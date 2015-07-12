@@ -35,8 +35,8 @@ from storm.locals import (
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
@@ -360,10 +360,10 @@ def get_comment_with_status_change(status, new_status, comment):
     return new_comment
 
 
+@implementer(IDistroSeriesDifference)
+@provider(IDistroSeriesDifferenceSource)
 class DistroSeriesDifference(StormBase):
     """See `DistroSeriesDifference`."""
-    implements(IDistroSeriesDifference)
-    classProvides(IDistroSeriesDifferenceSource)
     __storm_table__ = 'DistroSeriesDifference'
 
     id = Int(primary=True)

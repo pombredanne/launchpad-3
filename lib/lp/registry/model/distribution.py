@@ -34,7 +34,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.faq import (
@@ -185,6 +185,10 @@ from lp.translations.model.hastranslationimports import (
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+@implementer(
+    IBugSummaryDimension, IDistribution, IHasBugSupervisor,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
@@ -192,17 +196,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    StructuralSubscriptionTargetMixin, HasMilestonesMixin,
                    HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(
-        IBugSummaryDimension, IDistribution, IHasBugSupervisor,
-        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-        IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
-    title = StringCol(notNull=True)
+    _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
@@ -254,6 +254,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.name)
+
+    @property
+    def title(self):
+        return self.displayname
 
     @property
     def pillar(self):
@@ -1408,10 +1412,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return False
 
 
+@implementer(IDistributionSet)
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
-
-    implements(IDistributionSet)
     title = "Registered Distributions"
 
     def __iter__(self):
@@ -1453,7 +1456,7 @@ class DistributionSet:
         distro = Distribution(
             name=name,
             displayname=displayname,
-            title=title,
+            _title=title,
             description=description,
             summary=summary,
             domainname=domainname,

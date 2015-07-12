@@ -40,7 +40,7 @@ from zope.component import (
     )
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -107,10 +107,9 @@ USABLE_STATUSES = (
     MailingListStatus.MOD_FAILED)
 
 
+@implementer(IMessageApproval)
 class MessageApproval(SQLBase):
     """A held message."""
-
-    implements(IMessageApproval)
 
     message = ForeignKey(
         dbName='message', foreignKey='Message',
@@ -178,6 +177,7 @@ class MessageApproval(SQLBase):
                                  self.status)
 
 
+@implementer(IMailingList)
 class MailingList(SQLBase):
     """The mailing list for a team.
 
@@ -187,8 +187,6 @@ class MailingList(SQLBase):
     to instruct Mailman how to create, delete, and modify mailing lists (via
     XMLRPC).
     """
-
-    implements(IMailingList)
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
@@ -480,8 +478,8 @@ class MailingList(SQLBase):
             raise UnsafeToPurge(self)
 
 
+@implementer(IMailingListSet)
 class MailingListSet:
-    implements(IMailingListSet)
 
     title = _('Team mailing lists')
 
@@ -714,10 +712,9 @@ class MailingListSet:
             (MailingListStatus.CONSTRUCTING, MailingListStatus.UPDATING)))
 
 
+@implementer(IMailingListSubscription)
 class MailingListSubscription(SQLBase):
     """A mailing list subscription."""
-
-    implements(IMailingListSubscription)
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
@@ -744,10 +741,9 @@ class MailingListSubscription(SQLBase):
             return self.email_address
 
 
+@implementer(IMessageApprovalSet)
 class MessageApprovalSet:
     """Sets of held messages."""
-
-    implements(IMessageApprovalSet)
 
     def getMessageByMessageID(self, message_id):
         """See `IMessageApprovalSet`."""
@@ -789,10 +785,9 @@ class MessageApprovalSet:
         approvals.set(status=next_state)
 
 
+@implementer(IHeldMessageDetails)
 class HeldMessageDetails:
     """Details about a held message."""
-
-    implements(IHeldMessageDetails)
 
     def __init__(self, message_approval):
         self.message_approval = message_approval

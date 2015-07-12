@@ -12,7 +12,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.interfaces.bugtrackerperson import IBugTrackerPerson
 from lp.services.database.constants import UTC_NOW
@@ -20,10 +20,9 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IBugTrackerPerson)
 class BugTrackerPerson(SQLBase):
     """See `IBugTrackerPerson`."""
-
-    implements(IBugTrackerPerson)
 
     bugtracker = ForeignKey(
         dbName='bugtracker', foreignKey='BugTracker', notNull=True)

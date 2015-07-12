@@ -47,7 +47,7 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zisinstance
 
 from lp.app.errors import NotFoundError
@@ -91,12 +91,11 @@ def utcdatetime_from_field(field_value):
         raise InvalidEmailMessage('Invalid date %s' % field_value)
 
 
+@implementer(IMessage)
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
     coming into the bug system, or coming in from a mailing list.
     """
-
-    implements(IMessage)
 
     _table = 'Message'
     _defaultOrder = '-id'
@@ -191,8 +190,8 @@ def get_parent_msgids(parsed_message):
     return []
 
 
+@implementer(IMessageSet)
 class MessageSet:
-    implements(IMessageSet)
 
     extra_encoding_aliases = {
         'macintosh': 'mac_roman',
@@ -521,9 +520,9 @@ class MessageSet:
                 yield depth, message
 
 
+@implementer(IMessageChunk)
 class MessageChunk(SQLBase):
     """One part of a possibly multipart Message"""
-    implements(IMessageChunk)
 
     _table = 'MessageChunk'
     _defaultOrder = 'sequence'
@@ -555,10 +554,9 @@ class MessageChunk(SQLBase):
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url))
 
 
+@implementer(IUserToUserEmail)
 class UserToUserEmail(Storm):
     """See `IUserToUserEmail`."""
-
-    implements(IUserToUserEmail)
 
     __storm_table__ = 'UserToUserEmail'
 
@@ -622,10 +620,9 @@ class UserToUserEmail(Storm):
         Store.of(sender).add(self)
 
 
+@implementer(IDirectEmailAuthorization)
 class DirectEmailAuthorization:
     """See `IDirectEmailAuthorization`."""
-
-    implements(IDirectEmailAuthorization)
 
     def __init__(self, sender):
         """Create a `UserContactBy` instance.

@@ -180,7 +180,7 @@ distribution:
     3.1 : Debian
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Debian GNU/Linux
+    Hierarchy: Debian
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
     * Code - http://code.launchpad.dev/debian

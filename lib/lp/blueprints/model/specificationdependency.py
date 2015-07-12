@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = ['SpecificationDependency']
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
@@ -14,10 +14,9 @@ from lp.blueprints.interfaces.specificationdependency import (
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ISpecificationDependency)
 class SpecificationDependency(SQLBase):
     """A link between a spec and a bug."""
-
-    implements(ISpecificationDependency)
 
     _table = 'SpecificationDependency'
     specification = ForeignKey(dbName='specification',

@@ -22,7 +22,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.browser.interfaces import ISystemErrorView
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
-from zope.interface import implements
+from zope.interface import implementer
 
 import lp.layers
 from lp.services import features
@@ -33,12 +33,12 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import LaunchpadView
 
 
+@implementer(ISystemErrorView)
 class SystemErrorView(LaunchpadView):
     """Helper class for views on exceptions.
 
     Also, sets a 500 response code.
     """
-    implements(ISystemErrorView)
 
     page_title = 'Error: Launchpad system error'
 

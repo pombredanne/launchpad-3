@@ -14,7 +14,7 @@ from zope.formlib.interfaces import (
     WidgetInputError,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -44,8 +44,8 @@ class IThing(Interface):
     target = Reference(schema=Interface)
 
 
+@implementer(IThing)
 class Thing:
-    implements(IThing)
     owner = None
     target = None
 

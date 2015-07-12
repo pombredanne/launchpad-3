@@ -16,7 +16,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     EnumeratedType,
     Item,
@@ -24,7 +24,7 @@ from lazr.enum import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -56,10 +56,9 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import TableBatchNavigator
 
 
+@delegate_to(IBranchMergeProposal, context='context')
 class BranchMergeProposalListingItem:
     """A branch merge proposal that knows summary values for comments."""
-
-    delegates(IBranchMergeProposal, 'context')
 
     def __init__(self, branch_merge_proposal, summary, proposal_reviewer,
                  vote_references=None):
@@ -134,9 +133,9 @@ class BranchMergeProposalListingItem:
             return self.context.date_created
 
 
+@implementer(IBranchMergeProposalListingBatchNavigator)
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
-    implements(IBranchMergeProposalListingBatchNavigator)
 
     def __init__(self, view):
         super(BranchMergeProposalListingBatchNavigator, self).__init__(

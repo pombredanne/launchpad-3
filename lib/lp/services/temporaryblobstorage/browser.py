@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.browser.launchpadform import (
     action,
@@ -74,9 +74,9 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
             return uuid
 
 
+@implementer(ICanonicalUrlData)
 class TemporaryBlobStorageURL:
     """Bug URL creation rules."""
-    implements(ICanonicalUrlData)
 
     inside = None
     rootsite = None

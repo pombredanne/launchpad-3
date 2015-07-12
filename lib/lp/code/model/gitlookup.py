@@ -13,11 +13,11 @@ from lazr.uri import (
     URI,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     queryMultiAdapter,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
@@ -65,14 +65,13 @@ def adapt(obj, interface):
         return None
 
 
+@implementer(IGitTraversable)
 class RootGitTraversable:
     """Root traversable for Git repository objects.
 
     Corresponds to '/' in the path.  From here, you can traverse to a
     project or a distribution, optionally with a person context as well.
     """
-
-    implements(IGitTraversable)
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, owner, name, segments):
@@ -130,27 +129,25 @@ class _BaseGitTraversable:
         return owner, self.context, repository
 
 
+@adapter(IProduct)
+@implementer(IGitTraversable)
 class ProjectGitTraversable(_BaseGitTraversable):
     """Git repository traversable for projects.
 
     From here, you can traverse to a named project repository.
     """
 
-    adapts(IProduct)
-    implements(IGitTraversable)
-
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(owner, project=self.context)
 
 
+@adapter(IDistribution)
+@implementer(IGitTraversable)
 class DistributionGitTraversable(_BaseGitTraversable):
     """Git repository traversable for distributions.
 
     From here, you can traverse to a distribution source package.
     """
-
-    adapts(IDistribution)
-    implements(IGitTraversable)
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     def traverse(self, owner, name, segments):
@@ -176,14 +173,13 @@ class DistributionGitTraversable(_BaseGitTraversable):
         return owner, distro_source_package, None
 
 
+@adapter(IDistributionSourcePackage)
+@implementer(IGitTraversable)
 class DistributionSourcePackageGitTraversable(_BaseGitTraversable):
     """Git repository traversable for distribution source packages.
 
     From here, you can traverse to a named package repository.
     """
-
-    adapts(IDistributionSourcePackage)
-    implements(IGitTraversable)
 
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(
@@ -191,15 +187,14 @@ class DistributionSourcePackageGitTraversable(_BaseGitTraversable):
             sourcepackagename=self.context.sourcepackagename)
 
 
+@adapter(IPerson)
+@implementer(IGitTraversable)
 class PersonGitTraversable(_BaseGitTraversable):
     """Git repository traversable for people.
 
     From here, you can traverse to a named personal repository, or to a
     project or a distribution with a person context.
     """
-
-    adapts(IPerson)
-    implements(IGitTraversable)
 
     def getNamespace(self, owner):
         return getUtility(IGitNamespaceSet).get(owner)
@@ -247,10 +242,9 @@ class SegmentIterator:
         return segment
 
 
+@implementer(IGitTraverser)
 class GitTraverser:
     """Utility for traversing to objects that can have Git repositories."""
-
-    implements(IGitTraverser)
 
     def traverse(self, segments, owner=None):
         """See `IGitTraverser`."""
@@ -293,10 +287,9 @@ class GitTraverser:
         return owner, target, repository
 
 
+@implementer(IGitLookup)
 class GitLookup:
     """Utility for looking up Git repositories."""
-
-    implements(IGitLookup)
 
     def get(self, repository_id, default=None):
         """See `IGitLookup`."""

@@ -12,7 +12,7 @@ from storm.expr import (
     Count,
     Desc,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services import helpers
 from lp.translations.interfaces.hastranslationtemplates import (
@@ -22,9 +22,9 @@ from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 
 
+@implementer(IHasTranslationTemplates)
 class HasTranslationTemplatesMixin:
     """Helper class for implementing `IHasTranslationTemplates`."""
-    implements(IHasTranslationTemplates)
 
     def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`.

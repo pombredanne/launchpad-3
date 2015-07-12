@@ -17,7 +17,7 @@ from storm.locals import (
     Or,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -82,9 +82,8 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
             obj, obj.id, obj.name + " " + obj.version)
 
 
+@implementer(IHugeVocabulary)
 class PPAVocabulary(SQLObjectVocabularyBase):
-
-    implements(IHugeVocabulary)
 
     _table = Archive
     _orderBy = ['Person.name, Archive.name']

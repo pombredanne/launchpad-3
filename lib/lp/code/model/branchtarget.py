@@ -13,7 +13,7 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.code.errors import NoLinkedBranch
@@ -55,8 +55,8 @@ class _BaseBranchTarget:
         return []
 
 
+@implementer(IBranchTarget)
 class PackageBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     def __init__(self, sourcepackage):
         self.sourcepackage = sourcepackage
@@ -188,8 +188,8 @@ class PackageBranchTarget(_BaseBranchTarget):
         return result
 
 
+@implementer(IBranchTarget)
 class PersonBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     name = u'+junk'
     default_stacked_on_branch = None
@@ -262,8 +262,8 @@ class PersonBranchTarget(_BaseBranchTarget):
         branch.sourcepackagename = None
 
 
+@implementer(IBranchTarget)
 class ProductBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     def __init__(self, product):
         self.product = product

@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from lazr.lifecycle.objectdelta import ObjectDelta
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
@@ -17,10 +17,9 @@ from lp.code.interfaces.gitrepository import (
     )
 
 
+@implementer(IGitRepositoryDelta)
 class GitRepositoryDelta:
     """See `IGitRepositoryDelta`."""
-
-    implements(IGitRepositoryDelta)
 
     delta_values = ('name', 'git_identity')
 

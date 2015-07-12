@@ -19,7 +19,7 @@ __all__ = [
     ]
 
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.declarations import (
     accessor_for,
     export_as_webservice_entry,
@@ -33,7 +33,7 @@ from lazr.restful.fields import (
     )
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -198,10 +198,10 @@ class IIndexedMessage(Interface):
                               "of messages in its context."))
 
 
+@delegate_to(IMessage)
+@implementer(IIndexedMessage)
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
-    delegates(IMessage)
-    implements(IIndexedMessage)
 
     def __init__(self, context, inside, index, parent=None):
         self.context = context

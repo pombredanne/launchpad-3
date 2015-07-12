@@ -37,7 +37,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -333,9 +333,8 @@ class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
         return Link('+filebug', text, icon='add')
 
 
+@implementer(IProjectGroupActionMenu)
 class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
-
-    implements(IProjectGroupActionMenu)
 
     @property
     def maintainer_widget(self):
@@ -380,14 +379,14 @@ class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
         return ProjectGroupMilestoneTag(self.context, [])
 
 
+@implementer(IProjectGroupEditMenu)
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
-    implements(IProjectGroupEditMenu)
     label = "Change project group details"
     page_title = label
     schema = IProjectGroup
     field_names = [
-        'displayname', 'title', 'summary', 'description',
+        'displayname', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'wikiurl']
@@ -493,7 +492,7 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
         return getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
             displayname=data['displayname'],
             licenses=data['licenses'],
@@ -540,10 +539,9 @@ class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
         return Link('+all', text, icon='list')
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class ProjectSetView(LaunchpadView):
     """View for project group index page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = "Project groups registered in Launchpad"
 
@@ -582,7 +580,6 @@ class ProjectAddView(LaunchpadFormView):
     field_names = [
         'name',
         'displayname',
-        'title',
         'summary',
         'description',
         'owner',
@@ -599,7 +596,7 @@ class ProjectAddView(LaunchpadFormView):
         self.projectgroup = getUtility(IProjectGroupSet).new(
             name=data['name'].lower().strip(),
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],

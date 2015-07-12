@@ -6,7 +6,7 @@ Navigation menus are used to create links to related pages. The menus
 are usually bound to a view.
 
     >>> from zope.component import provideAdapter
-    >>> from zope.interface import implements, Interface
+    >>> from zope.interface import implementer, Interface
     >>> from lp.services.webapp.interfaces import INavigationMenu
     >>> from lp.services.webapp.menu import (
     ...     enabled_with_permission, Link, NavigationMenu)
@@ -33,9 +33,9 @@ are usually bound to a view.
     ...     def admin(self):
     ...         return Link('+admin', 'Administer this user')
 
-    >>> class EditView(LaunchpadView):
+    >>> @implementer(IEditMenuMarker)
+    ... class EditView(LaunchpadView):
     ...     """A simple view."""
-    ...     implements(IEditMenuMarker)
     ...     # A hack that reveals secret of how facets work.
     ...     __launchpad_facetname__ = 'overview'
 

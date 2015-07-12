@@ -25,7 +25,7 @@ from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.exceptions.exceptionformatter import format_exception
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
@@ -82,13 +82,13 @@ def _is_sensitive(request, name):
     return True
 
 
+@implementer(IErrorReportEvent)
 class ErrorReportEvent(ObjectEvent):
     """A new error report has been created."""
-    implements(IErrorReportEvent)
 
 
+@implementer(IErrorReport)
 class ErrorReport:
-    implements(IErrorReport)
 
     def __init__(self, id, type, value, time, tb_text, username,
                  url, duration, req_vars, timeline, informational=None,
@@ -289,8 +289,8 @@ def _get_type(report):
     return report.get('type', 'No exception type')
 
 
+@implementer(IErrorReportingUtility)
 class ErrorReportingUtility:
-    implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_offsite_referer = set([
@@ -469,8 +469,8 @@ class ErrorReportingUtility:
 globalErrorUtility = ErrorReportingUtility()
 
 
+@implementer(IErrorReportRequest)
 class ErrorReportRequest:
-    implements(IErrorReportRequest)
 
     oopsid = None
 

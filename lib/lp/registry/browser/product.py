@@ -46,7 +46,7 @@ __all__ = [
 from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import (
     copy_field,
     use_template,
@@ -64,14 +64,13 @@ from zope.formlib.widgets import (
     TextWidget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
     Bool,
     Choice,
-    TextLine,
     )
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -107,7 +106,7 @@ from lp.app.browser.tales import (
 from lp.app.enums import (
     InformationType,
     PROPRIETARY_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PILLAR_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import (
@@ -162,7 +161,7 @@ from lp.code.interfaces.codeimport import (
     )
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
-
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
@@ -223,6 +222,7 @@ from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import UnsafeFormGetSubmissionError
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.browser.customlanguagecode import (
@@ -688,6 +688,7 @@ class SortSeriesMixin:
         return self._sorted_filtered_list(check_active)
 
 
+@delegate_to(IProduct, context='product')
 class ProductWithSeries:
     """A decorated product that includes series data.
 
@@ -701,7 +702,6 @@ class ProductWithSeries:
     # variables to self.product, which would bypass the caching.
     series = None
     development_focus = None
-    delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
@@ -726,9 +726,9 @@ class ProductWithSeries:
             self.release_by_id[release.id] = release_delegate
 
 
+@delegate_to(IProductSeries, context='series')
 class DecoratedSeries:
     """A decorated series that includes helper attributes for templates."""
-    delegates(IProductSeries, 'series')
 
     def __init__(self, series):
         self.series = series
@@ -781,6 +781,7 @@ class SeriesWithReleases(DecoratedSeries):
         return False
 
 
+@delegate_to(IProductRelease, context='release')
 class ReleaseWithFiles:
     """A decorated release that includes product release files.
 
@@ -793,7 +794,6 @@ class ReleaseWithFiles:
     # this class will not delegate the actual instance variables to
     # self.release, which would raise an AttributeError.
     parent = None
-    delegates(IProductRelease, 'release')
 
     def __init__(self, release, parent):
         self.release = release
@@ -913,10 +913,9 @@ class ProductDownloadFileMixin:
         return False
 
 
+@implementer(IProductActionMenu)
 class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
                   FeedsMixin, ProductDownloadFileMixin):
-
-    implements(IProductActionMenu)
 
     @property
     def maintainer_widget(self):
@@ -1022,6 +1021,33 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
 
     def requestCountry(self):
         return ICountry(self.request, None)
+
+    @property
+    def golang_import_spec(self):
+        """Meta string for golang remote import path.
+        See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        """
+        if self.context.vcs == VCSType.GIT:
+            repo = getUtility(IGitRepositorySet).getDefaultRepository(
+                self.context)
+            if repo:
+                return "{hostname}/{product} git {git_https_url}".format(
+                    hostname=config.vhost.mainsite.hostname,
+                    product=self.context.name,
+                    git_https_url=repo.git_https_url)
+            else:
+                return None
+        elif (self.context.vcs == VCSType.BZR and
+        self.context.development_focus.branch):
+            return (
+                "{hostname}/{product} bzr "
+                "{root_url}{branch}").format(
+                    hostname=config.vhost.mainsite.hostname,
+                    root_url=allvhosts.configs['mainsite'].rooturl,
+                    product=self.context.name,
+                    branch=self.context.development_focus.branch.unique_name)
+        else:
+            return None
 
     def browserLanguages(self):
         return browser_languages(self.request)
@@ -1272,9 +1298,9 @@ class ProductDownloadFilesView(LaunchpadView,
                 release.version in self.milestones[series.name])
 
 
+@implementer(IProductEditMenu)
 class ProductBrandingView(BrandingChangeView):
     """A view to set branding."""
-    implements(IProductEditMenu)
 
     label = "Change branding"
     schema = IProduct
@@ -1291,8 +1317,8 @@ class ProductBrandingView(BrandingChangeView):
         return canonical_url(self.context)
 
 
+@implementer(IProductEditMenu)
 class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
-    implements(IProductEditMenu)
     schema = IProduct
     usage_fieldname = None
 
@@ -1349,10 +1375,9 @@ class ProductConfigureAnswersView(ProductConfigureBase):
     usage_fieldname = 'answers_usage'
 
 
+@implementer(IProductEditMenu)
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
-
-    implements(IProductEditMenu)
 
     label = "Edit details"
     schema = IProduct
@@ -1377,8 +1402,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('license_info', GhostWidget)
     custom_widget(
         'information_type', LaunchpadRadioWidgetWithDescription,
-        vocabulary=InformationTypeVocabulary(
-            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+        vocabulary=InformationTypeVocabulary(types=PILLAR_INFORMATION_TYPES))
 
     @property
     def next_url(self):
@@ -1402,8 +1426,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
         cache = IJSONRequestCache(self.request)
-        json_dump_information_types(
-            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        json_dump_information_types(cache, PILLAR_INFORMATION_TYPES)
         super(ProductEditView, self).initialize()
 
     def validate(self, data):
@@ -1725,11 +1748,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     @property
     def initial_values(self):
+        repository_set = getUtility(IGitRepositorySet)
         return dict(
             rcs_type=RevisionControlSystems.BZR,
             default_vcs=(self.context.pillar.inferred_vcs or VCSType.BZR),
             branch_type=LINK_LP_BZR,
-            branch_location=self.series.branch)
+            branch_location=self.series.branch,
+            git_repository_location=repository_set.getDefaultRepository(
+                self.context.pillar))
 
     @property
     def next_url(self):
@@ -2040,10 +2066,9 @@ class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
         return Link('+all', 'Show all projects', icon='list')
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class ProductSetView(LaunchpadView):
     """View for products index page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'Projects registered in Launchpad'
 
@@ -2170,7 +2195,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 
     schema = IProduct
     product = None
-    field_names = ['name', 'displayname', 'title', 'summary',
+    field_names = ['name', 'displayname', 'summary',
                    'description', 'homepageurl', 'sourceforgeproject',
                    'wikiurl', 'screenshotsurl',
                    'downloadurl', 'programminglang',
@@ -2203,7 +2228,7 @@ def create_source_package_fields():
 class ProjectAddStepOne(StepView):
     """product/+new view class for creating a new project."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary']
+    _field_names = ['displayname', 'name', 'summary']
     label = "Register a project in Launchpad"
     schema = IProduct
     step_name = 'projectaddstep1'
@@ -2259,7 +2284,7 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary', 'description',
+    _field_names = ['displayname', 'name', 'summary', 'description',
                     'homepageurl', 'information_type', 'licenses',
                     'license_info', 'driver', 'bug_supervisor', 'owner']
     schema = IProduct
@@ -2277,8 +2302,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget(
         'information_type',
         LaunchpadRadioWidgetWithDescription,
-        vocabulary=InformationTypeVocabulary(
-            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+        vocabulary=InformationTypeVocabulary(types=PILLAR_INFORMATION_TYPES))
 
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
@@ -2297,8 +2321,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
         cache = IJSONRequestCache(self.request)
-        json_dump_information_types(
-            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        json_dump_information_types(cache, PILLAR_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property
@@ -2488,7 +2511,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
             description=description,
             homepageurl=data.get('homepageurl'),
@@ -2552,10 +2575,9 @@ class IProductEditPeopleSchema(Interface):
             "become the project's new maintainers."))
 
 
+@implementer(IProductEditMenu)
 class ProductEditPeopleView(LaunchpadEditFormView):
     """Enable editing of important people on the project."""
-
-    implements(IProductEditMenu)
 
     label = "Change the roles of people"
     schema = IProductEditPeopleSchema

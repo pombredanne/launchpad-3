@@ -4,7 +4,7 @@
 from doctest import DocTestSuite
 import unittest
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import IBrowserRequest
 
 from lp.registry.interfaces.person import IPerson
@@ -20,8 +20,8 @@ class DummyLanguage:
         self.alt_suggestion_language = None
 
 
+@implementer(ILanguageSet)
 class DummyLanguageSet:
-    implements(ILanguageSet)
 
     _languages = {
         'ja': DummyLanguage('ja', 1),
@@ -34,8 +34,8 @@ class DummyLanguageSet:
         return self._languages[key]
 
 
+@implementer(IPerson)
 class DummyPerson:
-    implements(IPerson)
 
     def __init__(self, codes):
         self.codes = codes
@@ -54,8 +54,8 @@ class DummyResponse:
         pass
 
 
+@implementer(IBrowserRequest)
 class DummyRequest:
-    implements(IBrowserRequest)
 
     def __init__(self, **form_data):
         self.form = form_data
@@ -85,8 +85,8 @@ class DummyRequestLanguages:
             ]
 
 
+@implementer(ILaunchBag)
 class DummyLaunchBag:
-    implements(ILaunchBag)
 
     def __init__(self, login=None, user=None):
         self.login = login

@@ -18,7 +18,7 @@ from sqlobject import (
     ForeignKey,
     IntCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.constants import (
     DEFAULT,
@@ -42,12 +42,12 @@ from lp.translations.model.translator import Translator
 from lp.translations.utilities.rosettastats import RosettaStats
 
 
+@implementer(IDistroSeriesLanguage)
 class DistroSeriesLanguage(SQLBase, RosettaStats):
     """See `IDistroSeriesLanguage`.
 
     A SQLObject based implementation of IDistroSeriesLanguage.
     """
-    implements(IDistroSeriesLanguage)
 
     _table = 'DistroSeriesLanguage'
 
@@ -141,13 +141,13 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
         ztm.commit()
 
 
+@implementer(IDistroSeriesLanguage)
 class DummyDistroSeriesLanguage(RosettaStats):
     """See `IDistroSeriesLanguage`
 
     Represents a DistroSeriesLanguage where we do not yet actually HAVE one
     for that language for this distribution series.
     """
-    implements(IDistroSeriesLanguage)
 
     def __init__(self, distroseries, language):
         assert 'en' != language.code, (
@@ -221,12 +221,12 @@ class DummyDistroSeriesLanguage(RosettaStats):
         return
 
 
+@implementer(IDistroSeriesLanguageSet)
 class DistroSeriesLanguageSet:
     """See `IDistroSeriesLanguageSet`.
 
     Implements a means to get a DummyDistroSeriesLanguage.
     """
-    implements(IDistroSeriesLanguageSet)
 
     def getDummy(self, distroseries, language):
         """See IDistroSeriesLanguageSet."""

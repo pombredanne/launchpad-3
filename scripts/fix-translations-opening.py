@@ -8,7 +8,7 @@ __metaclass__ = type
 import _pythonpath
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.distroseries import DistroSeries
@@ -104,9 +104,8 @@ statements = [
     ]
 
 
+@implementer(ITunableLoop)
 class ExecuteLoop:
-
-    implements(ITunableLoop)
 
     def __init__(self, statement, series, logger):
         self.statement = statement

@@ -10,7 +10,7 @@ __all__ = [
     'SpecificationSubscriptionEditView',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from simplejson import dumps
 from zope.component import getUtility
 
@@ -203,9 +203,9 @@ class SpecificationPortletSubcribersIds(LaunchpadView):
         return self.subscriber_ids_js
 
 
+@delegate_to(ISpecificationSubscription, context='subscription')
 class SubscriptionAttrDecorator:
     """A SpecificationSubscription with added attributes for HTML/JS."""
-    delegates(ISpecificationSubscription, 'subscription')
 
     def __init__(self, subscription):
         self.subscription = subscription

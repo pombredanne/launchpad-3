@@ -21,7 +21,7 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.errors import NoSuchDistroSeries
@@ -80,12 +80,11 @@ def livefs_modified(livefs, event):
     livefs.date_last_modified = UTC_NOW
 
 
+@implementer(ILiveFS, IHasOwner)
 class LiveFS(Storm):
     """See `ILiveFS`."""
 
     __storm_table__ = 'LiveFS'
-
-    implements(ILiveFS, IHasOwner)
 
     id = Int(primary=True)
 
@@ -219,10 +218,9 @@ class LiveFS(Storm):
         IStore(LiveFS).remove(self)
 
 
+@implementer(ILiveFSSet)
 class LiveFSSet:
     """See `ILiveFSSet`."""
-
-    implements(ILiveFSSet)
 
     def new(self, registrant, owner, distro_series, name, metadata,
             require_virtualized=True, date_created=DEFAULT):

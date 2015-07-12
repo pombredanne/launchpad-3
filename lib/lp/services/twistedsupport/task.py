@@ -21,7 +21,7 @@ from twisted.internet import (
 from twisted.internet.task import LoopingCall
 from twisted.python import log
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -92,14 +92,13 @@ class ITaskConsumer(Interface):
         """
 
 
+@implementer(ITaskSource)
 class PollingTaskSource:
     """A task source that polls to generate tasks.
 
     This is useful for systems where we need to poll a central server in order
     to find new work to do.
     """
-
-    implements(ITaskSource)
 
     def __init__(self, interval, task_producer, clock=None, logger=None):
         """Construct a `PollingTaskSource`.
@@ -214,14 +213,13 @@ class NotRunningError(Exception):
             self, "%r has not started, cannot run tasks." % (consumer,))
 
 
+@implementer(ITaskConsumer)
 class ParallelLimitedTaskConsumer:
     """A consumer that runs tasks with limited parallelism.
 
     Assumes that the task source generates tasks that are nullary callables
     that might return `Deferred`s.
     """
-
-    implements(ITaskConsumer)
 
     def __init__(self, worker_limit, logger=None):
         if logger is None:

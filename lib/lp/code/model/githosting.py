@@ -12,7 +12,7 @@ import json
 from urlparse import urljoin
 
 import requests
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.errors import (
     GitRepositoryCreationFault,
@@ -27,10 +27,9 @@ class HTTPResponseNotOK(Exception):
     pass
 
 
+@implementer(IGitHostingClient)
 class GitHostingClient:
     """A client for the internal API provided by the Git hosting system."""
-
-    implements(IGitHostingClient)
 
     def __init__(self):
         self.endpoint = config.codehosting.internal_git_api_endpoint

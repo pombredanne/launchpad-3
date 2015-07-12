@@ -1749,7 +1749,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             "--- sample\t2009-01-15 23:44:22 +0000\n"
             "+++ sample\t2009-01-29 04:10:57 +0000\n"
             "@@ -19,7 +19,7 @@\n"
-            " from zope.interface import implements\n"
+            " from zope.interface import implementer\n"
             "\n"
             " from storm.expr import Desc, Join, LeftJoin\n"
             "-from storm.references import Reference\n"

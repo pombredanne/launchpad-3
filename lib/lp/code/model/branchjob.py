@@ -32,7 +32,7 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -52,8 +52,8 @@ from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.code.bzr import (
@@ -185,10 +185,9 @@ class BranchJobType(DBEnumeratedType):
         """)
 
 
+@implementer(IBranchJob)
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
-
-    implements(IBranchJob)
 
     _table = 'BranchJob'
 
@@ -229,11 +228,10 @@ class BranchJob(SQLBase):
         return BranchJobDerived.makeSubclass(self)
 
 
+@delegate_to(IBranchJob)
 class BranchJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IBranchJob)
 
     def __init__(self, branch_job):
         self.context = branch_job
@@ -247,7 +245,7 @@ class BranchJobDerived(BaseRunnableJob):
             }
 
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
-    # should be implemented by delegates().
+    # should be implemented by delegate_to().
     def __eq__(self, other):
         # removeSecurityProxy, since 'other' might well be a delegated object
         # and the context attribute is not exposed by design.
@@ -296,12 +294,10 @@ class BranchJobDerived(BaseRunnableJob):
         return [format_address_for_person(self.requester)]
 
 
+@implementer(IBranchScanJob)
+@provider(IBranchScanJobSource)
 class BranchScanJob(BranchJobDerived):
     """A Job that scans a branch for new revisions."""
-
-    implements(IBranchScanJob)
-
-    classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
     memory_limit = 2 * (1024 ** 3)
 
@@ -339,12 +335,10 @@ class BranchScanJob(BranchJobDerived):
                     % self._cached_branch_name)
 
 
+@implementer(IBranchUpgradeJob)
+@provider(IBranchUpgradeJobSource)
 class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
-
-    implements(IBranchUpgradeJob)
-
-    classProvides(IBranchUpgradeJobSource)
     class_job_type = BranchJobType.UPGRADE_BRANCH
 
     user_error_types = (NotBranchError,)
@@ -421,12 +415,10 @@ class BranchUpgradeJob(BranchJobDerived):
                 shutil.rmtree(upgrade_branch_path)
 
 
+@implementer(IRevisionMailJob)
+@provider(IRevisionMailJobSource)
 class RevisionMailJob(BranchJobDerived):
     """A Job that sends a mail for a scan of a Branch."""
-
-    implements(IRevisionMailJob)
-
-    classProvides(IRevisionMailJobSource)
 
     class_job_type = BranchJobType.REVISION_MAIL
 
@@ -471,9 +463,9 @@ class RevisionMailJob(BranchJobDerived):
         self.getMailer().sendAll()
 
 
+@implementer(IRevisionsAddedJob)
 class RevisionsAddedJob(BranchJobDerived):
     """A job for sending emails about added revisions."""
-    implements(IRevisionsAddedJob)
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
@@ -727,12 +719,10 @@ class RevisionsAddedJob(BranchJobDerived):
         return outf.getvalue()
 
 
+@implementer(IRosettaUploadJob)
+@provider(IRosettaUploadJobSource)
 class RosettaUploadJob(BranchJobDerived):
     """A Job that uploads translation files to Rosetta."""
-
-    implements(IRosettaUploadJob)
-
-    classProvides(IRosettaUploadJobSource)
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
 
@@ -964,12 +954,10 @@ class RosettaUploadJob(BranchJobDerived):
         return jobs
 
 
+@implementer(IReclaimBranchSpaceJob)
+@provider(IReclaimBranchSpaceJobSource)
 class ReclaimBranchSpaceJob(BranchJobDerived, BaseRunnableJobSource):
     """Reclaim the disk space used by a branch that's deleted from the DB."""
-
-    implements(IReclaimBranchSpaceJob)
-
-    classProvides(IReclaimBranchSpaceJobSource)
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 

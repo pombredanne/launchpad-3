@@ -61,10 +61,8 @@ the user will be warned too.
     >>> print extract_text(
     ...     first_tag_by_class(admin_browser.contents, 'warning message'))
     Celso Providelo
-    did not previously have any assigned bugs in
-    Jokosher Audio Editor.
-    If this bug was assigned by mistake,
-    you may change the assignment.
+    did not previously have any assigned bugs in Jokosher.
+    If this bug was assigned by mistake, you may change the assignment.
 
 When assigning a bug to oneself, though, the warning message is suppreseed.
 

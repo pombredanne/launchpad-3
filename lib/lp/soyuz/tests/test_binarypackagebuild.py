@@ -325,6 +325,28 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
+    def testDisjunctions(self):
+        # If one of a set of alternatives becomes available, that set of
+        # alternatives is dropped from the outstanding dependencies.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={
+                'dependencies': u'dep-bin (>= 999) | alt-bin, dep-tools'})
+        depwait_build.updateDependencies()
+        self.assertEqual(
+            u'dep-bin (>= 999) | alt-bin, dep-tools',
+            depwait_build.dependencies)
+
+        self.publisher.getPubBinaries(
+            binaryname='alt-bin', status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
+
+        depwait_build.updateDependencies()
+        self.assertEqual(u'dep-tools', depwait_build.dependencies)
+
 
 class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
 

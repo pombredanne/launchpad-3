@@ -18,7 +18,7 @@ import httplib
 import itertools
 import operator
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.declarations import error_status
@@ -32,26 +32,27 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
+    And,
+    Coalesce,
+    Desc,
+    Join,
     LeftJoin,
     NamedFunc,
-    )
-from storm.locals import (
-    And,
-    Desc,
-    Int,
-    Join,
-    List,
     Not,
     Or,
     Select,
     SQL,
+    )
+from storm.locals import (
+    Int,
+    List,
     Store,
     Unicode,
     )
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -69,10 +70,10 @@ from lp.answers.model.question import (
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
+    PILLAR_INFORMATION_TYPES,
     PRIVATE_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -165,10 +166,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.model.accesspolicy import (
-    AccessPolicy,
-    AccessPolicyGrantFlat,
-    )
+from lp.registry.model.accesspolicy import AccessPolicyGrantFlat
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -199,7 +197,11 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import fti_search
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayIntersects,
+    fti_search,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -224,9 +226,9 @@ from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+@implementer(ILicensesModifiedEvent)
 class LicensesModifiedEvent(ObjectModifiedEvent):
     """See `ILicensesModifiedEvent`."""
-    implements(ILicensesModifiedEvent)
 
     def __init__(self, product, user=None):
         super(LicensesModifiedEvent, self).__init__(
@@ -265,10 +267,9 @@ class Array(NamedFunc):
     name = 'array'
 
 
+@delegate_to(IProduct, context='product')
 class ProductWithLicenses:
     """Caches `Product.licenses`."""
-
-    delegates(IProduct, 'product')
 
     def __init__(self, product, license_ids):
         """Initialize a `ProductWithLicenses`.
@@ -339,25 +340,25 @@ class UnDeactivateable(Exception):
 bug_policy_default = {
     InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
     InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
-    InformationType.EMBARGOED: BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
 }
 
 
 branch_policy_default = {
     InformationType.PUBLIC: BranchSharingPolicy.PUBLIC,
-    InformationType.EMBARGOED: BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
     InformationType.PROPRIETARY: BranchSharingPolicy.PROPRIETARY,
 }
 
 
 specification_policy_default = {
     InformationType.PUBLIC: SpecificationSharingPolicy.PUBLIC,
-    InformationType.EMBARGOED:
-        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
     InformationType.PROPRIETARY: SpecificationSharingPolicy.PROPRIETARY,
 }
 
 
+@implementer(
+    IBugSummaryDimension, IHasBugSupervisor,
+    IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, QuestionTargetMixin,
@@ -368,11 +369,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasCodeImportsMixin, InformationTypeMixin,
               TranslationPolicyMixin):
     """A Product."""
-
-    implements(
-        IBugSummaryDimension, IHasBugSupervisor,
-        IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
-        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
@@ -399,7 +395,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
-    title = StringCol(dbName='title', notNull=True)
+    _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
@@ -442,6 +438,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     vcs = EnumCol(enum=VCSType, notNull=False)
 
     @property
+    def title(self):
+        return self.displayname
+
+    @property
     def date_next_suggest_packaging(self):
         """See `IProduct`
 
@@ -482,7 +482,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         changed.  Has the side-effect of creating a commercial subscription if
         permitted.
         """
-        if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+        if value not in PILLAR_INFORMATION_TYPES:
             yield CannotChangeInformationType('Not supported for Projects.')
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
@@ -1627,6 +1627,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return True
         return False
 
+    def userCanLimitedView(self, user):
+        """See `IProductPublic`."""
+        if self.userCanView(user):
+            return True
+        if user is None:
+            return False
+        return not Store.of(self).find(
+            Product,
+            Product.id == self.id,
+            ProductSet.getProductPrivacyFilter(user.person)).is_empty()
+
 
 def get_precached_products(products, need_licences=False,
                            need_projectgroups=False, need_series=False,
@@ -1786,8 +1797,8 @@ def get_distro_sourcepackages(products):
     return result
 
 
+@implementer(IProductSet)
 class ProductSet:
-    implements(IProductSet)
 
     def __init__(self):
         self.title = "Projects in Launchpad"
@@ -1817,19 +1828,39 @@ class ProductSet:
 
     @staticmethod
     def getProductPrivacyFilter(user):
-        if user is not None:
-            roles = IPersonRoles(user)
-            if roles.in_admin or roles.in_commercial_admin:
-                return True
-        granted_products = And(
-            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
-            TeamParticipation.person == user,
-            AccessPolicyGrantFlat.policy == AccessPolicy.id,
-            AccessPolicy.product == Product.id,
-            AccessPolicy.type == Product._information_type)
-        return Or(Product._information_type == InformationType.PUBLIC,
-                  Product._information_type == None,
-                  Product.id.is_in(Select(Product.id, granted_products)))
+        # Anonymous users can only see public projects. This is also
+        # sometimes used with an outer join with eg. Distribution, so we
+        # let NULL through too.
+        public_filter = Or(
+            Product._information_type == None,
+            Product._information_type == InformationType.PUBLIC)
+        if user is None:
+            return public_filter
+
+        # (Commercial) admins can see any project.
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_commercial_admin:
+            return True
+
+        # Normal users can see any project for which they can see either
+        # an entire policy or an artifact.
+        # XXX wgrant 2015-06-26: This is slower than ideal for people in
+        # teams with lots of artifact grants, as there can be tens of
+        # thousands of APGF rows for a single policy. But it's tens of
+        # milliseconds at most.
+        grant_filter = Coalesce(
+            ArrayIntersects(
+                SQL('Product.access_policies'),
+                Select(
+                    ArrayAgg(AccessPolicyGrantFlat.policy_id),
+                    tables=(AccessPolicyGrantFlat,
+                            Join(TeamParticipation,
+                                TeamParticipation.teamID ==
+                                AccessPolicyGrantFlat.grantee_id)),
+                    where=(TeamParticipation.person == user)
+                )),
+            False)
+        return Or(public_filter, grant_filter)
 
     @classmethod
     def get_users_private_products(cls, user):
@@ -1900,7 +1931,8 @@ class ProductSet:
             licenses = set()
         if information_type is None:
             information_type = InformationType.PUBLIC
-        if information_type in PROPRIETARY_INFORMATION_TYPES:
+        if (information_type in PILLAR_INFORMATION_TYPES
+                and information_type in PROPRIETARY_INFORMATION_TYPES):
             # This check is skipped in _valid_product_information_type during
             # creation, so done here.  It predicts whether a commercial
             # subscription will be generated based on the selected license,
@@ -1911,7 +1943,7 @@ class ProductSet:
                     ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
-            displayname=displayname, title=title, projectgroup=projectgroup,
+            displayname=displayname, _title=title, projectgroup=projectgroup,
             summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=None,
@@ -2095,7 +2127,7 @@ class ProductSet:
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
-                distinct=True).order_by(Product.title)
+                distinct=True).order_by(Product.displayname)
 
         # We only want Product - the other tables are just to populate
         # the cache.

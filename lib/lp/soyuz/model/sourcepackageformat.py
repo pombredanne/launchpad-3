@@ -13,7 +13,7 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
@@ -27,10 +27,9 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 
 
+@implementer(ISourcePackageFormatSelection)
 class SourcePackageFormatSelection(Storm):
     """See ISourcePackageFormatSelection."""
-
-    implements(ISourcePackageFormatSelection)
 
     __storm_table__ = 'sourcepackageformatselection'
 
@@ -42,10 +41,9 @@ class SourcePackageFormatSelection(Storm):
     format = DBEnum(enum=SourcePackageFormat)
 
 
+@implementer(ISourcePackageFormatSelectionSet)
 class SourcePackageFormatSelectionSet:
     """See ISourcePackageFormatSelectionSet."""
-
-    implements(ISourcePackageFormatSelectionSet)
 
     def getBySeriesAndFormat(self, distroseries, format):
         """See `ISourcePackageFormatSelection`."""

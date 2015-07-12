@@ -41,7 +41,7 @@ from ampoule import (
     main,
     pool,
     )
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
     LeaseHeld,
@@ -89,6 +89,7 @@ class BaseRunnableJobSource:
         yield
 
 
+@delegate_to(IJob, context='job')
 class BaseRunnableJob(BaseRunnableJobSource):
     """Base class for jobs to be run via JobRunner.
 
@@ -98,7 +99,6 @@ class BaseRunnableJob(BaseRunnableJobSource):
     Subclasses may provide getOopsRecipients, to send mail about oopses.
     If so, they should also provide getOperationDescription.
     """
-    delegates(IJob, 'job')
 
     user_error_types = ()
 

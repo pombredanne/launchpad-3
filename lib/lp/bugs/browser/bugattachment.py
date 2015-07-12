@@ -18,7 +18,7 @@ from zope.component import (
     getUtility,
     )
 from zope.contenttype import guess_content_type
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.browser.launchpadform import (
     action,
@@ -93,9 +93,9 @@ class BugAttachmentSetNavigation(GetitemNavigation):
 # Despite declaring compliance with ICanonicalUrlData, the LaunchBag
 # dependency means this tends towards the "not canonical at all" end of
 # the canonicalness scale. Beware.
+@implementer(ICanonicalUrlData)
 class BugAttachmentURL:
     """Bug URL creation rules."""
-    implements(ICanonicalUrlData)
 
     rootsite = 'bugs'
 

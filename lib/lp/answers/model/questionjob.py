@@ -8,7 +8,7 @@ __all__ = [
     'QuestionJob',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from storm.expr import And
 from storm.locals import (
@@ -18,8 +18,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.answers.enums import (
@@ -50,10 +50,9 @@ from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 
 
+@implementer(IQuestionJob)
 class QuestionJob(StormBase):
     """A Job for queued question emails."""
-
-    implements(IQuestionJob)
 
     __storm_table__ = 'QuestionJob'
 
@@ -100,12 +99,12 @@ class QuestionJob(StormBase):
         return QuestionEmailJob(self)
 
 
+@delegate_to(IQuestionJob)
+@implementer(IQuestionEmailJob)
+@provider(IQuestionEmailJobSource)
 class QuestionEmailJob(BaseRunnableJob):
     """Intermediate class for deriving from QuestionJob."""
 
-    delegates(IQuestionJob)
-    implements(IQuestionEmailJob)
-    classProvides(IQuestionEmailJobSource)
     config = config.IQuestionEmailJobSource
 
     def __init__(self, job):

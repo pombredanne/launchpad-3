@@ -14,7 +14,7 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -59,10 +59,9 @@ from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
 
 
+@implementer(IGitAPI)
 class GitAPI(LaunchpadXMLRPCView):
     """See `IGitAPI`."""
-
-    implements(IGitAPI)
 
     def __init__(self, *args, **kwargs):
         super(GitAPI, self).__init__(*args, **kwargs)
@@ -75,7 +74,7 @@ class GitAPI(LaunchpadXMLRPCView):
         try:
             hosting_path = repository.getInternalPath()
         except Unauthorized:
-            raise faults.PermissionDenied()
+            return None
         writable = check_permission("launchpad.Edit", repository)
         return {
             "path": hosting_path,
@@ -237,17 +236,18 @@ class GitAPI(LaunchpadXMLRPCView):
                 self._createRepository(requester, path)
                 result = self._performLookup(path)
             if result is None:
-                raise faults.PathTranslationError(path)
+                raise faults.GitRepositoryNotFound(path)
             if permission != "read" and not result["writable"]:
                 raise faults.PermissionDenied()
             return result
-        except faults.PermissionDenied:
-            # Turn "permission denied" for anonymous HTTP requests into
-            # "authorisation required", so that the user-agent has a chance
-            # to try HTTP basic auth.
+        except (faults.PermissionDenied, faults.GitRepositoryNotFound):
+            # Turn lookup errors for anonymous HTTP requests into
+            # "authorisation required", so that the user-agent has a
+            # chance to try HTTP basic auth.
             if can_authenticate and requester is None:
                 raise faults.Unauthorized()
-            raise
+            else:
+                raise
 
     def translatePath(self, path, permission, requester_id, can_authenticate):
         """See `IGitAPI`."""

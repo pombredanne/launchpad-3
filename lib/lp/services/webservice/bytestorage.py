@@ -16,7 +16,7 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.librarian.interfaces import (
     ILibraryFileAliasSet,
@@ -25,9 +25,9 @@ from lp.services.librarian.interfaces import (
 from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
+@implementer(IByteStorage, ICanonicalUrlData)
 class LibraryBackedByteStorage:
     """See `IByteStorage`."""
-    implements(IByteStorage, ICanonicalUrlData)
 
     def __init__(self, entry, field):
         """Initialize as the backing storage for one entry's field."""

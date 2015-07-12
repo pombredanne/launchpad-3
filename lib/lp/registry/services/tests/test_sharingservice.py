@@ -248,7 +248,7 @@ class TestSharingService(TestCaseWithFactory):
         # proprietary.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED,
+            information_type=InformationType.PROPRIETARY,
             owner=owner,
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         with person_logged_in(owner):
@@ -1889,18 +1889,6 @@ class TestSharingService(TestCaseWithFactory):
         self.assertTrue(
             self.service.checkPillarAccess(
                 [product], InformationType.USERDATA, right_person))
-
-    def test_checkPillarArtifactAccess_respects_teams(self):
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            information_type=InformationType.PROPRIETARY, owner=owner)
-        user = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            membership_policy=TeamMembershipPolicy.MODERATED, members=[user])
-        with person_logged_in(owner):
-            bug = self.factory.makeBug(target=product)
-            bug.subscribe(team, owner)
-        self.assertTrue(self.service.checkPillarArtifactAccess(product, user))
 
     def test_checkPillarAccess_no_policy(self):
         # checkPillarAccess returns False if there's no policy.

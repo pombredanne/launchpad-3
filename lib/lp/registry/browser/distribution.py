@@ -45,7 +45,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.boolwidgets import CheckBoxWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.security.checker import canWrite
@@ -786,10 +786,9 @@ class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
         'create_account']
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class DistributionSetView(LaunchpadView):
     """View for /distros top level collection."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'Distributions registered in Launchpad'
 
@@ -824,7 +823,6 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
     field_names = [
         "name",
         "displayname",
-        "title",
         "summary",
         "description",
         "domainname",
@@ -867,7 +865,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
             description=data['description'],
             domainname=data['domainname'],
@@ -890,7 +888,6 @@ class DistributionEditView(RegistryEditFormView,
     schema = IDistribution
     field_names = [
         'displayname',
-        'title',
         'summary',
         'description',
         'bug_reporting_guidelines',
@@ -1055,13 +1052,13 @@ class DistributionChangeMembersView(RegistryEditFormView):
         return "Change the %s members team" % self.context.displayname
 
 
+@implementer(IDistributionMirrorMenuMarker)
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
     """A text/plain page that lists the mirrors in the country of the request.
 
     If there are no mirrors located in the country of the request, we fallback
     to the main Ubuntu repositories.
     """
-    implements(IDistributionMirrorMenuMarker)
 
     def render(self):
         request = self.request
@@ -1090,9 +1087,8 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
         return body.encode('utf-8')
 
 
+@implementer(IDistributionMirrorMenuMarker)
 class DistributionMirrorsView(LaunchpadView):
-
-    implements(IDistributionMirrorMenuMarker)
     show_freshness = True
     show_mirror_type = False
     description = None

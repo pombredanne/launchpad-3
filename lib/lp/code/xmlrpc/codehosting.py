@@ -20,7 +20,7 @@ from bzrlib.urlutils import (
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -128,10 +128,9 @@ def run_with_login(login_id, function, *args, **kwargs):
         endInteraction()
 
 
+@implementer(ICodehostingAPI)
 class CodehostingAPI(LaunchpadXMLRPCView):
     """See `ICodehostingAPI`."""
-
-    implements(ICodehostingAPI)
 
     def acquireBranchToPull(self, branch_type_names):
         """See `ICodehostingAPI`."""
@@ -328,10 +327,10 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
             # '.bzr' is OK, '.bzr/foo' is OK, '.bzrfoo' is not.
             return
-        default_branch = namespace.target.default_stacked_on_branch
-        if default_branch is None:
-            return
         try:
+            default_branch = namespace.target.default_stacked_on_branch
+            if default_branch is None:
+                return
             path = branch_id_alias(default_branch)
         except Unauthorized:
             return

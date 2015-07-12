@@ -11,8 +11,8 @@ __all__ = [
     'LiveFSBuildBehaviour',
     ]
 
-from zope.component import adapts
-from zope.interface import implements
+from zope.component import adapter
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -31,11 +31,10 @@ from lp.soyuz.interfaces.livefs import LiveFSBuildArchiveOwnerMismatch
 from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 
 
+@adapter(ILiveFSBuild)
+@implementer(IBuildFarmJobBehaviour)
 class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `LiveFSBuild` jobs to slaves."""
-
-    adapts(ILiveFSBuild)
-    implements(IBuildFarmJobBehaviour)
 
     def getLogFileName(self):
         das = self.build.distro_arch_series

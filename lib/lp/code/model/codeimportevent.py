@@ -16,7 +16,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.enums import (
     CodeImportEventDataType,
@@ -39,10 +39,9 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ICodeImportEvent)
 class CodeImportEvent(SQLBase):
     """See `ICodeImportEvent`."""
-
-    implements(ICodeImportEvent)
     _table = 'CodeImportEvent'
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -78,10 +77,9 @@ class _CodeImportEventData(SQLBase):
     data_value = StringCol()
 
 
+@implementer(ICodeImportEventSet)
 class CodeImportEventSet:
     """See `ICodeImportEventSet`."""
-
-    implements(ICodeImportEventSet)
 
     def getAll(self):
         """See `ICodeImportEventSet`."""
@@ -321,10 +319,9 @@ class CodeImportEventSet:
             return None
 
 
+@implementer(ICodeImportEventToken)
 class CodeImportEventToken:
     """See `ICodeImportEventToken`."""
-
-    implements(ICodeImportEventToken)
 
     def __init__(self, items):
         self.items = items

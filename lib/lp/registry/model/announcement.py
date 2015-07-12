@@ -17,7 +17,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.announcement import (
     IAnnouncement,
@@ -36,11 +36,11 @@ from lp.services.database.sqlbase import (
 from lp.services.utils import utc_now
 
 
+@implementer(IAnnouncement)
 class Announcement(SQLBase):
     """A news item. These allow us to generate lists of recent news for
     project groups, products and distributions.
     """
-    implements(IAnnouncement)
 
     _defaultOrder = ['-date_announced', '-date_created']
 
@@ -217,10 +217,9 @@ class MakesAnnouncements(HasAnnouncements):
         return announcement
 
 
+@implementer(IAnnouncementSet)
 class AnnouncementSet(HasAnnouncements):
     """The set of all announcements across all pillars."""
-
-    implements(IAnnouncementSet)
 
     displayname = 'Launchpad-hosted'
     title = 'Launchpad'

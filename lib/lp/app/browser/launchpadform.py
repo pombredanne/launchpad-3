@@ -35,7 +35,7 @@ from zope.formlib.widgets import (
     )
 from zope.interface import (
     classImplements,
-    implements,
+    implementer,
     providedBy,
     )
 from zope.interface.advice import addClassAdvisor
@@ -570,14 +570,13 @@ def has_structured_doc(field):
     return field
 
 
+@implementer(ITraversable)
 class WidgetHasStructuredDoc:
     """Check if widget has structured doc.
 
     Example usage::
         tal:condition="widget/query:has-structured-doc"
     """
-
-    implements(ITraversable)
 
     def __init__(self, widget):
         self.widget = widget

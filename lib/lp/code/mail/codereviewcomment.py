@@ -10,7 +10,6 @@ __all__ = [
     'CodeReviewCommentMailer',
     ]
 
-from bzrlib import patches
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -21,6 +20,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.codereviewinlinecomment import (
     ICodeReviewInlineCommentSet,
     )
+from lp.code.mail import patches
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.services.mail.sendmail import (
     append_footer,
@@ -209,6 +209,17 @@ def build_inline_comments_section(comments, diff_text):
                     dirty_comment = True
             patch = patch['patch']
 
+        # call type here as patch is an instance of both Patch and BinaryPatch
+        if type(patch) is patches.BinaryPatch:
+            if dirty_comment:
+                result_lines.extend(dirty_head)
+                result_lines.append(u'> %s' % str(patch).rstrip('\n'))
+            line_count += 1
+            comment = comments.get(str(line_count))
+            if comment:
+                result_lines.extend(format_comment(comment))
+            continue
+
         for ph in patch.get_header().splitlines():
             line_count += 1  # inc patch headers
             comment = comments.get(str(line_count))
@@ -233,16 +244,18 @@ def build_inline_comments_section(comments, diff_text):
                 hunk_lines.extend(format_comment(comment))
                 hunk_comment = True
 
-            for line in hunk.lines:
-                line_count += 1  # inc hunk lines
-
-                #  line is a ContextLine/ReplaceLine
-                hunk_lines.append(u'> %s' % str(line).rstrip('\n').decode(
-                    'utf-8', 'replace'))
-                comment = comments.get(str(line_count))
-                if comment:
-                    hunk_lines.extend(format_comment(comment))
-                    hunk_comment = True
+            for hunk_line in hunk.lines:
+                # A single HunkLine can actually represent multiple
+                # lines in the "No newline at end of file" case.
+                hunk_line = str(hunk_line)
+                for line in hunk_line.splitlines():
+                    line_count += 1  # inc hunk lines
+                    hunk_lines.append(u'> %s' % line.rstrip('\n').decode(
+                        'utf-8', 'replace'))
+                    comment = comments.get(str(line_count))
+                    if comment:
+                        hunk_lines.extend(format_comment(comment))
+                        hunk_comment = True
 
             # preserve hunks for context if comment in patch header
             if patch_comment or hunk_comment:

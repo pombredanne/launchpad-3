@@ -183,7 +183,7 @@ class BugNotificationBuilder:
         for header in self.common_headers:
             message.add_header(*header)
 
-        if references is not None:
+        if references:
             message['References'] = ' '.join(references)
         if message_id is not None:
             message['Message-Id'] = message_id

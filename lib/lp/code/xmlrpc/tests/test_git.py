@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -40,10 +40,9 @@ from lp.testing.layers import (
 from lp.xmlrpc import faults
 
 
+@implementer(IGitHostingClient)
 class FakeGitHostingClient:
     """A GitHostingClient lookalike that just logs calls."""
-
-    implements(IGitHostingClient)
 
     def __init__(self):
         self.calls = []
@@ -52,10 +51,9 @@ class FakeGitHostingClient:
         self.calls.append(("create", path, clone_from))
 
 
+@implementer(IGitHostingClient)
 class BrokenGitHostingClient:
     """A GitHostingClient lookalike that pretends the remote end is down."""
-
-    implements(IGitHostingClient)
 
     def create(self, path, clone_from=None):
         raise GitRepositoryCreationFault("nothing here")
@@ -72,14 +70,15 @@ class TestGitAPIMixin:
             ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
         self.repository_set = getUtility(IGitRepositorySet)
 
-    def assertPathTranslationError(self, requester, path, permission="read",
-                                   can_authenticate=False):
+    def assertGitRepositoryNotFound(self, requester, path, permission="read",
+                                    can_authenticate=False):
         """Assert that the given path cannot be translated."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
         fault = self.git_api.translatePath(
             path, permission, requester, can_authenticate)
-        self.assertEqual(faults.PathTranslationError(path.strip("/")), fault)
+        self.assertEqual(
+            faults.GitRepositoryNotFound(path.strip("/")), fault)
 
     def assertPermissionDenied(self, requester, path,
                                message="Permission denied.",
@@ -199,14 +198,14 @@ class TestGitAPIMixin:
             self.factory.makeGitRepository(
                 information_type=InformationType.USERDATA))
         path = u"/%s" % repository.unique_name
-        self.assertPermissionDenied(requester, path)
+        self.assertGitRepositoryNotFound(requester, path)
 
     def test_translatePath_anonymous_cannot_see_private_repository(self):
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(
                 information_type=InformationType.USERDATA))
         path = u"/%s" % repository.unique_name
-        self.assertPermissionDenied(
+        self.assertGitRepositoryNotFound(
             LAUNCHPAD_ANONYMOUS, path, can_authenticate=False)
         self.assertUnauthorized(
             LAUNCHPAD_ANONYMOUS, path, can_authenticate=True)
@@ -269,7 +268,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         # When this happens, it returns a Fault saying so, including the
         # path it couldn't translate.
         requester = self.factory.makePerson()
-        self.assertPathTranslationError(requester, u"/untranslatable")
+        self.assertGitRepositoryNotFound(requester, u"/untranslatable")
 
     def test_translatePath_repository(self):
         requester = self.factory.makePerson()
@@ -299,13 +298,13 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_translatePath_no_such_repository(self):
         requester = self.factory.makePerson()
         path = u"/%s/+git/no-such-repository" % requester.name
-        self.assertPathTranslationError(requester, path)
+        self.assertGitRepositoryNotFound(requester, path)
 
     def test_translatePath_no_such_repository_non_ascii(self):
         requester = self.factory.makePerson()
         path = u"/%s/+git/\N{LATIN SMALL LETTER I WITH DIAERESIS}" % (
             requester.name)
-        self.assertPathTranslationError(requester, path)
+        self.assertGitRepositoryNotFound(requester, path)
 
     def test_translatePath_anonymous_public_repository(self):
         repository = self.factory.makeGitRepository()
@@ -412,10 +411,10 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_translatePath_anonymous_cannot_create(self):
         # Anonymous users cannot create repositories.
         project = self.factory.makeProject()
-        self.assertPathTranslationError(
+        self.assertGitRepositoryNotFound(
             LAUNCHPAD_ANONYMOUS, u"/%s" % project.name,
             permission="write", can_authenticate=False)
-        self.assertPathTranslationError(
+        self.assertUnauthorized(
             LAUNCHPAD_ANONYMOUS, u"/%s" % project.name,
             permission="write", can_authenticate=True)
 

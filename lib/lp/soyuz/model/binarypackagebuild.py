@@ -43,7 +43,7 @@ from storm.store import (
     )
 from storm.zope import IResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import DurationFormatterAPI
@@ -151,8 +151,8 @@ PRIVATE_ARCHIVE_SCORE_BONUS = 10000
 COPY_ARCHIVE_SCORE_PENALTY = 2600
 
 
+@implementer(IBinaryPackageBuild)
 class BinaryPackageBuild(PackageBuildMixin, SQLBase):
-    implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
@@ -519,9 +519,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         Return a triple containing the corresponding (name, version,
         relation) for the given dependency token.
         """
-        # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
         try:
-            name, version, relation = token[0]
+            name, version, relation = token
         except ValueError:
             raise AssertionError(
                 "APT is not dealing correctly with a dependency token "
@@ -614,9 +613,11 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
                 "It indicates that something is wrong in buildd-slaves."
                 % (self.title, self.id, self.dependencies))
 
-        remaining_deps = [
-            self._toAptFormat(token) for token in parsed_deps
-            if not self._isDependencySatisfied(token)]
+        remaining_deps = []
+        for or_dep in parsed_deps:
+            if not any(self._isDependencySatisfied(token) for token in or_dep):
+                remaining_deps.append(
+                    " | ".join(self._toAptFormat(token) for token in or_dep))
 
         # Update dependencies line
         self.dependencies = u", ".join(remaining_deps)
@@ -898,8 +899,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return changes.signer
 
 
+@implementer(IBinaryPackageBuildSet)
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
-    implements(IBinaryPackageBuildSet)
 
     def new(self, source_package_release, archive, distro_arch_series, pocket,
             arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None):

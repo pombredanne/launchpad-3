@@ -7,7 +7,6 @@ Try creating a project with a blacklisted name:
     >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
     >>> admin_browser.getControl('Name', index=0).value = 'blacklisted'
     >>> admin_browser.getControl('Display Name').value = 'Whatever'
-    >>> admin_browser.getControl('Title').value = 'Whatever'
     >>> admin_browser.getControl('Project Group Summary').value = 'Whatever'
     >>> admin_browser.getControl('Description').value = 'Whatever'
     >>> admin_browser.getControl('Add').click()

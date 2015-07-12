@@ -30,7 +30,7 @@ from storm.locals import (
     Reference,
     )
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
@@ -57,10 +57,9 @@ class InvalidTransition(Exception):
             (current_status, requested_status))
 
 
+@implementer(IJob)
 class Job(SQLBase):
     """See `IJob`."""
-
-    implements(IJob)
 
     @property
     def job_id(self):

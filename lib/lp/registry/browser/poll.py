@@ -23,7 +23,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -215,9 +215,9 @@ class PollBreadcrumb(TitleBreadcrumb):
     """Breadcrumb for polls."""
 
 
+@implementer(IPollActionMenu)
 class PollView(BasePollView):
     """A view class to display the results of a poll."""
-    implements(IPollActionMenu)
 
     def initialize(self):
         super(PollView, self).initialize()
@@ -417,9 +417,8 @@ class PollAddView(LaunchpadFormView):
         notify(ObjectCreatedEvent(poll))
 
 
+@implementer(IPollEditMenu)
 class PollEditView(LaunchpadEditFormView):
-
-    implements(IPollEditMenu)
     schema = IPoll
     label = "Edit poll details"
     page_title = 'Edit'

@@ -15,7 +15,7 @@ from zope.component import (
     getUtility,
     )
 from zope.formlib.interfaces import MissingInputError
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
@@ -450,8 +450,8 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             self.getPickerEntry(distribution).alt_title_link)
 
 
+@implementer(IHugeVocabulary)
 class TestPersonVocabulary:
-    implements(IHugeVocabulary)
     test_persons = []
 
     @classmethod

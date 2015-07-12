@@ -84,11 +84,11 @@ The base badge implementation class, `HasBadgeBase`, provides an
 implementation of IHasBadges. HasBadgeBase is also a default adapter
 for Interface, which just provides the privacy badge.
 
-    >>> from zope.interface import Interface, Attribute, implements
+    >>> from zope.interface import Interface, Attribute, implementer
     >>> from lp.app.browser.badge import IHasBadges, HasBadgeBase
     >>> from lp.testing import verifyObject
-    >>> class PrivateClass:
-    ...     implements(Interface)
+    >>> @implementer(Interface)
+    ... class PrivateClass:
     ...     private = True
     >>> private_object = PrivateClass()
     >>> has_badge_base = HasBadgeBase(private_object)
@@ -168,9 +168,9 @@ determination methods to use the results of an alternative query.
     ...     bugs = Attribute('Some linked bugs')
     ...     blueprints = Attribute('Some linked blueprints')
 
-    >>> from zope.interface import implements
-    >>> class Foo(object):
-    ...     implements(IFoo)
+    >>> from zope.interface import implementer
+    >>> @implementer(IFoo)
+    ... class Foo(object):
     ...     @property
     ...     def bugs(self):
     ...         print "Foo.bugs"
@@ -226,7 +226,7 @@ as illustrated by the printed method calls.
     title="Linked to a bug"/>
 
 When showing listings of Foos, you often want to use
-`lazr.delegates.delegates`. By having the DelegatingFoo inherit from the
+`lazr.delegates.delegate_to`. By having the DelegatingFoo inherit from the
 FooBadges class, we provide two things: a default implementation for each of
 the badge methods; and direct implementation of IHasBadges. This allows the
 wrapping, delegating class to provide an alternative method to decide on badge
@@ -236,9 +236,9 @@ listings we don't want to do 100 queries just to check bug badges. The batch
 handler for branches executes a single query for the BugBranch links for the
 branches in the batch and that is used to construct the DecoratedBranch.
 
-    >>> from lazr.delegates import delegates
-    >>> class DelegatingFoo(FooBadges):
-    ...     delegates(IFoo, 'foo')
+    >>> from lazr.delegates import delegate_to
+    >>> @delegate_to(IFoo, context='foo')
+    ... class DelegatingFoo(FooBadges):
     ...     def __init__(self, foo):
     ...         FooBadges.__init__(self, foo)
     ...         self.foo = foo

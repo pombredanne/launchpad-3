@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.services import (
     IService,
@@ -18,14 +18,13 @@ from lp.app.interfaces.services import (
 from lp.services.webapp.publisher import Navigation
 
 
+@implementer(IServiceFactory)
 class ServiceFactory(Navigation):
     """Creates a named service.
 
     Services are traversed via urls of the form /services/<name>
     Implementation classes are registered as named zope utilities.
     """
-
-    implements(IServiceFactory)
 
     def __init__(self):
         super(ServiceFactory, self).__init__(None)

@@ -10,7 +10,7 @@ __all__ = [
 
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productlicense import IProductLicense
@@ -18,9 +18,9 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IProductLicense)
 class ProductLicense(SQLBase):
     """A product's licence."""
-    implements(IProductLicense)
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     license = EnumCol(dbName='license', notNull=True, schema=License)

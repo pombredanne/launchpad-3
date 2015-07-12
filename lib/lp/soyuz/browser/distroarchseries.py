@@ -16,7 +16,7 @@ __all__ = [
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -82,9 +82,9 @@ class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
         return self.context.searchBinaryPackages(self.text)
 
 
+@implementer(IDistroArchSeriesActionMenu)
 class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
-    implements(IDistroArchSeriesActionMenu)
 
     @property
     def page_title(self):

@@ -15,7 +15,7 @@ import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -35,8 +35,8 @@ from lp.xmlrpc.interfaces import IPrivateApplication
 
 # NOTE: If you add a traversal here, you should update
 # the regular expression in utilities/page-performance-report.ini
+@implementer(IPrivateApplication)
 class PrivateApplication:
-    implements(IPrivateApplication)
 
     @property
     def mailinglists(self):
@@ -95,9 +95,8 @@ class ISelfTest(Interface):
         """Raise an exception."""
 
 
+@implementer(ISelfTest)
 class SelfTest(LaunchpadXMLRPCView):
-
-    implements(ISelfTest)
 
     def make_fault(self):
         """Returns an xmlrpc fault."""

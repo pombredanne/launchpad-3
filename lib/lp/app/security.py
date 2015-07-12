@@ -17,14 +17,14 @@ from itertools import (
     )
 
 from zope.component import queryAdapter
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.permission import checkPermission
 
 from lp.app.interfaces.security import IAuthorization
 
 
+@implementer(IAuthorization)
 class AuthorizationBase:
-    implements(IAuthorization)
     permission = None
     usedfor = None
 

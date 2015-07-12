@@ -20,8 +20,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -184,6 +184,9 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return self.distribution.owner
 
 
+@implementer(
+    IBugSummaryDimension, ISourcePackage, IHasBuildRecords, ISeriesBugTarget)
+@provider(ISourcePackageFactory)
 class SourcePackage(BugTargetBase, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     HasBranchesMixin, HasMergeProposalsMixin,
@@ -194,12 +197,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
     represent the concept of a source package in a distro series, with links
     to the relevant database objects.
     """
-
-    implements(
-        IBugSummaryDimension, ISourcePackage, IHasBuildRecords,
-        ISeriesBugTarget)
-
-    classProvides(ISourcePackageFactory)
 
     def __init__(self, sourcepackagename, distroseries):
         # We store the ID of the sourcepackagename and distroseries

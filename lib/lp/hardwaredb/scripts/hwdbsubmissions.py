@@ -29,7 +29,7 @@ import xml.etree.cElementTree as etree
 
 import pytz
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -2975,10 +2975,9 @@ class UdevDevice(BaseDevice):
         return self.udev['id']
 
 
+@implementer(ITunableLoop)
 class ProcessingLoopBase(object):
     """An `ITunableLoop` for processing HWDB submissions."""
-
-    implements(ITunableLoop)
 
     def __init__(self, transaction, logger, max_submissions, record_warnings):
         self.transaction = transaction

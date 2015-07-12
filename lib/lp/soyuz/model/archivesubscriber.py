@@ -28,7 +28,7 @@ from storm.locals import (
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import validate_person
 from lp.registry.model.person import Person
@@ -44,9 +44,9 @@ from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 
+@implementer(IArchiveSubscriber)
 class ArchiveSubscriber(Storm):
     """See `IArchiveSubscriber`."""
-    implements(IArchiveSubscriber)
     __storm_table__ = 'ArchiveSubscriber'
 
     id = Int(primary=True)
