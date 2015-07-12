@@ -3,10 +3,9 @@
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE WebHook (
+CREATE TABLE Webhook (
     id serial PRIMARY KEY,
-    git_repository integer REFERENCES GitRepository,
-    registrant integer REFERENCES Person,
+    registrant integer REFERENCES Person NOT NULL,
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     date_last_modified timestamp without time zone
@@ -15,12 +14,13 @@ CREATE TABLE WebHook (
     delivery_url text NOT NULL,
     secret text,
     json_data text NOT NULL,
+    git_repository integer REFERENCES GitRepository,
     CHECK (git_repository IS NOT NULL) -- To be expanded to other targets.
     );
 
-CREATE TABLE WebHookJob (
+CREATE TABLE WebhookJob (
     job integer PRIMARY KEY REFERENCES Job ON DELETE CASCADE NOT NULL,
-    webhook integer REFERENCES WebHook NOT NULL,
+    webhook integer REFERENCES Webhook NOT NULL,
     job_type integer NOT NULL,
     json_data text NOT NULL
     );
