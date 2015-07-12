@@ -27,6 +27,7 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     implementer,
@@ -131,10 +132,9 @@ class Webhook(StormBase):
         self.json_data = updated_data
 
 
+@implementer(IWebhookSource)
 class WebhookSource:
     """See `IWebhookSource`."""
-
-    implements(IWebhookSource)
 
     def new(self, target, registrant, delivery_url, event_types, active,
             secret):
