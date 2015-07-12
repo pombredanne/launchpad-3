@@ -30,7 +30,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
-    implements,
+    implementer,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -63,10 +63,9 @@ def webhook_modified(webhook, event):
         removeSecurityProxy(webhook).date_last_modified = UTC_NOW
 
 
+@implementer(IWebhook)
 class Webhook(StormBase):
     """See `IWebhook`."""
-
-    implements(IWebhook)
 
     __storm_table__ = 'Webhook'
 
@@ -151,12 +150,11 @@ class WebhookJobType(DBEnumeratedType):
         """)
 
 
+@implementer(IWebhookJob)
 class WebhookJob(StormBase):
     """See `IWebhookJob`."""
 
     __storm_table__ = 'WebhookJob'
-
-    implements(IWebhookJob)
 
     job_id = Int(name='job', primary=True)
     job = Reference(job_id, 'Job.id')
@@ -199,10 +197,9 @@ class WebhookJobDerived(BaseRunnableJob):
         self.context = webhook_job
 
 
+@implementer(IWebhookDeliveryJob)
 class WebhookDeliveryJob(WebhookJobDerived):
     """A job that delivers an event to a webhook endpoint."""
-
-    implements(IWebhookDeliveryJob)
 
     classProvides(IWebhookDeliveryJobSource)
     class_job_type = WebhookJobType.DELIVERY
