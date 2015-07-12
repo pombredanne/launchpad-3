@@ -1364,7 +1364,7 @@ class UnusedAccessPolicyPruner(TunableLoop):
 
 
 class ProductVCSPopulator(TunableLoop):
-    """Populates product.vcs from product.vcs is not set."""
+    """Populates product.vcs from product.inferred_vcs if not set."""
 
     maximum_chunk_size = 5000
 
