@@ -26,7 +26,6 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     implementer,
@@ -74,7 +73,7 @@ class Webhook(StormBase):
     git_repository_id = Int(name='git_repository')
     git_repository = Reference(git_repository_id, 'GitRepository.id')
 
-    registrant_id = Int(name='registrant')
+    registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
     date_created = DateTime(tzinfo=pytz.UTC, allow_none=False)
     date_last_modified = DateTime(tzinfo=pytz.UTC, allow_none=False)
@@ -125,8 +124,8 @@ class WebhookSource:
         return hook
 
     def delete(self, hooks):
-        for hook in hooks:
-            Store.of(hook).remove(hook)
+        IStore(Webhook).find(
+            Webhook, Webhook.id.is_in(set(hook.id for hook in hooks))).remove()
 
     def getByID(self, id):
         return IStore(Webhook).get(Webhook, id)
