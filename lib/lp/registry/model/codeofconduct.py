@@ -20,7 +20,7 @@ from sqlobject import (
     StringCol,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
@@ -50,10 +50,9 @@ from lp.services.mail.sendmail import (
 from lp.services.webapp import canonical_url
 
 
+@implementer(ICodeOfConductConf)
 class CodeOfConductConf:
     """Abstract Component to store the current CoC configuration."""
-
-    implements(ICodeOfConductConf)
 
     ## XXX: cprov 2005-02-17
     ## Integrate this class with LaunchpadCentral configuration
@@ -68,14 +67,13 @@ class CodeOfConductConf:
     datereleased = datetime(2005, 4, 12, tzinfo=pytz.timezone("UTC"))
 
 
+@implementer(ICodeOfConduct)
 class CodeOfConduct:
     """CoC class model.
 
     A set of properties allow us to properly handle the CoC stored
     in the filesystem, so it's not a database class.
     """
-
-    implements(ICodeOfConduct)
 
     def __init__(self, version):
         self.version = version
@@ -123,10 +121,9 @@ class CodeOfConduct:
         return getUtility(ICodeOfConductConf).datereleased
 
 
+@implementer(ICodeOfConductSet)
 class CodeOfConductSet:
     """A set of CodeOfConducts."""
-
-    implements(ICodeOfConductSet)
 
     title = 'Launchpad Codes of Conduct'
 
@@ -171,10 +168,9 @@ class CodeOfConductSet:
         raise AssertionError("No current code of conduct registered")
 
 
+@implementer(ISignedCodeOfConduct)
 class SignedCodeOfConduct(SQLBase):
     """Code of Conduct."""
-
-    implements(ISignedCodeOfConduct)
 
     _table = 'SignedCodeOfConduct'
 
@@ -227,10 +223,9 @@ class SignedCodeOfConduct(SQLBase):
             subject, message)
 
 
+@implementer(ISignedCodeOfConductSet)
 class SignedCodeOfConductSet:
     """A set of CodeOfConducts"""
-
-    implements(ISignedCodeOfConductSet)
 
     title = 'Code of Conduct Administrator Page'
 

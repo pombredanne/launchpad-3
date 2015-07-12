@@ -24,7 +24,7 @@ from lazr.restful.utils import get_current_web_service_request
 import simplejson
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema.vocabulary import (
@@ -82,9 +82,9 @@ from lp.services.webapp.publisher import (
     )
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class PillarBreadcrumb(DisplaynameBreadcrumb):
     """Breadcrumb that uses the displayname or title as appropriate."""
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def detail(self):
@@ -155,9 +155,9 @@ class InvolvedMenu(NavigationMenu):
             enabled=service_uses_launchpad(self.pillar.blueprints_usage))
 
 
+@implementer(IInvolved)
 class PillarInvolvementView(LaunchpadView):
     """A view for any `IPillar` implementing the IInvolved interface."""
-    implements(IInvolved)
 
     configuration_links = []
     visible_disabled_link_names = []

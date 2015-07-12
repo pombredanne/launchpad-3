@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
     IDefaultBrowserLayer,
@@ -26,8 +26,8 @@ from lp.services.webapp.servers import (
     )
 
 
+@implementer(IFacet)
 class AnswersFacet:
-    implements(IFacet)
 
     name = "answers"
     rootsite = "answers"
@@ -39,9 +39,9 @@ class AnswersLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Answers layer."""
 
 
+@implementer(AnswersLayer)
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     """Instances of AnswersBrowserRequest provide `AnswersLayer`."""
-    implements(AnswersLayer)
 
     def __init__(self, body_instream, environ, response=None):
         super(AnswersBrowserRequest, self).__init__(

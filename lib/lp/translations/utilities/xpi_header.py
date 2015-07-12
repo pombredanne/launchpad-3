@@ -14,7 +14,7 @@ except ImportError:
 from email.utils import parseaddr
 from StringIO import StringIO
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationHeaderData,
@@ -25,8 +25,8 @@ from lp.translations.interfaces.translationimporter import (
     )
 
 
+@implementer(ITranslationHeaderData)
 class XpiHeader:
-    implements(ITranslationHeaderData)
 
     def __init__(self, header_content):
         self._raw_content = header_content

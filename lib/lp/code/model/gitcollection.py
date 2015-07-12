@@ -29,7 +29,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -61,10 +61,9 @@ from lp.services.database.interfaces import IStore
 from lp.services.propertycache import get_property_cache
 
 
+@implementer(IGitCollection)
 class GenericGitCollection:
     """See `IGitCollection`."""
-
-    implements(IGitCollection)
 
     def __init__(self, store=None, filter_expressions=None, tables=None,
                  asymmetric_filter_expressions=None, asymmetric_tables=None):

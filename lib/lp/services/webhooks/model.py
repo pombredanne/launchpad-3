@@ -13,7 +13,7 @@ __all__ = [
 import datetime
 
 import iso8601
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -27,11 +27,10 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -70,10 +69,9 @@ def webhook_modified(webhook, event):
         removeSecurityProxy(webhook).date_last_modified = UTC_NOW
 
 
+@implementer(IWebhook)
 class Webhook(StormBase):
     """See `IWebhook`."""
-
-    implements(IWebhook)
 
     __storm_table__ = 'Webhook'
 
@@ -82,7 +80,7 @@ class Webhook(StormBase):
     git_repository_id = Int(name='git_repository')
     git_repository = Reference(git_repository_id, 'GitRepository.id')
 
-    registrant_id = Int(name='registrant')
+    registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
     date_created = DateTime(tzinfo=pytz.UTC, allow_none=False)
     date_last_modified = DateTime(tzinfo=pytz.UTC, allow_none=False)
@@ -156,8 +154,8 @@ class WebhookSource:
         return hook
 
     def delete(self, hooks):
-        for hook in hooks:
-            Store.of(hook).remove(hook)
+        IStore(Webhook).find(
+            Webhook, Webhook.id.is_in(set(hook.id for hook in hooks))).remove()
 
     def getByID(self, id):
         return IStore(Webhook).get(Webhook, id)
@@ -199,12 +197,11 @@ class WebhookJobType(DBEnumeratedType):
         """)
 
 
+@implementer(IWebhookJob)
 class WebhookJob(StormBase):
     """See `IWebhookJob`."""
 
     __storm_table__ = 'WebhookJob'
-
-    implements(IWebhookJob)
 
     job_id = Int(name='job', primary=True)
     job = Reference(job_id, 'Job.id')
@@ -237,22 +234,20 @@ class WebhookJob(StormBase):
         return WebhookJobDerived.makeSubclass(self)
 
 
+@delegate_to(IWebhookJob)
 class WebhookJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IWebhookJob)
 
     def __init__(self, webhook_job):
         self.context = webhook_job
 
 
+@provider(IWebhookDeliveryJobSource)
+@implementer(IWebhookDeliveryJob)
 class WebhookDeliveryJob(WebhookJobDerived):
     """A job that delivers an event to a webhook endpoint."""
 
-    implements(IWebhookDeliveryJob)
-
-    classProvides(IWebhookDeliveryJobSource)
     class_job_type = WebhookJobType.DELIVERY
 
     config = config.IWebhookDeliveryJobSource

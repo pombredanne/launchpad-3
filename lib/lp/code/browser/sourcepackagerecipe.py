@@ -42,7 +42,6 @@ from zope.formlib import form
 from zope.formlib.widget import Widget
 from zope.interface import (
     implementer,
-    implements,
     Interface,
     providedBy,
     )
@@ -637,9 +636,9 @@ class RecipeTextValidatorMixin:
         raise ErrorHandled()
 
 
+@implementer(IView)
 class RelatedBranchesWidget(Widget):
     """A widget to render the related branches for a recipe."""
-    implements(IView)
 
     __call__ = ViewPageTemplateFile(
         '../templates/sourcepackagerecipe-related-branches.pt')

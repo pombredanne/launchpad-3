@@ -30,7 +30,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.bugs.interfaces.bugtask import IBugTaskSet
@@ -79,10 +79,9 @@ from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 
 
+@implementer(IBranchCollection)
 class GenericBranchCollection:
     """See `IBranchCollection`."""
-
-    implements(IBranchCollection)
 
     def __init__(self, store=None, branch_filter_expressions=None,
                  tables=None,

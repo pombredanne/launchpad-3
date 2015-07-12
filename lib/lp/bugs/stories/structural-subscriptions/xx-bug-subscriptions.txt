@@ -19,7 +19,7 @@ We subscribe the Landscape team to Ubuntu.
     ... 'http://bugs.launchpad.dev/ubuntu/+subscribe')
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
     Subscribers
-      To all Ubuntu Linux bugs:
+      To all Ubuntu bugs:
         Landscape Developers
 
 And subscribe some people to the Firefox source package in ubuntu.
@@ -50,7 +50,7 @@ Sample Person and the Landscape team are now subscribed.
         Foo Bar
         Landscape Developers
         Sample Person
-      To all Ubuntu Linux bugs:
+      To all Ubuntu bugs:
         Landscape Developers
 
 Sample Person can also unsubscribe himself and the Landscape team.
@@ -67,7 +67,7 @@ Sample Person can also unsubscribe himself and the Landscape team.
     Subscribers
       To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      To all Ubuntu Linux bugs:
+      To all Ubuntu bugs:
         Landscape Developers
 
 
@@ -115,7 +115,7 @@ No Privileges Person is now subscribed...
       To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
         No Privileges Person
-      To all Ubuntu Linux bugs:
+      To all Ubuntu bugs:
         Landscape Developers
 
 ...has an entry in the "Remove subscriptions" list...
@@ -136,7 +136,7 @@ No Privileges Person is now subscribed...
     Subscribers
       To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      To all Ubuntu Linux bugs:
+      To all Ubuntu bugs:
         Landscape Developers
 
 The checkbox to unsubscribe No Privileges Person is no longer present on
@@ -162,7 +162,7 @@ purges the submitted form data from now unexpected values.
     Subscribers
       To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      To all Ubuntu Linux bugs:
+      To all Ubuntu bugs:
         Landscape Developers
 
     >>> remove_other = browser.getControl('\xa0Foo Bar')
@@ -176,7 +176,7 @@ purges the submitted form data from now unexpected values.
     Subscribers
       To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      To all Ubuntu Linux bugs:
+      To all Ubuntu bugs:
         Landscape Developers
 
 When Sample Person now visits the bug subscription page, he no longer sees

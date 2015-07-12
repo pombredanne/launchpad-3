@@ -17,7 +17,7 @@ from sqlobject import (
     )
 from storm.expr import And
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
@@ -53,8 +53,8 @@ from lp.services.webapp import canonical_url
 MAIL_APP = 'services/verification'
 
 
+@implementer(ILoginToken)
 class LoginToken(SQLBase):
-    implements(ILoginToken)
     _table = 'LoginToken'
 
     redirection_url = StringCol(default=None)
@@ -275,8 +275,8 @@ class LoginToken(SQLBase):
         return lpkey, new
 
 
+@implementer(ILoginTokenSet)
 class LoginTokenSet:
-    implements(ILoginTokenSet)
 
     def __init__(self):
         self.title = 'Launchpad e-mail address confirmation'

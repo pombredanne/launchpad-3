@@ -19,7 +19,7 @@ from datetime import datetime
 
 import pytz
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _
@@ -193,9 +193,8 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
+@implementer(IDistributionMirrorMenuMarker)
 class DistributionMirrorAddView(LaunchpadFormView):
-
-    implements(IDistributionMirrorMenuMarker)
     schema = IDistributionMirror
     field_names = ["displayname", "description", "whiteboard", "http_base_url",
                    "ftp_base_url", "rsync_base_url", "speed", "country",

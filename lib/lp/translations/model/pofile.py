@@ -43,7 +43,7 @@ from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -327,8 +327,8 @@ class POFileMixIn(RosettaStats):
             self.lasttranslator = translator
 
 
+@implementer(IPOFile)
 class POFile(SQLBase, POFileMixIn):
-    implements(IPOFile)
 
     _table = 'POFile'
 
@@ -1270,11 +1270,11 @@ class POFile(SQLBase, POFileMixIn):
         return self._selectRows(where="is_current_upstream IS FALSE")
 
 
+@implementer(IPOFile)
 class DummyPOFile(POFileMixIn):
     """Represents a POFile where we do not yet actually HAVE a POFile for
     that language for this template.
     """
-    implements(IPOFile)
 
     def __init__(self, potemplate, language, owner=None):
         self.id = None
@@ -1461,8 +1461,8 @@ class DummyPOFile(POFileMixIn):
         return []
 
 
+@implementer(IPOFileSet)
 class POFileSet:
-    implements(IPOFileSet)
 
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
@@ -1626,9 +1626,9 @@ class POFileSet:
         return results
 
 
+@implementer(ITranslationFileData)
 class POFileToTranslationFileDataAdapter:
     """Adapter from `IPOFile` to `ITranslationFileData`."""
-    implements(ITranslationFileData)
 
     def __init__(self, pofile):
         self._pofile = pofile

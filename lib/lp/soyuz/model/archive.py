@@ -46,7 +46,7 @@ from zope.component import (
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -226,8 +226,8 @@ def storm_validate_external_dependencies(archive, attr, value):
     return value
 
 
+@implementer(IArchive, IHasOwner, IHasBuildRecords)
 class Archive(SQLBase):
-    implements(IArchive, IHasOwner, IHasBuildRecords)
     _table = 'Archive'
     _defaultOrder = 'id'
 
@@ -2241,8 +2241,8 @@ def validate_ppa(owner, distribution, proposed_name, private=False):
         return text
 
 
+@implementer(IArchiveSet)
 class ArchiveSet:
-    implements(IArchiveSet)
     title = "Archives registered in Launchpad"
 
     def get(self, archive_id):

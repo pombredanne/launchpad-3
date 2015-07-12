@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
     IDefaultBrowserLayer,
@@ -30,8 +30,8 @@ from lp.services.webapp.servers import (
     )
 
 
+@implementer(IFacet)
 class BugsFacet:
-    implements(IFacet)
 
     name = "bugs"
     rootsite = "bugs"
@@ -43,9 +43,9 @@ class BugsLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Bugs layer."""
 
 
+@implementer(BugsLayer)
 class BugsBrowserRequest(LaunchpadBrowserRequest):
     """Instances of BugBrowserRequest provide `BugsLayer`."""
-    implements(BugsLayer)
 
 
 def bugs_request_publication_factory():

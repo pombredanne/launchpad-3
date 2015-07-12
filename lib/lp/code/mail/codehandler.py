@@ -11,7 +11,7 @@ import re
 from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 
 from lp.code.enums import CodeReviewVote
@@ -231,9 +231,9 @@ class CodeEmailCommands(EmailCommandCollection):
         return (reviewer, review_tags)
 
 
+@implementer(IMailHandler)
 class CodeHandler:
     """Mail handler for the code domain."""
-    implements(IMailHandler)
 
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
     allow_unknown_users = False

@@ -13,10 +13,10 @@ from uuid import uuid4
 
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import IApplicationRequest
 
 from lp.services.config import config
@@ -29,10 +29,9 @@ def generate_subscribe_key():
     return "longpoll.subscribe.%s" % uuid4()
 
 
+@adapter(IApplicationRequest)
+@implementer(ILongPollSubscriber)
 class LongPollApplicationRequestSubscriber:
-
-    adapts(IApplicationRequest)
-    implements(ILongPollSubscriber)
 
     def __init__(self, request):
         self.request = request

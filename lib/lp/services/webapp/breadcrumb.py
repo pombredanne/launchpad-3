@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import (
@@ -22,12 +22,12 @@ from lp.services.webapp.interfaces import (
     )
 
 
+@implementer(IBreadcrumb)
 class Breadcrumb:
     """See `IBreadcrumb`.
 
     This class is intended for use as an adapter.
     """
-    implements(IBreadcrumb)
 
     text = None
     _detail = None

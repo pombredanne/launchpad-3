@@ -34,7 +34,7 @@ from storm.expr import (
     )
 from storm.info import ClassAlias
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
@@ -742,8 +742,8 @@ class POTemplateExportView(BaseExportView):
         return self.context.source_file_format
 
 
+@implementer(ICanonicalUrlData)
 class POTemplateSubsetURL:
-    implements(ICanonicalUrlData)
 
     rootsite = 'mainsite'
     path = '+pots'
@@ -763,8 +763,8 @@ class POTemplateSubsetURL:
             return potemplatesubset.productseries
 
 
+@implementer(ICanonicalUrlData)
 class POTemplateURL:
-    implements(ICanonicalUrlData)
 
     rootsite = 'translations'
 

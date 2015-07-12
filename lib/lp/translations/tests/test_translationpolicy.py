@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -20,9 +20,9 @@ from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+@implementer(ITranslationPolicy)
 class TranslationPolicyImplementation(TranslationPolicyMixin):
     """An `ITranslationPolicy` implementation for testing."""
-    implements(ITranslationPolicy)
 
     translationgroup = None
 

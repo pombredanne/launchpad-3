@@ -9,7 +9,7 @@ from testtools.matchers import (
     Not,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.interface.exceptions import BrokenImplementation
@@ -45,10 +45,9 @@ class ITestInterface(Interface):
         """Dummy method for interface compliance testing."""
 
 
+@implementer(ITestInterface)
 class Implementor:
     """Dummy class that implements ITestInterface for testing."""
-
-    implements(ITestInterface)
 
     def doFoo(self):
         pass
@@ -113,8 +112,9 @@ class ProvidesTests(TestCase):
 
     def match_does_not_verify(self):
 
+        @implementer(ITestInterface)
         class BadlyImplementedClass:
-            implements(ITestInterface)
+            pass
 
         obj = BadlyImplementedClass()
         matcher = Provides(ITestInterface)

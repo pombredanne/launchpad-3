@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -123,9 +123,9 @@ class LanguageCelebrityDescriptor(CelebrityDescriptor):
         return celebrity.code == self.name
 
 
+@implementer(ILaunchpadCelebrities)
 class LaunchpadCelebrities:
     """See `ILaunchpadCelebrities`."""
-    implements(ILaunchpadCelebrities)
 
     admin = PersonCelebrityDescriptor('admins')
     software_center_agent = PersonCelebrityDescriptor(
@@ -176,4 +176,13 @@ class LaunchpadCelebrities:
         return mirror
 
     def isCelebrityPerson(self, name):
+        """See `ILaunchpadCelebrities`."""
         return str(name) in PersonCelebrityDescriptor.names
+
+    @classmethod
+    def clearCache(cls):
+        """See `ILaunchpadCelebrities`."""
+        for name in cls.__dict__:
+            desc = getattr(cls, name)
+            if isinstance(desc, CelebrityDescriptor):
+                desc.id = None

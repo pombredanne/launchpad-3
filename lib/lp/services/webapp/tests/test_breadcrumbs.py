@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 from zope.i18nmessageid import Message
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.browser.launchpad import Hierarchy
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -18,8 +18,8 @@ from lp.testing import (
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
+@implementer(ICanonicalUrlData)
 class Cookbook:
-    implements(ICanonicalUrlData)
     rootsite = None
     path = 'cookbook'
     inside = None

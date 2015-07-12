@@ -12,13 +12,13 @@ import psycopg2
 from storm.exceptions import DisconnectionError
 import transaction
 from zope.component import (
-    adapts,
+    adapter,
     ComponentLookupError,
     getGlobalSiteManager,
     queryAdapter,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.sendmail.interfaces import IMailDelivery
@@ -59,18 +59,19 @@ class IBar(Interface):
     pass
 
 
+@implementer(IFoo)
 class Foo:
-    implements(IFoo)
+    pass
 
 
+@implementer(IBar)
 class Bar:
-    implements(IBar)
+    pass
 
 
+@adapter(IFoo)
+@implementer(IBar)
 class FooToBar:
-
-    adapts(IFoo)
-    implements(IBar)
 
     def __init__(self, foo):
         self.foo = foo
@@ -88,16 +89,17 @@ class TestZopeAdapterFixture(TestCase):
         self.assertIs(None, queryAdapter(context, IBar))
         with ZopeAdapterFixture(FooToBar):
             # Now there is an adapter from Foo to Bar.
-            adapter = queryAdapter(context, IBar)
-            self.assertIsNot(None, adapter)
-            self.assertIsInstance(adapter, FooToBar)
+            bar_adapter = queryAdapter(context, IBar)
+            self.assertIsNot(None, bar_adapter)
+            self.assertIsInstance(bar_adapter, FooToBar)
         # The adapter is no longer registered.
         self.assertIs(None, queryAdapter(context, IBar))
 
 
+@implementer(IMailDelivery)
 class DummyMailer(object):
 
-    implements(IMailDelivery)
+    pass
 
 
 class TestZopeUtilityFixture(TestCase):

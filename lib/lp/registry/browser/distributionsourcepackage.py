@@ -20,10 +20,10 @@ __all__ = [
 import itertools
 import operator
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -99,9 +99,9 @@ class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
@@ -190,13 +190,13 @@ class DistributionSourcePackageNavigation(Navigation,
         return self.context.getVersion(name)
 
 
+@delegate_to(IDistributionSourcePackageRelease, context='context')
 class DecoratedDistributionSourcePackageRelease:
     """A decorated DistributionSourcePackageRelease.
 
     The publishing history and package diffs for the release are
     pre-cached.
     """
-    delegates(IDistributionSourcePackageRelease, 'context')
 
     def __init__(
         self, distributionsourcepackagerelease, publishing_history,
@@ -299,10 +299,10 @@ class DistributionSourcePackageBaseView(LaunchpadView):
             bulk_decorator=decorate)
 
 
+@implementer(IDistributionSourcePackageActionMenu)
 class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                                     LaunchpadView):
     """View class for DistributionSourcePackage."""
-    implements(IDistributionSourcePackageActionMenu)
 
     def initialize(self):
         super(DistributionSourcePackageView, self).initialize()

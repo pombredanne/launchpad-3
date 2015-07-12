@@ -28,18 +28,18 @@ he registered for.
     >>> content = find_tag_by_id(
     ...     anon_browser.contents, "direct-answer-contacts-for-list")
     >>> print extract_text(content).encode('ascii', 'backslashreplace')
-    Gnome Baker
+    gnomebaker
     ...mozilla-firefox... package in Ubuntu
 
     >>> content = find_tag_by_id(
     ...     anon_browser.contents, "team-answer-contacts-for-list")
     >>> print extract_text(content)
-    Gnome Baker
-    The Gnome Panel Applets
+    Gnome Applets
+    gnomebaker
 
 Clicking on the name of the project will show the project answers.
 
-    >>> anon_browser.getLink('Gnome Baker').click()
+    >>> anon_browser.getLink('gnomebaker').click()
     >>> print anon_browser.title
     Questions : gnomebaker
 
@@ -56,8 +56,8 @@ he will see a link after each project to manage his registration.
     >>> content = find_tag_by_id(
     ... browser.contents, "team-answer-contacts-for-list")
     >>> print extract_text(content)
-    Gnome Baker Unsubscribe team
-    The Gnome Panel Applets Unsubscribe team
+    Gnome Applets Unsubscribe team
+    gnomebaker Unsubscribe team
 
     >>> browser.getLink(id="gnomebaker-setteamanswercontact").click()
     >>> print browser.title
@@ -75,5 +75,5 @@ see the link for other users
     >>> content = find_tag_by_id(
     ...     browser.contents, "direct-answer-contacts-for-list")
     >>> print extract_text(content).encode('ascii', 'backslashreplace')
-    Gnome Baker
+    gnomebaker
     ...mozilla-firefox... package in Ubuntu

@@ -1322,7 +1322,6 @@
                 screenshotsurl
                 sourceforgeproject
                 summary
-                title
                 vcs
                 wikiurl"
             />
@@ -1736,7 +1735,6 @@
                 package_derivatives_email
                 redirect_release_uploads
                 summary
-                title
                 vcs
                 "/>
         <require

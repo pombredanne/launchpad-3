@@ -38,7 +38,7 @@ import re
 import subprocess
 import weakref
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
@@ -91,7 +91,6 @@ from zope.interface import (
     alsoProvides,
     classImplements,
     implementer,
-    implements,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
@@ -249,6 +248,7 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import (
+    convert_storm_clause_to_string,
     cursor,
     quote,
     SQLBase,
@@ -332,20 +332,18 @@ class AlreadyConvertedException(Exception):
     """Raised when an attempt to claim a team that has been claimed."""
 
 
+@implementer(IJoinTeamEvent)
 class JoinTeamEvent:
     """See `IJoinTeamEvent`."""
-
-    implements(IJoinTeamEvent)
 
     def __init__(self, person, team):
         self.person = person
         self.team = team
 
 
+@implementer(ITeamInvitationEvent)
 class TeamInvitationEvent:
     """See `IJoinTeamEvent`."""
-
-    implements(ITeamInvitationEvent)
 
     def __init__(self, member, team):
         self.member = member
@@ -414,10 +412,9 @@ def person_sort_key(person):
     return "%s, %s" % (displayname.strip(), person.name)
 
 
+@implementer(IPersonSettings)
 class PersonSettings(Storm):
     "The relatively rarely used settings for person (not a team)."
-
-    implements(IPersonSettings)
 
     __storm_table__ = 'PersonSettings'
 
@@ -474,13 +471,13 @@ _readonly_person_settings = readonly_settings(
     'Teams do not support changing this attribute.', IPersonSettings)
 
 
+@implementer(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+@delegate_to(IPersonSettings, context='_person_settings')
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
     QuestionsPersonMixin):
     """A Person."""
-
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     def __init__(self, *args, **kwargs):
         super(Person, self).__init__(*args, **kwargs)
@@ -504,8 +501,6 @@ class Person(
             return IStore(PersonSettings).find(
                 PersonSettings,
                 PersonSettings.person == self).one()
-
-    delegates(IPersonSettings, context='_person_settings')
 
     sortingColumns = SQL("person_sort_key(Person.displayname, Person.name)")
     # Redefine the default ordering into Storm syntax.
@@ -1013,52 +1008,23 @@ class Person(
 
     def _genAffiliatedProductSql(self, user=None):
         """Helper to generate the product sql for getAffiliatePillars"""
+        from lp.registry.model.product import ProductSet
         base_query = """
             SELECT name, 3 as kind, displayname
-            FROM product p
+            FROM product
             WHERE
-                p.active = True
+                product.active = True
                 AND (
-                    p.driver = %(person)s
-                    OR p.owner = %(person)s
-                    OR p.bug_supervisor = %(person)s
+                    product.driver = %(person)s
+                    OR product.owner = %(person)s
+                    OR product.bug_supervisor = %(person)s
                 )
         """ % sqlvalues(person=self)
 
-        if user is not None:
-            roles = IPersonRoles(user)
-            if roles.in_admin or roles.in_commercial_admin:
-                return base_query
-
-        # This is the raw sql version of model/product getProductPrivacyFilter
-        granted_products = """
-            SELECT p.id
-            FROM product p,
-                 accesspolicygrantflat apflat,
-                 teamparticipation part,
-                 accesspolicy ap
-             WHERE
-                apflat.grantee = part.team
-                AND part.person = %(user)s
-                AND apflat.policy = ap.id
-                AND ap.product = p.id
-                AND ap.type = p.information_type
-        """ % sqlvalues(user=user)
-
-        # We have to generate the sqlvalues first so that they're properly
-        # setup and escaped. Then we combine the above query which is already
-        # processed.
-        query_values = sqlvalues(information_type=InformationType.PUBLIC)
-        query_values.update(granted_sql=granted_products)
-
-        query = base_query + """
-                AND (
-                    p.information_type = %(information_type)s
-                    OR p.information_type is NULL
-                    OR p.id IN (%(granted_sql)s)
-                )
-        """ % query_values
-        return query
+        return "%s AND (%s)" % (
+            base_query,
+            convert_storm_clause_to_string(
+                ProductSet.getProductPrivacyFilter(user)))
 
     def getAffiliatedPillars(self, user):
         """See `IPerson`."""
@@ -3258,9 +3224,9 @@ class Person(
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
 
+@implementer(IPersonSet)
 class PersonSet:
     """The set of persons."""
-    implements(IPersonSet)
 
     def __init__(self):
         self.title = 'People registered with Launchpad'
@@ -3994,8 +3960,8 @@ class PersonLanguage(SQLBase):
                           notNull=True)
 
 
+@implementer(ISSHKey)
 class SSHKey(SQLBase):
-    implements(ISSHKey)
     _defaultOrder = ["person", "keytype", "keytext"]
 
     _table = 'SSHKey'
@@ -4014,8 +3980,8 @@ class SSHKey(SQLBase):
         super(SSHKey, self).destroySelf()
 
 
+@implementer(ISSHKeySet)
 class SSHKeySet:
-    implements(ISSHKeySet)
 
     def new(self, person, sshkey):
         try:
@@ -4060,8 +4026,8 @@ class SSHKeySet:
             """ % sqlvalues([person.id for person in people]))
 
 
+@implementer(IWikiName)
 class WikiName(SQLBase, HasOwnerMixin):
-    implements(IWikiName)
 
     _table = 'WikiName'
 
@@ -4074,8 +4040,8 @@ class WikiName(SQLBase, HasOwnerMixin):
         return self.wiki + self.wikiname
 
 
+@implementer(IWikiNameSet)
 class WikiNameSet:
-    implements(IWikiNameSet)
 
     def getByWikiAndName(self, wiki, wikiname):
         """See `IWikiNameSet`."""
@@ -4093,8 +4059,8 @@ class WikiNameSet:
         return WikiName(person=person, wiki=wiki, wikiname=wikiname)
 
 
+@implementer(IJabberID)
 class JabberID(SQLBase, HasOwnerMixin):
-    implements(IJabberID)
 
     _table = 'JabberID'
     _defaultOrder = ['jabberid']
@@ -4103,8 +4069,8 @@ class JabberID(SQLBase, HasOwnerMixin):
     jabberid = StringCol(dbName='jabberid', notNull=True)
 
 
+@implementer(IJabberIDSet)
 class JabberIDSet:
-    implements(IJabberIDSet)
 
     def new(self, person, jabberid):
         """See `IJabberIDSet`"""
@@ -4119,9 +4085,9 @@ class JabberIDSet:
         return JabberID.selectBy(person=person)
 
 
+@implementer(IIrcID)
 class IrcID(SQLBase, HasOwnerMixin):
     """See `IIrcID`"""
-    implements(IIrcID)
 
     _table = 'IrcID'
 
@@ -4130,9 +4096,9 @@ class IrcID(SQLBase, HasOwnerMixin):
     nickname = StringCol(dbName='nickname', notNull=True)
 
 
+@implementer(IIrcIDSet)
 class IrcIDSet:
     """See `IIrcIDSet`"""
-    implements(IIrcIDSet)
 
     def get(self, id):
         """See `IIrcIDSet`"""

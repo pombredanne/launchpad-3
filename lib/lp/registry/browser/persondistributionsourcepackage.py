@@ -12,7 +12,7 @@ __all__ = [
 
 
 from zope.component import queryAdapter
-from zope.interface import implements
+from zope.interface import implementer
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.errors import NotFoundError
@@ -41,9 +41,9 @@ class PersonDistributionSourcePackageNavigation(
 
 # XXX cjwatson 2015-01-29: Do we need two breadcrumbs, one for the
 # distribution and one for the source package?
+@implementer(IMultiFacetedBreadcrumb)
 class PersonDistributionSourcePackageBreadcrumb(Breadcrumb):
     """Breadcrumb for an `IPersonDistributionSourcePackage`."""
-    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

@@ -9,7 +9,7 @@ __all__ = ['ArchiveDependency']
 
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
@@ -20,10 +20,9 @@ from lp.soyuz.adapters.archivedependencies import component_dependencies
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 
 
+@implementer(IArchiveDependency)
 class ArchiveDependency(SQLBase):
     """See `IArchiveDependency`."""
-
-    implements(IArchiveDependency)
 
     _table = 'ArchiveDependency'
     _defaultOrder = 'id'

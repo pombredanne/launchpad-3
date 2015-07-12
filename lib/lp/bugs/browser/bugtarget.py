@@ -38,7 +38,7 @@ from zope.formlib.interfaces import InputErrors
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.interfaces import NotFound
@@ -214,10 +214,9 @@ class ProductConfigureBugTrackerView(ProductConfigureBase):
         self.updateContextFromData(data)
 
 
+@implementer(IBrowserPublisher)
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
-
-    implements(IBrowserPublisher)
 
     schema = IBug
 

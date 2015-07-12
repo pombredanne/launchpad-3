@@ -36,7 +36,7 @@ from zope.formlib.widgets import (
     TextWidget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -71,7 +71,6 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.browser import (
     add_subscribe_link,
@@ -85,6 +84,7 @@ from lp.registry.browser.pillar import (
     PillarInvolvementView,
     )
 from lp.registry.browser.product import ProductSetBranchView
+from lp.registry.enums import VCSType
 from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
@@ -92,6 +92,7 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -108,6 +109,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -186,10 +188,9 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
         return self.view.context.product
 
 
+@implementer(IProductSeriesInvolved)
 class ProductSeriesInvolvementView(PillarInvolvementView):
     """Encourage configuration of involvement links for project series."""
-
-    implements(IProductSeriesInvolved)
     has_involvement = True
 
     def __init__(self, context, request):
@@ -378,6 +379,22 @@ class ProductSeriesView(
     def requestCountry(self):
         """The country associated with the IP of the request."""
         return ICountry(self.request, None)
+
+    @property
+    def golang_import_spec(self):
+        """Meta string for golang remote import path.
+        See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        """
+        if self.context.product.vcs == VCSType.BZR and self.context.branch:
+            return (
+                "{hostname}/{product}/{series} bzr {root_url}{branch}").format(
+                    hostname=config.vhost.mainsite.hostname,
+                    product=self.context.product.name,
+                    series=self.context.name,
+                    branch=self.context.branch.unique_name,
+                    root_url=allvhosts.configs['mainsite'].rooturl)
+        else:
+            return None
 
     def browserLanguages(self):
         """The languages the user's browser requested."""

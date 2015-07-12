@@ -12,7 +12,7 @@ __all__ = [
 
 
 from zope.component import queryAdapter
-from zope.interface import implements
+from zope.interface import implementer
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.errors import NotFoundError
@@ -44,9 +44,9 @@ class PersonProductNavigation(PersonTargetDefaultVCSNavigationMixin,
             return branch
 
 
+@implementer(IMultiFacetedBreadcrumb)
 class PersonProductBreadcrumb(Breadcrumb):
     """Breadcrumb for an `IPersonProduct`."""
-    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

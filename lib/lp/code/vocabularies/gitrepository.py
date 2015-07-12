@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.code.interfaces.gitcollection import IAllGitRepositories
@@ -25,10 +25,9 @@ from lp.services.webapp.vocabulary import (
     )
 
 
+@implementer(IHugeVocabulary)
 class GitRepositoryVocabulary(StormVocabularyBase):
     """A vocabulary for searching Git repositories."""
-
-    implements(IHugeVocabulary)
 
     _table = GitRepository
     _order_by = ['name', 'id']

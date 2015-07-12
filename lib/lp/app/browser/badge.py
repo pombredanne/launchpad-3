@@ -17,7 +17,7 @@ __all__ = [
     ]
 
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -102,6 +102,7 @@ class IHasBadges(Interface):
         """
 
 
+@implementer(IHasBadges)
 class HasBadgeBase:
     """The standard base implementation for badge visibility.
 
@@ -111,7 +112,6 @@ class HasBadgeBase:
     The visibility of these badges are checked by calling a method like
     `isFooBadgeVisible` where Foo is the capitalised name of the badge.
     """
-    implements(IHasBadges)
 
     # All private objects should show the private badge.
     badges = ('private',)

@@ -11,7 +11,7 @@ __all__ = [
     'SpecificationBranchURL',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -24,10 +24,9 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
+@implementer(ICanonicalUrlData)
 class SpecificationBranchURL:
     """Specification branch URL creation rules."""
-
-    implements(ICanonicalUrlData)
 
     rootsite = "blueprints"
 

@@ -26,7 +26,7 @@ from lxml import html
 import markdown
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.traversing.interfaces import (
     ITraversable,
     TraversalError,
@@ -299,10 +299,9 @@ def parse_diff(text):
             header_next = False
 
 
+@implementer(ITraversable)
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
-
-    implements(ITraversable)
 
     def __init__(self, stringtoformat):
         self._stringtoformat = stringtoformat

@@ -10,7 +10,7 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.log.logger import FakeLogger
 from lp.services.looptuner import (
@@ -33,8 +33,8 @@ class IsDoneException(Exception):
     """Exception raised from the isDone method of an ITunableLoop."""
 
 
+@implementer(ITunableLoop)
 class FailingLoop:
-    implements(ITunableLoop)
 
     def __init__(
         self, fail_main=False, fail_cleanup=False):

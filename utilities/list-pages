@@ -49,8 +49,8 @@ import os
 
 from zope.app.testing.functional import FunctionalTestSetup
 from zope.browserpage.simpleviewclass import simple
-from zope.component import adapts, getGlobalSiteManager
-from zope.interface import directlyProvides, implements
+from zope.component import adapter, getGlobalSiteManager
+from zope.interface import directlyProvides, implementer
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from lp.services.config import config
@@ -72,21 +72,21 @@ def load_zcml(zopeless=False):
         FunctionalTestSetup(os.path.join(ROOT, 'zcml', 'webapp.zcml')).setUp()
 
 
-def is_page_adapter(adapter):
-    """Is 'adapter' a page adapter?
+def is_page_adapter(a):
+    """Is 'a' a page adapter?
 
     We figure this out by checking to see whether it is adapting from
     IDefaultBrowserLayer or one of its subclasses.
     """
-    for interface in adapter.required:
+    for interface in a.required:
         if issubclass(interface, IDefaultBrowserLayer):
             return True
     return False
 
 
-def get_view(adapter):
-    """Get the view factory associated with 'adapter'."""
-    return adapter.factory
+def get_view(a):
+    """Get the view factory associated with the adapter 'a'."""
+    return a.factory
 
 
 def get_template_filename(view):
@@ -98,14 +98,14 @@ def get_template_filename(view):
     return os.path.abspath(filename)
 
 
-def has_page_title(adapter):
-    """Does 'adapter' have a page title?
+def has_page_title(a):
+    """Does 'a' have a page title?
 
-    We use this to tell if 'adapter' is indeed an adapter for rendering an
-    entire page. The theory goes that if there's a page title associated with
+    We use this to tell if 'a' is indeed an adapter for rendering an entire
+    page. The theory goes that if there's a page title associated with
     something, then it's a page.
     """
-    view = get_view(adapter)
+    view = get_view(a)
     marker = object()
     template = get_template_filename(view)
     if template is None:
@@ -214,10 +214,9 @@ class Whatever(object):
             return child
 
 
+@implementer(ICanonicalUrlData)
+@adapter(object)
 class DefaultCanonicalUrlData(object):
-    implements(ICanonicalUrlData)
-    adapts(object)
-
     def __init__(self, name):
         self.path = '[[%s]]' % (name,)
         self.rootsite = None
@@ -243,8 +242,8 @@ def main():
     load_zcml()
     gsm = getGlobalSiteManager()
     gsm.registerAdapter(DefaultCanonicalUrlData)
-    for adapter in iter_page_adapters():
-        print format_page_adapter(adapter)
+    for a in iter_page_adapters():
+        print format_page_adapter(a)
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ __all__ = [
 import logging
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.looptuner import (
     DBLoopTuner,
@@ -21,9 +21,9 @@ from lp.services.looptuner import (
 from lp.translations.interfaces.pofile import IPOFileSet
 
 
+@implementer(ITunableLoop)
 class CreditsFixer:
     """`ITunableLoop` that translates all `POFile`s' translation credits."""
-    implements(ITunableLoop)
 
     def __init__(self, transaction, logger, start_at=0):
         self.transaction = transaction

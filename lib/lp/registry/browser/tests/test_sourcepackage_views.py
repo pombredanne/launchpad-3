@@ -15,7 +15,7 @@ from soupmatchers import (
 from testtools.matchers import Not
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -117,16 +117,19 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             def __init__(self, **kw):
                 self.__dict__.update(kw)
 
+        @implementer(ISourcePackage)
         class FakeSourcePackage(Faker):
             # Interface necessary for canonical_url() call in
             # get_register_upstream_url().
-            implements(ISourcePackage)
+            pass
 
+        @implementer(IDistroSeries)
         class FakeDistroSeries(Faker):
-            implements(IDistroSeries)
+            pass
 
+        @implementer(IDistribution)
         class FakeDistribution(Faker):
-            implements(IDistribution)
+            pass
 
         releases = Faker(sample_binary_packages=[
             Faker(summary='summary for foo'),

@@ -34,7 +34,7 @@ from storm.references import Reference
 from storm.store import Store
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -87,9 +87,8 @@ from lp.soyuz.interfaces.buildrecords import (
     )
 
 
+@implementer(IBuilder, IHasBuildRecords)
 class Builder(SQLBase):
-
-    implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
     _defaultOrder = ['id']
@@ -304,9 +303,9 @@ class BuilderProcessor(StormBase):
     processor = Reference(processor_id, Processor.id)
 
 
+@implementer(IBuilderSet)
 class BuilderSet(object):
     """See IBuilderSet"""
-    implements(IBuilderSet)
 
     def __init__(self):
         self.title = "The Launchpad build farm"

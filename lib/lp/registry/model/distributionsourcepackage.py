@@ -32,7 +32,7 @@ from storm.locals import (
     Unicode,
     )
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.model.bugtarget import BugTargetBase
@@ -113,6 +113,8 @@ class DistributionSourcePackageProperty:
         setattr(obj._self_in_database, self.attrname, value)
 
 
+@implementer(
+    IBugSummaryDimension, IDistributionSourcePackage, IHasCustomLanguageCodes)
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
@@ -126,10 +128,6 @@ class DistributionSourcePackage(BugTargetBase,
     things about the releases that are published under its name, the latest
     or current release, etc.
     """
-
-    implements(
-        IBugSummaryDimension, IDistributionSourcePackage,
-        IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
         'bug_reporting_guidelines')
@@ -545,10 +543,9 @@ class DistributionSourcePackage(BugTargetBase,
             cls._new(distribution, sourcepackagename, upstream_link_allowed)
 
 
+@implementer(transaction.interfaces.ISynchronizer)
 class ThreadLocalLRUCache(LRUCache, local):
     """A per-thread LRU cache that can synchronize with a transaction."""
-
-    implements(transaction.interfaces.ISynchronizer)
 
     def newTransaction(self, txn):
         pass

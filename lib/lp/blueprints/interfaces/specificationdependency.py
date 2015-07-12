@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -50,8 +50,8 @@ class ISpecificationDependencyRemoval(Interface):
         vocabulary='SpecificationDependencies')
 
 
+@implementer(ISpecificationDependencyRemoval)
 class SpecDependencyIsAlsoRemoval:
-    implements(ISpecificationDependencyRemoval)
 
     def __init__(self, specdep):
         self.specdep = specdep

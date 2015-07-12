@@ -10,7 +10,7 @@ __all__ = [
     'DistroArchSeriesBinaryPackageRelease',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
@@ -23,9 +23,8 @@ from lp.soyuz.model.distributionsourcepackagerelease import (
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
+@implementer(IDistroArchSeriesBinaryPackageRelease)
 class DistroArchSeriesBinaryPackageRelease:
-
-    implements(IDistroArchSeriesBinaryPackageRelease)
 
     def __init__(self, distroarchseries, binarypackagerelease):
         self.distroarchseries = distroarchseries

@@ -9,13 +9,13 @@ __all__ = [
     ]
 
 import requests
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.webhooks.interfaces import IWebhookClient
 
 
+@implementer(IWebhookClient)
 class WebhookClient:
-    implements(IWebhookClient)
 
     def deliver(self, url, proxy, payload):
         """See `IWebhookClient`."""

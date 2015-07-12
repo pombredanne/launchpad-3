@@ -42,7 +42,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import PUBLIC_INFORMATION_TYPES
@@ -78,10 +78,9 @@ from lp.services.identity.interfaces.emailaddress import (
     )
 
 
+@implementer(IRevision)
 class Revision(SQLBase):
     """See IRevision."""
-
-    implements(IRevision)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     log_body = StringCol(notNull=True)
@@ -180,8 +179,8 @@ class Revision(SQLBase):
         return result_set.first()
 
 
+@implementer(IRevisionAuthor)
 class RevisionAuthor(SQLBase):
-    implements(IRevisionAuthor)
 
     _table = 'RevisionAuthor'
 
@@ -218,10 +217,9 @@ class RevisionAuthor(SQLBase):
             return False
 
 
+@implementer(IRevisionParent)
 class RevisionParent(SQLBase):
     """The association between a revision and its parent."""
-
-    implements(IRevisionParent)
 
     _table = 'RevisionParent'
 
@@ -232,10 +230,9 @@ class RevisionParent(SQLBase):
     parent_id = StringCol(notNull=True)
 
 
+@implementer(IRevisionProperty)
 class RevisionProperty(SQLBase):
     """A property on a revision. See IRevisionProperty."""
-
-    implements(IRevisionProperty)
 
     _table = 'RevisionProperty'
 
@@ -245,9 +242,8 @@ class RevisionProperty(SQLBase):
     value = StringCol(notNull=True)
 
 
+@implementer(IRevisionSet)
 class RevisionSet:
-
-    implements(IRevisionSet)
 
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)

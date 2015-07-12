@@ -14,9 +14,9 @@ from zope.component import (
     provideUtility,
     )
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
     Interface,
+    provider,
     )
 from zope.security.interfaces import Unauthorized
 import zope.testing.cleanup
@@ -135,11 +135,11 @@ class CheckerFactory:
         return Checker(obj, self.calls)
 
 
+@implementer(IObjectPrivacy)
 class Object:
     """An arbitrary object, adaptable to `IObjectPrivacy`.
 
     For simplicity we implement `IObjectPrivacy` directly."""
-    implements(IObjectPrivacy)
     is_private = False
 
 
@@ -167,20 +167,20 @@ class Delegate(AuthorizationBase):
         yield self.object_two, self.permission
 
 
+@implementer(ILaunchpadPermission)
 class PermissionAccessLevel:
     """A minimal implementation of `ILaunchpadPermission`."""
-    implements(ILaunchpadPermission)
     access_level = 'read'
 
 
+@implementer(IPerson, IPersonRoles)
 class FakePerson:
     """A minimal object to represent a person."""
-    implements(IPerson, IPersonRoles)
 
 
+@implementer(ILaunchpadPrincipal)
 class FakeLaunchpadPrincipal:
     """A minimal principal implementing `ILaunchpadPrincipal`"""
-    implements(ILaunchpadPrincipal)
     person = FakePerson()
     scope = None
     access_level = ''
@@ -195,9 +195,9 @@ class FakeStore:
         pass
 
 
+@provider(IStoreSelector)
 class FakeStoreSelector:
     """A store selector that always returns a `FakeStore`."""
-    classProvides(IStoreSelector)
 
     @staticmethod
     def get(name, flavor):
@@ -431,8 +431,8 @@ class ILoneObject(Interface):
     """A marker interface for objects that only contain themselves."""
 
 
+@implementer(ILoneObject, ILaunchpadContainer)
 class LoneObject:
-    implements(ILoneObject, ILaunchpadContainer)
 
     def isWithin(self, context):
         return self == context
@@ -675,10 +675,9 @@ class TestIterAuthorization(TestCase):
         self.assertEqual(cache_expected, cache)
 
 
+@implementer(Interface)
 class AvailableWithPermissionObject:
     """ An object used to test available_with_permission."""
-
-    implements(Interface)
 
     @available_with_permission('launchpad.Edit', 'foo')
     def test_function_foo(self, foo, bar=None):

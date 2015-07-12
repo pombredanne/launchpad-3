@@ -320,6 +320,9 @@ class FileProducer(static.NoRangeStaticProducer):
         if not self.request:
             return
         data = yield self.fileObject.read(self.bufferSize)
+        # stopProducing may have been called while we were waiting.
+        if not self.request:
+            return
         if data:
             self.request.write(data)
         else:

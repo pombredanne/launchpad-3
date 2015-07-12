@@ -11,7 +11,7 @@ __all__ = [
 
 from operator import itemgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from storm.expr import (
     And,
     Desc,
@@ -20,7 +20,7 @@ from storm.expr import (
     SQL,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -38,15 +38,14 @@ from lp.soyuz.model.publishing import (
     )
 
 
+@implementer(IDistributionSourcePackageRelease)
+@delegate_to(ISourcePackageRelease, context='sourcepackagerelease')
 class DistributionSourcePackageRelease:
     """This is a "Magic Distribution Source Package Release". It is not an
     SQLObject, but it represents the concept of a specific source package
     release in the distribution. You can then query it for useful
     information.
     """
-
-    implements(IDistributionSourcePackageRelease)
-    delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distribution, sourcepackagerelease):
         self.distribution = distribution

@@ -22,7 +22,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import Desc
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
@@ -48,19 +48,18 @@ from lp.services.database.sqlbase import (
     )
 
 
+@implementer(IKarmaAssignedEvent)
 class KarmaAssignedEvent:
     """See `IKarmaAssignedEvent`."""
-
-    implements(IKarmaAssignedEvent)
 
     def __init__(self, object, karma):
         self.object = object
         self.karma = karma
 
 
+@implementer(IKarma)
 class Karma(SQLBase):
     """See IKarma."""
-    implements(IKarma)
 
     _table = 'Karma'
     _defaultOrder = ['action', 'id']
@@ -80,9 +79,9 @@ class Karma(SQLBase):
         dbName='datecreated', notNull=True, default=UTC_NOW)
 
 
+@implementer(IKarmaAction)
 class KarmaAction(SQLBase):
     """See IKarmaAction."""
-    implements(IKarmaAction)
 
     _table = 'KarmaAction'
     sortingColumns = ['category', 'name']
@@ -96,9 +95,9 @@ class KarmaAction(SQLBase):
     points = IntCol(dbName='points', notNull=True)
 
 
+@implementer(IKarmaActionSet)
 class KarmaActionSet:
     """See IKarmaActionSet."""
-    implements(IKarmaActionSet)
 
     def __iter__(self):
         return iter(KarmaAction.select())
@@ -125,9 +124,9 @@ class KarmaActionSet:
                 query, clauseTables=['Karma'], distinct=True, orderBy=orderBy)
 
 
+@implementer(IKarmaCache)
 class KarmaCache(SQLBase):
     """See IKarmaCache."""
-    implements(IKarmaCache)
 
     _table = 'KarmaCache'
     _defaultOrder = ['category', 'id']
@@ -149,9 +148,9 @@ class KarmaCache(SQLBase):
         notNull=False)
 
 
+@implementer(IKarmaCacheManager)
 class KarmaCacheManager:
     """See IKarmaCacheManager."""
-    implements(IKarmaCacheManager)
 
     def new(self, value, person_id, category_id, product_id=None,
             distribution_id=None, sourcepackagename_id=None,
@@ -195,9 +194,9 @@ class KarmaCacheManager:
             KarmaCache.sourcepackagenameID == sourcepackagename_id).one()
 
 
+@implementer(IKarmaTotalCache)
 class KarmaTotalCache(SQLBase):
     """A cached value of the total of a person's karma (all categories)."""
-    implements(IKarmaTotalCache)
 
     _table = 'KarmaTotalCache'
     _defaultOrder = ['id']
@@ -206,9 +205,9 @@ class KarmaTotalCache(SQLBase):
     karma_total = IntCol(dbName='karma_total', notNull=True)
 
 
+@implementer(IKarmaCategory)
 class KarmaCategory(SQLBase):
     """See IKarmaCategory."""
-    implements(IKarmaCategory)
 
     _defaultOrder = ['title', 'id']
 
@@ -220,14 +219,13 @@ class KarmaCategory(SQLBase):
         'KarmaAction', joinColumn='category', orderBy='name')
 
 
+@implementer(IKarmaContext)
 class KarmaContextMixin:
     """A mixin to be used by classes implementing IKarmaContext.
 
     This would be better as an adapter for Product and Distribution, but a
     mixin should be okay for now.
     """
-
-    implements(IKarmaContext)
 
     def getTopContributorsGroupedByCategory(self, limit=None):
         """See IKarmaContext."""

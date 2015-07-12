@@ -12,7 +12,7 @@ import threading
 
 import pytz
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
@@ -37,9 +37,8 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 _utc_tz = pytz.timezone('UTC')
 
 
+@implementer(IOpenLaunchBag)
 class LaunchBag:
-
-    implements(IOpenLaunchBag)
 
     # Map Interface to attribute name.
     _registry = {

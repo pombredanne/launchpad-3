@@ -16,17 +16,16 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import And
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 
 
+@implementer(ICustomLanguageCode)
 class CustomLanguageCode(SQLBase):
     """See `ICustomLanguageCode`."""
-
-    implements(ICustomLanguageCode)
 
     _table = 'CustomLanguageCode'
 

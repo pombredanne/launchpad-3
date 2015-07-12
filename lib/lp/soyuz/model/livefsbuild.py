@@ -23,7 +23,7 @@ from storm.locals import (
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
@@ -64,10 +64,9 @@ from lp.soyuz.mail.livefsbuild import LiveFSBuildMailer
 from lp.soyuz.model.archive import Archive
 
 
+@implementer(ILiveFSFile)
 class LiveFSFile(Storm):
     """See `ILiveFS`."""
-
-    implements(ILiveFSFile)
 
     __storm_table__ = 'LiveFSFile'
 
@@ -86,10 +85,9 @@ class LiveFSFile(Storm):
         self.libraryfile = libraryfile
 
 
+@implementer(ILiveFSBuild)
 class LiveFSBuild(PackageBuildMixin, Storm):
     """See `ILiveFSBuild`."""
-
-    implements(ILiveFSBuild)
 
     __storm_table__ = 'LiveFSBuild'
 
@@ -336,8 +334,8 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         return [self.lfaUrl(lfa) for _, lfa, _ in self.getFiles()]
 
 
+@implementer(ILiveFSBuildSet)
 class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
-    implements(ILiveFSBuildSet)
 
     def new(self, requester, livefs, archive, distro_arch_series, pocket,
             unique_key=None, metadata_override=None, date_created=DEFAULT):

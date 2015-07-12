@@ -1236,10 +1236,10 @@ Test the 'fmt:' namespace where the context is a dict.
 
 Test the 'fmt:url' namespace for canonical urls.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.webapp.interfaces import ICanonicalUrlData
-    >>> class ObjectThatHasUrl:
-    ...     implements(ICanonicalUrlData)
+    >>> @implementer(ICanonicalUrlData)
+    ... class ObjectThatHasUrl:
     ...     path = 'bonobo/saki'
     ...     inside = None
     ...     rootsite = None
@@ -1253,11 +1253,11 @@ request.
 
 Make a mock-up IBrowserRequest, and use this as the interaction.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.webapp.interfaces import (
     ...     ILaunchpadBrowserApplicationRequest)
-    >>> class MockBrowserRequest:
-    ...     implements(ILaunchpadBrowserApplicationRequest,)
+    >>> @implementer(ILaunchpadBrowserApplicationRequest,)
+    ... class MockBrowserRequest:
     ...
     ...     interaction = None
     ...     principal = None

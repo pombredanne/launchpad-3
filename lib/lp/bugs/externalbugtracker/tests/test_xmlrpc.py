@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from urllib2 import URLError
 from xml.parsers.expat import ExpatError
 
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
@@ -33,3 +34,13 @@ class TestUrlLib2Transport(TestCase):
         self.assertRaises(
             ExpatError, transport.request,
             'www.example.com', 'xmlrpc', "<methodCall />")
+
+    def test_unicode_url(self):
+        # Python's httplib doesn't like Unicode URLs much. Ensure that
+        # they don't cause it to crash, and we get a post-serialisation
+        # connection error instead.
+        transport = UrlLib2Transport(u"http://test.invalid/")
+        self.assertRaisesWithContent(
+            URLError, '<urlopen error [Errno -2] Name or service not known>',
+            transport.request, u"test.invalid", u"xmlrpc",
+            u"\N{SNOWMAN}".encode('utf-8'))

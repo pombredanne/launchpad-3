@@ -82,7 +82,7 @@ from storm.expr import (
     )
 from storm.info import ClassAlias
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.interfaces import IVocabularyTokenized
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -244,9 +244,9 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
+@implementer(IHugeVocabulary)
 class ProductVocabulary(SQLObjectVocabularyBase):
     """All `IProduct` objects vocabulary."""
-    implements(IHugeVocabulary)
     step_title = 'Search'
 
     _table = Product
@@ -308,9 +308,9 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
+@implementer(IHugeVocabulary)
 class ProjectGroupVocabulary(SQLObjectVocabularyBase):
     """All `IProjectGroup` objects vocabulary."""
-    implements(IHugeVocabulary)
 
     _table = ProjectGroup
     _orderBy = 'displayname'
@@ -402,6 +402,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         raise LookupError(token)
 
 
+@implementer(IHugeVocabulary)
 class NonMergedPeopleAndTeamsVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people and teams.
@@ -410,7 +411,6 @@ class NonMergedPeopleAndTeamsVocabulary(
     the people provided by it know how to deal with people which don't have
     a preferred email address, that is, unvalidated person profiles.
     """
-    implements(IHugeVocabulary)
 
     _orderBy = ['displayname']
     displayname = 'Select a Person or Team'
@@ -434,6 +434,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         return self._select(ensure_unicode(text))
 
 
+@implementer(IHugeVocabulary)
 class PersonAccountToMergeVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people with at least one email address.
@@ -441,7 +442,6 @@ class PersonAccountToMergeVocabulary(
     This vocabulary is a very specialized one, meant to be used only to choose
     accounts to merge. You *don't* want to use it.
     """
-    implements(IHugeVocabulary)
 
     _orderBy = ['displayname']
     displayname = 'Select a Person to Merge'
@@ -504,6 +504,7 @@ class VocabularyFilterTeam(VocabularyFilter):
         return [Person.teamownerID != None]
 
 
+@implementer(IHugeVocabulary)
 class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of valid, viewable Persons/Teams in Launchpad.
@@ -517,7 +518,6 @@ class ValidPersonOrTeamVocabulary(
     ValidMaintainer and ValidOwner, because they have exactly the same
     requisites.
     """
-    implements(IHugeVocabulary)
 
     displayname = 'Select a Person or Team'
     step_title = 'Search'
@@ -877,10 +877,9 @@ class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
                         tp_alias.personID == user.id))]
 
 
+@implementer(IVocabularyTokenized)
 class PersonActiveMembershipVocabulary:
     """All the teams the person is an active member of."""
-
-    implements(IVocabularyTokenized)
 
     def __init__(self, context):
         assert IPerson.providedBy(context)
@@ -949,10 +948,9 @@ class NewPillarGranteeVocabulary(ValidPersonOrExclusiveTeamVocabulary):
             super(NewPillarGranteeVocabulary, self).extra_clause)
 
 
+@implementer(IHugeVocabulary)
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
     """The set of all active mailing lists."""
-
-    implements(IHugeVocabulary)
 
     displayname = 'Select an active mailing list.'
     step_title = 'Search'
@@ -1106,9 +1104,9 @@ class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
         return SimpleTerm(obj, obj.name, obj.displayname)
 
 
+@implementer(IHugeVocabulary)
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     """All `IProductRelease` objects vocabulary."""
-    implements(IHugeVocabulary)
 
     displayname = 'Select a Product Release'
     step_title = 'Search'
@@ -1174,9 +1172,9 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         return objs
 
 
+@implementer(IHugeVocabulary)
 class ProductSeriesVocabulary(SQLObjectVocabularyBase):
     """All `IProductSeries` objects vocabulary."""
-    implements(IHugeVocabulary)
 
     displayname = 'Select a Release Series'
     step_title = 'Search'
@@ -1399,6 +1397,7 @@ class MilestoneWithDateExpectedVocabulary(MilestoneVocabulary):
         return term
 
 
+@implementer(IHugeVocabulary)
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     """List all commercial projects.
 
@@ -1407,8 +1406,6 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     contains the active projects the user maintains, or all active project
     if the user is a registry expert.
     """
-
-    implements(IHugeVocabulary)
 
     _table = Product
     _orderBy = 'displayname'
@@ -1560,6 +1557,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         return objs
 
 
+@implementer(IHugeVocabulary)
 class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
     """A vocabulary source for series to derive from.
 
@@ -1577,8 +1575,6 @@ class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
     It is permissible for a distribution to have both derived and non-derived
     series at the same time.
     """
-
-    implements(IHugeVocabulary)
 
     displayname = "Add a parent series"
     step_title = 'Search'
@@ -1682,13 +1678,12 @@ class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
             return self.find_terms(where)
 
 
+@implementer(IHugeVocabulary)
 class DistroSeriesDifferencesVocabulary(FilteredVocabularyBase):
     """A vocabulary source for differences relating to a series.
 
     Specifically, all `DistroSeriesDifference`s relating to a derived series.
     """
-
-    implements(IHugeVocabulary)
 
     displayname = "Choose a difference"
     step_title = 'Search'

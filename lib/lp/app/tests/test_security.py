@@ -9,7 +9,7 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -71,9 +71,9 @@ class IDummy(Interface):
     """Marker interface to test forwarding."""
 
 
+@implementer(IDummy)
 class Dummy:
     """An implementation of IDummy."""
-    implements(IDummy)
 
 
 class TestAuthorizationBase(TestCaseWithFactory):

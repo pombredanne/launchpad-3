@@ -21,14 +21,14 @@ __all__ = [
 
 import types
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import (
     InvalidURIError,
     URI,
     )
 from zope.component import getMultiAdapter
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -78,13 +78,13 @@ def get_facet(view):
     return getattr(removeSecurityProxy(view), '__launchpad_facetname__', None)
 
 
+@implementer(ILinkData)
 class LinkData:
     """General links that aren't default links.
 
     Instances of this class just provide link data.  The class is also known
     as 'Link' to make it nice to use when defining menus.
     """
-    implements(ILinkData)
 
     def __init__(self, target, text, summary=None, icon=None, enabled=True,
                  site=None, menu=None, hidden=False):
@@ -122,10 +122,10 @@ class LinkData:
 Link = LinkData
 
 
+@implementer(ILink)
+@delegate_to(ILinkData, context='_linkdata')
 class MenuLink:
     """Adapter from ILinkData to ILink."""
-    implements(ILink)
-    delegates(ILinkData, context='_linkdata')
 
     # These attributes are set by the menus infrastructure.
     name = None
@@ -175,9 +175,9 @@ class MenuLink:
         return self.url.path
 
 
+@implementer(IFacetLink)
 class FacetLink(MenuLink):
     """Adapter from ILinkData to IFacetLink."""
-    implements(IFacetLink)
 
     # This attribute is set by the menus infrastructure.
     selected = False
@@ -189,10 +189,9 @@ ALL_LINKS = object()
 MENU_ANNOTATION_KEY = 'lp.services.webapp.menu.links'
 
 
+@implementer(IMenuBase)
 class MenuBase(UserAttributeCache):
     """Base class for facets and menus."""
-
-    implements(IMenuBase)
 
     links = None
     extra_attributes = None
@@ -337,10 +336,9 @@ class MenuBase(UserAttributeCache):
             yield link
 
 
+@implementer(IFacetMenu)
 class FacetMenu(MenuBase):
     """Base class for facet menus."""
-
-    implements(IFacetMenu)
 
     _baseclassname = 'FacetMenu'
 
@@ -364,26 +362,23 @@ class FacetMenu(MenuBase):
             link.selected = True
 
 
+@implementer(IApplicationMenu)
 class ApplicationMenu(MenuBase):
     """Base class for application menus."""
-
-    implements(IApplicationMenu)
 
     _baseclassname = 'ApplicationMenu'
 
 
+@implementer(IContextMenu)
 class ContextMenu(MenuBase):
     """Base class for context menus."""
-
-    implements(IContextMenu)
 
     _baseclassname = 'ContextMenu'
 
 
+@implementer(INavigationMenu)
 class NavigationMenu(MenuBase):
     """Base class for navigation menus."""
-
-    implements(INavigationMenu)
 
     _baseclassname = 'NavigationMenu'
 

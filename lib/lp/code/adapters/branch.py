@@ -16,7 +16,7 @@ from lazr.lifecycle import snapshot
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.objectdelta import ObjectDelta
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.branch import (
     IBranch,
@@ -29,10 +29,9 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 # well as landing target when it is added to the UI
 
 
+@implementer(IBranchDelta)
 class BranchDelta:
     """See IBranchDelta."""
-
-    implements(IBranchDelta)
 
     delta_values = ('name', 'title', 'url', 'lifecycle_status')
 

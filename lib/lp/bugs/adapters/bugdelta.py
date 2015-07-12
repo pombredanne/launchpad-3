@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.interfaces.bug import IBugDelta
 
 
+@implementer(IBugDelta)
 class BugDelta:
     """See `IBugDelta`."""
-    implements(IBugDelta)
 
     def __init__(self, bug, bugurl, user,
                  title=None, description=None, name=None,

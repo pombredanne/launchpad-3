@@ -10,8 +10,8 @@ __all__ = [
 
 import traceback
 
-from zope.component import adapts
-from zope.interface import implements
+from zope.component import adapter
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -31,11 +31,10 @@ from lp.soyuz.adapters.archivedependencies import (
     )
 
 
+@adapter(ISourcePackageRecipeBuild)
+@implementer(IBuildFarmJobBehaviour)
 class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     """How to build a recipe on the build farm."""
-
-    adapts(ISourcePackageRecipeBuild)
-    implements(IBuildFarmJobBehaviour)
 
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will

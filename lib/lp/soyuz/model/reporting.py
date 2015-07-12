@@ -6,14 +6,14 @@ __all__ = [
     'LatestPersonSourcePackageReleaseCache',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from storm.base import Storm
 from storm.locals import (
     Int,
     Reference,
     )
 from storm.properties import DateTime
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.enumcol import EnumCol
 from lp.soyuz.enums import ArchivePurpose
@@ -23,10 +23,10 @@ from lp.soyuz.interfaces.reporting import (
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@implementer(ILatestPersonSourcePackageReleaseCache)
+@delegate_to(ISourcePackageRelease, context='sourcepackagerelease')
 class LatestPersonSourcePackageReleaseCache(Storm):
     """See `LatestPersonSourcePackageReleaseCache`."""
-    implements(ILatestPersonSourcePackageReleaseCache)
-    delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     __storm_table__ = 'LatestPersonSourcePackageReleaseCache'
 

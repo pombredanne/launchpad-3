@@ -44,7 +44,7 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
@@ -168,12 +168,11 @@ def git_repository_modified(repository, event):
         send_git_repository_modified_notifications(repository, event)
 
 
+@implementer(IGitRepository, IHasOwner, IPrivacy, IInformationType)
 class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     """See `IGitRepository`."""
 
     __storm_table__ = 'GitRepository'
-
-    implements(IGitRepository, IHasOwner, IPrivacy, IInformationType)
 
     id = Int(primary=True)
 
@@ -1126,10 +1125,9 @@ class ClearPrerequisiteRepository(DeletionOperation):
         self.affected_object.prerequisite_git_commit_sha1 = None
 
 
+@implementer(IGitRepositorySet)
 class GitRepositorySet:
     """See `IGitRepositorySet`."""
-
-    implements(IGitRepositorySet)
 
     def new(self, registrant, owner, target, name, information_type=None,
             date_created=DEFAULT, description=None):

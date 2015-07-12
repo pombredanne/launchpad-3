@@ -37,7 +37,7 @@ from operator import attrgetter
 import re
 import urllib
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
@@ -64,7 +64,6 @@ from zope.event import notify
 from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import (
     implementer,
-    implements,
     providedBy,
     )
 from zope.schema import Choice
@@ -2272,10 +2271,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             )
 
 
+@implementer(IObjectPrivacy)
 class BugTaskPrivacyAdapter:
     """Provides `IObjectPrivacy` for `IBugTask`."""
-
-    implements(IObjectPrivacy)
 
     def __init__(self, context):
         self.context = context
@@ -2393,9 +2391,9 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
     page_title = label
 
 
+@delegate_to(IBugActivity, context='activity')
 class BugActivityItem:
     """A decorated BugActivity."""
-    delegates(IBugActivity, 'activity')
 
     def __init__(self, activity):
         self.activity = activity

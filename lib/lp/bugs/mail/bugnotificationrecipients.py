@@ -8,12 +8,13 @@ __all__ = [
     'BugNotificationRecipients',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.mail.interfaces import INotificationRecipientSet
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
+@implementer(INotificationRecipientSet)
 class BugNotificationRecipients(NotificationRecipientSet):
     """A set of emails and rationales notified for a bug change.
 
@@ -36,7 +37,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
     Instances of this class are meant to be returned by
     IBug.getBugNotificationRecipients().
     """
-    implements(INotificationRecipientSet)
 
     def __init__(self, duplicateof=None):
         """Constructs a new BugNotificationRecipients instance.

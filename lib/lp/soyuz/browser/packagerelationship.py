@@ -12,7 +12,7 @@ __all__ = [
 
 import operator as std_operator
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.webapp import canonical_url
 from lp.soyuz.interfaces.packagerelationship import (
@@ -53,10 +53,9 @@ def relationship_builder(relationship_line, parser, getter):
     return relationship_set
 
 
+@implementer(IPackageRelationship)
 class PackageRelationship:
     """See IPackageRelationship."""
-
-    implements(IPackageRelationship)
 
     def __init__(self, name, operator, version, url=None):
         self.name = name
@@ -69,9 +68,9 @@ class PackageRelationship:
             self.operator = operator
 
 
+@implementer(IPackageRelationshipSet)
 class PackageRelationshipSet:
     """See IPackageRelationshipSet."""
-    implements(IPackageRelationshipSet)
 
     def __init__(self):
         self.contents = []

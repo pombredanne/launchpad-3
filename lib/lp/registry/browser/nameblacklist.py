@@ -17,7 +17,7 @@ from zope.component import (
     getUtility,
     )
 from zope.formlib.widgets import TextWidget
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.browser.launchpadform import (
     action,
@@ -157,9 +157,8 @@ class NameBlacklistNavigationMenu(ApplicationMenu):
 
 
 @adapter(INameBlacklistSet)
+@implementer(IBreadcrumb)
 class NameBlacklistSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `INameBlackListSet`."""
-
-    implements(IBreadcrumb)
 
     text = "Name Blacklist"

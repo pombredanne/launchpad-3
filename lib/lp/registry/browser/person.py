@@ -68,7 +68,7 @@ from textwrap import dedent
 import urllib
 
 from lazr.config import as_timedelta
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
 from lazr.restful.utils import smartquote
@@ -77,7 +77,7 @@ import pytz
 from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     queryMultiAdapter,
     )
@@ -90,7 +90,7 @@ from zope.formlib.widgets import (
     )
 from zope.interface import (
     classImplements,
-    implements,
+    implementer,
     Interface,
     )
 from zope.interface.exceptions import Invalid
@@ -284,8 +284,9 @@ from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class PersonBreadcrumb(DisplaynameBreadcrumb):
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
+    pass
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -981,10 +982,9 @@ class PersonSetActionNavigationMenu(RegistryCollectionActionMenuBase):
              'request_merge', 'admin_merge_people', 'admin_merge_teams']
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class PeopleSearchView(LaunchpadView):
     """Search for people and teams on the /people page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'People and teams in Launchpad'
 
@@ -1139,6 +1139,7 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
+@delegate_to(IPerson, context='person')
 class PersonWithKeysAndPreferredEmail:
     """A decorated person that includes GPG keys and preferred emails."""
 
@@ -1148,7 +1149,6 @@ class PersonWithKeysAndPreferredEmail:
     gpgkeys = None
     sshkeys = None
     preferredemail = None
-    delegates(IPerson, 'person')
 
     def __init__(self, person):
         self.person = person
@@ -2409,9 +2409,8 @@ class PersonEditJabberIDsView(LaunchpadFormView):
             jabberset.new(self.context, jabberid)
 
 
+@implementer(IPersonEditMenu)
 class PersonEditSSHKeysView(LaunchpadView):
-
-    implements(IPersonEditMenu)
 
     info_message = None
     error_message = None
@@ -2478,6 +2477,7 @@ class PersonEditSSHKeysView(LaunchpadView):
         self.info_message = structured('Key "%s" removed', comment)
 
 
+@implementer(IPersonEditMenu)
 class PersonGPGView(LaunchpadView):
     """View for the GPG-related actions for a Person
 
@@ -2485,8 +2485,6 @@ class PersonGPGView(LaunchpadView):
     it. Also supports removing the token generated for validation (in
     the case you want to give up on importing the key).
     """
-
-    implements(IPersonEditMenu)
 
     key = None
     fingerprint = None
@@ -2698,6 +2696,7 @@ class BasePersonEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
+@implementer(IPersonEditMenu)
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
@@ -2705,8 +2704,6 @@ class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-
-    implements(IPersonEditMenu)
 
     label = 'Change your personal details'
     page_title = label
@@ -2765,6 +2762,7 @@ class PersonBrandingView(BrandingChangeView):
     schema = IPerson
 
 
+@implementer(IPersonEditMenu)
 class PersonEditEmailsView(LaunchpadFormView):
     """A view for editing a person's email settings.
 
@@ -2772,8 +2770,6 @@ class PersonEditEmailsView(LaunchpadFormView):
     the system associated with their account, and remove associated
     emails.
     """
-
-    implements(IPersonEditMenu)
 
     schema = IEmailAddress
 
@@ -3100,10 +3096,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.next_url = self.action_url
 
 
+@implementer(IPersonEditMenu)
 class PersonEditMailingListsView(LaunchpadFormView):
     """A view for editing a person's mailing list subscriptions."""
-
-    implements(IPersonEditMenu)
 
     schema = IEmailAddress
 
@@ -3564,23 +3559,22 @@ class BaseWithStats:
         self.needs_building = needs_building
 
 
+@implementer(ISourcePackageRelease)
+@delegate_to(ISourcePackageRelease)
 class SourcePackageReleaseWithStats(BaseWithStats):
     """An ISourcePackageRelease, with extra stats added."""
-
-    implements(ISourcePackageRelease)
-    delegates(ISourcePackageRelease)
+    pass
 
 
+@implementer(ISourcePackagePublishingHistory)
+@delegate_to(ISourcePackagePublishingHistory)
 class SourcePackagePublishingHistoryWithStats(BaseWithStats):
     """An ISourcePackagePublishingHistory, with extra stats added."""
 
-    implements(ISourcePackagePublishingHistory)
-    delegates(ISourcePackagePublishingHistory)
 
-
+@implementer(IPersonRelatedSoftwareMenu)
 class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-packages."""
-    implements(IPersonRelatedSoftwareMenu)
     _max_results_key = 'summary_list_size'
 
     @property
@@ -4042,9 +4036,9 @@ class IEmailToPerson(Interface):
             raise Invalid('You must provide a subject and a message.')
 
 
+@implementer(INotificationRecipientSet)
 class ContactViaWebNotificationRecipientSet:
     """A set of notification recipients and rationales from ContactViaWeb."""
-    implements(INotificationRecipientSet)
 
     # Primary reason enumerations.
     TO_USER = object()
@@ -4404,10 +4398,9 @@ class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
 classImplements(PersonIndexView, IPersonIndexMenu)
 
 
+@adapter(IPerson, IWebServiceClientRequest)
+@implementer(Interface)
 class PersonXHTMLRepresentation:
-    adapts(IPerson, IWebServiceClientRequest)
-    implements(Interface)
-
     def __init__(self, person, request):
         self.person = person
         self.request = request

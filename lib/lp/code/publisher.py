@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
     IDefaultBrowserLayer,
@@ -31,8 +31,8 @@ from lp.services.webapp.servers import (
     )
 
 
+@implementer(IFacet)
 class BranchesFacet:
-    implements(IFacet)
 
     name = "branches"
     rootsite = "code"
@@ -44,9 +44,9 @@ class CodeLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Code layer."""
 
 
+@implementer(CodeLayer)
 class CodeBrowserRequest(LaunchpadBrowserRequest):
     """Instances of CodeBrowserRequest provide `CodeLayer`."""
-    implements(CodeLayer)
 
 
 def code_request_publication_factory():

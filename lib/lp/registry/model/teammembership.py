@@ -22,7 +22,7 @@ from sqlobject import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -75,10 +75,9 @@ from lp.services.mail.sendmail import (
 from lp.services.webapp import canonical_url
 
 
+@implementer(ITeamMembership)
 class TeamMembership(SQLBase):
     """See `ITeamMembership`."""
-
-    implements(ITeamMembership)
 
     _table = 'TeamMembership'
     _defaultOrder = 'id'
@@ -374,10 +373,9 @@ class TeamMembership(SQLBase):
             self.last_change_comment)
 
 
+@implementer(ITeamMembershipSet)
 class TeamMembershipSet:
     """See `ITeamMembershipSet`."""
-
-    implements(ITeamMembershipSet)
 
     _defaultOrder = ['Person.displayname', 'Person.name']
 
@@ -455,8 +453,8 @@ class TeamMembershipSet:
             _cleanTeamParticipation(member, team)
 
 
+@implementer(ITeamParticipation)
 class TeamParticipation(SQLBase):
-    implements(ITeamParticipation)
 
     _table = 'TeamParticipation'
 

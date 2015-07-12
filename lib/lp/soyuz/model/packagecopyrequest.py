@@ -15,7 +15,7 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -33,9 +33,9 @@ def _construct_enum_mapping(db_item_cls):
     return dict(zip(db_item_cls.items, itertools.count(1)))
 
 
+@implementer(IPackageCopyRequest)
 class PackageCopyRequest(Storm):
     """See `IPackageCopyRequest`."""
-    implements(IPackageCopyRequest)
     __storm_table__ = 'PackageCopyRequest'
     id = Int(primary=True)
 
@@ -157,9 +157,9 @@ def _set_location_data(pcr, location, prefix):
             setattr(pcr, '%s_%s' % (prefix, datum_name), value)
 
 
+@implementer(IPackageCopyRequestSet)
 class PackageCopyRequestSet:
     """See `IPackageCopyRequestSet`."""
-    implements(IPackageCopyRequestSet)
 
     def new(self, source, target, requester, copy_binaries=False, reason=None):
         """See `IPackageCopyRequestSet`."""

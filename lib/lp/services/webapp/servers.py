@@ -36,7 +36,7 @@ from zope.formlib.itemswidgets import MultiDataHelper
 from zope.formlib.widget import SimpleInputWidget
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     )
 from zope.publisher.browser import (
     BrowserRequest,
@@ -234,13 +234,13 @@ class ApplicationServerSettingRequestFactory:
         return request
 
 
+@implementer(IRequestPublicationFactory)
 class VirtualHostRequestPublicationFactory:
     """An `IRequestPublicationFactory` handling request to a Launchpad vhost.
 
     This factory will accepts requests to a particular Launchpad virtual host
     that matches a particular port and set of HTTP methods.
     """
-    implements(IRequestPublicationFactory)
 
     default_methods = ['GET', 'HEAD', 'POST']
 
@@ -559,10 +559,9 @@ class LaunchpadBrowserRequestMixin:
         return url
 
 
+@implementer(IBasicLaunchpadRequest)
 class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
-
-    implements(IBasicLaunchpadRequest)
 
     strict_transport_security = True
 
@@ -634,15 +633,14 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         return get_query_string_params(self)
 
 
+@implementer(
+    ILaunchpadBrowserApplicationRequest, ISynchronizer,
+    lp.layers.LaunchpadLayer)
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
                               NotificationRequest, ErrorReportRequest):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
-
-    implements(
-        ILaunchpadBrowserApplicationRequest, ISynchronizer,
-        lp.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
@@ -694,10 +692,9 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         pass
 
 
+@implementer(IBrowserFormNG)
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
-
-    implements(IBrowserFormNG)
 
     def __init__(self, form):
         """Create a new BrowserFormNG that wraps a dict containing form data.
@@ -864,6 +861,9 @@ def adaptRequestToResponse(request):
     return request.response
 
 
+@implementer(
+    INotificationRequest, IBasicLaunchpadRequest, IParticipation,
+    lp.layers.LaunchpadLayer)
 class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
                            TestRequest, ErrorReportRequest):
     """Mock request for use in unit and functional tests.
@@ -904,9 +904,6 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
     """
-    implements(
-        INotificationRequest, IBasicLaunchpadRequest, IParticipation,
-        lp.layers.LaunchpadLayer)
 
     # These two attributes satisfy IParticipation.
     principal = None
@@ -969,6 +966,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         return
 
 
+@implementer(INotificationResponse)
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
     """Mock response for use in unit and functional tests.
 
@@ -983,7 +981,6 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
     >>> request.notifications[0].message
     u'Warning Notification'
     """
-    implements(INotificationResponse)
 
     uuid = 'LaunchpadTestResponse'
 
@@ -1146,9 +1143,9 @@ class FeedsPublication(LaunchpadBrowserPublication):
         return auth_utility.unauthenticatedPrincipal()
 
 
+@implementer(lp.layers.FeedsLayer)
 class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
-    implements(lp.layers.FeedsLayer)
 
     # Feeds is not served over SSL, so don't force SSL.
     strict_transport_security = False
@@ -1156,8 +1153,9 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- testopenid
 
+@implementer(lp.layers.TestOpenIDLayer)
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(lp.layers.TestOpenIDLayer)
+    pass
 
 
 class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
@@ -1325,8 +1323,8 @@ class WebServicePublication(WebServicePublicationMixin,
         return principal
 
 
+@implementer(lp.layers.WebServiceLayer)
 class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
-    implements(lp.layers.WebServiceLayer)
 
     def getRootURL(self, rootsite):
         """See IBasicLaunchpadRequest."""
@@ -1510,9 +1508,9 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
             raise ProtocolErrorException(self.status, self.headers)
 
 
+@implementer(ILaunchpadProtocolError)
 class ProtocolErrorException(Exception):
     """An exception for requests that turn out to be protocol errors."""
-    implements(ILaunchpadProtocolError)
 
     def __init__(self, status, headers):
         """Store status and headers for rendering in the HTTP response."""

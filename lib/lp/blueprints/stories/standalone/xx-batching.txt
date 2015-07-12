@@ -14,7 +14,6 @@ To demonstrate this, we'll create a new project:
   >>> browser.open("http://launchpad.dev/projects/+new")
   >>> browser.getControl('URL', index=0).value = 'big-project'
   >>> browser.getControl('Name').value = 'Big Project'
-  >>> browser.getControl('Title').value = 'The Big Project'
   >>> browser.getControl('Summary').value = 'A big project indeed.'
   >>> browser.getControl('Continue').click()
 

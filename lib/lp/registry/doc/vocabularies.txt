@@ -1100,10 +1100,11 @@ heterogeneous.
 
     >>> vocab = get_naked_vocab(None, "DistributionOrProduct")
     >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
+    ...     if 'buntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux - class Distribution
-    Ubuntu Test - class Distribution
+    Kubuntu - class Distribution
+    Ubuntu - class Distribution
+    ubuntutest - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1167,10 +1168,11 @@ is heterogeneous.
 
     >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
+    ...     if 'buntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux - class Distribution
-    Ubuntu Test - class Distribution
+    Kubuntu - class Distribution
+    Ubuntu - class Distribution
+    ubuntutest - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1242,16 +1244,16 @@ _clauseTables).
     9
 
     >>> for term in featured_project_vocabulary:
-    ...     print term.token, term.value.displayname, term.title
-    applets         Gnome Applets        The Gnome Panel Applets
-    bazaar          Bazaar               Bazaar
-    firefox         Mozilla Firefox      Mozilla Firefox
-    gentoo          Gentoo               The Gentoo Linux
-    gnome           GNOME                The GNOME Project
-    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator
-    mozilla The     Mozilla Project      The Mozilla Project
-    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird
-    ubuntu          Ubuntu               Ubuntu Linux
+    ...     print term.token, term.title
+    applets         Gnome Applets
+    bazaar          Bazaar
+    firefox         Mozilla Firefox
+    gentoo          Gentoo
+    gnome           GNOME
+    gnome-terminal  GNOME Terminal
+    mozilla         The Mozilla Project
+    thunderbird     Mozilla Thunderbird
+    ubuntu          Ubuntu
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in featured_project_vocabulary

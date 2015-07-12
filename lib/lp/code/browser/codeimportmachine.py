@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import TextLine
@@ -81,10 +81,9 @@ class UpdateMachineStateForm(Interface):
             "Why the machine state is changing."))
 
 
+@delegate_to(ICodeImportEvent, context='event')
 class DecoratedEvent:
     """A CodeImportEvent with cached items."""
-
-    delegates(ICodeImportEvent, 'event')
 
     def __init__(self, event):
         self.event = event

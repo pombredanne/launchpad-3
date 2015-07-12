@@ -16,7 +16,7 @@ from zope.component import (
     getUtility,
     provideUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import (
@@ -50,8 +50,8 @@ class Simple:
         self.displayname = displayname
 
 
+@implementer(IHugeVocabulary)
 class SimpleHugeVocabulary(SimpleVocabulary, FilteredVocabularyBase):
-    implements(IHugeVocabulary)
     displayname = "Simple objects"
     step_title = "Select something"
 

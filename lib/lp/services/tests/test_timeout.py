@@ -18,7 +18,7 @@ import time
 import urllib2
 import xmlrpclib
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.log.logger import FakeLogger
 from lp.services.timeout import (

@@ -347,7 +347,7 @@ Distribution archives (i.e. PPAs).
     DEBUG Publishing custom pmount,
     pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
     DEBUG Skipping translations since its purpose is not in
-    MAIN_ARCHIVE_PURPOSES.
+    MAIN_ARCHIVE_PURPOSES and the archive is not whitelisted.
 
 # And this time, we see that there are no entries imported in the queue.
     >>> translation_import_queue.getAllEntries(target=ubuntu).count()
@@ -376,7 +376,7 @@ Translations coming from rebuilt packages are also ignored.
     DEBUG Publishing custom pmount,
     pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
     DEBUG Skipping translations since its purpose is not in
-    MAIN_ARCHIVE_PURPOSES.
+    MAIN_ARCHIVE_PURPOSES and the archive is not whitelisted.
 
 # And this time, we see that there are no entries imported in the queue.
     >>> translation_import_queue.getAllEntries(target=ubuntu).count()
