@@ -12,7 +12,7 @@ __all__ = [
 import datetime
 
 import iso8601
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -29,8 +29,8 @@ from storm.references import Reference
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
     implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -187,21 +187,20 @@ class WebhookJob(StormBase):
         return WebhookJobDerived.makeSubclass(self)
 
 
+@delegate_to(IWebhookJob)
 class WebhookJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IWebhookJob)
 
     def __init__(self, webhook_job):
         self.context = webhook_job
 
 
+@provider(IWebhookDeliveryJobSource)
 @implementer(IWebhookDeliveryJob)
 class WebhookDeliveryJob(WebhookJobDerived):
     """A job that delivers an event to a webhook endpoint."""
 
-    classProvides(IWebhookDeliveryJobSource)
     class_job_type = WebhookJobType.DELIVERY
 
     config = config.IWebhookDeliveryJobSource
