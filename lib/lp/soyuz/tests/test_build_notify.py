@@ -86,18 +86,17 @@ class TestBuildNotify(TestCaseWithFactory):
     def _assert_mail_is_correct(self, build, notification, ppa=False):
         # Assert that the mail sent (which is in notification), matches
         # the data from the build
-        self.assertEquals('test@example.com',
-            notification['X-Creator-Recipient'])
-        self.assertEquals(
+        self.assertEqual(
+            'test@example.com', notification['X-Creator-Recipient'])
+        self.assertEqual(
             self.das.architecturetag, notification['X-Launchpad-Build-Arch'])
-        self.assertEquals(
-            'main', notification['X-Launchpad-Build-Component'])
-        self.assertEquals(
+        self.assertEqual('main', notification['X-Launchpad-Build-Component'])
+        self.assertEqual(
             build.status.name, notification['X-Launchpad-Build-State'])
-        self.assertEquals(
+        self.assertEqual(
             build.archive.reference, notification['X-Launchpad-Archive'])
         if ppa and build.archive.distribution.name == u'ubuntu':
-            self.assertEquals(
+            self.assertEqual(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)
         build_log = 'None'
@@ -147,7 +146,7 @@ class TestBuildNotify(TestCaseWithFactory):
             build.source_package_release.version, self.das.architecturetag,
             build.archive.reference, build.status.title, duration, build_log,
             builder, source, build.title, canonical_url(build)))
-        self.assertEquals(expected_body, body)
+        self.assertEqual(expected_body, body)
 
     def test_notify_buildd_admins(self):
         # A build will cause an e-mail to be sent out to the buildd-admins,
@@ -158,7 +157,7 @@ class TestBuildNotify(TestCaseWithFactory):
         expected_emails = self.buildd_admins_email + ['test@example.com']
         notifications = pop_notifications()
         actual_emails = [n['To'] for n in notifications]
-        self.assertEquals(expected_emails, actual_emails)
+        self.assertEqual(expected_emails, actual_emails)
 
     def test_ppa_does_not_notify_buildd_admins(self):
         # A build for a PPA does not notify the buildd admins.
@@ -167,7 +166,7 @@ class TestBuildNotify(TestCaseWithFactory):
         build.notify()
         notifications = pop_notifications()
         # An e-mail is sent to the archive owner, as well as the creator
-        self.assertEquals(2, len(notifications))
+        self.assertEqual(2, len(notifications))
 
     def test_notify_failed_to_build(self):
         # An e-mail is sent to the source package creator on build failures.
@@ -305,9 +304,9 @@ class TestBuildNotify(TestCaseWithFactory):
         [ppa_build] = ppa_spph.createMissingBuilds()
         ppa_build.notify()
         notifications = pop_notifications()
-        self.assertEquals(1, len(notifications))
+        self.assertEqual(1, len(notifications))
 
-    def test_notify_owner_supresses_mail(self):
+    def test_notify_owner_suppresses_mail(self):
         # When the 'notify_owner' config option is False, we don't send mail
         # to the owner of the SPR.
         self.create_builds(self.archive)
@@ -321,11 +320,11 @@ class TestBuildNotify(TestCaseWithFactory):
         build.notify()
         notifications = pop_notifications()
         actual_emails = [n['To'] for n in notifications]
-        self.assertEquals(self.buildd_admins_email, actual_emails)
+        self.assertEqual(self.buildd_admins_email, actual_emails)
         # And undo what we just did.
         config.pop('notify_owner')
 
-    def test_build_notification_supresses_mail(self):
+    def test_build_notification_suppresses_mail(self):
         # When the 'build_notification' config option is False, we don't
         # send any mail at all.
         self.create_builds(self.archive)
@@ -337,7 +336,7 @@ class TestBuildNotify(TestCaseWithFactory):
         config.push('send_build_notification', send_build_notification)
         build.notify()
         notifications = pop_notifications()
-        self.assertEquals(0, len(notifications))
+        self.assertEqual(0, len(notifications))
         # And undo what we just did.
         config.pop('send_build_notification')
 
@@ -356,4 +355,4 @@ class TestBuildNotify(TestCaseWithFactory):
         expected_emails = self.buildd_admins_email + [
             'sponsor@example.com', 'test@example.com']
         actual_emails = [n['To'] for n in notifications]
-        self.assertEquals(expected_emails, actual_emails)
+        self.assertEqual(expected_emails, actual_emails)
