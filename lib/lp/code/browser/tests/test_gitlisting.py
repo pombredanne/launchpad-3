@@ -62,8 +62,7 @@ class TestTargetGitListingView:
             'https://git.launchpad.dev/%s' % self.target_path,
             soup.find(attrs={'class': 'https-url'}).find(text=True))
         self.assertEqual(
-            'https://git.launchpad.dev/~foowner/%s/+git/foo'
-            % self.target_path,
+            'https://git.launchpad.dev/%s' % self.target_path,
             soup.find(text='Browse the code').parent['href'])
 
         # The default repo's branches are shown, but not its tags.
@@ -210,7 +209,7 @@ class TestPersonTargetGitListingView:
             'https://git.launchpad.dev/~dev/%s' % self.target_path,
             soup.find(attrs={'class': 'https-url'}).find(text=True))
         self.assertEqual(
-            'https://git.launchpad.dev/~dev/%s/+git/foo' % self.target_path,
+            'https://git.launchpad.dev/~dev/%s' % self.target_path,
             soup.find(text='Browse the code').parent['href'])
 
         # The default repo's branches are shown.
