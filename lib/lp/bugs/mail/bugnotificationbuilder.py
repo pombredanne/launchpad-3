@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug notification building code."""
@@ -156,6 +156,10 @@ class BugNotificationBuilder:
                 ('X-Launchpad-Bug-Modifier',
                     '%s (%s)' % (event_creator.displayname,
                         event_creator.name)))
+
+        if bug.duplicateof is not None:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Duplicate', str(bug.duplicateof.id)))
 
     def build(self, from_address, to_address, body, subject, email_date,
               rationale=None, references=None, message_id=None, filters=None):
