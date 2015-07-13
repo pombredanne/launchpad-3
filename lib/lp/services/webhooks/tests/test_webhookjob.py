@@ -21,9 +21,13 @@ from testtools.matchers import (
     MatchesStructure,
     Not,
     )
+import transaction
 
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import block_on_job
+from lp.services.scripts.tests import run_script
 from lp.services.webhooks.client import WebhookClient
 from lp.services.webhooks.interfaces import (
     IWebhookClient,
@@ -43,8 +47,9 @@ from lp.testing.fixture import (
     ZopeUtilityFixture,
     )
 from lp.testing.layers import (
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 
 
@@ -63,7 +68,7 @@ class TestWebhookJob(TestCaseWithFactory):
 class TestWebhookJobDerived(TestCaseWithFactory):
     """Tests for `WebhookJobDerived`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def test_getOopsMailController(self):
         """By default, no mail is sent about failed WebhookJobs."""
@@ -147,7 +152,7 @@ class MockWebhookClient:
 class TestWebhookDeliveryJob(TestCaseWithFactory):
     """Tests for `WebhookDeliveryJob`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def makeAndRunJob(self, response_status=200, raises=None, mock=True):
         hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
@@ -251,3 +256,45 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(1, len(oopses.oopses))
         self.assertEqual(
             'No webhook proxy configured.', oopses.oopses[0]['value'])
+
+
+class TestViaCronscript(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_run_from_cronscript(self):
+        hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        self.assertEqual(JobStatus.WAITING, job.status)
+        transaction.commit()
+
+        retcode, stdout, stderr = run_script(
+            'cronscripts/process-job-source.py', ['IWebhookDeliveryJobSource'],
+            expect_returncode=0)
+        self.assertEqual('', stdout)
+        self.assertIn('INFO    Ran 1 WebhookDeliveryJob jobs.\n', stderr)
+
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertIn(
+            'Cannot connect to proxy',
+            job.json_data['result']['connection_error'])
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_WebhookDeliveryJob(self):
+        """MergeProposalNeedsReviewEmailJob runs under Celery."""
+        hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
+
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'WebhookDeliveryJob'}))
+        with block_on_job():
+            job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+            transaction.commit()
+
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertIn(
+            'Cannot connect to proxy',
+            job.json_data['result']['connection_error'])
