@@ -1213,17 +1213,18 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             self.getAccessPolicyTypes(product))
 
     def test_ProductVCSPopulator(self):
+        switch_dbuser('testadmin')
         product = self.factory.makeProduct()
         self.assertIs(None, product.vcs)
 
-        repo = self.factory.makeGitRepository(target=product)
         with admin_logged_in():
+            repo = self.factory.makeGitRepository(target=product)
             getUtility(IGitRepositorySet).setDefaultRepository(
                 target=product, repository=repo)
 
         self.runDaily()
 
-        self.assertIs(VCSType.GIT, product.vcs)
+        self.assertEqual(VCSType.GIT, product.vcs)
 
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
