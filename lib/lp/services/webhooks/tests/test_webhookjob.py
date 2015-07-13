@@ -285,7 +285,7 @@ class TestViaCelery(TestCaseWithFactory):
     layer = CeleryJobLayer
 
     def test_WebhookDeliveryJob(self):
-        """MergeProposalNeedsReviewEmailJob runs under Celery."""
+        """WebhookDeliveryJob runs under Celery."""
         hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
 
         self.useFixture(FeatureFixture(
