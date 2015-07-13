@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A module for CodeOfConduct (CoC) related classes.
@@ -43,6 +43,7 @@ from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
@@ -210,8 +211,8 @@ class SignedCodeOfConduct(SQLBase):
     def sendAdvertisementEmail(self, subject, content):
         """See ISignedCodeOfConduct."""
         assert self.owner.preferredemail
-        template = open('lib/lp/registry/emailtemplates/'
-                        'signedcoc-acknowledge.txt').read()
+        template = get_email_template(
+            'signedcoc-acknowledge.txt', app='registry')
         fromaddress = format_address(
             "Launchpad Code Of Conduct System",
             config.canonical.noreply_from_address)

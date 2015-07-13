@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notifications related to linking bugs and questions."""
@@ -6,23 +6,12 @@
 __metaclass__ = type
 __all__ = []
 
-import os
-
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 
 from lp.answers.notification import QuestionNotification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.services.mail.helpers import get_email_template
 from lp.services.webapp.publisher import canonical_url
-
-
-def get_email_template(filename):
-    """Returns the email template with the given file name.
-
-    The templates are located in 'emailtemplates'.
-    """
-    base = os.path.dirname(__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
-    return open(fullpath).read()
 
 
 def dispatch_linked_question_notifications(bugtask, event):
@@ -58,14 +47,15 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def getBody(self):
         """See QuestionNotification."""
-        return get_email_template(
-            'question-linked-bug-status-updated.txt') % {
-                'bugtask_target_name': self.bugtask.target.displayname,
-                'question_id': self.question.id,
-                'question_title': self.question.title,
-                'question_url': canonical_url(self.question),
-                'bugtask_url': canonical_url(self.bugtask),
-                'bug_id': self.bugtask.bug.id,
-                'bugtask_title': self.bugtask.bug.title,
-                'old_status': self.old_bugtask.status.title,
-                'new_status': self.bugtask.status.title}
+        template = get_email_template(
+            'question-linked-bug-status-updated.txt', app='coop/answersbugs')
+        return template % {
+            'bugtask_target_name': self.bugtask.target.displayname,
+            'question_id': self.question.id,
+            'question_title': self.question.title,
+            'question_url': canonical_url(self.question),
+            'bugtask_url': canonical_url(self.bugtask),
+            'bug_id': self.bugtask.bug.id,
+            'bugtask_title': self.bugtask.bug.title,
+            'old_status': self.old_bugtask.status.title,
+            'new_status': self.bugtask.status.title}
