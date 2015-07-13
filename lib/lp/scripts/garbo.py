@@ -1702,6 +1702,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
+        ProductVCSPopulator,
         PreviewDiffPruner,
         DiffPruner,
         ]
