@@ -49,6 +49,7 @@ from lp.code.bzr import (
     )
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
@@ -63,6 +64,7 @@ from lp.code.model.gitjob import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
@@ -116,6 +118,7 @@ from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
     FakeAdapterMixin,
+    admin_logged_in,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -1208,6 +1211,20 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
+
+    def test_ProductVCSPopulator(self):
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        self.assertIs(None, product.vcs)
+
+        with admin_logged_in():
+            repo = self.factory.makeGitRepository(target=product)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=product, repository=repo)
+
+        self.runDaily()
+
+        self.assertEqual(VCSType.GIT, product.vcs)
 
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
