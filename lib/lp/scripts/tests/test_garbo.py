@@ -16,6 +16,7 @@ from StringIO import StringIO
 import time
 
 from pytz import UTC
+from storm.exceptions import NoneError
 from storm.expr import (
     In,
     Like,
@@ -68,6 +69,7 @@ from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.person import PersonSettings
 from lp.registry.model.teammembership import TeamMembership
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -1351,6 +1353,49 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # retained.
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
+
+    def test_PersonSettingsENFPopulator(self):
+        switch_dbuser('testadmin')
+        store = IMasterStore(PersonSettings)
+        people_enf_none = []
+        people_enf_false = []
+        people_enf_true = []
+        for _ in range(2):
+            person = self.factory.makePerson()
+            try:
+                person.expanded_notification_footers = None
+            except NoneError:
+                # Now enforced by DB NOT NULL constraint; backfilling is no
+                # longer necessary.
+                return
+            people_enf_none.append(person)
+            person = self.factory.makePerson()
+            person.expanded_notification_footers = False
+            people_enf_false.append(person)
+            person = self.factory.makePerson()
+            person.expanded_notification_footers = True
+            people_enf_true.append(person)
+        settings_count = store.find(PersonSettings).count()
+        self.runDaily()
+        switch_dbuser('testadmin')
+
+        # No rows have been deleted.
+        self.assertEqual(settings_count, store.find(PersonSettings).count())
+
+        def _assert_enf_by_person(person, expected):
+            record = store.find(
+                PersonSettings, PersonSettings.person == person.id).one()
+            self.assertEqual(expected, record.expanded_notification_footers)
+
+        # Rows with expanded_notification_footers=None have been backfilled.
+        for person in people_enf_none:
+            _assert_enf_by_person(person, False)
+
+        # Other rows have been left alone.
+        for person in people_enf_false:
+            _assert_enf_by_person(person, False)
+        for person in people_enf_true:
+            _assert_enf_by_person(person, True)
 
 
 class TestGarboTasks(TestCaseWithFactory):

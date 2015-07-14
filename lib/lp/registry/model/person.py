@@ -20,6 +20,7 @@ __all__ = [
     'person_sort_key',
     'PersonLanguage',
     'PersonSet',
+    'PersonSettings',
     'SSHKey',
     'SSHKeySet',
     'TeamInvitationEvent',
