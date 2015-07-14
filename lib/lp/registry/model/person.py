@@ -424,7 +424,7 @@ class PersonSettings(Storm):
 
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=False)
 
-    expanded_notification_footers = BoolCol(notNull=True, default=False)
+    expanded_notification_footers = BoolCol(notNull=False, default=False)
 
 
 def readonly_settings(message, interface):
