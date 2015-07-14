@@ -61,9 +61,9 @@ source creator (mark) as specified in the test configuration:
 
   >>> for build_notification in notifications:
   ...      build_notification['To']
-  'celso.providelo@canonical.com'
-  'foo.bar@canonical.com'
-  'mark@example.com'
+  'Celso Providelo <celso.providelo@canonical.com>'
+  'Foo Bar <foo.bar@canonical.com>'
+  'Mark Shuttleworth <mark@example.com>'
 
 Note that the generated notification contain the 'extra_info' content:
 
@@ -99,7 +99,8 @@ Note that the generated notification contain the 'extra_info' content:
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
-  --
+  -- =
+  <BLANKLINE>
   i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
   http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/22
   <BLANKLINE>
