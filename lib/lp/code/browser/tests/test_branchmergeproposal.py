@@ -11,6 +11,7 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
+from urllib import quote_plus
 
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
@@ -154,6 +155,20 @@ class TestBranchMergeProposalMergedViewMixin:
             normalize_whitespace(extract_text(find_tag_by_id(
                 browser.contents, 'landing-targets'))))
 
+    def test_link_to_merged_revno(self):
+        bmp = self.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        bmp.markAsMerged(merge_reporter=bmp.registrant)
+        browser = self.getViewBrowser(bmp, '+merged', user=bmp.registrant)
+        browser.getControl(self.merged_revision_text).value = str(
+            self.arbitrary_revisions[2])
+        browser.getControl('Mark as Merged').click()
+        browser = self.getViewBrowser(bmp.merge_source, '+index')
+        revision_link = self.getCodebrowseUrl(bmp, self.arbitrary_revisions[2])
+        revision_number = Tag(
+            'Revision number', 'a', {'href': revision_link},
+            text='revision %s' % self.arbitrary_revisions[2])
+        self.assertThat(browser.contents, HTMLContains(revision_number))
 
 class TestBranchMergeProposalMergedViewBzr(
     TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
@@ -171,6 +186,9 @@ class TestBranchMergeProposalMergedViewBzr(
     def getBranchRevisionValues(self, branch):
         return {'merged_revno': branch.revision_count}
 
+    def getCodebrowseUrl(self, bmp, revision):
+        return "%s/revision/%s" % (bmp.merge_target, revision)
+
 
 class TestBranchMergeProposalMergedViewGit(
     TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
@@ -187,6 +205,9 @@ class TestBranchMergeProposalMergedViewGit(
 
     def getBranchRevisionValues(self, branch):
         return {'merged_revision_id': branch.commit_sha1}
+
+    def getCodebrowseUrl(self, bmp, revision):
+        return "%s/commit/?id=%s" % (bmp.merge_target, revision)
 
 
 class TestBranchMergeProposalAddVoteView(TestCaseWithFactory):
