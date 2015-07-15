@@ -52,7 +52,8 @@ class BaseMailer:
             not supplied, random message-ids will be used.
         :param mail_controller_class: The class of the mail controller to
             use to send the mails.  Defaults to `MailController`.
-        :param request: An `IErrorReportRequest` to use when logging OOPSes.
+        :param request: An optional `IErrorReportRequest` to use when
+            logging OOPSes.
         """
         self._subject_template = subject
         self._template_name = template_name
