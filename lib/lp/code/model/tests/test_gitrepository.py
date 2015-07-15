@@ -736,7 +736,18 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         # The basic codebrowse URL for a repository is an 'https' URL.
         repository = self.factory.makeGitRepository()
         expected_url = urlutils.join(
-            config.codehosting.git_browse_root, repository.unique_name)
+            config.codehosting.git_browse_root, repository.shortened_path)
+        self.assertEqual(expected_url, repository.getCodebrowseUrl())
+
+    def test_codebrowse_url_for_default(self):
+        # The codebrowse URL for the default repository for a target is an
+        # 'https' URL based on the repository's shortened path.
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(repository.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
+        expected_url = urlutils.join(
+            config.codehosting.git_browse_root, repository.shortened_path)
         self.assertEqual(expected_url, repository.getCodebrowseUrl())
 
     def test_git_https_url_for_public(self):
