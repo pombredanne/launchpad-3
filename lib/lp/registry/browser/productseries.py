@@ -385,7 +385,8 @@ class ProductSeriesView(
         """Meta string for golang remote import path.
         See: https://golang.org/cmd/go/#hdr-Remote_import_paths
         """
-        if self.context.product.vcs == VCSType.BZR and self.context.branch:
+        if (self.context.product.vcs == VCSType.BZR and
+            self.user_branch_visible):
             return (
                 "{hostname}/{product}/{series} bzr {root_url}{branch}").format(
                     hostname=config.vhost.mainsite.hostname,
