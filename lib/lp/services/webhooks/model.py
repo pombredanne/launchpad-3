@@ -7,6 +7,7 @@ __all__ = [
     'Webhook',
     'WebhookJob',
     'WebhookJobType',
+    'WebhookTargetMixin',
     ]
 
 import datetime
@@ -26,6 +27,7 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     implementer,
@@ -33,11 +35,15 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.model.person import Person
 from lp.services.config import config
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -49,6 +55,8 @@ from lp.services.webhooks.interfaces import (
     IWebhookDeliveryJob,
     IWebhookDeliveryJobSource,
     IWebhookJob,
+    IWebhookSource,
+    WebhookFeatureDisabled,
     )
 
 
@@ -80,7 +88,7 @@ class Webhook(StormBase):
 
     delivery_url = Unicode(allow_none=False)
     active = Bool(default=True, allow_none=False)
-    secret = Unicode(allow_none=False)
+    secret = Unicode(allow_none=True)
 
     json_data = JSON(name='json_data')
 
@@ -90,6 +98,26 @@ class Webhook(StormBase):
             return self.git_repository
         else:
             raise AssertionError("No target.")
+
+    @property
+    def deliveries(self):
+        jobs = Store.of(self).find(
+            WebhookJob,
+            WebhookJob.webhook == self,
+            WebhookJob.job_type == WebhookJobType.DELIVERY,
+            ).order_by(WebhookJob.job_id)
+
+        def preload_jobs(rows):
+            load_related(Job, rows, ['job_id'])
+
+        return DecoratedResultSet(
+            jobs, lambda job: job.makeDerived(), pre_iter_hook=preload_jobs)
+
+    def getDelivery(self, id):
+        return self.deliveries.find(WebhookJob.job_id == id).one()
+
+    def ping(self):
+        return WebhookDeliveryJob.create(self, {'ping': True})
 
     @property
     def event_types(self):
@@ -104,6 +132,7 @@ class Webhook(StormBase):
         self.json_data = updated_data
 
 
+@implementer(IWebhookSource)
 class WebhookSource:
     """See `IWebhookSource`."""
 
@@ -121,6 +150,7 @@ class WebhookSource:
         hook.secret = secret
         hook.event_types = event_types
         IStore(Webhook).add(hook)
+        IStore(Webhook).flush()
         return hook
 
     def delete(self, hooks):
@@ -137,6 +167,24 @@ class WebhookSource:
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         return IStore(Webhook).find(Webhook, target_filter)
+
+
+class WebhookTargetMixin:
+
+    @property
+    def webhooks(self):
+        def preload_registrants(rows):
+            load_related(Person, rows, ['registrant_id'])
+
+        return DecoratedResultSet(
+            getUtility(IWebhookSource).findByTarget(self),
+            pre_iter_hook=preload_registrants)
+
+    def newWebhook(self, registrant, delivery_url, event_types, active=True):
+        if not getFeatureFlag('webhooks.new.enabled'):
+            raise WebhookFeatureDisabled()
+        return getUtility(IWebhookSource).new(
+            self, registrant, delivery_url, event_types, active, None)
 
 
 class WebhookJobType(DBEnumeratedType):

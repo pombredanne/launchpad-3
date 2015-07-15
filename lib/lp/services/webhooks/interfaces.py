@@ -12,10 +12,26 @@ __all__ = [
     'IWebhookDeliveryJobSource',
     'IWebhookJob',
     'IWebhookSource',
+    'IWebhookTarget',
+    'WebhookFeatureDisabled',
     ]
 
-from lazr.restful.declarations import exported
-from lazr.restful.fields import Reference
+import httplib
+
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    error_status,
+    export_as_webservice_entry,
+    export_factory_operation,
+    exported,
+    operation_for_version,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -36,14 +52,31 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_entry_return_type,
+    patch_reference_property,
+    )
+
+
+@error_status(httplib.UNAUTHORIZED)
+class WebhookFeatureDisabled(Exception):
+    """Only certain users can create new Git repositories."""
+
+    def __init__(self):
+        Exception.__init__(
+            self, "This webhook feature is not available yet.")
 
 
 class IWebhook(Interface):
 
+    export_as_webservice_entry(as_of='beta')
+
     id = Int(title=_("ID"), readonly=True, required=True)
 
     target = exported(Reference(
-        title=_("Target"), schema=IPerson, required=True, readonly=True,
+        title=_("Target"), schema=Interface,  # Actually IWebhookTarget.
+        required=True, readonly=True,
         description=_("The object for which this webhook receives events.")))
     event_types = exported(List(
         TextLine(), title=_("Event types"),
@@ -53,17 +86,31 @@ class IWebhook(Interface):
     registrant = exported(Reference(
         title=_("Registrant"), schema=IPerson, required=True, readonly=True,
         description=_("The person who created this webhook.")))
+    registrant_id = Int(title=_("Registrant ID"))
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
     date_last_modified = exported(Datetime(
         title=_("Date last modified"), required=True, readonly=True))
 
-    delivery_url = exported(Bool(
+    delivery_url = exported(TextLine(
         title=_("URL"), required=True, readonly=False))
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
     secret = TextLine(
         title=_("Unique name"), required=False, readonly=True)
+
+    deliveries = exported(doNotSnapshot(CollectionField(
+        title=_("Recent deliveries for this webhook."),
+        value_type=Reference(schema=Interface),
+        readonly=True)))
+
+    def getDelivery(id):
+        """Retrieve a delivery by ID, or None if it doesn't exist."""
+
+    @export_factory_operation(Interface, [])  # Actually IWebhookDelivery.
+    @operation_for_version('devel')
+    def ping():
+        """Send a test event."""
 
 
 class IWebhookSource(Interface):
@@ -79,6 +126,23 @@ class IWebhookSource(Interface):
 
     def findByTarget(target):
         """Find all webhooks for the given target."""
+
+
+class IWebhookTarget(Interface):
+
+    export_as_webservice_entry(as_of='beta')
+
+    webhooks = exported(doNotSnapshot(CollectionField(
+        title=_("Webhooks for this target."),
+        value_type=Reference(schema=IWebhook),
+        readonly=True)))
+
+    @call_with(registrant=REQUEST_USER)
+    @export_factory_operation(
+        IWebhook, ['delivery_url', 'active', 'event_types'])
+    @operation_for_version("devel")
+    def newWebhook(registrant, delivery_url, event_types, active=True):
+        """Create a new webhook."""
 
 
 class IWebhookJob(Interface):
@@ -97,6 +161,8 @@ class IWebhookJob(Interface):
 
 class IWebhookDeliveryJob(IRunnableJob):
     """A Job that delivers an event to a webhook consumer."""
+
+    export_as_webservice_entry('webhook_delivery', as_of='beta')
 
     webhook = exported(Reference(
         title=_("Webhook"),
@@ -151,3 +217,7 @@ class IWebhookClient(Interface):
         return a response, and a DNS error returns a connection_error, but
         the proxy being offline will raise an exception.
         """
+
+patch_collection_property(IWebhook, 'deliveries', IWebhookDeliveryJob)
+patch_entry_return_type(IWebhook, 'ping', IWebhookDeliveryJob)
+patch_reference_property(IWebhook, 'target', IWebhookTarget)
