@@ -16,18 +16,22 @@
     <subscriber
         for="lp.services.webhooks.interfaces.IWebhook zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.services.webhooks.model.webhook_modified"/>
-
-    <class class="lp.services.webhooks.model.WebhookDeliveryJob">
-        <require
-            permission="launchpad.View"
-            interface="lp.services.webhooks.interfaces.IWebhookDeliveryJob"/>
-    </class>
-
     <securedutility
         class="lp.services.webhooks.model.WebhookSource"
         provides="lp.services.webhooks.interfaces.IWebhookSource">
         <allow interface="lp.services.webhooks.interfaces.IWebhookSource"/>
     </securedutility>
+
+    <securedutility
+        component="lp.services.webhooks.model.WebhookDeliveryJob"
+        provides="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource"/>
+    </securedutility>
+    <class class="lp.services.webhooks.model.WebhookDeliveryJob">
+        <require
+            permission="launchpad.View"
+            interface="lp.services.webhooks.interfaces.IWebhookDeliveryJob"/>
+    </class>
 
     <utility
         provides="lp.services.webhooks.interfaces.IWebhookClient"

@@ -41,7 +41,10 @@ from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IStore
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import (
@@ -241,6 +244,16 @@ class WebhookJobDerived(BaseRunnableJob):
 
     def __init__(self, webhook_job):
         self.context = webhook_job
+
+    @classmethod
+    def iterReady(cls):
+        """See `IJobSource`."""
+        jobs = IMasterStore(WebhookJob).find(
+            WebhookJob,
+            WebhookJob.job_type == cls.class_job_type,
+            WebhookJob.job == Job.id,
+            Job.id.is_in(Job.ready_jobs))
+        return (cls(job) for job in jobs)
 
 
 @provider(IWebhookDeliveryJobSource)
