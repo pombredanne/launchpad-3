@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions related to sending bug notifications."""
@@ -13,10 +13,13 @@ __all__ = [
 
 from itertools import groupby
 from operator import itemgetter
+from smtplib import SMTPException
+import sys
 
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 
 from lp.bugs.enums import (
     BugNotificationLevel,
@@ -36,6 +39,7 @@ from lp.services.mail.sendmail import sendmail
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.logger import log
 from lp.services.webapp import canonical_url
+from lp.services.webapp.errorlog import ScriptRequest
 
 
 def get_activity_key(notification):
@@ -347,11 +351,22 @@ class SendBugNotifications(LaunchpadCronScript):
         for (bug_notifications,
              omitted_notifications,
              messages) in pending_notifications:
-            for message in messages:
-                self.logger.info("Notifying %s about bug %d." % (
-                    message['To'], bug_notifications[0].bug.id))
-                sendmail(message)
-                self.logger.debug(message.as_string())
+            try:
+                for message in messages:
+                    self.logger.info("Notifying %s about bug %d." % (
+                        message['To'], bug_notifications[0].bug.id))
+                    sendmail(message)
+                    self.logger.debug(message.as_string())
+            except SMTPException:
+                request = ScriptRequest([
+                    ("script_name", self.name),
+                    ("path", sys.argv[0]),
+                    ])
+                getUtility(IErrorReportingUtility).raising(
+                    sys.exc_info(), request)
+                self.logger.info(request.oopsid)
+                self.txn.abort()
+                continue
             for notification in bug_notifications:
                 notification.date_emailed = UTC_NOW
                 notification.status = BugNotificationStatus.SENT
