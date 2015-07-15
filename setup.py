@@ -41,6 +41,7 @@ setup(
         'feedvalidator',
         'funkload',
         'html5browser',
+        'httmock',
         'pygpgme',
         'python-debian',
         'python-keystoneclient',
