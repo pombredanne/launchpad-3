@@ -70,7 +70,27 @@ class TestProductSeries(BrowserTestCase):
         with person_logged_in(series.product.owner):
             series.product.vcs = VCSType.BZR
 
-        self.assertEqual(None, view.golang_import_spec)
+        self.assertIsNone(view.golang_import_spec)
+
+    def test_golang_meta_no_permissions(self):
+        # ensure golang meta import path is not rendered if user does
+        # not have launchpad.View permissions on branch.
+        owner = self.factory.makePerson()
+        simple_user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        series = self.factory.makeProductSeries(owner=owner, product=product)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+
+        with person_logged_in(owner):
+            series.branch = branch
+            series.product.vcs = VCSType.BZR
+            view = create_initialized_view(series, '+index')
+            self.assertIsNot(None, view.golang_import_spec)
+
+        with person_logged_in(simple_user):
+            view = create_initialized_view(series, '+index')
+            self.assertIsNone(view.golang_import_spec)
 
     def test_information_type_public(self):
         # A ProductSeries view should include its information_type,

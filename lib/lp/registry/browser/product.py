@@ -1027,27 +1027,26 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         """Meta string for golang remote import path.
         See: https://golang.org/cmd/go/#hdr-Remote_import_paths
         """
+
         if self.context.vcs == VCSType.GIT:
             repo = getUtility(IGitRepositorySet).getDefaultRepository(
                 self.context)
-            if repo:
+            if check_permission('launchpad.View', repo):
                 return "{hostname}/{product} git {git_https_url}".format(
                     hostname=config.vhost.mainsite.hostname,
                     product=self.context.name,
                     git_https_url=repo.git_https_url)
-            else:
-                return None
-        elif (self.context.vcs == VCSType.BZR and
-        self.context.development_focus.branch):
-            return (
-                "{hostname}/{product} bzr "
-                "{root_url}{branch}").format(
-                    hostname=config.vhost.mainsite.hostname,
-                    root_url=allvhosts.configs['mainsite'].rooturl,
-                    product=self.context.name,
-                    branch=self.context.development_focus.branch.unique_name)
-        else:
-            return None
+        elif self.context.vcs == VCSType.BZR:
+            branch = self.context.development_focus.branch
+            if check_permission('launchpad.View', branch):
+                return (
+                    "{hostname}/{product} bzr "
+                    "{root_url}{branch}").format(
+                        hostname=config.vhost.mainsite.hostname,
+                        root_url=allvhosts.configs['mainsite'].rooturl,
+                        product=self.context.name,
+                        branch=branch.unique_name)
+        return None
 
     def browserLanguages(self):
         return browser_languages(self.request)
