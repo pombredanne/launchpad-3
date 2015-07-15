@@ -1,0 +1,58 @@
+<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:webservice="http://namespaces.canonical.com/webservice">
+
+    <class class="lp.services.webhooks.model.Webhook">
+        <require
+            permission="launchpad.View"
+            interface="lp.services.webhooks.interfaces.IWebhook"
+            set_schema="lp.services.webhooks.interfaces.IWebhook"/>
+    </class>
+    <subscriber
+        for="lp.services.webhooks.interfaces.IWebhook zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler="lp.services.webhooks.model.webhook_modified"/>
+    <securedutility
+        class="lp.services.webhooks.model.WebhookSource"
+        provides="lp.services.webhooks.interfaces.IWebhookSource">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookSource"/>
+    </securedutility>
+
+    <securedutility
+        component="lp.services.webhooks.model.WebhookDeliveryJob"
+        provides="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource"/>
+    </securedutility>
+    <class class="lp.services.webhooks.model.WebhookDeliveryJob">
+        <require
+            permission="launchpad.View"
+            interface="lp.services.webhooks.interfaces.IWebhookDeliveryJob"/>
+    </class>
+
+    <utility
+        provides="lp.services.webhooks.interfaces.IWebhookClient"
+        factory="lp.services.webhooks.client.WebhookClient"
+        permission="zope.Public"/>
+
+    <browser:url
+       for="lp.services.webhooks.interfaces.IWebhook"
+       path_expression="string:+webhook/${id}"
+       attribute_to_parent="target"
+       />
+    <browser:navigation
+        module="lp.services.webhooks.browser" classes="WebhookNavigation" />
+
+    <browser:url
+       for="lp.services.webhooks.interfaces.IWebhookDeliveryJob"
+       path_expression="string:+delivery/${job_id}"
+       attribute_to_parent="webhook"
+       />
+
+    <webservice:register module="lp.services.webhooks.webservice" />
+
+
+</configure>

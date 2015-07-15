@@ -183,6 +183,10 @@ from lp.services.oauth.interfaces import (
     )
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webhooks.interfaces import (
+    IWebhook,
+    IWebhookDeliveryJob,
+    )
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
@@ -3053,3 +3057,26 @@ class EditLiveFSBuild(AdminByBuilddAdmin):
 
 class AdminLiveFSBuild(AdminByBuilddAdmin):
     usedfor = ILiveFSBuild
+
+
+class ViewWebhook(AuthorizationBase):
+    """Webhooks can be viewed and edited by someone who can edit the target."""
+    permission = 'launchpad.View'
+    usedfor = IWebhook
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(
+            user, self.obj.target, 'launchpad.Edit')
+
+
+class ViewWebhookDeliveryJob(DelegatedAuthorization):
+    """Webhooks can be viewed and edited by someone who can edit the target."""
+    permission = 'launchpad.View'
+    usedfor = IWebhookDeliveryJob
+
+    def __init__(self, obj):
+        super(ViewWebhookDeliveryJob, self).__init__(
+            obj, obj.webhook, 'launchpad.View')
