@@ -80,7 +80,7 @@ class TestProductSeries(BrowserTestCase):
         product = self.factory.makeProduct(owner=owner)
         series = self.factory.makeProductSeries(owner=owner, product=product)
         branch = self.factory.makeBranch(
-            owner=owner, information_type=InformationType.USERDATA)
+            owner=owner, information_type=InformationType.PRIVATESECURITY)
 
         with person_logged_in(owner):
             series.branch = branch
