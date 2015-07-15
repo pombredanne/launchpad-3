@@ -24,7 +24,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
     InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.code.interfaces.gitrepository import IGitRepositorySet
@@ -368,6 +367,25 @@ class TestProductView(BrowserTestCase):
         with person_logged_in(repo.target.owner):
             repo.target.vcs = VCSType.GIT
         self.assertIsNone(view.golang_import_spec)
+
+    def test_golang_meta_no_permissions(self):
+        # ensure golang meta import path is not rendered if user does
+        # not have launchpad.View permissions on branch.
+        simple_user = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.PRIVATESECURITY)
+
+        with person_logged_in(owner):
+            product.development_focus.branch = branch
+            product.vcs = VCSType.BZR
+            view = create_initialized_view(product, '+index')
+            self.assertIsNot(None, view.golang_import_spec)
+
+        with person_logged_in(simple_user):
+            view = create_initialized_view(product, '+index')
+            self.assertIsNone(view.golang_import_spec)
 
     def test_show_programming_languages_without_languages(self):
         # show_programming_languages is false when there are no programming
