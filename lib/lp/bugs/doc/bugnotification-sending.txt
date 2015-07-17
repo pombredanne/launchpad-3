@@ -19,15 +19,16 @@ be sent:
 And let's define functions to make printing out the notifications
 easier.
 
-    >>> def print_notification_headers(email_notification):
+    >>> def print_notification_headers(email_notification, extra_headers=[]):
     ...     for header in ['To', 'From', 'Subject',
     ...                    'X-Launchpad-Message-Rationale',
-    ...                    'X-Launchpad-Subscription']:
+    ...                    'X-Launchpad-Subscription'] + extra_headers:
     ...         if email_notification[header]:
     ...             print "%s: %s" % (header, email_notification[header])
 
-    >>> def print_notification(email_notification):
-    ...     print_notification_headers(email_notification)
+    >>> def print_notification(email_notification, extra_headers=[]):
+    ...     print_notification_headers(
+    ...         email_notification, extra_headers=extra_headers)
     ...     print
     ...     print email_notification.get_payload(decode=True)
     ...     print "-" * 70
@@ -349,10 +350,32 @@ We will need a fresh new bug.
     >>> with lp_dbuser():
     ...     new_bug = ubuntu.createBug(params)
 
+No duplicate information is included.
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> for bug_notifications, omitted, messages in (
+    ...     get_email_notifications(notifications)):
+    ...     for message in messages:
+    ...         print_notification(
+    ...             message, extra_headers=['X-Launchpad-Bug-Duplicate'])
+    To: test@canonical.com
+    From: Sample Person <16@bugs.launchpad.net>
+    Subject: [Bug 16] [NEW] new bug
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    Public bug reported:
+    ...
+    ----------------------------------------------------------------------
+
+    >>> flush_notifications()
+
 If a bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
 
-    >>> flush_notifications()
     >>> with lp_dbuser():
     ...     new_bug.markAsDuplicate(bug_one)
     >>> comment = getUtility(IMessageSet).fromText(
@@ -367,11 +390,13 @@ top of the email:
     >>> for bug_notifications, omitted, messages in (
     ...     get_email_notifications(notifications)):
     ...     for message in messages:
-    ...         print_notification(message)
+    ...         print_notification(
+    ...             message, extra_headers=['X-Launchpad-Bug-Duplicate'])
     To: test@canonical.com
     From: Sample Person <16@bugs.launchpad.net>
     Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Bug-Duplicate: 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
         http://bugs.launchpad.dev/bugs/1
