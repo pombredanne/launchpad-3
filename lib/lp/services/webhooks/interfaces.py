@@ -11,6 +11,7 @@ __all__ = [
     'IWebhookDeliveryJob',
     'IWebhookDeliveryJobSource',
     'IWebhookJob',
+    'IWebhookJobSource',
     'IWebhookSource',
     'IWebhookTarget',
     'WebhookFeatureDisabled',
@@ -157,6 +158,12 @@ class IWebhookJob(Interface):
         schema=IWebhook, required=True, readonly=True)
 
     json_data = Attribute(_("A dict of data about the job."))
+
+
+class IWebhookJobSource(IJobSource):
+
+    def deleteByIDs(webhookjob_ids):
+        """Delete `IWebhookJobs` by their primary key (Job.id)."""
 
 
 class IWebhookDeliveryJob(IRunnableJob):

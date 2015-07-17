@@ -58,6 +58,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookDeliveryJob,
     IWebhookDeliveryJobSource,
     IWebhookJob,
+    IWebhookJobSource,
     IWebhookSource,
     WebhookFeatureDisabled,
     )
@@ -200,6 +201,7 @@ class WebhookJobType(DBEnumeratedType):
         """)
 
 
+@provider(IWebhookJobSource)
 @implementer(IWebhookJob)
 class WebhookJob(StormBase):
     """See `IWebhookJob`."""
@@ -235,6 +237,14 @@ class WebhookJob(StormBase):
 
     def makeDerived(self):
         return WebhookJobDerived.makeSubclass(self)
+
+    @staticmethod
+    def deleteByIDs(webhookjob_ids):
+        """See `IWebhookJobSource`."""
+        # Assumes that Webhook's PK is its FK to Job.id.
+        IStore(WebhookJob).find(
+            WebhookJob, WebhookJob.job_id.is_in(webhookjob_ids)).remove()
+        IStore(Job).find(Job, Job.id.is_in(webhookjob_ids)).remove()
 
 
 @delegate_to(IWebhookJob)
