@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from operator import itemgetter
 from textwrap import dedent
 
 from zope.component import getUtility
@@ -25,6 +26,18 @@ from lp.testing import (
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.sampledata import ADMIN_EMAIL
+
+
+REASONS = {
+    "creator": (
+        "You are receiving this email because you created this version of "
+        "this\npackage."),
+    "signer": "You are receiving this email because you signed this package.",
+    "buildd-admin": (
+        "You are receiving this email because you are a buildd "
+        "administrator."),
+    "owner": "You are receiving this email because you own this archive.",
+    }
 
 
 class TestBuildNotify(TestCaseWithFactory):
@@ -51,6 +64,7 @@ class TestBuildNotify(TestCaseWithFactory):
             'launchpad-buildd-admins')
         self.buildd_admins_email = []
         with person_logged_in(self.admin):
+            self.ppa_owner_email = self.ppa.owner.preferredemail.email
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
@@ -83,21 +97,22 @@ class TestBuildNotify(TestCaseWithFactory):
                     build.buildqueue_record.builder = self.builder
             self.builds.append(build)
 
-    def _assert_mail_is_correct(self, build, notification, ppa=False):
+    def _assert_mail_is_correct(self, build, notification, recipient, reason,
+                                ppa=False):
         # Assert that the mail sent (which is in notification), matches
         # the data from the build
-        self.assertEquals('test@example.com',
-            notification['X-Creator-Recipient'])
-        self.assertEquals(
+        self.assertEqual(recipient, notification['To'])
+        self.assertEqual(
+            'test@example.com', notification['X-Creator-Recipient'])
+        self.assertEqual(
             self.das.architecturetag, notification['X-Launchpad-Build-Arch'])
-        self.assertEquals(
-            'main', notification['X-Launchpad-Build-Component'])
-        self.assertEquals(
+        self.assertEqual('main', notification['X-Launchpad-Build-Component'])
+        self.assertEqual(
             build.status.name, notification['X-Launchpad-Build-State'])
-        self.assertEquals(
+        self.assertEqual(
             build.archive.reference, notification['X-Launchpad-Archive'])
         if ppa and build.archive.distribution.name == u'ubuntu':
-            self.assertEquals(
+            self.assertEqual(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)
         build_log = 'None'
@@ -105,10 +120,10 @@ class TestBuildNotify(TestCaseWithFactory):
             source = 'not available'
         else:
             source = canonical_url(build.distributionsourcepackagerelease)
-        builder = canonical_url(build.builder)
         if build.status == BuildStatus.BUILDING:
             duration = 'not finished'
             build_log = 'see builder page'
+            builder = canonical_url(build.builder)
         elif (
             build.status == BuildStatus.SUPERSEDED or
             build.status == BuildStatus.NEEDSBUILD):
@@ -122,6 +137,7 @@ class TestBuildNotify(TestCaseWithFactory):
         else:
             duration = DurationFormatterAPI(
                 build.duration).approximateduration()
+            builder = canonical_url(build.builder)
         expected_body = dedent("""
          * Source Package: %s
          * Version: %s
@@ -147,59 +163,61 @@ class TestBuildNotify(TestCaseWithFactory):
             build.source_package_release.version, self.das.architecturetag,
             build.archive.reference, build.status.title, duration, build_log,
             builder, source, build.title, canonical_url(build)))
-        self.assertEquals(expected_body, body)
+        expected_body += "\n" + REASONS[reason] + "\n"
+        self.assertEqual(expected_body, body)
 
-    def test_notify_buildd_admins(self):
-        # A build will cause an e-mail to be sent out to the buildd-admins,
-        # for primary archive builds.
-        self.create_builds(self.archive)
-        build = self.builds[BuildStatus.FAILEDTOBUILD.value]
-        build.notify()
-        expected_emails = self.buildd_admins_email + ['test@example.com']
+    def _assert_mails_are_correct(self, build, reasons, ppa=False):
         notifications = pop_notifications()
-        actual_emails = [n['To'] for n in notifications]
-        self.assertEquals(expected_emails, actual_emails)
-
-    def test_ppa_does_not_notify_buildd_admins(self):
-        # A build for a PPA does not notify the buildd admins.
-        self.create_builds(self.ppa)
-        build = self.builds[BuildStatus.FAILEDTOBUILD.value]
-        build.notify()
-        notifications = pop_notifications()
-        # An e-mail is sent to the archive owner, as well as the creator
-        self.assertEquals(2, len(notifications))
+        reasons = sorted(reasons, key=itemgetter(0))
+        for notification, (recipient, reason) in zip(notifications, reasons):
+            self._assert_mail_is_correct(
+                build, notification, recipient, reason, ppa=ppa)
 
     def test_notify_failed_to_build(self):
-        # An e-mail is sent to the source package creator on build failures.
+        # For primary archive builds, a build failure notifies the buildd
+        # admins and the source package creator.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_failed_to_build_ppa(self):
-        # An e-mail is sent to the source package creator on build failures.
-        self.create_builds(archive=self.ppa)
+        # For PPA builds, a build failure notifies the source package signer
+        # and the archive owner, but not the buildd admins.
+        self.create_builds(self.ppa)
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        expected_reasons = [
+            ("test@example.com", "signer"),
+            (self.ppa_owner_email, "owner"),
+            ]
+        self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
     def test_notify_needs_building(self):
-        # We can notify the creator when the build is needing to be built.
+        # We can notify the creator and buildd admins when a build needs to
+        # be built.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.NEEDSBUILD.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_needs_building_ppa(self):
-        # We can notify the creator when the build is needing to be built.
+        # We can notify the signer and the archive owner when a build needs
+        # to be built.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.NEEDSBUILD.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        expected_reasons = [
+            ("test@example.com", "signer"),
+            (self.ppa_owner_email, "owner"),
+            ]
+        self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
     def test_notify_successfully_built(self):
         # Successful builds don't notify anyone.
@@ -209,90 +227,121 @@ class TestBuildNotify(TestCaseWithFactory):
         self.assertEqual([], pop_notifications())
 
     def test_notify_dependency_wait(self):
-        # We can notify the creator when the build can't find a dependency.
+        # We can notify the creator and buildd admins when a build can't
+        # find a dependency.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.MANUALDEPWAIT.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_dependency_wait_ppa(self):
-        # We can notify the creator when the build can't find a dependency.
+        # We can notify the signer and the archive owner when the build
+        # can't find a dependency.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.MANUALDEPWAIT.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        expected_reasons = [
+            ("test@example.com", "signer"),
+            (self.ppa_owner_email, "owner"),
+            ]
+        self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
     def test_notify_chroot_problem(self):
-        # We can notify the creator when the builder the build attempted to
-        # be built on has an internal problem.
+        # We can notify the creator and buildd admins when the builder a
+        # build attempted to be built on has an internal problem.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.CHROOTWAIT.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_chroot_problem_ppa(self):
-        # We can notify the creator when the builder the build attempted to
-        # be built on has an internal problem.
+        # We can notify the signer and the archive owner when the builder a
+        # build attempted to be built on has an internal problem.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.CHROOTWAIT.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        expected_reasons = [
+            ("test@example.com", "signer"),
+            (self.ppa_owner_email, "owner"),
+            ]
+        self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
     def test_notify_build_for_superseded_source(self):
-        # We can notify the creator when the source package had a newer
-        # version uploaded before this build had a chance to be dispatched.
+        # We can notify the creator and buildd admins when the source
+        # package had a newer version uploaded before this build had a
+        # chance to be dispatched.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.SUPERSEDED.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_build_for_superseded_source_ppa(self):
-        # We can notify the creator when the source package had a newer
-        # version uploaded before this build had a chance to be dispatched.
+        # We can notify the signer and the archive owner when the source
+        # package had a newer version uploaded before this build had a
+        # chance to be dispatched.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.SUPERSEDED.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        expected_reasons = [
+            ("test@example.com", "signer"),
+            (self.ppa_owner_email, "owner"),
+            ]
+        self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
     def test_notify_currently_building(self):
-        # We can notify the creator when the build is currently building.
+        # We can notify the creator and buildd admins when the build is
+        # currently building.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.BUILDING.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_currently_building_ppa(self):
-        # We can notify the creator when the build is currently building.
+        # We can notify the signer and the archive owner when the build is
+        # currently building.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.BUILDING.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        expected_reasons = [
+            ("test@example.com", "signer"),
+            (self.ppa_owner_email, "owner"),
+            ]
+        self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
     def test_notify_uploading_build(self):
-        # We can notify the creator when the build has completed, and binary
-        # packages are being uploaded by the builder.
+        # We can notify the creator and buildd admins when the build has
+        # completed, and binary packages are being uploaded by the builder.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.UPLOADING.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_uploading_build_ppa(self):
-        # We can notify the creator when the build has completed, and binary
-        # packages are being uploaded by the builder.
+        # We can notify the signer and the archive owner when the build has
+        # completed, and binary packages are being uploaded by the builder.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.UPLOADING.value]
         build.notify()
-        notification = pop_notifications()[1]
-        self._assert_mail_is_correct(build, notification, ppa=True)
+        expected_reasons = [
+            ("test@example.com", "signer"),
+            (self.ppa_owner_email, "owner"),
+            ]
+        self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
     def test_copied_into_ppa_does_not_spam(self):
         # When a package is copied into a PPA, we don't send mail to the
@@ -304,10 +353,10 @@ class TestBuildNotify(TestCaseWithFactory):
             self.distroseries, PackagePublishingPocket.RELEASE, self.ppa)
         [ppa_build] = ppa_spph.createMissingBuilds()
         ppa_build.notify()
-        notifications = pop_notifications()
-        self.assertEquals(1, len(notifications))
+        self._assert_mails_are_correct(
+            ppa_build, [(self.ppa_owner_email, "owner")], ppa=True)
 
-    def test_notify_owner_supresses_mail(self):
+    def test_notify_owner_suppresses_mail(self):
         # When the 'notify_owner' config option is False, we don't send mail
         # to the owner of the SPR.
         self.create_builds(self.archive)
@@ -319,13 +368,13 @@ class TestBuildNotify(TestCaseWithFactory):
             """)
         config.push('notify_owner', notify_owner)
         build.notify()
-        notifications = pop_notifications()
-        actual_emails = [n['To'] for n in notifications]
-        self.assertEquals(self.buildd_admins_email, actual_emails)
+        self._assert_mails_are_correct(
+            build,
+            [(email, "buildd-admin") for email in self.buildd_admins_email])
         # And undo what we just did.
         config.pop('notify_owner')
 
-    def test_build_notification_supresses_mail(self):
+    def test_build_notification_suppresses_mail(self):
         # When the 'build_notification' config option is False, we don't
         # send any mail at all.
         self.create_builds(self.archive)
@@ -337,12 +386,12 @@ class TestBuildNotify(TestCaseWithFactory):
         config.push('send_build_notification', send_build_notification)
         build.notify()
         notifications = pop_notifications()
-        self.assertEquals(0, len(notifications))
+        self.assertEqual(0, len(notifications))
         # And undo what we just did.
         config.pop('send_build_notification')
 
     def test_sponsored_upload_notification(self):
-        # If the signing key is different to the creator, they are both
+        # If the signing key is different from the creator, they are both
         # notified.
         sponsor = self.factory.makePerson('sponsor@example.com')
         key = self.factory.makeGPGKey(owner=sponsor)
@@ -352,8 +401,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # Push past the security proxy
         removeSecurityProxy(spr).dscsigningkey = key
         build.notify()
-        notifications = pop_notifications()
-        expected_emails = self.buildd_admins_email + [
-            'sponsor@example.com', 'test@example.com']
-        actual_emails = [n['To'] for n in notifications]
-        self.assertEquals(expected_emails, actual_emails)
+        expected_reasons = [
+            (email, "buildd-admin") for email in self.buildd_admins_email]
+        expected_reasons.append(("test@example.com", "creator"))
+        expected_reasons.append(("sponsor@example.com", "signer"))
+        self._assert_mails_are_correct(build, expected_reasons)

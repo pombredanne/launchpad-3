@@ -18,3 +18,5 @@ contact a member of the Launchpad Buildd Administrators team.
 --
 %(build_title)s
 %(build_url)s
+
+%(reason)s
