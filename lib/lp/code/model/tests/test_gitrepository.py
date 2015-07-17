@@ -321,7 +321,7 @@ class TestGitIdentityMixin(TestCaseWithFactory):
 class TestGitRepositoryDeletion(TestCaseWithFactory):
     """Test the different cases that make a repository deletable or not."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestGitRepositoryDeletion, self).setUp()
@@ -414,10 +414,9 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
 
     def test_related_GitJobs_deleted(self):
         # A repository with an associated job will delete those jobs.
-        repository = self.factory.makeGitRepository()
-        GitAPI(None, None).notify(repository.getInternalPath())
-        store = Store.of(repository)
-        repository.destroySelf()
+        GitAPI(None, None).notify(self.repository.getInternalPath())
+        store = Store.of(self.repository)
+        self.repository.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
         jobs = store.find(GitJob, GitJob.job_type == GitJobType.REF_SCAN)
@@ -426,10 +425,9 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
     def test_creates_job_to_reclaim_space(self):
         # When a repository is deleted from the database, a job is created
         # to remove the repository from disk as well.
-        repository = self.factory.makeGitRepository()
-        repository_path = repository.getInternalPath()
-        store = Store.of(repository)
-        repository.destroySelf()
+        repository_path = self.repository.getInternalPath()
+        store = Store.of(self.repository)
+        self.repository.destroySelf()
         jobs = store.find(
             GitJob,
             GitJob.job_type == GitJobType.RECLAIM_REPOSITORY_SPACE)
