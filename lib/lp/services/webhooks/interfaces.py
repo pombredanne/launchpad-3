@@ -163,7 +163,10 @@ class IWebhookJob(Interface):
 class IWebhookJobSource(IJobSource):
 
     def deleteByIDs(webhookjob_ids):
-        """Delete `IWebhookJobs` by their primary key (Job.id)."""
+        """Delete `IWebhookJob`s by their primary key (`Job.id`)."""
+
+    def deleteByWebhooks(webhooks):
+        """Delete all `IWebhookJob`s for the given `IWebhook`."""
 
 
 class IWebhookDeliveryJob(IRunnableJob):

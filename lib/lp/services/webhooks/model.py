@@ -246,6 +246,15 @@ class WebhookJob(StormBase):
             WebhookJob, WebhookJob.job_id.is_in(webhookjob_ids)).remove()
         IStore(Job).find(Job, Job.id.is_in(webhookjob_ids)).remove()
 
+    @classmethod
+    def deleteByWebhooks(cls, webhooks):
+        """See `IWebhookJobSource`."""
+        result = IStore(WebhookJob).find(
+            WebhookJob,
+            WebhookJob.webhook_id.is_in(hook.id for hook in webhooks))
+        job_ids = list(result.values(WebhookJob.job_id))
+        cls.deleteByIDs(job_ids)
+
 
 @delegate_to(IWebhookJob)
 class WebhookJobDerived(BaseRunnableJob):
