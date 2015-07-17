@@ -3,7 +3,10 @@
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.store import Store
-from testtools.matchers import GreaterThan
+from testtools.matchers import (
+    Equals,
+    GreaterThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.event import notify
@@ -21,9 +24,11 @@ from lp.testing import (
     anonymous_logged_in,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestWebhook(TestCaseWithFactory):
@@ -153,7 +158,12 @@ class TestWebhookSource(TestCaseWithFactory):
             [u'http://path/to/0', u'http://path/to/1', u'http://path/to/2'],
             [hook.delivery_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])
-        getUtility(IWebhookSource).delete(hooks[:2])
+
+        transaction.commit()
+        with StormStatementRecorder() as recorder:
+            getUtility(IWebhookSource).delete(hooks[:2])
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
+
         self.assertContentEqual(
             [u'http://path/to/2'],
             [hook.delivery_url for hook in
