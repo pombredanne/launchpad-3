@@ -16,6 +16,7 @@ from StringIO import StringIO
 import time
 
 from pytz import UTC
+from storm.exceptions import LostObjectError
 from storm.expr import (
     In,
     Like,
@@ -976,6 +977,22 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         switch_dbuser('testadmin')
         self.assertEqual(1, store.find(GitJob).count())
+
+    def test_WebhookJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        switch_dbuser('testadmin')
+
+        webhook = self.factory.makeWebhook()
+        job1 = webhook.ping()
+        removeSecurityProxy(job1).job.date_finished = THIRTY_DAYS_AGO
+        job2 = webhook.ping()
+        removeSecurityProxy(job2).job.date_finished = SEVEN_DAYS_AGO
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(webhook, job2.webhook)
+        self.assertRaises(LostObjectError, getattr, job1, 'webhook')
 
     def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.

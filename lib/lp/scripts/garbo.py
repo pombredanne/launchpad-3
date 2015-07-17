@@ -116,6 +116,8 @@ from lp.services.scripts.base import (
     )
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webhooks.interfaces import IWebhookJobSource
+from lp.services.webhooks.model import WebhookJob
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -1109,6 +1111,28 @@ class GitJobPruner(BulkPruner):
         """
 
 
+class WebhookJobPruner(TunableLoop):
+    """Prune `WebhookJobs` that finished more than a month ago."""
+
+    maximum_chunk_size = 5000
+
+    @property
+    def old_jobs(self):
+        return IMasterStore(WebhookJob).using(WebhookJob, Job).find(
+            (WebhookJob.job_id,),
+            Job.id == WebhookJob.job_id,
+            Job.date_finished < SQL(
+                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '30 days'::interval"))
+
+    def __call__(self, chunksize):
+        getUtility(IWebhookJobSource).deleteByIDs(
+            list(self.old_jobs[:int(chunksize)].values(WebhookJob.job_id)))
+        transaction.commit()
+
+    def isDone(self):
+        return self.old_jobs.is_empty()
+
+
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -1689,6 +1713,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         GitJobPruner,
+        WebhookJobPruner,
         HWSubmissionEmailLinker,
         LiveFSFilePruner,
         LoginTokenPruner,
