@@ -16,6 +16,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import SQLObjectNotFound
+from storm.exceptions import LostObjectError
 from storm.store import Store
 from testtools.matchers import (
     EndsWith,
@@ -465,6 +466,13 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
             inline_comments={"1": "Must disappear."},
         )
         self.repository.destroySelf(break_references=True)
+
+    def test_related_webhooks_deleted(self):
+        webhook = self.factory.makeWebhook(target=self.repository)
+        webhook.ping()
+        self.repository.destroySelf()
+        transaction.commit()
+        self.assertRaises(LostObjectError, getattr, webhook, 'target')
 
 
 class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
