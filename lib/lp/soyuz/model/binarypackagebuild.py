@@ -17,6 +17,7 @@ from operator import (
     attrgetter,
     itemgetter,
     )
+import textwrap
 
 import apt_pkg
 import pytz
@@ -702,7 +703,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def notify(self, extra_info=None):
         """See `IPackageBuild`.
 
-        If config.buildmaster.build_notification is disable, simply
+        If config.buildmaster.send_build_notification is disabled, simply
         return.
 
         If config.builddmaster.notify_owner is enabled and SPR.creator
@@ -722,7 +723,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         if self.status == BuildStatus.FULLYBUILT:
             return
 
-        recipients = set()
+        recipients = {}
 
         fromaddress = format_address(
             config.builddmaster.default_sender_name,
@@ -764,12 +765,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
                 # notified if they are the PPA owner or in the PPA team.
                 # (see bug 375757)
                 # Non-PPA notifications inform the creator regardless.
-                recipients = recipients.union(
-                    get_contact_email_addresses(creator))
+                for recipient in get_contact_email_addresses(creator):
+                    recipients.setdefault(
+                        recipient, "you created this version of this package")
             dsc_key = self.source_package_release.dscsigningkey
             if dsc_key:
-                recipients = recipients.union(
-                    get_contact_email_addresses(dsc_key.owner))
+                for recipient in get_contact_email_addresses(dsc_key.owner):
+                    recipients.setdefault(recipient, "you signed this package")
 
         # Modify notification contents according to the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
@@ -780,12 +782,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         subject = "[Build #%d] %s" % (self.id, self.title)
         if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
-            recipients = recipients.union(
-                get_contact_email_addresses(buildd_admins))
+            for recipient in get_contact_email_addresses(buildd_admins):
+                recipients.setdefault(
+                    recipient, "you are a buildd administrator")
             source_url = canonical_url(self.distributionsourcepackagerelease)
         else:
-            recipients = recipients.union(
-                get_contact_email_addresses(self.archive.owner))
+            for recipient in get_contact_email_addresses(self.archive.owner):
+                recipients.setdefault(recipient, "you own this archive")
             # For PPAs we run the risk of having no available contact_address,
             # for instance, when both, SPR.creator and Archive.owner have
             # not enabled it.
@@ -803,7 +806,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # pocket build. We don't build SECURITY yet :(
 
         # XXX cprov 2006-08-02: find out a way to glue parameters reported
-        # with the state in the build worflow, maybe by having an
+        # with the state in the build workflow, maybe by having an
         # IBuild.statusReport property, which could also be used in the
         # respective page template.
         if self.status in [
@@ -852,9 +855,11 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             'archive_tag': self.archive.reference,
             'component_tag': self.current_component.name,
             }
-        message = template % replacements
 
-        for toaddress in recipients:
+        for toaddress, reason in recipients.items():
+            replacements['reason'] = textwrap.fill(
+                'You are receiving this email because %s.' % reason, width=72)
+            message = template % replacements
             simple_sendmail(
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
