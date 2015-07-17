@@ -9,11 +9,13 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.checker import getChecker
 
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.services.webhooks.interfaces import (
     IWebhook,
     IWebhookSource,
     )
+from lp.services.webhooks.model import WebhookJob
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
@@ -141,9 +143,12 @@ class TestWebhookSource(TestCaseWithFactory):
     def test_delete(self):
         target = self.factory.makeGitRepository()
         login_person(target.owner)
-        hooks = [
-            self.factory.makeWebhook(target, u'http://path/to/%d' % i)
-            for i in range(3)]
+        hooks = []
+        for i in range(3):
+            hook = self.factory.makeWebhook(target, u'http://path/to/%d' % i)
+            hook.ping()
+            hooks.append(hook)
+        self.assertEqual(3, IStore(WebhookJob).find(WebhookJob).count())
         self.assertContentEqual(
             [u'http://path/to/0', u'http://path/to/1', u'http://path/to/2'],
             [hook.delivery_url for hook in
@@ -153,3 +158,5 @@ class TestWebhookSource(TestCaseWithFactory):
             [u'http://path/to/2'],
             [hook.delivery_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])
+        self.assertEqual(1, IStore(WebhookJob).find(WebhookJob).count())
+        self.assertEqual(1, hooks[2].deliveries.count())

@@ -158,6 +158,8 @@ class WebhookSource:
         return hook
 
     def delete(self, hooks):
+        hooks = list(hooks)
+        getUtility(IWebhookJobSource).deleteByWebhooks(hooks)
         IStore(Webhook).find(
             Webhook, Webhook.id.is_in(set(hook.id for hook in hooks))).remove()
 
@@ -242,6 +244,7 @@ class WebhookJob(StormBase):
     def deleteByIDs(webhookjob_ids):
         """See `IWebhookJobSource`."""
         # Assumes that Webhook's PK is its FK to Job.id.
+        webookjob_ids = list(webhookjob_ids)
         IStore(WebhookJob).find(
             WebhookJob, WebhookJob.job_id.is_in(webhookjob_ids)).remove()
         IStore(Job).find(Job, Job.id.is_in(webhookjob_ids)).remove()
