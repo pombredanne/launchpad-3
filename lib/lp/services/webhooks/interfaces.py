@@ -24,6 +24,7 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_factory_operation,
     exported,
     operation_for_version,
@@ -112,6 +113,11 @@ class IWebhook(Interface):
     @operation_for_version('devel')
     def ping():
         """Send a test event."""
+
+    @export_destructor_operation()
+    @operation_for_version('devel')
+    def destroySelf():
+        """Delete this webhook."""
 
 
 class IWebhookSource(Interface):

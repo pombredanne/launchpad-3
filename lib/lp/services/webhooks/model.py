@@ -123,6 +123,9 @@ class Webhook(StormBase):
     def ping(self):
         return WebhookDeliveryJob.create(self, {'ping': True})
 
+    def destroySelf(self):
+        getUtility(IWebhookSource).delete([self])
+
     @property
     def event_types(self):
         return (self.json_data or {}).get('event_types', [])
