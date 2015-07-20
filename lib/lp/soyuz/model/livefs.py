@@ -47,7 +47,10 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.stormexpr import Greatest
+from lp.services.database.stormexpr import (
+    Greatest,
+    NullsLast,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchiveDisabled
@@ -173,9 +176,9 @@ class LiveFS(Storm):
     def builds(self):
         """See `ILiveFS`."""
         order_by = (
-            Desc(Greatest(
+            NullsLast(Desc(Greatest(
                 LiveFSBuild.date_started,
-                LiveFSBuild.date_finished)),
+                LiveFSBuild.date_finished))),
             Desc(LiveFSBuild.date_created),
             Desc(LiveFSBuild.id))
         return self._getBuilds(None, order_by)
@@ -195,9 +198,9 @@ class LiveFS(Storm):
         """See `ILiveFS`."""
         filter_term = (Not(LiveFSBuild.status.is_in(self._pending_states)))
         order_by = (
-            Desc(Greatest(
+            NullsLast(Desc(Greatest(
                 LiveFSBuild.date_started,
-                LiveFSBuild.date_finished)),
+                LiveFSBuild.date_finished))),
             Desc(LiveFSBuild.id))
         return self._getBuilds(filter_term, order_by)
 
