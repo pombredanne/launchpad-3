@@ -663,7 +663,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getCodebrowseUrlForRevision(self, revision):
         """See `IBranch`."""
-        return self.getCodebrowseUrl("revision", quote_plus(str(revision)))
+        return self.getCodebrowseUrl("revision", str(revision))
 
     @property
     def browse_source_url(self):
