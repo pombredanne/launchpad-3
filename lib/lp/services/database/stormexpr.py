@@ -17,6 +17,8 @@ __all__ = [
     'get_where_for_reference',
     'IsDistinctFrom',
     'NullCount',
+    'NullsFirst',
+    'NullsLast',
     'rank_by_fti',
     'TryAdvisoryLock',
     'Unnest',
@@ -37,6 +39,7 @@ from storm.expr import (
     NamedFunc,
     Or,
     SQL,
+    SuffixExpr,
     TABLE,
     )
 from storm.info import (
@@ -211,6 +214,18 @@ class IsDistinctFrom(CompoundOper):
     """True iff the left side is distinct from the right side."""
     __slots__ = ()
     oper = " IS DISTINCT FROM "
+
+
+class NullsFirst(SuffixExpr):
+    """Order null values before non-null values."""
+    __slots__ = ()
+    suffix = "NULLS FIRST"
+
+
+class NullsLast(SuffixExpr):
+    """Order null values after non-null values."""
+    __slots__ = ()
+    suffix = "NULLS LAST"
 
 
 def get_where_for_reference(reference, other):
