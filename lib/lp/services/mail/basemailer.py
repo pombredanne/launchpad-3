@@ -157,22 +157,23 @@ class BaseMailer:
         """Send notifications to all recipients."""
         # We never want SMTP errors to propagate from this function.
         for email, recipient in self._recipients.getRecipientPersons():
+            ctrl = self.generateEmail(email, recipient)
             try:
-                ctrl = self.generateEmail(email, recipient)
                 ctrl.send()
             except SMTPException:
                 # If the initial sending failed, try again without
                 # attachments.
+                ctrl = self.generateEmail(
+                    email, recipient, force_no_attachments=True)
                 try:
-                    ctrl = self.generateEmail(
-                        email, recipient, force_no_attachments=True)
                     ctrl.send()
                 except SMTPException:
                     error_utility = getUtility(IErrorReportingUtility)
                     oops_vars = {
-                        "message_id": self.message_id,
+                        "message_id": ctrl.headers.get("Message-Id"),
                         "notification_type": self.notification_type,
-                        "recipient": recipient.id,
+                        "recipient": ", ".join(ctrl.to_addrs),
+                        "subject": ctrl.subject,
                         }
                     with error_utility.oopsMessage(oops_vars):
                         oops = error_utility.raising(
