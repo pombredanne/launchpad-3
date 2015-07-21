@@ -881,7 +881,7 @@ class FormattersAPI:
         matches = re.finditer(re_email_address, text)
         for match in matches:
             address = match.group()
-            # Since we globally replace the e-mail in the text, if we have seen
+            # Since we globally replace the email in the text, if we have seen
             # the address before, skip it.
             if address in seen_addresses:
                 continue

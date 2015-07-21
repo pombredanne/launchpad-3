@@ -9,7 +9,7 @@ IDistributionSourcePackage, an IProduct, etc.
 Bug targets have a bugtargetdisplayname attribute, which returns a value
 tailored for human reading (e.g. display in Web pages); and a bugtargetname
 attribute, which returns a value tailored for unique identification of the
-target (such as in filterable e-mail messages).
+target (such as in filterable email messages).
 
     >>> from zope.component import getUtility
     >>> from lp.bugs.interfaces.bugtarget import IBugTarget

@@ -396,7 +396,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                         structured(_(
                 'The key ${key} cannot be validated because it has expired. '
                 'Change the expiry date (in a terminal, enter '
-                '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
+                '<kbd>gpg --edit-key <var>your@email.address</var></kbd> '
                 'then enter <kbd>expire</kbd>), and try again.',
                 mapping=dict(key=e.key.keyid))))
         else:
@@ -408,7 +408,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
     schema = Interface
     field_names = []
     expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
-    label = 'Confirm e-mail address'
+    label = 'Confirm email address'
 
     def initialize(self):
         if self.redirectIfInvalidOrConsumedToken():
@@ -537,10 +537,10 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
                 'duplicated account will belong to your own account.'))
         else:
             self.success(_(
-                'The e-mail address %s has been assigned to you, but the '
-                'duplicate account you selected has other registered e-mail '
+                'The email address %s has been assigned to you, but the '
+                'duplicate account you selected has other registered email '
                 'addresses too. To complete the merge, you have to prove '
-                'that you have access to all those e-mail addresses.'
+                'that you have access to all those email addresses.'
                 % self.context.email))
         self.context.consume()
 

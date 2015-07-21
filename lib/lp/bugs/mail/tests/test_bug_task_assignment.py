@@ -78,7 +78,7 @@ class TestAssignmentNotification(TestCaseWithFactory):
         rationale = (
             'You have assigned this bug to yourself for Rebirth')
         [email] = stub.test_emails
-        # Actual message is part 2 of the e-mail.
+        # Actual message is part 2 of the email.
         msg = email[2]
         self.assertIn(rationale, msg)
 
@@ -98,7 +98,7 @@ class TestAssignmentNotification(TestCaseWithFactory):
                         '%s not in \n%s\n' % (new_message, msg))
 
     def test_assignee_new_subscriber(self):
-        """Build a list of people who will receive e-mails about the bug
+        """Build a list of people who will receive emails about the bug
         task changes and ensure the assignee is not one."""
         self.bug_task.transitionToAssignee(self.person_assigned)
         notify(ObjectModifiedEvent(
@@ -115,7 +115,7 @@ class TestAssignmentNotification(TestCaseWithFactory):
 
     def test_team_assigned_new_subscriber(self):
         """Assign a team, who is not subscribed to a bug, a bug task and
-        ensure that team members do not receive an e-mail about the bug
+        ensure that team members do not receive an email about the bug
         task changes."""
         self.bug_task.transitionToAssignee(self.team_assigned)
         notify(ObjectModifiedEvent(

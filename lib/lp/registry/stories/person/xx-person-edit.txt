@@ -81,7 +81,7 @@ actions.
 He will enable expanded mail notification footers.
 
     >>> expanded_footer_control = browser.getControl(
-    ...     "Include filtering information in e-mail footers")
+    ...     "Include filtering information in email footers")
     >>> expanded_footer_control.selected
     False
     >>> expanded_footer_control.click()
@@ -100,5 +100,5 @@ We now check to ensure that the various notifications options were changed:
     ...     "Send me bug notifications for changes I make").selected
     True
     >>> browser.getControl(
-    ...     "Include filtering information in e-mail footers").selected
+    ...     "Include filtering information in email footers").selected
     True

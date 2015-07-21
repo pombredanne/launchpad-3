@@ -246,7 +246,7 @@ logins to a user that is explicitly subscribed to this bug):
     ** Information type changed from Public to Private Security
     -----------------------------
 
-Now we set the bug back to public and check if the e-mail sent changed as well.
+Now we set the bug back to public and check if the email sent changed as well.
 
     >>> changed = edited_bug.transitionToInformationType(
     ...     InformationType.PUBLIC, getUtility(ILaunchBag).user)

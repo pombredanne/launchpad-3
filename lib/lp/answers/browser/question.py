@@ -1079,7 +1079,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         """Post-processing work common to all workflow actions.
 
         Adds a notification, subscribe the user if he checked the
-        'E-mail me...' option and redirect to the question page.
+        'Email me...' option and redirect to the question page.
         """
         self.request.response.addNotification(message)
 

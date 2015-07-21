@@ -1,7 +1,7 @@
-Launchpad Bugs e-mail interface
-===============================
+Launchpad Bugs email interface
+==============================
 
-Launchpad's bugtracker has an e-mail interface, with which you may report new
+Launchpad's bugtracker has an email interface, with which you may report new
 bugs, add comments, and change the details of existing bug reports. Commands
 can be interleaved within a comment, so to distinguish them from the comment,
 they must be indented with at least one space or tab character.
@@ -9,7 +9,7 @@ they must be indented with at least one space or tab character.
 Submit a new bug
 ----------------
 
-To report a bug, you send an OpenPGP-signed e-mail message to
+To report a bug, you send an OpenPGP-signed email message to
 new@bugs.launchpad-domain. You must have registered your key in
 Launchpad as well. The subject of the email will be used as the summary
 of the bug, and the body will be used as the description. In the body of
@@ -2061,7 +2061,7 @@ The first part is the error message, explaining what went wrong.
     Some error message.
     <BLANKLINE>
     --
-    For more information about using Launchpad by e-mail, see
+    For more information about using Launchpad by email, see
     https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 
@@ -2204,7 +2204,7 @@ failure in an email.
     There's no such person with the specified name or email: nonexistentuser
     <BLANKLINE>
     --
-    For more information about using Launchpad by e-mail, see
+    For more information about using Launchpad by email, see
     https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 
@@ -2256,7 +2256,7 @@ And the sender receives an email to let them know about the failing
         security yes
     <BLANKLINE>
     --
-    For more information about using Launchpad by e-mail, see
+    For more information about using Launchpad by email, see
     https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 

@@ -33,7 +33,7 @@ class IQuestionSubscription(Interface):
     person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
-        "e-mail address.")), as_of="devel")
+        "email address.")), as_of="devel")
     question = exported(Reference(
         Interface, title=_("Question"), required=True, readonly=True),
         as_of="devel")

@@ -32,7 +32,7 @@ these emails are going to be transferred.
 
 If the user confirms, spiv will be merged into salgado.
 
-    >>> admin_browser.getControl('Reassign E-mails and Merge').click()
+    >>> admin_browser.getControl('Reassign Emails and Merge').click()
     >>> admin_browser.url
     'http://launchpad.dev/~salgado'
 

@@ -7084,7 +7084,7 @@ CREATE TABLE bugtrackerperson (
 );
 
 
-COMMENT ON TABLE bugtrackerperson IS 'A mapping from a user in an external bug tracker to a Person record in Launchpad. This is used when we can''t get an e-mail address from the bug tracker.';
+COMMENT ON TABLE bugtrackerperson IS 'A mapping from a user in an external bug tracker to a Person record in Launchpad. This is used when we can''t get an email address from the bug tracker.';
 
 
 COMMENT ON COLUMN bugtrackerperson.date_created IS 'When was this mapping added.';

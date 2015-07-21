@@ -511,7 +511,7 @@ canonical url chain that provides at least one of the interfaces given.
 
 canonical_url() is sometimes used in code that doesn't have direct
 access to the current request, and always wants a URL that can be used
-in a browser (for example e-mail notifications or XHTML representations
+in a browser (for example email notifications or XHTML representations
 of objects). Therefore, if no request is explicitly given,
 canonical_url() returns the browser URL, even if the current request is
 a web service request
