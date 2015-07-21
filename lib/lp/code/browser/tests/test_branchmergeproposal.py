@@ -159,14 +159,14 @@ class TestBranchMergeProposalMergedViewMixin:
         bmp = self.makeBranchMergeProposal()
         login_person(bmp.registrant)
         bmp.markAsMerged(merge_reporter=bmp.registrant)
+        revision_link = bmp.merge_target.getCodebrowseUrlForRevision(
+            self.arbitrary_revisions[2])
+        revision_number = Tag('Revision number', 'a', {'href': revision_link})
         browser = self.getViewBrowser(bmp, '+merged', user=bmp.registrant)
         browser.getControl(self.merged_revision_text).value = str(
             self.arbitrary_revisions[2])
         browser.getControl('Mark as Merged').click()
         browser = self.getViewBrowser(bmp.merge_source, '+index')
-        revision_link = bmp.merge_target.getCodebrowseUrlForRevision(
-            self.arbitrary_revisions[2])
-        revision_number = Tag('Revision number', 'a', {'href': revision_link})
         self.assertThat(browser.contents, HTMLContains(revision_number))
 
 class TestBranchMergeProposalMergedViewBzr(
