@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Furnish distroseries with lacking translations that its parent does have.
@@ -18,6 +18,7 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.translations.scripts.copy_distroseries_translations import (
     copy_distroseries_translations,
     )
@@ -49,6 +50,11 @@ class TranslationsCopier(LaunchpadCronScript):
             help=(
                 "Copy only templates for sources that are published in the "
                 "target series."))
+        self.parser.add_option('-A', '--archive', dest='archive',
+            help=(
+                "With --published-sources-only, check publication in this "
+                "archive (if omitted, the target's main archive will be "
+                "checked)."))
         self.parser.add_option('-f', '--force', dest='force',
             action="store_true", default=False,
             help="Don't check if target's UI and imports are blocked; "
@@ -71,6 +77,11 @@ class TranslationsCopier(LaunchpadCronScript):
             self.parser.error(
                 "No source series specified and target has no previous "
                 "series.")
+        if self.options.archive is not None:
+            archive = getUtility(IArchiveSet).getByReference(
+                self.options.archive)
+        else:
+            archive = None
 
         # Both translation UI and imports for this series should be blocked
         # while the copy is in progress, to reduce the chances of deadlocks or
@@ -92,7 +103,8 @@ class TranslationsCopier(LaunchpadCronScript):
         # Actual work is done here.
         copy_distroseries_translations(
             source, target, self.txn, self.logger,
-            published_sources_only=self.options.published_sources_only)
+            published_sources_only=self.options.published_sources_only,
+            archive=archive)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
