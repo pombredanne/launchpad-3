@@ -690,12 +690,12 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         return tempdir
 
     def _unfoldEmailHeader(self, header):
-        """Unfold a multiline e-mail header."""
+        """Unfold a multiline email header."""
         header = ''.join(header.splitlines())
         return header.replace('\t', ' ')
 
     def assertEmailHeadersEqual(self, expected, observed):
-        """Assert that two e-mail headers are equal.
+        """Assert that two email headers are equal.
 
         The headers are unfolded before being compared.
         """

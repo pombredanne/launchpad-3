@@ -1,8 +1,8 @@
 = LaunchpadLoginSource =
 
 LaunchpadLoginSource is used to create principals, from login
-information, passing the e-mail address to getPrincipalByLogin. If no
-person is found with the given e-mail address, None is returned
+information, passing the email address to getPrincipalByLogin. If no
+person is found with the given email address, None is returned
 
     >>> from lp.services.webapp.authentication import (
     ...     LaunchpadLoginSource)
@@ -10,7 +10,7 @@ person is found with the given e-mail address, None is returned
     >>> print login_source.getPrincipalByLogin('no-such-email@example.com')
     None
 
-Giving getPrincipalByLogin() an existing e-mail address, returns a
+Giving getPrincipalByLogin() an existing email address, returns a
 ILaunchpadPrincipal with the same id as the corresponding Account record's
 account id.
 

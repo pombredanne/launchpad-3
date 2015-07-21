@@ -88,8 +88,8 @@ values for the email headers and footers.
     You are subscribed to branch ...
 
 
-E-mail
-------
+Email
+-----
 
 Jobs for notifications are automagically generated when the merge proposal
 is created.  When those jobs are run, the email is sent from the registrant.

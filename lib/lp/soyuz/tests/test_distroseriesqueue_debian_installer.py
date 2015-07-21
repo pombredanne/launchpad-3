@@ -52,7 +52,7 @@ class TestDistroSeriesQueueDebianInstaller(TestNativePublishingBase):
         self.assertEqual(1, len(upload.queue_root.customfiles))
 
     def test_generates_mail(self):
-        # Two e-mail messages were generated (acceptance and announcement).
+        # Two email messages were generated (acceptance and announcement).
         self.anything_policy.setDistroSeriesAndPocket("hoary-test")
         self.anything_policy.distroseries.changeslist = "announce@example.com"
         self.uploadTestData()

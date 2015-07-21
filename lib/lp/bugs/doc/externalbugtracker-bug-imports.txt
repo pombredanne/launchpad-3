@@ -86,7 +86,7 @@ The bug reporter, as returned by getBugReporter(), got automatically created.
     Joe Bloggs
 
 Since he didn't have a Launchpad account before, he doesn't have a
-preferred e-mail address, and the one that is associated with his
+preferred email address, and the one that is associated with his
 account is marked as NEW, since we don't know whether it's valid.
 
     >>> from lp.services.identity.interfaces.emailaddress import (
@@ -105,7 +105,7 @@ account is marked as NEW, since we don't know whether it's valid.
     u'when importing bug #3 from http://...'
 
 No one got subscribed to the created bug, since the relevant people
-already get e-mail notifications via the external bug tracker.
+already get email notifications via the external bug tracker.
 
     >>> [person.name for person in bug.getDirectSubscribers()]
     []
@@ -168,7 +168,7 @@ Reporter already registered in Launchpad
 ----------------------------------------
 
 Even if the reporter of the bug has an account in Launchpad (and thus a
-valid e-mail address), he still won't be subscribed to the imported bug.
+valid email address), he still won't be subscribed to the imported bug.
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv.preferredemail is not None

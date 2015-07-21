@@ -231,7 +231,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
 
         --\x20
-        For more information about using Launchpad by e-mail, see
+        For more information about using Launchpad by email, see
         https://help.launchpad.net/EmailInterface
         or send an email to help@launchpad.net"""),
                                 message.get_payload(decode=True))

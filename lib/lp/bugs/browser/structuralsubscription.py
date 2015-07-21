@@ -243,13 +243,13 @@ class StructuralSubscriptionView(LaunchpadFormView):
             target.addBugSubscription(self.user, self.user)
             self.request.response.addNotification(
                 'You have subscribed to "%s". You will now receive an '
-                'e-mail each time someone reports or changes one of '
+                'email each time someone reports or changes one of '
                 'its bugs.' % target.displayname)
         elif is_subscribed and not subscribe:
             target.removeBugSubscription(self.user, self.user)
             self.request.response.addNotification(
                 'You have unsubscribed from "%s". You '
-                'will no longer automatically receive e-mail about '
+                'will no longer automatically receive email about '
                 'changes to its bugs.' % target.displayname)
         else:
             # The subscription status did not change: nothing to do.
@@ -270,7 +270,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         for team in form_selected_teams - subscriptions:
             target.addBugSubscription(team, self.user)
             self.request.response.addNotification(
-                'The %s team will now receive an e-mail each time '
+                'The %s team will now receive an email each time '
                 'someone reports or changes a public bug in "%s".' % (
                 team.displayname, self.context.displayname))
 
@@ -278,7 +278,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
             target.removeBugSubscription(team, self.user)
             self.request.response.addNotification(
                 'The %s team will no longer automatically receive '
-                'e-mail about changes to public bugs in "%s".' % (
+                'email about changes to public bugs in "%s".' % (
                     team.displayname, self.context.displayname))
 
     def _handleDriverChanges(self, data):
@@ -291,7 +291,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         if new_subscription is not None:
             target.addBugSubscription(new_subscription, self.user)
             self.request.response.addNotification(
-                '%s will now receive an e-mail each time someone '
+                '%s will now receive an email each time someone '
                 'reports or changes a public bug in "%s".' % (
                 new_subscription.displayname,
                 target.displayname))
@@ -300,7 +300,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         for subscription in subscriptions_to_remove:
             target.removeBugSubscription(subscription, self.user)
             self.request.response.addNotification(
-                '%s will no longer automatically receive e-mail about '
+                '%s will no longer automatically receive email about '
                 'public bugs in "%s".' % (
                     subscription.displayname, target.displayname))
 

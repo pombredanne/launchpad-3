@@ -279,7 +279,7 @@ class LoginToken(SQLBase):
 class LoginTokenSet:
 
     def __init__(self):
-        self.title = 'Launchpad e-mail address confirmation'
+        self.title = 'Launchpad email address confirmation'
 
     def get(self, id, default=None):
         """See ILoginTokenSet."""

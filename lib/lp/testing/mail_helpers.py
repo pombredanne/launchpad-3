@@ -48,7 +48,7 @@ def pop_notifications(sort_key=None, commit=True):
 
 
 def sort_addresses(header):
-    """Sort an address-list in an e-mail header field body."""
+    """Sort an address-list in an email header field body."""
     addresses = set(address.strip() for address in header.split(','))
     return ", ".join(sorted(addresses))
 
