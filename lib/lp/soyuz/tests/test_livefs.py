@@ -234,9 +234,22 @@ class TestLiveFS(TestCaseWithFactory):
         # Change the status of one of the builds and retest.
         builds[0].updateStatus(BuildStatus.BUILDING)
         builds[0].updateStatus(BuildStatus.FULLYBUILT)
-        self.assertEqual(builds[1:] + builds[:1], list(livefs.builds))
+        self.assertEqual(builds, list(livefs.builds))
         self.assertEqual(builds[:1], list(livefs.completed_builds))
         self.assertEqual(builds[1:], list(livefs.pending_builds))
+
+    def test_getBuilds_cancelled_never_started_last(self):
+        # A cancelled build that was never even started sorts to the end.
+        livefs = self.factory.makeLiveFS()
+        fullybuilt = self.factory.makeLiveFSBuild(livefs=livefs)
+        instacancelled = self.factory.makeLiveFSBuild(livefs=livefs)
+        fullybuilt.updateStatus(BuildStatus.BUILDING)
+        fullybuilt.updateStatus(BuildStatus.FULLYBUILT)
+        instacancelled.updateStatus(BuildStatus.CANCELLED)
+        self.assertEqual([fullybuilt, instacancelled], list(livefs.builds))
+        self.assertEqual(
+            [fullybuilt, instacancelled], list(livefs.completed_builds))
+        self.assertEqual([], list(livefs.pending_builds))
 
     def test_getBuilds_privacy(self):
         # The various getBuilds methods exclude builds against invisible
@@ -669,10 +682,11 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 BuildStatus.FULLYBUILT,
                 date_finished=db_livefs.date_created + timedelta(minutes=10))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
-        # Builds that have not yet been started are listed first (since DESC
-        # defaults to NULLS FIRST).
-        self.assertEqual(
-            builds[1:] + builds[:1], self.getCollectionLinks(livefs, "builds"))
+        # Builds that have not yet been started are listed last.  This does
+        # mean that pending builds that have never been started are sorted
+        # to the end, but means that builds that were cancelled before
+        # starting don't pollute the start of the collection forever.
+        self.assertEqual(builds, self.getCollectionLinks(livefs, "builds"))
         self.assertEqual(
             builds[:1], self.getCollectionLinks(livefs, "completed_builds"))
         self.assertEqual(
@@ -686,7 +700,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 date_finished=db_livefs.date_created + timedelta(minutes=20))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
         self.assertEqual(
-            [builds[2], builds[3], builds[1], builds[0]],
+            [builds[1], builds[0], builds[2], builds[3]],
             self.getCollectionLinks(livefs, "builds"))
         self.assertEqual(
             [builds[1], builds[0]],

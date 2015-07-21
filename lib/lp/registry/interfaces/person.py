@@ -552,6 +552,14 @@ class IPersonSettings(Interface):
         title=_("Send me bug notifications for changes I make"),
         required=False, default=False)
 
+    expanded_notification_footers = Bool(
+        title=_("Include filtering information in e-mail footers"),
+        description=_(
+            "Some e-mail clients do not allow filtering on arbitrary message "
+            "headers.  If you use one of these, you can set this option to "
+            "add more information to the end of message bodies."),
+        required=False, default=False)
+
 
 class IPersonPublic(IPrivacy):
     """Public attributes for a Person.
