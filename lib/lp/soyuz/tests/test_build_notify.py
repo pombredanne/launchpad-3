@@ -1,10 +1,9 @@
-# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import timedelta
-from operator import itemgetter
 from textwrap import dedent
 
 from zope.component import getUtility
@@ -15,6 +14,7 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
@@ -36,7 +36,9 @@ REASONS = {
     "buildd-admin": (
         "You are receiving this email because you are a buildd "
         "administrator."),
-    "owner": "You are receiving this email because you own this archive.",
+    "owner": (
+        "You are receiving this email because you are the owner of this "
+        "archive."),
     }
 
 
@@ -62,17 +64,14 @@ class TestBuildNotify(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA)
         buildd_admins = getUtility(IPersonSet).getByName(
             'launchpad-buildd-admins')
-        self.buildd_admins_email = []
         with person_logged_in(self.admin):
-            self.ppa_owner_email = self.ppa.owner.preferredemail.email
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
             self.builder = self.factory.makeBuilder(
                 processors=[self.processor])
-            for member in buildd_admins.activemembers:
-                self.buildd_admins_email.append(member.preferredemail.email)
+            self.buildd_admins_members = list(buildd_admins.activemembers)
         self.builds = []
 
     def create_builds(self, archive):
@@ -101,7 +100,17 @@ class TestBuildNotify(TestCaseWithFactory):
                                 ppa=False):
         # Assert that the mail sent (which is in notification), matches
         # the data from the build
-        self.assertEqual(recipient, notification['To'])
+        self.assertEqual(
+            format_address_for_person(recipient), notification['To'])
+        if reason == "buildd-admin":
+            rationale = "Buildd-Admin @launchpad-buildd-admins"
+        else:
+            rationale = reason.title()
+        self.assertEqual(
+            rationale, notification['X-Launchpad-Message-Rationale'])
+        self.assertEqual(
+            'package-build-status',
+            notification['X-Launchpad-Notification-Type'])
         self.assertEqual(
             'test@example.com', notification['X-Creator-Recipient'])
         self.assertEqual(
@@ -155,20 +164,21 @@ class TestBuildNotify(TestCaseWithFactory):
         If you want further information about this situation, feel free to
         contact a member of the Launchpad Buildd Administrators team.
 
-        --
+        %s
         %s
         %s
         """ % (
             build.source_package_release.sourcepackagename.name,
             build.source_package_release.version, self.das.architecturetag,
             build.archive.reference, build.status.title, duration, build_log,
-            builder, source, build.title, canonical_url(build)))
+            builder, source, "-- ", build.title, canonical_url(build)))
         expected_body += "\n" + REASONS[reason] + "\n"
         self.assertEqual(expected_body, body)
 
     def _assert_mails_are_correct(self, build, reasons, ppa=False):
         notifications = pop_notifications()
-        reasons = sorted(reasons, key=itemgetter(0))
+        reasons = sorted(
+            reasons, key=lambda r: format_address_for_person(r[0]))
         for notification, (recipient, reason) in zip(notifications, reasons):
             self._assert_mail_is_correct(
                 build, notification, recipient, reason, ppa=ppa)
@@ -180,8 +190,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
         self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_failed_to_build_ppa(self):
@@ -191,8 +201,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         build.notify()
         expected_reasons = [
-            ("test@example.com", "signer"),
-            (self.ppa_owner_email, "owner"),
+            (self.creator, "signer"),
+            (self.ppa.owner, "owner"),
             ]
         self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
@@ -203,8 +213,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.NEEDSBUILD.value]
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
         self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_needs_building_ppa(self):
@@ -214,8 +224,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.NEEDSBUILD.value]
         build.notify()
         expected_reasons = [
-            ("test@example.com", "signer"),
-            (self.ppa_owner_email, "owner"),
+            (self.creator, "signer"),
+            (self.ppa.owner, "owner"),
             ]
         self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
@@ -233,8 +243,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.MANUALDEPWAIT.value]
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
         self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_dependency_wait_ppa(self):
@@ -244,8 +254,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.MANUALDEPWAIT.value]
         build.notify()
         expected_reasons = [
-            ("test@example.com", "signer"),
-            (self.ppa_owner_email, "owner"),
+            (self.creator, "signer"),
+            (self.ppa.owner, "owner"),
             ]
         self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
@@ -256,8 +266,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.CHROOTWAIT.value]
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
         self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_chroot_problem_ppa(self):
@@ -267,8 +277,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.CHROOTWAIT.value]
         build.notify()
         expected_reasons = [
-            ("test@example.com", "signer"),
-            (self.ppa_owner_email, "owner"),
+            (self.creator, "signer"),
+            (self.ppa.owner, "owner"),
             ]
         self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
@@ -280,8 +290,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.SUPERSEDED.value]
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
         self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_build_for_superseded_source_ppa(self):
@@ -292,8 +302,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.SUPERSEDED.value]
         build.notify()
         expected_reasons = [
-            ("test@example.com", "signer"),
-            (self.ppa_owner_email, "owner"),
+            (self.creator, "signer"),
+            (self.ppa.owner, "owner"),
             ]
         self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
@@ -304,8 +314,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.BUILDING.value]
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
         self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_currently_building_ppa(self):
@@ -315,8 +325,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.BUILDING.value]
         build.notify()
         expected_reasons = [
-            ("test@example.com", "signer"),
-            (self.ppa_owner_email, "owner"),
+            (self.creator, "signer"),
+            (self.ppa.owner, "owner"),
             ]
         self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
@@ -327,8 +337,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.UPLOADING.value]
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
         self._assert_mails_are_correct(build, expected_reasons)
 
     def test_notify_uploading_build_ppa(self):
@@ -338,8 +348,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.UPLOADING.value]
         build.notify()
         expected_reasons = [
-            ("test@example.com", "signer"),
-            (self.ppa_owner_email, "owner"),
+            (self.creator, "signer"),
+            (self.ppa.owner, "owner"),
             ]
         self._assert_mails_are_correct(build, expected_reasons, ppa=True)
 
@@ -354,7 +364,7 @@ class TestBuildNotify(TestCaseWithFactory):
         [ppa_build] = ppa_spph.createMissingBuilds()
         ppa_build.notify()
         self._assert_mails_are_correct(
-            ppa_build, [(self.ppa_owner_email, "owner")], ppa=True)
+            ppa_build, [(self.ppa.owner, "owner")], ppa=True)
 
     def test_notify_owner_suppresses_mail(self):
         # When the 'notify_owner' config option is False, we don't send mail
@@ -370,7 +380,8 @@ class TestBuildNotify(TestCaseWithFactory):
         build.notify()
         self._assert_mails_are_correct(
             build,
-            [(email, "buildd-admin") for email in self.buildd_admins_email])
+            [(person, "buildd-admin")
+             for person in self.buildd_admins_members])
         # And undo what we just did.
         config.pop('notify_owner')
 
@@ -402,7 +413,7 @@ class TestBuildNotify(TestCaseWithFactory):
         removeSecurityProxy(spr).dscsigningkey = key
         build.notify()
         expected_reasons = [
-            (email, "buildd-admin") for email in self.buildd_admins_email]
-        expected_reasons.append(("test@example.com", "creator"))
-        expected_reasons.append(("sponsor@example.com", "signer"))
+            (person, "buildd-admin") for person in self.buildd_admins_members]
+        expected_reasons.append((self.creator, "creator"))
+        expected_reasons.append((sponsor, "signer"))
         self._assert_mails_are_correct(build, expected_reasons)
