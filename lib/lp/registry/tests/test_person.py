@@ -515,6 +515,11 @@ class TestPerson(TestCaseWithFactory):
         user = self.factory.makePerson()
         self.assertFalse(user.selfgenerated_bugnotifications)
 
+    def test_expanded_notification_footers_false_by_default(self):
+        # Default for new accounts is to disable expanded notification footers.
+        user = self.factory.makePerson()
+        self.assertFalse(user.expanded_notification_footers)
+
     def test_canAccess__anonymous(self):
         # Anonymous users cannot call Person.canAccess()
         person = self.factory.makePerson()

@@ -20,6 +20,7 @@ __all__ = [
     'person_sort_key',
     'PersonLanguage',
     'PersonSet',
+    'PersonSettings',
     'SSHKey',
     'SSHKeySet',
     'TeamInvitationEvent',
@@ -105,10 +106,7 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -422,6 +420,8 @@ class PersonSettings(Storm):
     person = Reference(personID, "Person.id")
 
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=False)
+
+    expanded_notification_footers = BoolCol(notNull=False, default=False)
 
 
 def readonly_settings(message, interface):

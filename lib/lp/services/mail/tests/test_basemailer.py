@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for the BaseMailer class."""
 
@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 from smtplib import SMTPException
+
+from testtools.matchers import EndsWith
 
 from lp.services.mail.basemailer import BaseMailer
 from lp.services.mail.sendmail import MailController
@@ -131,6 +133,33 @@ class TestBaseMailer(TestCaseWithFactory):
             attachment.get_payload())
         self.assertEqual('text/plain', attachment['Content-Type'])
         self.assertEqual('inline', attachment['Content-Disposition'])
+
+    def test_generateEmail_append_no_expanded_footer(self):
+        # Recipients without expanded_notification_footers do not receive an
+        # expanded footer on messages.
+        fake_to = self.factory.makePerson(email='to@example.com')
+        recipients = {fake_to: FakeSubscription()}
+        mailer = BaseMailerSubclass(
+            'subject', None, recipients, 'from@example.com',
+            notification_type='test')
+        ctrl = mailer.generateEmail('to@example.com', fake_to)
+        self.assertNotIn('Launchpad-Message-Rationale', ctrl.body)
+
+    def test_generateEmail_append_expanded_footer(self):
+        # Recipients with expanded_notification_footers receive an expanded
+        # footer on messages.
+        fake_to = self.factory.makePerson(email='to@example.com')
+        fake_to.expanded_notification_footers = True
+        recipients = {fake_to: FakeSubscription()}
+        mailer = BaseMailerSubclass(
+            'subject', None, recipients, 'from@example.com',
+            notification_type='test')
+        ctrl = mailer.generateEmail('to@example.com', fake_to)
+        self.assertThat(
+            ctrl.body, EndsWith(
+                '\n-- \n'
+                'Launchpad-Message-Rationale: pete\n'
+                'Launchpad-Notification-Type: test\n'))
 
     def test_sendall_single_failure_doesnt_kill_all(self):
         # A failure to send to a particular email address doesn't stop sending

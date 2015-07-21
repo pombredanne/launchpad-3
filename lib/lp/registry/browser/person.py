@@ -2702,7 +2702,8 @@ class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
 
     field_names = ['displayname', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
-                   'selfgenerated_bugnotifications']
+                   'selfgenerated_bugnotifications',
+                   'expanded_notification_footers']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     label = 'Change your personal details'
