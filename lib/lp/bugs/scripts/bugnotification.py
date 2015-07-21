@@ -353,19 +353,31 @@ class SendBugNotifications(LaunchpadCronScript):
              messages) in pending_notifications:
             try:
                 for message in messages:
-                    self.logger.info("Notifying %s about bug %d." % (
-                        message['To'], bug_notifications[0].bug.id))
-                    sendmail(message)
-                    self.logger.debug(message.as_string())
+                    try:
+                        self.logger.info("Notifying %s about bug %d." % (
+                            message['To'], bug_notifications[0].bug.id))
+                        sendmail(message)
+                        self.logger.debug(message.as_string())
+                    except SMTPException:
+                        request = ScriptRequest([
+                            ("script_name", self.name),
+                            ("path", sys.argv[0]),
+                            ])
+                        error_utility = getUtility(IErrorReportingUtility)
+                        oops_vars = {
+                            "message_id": message.get("Message-Id"),
+                            "notification_type": "bug",
+                            "recipient": message["To"],
+                            "subject": message["Subject"],
+                            }
+                        with error_utility.oopsMessage(oops_vars):
+                            error_utility.raising(sys.exc_info(), request)
+                        self.logger.info(request.oopsid)
+                        self.txn.abort()
+                        # Re-raise to get out of this loop and go to the
+                        # next iteration of the outer loop.
+                        raise
             except SMTPException:
-                request = ScriptRequest([
-                    ("script_name", self.name),
-                    ("path", sys.argv[0]),
-                    ])
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
-                self.logger.info(request.oopsid)
-                self.txn.abort()
                 continue
             for notification in bug_notifications:
                 notification.date_emailed = UTC_NOW
