@@ -608,7 +608,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         expected_msg = html_escape(
-            u"An e-mail message was sent to '%s' "
+            u"An email message was sent to '%s' "
             "with instructions on how to confirm that it belongs to you."
             % added_email)
         self.assertEqual(expected_msg, notifications[0].message)
@@ -638,7 +638,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         token_url = get_token_url_from_email(raw_msg)
         browser = setupBrowserForUser(user=self.person)
         browser.open(token_url)
-        expected_msg = u'Confirm e-mail address <code>%s</code>' % added_email
+        expected_msg = u'Confirm email address <code>%s</code>' % added_email
         self.assertIn(expected_msg, browser.contents)
         browser.getControl('Continue').click()
         # Login again to access displayname, since browser logged us out.

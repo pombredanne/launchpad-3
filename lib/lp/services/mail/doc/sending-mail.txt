@@ -322,7 +322,7 @@ are ignored.
     >>> sent_msg['CC']
     'foo.bar@canonical.com'
 
-Since sendmail() gets the addresses to send to from the e-mail header,
+Since sendmail() gets the addresses to send to from the email header,
 it needs to take care of unfolding the headers, so that they don't
 contain any line breaks.
 

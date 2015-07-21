@@ -2191,7 +2191,7 @@ class Person(
         if pre_deactivate and not comment:
             raise AssertionError("Require a comment to deactivate.")
 
-        # Set account status, and set all e-mails to NEW.
+        # Set account status, and set all emails to NEW.
         if pre_deactivate:
             self.preDeactivate(comment)
 

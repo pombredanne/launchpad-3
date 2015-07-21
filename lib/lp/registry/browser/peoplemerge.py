@@ -189,7 +189,7 @@ class AdminPeopleMergeView(AdminMergeBaseView):
             return
         self.doMerge(data)
 
-    @action('Reassign E-mails and Merge', name='reassign_emails_and_merge')
+    @action('Reassign Emails and Merge', name='reassign_emails_and_merge')
     def reassign_emails_and_merge_action(self, action, data):
         """Reassign emails of the person to be merged and merge them."""
         self.setUpPeople(data)

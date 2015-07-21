@@ -345,7 +345,7 @@ COMMENT ON COLUMN BugTrackerAlias.base_url IS 'Another base URL for this bug tra
 
 -- BugTrackerPerson
 
-COMMENT ON TABLE BugTrackerPerson IS 'A mapping from a user in an external bug tracker to a Person record in Launchpad. This is used when we can''t get an e-mail address from the bug tracker.';
+COMMENT ON TABLE BugTrackerPerson IS 'A mapping from a user in an external bug tracker to a Person record in Launchpad. This is used when we can''t get an email address from the bug tracker.';
 COMMENT ON COLUMN BugTrackerPerson.date_created IS 'When was this mapping added.';
 COMMENT ON COLUMN BugTrackerPerson.bugtracker IS 'The external bug tracker in which this user has an account.';
 COMMENT ON COLUMN BugTrackerPerson.name IS 'The (within the bug tracker) unique username in the external bug tracker.';

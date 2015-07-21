@@ -10,9 +10,9 @@
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:extra-info fill-slot="extra_info">
-      <h2>Your e-mail addresses</h2>
+      <h2>Your email addresses</h2>
       <p tal:condition="context/preferredemail">
-        Your preferred contact address for all Launchpad e-mail is:
+        Your preferred contact address for all Launchpad email is:
         <b tal:content="context/preferredemail/email" />
       </p>
       <p tal:condition="not: context/preferredemail"

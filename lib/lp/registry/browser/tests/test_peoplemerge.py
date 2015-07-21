@@ -74,7 +74,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
         self.assertThat(
             extract_text(explanation), DocTestMatches(
                 "The account..."
-                "has more than one registered e-mail address..."))
+                "has more than one registered email address..."))
         email_select_control = browser.getControl(name='selected')
         for ctrl in email_select_control.controls:
             ctrl.selected = True
@@ -124,7 +124,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
         # wasn't finished because the duplicate account still have a registered
         # email addresses.
         self.assertIn(
-            'has other registered e-mail addresses too', browser.contents)
+            'has other registered email addresses too', browser.contents)
         return browser, emails
 
     def test_validation_email_confirm(self):
@@ -231,7 +231,7 @@ class TestRequestPeopleMergeHiddenEmailAddresses(RequestPeopleMergeMixin):
         explanation = find_tag_by_id(browser.contents, 'explanation')
         self.assertThat(
             extract_text(explanation), DocTestMatches(
-                "The account...has 2 registered e-mail addresses..."))
+                "The account...has 2 registered email addresses..."))
         self.assertRaises(LookupError, browser.getControl, 'selected')
         self.assertNotIn('foo@baz.com', browser.contents)
         self.assertNotIn('bar.foo@canonical.com', browser.contents)
@@ -246,7 +246,7 @@ class TestRequestPeopleMergeHiddenEmailAddresses(RequestPeopleMergeMixin):
         self.assertThat(
             extract_text(confirmation), DocTestMatches(
                 "Confirmation email messages were sent to the 2 registered "
-                "e-mail addresses..."))
+                "email addresses..."))
         self.assertNotIn('foo@baz.com', browser.contents)
         self.assertNotIn('bar.foo@canonical.com', browser.contents)
 
@@ -457,7 +457,7 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
                 'field.dupe_person': self.dupe_person.name,
                 'field.target_person': self.target_person.name,
                 'field.actions.reassign_emails_and_merge':
-                    'Reassign E-mails and Merge',
+                    'Reassign Emails and Merge',
                 }
         return create_initialized_view(
             self.person_set, '+adminpeoplemerge', form=form)

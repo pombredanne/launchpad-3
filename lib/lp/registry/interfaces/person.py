@@ -553,9 +553,9 @@ class IPersonSettings(Interface):
         required=False, default=False)
 
     expanded_notification_footers = Bool(
-        title=_("Include filtering information in e-mail footers"),
+        title=_("Include filtering information in email footers"),
         description=_(
-            "Some e-mail clients do not allow filtering on arbitrary message "
+            "Some email clients do not allow filtering on arbitrary message "
             "headers.  If you use one of these, you can set this option to "
             "add more information to the end of message bodies."),
         required=False, default=False)
@@ -848,9 +848,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         "came from a gina or POFileImporter run.")
     validatedemails = exported(
         CollectionField(
-            title=_("Confirmed e-mails of this person."),
+            title=_("Confirmed emails of this person."),
             description=_(
-                "Confirmed e-mails are the ones in the VALIDATED state"),
+                "Confirmed emails are the ones in the VALIDATED state"),
             readonly=True, required=False,
             value_type=Reference(schema=IEmailAddress)),
         exported_as='confirmed_email_addresses')
@@ -2424,7 +2424,7 @@ class IRequestPeopleMerge(Interface):
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
         description=_(
-            "The e-mail address or Launchpad ID of the account you want to "
+            "The email address or Launchpad ID of the account you want to "
             "merge into yours."))
 
 
@@ -2486,7 +2486,7 @@ class TeamContactMethod(EnumeratedType):
         """)
 
     EXTERNAL_ADDRESS = Item("""
-        Another e-mail address
+        Another email address
 
         Notifications directed to this team are sent to the contact address
         specified.

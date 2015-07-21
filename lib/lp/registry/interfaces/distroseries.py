@@ -265,8 +265,8 @@ class IDistroSeriesPublic(
             required=False, vocabulary='ValidPersonOrTeam', schema=IPerson))
     changeslist = exported(
         TextLine(
-            title=_("E-mail changes to"), required=True,
-            description=_("The mailing list or other e-mail address that "
+            title=_("Email changes to"), required=True,
+            description=_("The mailing list or other email address that "
                           "Launchpad should notify about new uploads."),
             constraint=email_validator))
     sourcecount = Attribute("Source Packages Counter")

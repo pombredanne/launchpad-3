@@ -246,7 +246,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
             new_work_item['title'],
             new_work_item['status'].name)
         [email] = stub.test_emails
-        # Actual message is part 2 of the e-mail.
+        # Actual message is part 2 of the email.
         msg = email[2]
         self.assertIn(rationale, msg)
 
@@ -267,7 +267,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         self.assertEqual(1, len(stub.test_emails))
         rationale = '- %s: %s' % (wi.title, wi.status.name)
         [email] = stub.test_emails
-        # Actual message is part 2 of the e-mail.
+        # Actual message is part 2 of the email.
         msg = email[2]
         self.assertIn(rationale, msg)
 
@@ -309,7 +309,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         rationale_added = '+ %s: %s' % (
             new_work_item['title'], new_work_item['status'].name)
         [email] = stub.test_emails
-        # Actual message is part 2 of the e-mail.
+        # Actual message is part 2 of the email.
         msg = email[2]
         self.assertIn(rationale_removed, msg)
         self.assertIn(rationale_added, msg)

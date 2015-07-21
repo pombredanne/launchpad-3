@@ -198,7 +198,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
-        # but doesn't send an e-mail notification.
+        # but doesn't send an email notification.
         subscriber = self.factory.makePerson(displayname='Mom')
         bug_subscription = self.bug.subscribe(self.user, subscriber)
         notify(ObjectCreatedEvent(bug_subscription, user=subscriber))
@@ -210,7 +210,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_unsubscribe(self):
         # Unsubscribing someone from a bug adds an item to the activity
-        # log, but doesn't send an e-mail notification.
+        # log, but doesn't send an email notification.
         subscriber = self.factory.makePerson(displayname='Mom')
         self.bug.subscribe(self.user, subscriber)
         self.saveOldChanges()
@@ -452,7 +452,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_link_branch(self):
         # Linking a branch to a bug adds both to the activity log and
-        # sends an e-mail notification.
+        # sends an email notification.
         branch = self.factory.makeBranch()
         self.bug.linkBranch(branch, self.user)
 
@@ -477,7 +477,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_link_branch_to_complete_bug(self):
         # Linking a branch to a bug that is "complete" (see
         # IBug.is_complete) adds to the activity log but does *not*
-        # send an e-mail notification.
+        # send an email notification.
         for bug_task in self.bug.bugtasks:
             bug_task.transitionToStatus(
                 BugTaskStatus.FIXRELEASED, user=self.user)
@@ -495,7 +495,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_link_private_branch(self):
         # Linking a *private* branch to a bug adds *nothing* to the
-        # activity log and does *not* send an e-mail notification.
+        # activity log and does *not* send an email notification.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
@@ -503,7 +503,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_unlink_branch(self):
         # Unlinking a branch from a bug adds both to the activity log and
-        # sends an e-mail notification.
+        # sends an email notification.
         branch = self.factory.makeBranch()
         self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
@@ -530,7 +530,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_unlink_branch_from_complete_bug(self):
         # Unlinking a branch from a bug that is "complete" (see
         # IBug.is_complete) adds to the activity log but does *not*
-        # send an e-mail notification.
+        # send an email notification.
         for bug_task in self.bug.bugtasks:
             bug_task.transitionToStatus(
                 BugTaskStatus.FIXRELEASED, user=self.user)
@@ -549,7 +549,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_unlink_private_branch(self):
         # Unlinking a *private* branch from a bug adds *nothing* to
-        # the activity log and does *not* send an e-mail notification.
+        # the activity log and does *not* send an email notification.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
@@ -1639,7 +1639,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_convert_to_question_no_comment(self):
         # When a bug task is converted to a question, its status is
         # first set to invalid, which causes the normal notifications for
-        # that to be added to the activity log and sent out as e-mail
+        # that to be added to the activity log and sent out as email
         # notification. After that another item is added to the activity
         # log saying that the bug was converted to a question.
         self.product.official_answers = True

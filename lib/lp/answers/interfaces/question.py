@@ -526,7 +526,7 @@ class IQuestionAddMessageForm(Interface):
     message = Text(title=_('Message'), required=False)
 
     subscribe_me = Bool(
-        title=_('E-mail me future discussion about this question'),
+        title=_('Email me future discussion about this question'),
         required=False, default=False)
 
 

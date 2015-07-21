@@ -77,7 +77,7 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
 
 
 def get_template(archive, action):
-    """Return the appropriate e-mail template."""
+    """Return the appropriate email template."""
     template_name = 'upload-'
     if action in ('new', 'accepted', 'announcement'):
         template_name += action
@@ -102,7 +102,7 @@ ACTION_DESCRIPTIONS = {
 
 def calculate_subject(spr, bprs, customfiles, archive, distroseries,
                       pocket, action):
-    """Return the e-mail subject for the notification."""
+    """Return the email subject for the notification."""
     suite = distroseries.getSuite(pocket)
     names = set()
     version = '-'
@@ -261,7 +261,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
 def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
                   action, previous_version=None):
-    """Assemble the e-mail notification body."""
+    """Assemble the email notification body."""
     if changes is None:
         changes = {}
     info = fetch_information(
@@ -568,7 +568,7 @@ def email_to_person(email):
 
 
 def person_to_email(person):
-    """Return a string of full name <e-mail address> given an IPerson."""
+    """Return a string of full name <email address> given an IPerson."""
     if person and person.preferredemail:
         # This will use email.header to encode any non-ASCII characters.
         return format_address_for_person(person)
