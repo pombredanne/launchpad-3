@@ -16,6 +16,7 @@ from itertools import (
     groupby,
     )
 from operator import attrgetter
+from urllib import quote_plus
 
 from bzrlib import urlutils
 import pytz
@@ -349,6 +350,10 @@ class GitRepository(StormBase, GitIdentityMixin):
         """See `IGitRepository`."""
         return urlutils.join(
             config.codehosting.git_browse_root, self.shortened_path)
+
+    def getCodebrowseUrlForRevision(self, commit):
+        return "%s/commit/?id=%s" % (
+            self.getCodebrowseUrl(), quote_plus(str(commit)))
 
     @property
     def git_https_url(self):

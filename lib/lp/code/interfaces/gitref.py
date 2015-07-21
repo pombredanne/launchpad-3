@@ -134,6 +134,9 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
     def getCodebrowseUrl():
         """Construct a browsing URL for this Git reference."""
 
+    def getCodebrowseUrlForRevision(commit):
+        """Construct a browsing URL for this Git at the given commit"""
+
     information_type = Attribute(
         "The type of information contained in the repository containing this "
         "reference.")

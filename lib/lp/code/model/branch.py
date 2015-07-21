@@ -10,6 +10,7 @@ __all__ = [
 
 from datetime import datetime
 import operator
+from urllib import quote_plus
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
@@ -659,6 +660,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             root = config.codehosting.codebrowse_root
         return urlutils.join(root, self.unique_name, *extras)
+
+    def getCodebrowseUrlForRevision(self, revision):
+        """See `IBranch`."""
+        return self.getCodebrowseUrl("revision", quote_plus(str(revision)))
 
     @property
     def browse_source_url(self):

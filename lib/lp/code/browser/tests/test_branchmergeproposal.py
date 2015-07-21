@@ -164,10 +164,9 @@ class TestBranchMergeProposalMergedViewMixin:
             self.arbitrary_revisions[2])
         browser.getControl('Mark as Merged').click()
         browser = self.getViewBrowser(bmp.merge_source, '+index')
-        revision_link = self.getCodebrowseUrl(bmp, self.arbitrary_revisions[2])
-        revision_number = Tag(
-            'Revision number', 'a', {'href': revision_link},
-            text='revision %s' % self.arbitrary_revisions[2])
+        revision_link = bmp.merge_target.getCodebrowseUrlForRevision(
+            self.arbitrary_revisions[2])
+        revision_number = Tag('Revision number', 'a', {'href': revision_link})
         self.assertThat(browser.contents, HTMLContains(revision_number))
 
 class TestBranchMergeProposalMergedViewBzr(
@@ -186,9 +185,6 @@ class TestBranchMergeProposalMergedViewBzr(
     def getBranchRevisionValues(self, branch):
         return {'merged_revno': branch.revision_count}
 
-    def getCodebrowseUrl(self, bmp, revision):
-        return "%s/revision/%s" % (bmp.merge_target, revision)
-
 
 class TestBranchMergeProposalMergedViewGit(
     TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
@@ -205,9 +201,6 @@ class TestBranchMergeProposalMergedViewGit(
 
     def getBranchRevisionValues(self, branch):
         return {'merged_revision_id': branch.commit_sha1}
-
-    def getCodebrowseUrl(self, bmp, revision):
-        return "%s/commit/?id=%s" % (bmp.merge_target, revision)
 
 
 class TestBranchMergeProposalAddVoteView(TestCaseWithFactory):

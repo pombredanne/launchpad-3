@@ -101,6 +101,10 @@ class GitRefMixin:
         return "%s?h=%s" % (
             self.repository.getCodebrowseUrl(), quote_plus(self.name))
 
+    def getCodebrowseUrlForRevision(self, commit):
+        """See `IGitRef`."""
+        return self.repository.getCodebrowseUrlForRevision(commit)
+
     @property
     def information_type(self):
         """See `IGitRef`."""

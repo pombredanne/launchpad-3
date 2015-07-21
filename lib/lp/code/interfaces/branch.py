@@ -692,6 +692,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     browse_source_url = Attribute(
         "The URL of the source browser for this branch.")
 
+    def getCodebrowseUrlForRevision(commit):
+        """The URL to the commit of the merge to the target branch"""
+
     # Really ICodeImport, but that would cause a circular import
     code_import = exported(
         Reference(
