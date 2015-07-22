@@ -58,6 +58,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookDeliveryJob,
     IWebhookDeliveryJobSource,
     IWebhookJob,
+    IWebhookJobSource,
     IWebhookSource,
     WebhookFeatureDisabled,
     )
@@ -122,6 +123,9 @@ class Webhook(StormBase):
     def ping(self):
         return WebhookDeliveryJob.create(self, {'ping': True})
 
+    def destroySelf(self):
+        getUtility(IWebhookSource).delete([self])
+
     @property
     def event_types(self):
         return (self.json_data or {}).get('event_types', [])
@@ -157,6 +161,8 @@ class WebhookSource:
         return hook
 
     def delete(self, hooks):
+        hooks = list(hooks)
+        getUtility(IWebhookJobSource).deleteByWebhooks(hooks)
         IStore(Webhook).find(
             Webhook, Webhook.id.is_in(set(hook.id for hook in hooks))).remove()
 
@@ -200,6 +206,7 @@ class WebhookJobType(DBEnumeratedType):
         """)
 
 
+@provider(IWebhookJobSource)
 @implementer(IWebhookJob)
 class WebhookJob(StormBase):
     """See `IWebhookJob`."""
@@ -235,6 +242,24 @@ class WebhookJob(StormBase):
 
     def makeDerived(self):
         return WebhookJobDerived.makeSubclass(self)
+
+    @staticmethod
+    def deleteByIDs(webhookjob_ids):
+        """See `IWebhookJobSource`."""
+        # Assumes that Webhook's PK is its FK to Job.id.
+        webookjob_ids = list(webhookjob_ids)
+        IStore(WebhookJob).find(
+            WebhookJob, WebhookJob.job_id.is_in(webhookjob_ids)).remove()
+        IStore(Job).find(Job, Job.id.is_in(webhookjob_ids)).remove()
+
+    @classmethod
+    def deleteByWebhooks(cls, webhooks):
+        """See `IWebhookJobSource`."""
+        result = IStore(WebhookJob).find(
+            WebhookJob,
+            WebhookJob.webhook_id.is_in(hook.id for hook in webhooks))
+        job_ids = list(result.values(WebhookJob.job_id))
+        cls.deleteByIDs(job_ids)
 
 
 @delegate_to(IWebhookJob)
