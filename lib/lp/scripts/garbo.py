@@ -1661,12 +1661,12 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-frequently'
     tunable_loops = [
-        BugSummaryJournalRollup,
-        OpenIDConsumerNoncePruner,
-        OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
-        VoucherRedeemer,
+        BugSummaryJournalRollup,
+        OpenIDConsumerAssociationPruner,
+        OpenIDConsumerNoncePruner,
         PopulateLatestPersonSourcePackageReleaseCache,
+        VoucherRedeemer,
         ]
     experimental_tunable_loops = []
 
@@ -1683,11 +1683,11 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-hourly'
     tunable_loops = [
-        RevisionCachePruner,
-        BugWatchScheduler,
-        UnusedSessionPruner,
-        DuplicateSessionPruner,
         BugHeatUpdater,
+        BugWatchScheduler,
+        DuplicateSessionPruner,
+        RevisionCachePruner,
+        UnusedSessionPruner,
         ]
     experimental_tunable_loops = []
 
@@ -1712,24 +1712,24 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugWatchActivityPruner,
         CodeImportEventPruner,
         CodeImportResultPruner,
+        DiffPruner,
         GitJobPruner,
-        WebhookJobPruner,
         HWSubmissionEmailLinker,
         LiveFSFilePruner,
         LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
+        POTranslationPruner,
+        PreviewDiffPruner,
+        ProductVCSPopulator,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         TeamMembershipPruner,
-        POTranslationPruner,
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
-        ProductVCSPopulator,
-        PreviewDiffPruner,
-        DiffPruner,
+        WebhookJobPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
