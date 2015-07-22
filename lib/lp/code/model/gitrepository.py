@@ -146,6 +146,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import available_with_permission
+from lp.services.webhooks.interfaces import IWebhookSource
 from lp.services.webhooks.model import WebhookTargetMixin
 
 
@@ -1075,6 +1076,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositoryAccessGrants()
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
+        getUtility(IWebhookSource).delete(self.webhooks)
 
         # Now destroy the repository.
         repository_name = self.unique_name

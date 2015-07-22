@@ -11,6 +11,7 @@ __all__ = [
     'IWebhookDeliveryJob',
     'IWebhookDeliveryJobSource',
     'IWebhookJob',
+    'IWebhookJobSource',
     'IWebhookSource',
     'IWebhookTarget',
     'WebhookFeatureDisabled',
@@ -23,6 +24,7 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_factory_operation,
     exported,
     operation_for_version,
@@ -112,6 +114,11 @@ class IWebhook(Interface):
     def ping():
         """Send a test event."""
 
+    @export_destructor_operation()
+    @operation_for_version('devel')
+    def destroySelf():
+        """Delete this webhook."""
+
 
 class IWebhookSource(Interface):
 
@@ -157,6 +164,15 @@ class IWebhookJob(Interface):
         schema=IWebhook, required=True, readonly=True)
 
     json_data = Attribute(_("A dict of data about the job."))
+
+
+class IWebhookJobSource(IJobSource):
+
+    def deleteByIDs(webhookjob_ids):
+        """Delete `IWebhookJob`s by their primary key (`Job.id`)."""
+
+    def deleteByWebhooks(webhooks):
+        """Delete all `IWebhookJob`s for the given `IWebhook`."""
 
 
 class IWebhookDeliveryJob(IRunnableJob):

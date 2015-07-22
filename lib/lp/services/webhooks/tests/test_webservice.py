@@ -126,6 +126,16 @@ class TestWebhook(TestCaseWithFactory):
             get_deliveries, create_delivery, 2)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
+    def test_delete(self):
+        with person_logged_in(self.owner):
+            self.webhook.ping()
+        delete_response = self.webservice.delete(
+            self.webhook_url, api_version='devel')
+        self.assertEqual(200, delete_response.status)
+        get_response = self.webservice.get(
+            self.webhook_url, api_version='devel')
+        self.assertEqual(404, get_response.status)
+
 
 class TestWebhookDelivery(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer

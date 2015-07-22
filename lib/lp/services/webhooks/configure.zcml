@@ -23,6 +23,11 @@
     </securedutility>
 
     <securedutility
+        component="lp.services.webhooks.model.WebhookJob"
+        provides="lp.services.webhooks.interfaces.IWebhookJobSource">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookJobSource"/>
+    </securedutility>
+    <securedutility
         component="lp.services.webhooks.model.WebhookDeliveryJob"
         provides="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource">
         <allow interface="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource"/>

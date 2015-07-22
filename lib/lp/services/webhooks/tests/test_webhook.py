@@ -3,25 +3,32 @@
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.store import Store
-from testtools.matchers import GreaterThan
+from testtools.matchers import (
+    Equals,
+    GreaterThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.checker import getChecker
 
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.services.webhooks.interfaces import (
     IWebhook,
     IWebhookSource,
     )
+from lp.services.webhooks.model import WebhookJob
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestWebhook(TestCaseWithFactory):
@@ -67,8 +74,9 @@ class TestWebhookPermissions(TestCaseWithFactory):
         expected_get_permissions = {
             'launchpad.View': set((
                 'active', 'date_created', 'date_last_modified', 'deliveries',
-                'delivery_url', 'event_types', 'getDelivery', 'id', 'ping',
-                'registrant', 'registrant_id', 'secret', 'target')),
+                'delivery_url', 'destroySelf', 'event_types', 'getDelivery',
+                'id', 'ping', 'registrant', 'registrant_id', 'secret',
+                'target')),
             }
         webhook = self.factory.makeWebhook()
         checker = getChecker(webhook)
@@ -141,15 +149,25 @@ class TestWebhookSource(TestCaseWithFactory):
     def test_delete(self):
         target = self.factory.makeGitRepository()
         login_person(target.owner)
-        hooks = [
-            self.factory.makeWebhook(target, u'http://path/to/%d' % i)
-            for i in range(3)]
+        hooks = []
+        for i in range(3):
+            hook = self.factory.makeWebhook(target, u'http://path/to/%d' % i)
+            hook.ping()
+            hooks.append(hook)
+        self.assertEqual(3, IStore(WebhookJob).find(WebhookJob).count())
         self.assertContentEqual(
             [u'http://path/to/0', u'http://path/to/1', u'http://path/to/2'],
             [hook.delivery_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])
-        getUtility(IWebhookSource).delete(hooks[:2])
+
+        transaction.commit()
+        with StormStatementRecorder() as recorder:
+            getUtility(IWebhookSource).delete(hooks[:2])
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
+
         self.assertContentEqual(
             [u'http://path/to/2'],
             [hook.delivery_url for hook in
              getUtility(IWebhookSource).findByTarget(target)])
+        self.assertEqual(1, IStore(WebhookJob).find(WebhookJob).count())
+        self.assertEqual(1, hooks[2].deliveries.count())

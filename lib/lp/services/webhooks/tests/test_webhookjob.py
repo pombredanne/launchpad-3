@@ -10,6 +10,7 @@ from httmock import (
     urlmatch,
     )
 import requests
+from storm.store import Store
 from testtools import TestCase
 from testtools.matchers import (
     Contains,
@@ -22,6 +23,7 @@ from testtools.matchers import (
     Not,
     )
 import transaction
+from zope.component import getUtility
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
@@ -33,6 +35,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookClient,
     IWebhookDeliveryJob,
     IWebhookJob,
+    IWebhookJobSource,
     )
 from lp.services.webhooks.model import (
     WebhookDeliveryJob,
@@ -40,7 +43,10 @@ from lp.services.webhooks.model import (
     WebhookJobDerived,
     WebhookJobType,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import dbuser
 from lp.testing.fixture import (
     CaptureOops,
@@ -63,6 +69,41 @@ class TestWebhookJob(TestCaseWithFactory):
         hook = self.factory.makeWebhook()
         self.assertProvides(
             WebhookJob(hook, WebhookJobType.DELIVERY, {}), IWebhookJob)
+
+
+class TestWebhookJobSource(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_deleteByIDs(self):
+        target = self.factory.makeGitRepository()
+        login_person(target.owner)
+        hook = self.factory.makeWebhook(target=target)
+        job1 = hook.ping()
+        job2 = hook.ping()
+        job3 = hook.ping()
+        self.assertContentEqual([job3, job2, job1], hook.deliveries)
+        getUtility(IWebhookJobSource).deleteByIDs([job1.job_id, job3.job_id])
+        self.assertContentEqual([job2], hook.deliveries)
+
+    def test_deleteByWebhooks(self):
+        target = self.factory.makeGitRepository()
+        login_person(target.owner)
+        hook1 = self.factory.makeWebhook(target=target)
+        job1 = hook1.ping()
+        job2 = hook1.ping()
+        hook2 = self.factory.makeWebhook(target=target)
+        job3 = hook2.ping()
+        hook3 = self.factory.makeWebhook(target=target)
+        job4 = hook3.ping()
+        store = Store.of(hook1)
+        self.assertEqual(4, store.find(WebhookJob).count())
+        self.assertContentEqual([job2, job1], hook1.deliveries)
+        self.assertContentEqual([job3], hook2.deliveries)
+        self.assertContentEqual([job4], hook3.deliveries)
+        getUtility(IWebhookJobSource).deleteByWebhooks([hook1, hook2])
+        self.assertEqual(1, store.find(WebhookJob).count())
+        self.assertContentEqual([job4], hook3.deliveries)
 
 
 class TestWebhookJobDerived(TestCaseWithFactory):
