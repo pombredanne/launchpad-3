@@ -11,6 +11,7 @@ CREATE TABLE Snap (
     owner integer NOT NULL REFERENCES person,
     distro_series integer NOT NULL REFERENCES distroseries,
     name text NOT NULL,
+    description text,
     branch integer REFERENCES branch,
     git_repository integer REFERENCES gitrepository,
     git_path text,
@@ -26,6 +27,7 @@ COMMENT ON COLUMN Snap.registrant IS 'The user who registered the snap package.'
 COMMENT ON COLUMN Snap.owner IS 'The owner of the snap package.';
 COMMENT ON COLUMN Snap.distro_series IS 'The DistroSeries for which the snap package should be built.';
 COMMENT ON COLUMN Snap.name IS 'The name of the snap package, unique per owner and DistroSeries.';
+COMMENT ON COLUMN Snap.description IS 'A description of the snap package.';
 COMMENT ON COLUMN Snap.branch IS 'A Bazaar branch containing a snap recipe.';
 COMMENT ON COLUMN Snap.git_repository IS 'A Git repository with a branch containing a snap recipe.';
 COMMENT ON COLUMN Snap.git_path IS 'The path of the Git branch containing a snap recipe.';
