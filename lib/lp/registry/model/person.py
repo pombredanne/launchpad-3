@@ -20,6 +20,7 @@ __all__ = [
     'person_sort_key',
     'PersonLanguage',
     'PersonSet',
+    'PersonSettings',
     'SSHKey',
     'SSHKeySet',
     'TeamInvitationEvent',
@@ -105,10 +106,7 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -422,6 +420,8 @@ class PersonSettings(Storm):
     person = Reference(personID, "Person.id")
 
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=False)
+
+    expanded_notification_footers = BoolCol(notNull=False, default=False)
 
 
 def readonly_settings(message, interface):
@@ -2191,7 +2191,7 @@ class Person(
         if pre_deactivate and not comment:
             raise AssertionError("Require a comment to deactivate.")
 
-        # Set account status, and set all e-mails to NEW.
+        # Set account status, and set all emails to NEW.
         if pre_deactivate:
             self.preDeactivate(comment)
 

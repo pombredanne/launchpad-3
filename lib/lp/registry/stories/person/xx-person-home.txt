@@ -51,7 +51,7 @@ But Foo Bar can:
     Email:
     test@canonical.com
     testing@canonical.com
-    Change e-mail settings
+    Change email settings
     Manage mailing list subscriptions
 
 
@@ -269,6 +269,6 @@ users cannot see this, but admins like Foo Bar can.
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'email-addresses'))
     jvprat@wanadoo.es
-    Change e-mail settings
+    Change email settings
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class for sending out emails."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = ['BaseMailer', 'RecipientReason']
 
+from collections import OrderedDict
 import logging
 from smtplib import SMTPException
 
@@ -77,6 +78,9 @@ class BaseMailer:
         headers = self._getHeaders(email)
         subject = self._getSubject(email, recipient)
         body = self._getBody(email, recipient)
+        expanded_footer = self._getExpandedFooter(headers, recipient)
+        if expanded_footer:
+            body = append_footer(body, expanded_footer)
         ctrl = self._mail_controller_class(
             self.from_address, to_addresses, subject, body, headers,
             envelope_to=[email])
@@ -100,7 +104,8 @@ class BaseMailer:
     def _getHeaders(self, email):
         """Return the mail headers to use."""
         reason, rationale = self._recipients.getReason(email)
-        headers = {'X-Launchpad-Message-Rationale': reason.mail_header}
+        headers = OrderedDict()
+        headers['X-Launchpad-Message-Rationale'] = reason.mail_header
         if self.notification_type is not None:
             headers['X-Launchpad-Notification-Type'] = self.notification_type
         reply_to = self._getReplyToAddress()
@@ -145,6 +150,16 @@ class BaseMailer:
     def _getFooter(self, params):
         """Provide a footer to attach to the body, or None."""
         return None
+
+    def _getExpandedFooter(self, headers, recipient):
+        """Provide an expanded footer for recipients who have requested it."""
+        if not recipient.expanded_notification_footers:
+            return None
+        lines = []
+        for key, value in headers.items():
+            if key.startswith('X-Launchpad-'):
+                lines.append('%s: %s\n' % (key[2:], value))
+        return ''.join(lines)
 
     def sendAll(self):
         """Send notifications to all recipients."""

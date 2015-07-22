@@ -61,13 +61,13 @@ source creator (mark) as specified in the test configuration:
 
   >>> for build_notification in notifications:
   ...      build_notification['To']
-  'celso.providelo@canonical.com'
-  'foo.bar@canonical.com'
-  'mark@example.com'
+  'Celso Providelo <celso.providelo@canonical.com>'
+  'Foo Bar <foo.bar@canonical.com>'
+  'Mark Shuttleworth <mark@example.com>'
 
 Note that the generated notification contain the 'extra_info' content:
 
-  >>> build_notification = notifications.pop(0)
+  >>> build_notification = notifications[0]
 
   >>> build_notification['Subject']
   '[Build #22] i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
@@ -99,7 +99,24 @@ Note that the generated notification contain the 'extra_info' content:
   If you want further information about this situation, feel free to
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
-  --
+  -- =
+  <BLANKLINE>
   i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
   http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/22
+  <BLANKLINE>
+  You are receiving this email because you are a buildd administrator.
+  <BLANKLINE>
+
+The other notifications are similar except for the footer.
+
+  >>> print notifications[1].get_payload()
+  <BLANKLINE>
+  ...
+  You are receiving this email because you are a buildd administrator.
+  <BLANKLINE>
+  >>> print notifications[2].get_payload()
+  <BLANKLINE>
+  ...
+  You are receiving this email because you created this version of this
+  package.
   <BLANKLINE>

@@ -17,13 +17,13 @@
         <ul class="bulleted">
           <li>You must be logged in to Launchpad under the account you
             want to keep.</li>
-          <li>You must have access to the e-mail address registered
+          <li>You must have access to the email address registered
             under the other account that you want to remove.</li>
         </ul>
         <p>
           You will receive an email notification requesting you authorize
           the merge, and once you've proven that you own the duplicated
-          account's e-mail address, it will be assigned to you, along with
+          account's email address, it will be assigned to you, along with
           everything else owned by it.
         </p>
         <p>

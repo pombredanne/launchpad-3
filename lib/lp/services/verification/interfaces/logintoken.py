@@ -78,7 +78,7 @@ class ILoginToken(IAuthToken):
         """
 
     def sendClaimTeamEmail():
-        """E-mail instructions for claiming a team to self.email."""
+        """Email instructions for claiming a team to self.email."""
 
     def activateGPGKey(key, can_encrypt):
         """Activate a GPG key.

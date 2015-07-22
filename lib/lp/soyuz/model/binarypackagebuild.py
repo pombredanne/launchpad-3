@@ -46,10 +46,7 @@ from zope.component import getUtility
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -82,15 +79,6 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.mail.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
-from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -105,6 +93,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.mail.binarypackagebuild import BinaryPackageBuildMailer
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.files import BinaryPackageFile
@@ -702,7 +691,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def notify(self, extra_info=None):
         """See `IPackageBuild`.
 
-        If config.buildmaster.build_notification is disable, simply
+        If config.buildmaster.send_build_notification is disabled, simply
         return.
 
         If config.builddmaster.notify_owner is enabled and SPR.creator
@@ -716,148 +705,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         the record in question (all states are supported), see
         doc/build-notification.txt for further information.
         """
-
         if not config.builddmaster.send_build_notification:
             return
         if self.status == BuildStatus.FULLYBUILT:
             return
-
-        recipients = set()
-
-        fromaddress = format_address(
-            config.builddmaster.default_sender_name,
-            config.builddmaster.default_sender_address)
-
-        extra_headers = {
-            'X-Launchpad-Archive': self.archive.reference,
-            'X-Launchpad-Build-State': self.status.name,
-            'X-Launchpad-Build-Component': self.current_component.name,
-            'X-Launchpad-Build-Arch':
-                self.distro_arch_series.architecturetag,
-            }
-
-        # XXX cprov 2006-10-27: Temporary extra debug info about the
-        # SPR.creator in context, to be used during the service quarantine,
-        # notify_owner will be disabled to avoid *spamming* Debian people.
-        creator = self.source_package_release.creator
-        extra_headers['X-Creator-Recipient'] = ",".join(
-            get_contact_email_addresses(creator))
-
-        # Currently there are 7038 SPR published in edgy which the creators
-        # have no preferredemail. They are the autosync ones (creator = katie,
-        # 3583 packages) and the untouched sources since we have migrated from
-        # DAK (the rest). We should not spam Debian maintainers.
-
-        # Please note that both the package creator and the package uploader
-        # will be notified of failures if:
-        #     * the 'notify_owner' flag is set
-        #     * the package build (failure) occurred in the original
-        #       archive.
-        package_was_not_copied = (
-            self.archive == self.source_package_release.upload_archive)
-
-        if package_was_not_copied and config.builddmaster.notify_owner:
-            if (self.archive.is_ppa and creator.inTeam(self.archive.owner)
-                or
-                not self.archive.is_ppa):
-                # If this is a PPA, the package creator should only be
-                # notified if they are the PPA owner or in the PPA team.
-                # (see bug 375757)
-                # Non-PPA notifications inform the creator regardless.
-                recipients = recipients.union(
-                    get_contact_email_addresses(creator))
-            dsc_key = self.source_package_release.dscsigningkey
-            if dsc_key:
-                recipients = recipients.union(
-                    get_contact_email_addresses(dsc_key.owner))
-
-        # Modify notification contents according to the targeted archive.
-        # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
-        # We only send build-notifications to 'buildd-admin' celebrity for
-        # main archive candidates.
-        # For PPA build notifications we include the archive.owner
-        # contact_address.
-        subject = "[Build #%d] %s" % (self.id, self.title)
-        if not self.archive.is_ppa:
-            buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
-            recipients = recipients.union(
-                get_contact_email_addresses(buildd_admins))
-            source_url = canonical_url(self.distributionsourcepackagerelease)
-        else:
-            recipients = recipients.union(
-                get_contact_email_addresses(self.archive.owner))
-            # For PPAs we run the risk of having no available contact_address,
-            # for instance, when both, SPR.creator and Archive.owner have
-            # not enabled it.
-            if len(recipients) == 0:
-                return
-            subject += ' [%s]' % self.archive.reference
-            source_url = 'not available'
-            # The deprecated PPA reference header is included for Ubuntu
-            # PPAs to avoid breaking existing consumers.
-            if self.archive.distribution.name == u'ubuntu':
-                extra_headers['X-Launchpad-PPA'] = get_ppa_reference(
-                    self.archive)
-
-        # XXX cprov 2006-08-02: pending security recipients for SECURITY
-        # pocket build. We don't build SECURITY yet :(
-
-        # XXX cprov 2006-08-02: find out a way to glue parameters reported
-        # with the state in the build worflow, maybe by having an
-        # IBuild.statusReport property, which could also be used in the
-        # respective page template.
-        if self.status in [
-            BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
-            # untouched builds
-            buildduration = 'not available'
-            buildlog_url = 'not available'
-            builder_url = 'not available'
-        elif self.status == BuildStatus.UPLOADING:
-            buildduration = 'uploading'
-            buildlog_url = 'see builder page'
-            builder_url = 'not available'
-        elif self.status == BuildStatus.BUILDING:
-            # build in process
-            buildduration = 'not finished'
-            buildlog_url = 'see builder page'
-            builder_url = canonical_url(self.buildqueue_record.builder)
-        else:
-            # completed states (success and failure)
-            buildduration = DurationFormatterAPI(
-                self.duration).approximateduration()
-            buildlog_url = self.log_url
-            builder_url = canonical_url(self.builder)
-
-        if self.status == BuildStatus.FAILEDTOUPLOAD:
-            assert extra_info is not None, (
-                'Extra information is required for FAILEDTOUPLOAD '
-                'notifications.')
-            extra_info = 'Upload log:\n%s' % extra_info
-        else:
-            extra_info = ''
-
-        template = get_email_template('build-notification.txt', app='soyuz')
-        replacements = {
-            'source_name': self.source_package_release.name,
-            'source_version': self.source_package_release.version,
-            'architecturetag': self.distro_arch_series.architecturetag,
-            'build_state': self.status.title,
-            'build_duration': buildduration,
-            'buildlog_url': buildlog_url,
-            'builder_url': builder_url,
-            'build_title': self.title,
-            'build_url': canonical_url(self),
-            'source_url': source_url,
-            'extra_info': extra_info,
-            'archive_tag': self.archive.reference,
-            'component_tag': self.current_component.name,
-            }
-        message = template % replacements
-
-        for toaddress in recipients:
-            simple_sendmail(
-                fromaddress, toaddress, subject, message,
-                headers=extra_headers)
+        mailer = BinaryPackageBuildMailer.forStatus(
+            self, extra_info=extra_info)
+        mailer.sendAll()
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""

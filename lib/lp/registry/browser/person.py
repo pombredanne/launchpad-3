@@ -829,7 +829,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'Change e-mail settings'
+        text = 'Change email settings'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -960,7 +960,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     def email_settings(self):
         target = '+editemails'
-        text = 'E-mail Settings'
+        text = 'Email Settings'
         return Link(target, text)
 
     @enabled_with_permission('launchpad.Special')
@@ -2702,7 +2702,8 @@ class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
 
     field_names = ['displayname', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
-                   'selfgenerated_bugnotifications']
+                   'selfgenerated_bugnotifications',
+                   'expanded_notification_footers']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     label = 'Change your personal details'
@@ -2778,7 +2779,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
 
-    label = 'Change your e-mail settings'
+    label = 'Change your email settings'
 
     def initialize(self):
         require_fresh_login(self.request, self.context, '+editemails')
@@ -2992,7 +2993,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
-            "An e-mail message was sent to '%s' with "
+            "An email message was sent to '%s' with "
             "instructions on how to confirm that "
             "it belongs to you." % email)
         self.next_url = self.action_url

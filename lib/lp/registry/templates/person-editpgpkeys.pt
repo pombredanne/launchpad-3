@@ -61,7 +61,7 @@
       <p tal:condition="view/key/expired" class="error message">
         The key <span tal:replace="view/key/keyid" /> cannot be validated
         because it has expired. Change the expiry date (in a terminal, enter
-        <kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> then enter
+        <kbd>gpg --edit-key <var>your@email.address</var></kbd> then enter
         <kbd>expire</kbd>), and try again.
       </p>
 
@@ -180,7 +180,7 @@
             </tbody>
           </table>
           <p>
-            Next, Launchpad will send e-mail to you at
+            Next, Launchpad will send email to you at
             <code tal:content="context/preferredemail/email"/> with instructions
             on finishing the process.
           </p>

@@ -78,12 +78,19 @@ actions.
     False
     >>> self_generated_control.click()
 
+He will enable expanded mail notification footers.
+
+    >>> expanded_footer_control = browser.getControl(
+    ...     "Include filtering information in email footers")
+    >>> expanded_footer_control.selected
+    False
+    >>> expanded_footer_control.click()
+
     >>> browser.getControl('Save').click()
     >>> browser.url
     'http://launchpad.dev/~rayjay'
 
-We now check to ensure that the verbose bug notifications option and
-self-generated bug notification option were changed:
+We now check to ensure that the various notifications options were changed:
 
     >>> browser.open('http://launchpad.dev/~rayjay/+edit')
     >>> browser.getControl("Include bug descriptions when sending me "
@@ -91,4 +98,7 @@ self-generated bug notification option were changed:
     False
     >>> browser.getControl(
     ...     "Send me bug notifications for changes I make").selected
+    True
+    >>> browser.getControl(
+    ...     "Include filtering information in email footers").selected
     True

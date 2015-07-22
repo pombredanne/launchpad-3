@@ -142,7 +142,7 @@ def format_address(name, address):
         '"Foo \\[Baz\\] Bar" <foo.bar@canonical.com>'
 
     Really long names doesn't get folded, since we're not constructing
-    an e-mail header here.
+    an email header here.
 
         >>> formatted_address = format_address(
         ...     'a '*100, 'long.name@example.com')
@@ -333,7 +333,7 @@ def simple_sendmail_from_person(
 
 
 def get_addresses_from_header(email_header):
-    r"""Get the e-mail addresses specificed in an e-mail header.
+    r"""Get the email addresses specificed in an email header.
 
         >>> get_addresses_from_header('one@example.com')
         ['one@example.com']
