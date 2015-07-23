@@ -713,6 +713,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
         # Obsolete table.
         ('branchmergequeue', 'owner'),
+        # This needs handling before we deploy the snap code, but can be
+        # ignored for the purpose of deploying the database tables.
+        ('snap', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
