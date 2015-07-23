@@ -192,6 +192,7 @@ from lp.services.worlddata.interfaces.language import (
     ILanguageSet,
     )
 from lp.snappy.interfaces.snap import ISnap
+from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -3116,3 +3117,33 @@ class AdminSnap(AuthorizationBase):
         return (
             user.in_ppa_self_admins
             and EditSnap(self.obj).checkAuthenticated(user))
+
+
+class ViewSnapBuild(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ISnapBuild
+
+    def iter_objects(self):
+        yield self.obj.snap
+        yield self.obj.archive
+
+
+class EditSnapBuild(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = ISnapBuild
+
+    def checkAuthenticated(self, user):
+        """Check edit access for snap package builds.
+
+        Allow admins, buildd admins, and the owner of the snap package.
+        (Note that the requester of the build is required to be in the team
+        that owns the snap package.)
+        """
+        auth_snap = EditSnap(self.obj.snap)
+        if auth_snap.checkAuthenticated(user):
+            return True
+        return super(EditSnapBuild, self).checkAuthenticated(user)
+
+
+class AdminSnapBuild(AdminByBuilddAdmin):
+    usedfor = ISnapBuild

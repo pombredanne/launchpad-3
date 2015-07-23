@@ -13,5 +13,15 @@
             for="lp.snappy.interfaces.snap.ISnap"
             path_expression="string:+snap/${name}"
             attribute_to_parent="owner" />
+        <browser:navigation
+            module="lp.snappy.browser.snap"
+            classes="SnapNavigation" />
+        <browser:url
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            path_expression="string:+build/${id}"
+            attribute_to_parent="snap" />
+        <browser:navigation
+            module="lp.snappy.browser.snapbuild"
+            classes="SnapBuildNavigation" />
     </facet>
 </configure>

@@ -265,6 +265,8 @@ from lp.services.webhooks.interfaces import IWebhookSource
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.model.snapbuild import SnapFile
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -4558,6 +4560,59 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             **kwargs)
         IStore(snap).flush()
         return snap
+
+    def makeSnapBuild(self, requester=None, registrant=None, snap=None,
+                      archive=None, distroarchseries=None, pocket=None,
+                      date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
+                      builder=None, duration=None, **kwargs):
+        """Make a new SnapBuild."""
+        if requester is None:
+            requester = self.makePerson()
+        if snap is None:
+            if "distroseries" in kwargs:
+                distroseries = kwargs["distroseries"]
+                del kwargs["distroseries"]
+            elif distroarchseries is not None:
+                distroseries = distroarchseries.distroseries
+            elif archive is not None:
+                distroseries = self.makeDistroSeries(
+                    distribution=archive.distribution)
+            else:
+                distroseries = None
+            if registrant is None:
+                registrant = requester
+            snap = self.makeSnap(
+                registrant=registrant, distroseries=distroseries, **kwargs)
+        if archive is None:
+            archive = snap.distro_series.main_archive
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=snap.distro_series)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        snapbuild = getUtility(ISnapBuildSet).new(
+            requester, snap, archive, distroarchseries, pocket,
+            date_created=date_created)
+        if duration is not None:
+            removeSecurityProxy(snapbuild).updateStatus(
+                BuildStatus.BUILDING, builder=builder,
+                date_started=snapbuild.date_created)
+            removeSecurityProxy(snapbuild).updateStatus(
+                status, builder=builder,
+                date_finished=snapbuild.date_started + duration)
+        else:
+            removeSecurityProxy(snapbuild).updateStatus(
+                status, builder=builder)
+        IStore(snapbuild).flush()
+        return snapbuild
+
+    def makeSnapFile(self, snapbuild=None, libraryfile=None):
+        if snapbuild is None:
+            snapbuild = self.makeSnapBuild()
+        if libraryfile is None:
+            libraryfile = self.makeLibraryFileAlias()
+        return ProxyFactory(
+            SnapFile(snapbuild=snapbuild, libraryfile=libraryfile))
 
 
 # Some factory methods return simple Python types. We don't add
