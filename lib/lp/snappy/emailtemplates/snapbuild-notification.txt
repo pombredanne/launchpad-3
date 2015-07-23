@@ -1,0 +1,10 @@
+ * Snap Package: %(snap_name)s
+ * Archive: %(archive_tag)s
+ * Distroseries: %(distroseries)s
+ * Architecture: %(architecturetag)s
+ * Pocket: %(pocket)s
+ * State: %(build_state)s
+ * Duration: %(build_duration)s
+ * Build Log: %(log_url)s
+ * Upload Log: %(upload_log_url)s
+ * Builder: %(builder_url)s
