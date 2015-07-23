@@ -274,6 +274,7 @@ from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
@@ -618,6 +619,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             return self.redirectSubTree(canonical_url(livefs))
 
         return livefs
+
+    @stepthrough('+snap')
+    def traverse_snap(self, name):
+        """Traverse to this person's snap packages."""
+        return getUtility(ISnapSet).getByName(self.context, name)
 
 
 class PersonSetNavigation(Navigation):

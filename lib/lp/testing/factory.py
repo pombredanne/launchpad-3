@@ -264,6 +264,7 @@ from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.webhooks.interfaces import IWebhookSource
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -4530,6 +4531,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IWebhookSource).new(
             target, self.makePerson(), delivery_url, [], True,
             self.getUniqueUnicode())
+
+    def makeSnap(self, registrant=None, owner=None, distroseries=None,
+                 name=None, branch=None, git_ref=None,
+                 require_virtualized=True, date_created=DEFAULT):
+        """Make a new Snap."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if owner is None:
+            owner = self.makeTeam(registrant)
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if name is None:
+            name = self.getUniqueString(u"snap-name")
+        kwargs = {}
+        if branch is None and git_ref is None:
+            branch = self.makeAnyBranch()
+        if branch is not None:
+            kwargs["branch"] = branch
+        elif git_ref is not None:
+            kwargs["git_repository"] = git_ref.repository
+            kwargs["git_path"] = git_ref.path
+        snap = getUtility(ISnapSet).new(
+            registrant, owner, distroseries, name,
+            require_virtualized=require_virtualized, date_created=date_created,
+            **kwargs)
+        IStore(snap).flush()
+        return snap
 
 
 # Some factory methods return simple Python types. We don't add

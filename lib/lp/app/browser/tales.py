@@ -1858,6 +1858,17 @@ class LiveFSFormatterAPI(CustomizableFormatter):
                 'owner': self._context.owner.displayname}
 
 
+class SnapFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISnap objects."""
+
+    _link_summary_template = _(
+        'Snap %(name)s for %(owner)s')
+
+    def _link_summary_values(self):
+        return {'name': self._context.name,
+                'owner': self._context.owner.displayname}
+
+
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
