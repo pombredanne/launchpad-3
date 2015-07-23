@@ -11,11 +11,16 @@ __all__ = [
     'ISnapFile',
     ]
 
-from lazr.restful.fields import Reference
-from zope.interface import (
-    Attribute,
-    Interface,
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_for_version,
+    operation_parameters,
     )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
 from zope.schema import (
     Bool,
     Choice,
@@ -37,7 +42,11 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 class ISnapFile(Interface):
     """A file produced by a snap package build."""
 
-    snapbuild = Attribute("The snap package build producing this file.")
+    snapbuild = Reference(
+        # Really ISnapBuild, patched in _schema_circular_imports.py.
+        Interface,
+        title=_("The snap package build producing this file."),
+        required=True, readonly=True)
 
     libraryfile = Reference(
         ILibraryFileAlias, title=_("The library file alias for this file."),
@@ -47,46 +56,46 @@ class ISnapFile(Interface):
 class ISnapBuildView(IPackageBuild):
     """`ISnapBuild` attributes that require launchpad.View permission."""
 
-    requester = Reference(
+    requester = exported(Reference(
         IPerson,
         title=_("The person who requested this build."),
-        required=True, readonly=True)
+        required=True, readonly=True))
 
-    snap = Reference(
+    snap = exported(Reference(
         ISnap,
         title=_("The snap package to build."),
-        required=True, readonly=True)
+        required=True, readonly=True))
 
-    archive = Reference(
+    archive = exported(Reference(
         IArchive,
         title=_("The archive from which to build the snap package."),
-        required=True, readonly=True)
+        required=True, readonly=True))
 
-    distro_arch_series = Reference(
+    distro_arch_series = exported(Reference(
         IDistroArchSeries,
         title=_("The series and architecture for which to build."),
-        required=True, readonly=True)
+        required=True, readonly=True))
 
-    pocket = Choice(
+    pocket = exported(Choice(
         title=_("The pocket for which to build."),
-        vocabulary=PackagePublishingPocket, required=True, readonly=True)
+        vocabulary=PackagePublishingPocket, required=True, readonly=True))
 
     virtualized = Bool(
         title=_("If True, this build is virtualized."), readonly=True)
 
-    score = Int(
+    score = exported(Int(
         title=_("Score of the related build farm job (if any)."),
-        required=False, readonly=True)
+        required=False, readonly=True))
 
-    can_be_rescored = Bool(
+    can_be_rescored = exported(Bool(
         title=_("Can be rescored"),
         required=True, readonly=True,
-        description=_("Whether this build record can be rescored manually."))
+        description=_("Whether this build record can be rescored manually.")))
 
-    can_be_cancelled = Bool(
+    can_be_cancelled = exported(Bool(
         title=_("Can be cancelled"),
         required=True, readonly=True,
-        description=_("Whether this build record can be cancelled."))
+        description=_("Whether this build record can be cancelled.")))
 
     def getFiles():
         """Retrieve the build's `ISnapFile` records.
@@ -111,6 +120,8 @@ class ISnapBuildView(IPackageBuild):
         :return: The corresponding `ILibraryFileAlias`.
         """
 
+    @export_read_operation()
+    @operation_for_version("devel")
     def getFileUrls():
         """URLs for all the files produced by this build.
 
@@ -127,6 +138,8 @@ class ISnapBuildEdit(Interface):
         :return: An `ISnapFile`.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
     def cancel():
         """Cancel the build if it is either pending or in progress.
 
@@ -145,12 +158,20 @@ class ISnapBuildEdit(Interface):
 class ISnapBuildAdmin(Interface):
     """`ISnapBuild` attributes that require launchpad.Admin."""
 
+    @operation_parameters(score=Int(title=_("Score"), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
     def rescore(score):
         """Change the build's score."""
 
 
 class ISnapBuild(ISnapBuildView, ISnapBuildEdit, ISnapBuildAdmin):
     """Build information for snap package builds."""
+
+    # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(as_of="beta")
 
 
 class ISnapBuildSet(ISpecificBuildFarmJobSource):

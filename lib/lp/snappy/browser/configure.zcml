@@ -17,6 +17,10 @@
             module="lp.snappy.browser.snap"
             classes="SnapNavigation" />
         <browser:url
+            for="lp.snappy.interfaces.snap.ISnapSet"
+            path_expression="string:+snaps"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot" />
+        <browser:url
             for="lp.snappy.interfaces.snapbuild.ISnapBuild"
             path_expression="string:+build/${id}"
             attribute_to_parent="snap" />

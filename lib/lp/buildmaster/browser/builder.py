@@ -55,6 +55,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.batching import StormRangeFactory
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.soyuz.browser.build import (
     BuildRecordsView,
     get_build_by_id_str,
@@ -84,6 +85,13 @@ class BuilderSetNavigation(GetitemNavigation):
     @stepthrough('+livefsbuild')
     def traverse_livefsbuild(self, name):
         build = get_build_by_id_str(ILiveFSBuildSet, name)
+        if build is None:
+            return None
+        return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+snapbuild')
+    def traverse_snapbuild(self, name):
+        build = get_build_by_id_str(ISnapBuildSet, name)
         if build is None:
             return None
         return self.redirectSubTree(canonical_url(build))
