@@ -234,7 +234,6 @@ class BaseRunnableJob(BaseRunnableJobSource):
             eta = datetime.now(UTC) + self.retry_delay
             # Don't schedule the job while its lease is still held, or
             # celery will skip it.
-            # XXX wgrant 2015-07-24: Untested!
             if eta < self.job.lease_expires:
                 eta = self.job.lease_expires
         return cls.apply_async(

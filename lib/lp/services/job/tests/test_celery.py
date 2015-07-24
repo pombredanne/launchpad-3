@@ -10,9 +10,16 @@ from datetime import (
     )
 from time import sleep
 
+import iso8601
 from lazr.delegates import delegate_to
 from pytz import UTC
-from testtools.matchers import GreaterThan
+from testtools.matchers import (
+    GreaterThan,
+    HasLength,
+    LessThan,
+    MatchesAll,
+    MatchesListwise,
+    )
 import transaction
 from zope.interface import implementer
 
@@ -66,14 +73,29 @@ class TestJobWithRetryError(TestJob):
 
     retry_error_types = (RetryException, )
 
-    retry_delay = timedelta(seconds=1)
+    retry_delay = timedelta(seconds=5)
+
+    def acquireLease(self, duration=10):
+        return self.job.acquireLease(duration)
+
+    def storeDateStarted(self):
+        existing = self.job.base_json_data or {}
+        existing.setdefault('dates_started', [])
+        existing['dates_started'].append(self.job.date_started.isoformat())
+        self.job.base_json_data = existing
 
     def run(self):
-        """Raise a retry exception on the the first attempt to run the job."""
-        if self.job.attempt_count < 2:
-            # Reset the lease so that the next attempt to run the
-            # job does not fail with a LeaseHeld error.
-            self.job.lease_expires = None
+        """Concoct various retry scenarios."""
+        self.storeDateStarted()
+        if self.job.attempt_count == 1:
+            # First test without a conflicting lease. The job should be
+            # rescheduled for 5 seconds (retry_delay) in the future.
+            self.job.lease_expires = datetime.now(UTC)
+            raise RetryException
+        elif self.job.attempt_count == 2:
+            # The retry delay is 5 seconds, but the lease is for nearly
+            # 10 seconds, so the job will be rescheduled 10 seconds in
+            # the future.
             raise RetryException
 
 
@@ -143,7 +165,10 @@ class TestJobsViaCelery(TestCaseWithFactory):
             'jobs.celery.enabled_classes': 'TestJobWithRetryError'
         }))
 
-        job = TestJobWithRetryError()
+        # Set scheduled_start on the job to ensure that retry delays
+        # override it.
+        job = TestJobWithRetryError(
+            scheduled_start=datetime.now(UTC) + timedelta(seconds=1))
         job.celeryRunOnCommit()
         transaction.commit()
 
@@ -157,5 +182,25 @@ class TestJobsViaCelery(TestCaseWithFactory):
             count += 1
             transaction.abort()
 
-        self.assertEqual(2, job.attempt_count)
+        # Collect the start times recorded by the job.
+        dates_started = [
+            iso8601.parse_date(d)
+            for d in job.job.base_json_data['dates_started']]
+
+        # The first attempt's lease is set to the end of the job, so
+        # the second attempt should start roughly 5 seconds after the
+        # first. The third attempt has to wait out the full 10 second
+        # lease, so it should start roughly 10 seconds after the second.
+        self.assertThat(dates_started, HasLength(3))
+        self.assertThat(dates_started,
+            MatchesListwise([
+                MatchesAll(),
+                MatchesAll(
+                    GreaterThan(dates_started[0] + timedelta(seconds=4)),
+                    LessThan(dates_started[0] + timedelta(seconds=8))),
+                MatchesAll(
+                    GreaterThan(dates_started[1] + timedelta(seconds=8)),
+                    LessThan(dates_started[1] + timedelta(seconds=12))),
+                ]))
+        self.assertEqual(3, job.attempt_count)
         self.assertEqual(JobStatus.COMPLETED, job.status)
