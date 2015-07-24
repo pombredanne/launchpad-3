@@ -80,6 +80,7 @@ def configure(argv):
     result['CELERY_CREATE_MISSING_QUEUES'] = False
     result['CELERY_DEFAULT_EXCHANGE'] = 'job'
     result['CELERY_DEFAULT_QUEUE'] = 'launchpad_job'
+    result['CELERY_ENABLE_UTC'] = True
     result['CELERY_IMPORTS'] = ("lp.services.job.celeryjob", )
     result['CELERY_QUEUES'] = celery_queues
     result['CELERY_RESULT_BACKEND'] = 'amqp'

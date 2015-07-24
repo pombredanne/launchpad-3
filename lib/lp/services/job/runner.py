@@ -46,6 +46,7 @@ from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
     LeaseHeld,
     )
+from pytz import UTC
 from storm.exceptions import LostObjectError
 import transaction
 from twisted.internet import reactor
@@ -226,10 +227,16 @@ class BaseRunnableJob(BaseRunnableJobSource):
             cls = CeleryRunJob
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
+        eta = self.job.scheduled_start
         if self.job.lease_expires is not None:
-            eta = datetime.now() + self.retry_delay
-        else:
-            eta = None
+            # XXX wgrant 2015-07-24: scheduled_start should really be
+            # set by some retry logic somewhere.
+            eta = datetime.now(UTC) + self.retry_delay
+            # Don't schedule the job while its lease is still held, or
+            # celery will skip it.
+            # XXX wgrant 2015-07-24: Untested!
+            if eta < self.job.lease_expires:
+                eta = self.job.lease_expires
         return cls.apply_async(
             (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta,
             task_id=self.taskId())

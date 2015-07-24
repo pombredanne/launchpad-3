@@ -4,10 +4,15 @@
 """Tests for running jobs via Celery."""
 
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from time import sleep
 
 from lazr.delegates import delegate_to
+from pytz import UTC
+from testtools.matchers import GreaterThan
 import transaction
 from zope.interface import implementer
 
@@ -33,12 +38,12 @@ class TestJob(BaseRunnableJob):
 
     config = config.launchpad
 
-    def __init__(self, job_id=None):
+    def __init__(self, job_id=None, scheduled_start=None):
         if job_id is not None:
             store = IStore(Job)
             self.job = store.find(Job, id=job_id)[0]
         else:
-            self.job = Job(max_retries=2)
+            self.job = Job(max_retries=2, scheduled_start=scheduled_start)
 
     def run(self):
         pass
@@ -72,7 +77,7 @@ class TestJobWithRetryError(TestJob):
             raise RetryException
 
 
-class TestRetryJobsViaCelery(TestCaseWithFactory):
+class TestJobsViaCelery(TestCaseWithFactory):
     """Tests for running jobs via Celery."""
 
     layer = CeleryJobLayer
@@ -90,6 +95,43 @@ class TestRetryJobsViaCelery(TestCaseWithFactory):
         store = IStore(Job)
         dbjob = store.find(Job, id=job_id)[0]
         self.assertEqual(JobStatus.COMPLETED, dbjob.status)
+
+    def test_scheduled_start(self):
+        # Submit four jobs: one in the past, one in the far future, one
+        # in 10 seconds, and one at any time.  Wait up to a minute and
+        # ensure that the correct three have completed, and that they
+        # completed in the expected order.
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'TestJob'
+        }))
+        now = datetime.now(UTC)
+        job_past = TestJob(scheduled_start=now - timedelta(seconds=60))
+        job_past.celeryRunOnCommit()
+        job_forever = TestJob(scheduled_start=now + timedelta(seconds=600))
+        job_forever.celeryRunOnCommit()
+        job_future = TestJob(scheduled_start=now + timedelta(seconds=10))
+        job_future.celeryRunOnCommit()
+        job_whenever = TestJob(scheduled_start=None)
+        job_whenever.celeryRunOnCommit()
+        transaction.commit()
+
+        count = 0
+        while count < 300:
+            transaction.abort()
+            if (not job_past.is_pending and not job_future.is_pending
+                    and not job_whenever.is_pending):
+                break
+            sleep(0.2)
+            count += 1
+
+        self.assertEqual(JobStatus.COMPLETED, job_past.status)
+        self.assertEqual(JobStatus.COMPLETED, job_future.status)
+        self.assertEqual(JobStatus.COMPLETED, job_whenever.status)
+        self.assertEqual(JobStatus.WAITING, job_forever.status)
+        self.assertThat(
+            job_whenever.date_started, GreaterThan(job_past.date_started))
+        self.assertThat(
+            job_future.date_started, GreaterThan(job_whenever.date_started))
 
     def test_jobs_with_retry_exceptions_are_queued_again(self):
         # A job that raises a retry error is automatically queued
