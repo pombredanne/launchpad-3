@@ -107,22 +107,25 @@ class TestJobsViaCelery(TestCaseWithFactory):
         now = datetime.now(UTC)
         job_past = TestJob(scheduled_start=now - timedelta(seconds=60))
         job_past.celeryRunOnCommit()
+        self.assertTrue(job_past.is_runnable)
         job_forever = TestJob(scheduled_start=now + timedelta(seconds=600))
         job_forever.celeryRunOnCommit()
+        self.assertFalse(job_forever.is_runnable)
         job_future = TestJob(scheduled_start=now + timedelta(seconds=10))
         job_future.celeryRunOnCommit()
+        self.assertFalse(job_future.is_runnable)
         job_whenever = TestJob(scheduled_start=None)
         job_whenever.celeryRunOnCommit()
+        self.assertTrue(job_whenever.is_runnable)
         transaction.commit()
 
         count = 0
-        while count < 300:
-            transaction.abort()
-            if (not job_past.is_pending and not job_future.is_pending
-                    and not job_whenever.is_pending):
-                break
+        while (count < 300
+                and (job_past.is_pending or job_future.is_pending
+                     or job_whenever.is_pending)):
             sleep(0.2)
             count += 1
+            transaction.abort()
 
         self.assertEqual(JobStatus.COMPLETED, job_past.status)
         self.assertEqual(JobStatus.COMPLETED, job_future.status)
@@ -139,31 +142,20 @@ class TestJobsViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'TestJobWithRetryError'
         }))
-        with block_on_job(self):
-            job = TestJobWithRetryError()
-            job.celeryRunOnCommit()
-            job_id = job.job_id
-            transaction.commit()
-            store = IStore(Job)
 
-            # block_on_job() is not aware of the Celery request
-            # issued when the retry exception occurs, but we can
-            # check the status of the job in the database.
-            def job_finished():
-                transaction.abort()
-                dbjob = store.find(Job, id=job_id)[0]
-                return (
-                    dbjob.status == JobStatus.COMPLETED and
-                    dbjob.attempt_count == 2)
-            count = 0
-            while count < 300 and not job_finished():
-                # We have a maximum wait of one minute.  We should not get
-                # anywhere close to that on developer machines (10 seconds was
-                # working fine), but when the test suite is run in parallel we
-                # can need a lot more time (see bug 1007576).
-                sleep(0.2)
-                count += 1
+        job = TestJobWithRetryError()
+        job.celeryRunOnCommit()
+        transaction.commit()
 
-        dbjob = store.find(Job, id=job_id)[0]
-        self.assertEqual(2, dbjob.attempt_count)
-        self.assertEqual(JobStatus.COMPLETED, dbjob.status)
+        count = 0
+        while count < 300 and job.is_pending:
+            # We have a maximum wait of one minute.  We should not get
+            # anywhere close to that on developer machines (10 seconds was
+            # working fine), but when the test suite is run in parallel we
+            # can need a lot more time (see bug 1007576).
+            sleep(0.2)
+            count += 1
+            transaction.abort()
+
+        self.assertEqual(2, job.attempt_count)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
