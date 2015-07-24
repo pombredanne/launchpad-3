@@ -231,7 +231,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
         # Don't schedule the job while its lease is still held, or
         # celery will skip it.
         if (self.job.lease_expires is not None
-                and eta < self.job.lease_expires):
+                and (eta is None or eta < self.job.lease_expires)):
             eta = self.job.lease_expires
         return cls.apply_async(
             (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta,
