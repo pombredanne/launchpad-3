@@ -46,7 +46,7 @@ from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
     LeaseHeld,
     )
-from pytz import UTC
+from pytz import utc
 from storm.exceptions import LostObjectError
 import transaction
 from twisted.internet import reactor
@@ -228,14 +228,11 @@ class BaseRunnableJob(BaseRunnableJobSource):
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
         eta = self.job.scheduled_start
-        if self.job.lease_expires is not None:
-            # XXX wgrant 2015-07-24: scheduled_start should really be
-            # set by some retry logic somewhere.
-            eta = datetime.now(UTC) + self.retry_delay
-            # Don't schedule the job while its lease is still held, or
-            # celery will skip it.
-            if eta < self.job.lease_expires:
-                eta = self.job.lease_expires
+        # Don't schedule the job while its lease is still held, or
+        # celery will skip it.
+        if (self.job.lease_expires is not None
+                and eta < self.job.lease_expires):
+            eta = self.job.lease_expires
         return cls.apply_async(
             (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta,
             task_id=self.taskId())
@@ -260,6 +257,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
+        if self.job.attempt_count > 0:
+            self.job.scheduled_start = datetime.now(utc) + self.retry_delay
         self.job.queue(
             manage_transaction, abort_transaction,
             add_commit_hook=self.celeryRunOnCommit)
