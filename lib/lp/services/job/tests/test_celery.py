@@ -154,7 +154,7 @@ class TestJobsViaCelery(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, job_whenever.status)
         self.assertEqual(JobStatus.WAITING, job_forever.status)
         self.assertThat(
-            job_whenever.date_started, GreaterThan(job_past.date_started))
+            job_future.date_started, GreaterThan(job_past.date_started))
         self.assertThat(
             job_future.date_started, GreaterThan(job_whenever.date_started))
 
