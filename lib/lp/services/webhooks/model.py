@@ -10,7 +10,10 @@ __all__ = [
     'WebhookTargetMixin',
     ]
 
-import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import iso8601
 from lazr.delegates import delegate_to
@@ -18,7 +21,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-import pytz
+from pytz import utc
 from storm.properties import (
     Bool,
     DateTime,
@@ -87,8 +90,8 @@ class Webhook(StormBase):
 
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
-    date_created = DateTime(tzinfo=pytz.UTC, allow_none=False)
-    date_last_modified = DateTime(tzinfo=pytz.UTC, allow_none=False)
+    date_created = DateTime(tzinfo=utc, allow_none=False)
+    date_last_modified = DateTime(tzinfo=utc, allow_none=False)
 
     delivery_url = Unicode(allow_none=False)
     active = Bool(default=True, allow_none=False)
@@ -327,6 +330,21 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def payload(self):
         return self.json_data['payload']
 
+    @property
+    def _time_since_first_attempt(self):
+        return datetime.now(utc) - (self.date_first_sent or self.date_created)
+
+    @property
+    def retry_automatically(self):
+        return self._time_since_first_attempt < timedelta(days=1)
+
+    @property
+    def retry_delay(self):
+        if self._time_since_first_attempt < timedelta(hours=1):
+            return timedelta(minutes=5)
+        else:
+            return timedelta(hours=1)
+
     def run(self):
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
@@ -340,7 +358,7 @@ class WebhookDeliveryJob(WebhookJobDerived):
                     del result[direction][attr]
         updated_data = self.json_data
         updated_data['result'] = result
-        updated_data['date_sent'] = datetime.datetime.now(pytz.UTC).isoformat()
+        updated_data['date_sent'] = datetime.now(utc).isoformat()
         if 'date_first_sent' not in updated_data:
             updated_data['date_first_sent'] = updated_data['date_sent']
         self.json_data = updated_data

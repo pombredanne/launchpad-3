@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
+
 from httmock import (
     HTTMock,
     urlmatch,
@@ -302,13 +304,36 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         job, reqs = self.makeAndRunJob(response_status=404)
         self.assertEqual(job.date_first_sent, job.date_sent)
         orig_first_sent = job.date_first_sent
-        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
         job.queue()
+        job.lease_expires = None
+        job.scheduled_start = None
         with dbuser("webhookrunner"):
             JobRunner([job]).runAll()
-        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
         self.assertNotEqual(job.date_first_sent, job.date_sent)
         self.assertEqual(orig_first_sent, job.date_first_sent)
+
+    def test_retry_delay(self):
+        # Deliveries are retried every 5 minutes for the first hour, and
+        # every hour thereafter.
+        job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertEqual(timedelta(minutes=5), job.retry_delay)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=30)).isoformat()
+        self.assertEqual(timedelta(minutes=5), job.retry_delay)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=30)).isoformat()
+        self.assertEqual(timedelta(hours=1), job.retry_delay)
+
+    def test_retry_automatically(self):
+        # Deliveries are automatically retried until 24 hours after the
+        # initial attempt.
+        job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertTrue(job.retry_automatically)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=24)).isoformat()
+        self.assertFalse(job.retry_automatically)
 
 
 class TestViaCronscript(TestCaseWithFactory):
