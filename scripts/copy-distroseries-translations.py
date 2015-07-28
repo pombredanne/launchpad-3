@@ -50,11 +50,23 @@ class TranslationsCopier(LaunchpadCronScript):
             help=(
                 "Copy only templates for sources that are published in the "
                 "target series."))
-        self.parser.add_option('-A', '--archive', dest='archive',
+        self.parser.add_option('--check-distribution',
+            dest='check_distribution',
             help=(
                 "With --published-sources-only, check publication in this "
-                "archive (if omitted, the target's main archive will be "
+                "distribution (if omitted, the target distribution will be "
                 "checked)."))
+        self.parser.add_option('--check-distroseries',
+            dest='check_distroseries',
+            help=(
+                "With --published-sources-only, check publication in this "
+                "distroseries (if omitted, the target distroseries will be "
+                "checked)."))
+        self.parser.add_option('--check-archive', dest='check_archive',
+            help=(
+                "With --published-sources-only, check publication in this "
+                "archive (if omitted, the main archive of "
+                "--check-distroseries will be checked)."))
         self.parser.add_option('-f', '--force', dest='force',
             action="store_true", default=False,
             help="Don't check if target's UI and imports are blocked; "
@@ -77,11 +89,21 @@ class TranslationsCopier(LaunchpadCronScript):
             self.parser.error(
                 "No source series specified and target has no previous "
                 "series.")
-        if self.options.archive is not None:
-            archive = getUtility(IArchiveSet).getByReference(
-                self.options.archive)
+        if self.options.check_distribution is not None:
+            check_distribution = getUtility(IDistributionSet)[
+                self.options.check_distribution]
         else:
-            archive = None
+            check_distribution = target.distribution
+        if self.options.check_distroseries is not None:
+            check_distroseries = check_distribution[
+                self.options.check_distroseries]
+        else:
+            check_distroseries = check_distribution[self.options.series]
+        if self.options.check_archive is not None:
+            check_archive = getUtility(IArchiveSet).getByReference(
+                self.options.check_archive)
+        else:
+            check_archive = None
 
         # Both translation UI and imports for this series should be blocked
         # while the copy is in progress, to reduce the chances of deadlocks or
@@ -104,7 +126,7 @@ class TranslationsCopier(LaunchpadCronScript):
         copy_distroseries_translations(
             source, target, self.txn, self.logger,
             published_sources_only=self.options.published_sources_only,
-            archive=archive)
+            check_distroseries=check_distroseries, check_archive=check_archive)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.

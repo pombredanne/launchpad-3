@@ -103,32 +103,31 @@ class TestCopying(TestCaseWithFactory):
         for spn in spns:
             self.factory.makePOTemplate(
                 distroseries=dapper, sourcepackagename=spn)
-        ppa = self.factory.makeArchive(
-            distribution=distro, purpose=ArchivePurpose.PPA)
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
 
         def get_template_spns(series):
             return [
                 pot.sourcepackagename for pot in
                 getUtility(IPOTemplateSet).getSubset(distroseries=series)]
 
-        # Create a fresh series with two sources published in the PPA, and
-        # one in the target's main archive.
         edgy = self.factory.makeDistroSeries(
             distribution=distro, name='edgy')
+        edgy_derived = self.factory.makeDistroSeries(
+            distribution=ppa.distribution, name='edgy-derived')
         self.factory.makeSourcePackagePublishingHistory(
-            archive=ppa, distroseries=edgy, sourcepackagename=spns[0],
+            archive=ppa, distroseries=edgy_derived, sourcepackagename=spns[0],
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeSourcePackagePublishingHistory(
             archive=edgy.main_archive, distroseries=edgy,
             sourcepackagename=spns[1],
             status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeSourcePackagePublishingHistory(
-            archive=ppa, distroseries=edgy, sourcepackagename=spns[2],
+            archive=ppa, distroseries=edgy_derived, sourcepackagename=spns[2],
             status=PackagePublishingStatus.PENDING)
 
         self.assertContentEqual(spns, get_template_spns(dapper))
         self.assertContentEqual([], get_template_spns(edgy))
         copy_distroseries_translations(
             dapper, edgy, self.txn, logging, published_sources_only=True,
-            archive=ppa)
+            check_distroseries=edgy_derived, check_archive=ppa)
         self.assertContentEqual([spns[0], spns[2]], get_template_spns(edgy))

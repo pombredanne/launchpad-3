@@ -79,7 +79,8 @@ class SeriesStateKeeper:
 
 def copy_distroseries_translations(source, target, txn, logger,
                                    published_sources_only=False,
-                                   archive=None):
+                                   check_distroseries=None,
+                                   check_archive=None):
     """Copy translations into a new `DistroSeries`.
 
     Wraps around `copy_active_translations`, but also ensures that the
@@ -110,12 +111,15 @@ def copy_distroseries_translations(source, target, txn, logger,
             " translation state.")
 
         if published_sources_only:
-            if archive is None:
-                archive = target.main_archive
+            if check_distroseries is None:
+                check_distroseries = target
+            if check_archive is None:
+                check_archive = check_distroseries.main_archive
             spns = bulk.load(
                 SourcePackageName,
-                archive.getPublishedSources(
-                        distroseries=target, status=active_publishing_status)
+                check_archive.getPublishedSources(
+                        distroseries=check_distroseries,
+                        status=active_publishing_status)
                     .config(distinct=True)
                     .order_by(
                         SourcePackagePublishingHistory.sourcepackagenameID)
