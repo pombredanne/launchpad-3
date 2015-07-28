@@ -72,11 +72,6 @@ class TranslationsCopier(LaunchpadCronScript):
             help="Don't check if target's UI and imports are blocked; "
                  "actively block them.")
 
-    def _getTargetSeries(self):
-        """Retrieve target `DistroSeries`."""
-        series = self.options.series
-        return getUtility(IDistributionSet)[self.options.distro][series]
-
     def main(self):
         target = getUtility(IDistributionSet)[self.options.distro][
             self.options.series]
