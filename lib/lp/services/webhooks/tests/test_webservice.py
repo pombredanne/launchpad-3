@@ -160,9 +160,9 @@ class TestWebhookDelivery(TestCaseWithFactory):
             representation,
             MatchesAll(
                 KeysEqual(
-                    'date_created', 'date_sent', 'http_etag', 'payload',
-                    'pending', 'resource_type_link', 'self_link',
-                    'successful', 'web_link', 'webhook_link'),
+                    'date_created', 'date_first_sent', 'date_sent',
+                    'http_etag', 'payload', 'pending', 'resource_type_link',
+                    'self_link', 'successful', 'web_link', 'webhook_link'),
                 ContainsDict(
                     {'payload': Equals({'ping': True}),
                     'pending': Equals(True),
