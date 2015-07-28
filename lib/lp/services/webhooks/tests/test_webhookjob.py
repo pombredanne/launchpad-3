@@ -18,6 +18,7 @@ from testtools.matchers import (
     Contains,
     ContainsDict,
     Equals,
+    GreaterThan,
     Is,
     KeysEqual,
     MatchesAll,
@@ -244,8 +245,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertThat(
             job,
             MatchesStructure(
-                status=Equals(JobStatus.COMPLETED),
-                pending=Equals(False),
+                status=Equals(JobStatus.WAITING),
+                pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
                 json_data=ContainsDict(
@@ -258,7 +259,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([], oopses.oopses)
 
     def test_run_connection_error(self):
-        # Jobs that fail to connecthave a connection_error rather than a
+        # Jobs that fail to connect have a connection_error rather than a
         # response.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(
@@ -266,8 +267,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertThat(
             job,
             MatchesStructure(
-                status=Equals(JobStatus.COMPLETED),
-                pending=Equals(False),
+                status=Equals(JobStatus.WAITING),
+                pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
                 json_data=ContainsDict(
@@ -304,13 +305,14 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         job, reqs = self.makeAndRunJob(response_status=404)
         self.assertEqual(job.date_first_sent, job.date_sent)
         orig_first_sent = job.date_first_sent
-        self.assertEqual(JobStatus.COMPLETED, job.status)
-        job.queue()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(1, job.attempt_count)
         job.lease_expires = None
         job.scheduled_start = None
         with dbuser("webhookrunner"):
             JobRunner([job]).runAll()
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(2, job.attempt_count)
         self.assertNotEqual(job.date_first_sent, job.date_sent)
         self.assertEqual(orig_first_sent, job.date_first_sent)
 
@@ -334,6 +336,54 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         job.json_data['date_first_sent'] = (
             job.date_first_sent - timedelta(hours=24)).isoformat()
         self.assertFalse(job.retry_automatically)
+
+    def test_automatic_retries(self):
+        hook = self.factory.makeWebhook()
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+
+        client = MockWebhookClient(response_status=404)
+        self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
+
+        def run_job(job):
+            with dbuser("webhookrunner"):
+                runner = JobRunner([job])
+                runner.runAll()
+            if len(runner.completed_jobs) == 1 and not runner.incomplete_jobs:
+                return True
+            if len(runner.incomplete_jobs) == 1 and not runner.completed_jobs:
+                job.lease_expires = None
+                return False
+            if not runner.incomplete_jobs and not runner.completed_jobs:
+                return None
+            raise Exception("Unexpected jobs.")
+
+        # The first attempt fail but schedules a retry five minutes later.
+        self.assertEqual(False, run_job(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(False, job.successful)
+        self.assertTrue(job.pending)
+        self.assertIsNot(None, job.date_sent)
+        last_date_sent = job.date_sent
+
+        # Pretend we're five minutes in the future and try again. The
+        # job will be retried again.
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=5)).isoformat()
+        job.scheduled_start -= timedelta(minutes=5)
+        self.assertEqual(False, run_job(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(False, job.successful)
+        self.assertTrue(job.pending)
+        self.assertThat(job.date_sent, GreaterThan(last_date_sent))
+
+        # If the job was first tried a day ago, the next attempt gives up.
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=24)).isoformat()
+        job.scheduled_start -= timedelta(hours=24)
+        self.assertEqual(True, run_job(job))
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(False, job.successful)
+        self.assertFalse(job.pending)
 
 
 class TestViaCronscript(TestCaseWithFactory):

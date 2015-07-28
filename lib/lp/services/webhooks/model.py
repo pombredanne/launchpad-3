@@ -63,6 +63,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookJob,
     IWebhookJobSource,
     IWebhookSource,
+    WebhookDeliveryRetry,
     WebhookFeatureDisabled,
     )
 
@@ -250,7 +251,7 @@ class WebhookJob(StormBase):
     def deleteByIDs(webhookjob_ids):
         """See `IWebhookJobSource`."""
         # Assumes that Webhook's PK is its FK to Job.id.
-        webookjob_ids = list(webhookjob_ids)
+        webhookjob_ids = list(webhookjob_ids)
         IStore(WebhookJob).find(
             WebhookJob, WebhookJob.job_id.is_in(webhookjob_ids)).remove()
         IStore(Job).find(Job, Job.id.is_in(webhookjob_ids)).remove()
@@ -290,6 +291,12 @@ class WebhookDeliveryJob(WebhookJobDerived):
     """A job that delivers an event to a webhook endpoint."""
 
     class_job_type = WebhookJobType.DELIVERY
+
+    retry_error_types = (WebhookDeliveryRetry,)
+
+    # Effectively infinite, as we give up by checking
+    # retry_automatically and raising a fatal exception instead.
+    max_retries = 1000
 
     config = config.IWebhookDeliveryJobSource
 
@@ -362,3 +369,6 @@ class WebhookDeliveryJob(WebhookJobDerived):
         if 'date_first_sent' not in updated_data:
             updated_data['date_first_sent'] = updated_data['date_sent']
         self.json_data = updated_data
+
+        if not self.successful and self.retry_automatically:
+            raise WebhookDeliveryRetry()
