@@ -400,9 +400,12 @@ class TestViaCronscript(TestCaseWithFactory):
             'cronscripts/process-job-source.py', ['IWebhookDeliveryJobSource'],
             expect_returncode=0)
         self.assertEqual('', stdout)
-        self.assertIn('INFO    Ran 1 WebhookDeliveryJob jobs.\n', stderr)
+        self.assertIn(
+            'WARNING Scheduling retry due to WebhookDeliveryRetry', stderr)
+        self.assertIn(
+            'INFO    1 WebhookDeliveryJob jobs did not complete.\n', stderr)
 
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(JobStatus.WAITING, job.status)
         self.assertIn(
             'Cannot connect to proxy',
             job.json_data['result']['connection_error'])
@@ -422,7 +425,7 @@ class TestViaCelery(TestCaseWithFactory):
             job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
             transaction.commit()
 
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(JobStatus.WAITING, job.status)
         self.assertIn(
             'Cannot connect to proxy',
             job.json_data['result']['connection_error'])
