@@ -63,6 +63,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookJob,
     IWebhookJobSource,
     IWebhookSource,
+    WebhookDeliveryFailure,
     WebhookDeliveryRetry,
     WebhookFeatureDisabled,
     )
@@ -316,10 +317,19 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def successful(self):
         if 'result' not in self.json_data:
             return None
-        if 'connection_error' in self.json_data['result']:
-            return False
+        return self.failure_detail is None
+
+    @property
+    def failure_detail(self):
+        if 'result' not in self.json_data:
+            return None
+        connection_error = self.json_data['result'].get('connection_error')
+        if connection_error is not None:
+            return 'Connection error: %s' % connection_error
         status_code = self.json_data['result']['response']['status_code']
-        return 200 <= status_code <= 299
+        if 200 <= status_code <= 299:
+            return None
+        return 'Bad HTTP response: %d' % status_code
 
     @property
     def date_first_sent(self):
@@ -370,5 +380,8 @@ class WebhookDeliveryJob(WebhookJobDerived):
             updated_data['date_first_sent'] = updated_data['date_sent']
         self.json_data = updated_data
 
-        if not self.successful and self.retry_automatically:
-            raise WebhookDeliveryRetry()
+        if not self.successful:
+            if self.retry_automatically:
+                raise WebhookDeliveryRetry()
+            else:
+                raise WebhookDeliveryFailure(self.failure_detail)

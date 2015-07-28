@@ -238,8 +238,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([], oopses.oopses)
 
     def test_run_404(self):
-        # The job succeeds even if the response is an error. A job only
-        # fails if it was definitely a problem on our end.
+        # A request that returns a non-2xx response is a failure and
+        # gets retried.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(response_status=404)
         self.assertThat(
@@ -260,7 +260,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
 
     def test_run_connection_error(self):
         # Jobs that fail to connect have a connection_error rather than a
-        # response.
+        # response. They too trigger a retry.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(
                 raises=requests.ConnectionError('Connection refused'))
@@ -357,7 +357,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 return None
             raise Exception("Unexpected jobs.")
 
-        # The first attempt fail but schedules a retry five minutes later.
+        # The first attempt fails but schedules a retry five minutes later.
         self.assertEqual(False, run_job(job))
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertEqual(False, job.successful)
@@ -380,8 +380,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         job.json_data['date_first_sent'] = (
             job.date_first_sent - timedelta(hours=24)).isoformat()
         job.scheduled_start -= timedelta(hours=24)
-        self.assertEqual(True, run_job(job))
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(False, run_job(job))
+        self.assertEqual(JobStatus.FAILED, job.status)
         self.assertEqual(False, job.successful)
         self.assertFalse(job.pending)
 

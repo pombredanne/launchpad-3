@@ -14,6 +14,7 @@ __all__ = [
     'IWebhookJobSource',
     'IWebhookSource',
     'IWebhookTarget',
+    'WebhookDeliveryFailure',
     'WebhookDeliveryRetry',
     'WebhookFeatureDisabled',
     ]
@@ -69,6 +70,11 @@ class WebhookFeatureDisabled(Exception):
     def __init__(self):
         Exception.__init__(
             self, "This webhook feature is not available yet.")
+
+
+class WebhookDeliveryFailure(Exception):
+    """A webhook delivery failed and should not be retried."""
+    pass
 
 
 class WebhookDeliveryRetry(Exception):
