@@ -312,6 +312,12 @@ class WebhookDeliveryJob(WebhookJobDerived):
         return 200 <= status_code <= 299
 
     @property
+    def date_first_sent(self):
+        if 'date_first_sent' not in self.json_data:
+            return None
+        return iso8601.parse_date(self.json_data['date_first_sent'])
+
+    @property
     def date_sent(self):
         if 'date_sent' not in self.json_data:
             return None
@@ -335,4 +341,6 @@ class WebhookDeliveryJob(WebhookJobDerived):
         updated_data = self.json_data
         updated_data['result'] = result
         updated_data['date_sent'] = datetime.datetime.now(pytz.UTC).isoformat()
+        if 'date_first_sent' not in updated_data:
+            updated_data['date_first_sent'] = updated_data['date_sent']
         self.json_data = updated_data

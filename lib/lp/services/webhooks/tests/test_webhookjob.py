@@ -298,6 +298,18 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(
             'No webhook proxy configured.', oopses.oopses[0]['value'])
 
+    def test_date_first_sent(self):
+        job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertEqual(job.date_first_sent, job.date_sent)
+        orig_first_sent = job.date_first_sent
+        self.assertEqual(JobStatus.FAILED, job.status)
+        job.queue()
+        with dbuser("webhookrunner"):
+            JobRunner([job]).runAll()
+        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertNotEqual(job.date_first_sent, job.date_sent)
+        self.assertEqual(orig_first_sent, job.date_first_sent)
+
 
 class TestViaCronscript(TestCaseWithFactory):
 
