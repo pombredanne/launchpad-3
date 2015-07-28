@@ -129,5 +129,5 @@ class TestCopying(TestCaseWithFactory):
         self.assertContentEqual([], get_template_spns(edgy))
         copy_distroseries_translations(
             dapper, edgy, self.txn, logging, published_sources_only=True,
-            check_distroseries=edgy_derived, check_archive=ppa)
+            check_archive=ppa, check_distroseries=edgy_derived)
         self.assertContentEqual([spns[0], spns[2]], get_template_spns(edgy))
