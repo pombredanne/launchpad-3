@@ -294,6 +294,7 @@ class WebhookDeliveryJob(WebhookJobDerived):
     class_job_type = WebhookJobType.DELIVERY
 
     retry_error_types = (WebhookDeliveryRetry,)
+    user_error_types = (WebhookDeliveryFailure,)
 
     # Effectively infinite, as we give up by checking
     # retry_automatically and raising a fatal exception instead.
@@ -350,6 +351,14 @@ class WebhookDeliveryJob(WebhookJobDerived):
     @property
     def _time_since_first_attempt(self):
         return datetime.now(utc) - (self.date_first_sent or self.date_created)
+
+    def retry(self):
+        """See `IWebhookDeliveryJob`."""
+        # Unset any retry delay and reset attempt_count to prevent
+        # queue() from delaying it again.
+        self.scheduled_start = None
+        self.attempt_count = 0
+        self.queue()
 
     @property
     def retry_automatically(self):

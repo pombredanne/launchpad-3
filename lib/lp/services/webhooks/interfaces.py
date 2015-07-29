@@ -226,6 +226,14 @@ class IWebhookDeliveryJob(IRunnableJob):
         title=_('Event payload'),
         key_type=TextLine(), required=True, readonly=True))
 
+    def retry():
+        """Attempt to deliver the event again.
+
+        Launchpad will automatically retry regularly for 24 hours, but
+        this can be used after it gives up or to avoid waiting for the
+        next automatic attempt.
+        """
+
 
 class IWebhookDeliveryJobSource(IJobSource):
 
