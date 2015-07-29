@@ -24,7 +24,6 @@ from lp.soyuz.adapters.notification import (
     get_upload_notification_recipients,
     is_auto_sync_upload,
     notify,
-    person_to_email,
     reject_changes_file,
     )
 from lp.soyuz.enums import (
@@ -196,14 +195,15 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         archive = self.factory.makeArchive(owner=person, name='ppa')
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
-        person = self.factory.makePerson()
+        person = self.factory.makePerson(
+            displayname=u'Blamer', email='blamer@example.com')
         notify(
             person, None, [bpr], [], archive, distroseries, pocket,
             summary_text="Rejected by archive administrator.",
             action='rejected')
         [notification] = pop_notifications()
         body = notification.get_payload()[0].get_payload()
-        self.assertEqual(person_to_email(person), notification['To'])
+        self.assertEqual('Blamer <blamer@example.com>', notification['To'])
         expected_body = dedent("""\
             Rejected:
             Rejected by archive administrator.

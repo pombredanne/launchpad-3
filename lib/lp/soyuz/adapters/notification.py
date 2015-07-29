@@ -12,7 +12,6 @@ __all__ = [
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formataddr
 import os
 
 from zope.component import getUtility
@@ -305,11 +304,11 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     changedby_person = email_to_person(info['changedby_email'])
 
     if blamer is not None and blamer != changedby_person:
-        signer_signature = person_to_email(blamer)
-        if signer_signature and signer_signature != info['changedby']:
-            information['SIGNER'] = (
-                '\nSigned-By: %s' %
-                formataddr((blamer.displayname, blamer.preferredemail.email)))
+        if blamer and blamer.preferredemail:
+            signer_displayname = rfc822_encode_address(
+                blamer.displayname, blamer.preferredemail.email)
+            if signer_displayname != info['changedby_displayname']:
+                information['SIGNER'] = '\nSigned-By: %s' % signer_displayname
     # Add maintainer if present and different from changed-by.
     maintainer_displayname = info['maintainer_displayname']
     if (maintainer_displayname and
@@ -571,35 +570,6 @@ def email_to_person(email):
     return getUtility(IPersonSet).getByEmail(email)
 
 
-def person_to_email(person):
-    """Return a string of full name <email address> given an IPerson."""
-    if person and person.preferredemail:
-        # This will use email.header to encode any non-ASCII characters.
-        return format_address_for_person(person)
-
-
-def fix_email(fullemail, field_name):
-    """Turn an email address from .changes into various useful forms.
-
-    The input address may be None, or anything that `parse_maintainer_bytes`
-    understands.
-
-    :return: A tuple of (RFC2047-compatible address, Unicode
-        RFC822-compatible address, email).
-    """
-    if not fullemail:
-        return None, None, None
-
-    try:
-        name, email = parse_maintainer_bytes(fullemail, field_name)
-        return (
-            rfc2047_encode_address(name, email).encode('utf-8'),
-            rfc822_encode_address(name, email),
-            email.encode('ascii'))
-    except ParseMaintError:
-        return None, None, None
-
-
 def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     """Return True if this is a (Debian) auto sync upload.
 
@@ -627,29 +597,39 @@ def fetch_information(spr, bprs, changes, previous_version=None):
         changesfile = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         date = changes.get('Date')
-        changedby, changedby_displayname, changedby_email = fix_email(
-            changes.get('Changed-By'), 'Changed-By')
-        maintainer, maintainer_displayname, maintainer_email = fix_email(
-            changes.get('Maintainer'), 'Maintainer')
+        try:
+            changedby = parse_maintainer_bytes(
+                changes.get('Changed-By'), 'Changed-By')
+        except ParseMaintError:
+            pass
+        try:
+            maintainer = parse_maintainer_bytes(
+                changes.get('Maintainer'), 'Maintainer')
+        except ParseMaintError:
+            pass
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
         changesfile = spr.aggregate_changelog(previous_version)
         date = spr.dateuploaded
-        changedby = person_to_email(spr.creator)
-        maintainer = person_to_email(spr.maintainer)
-        if changedby:
-            addr = formataddr((spr.creator.displayname,
-                               spr.creator.preferredemail.email))
-            changedby_displayname = sanitize_string(addr)
-            changedby_email = spr.creator.preferredemail.email
-        if maintainer:
-            addr = formataddr((spr.maintainer.displayname,
-                               spr.maintainer.preferredemail.email))
-            maintainer_displayname = sanitize_string(addr)
-            maintainer_email = spr.maintainer.preferredemail.email
+        if spr.creator and spr.creator.preferredemail:
+            changedby = (
+                spr.creator.displayname, spr.creator.preferredemail.email)
+        if spr.maintainer and spr.maintainer.preferredemail:
+            maintainer = (
+                spr.maintainer.displayname,
+                spr.maintainer.preferredemail.email)
     else:
         changesfile = date = None
+
+    if changedby:
+        changedby_displayname = rfc822_encode_address(*changedby)
+        changedby_email = changedby[1]
+        changedby = format_address(*changedby)
+    if maintainer:
+        maintainer_displayname = rfc822_encode_address(*maintainer)
+        maintainer_email = maintainer[1]
+        maintainer = format_address(*maintainer)
 
     return {
         'changelog': changesfile,
