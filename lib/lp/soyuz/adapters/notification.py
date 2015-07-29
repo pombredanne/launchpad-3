@@ -302,12 +302,10 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     # preferred email address set.  We'll get a None here.
     changedby_person = email_to_person(info['changedby_email'])
 
-    if blamer is not None and blamer != changedby_person:
-        if blamer and blamer.preferredemail:
-            signer_displayname = rfc822_encode_address(
-                blamer.displayname, blamer.preferredemail.email)
-            if signer_displayname != info['changedby_displayname']:
-                information['SIGNER'] = '\nSigned-By: %s' % signer_displayname
+    if (blamer is not None and blamer != changedby_person
+            and blamer.preferredemail):
+        information['SIGNER'] = '\nSigned-By: %s' % rfc822_encode_address(
+            blamer.displayname, blamer.preferredemail.email)
     # Add maintainer if present and different from changed-by.
     maintainer_displayname = info['maintainer_displayname']
     if (maintainer_displayname and
