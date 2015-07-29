@@ -543,7 +543,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             '<<': lambda x: x == -1,
             }
 
-        # Use debian_support function to compare versions
+        # Use apt_pkg function to compare versions
         # it behaves similar to cmp, i.e. returns negative
         # if first < second, zero if first == second and
         # positive if first > second.
