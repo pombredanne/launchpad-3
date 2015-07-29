@@ -591,9 +591,9 @@ def fix_email(fullemail, field_name):
     try:
         name, email = safe_fix_maintainer(fullemail, field_name)
         return (
-            rfc2047_encode_address(name, email),
-            rfc822_encode_address(name, email).decode('utf-8'),
-            email)
+            rfc2047_encode_address(name, email).encode('utf-8'),
+            rfc822_encode_address(name, email),
+            email.encode('ascii'))
     except ParseMaintError:
         return None, None, None
 

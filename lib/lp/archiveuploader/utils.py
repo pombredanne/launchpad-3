@@ -33,7 +33,7 @@ __all__ = [
 
 
 from collections import defaultdict
-import email.header
+from email.header import Header
 import os
 import re
 import signal
@@ -159,42 +159,6 @@ def extract_component_from_section(section, default_component="main"):
     return (section, component)
 
 
-def force_to_utf8(s):
-    """Forces a string to UTF-8.
-
-    If the string isn't already UTF-8, it's assumed to be ISO-8859-1.
-    """
-    try:
-        unicode(s, 'utf-8')
-        return s
-    except UnicodeError:
-        latin1_s = unicode(s, 'iso8859-1')
-        return latin1_s.encode('utf-8')
-
-
-def rfc2047_encode(s):
-    """Encodes a (header) string per RFC2047 if necessary.
-
-    If the string is neither ASCII nor UTF-8, it's assumed to be ISO-8859-1.
-    """
-    if not s:
-        return ''
-    try:
-        s.decode('us-ascii')
-        #encodings.ascii.Codec().decode(s)
-        return s
-    except UnicodeError:
-        pass
-    try:
-        s.decode('utf8')
-        #encodings.utf_8.Codec().decode(s)
-        h = email.header.Header(s, 'utf-8', 998)
-        return str(h)
-    except UnicodeError:
-        h = email.header.Header(s, 'iso-8859-1', 998)
-        return str(h)
-
-
 class ParseMaintError(Exception):
     """Exception raised for errors in parsing a maintainer field.
 
@@ -209,15 +173,9 @@ class ParseMaintError(Exception):
 
 
 def fix_maintainer(maintainer, field_name="Maintainer"):
-    """Parses a Maintainer or Changed-By field and returns:
+    """Parses a Maintainer or Changed-By field into the name and address.
 
-    (1) an RFC822 compatible version,
-    (2) an RFC2047 compatible version,
-    (3) the name
-    (4) the email
-
-    The name is forced to UTF-8 for both (1) and (3).  If the name field
-    contains '.' or ',', (1) and (2) are switched to 'email (name)' format.
+    maintainer is a bytestring, name and address are Unicode.
     """
     maintainer = maintainer.strip()
     if not maintainer:
@@ -241,8 +199,13 @@ def fix_maintainer(maintainer, field_name="Maintainer"):
         while email.startswith("<"):
             email = email[1:]
 
-    # Force the name to be UTF-8
-    name = force_to_utf8(name)
+    # Decode the name as UTF-8 or ISO8859-1.
+    try:
+        name = unicode(name, "utf-8")
+    except UnicodeError:
+        name = unicode(name, "iso8859-1")
+    # Email addresses are always ASCII.
+    email = unicode(email, "ascii")
 
     if email.find("@") == -1 and email.find("buildd_") != 0:
         raise ParseMaintError(
@@ -264,31 +227,38 @@ def safe_fix_maintainer(content, fieldname):
 
 
 def rfc822_encode_address(name, email):
-    """Return an RFC822 encoding of a name and an email address.
+    """Return a Unicode RFC822 encoding of a name and an email address.
 
-    The character encodings of name and email are left unchanged.
+    name and email must be Unicode. If they contain non-ASCII
+    characters, the result is not RFC822-compliant and you should use
+    rfc2047_encode_address instead.
+
+    If the name field contains '.' or ',' the 'email (name)' format is used.
     """
     # If the maintainer's name contains a full stop then the whole field will
     # not work directly as an email address due to a misfeature in the syntax
     # specified in RFC822; see Debian policy 5.6.2 (Maintainer field syntax)
     # for details.
-    if name.find(',') != -1 or name.find('.') != -1:
-        return "%s (%s)" % (email, name)
+    if name.find(u',') != -1 or name.find(u'.') != -1:
+        return u"%s (%s)" % (email, name)
     else:
-        return "%s <%s>" % (name, email)
+        return u"%s <%s>" % (name, email)
 
 
 def rfc2047_encode_address(name, email):
     """Return an RFC2047 encoding of a name and an email address.
 
-    name must be a UTF-8 or ISO8859-1 bytestring, and email must be an
-    ASCII bytestring.
+    name and email must be Unicode strings, and email must be
+    ASCII-only.
+
+    If the name field contains '.' or ',' the 'email (name)' format is used.
     """
     try:
-        email.decode('ascii')
+        email.encode('ascii')
     except UnicodeDecodeError:
         raise AssertionError("Email addresses must be ASCII.")
-    return rfc822_encode_address(rfc2047_encode(name), email)
+    return rfc822_encode_address(
+        Header(name, 'utf-8', 998).encode().decode('ascii'), email)
 
 
 def extract_dpkg_source(dsc_filepath, target, vendor=None):

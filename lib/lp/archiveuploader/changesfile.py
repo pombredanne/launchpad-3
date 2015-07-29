@@ -356,11 +356,10 @@ class ChangesFile(SignableTagFile):
          -- <CHANGED-BY>  <DATE>
         }}}
         """
-        changes_author = '\n\n -- %s  %s' % (
-            rfc822_encode_address(
-                self.changed_by['name'], self.changed_by['email']),
-            self.date)
-        return self.changes_comment + changes_author
+        changes_author = rfc822_encode_address(
+            self.changed_by['name'], self.changed_by['email'])
+        return '%s\n\n -- %s  %s' % (
+            self.changes_comment, changes_author.encode('utf-8'), self.date)
 
 
 def determine_file_class_and_name(filename):
