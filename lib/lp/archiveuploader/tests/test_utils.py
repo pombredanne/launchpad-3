@@ -147,19 +147,16 @@ class TestUtilities(TestCase):
         """
         from lp.archiveuploader.utils import (
             parse_maintainer_bytes,
-            rfc2047_encode_address,
             rfc822_encode_address,
             )
         cases = (
             ("No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
              u"No\xe8l K\xf6the <noel@debian.org>",
-             u"=?utf-8?b?Tm/DqGwgS8O2dGhl?= <noel@debian.org>",
              u"No\xe8l K\xf6the",
              u"noel@debian.org"),
 
             ("No\xe8l K\xf6the <noel@debian.org>",
              u"No\xe8l K\xf6the <noel@debian.org>",
-             u"=?utf-8?b?Tm/DqGwgS8O2dGhl?= <noel@debian.org>",
              u"No\xe8l K\xf6the",
              u"noel@debian.org"),
 
@@ -171,42 +168,35 @@ class TestUtilities(TestCase):
 
             ("James J. Troup <james@nocrew.org>",
              u"james@nocrew.org (James J. Troup)",
-             u"james@nocrew.org (James J. Troup)",
              u"James J. Troup",
              u"james@nocrew.org"),
 
             ("James J, Troup <james@nocrew.org>",
-             u"james@nocrew.org (James J, Troup)",
              u"james@nocrew.org (James J, Troup)",
              u"James J, Troup",
              u"james@nocrew.org"),
 
             ("james@nocrew.org",
              u" <james@nocrew.org>",
-             u" <james@nocrew.org>",
              u"",
              u"james@nocrew.org"),
 
             ("<james@nocrew.org>",
-             u" <james@nocrew.org>",
              u" <james@nocrew.org>",
              u"",
              u"james@nocrew.org"),
 
             ("Cris van Pelt <\"Cris van Pelt\"@tribe.eu.org>",
              u"Cris van Pelt <\"Cris van Pelt\"@tribe.eu.org>",
-             u"Cris van Pelt <\"Cris van Pelt\"@tribe.eu.org>",
              u"Cris van Pelt",
              u"\"Cris van Pelt\"@tribe.eu.org"),
 
             ("Zak B. Elep <zakame@ubuntu.com>",
              u"zakame@ubuntu.com (Zak B. Elep)",
-             u"zakame@ubuntu.com (Zak B. Elep)",
              u"Zak B. Elep",
              u"zakame@ubuntu.com"),
 
             ("zakame@ubuntu.com (Zak B. Elep)",
-             u" <zakame@ubuntu.com (Zak B. Elep)>",
              u" <zakame@ubuntu.com (Zak B. Elep)>",
              u"",
              u"zakame@ubuntu.com (Zak B. Elep)"),
@@ -214,10 +204,9 @@ class TestUtilities(TestCase):
 
         for case in cases:
             (name, email) = parse_maintainer_bytes(case[0], 'Maintainer')
-            self.assertEquals(case[3], name)
-            self.assertEquals(case[4], email)
+            self.assertEquals(case[2], name)
+            self.assertEquals(case[3], email)
             self.assertEquals(case[1], rfc822_encode_address(name, email))
-            self.assertEquals(case[2], rfc2047_encode_address(name, email))
 
     def testParseMaintainerRaises(self):
         """lp.archiveuploader.utils.parse_maintainer should raise on incorrect

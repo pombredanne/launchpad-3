@@ -22,7 +22,6 @@ from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import (
     parse_maintainer_bytes,
     ParseMaintError,
-    rfc2047_encode_address,
     rfc822_encode_address,
     )
 from lp.registry.interfaces.person import IPersonSet
