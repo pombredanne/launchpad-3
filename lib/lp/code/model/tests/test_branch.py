@@ -10,7 +10,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import json
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -73,6 +72,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchjob import (
     IBranchScanJobSource,
     IBranchUpgradeJobSource,
+    IReclaimBranchSpaceJobSource,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
@@ -371,8 +371,13 @@ class TestBranchWriteJobViaCelery(TestCaseWithFactory):
         db_branch, tree = self.create_branch_and_tree()
         branch_path = get_real_branch_path(db_branch.id)
         self.assertThat(branch_path, PathExists())
+        store = Store.of(db_branch)
         with person_logged_in(db_branch.owner):
             db_branch.destroySelf()
+        job = store.find(
+            BranchJob,
+            BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE).one()
+        job.job.scheduled_start = datetime.now(UTC)
         with block_on_job():
             transaction.commit()
         self.assertThat(branch_path, Not(PathExists()))

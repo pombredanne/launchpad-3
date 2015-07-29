@@ -129,7 +129,11 @@ class Job(SQLBase):
     @property
     def is_runnable(self):
         """See `IJob`."""
-        return self.status == JobStatus.WAITING
+        if self.status != JobStatus.WAITING:
+            return False
+        if self.scheduled_start is None:
+            return True
+        return self.scheduled_start <= datetime.datetime.now(UTC)
 
     @classmethod
     def createMultiple(self, store, num_jobs, requester=None):

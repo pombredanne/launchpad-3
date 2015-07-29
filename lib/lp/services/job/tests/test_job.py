@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from pytz import UTC
 import time
 
 from lazr.jobrunner.jobrunner import LeaseHeld
@@ -257,6 +261,30 @@ class TestJob(TestCaseWithFactory):
             job = Job(_status=status)
             self.assertEqual(
                 status in Job.PENDING_STATUSES, job.is_pending)
+
+    def test_is_runnable_when_failed(self):
+        """is_runnable is false when the job is not WAITING."""
+        job = Job(_status=JobStatus.FAILED)
+        self.assertFalse(job.is_runnable)
+
+    def test_is_runnable_when_scheduled_in_future(self):
+        """is_runnable is false when the job is scheduled in the future."""
+        job = Job(
+            _status=JobStatus.WAITING,
+            scheduled_start=datetime.now(UTC) + timedelta(seconds=60))
+        self.assertFalse(job.is_runnable)
+
+    def test_is_runnable_when_scheduled_in_past(self):
+        """is_runnable is true when the job is scheduled in the past."""
+        job = Job(
+            _status=JobStatus.WAITING,
+            scheduled_start=datetime.now(UTC) - timedelta(seconds=60))
+        self.assertTrue(job.is_runnable)
+
+    def test_is_runnable_when_not_scheduled(self):
+        """is_runnable is true when no explicit schedule has been requested."""
+        job = Job(_status=JobStatus.WAITING)
+        self.assertTrue(job.is_runnable)
 
     def test_start_manages_transactions(self):
         # Job.start() does not commit the transaction by default.
