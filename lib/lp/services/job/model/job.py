@@ -102,8 +102,8 @@ class Job(SQLBase):
              JobStatus.FAILED,
              JobStatus.SUSPENDED,
              JobStatus.WAITING),
-        JobStatus.FAILED: (),
-        JobStatus.COMPLETED: (),
+        JobStatus.FAILED: (JobStatus.WAITING,),
+        JobStatus.COMPLETED: (JobStatus.WAITING,),
         JobStatus.SUSPENDED:
             (JobStatus.WAITING,),
         }

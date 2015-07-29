@@ -14,6 +14,8 @@ __all__ = [
     'IWebhookJobSource',
     'IWebhookSource',
     'IWebhookTarget',
+    'WebhookDeliveryFailure',
+    'WebhookDeliveryRetry',
     'WebhookFeatureDisabled',
     ]
 
@@ -68,6 +70,16 @@ class WebhookFeatureDisabled(Exception):
     def __init__(self):
         Exception.__init__(
             self, "This webhook feature is not available yet.")
+
+
+class WebhookDeliveryFailure(Exception):
+    """A webhook delivery failed and should not be retried."""
+    pass
+
+
+class WebhookDeliveryRetry(Exception):
+    """A webhook delivery failed and should be retried."""
+    pass
 
 
 class IWebhook(Interface):
@@ -199,6 +211,11 @@ class IWebhookDeliveryJob(IRunnableJob):
 
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
+
+    date_first_sent = exported(Datetime(
+        title=_("Date first sent"),
+        description=_("Timestamp of the first delivery attempt."),
+        required=False, readonly=True))
 
     date_sent = exported(Datetime(
         title=_("Date sent"),
