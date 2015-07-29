@@ -192,7 +192,7 @@ def parse_maintainer(maintainer, field_name="Maintainer"):
         if not m:
             raise ParseMaintError(
                 "%s: doesn't parse as a valid %s field."
-                % (maintainer, field_name))
+                % (maintainer.encode("utf-8"), field_name))
         name = m.group(1)
         email = m.group(2)
         # Just in case the maintainer ended up with nested angles; check...
@@ -201,7 +201,8 @@ def parse_maintainer(maintainer, field_name="Maintainer"):
 
     if email.find(u"@") == -1 and email.find(u"buildd_") != 0:
         raise ParseMaintError(
-            "%s: no @ found in email address part." % maintainer)
+            "%s: no @ found in email address part." %
+            maintainer.encode("utf-8"))
 
     return (name, email)
 

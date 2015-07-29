@@ -6,6 +6,9 @@
 # arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
 
 import os
+import re
+
+from testtools.testcase import ExpectedException
 
 from lp.archiveuploader.tests import datadir
 from lp.archiveuploader.utils import (
@@ -139,11 +142,11 @@ class TestUtilities(TestCase):
         self.assertEquals(sect, "libs")
         self.assertEquals(comp, "restricted")
 
-    def testFixMaintainerOkay(self):
-        """lp.archiveuploader.utils.safe_fix_maintainer should parse correctly
+    def testParseMaintainerOkay(self):
+        """lp.archiveuploader.utils.parse_maintainer should parse correctly
         """
         from lp.archiveuploader.utils import (
-            safe_fix_maintainer,
+            parse_maintainer_bytes,
             rfc2047_encode_address,
             rfc822_encode_address,
             )
@@ -210,27 +213,28 @@ class TestUtilities(TestCase):
              )
 
         for case in cases:
-            (name, email) = safe_fix_maintainer(case[0], 'Maintainer')
+            (name, email) = parse_maintainer_bytes(case[0], 'Maintainer')
             self.assertEquals(case[3], name)
             self.assertEquals(case[4], email)
             self.assertEquals(case[1], rfc822_encode_address(name, email))
             self.assertEquals(case[2], rfc2047_encode_address(name, email))
 
-    def testFixMaintainerRaises(self):
-        """lp.archiveuploader.utils.fix_maintainer should raise on incorrect
+    def testParseMaintainerRaises(self):
+        """lp.archiveuploader.utils.parse_maintainer should raise on incorrect
            values
         """
-        from lp.archiveuploader.utils import fix_maintainer, ParseMaintError
+        from lp.archiveuploader.utils import (
+            parse_maintainer_bytes,
+            ParseMaintError,
+            )
         cases = (
             "James Troup",
             "James Troup <james>",
-            "James Troup <james@nocrew.org")
+            "James Troup <james@nocrew.org",
+            "No\xc3\xa8l K\xc3\xb6the")
         for case in cases:
-            try:
-                fix_maintainer(case)
-                self.assertNotReached()
-            except ParseMaintError:
-                pass
+            with ExpectedException(ParseMaintError, '^%s: ' % re.escape(case)):
+                parse_maintainer_bytes(case, 'Maintainer')
 
 
 class TestFilenameRegularExpressions(TestCase):
