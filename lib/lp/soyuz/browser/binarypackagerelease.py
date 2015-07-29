@@ -8,8 +8,6 @@ __all__ = [
     'BinaryPackageView',
     ]
 
-from apt_pkg import parse_depends
-
 from lp.services.webapp import Navigation
 from lp.services.webapp.publisher import LaunchpadView
 from lp.soyuz.browser.packagerelationship import relationship_builder
@@ -26,12 +24,10 @@ class BinaryPackageView(LaunchpadView):
     def _relationship_parser(self, content):
         """Wrap the relationship_builder for BinaryPackages.
 
-        Define apt_pkg.ParseDep as a relationship 'parser' and
-        IDistroArchSeries.getBinaryPackage as 'getter'.
+        Define IDistroArchSeries.getBinaryPackage as a relationship 'getter'.
         """
         getter = self.context.build.distro_arch_series.getBinaryPackage
-        parser = parse_depends
-        return relationship_builder(content, parser=parser, getter=getter)
+        return relationship_builder(content, getter=getter)
 
     def depends(self):
         return self._relationship_parser(self.context.depends)
