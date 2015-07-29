@@ -12,6 +12,7 @@ __all__ = [
     'extract_dpkg_source',
     'get_source_file_extension',
     'parse_and_merge_file_lists',
+    'parse_maintainer_bytes',
     'ParseMaintError',
     'prefix_multi_line_string',
     're_taint_free',
@@ -26,7 +27,6 @@ __all__ = [
     're_extract_src_version',
     'rfc2047_encode_address',
     'rfc822_encode_address',
-    'safe_fix_maintainer',
     'UploadError',
     'UploadWarning',
     ]
@@ -172,7 +172,7 @@ class ParseMaintError(Exception):
         self.message = message
 
 
-def fix_maintainer(maintainer, field_name="Maintainer"):
+def parse_maintainer(maintainer, field_name="Maintainer"):
     """Parses a Maintainer or Changed-By field into the name and address.
 
     maintainer, name and address are all Unicode.
@@ -206,16 +206,15 @@ def fix_maintainer(maintainer, field_name="Maintainer"):
     return (name, email)
 
 
-def safe_fix_maintainer(content, fieldname):
-    """Wrapper for fix_maintainer() to handle both Unicode and bytestrings.
+def parse_maintainer_bytes(content, fieldname):
+    """Wrapper for parse_maintainer to handle both Unicode and bytestrings.
 
     It verifies the content type and transforms it to a unicode with
-    guess().  Then we can safely call fix_maintainer().
+    guess().  Then we can safely call parse_maintainer().
     """
     if type(content) != unicode:
         content = guess_encoding(content)
-
-    return fix_maintainer(content, fieldname)
+    return parse_maintainer(content, fieldname)
 
 
 def rfc822_encode_address(name, email):

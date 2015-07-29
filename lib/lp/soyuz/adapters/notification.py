@@ -21,10 +21,10 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import (
+    parse_maintainer_bytes,
     ParseMaintError,
     rfc2047_encode_address,
     rfc822_encode_address,
-    safe_fix_maintainer,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -579,7 +579,7 @@ def person_to_email(person):
 def fix_email(fullemail, field_name):
     """Turn an email address from .changes into various useful forms.
 
-    The input address may be None, or anything that `fix_maintainer`
+    The input address may be None, or anything that `parse_maintainer_bytes`
     understands.
 
     :return: A tuple of (RFC2047-compatible address, Unicode
@@ -589,7 +589,7 @@ def fix_email(fullemail, field_name):
         return None, None, None
 
     try:
-        name, email = safe_fix_maintainer(fullemail, field_name)
+        name, email = parse_maintainer_bytes(fullemail, field_name)
         return (
             rfc2047_encode_address(name, email).encode('utf-8'),
             rfc822_encode_address(name, email),
