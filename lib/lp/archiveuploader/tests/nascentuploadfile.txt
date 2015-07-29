@@ -298,16 +298,14 @@ As we can see, this method also return an error generator.
 The built address_structure contains values that will be used during
 the upload processing:
 
-    >>> ed_binary_changes.maintainer['rfc822']
-    'James Troup <james@nocrew.org>'
-    >>> ed_binary_changes.maintainer['rfc2047']
-    'James Troup <james@nocrew.org>'
     >>> ed_binary_changes.maintainer['name']
-    'James Troup'
+    u'James Troup'
     >>> ed_binary_changes.maintainer['email']
-    'james@nocrew.org'
+    u'james@nocrew.org'
     >>> ed_binary_changes.maintainer['person']
     <Person ...>
+    >>> ed_binary_changes.maintainer['person'].displayname
+    u'James Troup'
 
 
 Signature Traces
@@ -372,8 +370,8 @@ The DSC is GPG-signed most of the time, so we can guarantee who was
 the author. The DSCFile class implements the same address parsing
 methods found in ChangesFile:
 
-    >>> ed_source_dsc.maintainer['rfc822']
-    'James Troup <james@nocrew.org>'
+    >>> ed_source_dsc.maintainer['person'].displayname
+    u'James Troup'
 
 The DSC signer IPerson:
 
