@@ -170,6 +170,20 @@ class TestWebhookDelivery(TestCaseWithFactory):
                     'date_created': Not(Is(None)),
                     'date_sent': Is(None)})))
 
+    def test_retry(self):
+        with person_logged_in(self.owner):
+            self.delivery.start()
+            self.delivery.fail()
+        representation = self.webservice.get(
+            self.delivery_url, api_version='devel').jsonBody()
+        self.assertFalse(representation['pending'])
+        response = self.webservice.named_post(
+            self.delivery_url, 'retry', api_version='devel')
+        self.assertEqual(200, response.status)
+        representation = self.webservice.get(
+            self.delivery_url, api_version='devel').jsonBody()
+        self.assertTrue(representation['pending'])
+
 
 class TestWebhookTarget(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer

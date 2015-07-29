@@ -21,6 +21,7 @@ from testtools.matchers import (
     GreaterThan,
     Is,
     KeysEqual,
+    LessThan,
     MatchesAll,
     MatchesStructure,
     Not,
@@ -337,28 +338,27 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             job.date_first_sent - timedelta(hours=24)).isoformat()
         self.assertFalse(job.retry_automatically)
 
+    def runJob(self, job):
+        with dbuser("webhookrunner"):
+            runner = JobRunner([job])
+            runner.runAll()
+        job.lease_expires = None
+        if len(runner.completed_jobs) == 1 and not runner.incomplete_jobs:
+            return True
+        if len(runner.incomplete_jobs) == 1 and not runner.completed_jobs:
+            return False
+        if not runner.incomplete_jobs and not runner.completed_jobs:
+            return None
+        raise Exception("Unexpected jobs.")
+
     def test_automatic_retries(self):
         hook = self.factory.makeWebhook()
         job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
-
         client = MockWebhookClient(response_status=404)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
-        def run_job(job):
-            with dbuser("webhookrunner"):
-                runner = JobRunner([job])
-                runner.runAll()
-            if len(runner.completed_jobs) == 1 and not runner.incomplete_jobs:
-                return True
-            if len(runner.incomplete_jobs) == 1 and not runner.completed_jobs:
-                job.lease_expires = None
-                return False
-            if not runner.incomplete_jobs and not runner.completed_jobs:
-                return None
-            raise Exception("Unexpected jobs.")
-
         # The first attempt fails but schedules a retry five minutes later.
-        self.assertEqual(False, run_job(job))
+        self.assertEqual(False, self.runJob(job))
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertEqual(False, job.successful)
         self.assertTrue(job.pending)
@@ -370,7 +370,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         job.json_data['date_first_sent'] = (
             job.date_first_sent - timedelta(minutes=5)).isoformat()
         job.scheduled_start -= timedelta(minutes=5)
-        self.assertEqual(False, run_job(job))
+        self.assertEqual(False, self.runJob(job))
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertEqual(False, job.successful)
         self.assertTrue(job.pending)
@@ -380,10 +380,55 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         job.json_data['date_first_sent'] = (
             job.date_first_sent - timedelta(hours=24)).isoformat()
         job.scheduled_start -= timedelta(hours=24)
-        self.assertEqual(False, run_job(job))
+        self.assertEqual(False, self.runJob(job))
         self.assertEqual(JobStatus.FAILED, job.status)
         self.assertEqual(False, job.successful)
         self.assertFalse(job.pending)
+
+    def test_manual_retries(self):
+        hook = self.factory.makeWebhook()
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        client = MockWebhookClient(response_status=404)
+        self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
+
+        # Simulate a first attempt failure.
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIsNot(None, job.scheduled_start)
+
+        # A manual retry brings the scheduled start forward.
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIs(None, job.scheduled_start)
+
+        # Force the next attempt to fail hard by pretending it was more
+        # than 24 hours later.
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=24)).isoformat()
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.FAILED, job.status)
+
+        # A manual retry brings the job out of FAILED and schedules it
+        # to run as soon as possible. If it fails again, it fails hard;
+        # the initial attempt more than 24 hours ago is remembered.
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIs(None, job.scheduled_start)
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.FAILED, job.status)
+
+        # A completed job can be retried just like a failed one. The
+        # endpoint may have erroneously returned a 200 without recording
+        # the event.
+        client.response_status = 200
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(True, self.runJob(job))
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(True, self.runJob(job))
+        self.assertEqual(JobStatus.COMPLETED, job.status)
 
 
 class TestViaCronscript(TestCaseWithFactory):

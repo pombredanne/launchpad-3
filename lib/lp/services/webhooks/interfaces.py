@@ -28,6 +28,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_destructor_operation,
     export_factory_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     REQUEST_USER,
@@ -225,6 +226,16 @@ class IWebhookDeliveryJob(IRunnableJob):
     payload = exported(Dict(
         title=_('Event payload'),
         key_type=TextLine(), required=True, readonly=True))
+
+    @export_write_operation()
+    @operation_for_version("devel")
+    def retry():
+        """Attempt to deliver the event again.
+
+        Launchpad will automatically retry regularly for 24 hours, but
+        this can be used after it gives up or to avoid waiting for the
+        next automatic attempt.
+        """
 
 
 class IWebhookDeliveryJobSource(IJobSource):
