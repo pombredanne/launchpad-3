@@ -162,7 +162,6 @@ class TestUtilities(TestCase):
 
             ("James Troup <james@nocrew.org>",
              u"James Troup <james@nocrew.org>",
-             u"James Troup <james@nocrew.org>",
              u"James Troup",
              u"james@nocrew.org"),
 
