@@ -242,11 +242,9 @@ class TestNotification(TestCaseWithFactory):
         fields = [
             info['changedby'],
             info['maintainer'],
-            info['changedby_displayname'],
-            info['maintainer_displayname'],
             ]
         for field in fields:
-            self.assertEqual('Foo Bar <foo.bar@example.com>', field)
+            self.assertEqual((u'Foo Bar', u'foo.bar@example.com'), field)
 
     def test_fetch_information_spr(self):
         creator = self.factory.makePerson(displayname=u"foø")
@@ -257,15 +255,9 @@ class TestNotification(TestCaseWithFactory):
         self.assertEqual(info['date'], spr.dateuploaded)
         self.assertEqual(info['changelog'], spr.changelog_entry)
         self.assertEqual(
-            info['changedby'], format_address_for_person(spr.creator))
+            (u"foø", spr.creator.preferredemail.email), info['changedby'])
         self.assertEqual(
-            info['maintainer'], format_address_for_person(spr.maintainer))
-        self.assertEqual(
-            u"foø <%s>" % spr.creator.preferredemail.email,
-            info['changedby_displayname'])
-        self.assertEqual(
-            u"bær <%s>" % spr.maintainer.preferredemail.email,
-            info['maintainer_displayname'])
+            (u"bær", spr.maintainer.preferredemail.email), info['maintainer'])
 
     def test_fetch_information_bprs(self):
         bpr = self.factory.makeBinaryPackageRelease()
@@ -274,17 +266,11 @@ class TestNotification(TestCaseWithFactory):
         self.assertEqual(info['date'], spr.dateuploaded)
         self.assertEqual(info['changelog'], spr.changelog_entry)
         self.assertEqual(
-            info['changedby'], format_address_for_person(spr.creator))
+            (spr.creator.displayname, spr.creator.preferredemail.email),
+            info['changedby'])
         self.assertEqual(
-            info['maintainer'], format_address_for_person(spr.maintainer))
-        self.assertEqual(
-            info['changedby_displayname'],
-            formataddr((spr.creator.displayname,
-                        spr.creator.preferredemail.email)))
-        self.assertEqual(
-            info['maintainer_displayname'],
-            formataddr((spr.maintainer.displayname,
-                        spr.maintainer.preferredemail.email)))
+            (spr.maintainer.displayname, spr.maintainer.preferredemail.email),
+            info['maintainer'])
 
     def test_calculate_subject_spr(self):
         spr = self.factory.makeSourcePackageRelease()
@@ -461,5 +447,5 @@ class TestNotification(TestCaseWithFactory):
         # If changer has no preferred email address,
         # is_auto_sync_upload should still work.
         result = is_auto_sync_upload(
-            spr=None, bprs=None, pocket=None, changed_by_email=None)
+            spr=None, bprs=None, pocket=None, changed_by=None)
         self.assertFalse(result)
