@@ -290,10 +290,8 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     # preferred email address set.  We'll get a None here.
     changedby_person = addr_to_person(info['changedby'])
     if info['changedby']:
-        changedby_displayname = rfc822_encode_address(*info['changedby'])
-        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby_displayname
-    else:
-        changedby_displayname = None
+        information['CHANGEDBY'] = (
+            '\nChanged-By: %s' % rfc822_encode_address(*info['changedby']))
     origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
@@ -308,12 +306,9 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
             and blamer.preferredemail):
         information['SIGNER'] = '\nSigned-By: %s' % rfc822_encode_address(
             blamer.displayname, blamer.preferredemail.email)
-    # Add maintainer if present and different from changed-by.
-    if info['maintainer']:
-        maintainer_displayname = rfc822_encode_address(*info['maintainer'])
-        if maintainer_displayname != changedby_displayname:
-            information['MAINTAINER'] = (
-                '\nMaintainer: %s' % maintainer_displayname)
+    if info['maintainer'] and info['maintainer'] != info['changedby']:
+        information['MAINTAINER'] = (
+            '\nMaintainer: %s' % rfc822_encode_address(*info['maintainer']))
     return get_template(archive, action) % information
 
 
