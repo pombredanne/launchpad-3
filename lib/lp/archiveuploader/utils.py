@@ -224,7 +224,9 @@ def rfc822_encode_address(name, email):
     characters, the result is not RFC822-compliant and you should use
     something like format_address instead.
 
-    If the name field contains '.' or ',' the 'email (name)' format is used.
+    This is similar to email.utils.format_addr, except that it handles
+    special characters using the 'email (name)' format rather than
+    '"name" (email)'.
     """
     # If the maintainer's name contains a full stop then the whole field will
     # not work directly as an email address due to a misfeature in the syntax
