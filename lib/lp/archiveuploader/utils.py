@@ -25,7 +25,6 @@ __all__ = [
     're_valid_pkg_name',
     're_changes_file_name',
     're_extract_src_version',
-    'rfc2047_encode_address',
     'rfc822_encode_address',
     'UploadError',
     'UploadWarning',
@@ -33,7 +32,6 @@ __all__ = [
 
 
 from collections import defaultdict
-from email.header import Header
 import os
 import re
 import signal
@@ -223,9 +221,11 @@ def rfc822_encode_address(name, email):
 
     name and email must be Unicode. If they contain non-ASCII
     characters, the result is not RFC822-compliant and you should use
-    rfc2047_encode_address instead.
+    something like format_address instead.
 
-    If the name field contains '.' or ',' the 'email (name)' format is used.
+    This is similar to email.utils.format_addr, except that it handles
+    special characters using the 'email (name)' format rather than
+    '"name" (email)'.
     """
     # If the maintainer's name contains a full stop then the whole field will
     # not work directly as an email address due to a misfeature in the syntax
@@ -235,22 +235,6 @@ def rfc822_encode_address(name, email):
         return u"%s (%s)" % (email, name)
     else:
         return u"%s <%s>" % (name, email)
-
-
-def rfc2047_encode_address(name, email):
-    """Return an RFC2047 encoding of a name and an email address.
-
-    name and email must be Unicode strings, and email must be
-    ASCII-only.
-
-    If the name field contains '.' or ',' the 'email (name)' format is used.
-    """
-    try:
-        email.encode('ascii')
-    except UnicodeDecodeError:
-        raise AssertionError("Email addresses must be ASCII.")
-    return rfc822_encode_address(
-        Header(name, 'utf-8', 998).encode().decode('ascii'), email)
 
 
 def extract_dpkg_source(dsc_filepath, target, vendor=None):
