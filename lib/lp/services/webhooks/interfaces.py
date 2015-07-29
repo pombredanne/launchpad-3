@@ -28,6 +28,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_destructor_operation,
     export_factory_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     REQUEST_USER,
@@ -226,6 +227,8 @@ class IWebhookDeliveryJob(IRunnableJob):
         title=_('Event payload'),
         key_type=TextLine(), required=True, readonly=True))
 
+    @export_write_operation()
+    @operation_for_version("devel")
     def retry():
         """Attempt to deliver the event again.
 
