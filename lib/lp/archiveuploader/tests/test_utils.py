@@ -140,10 +140,10 @@ class TestUtilities(TestCase):
         self.assertEquals(comp, "restricted")
 
     def testFixMaintainerOkay(self):
-        """lp.archiveuploader.utils.fix_maintainer should parse correct values
+        """lp.archiveuploader.utils.safe_fix_maintainer should parse correctly
         """
         from lp.archiveuploader.utils import (
-            fix_maintainer,
+            safe_fix_maintainer,
             rfc2047_encode_address,
             rfc822_encode_address,
             )
@@ -210,7 +210,7 @@ class TestUtilities(TestCase):
              )
 
         for case in cases:
-            (name, email) = fix_maintainer(case[0])
+            (name, email) = safe_fix_maintainer(case[0], 'Maintainer')
             self.assertEquals(case[3], name)
             self.assertEquals(case[4], email)
             self.assertEquals(case[1], rfc822_encode_address(name, email))

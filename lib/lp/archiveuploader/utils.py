@@ -175,18 +175,18 @@ class ParseMaintError(Exception):
 def fix_maintainer(maintainer, field_name="Maintainer"):
     """Parses a Maintainer or Changed-By field into the name and address.
 
-    maintainer is a bytestring, name and address are Unicode.
+    maintainer, name and address are all Unicode.
     """
     maintainer = maintainer.strip()
     if not maintainer:
-        return ('', '', '', '')
+        return (u'', u'')
 
-    if maintainer.find("<") == -1:
+    if maintainer.find(u"<") == -1:
         email = maintainer
-        name = ""
-    elif (maintainer[0] == "<" and maintainer[-1:] == ">"):
+        name = u""
+    elif (maintainer[0] == u"<" and maintainer[-1:] == u">"):
         email = maintainer[1:-1]
-        name = ""
+        name = u""
     else:
         m = re_parse_maintainer.match(maintainer)
         if not m:
@@ -196,18 +196,10 @@ def fix_maintainer(maintainer, field_name="Maintainer"):
         name = m.group(1)
         email = m.group(2)
         # Just in case the maintainer ended up with nested angles; check...
-        while email.startswith("<"):
+        while email.startswith(u"<"):
             email = email[1:]
 
-    # Decode the name as UTF-8 or ISO8859-1.
-    try:
-        name = unicode(name, "utf-8")
-    except UnicodeError:
-        name = unicode(name, "iso8859-1")
-    # Email addresses are always ASCII.
-    email = unicode(email, "ascii")
-
-    if email.find("@") == -1 and email.find("buildd_") != 0:
+    if email.find(u"@") == -1 and email.find(u"buildd_") != 0:
         raise ParseMaintError(
             "%s: no @ found in email address part." % maintainer)
 
@@ -215,7 +207,7 @@ def fix_maintainer(maintainer, field_name="Maintainer"):
 
 
 def safe_fix_maintainer(content, fieldname):
-    """Wrapper for fix_maintainer() to handle unicode and string argument.
+    """Wrapper for fix_maintainer() to handle both Unicode and bytestrings.
 
     It verifies the content type and transforms it to a unicode with
     guess().  Then we can safely call fix_maintainer().
@@ -223,7 +215,7 @@ def safe_fix_maintainer(content, fieldname):
     if type(content) != unicode:
         content = guess_encoding(content)
 
-    return fix_maintainer(content.encode("utf-8"), fieldname)
+    return fix_maintainer(content, fieldname)
 
 
 def rfc822_encode_address(name, email):
