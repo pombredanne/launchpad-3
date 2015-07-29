@@ -54,15 +54,14 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
     def test_notify_from_unicode_names(self):
         # People with unicode in their names should appear correctly in the
         # email and not get smashed to ASCII or otherwise transliterated.
-        RANDOM_UNICODE = u"Loïc"
-        creator = self.factory.makePerson(displayname=RANDOM_UNICODE)
+        creator = self.factory.makePerson(displayname=u"Loïc")
         spr = self.factory.makeSourcePackageRelease(creator=creator)
         self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         pocket = PackagePublishingPocket.RELEASE
         distroseries = self.factory.makeDistroSeries()
         distroseries.changeslist = "blah@example.com"
-        blamer = self.factory.makePerson()
+        blamer = self.factory.makePerson(displayname=u"Stéphane")
         notify(
             blamer, spr, [], [], archive, distroseries, pocket,
             action='accepted')
@@ -70,7 +69,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         self.assertEqual(2, len(notifications))
         msg = notifications[1].get_payload(0)
         body = msg.get_payload(decode=True)
-        self.assertIn("Loïc", body)
+        self.assertIn("Changed-By: Loïc", body)
+        self.assertIn("Signed-By: Stéphane", body)
 
     def test_calculate_subject_customfile(self):
         lfa = self.factory.makeLibraryFileAlias()

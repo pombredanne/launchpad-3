@@ -306,8 +306,10 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
 
     if blamer is not None and blamer != changedby_person:
         signer_signature = person_to_email(blamer)
-        if signer_signature != info['changedby']:
-            information['SIGNER'] = '\nSigned-By: %s' % signer_signature
+        if signer_signature and signer_signature != info['changedby']:
+            information['SIGNER'] = (
+                '\nSigned-By: %s' %
+                formataddr((blamer.displayname, blamer.preferredemail.email)))
     # Add maintainer if present and different from changed-by.
     maintainer_displayname = info['maintainer_displayname']
     if (maintainer_displayname and
