@@ -174,7 +174,6 @@ class TestWebhookDelivery(TestCaseWithFactory):
         with person_logged_in(self.owner):
             self.delivery.start()
             self.delivery.fail()
-        # Send a test event.
         representation = self.webservice.get(
             self.delivery_url, api_version='devel').jsonBody()
         self.assertFalse(representation['pending'])
