@@ -24,6 +24,8 @@ __all__ = [
     're_valid_pkg_name',
     're_changes_file_name',
     're_extract_src_version',
+    'rfc2047_encode_address',
+    'rfc822_encode_address',
     'safe_fix_maintainer',
     'UploadError',
     'UploadWarning',
@@ -239,28 +241,14 @@ def fix_maintainer(maintainer, field_name="Maintainer"):
         while email.startswith("<"):
             email = email[1:]
 
-    # Get an RFC2047 compliant version of the name
-    rfc2047_name = rfc2047_encode(name)
-
     # Force the name to be UTF-8
     name = force_to_utf8(name)
-
-    # If the maintainer's name contains a full stop then the whole field will
-    # not work directly as an email address due to a misfeature in the syntax
-    # specified in RFC822; see Debian policy 5.6.2 (Maintainer field syntax)
-    # for details.
-    if name.find(',') != -1 or name.find('.') != -1:
-        rfc822_maint = "%s (%s)" % (email, name)
-        rfc2047_maint = "%s (%s)" % (email, rfc2047_name)
-    else:
-        rfc822_maint = "%s <%s>" % (name, email)
-        rfc2047_maint = "%s <%s>" % (rfc2047_name, email)
 
     if email.find("@") == -1 and email.find("buildd_") != 0:
         raise ParseMaintError(
             "%s: no @ found in email address part." % maintainer)
 
-    return (rfc822_maint, rfc2047_maint, name, email)
+    return (name, email)
 
 
 def safe_fix_maintainer(content, fieldname):
@@ -273,6 +261,34 @@ def safe_fix_maintainer(content, fieldname):
         content = guess_encoding(content)
 
     return fix_maintainer(content.encode("utf-8"), fieldname)
+
+
+def rfc822_encode_address(name, email):
+    """Return an RFC822 encoding of a name and an email address.
+
+    The character encodings of name and email are left unchanged.
+    """
+    # If the maintainer's name contains a full stop then the whole field will
+    # not work directly as an email address due to a misfeature in the syntax
+    # specified in RFC822; see Debian policy 5.6.2 (Maintainer field syntax)
+    # for details.
+    if name.find(',') != -1 or name.find('.') != -1:
+        return "%s (%s)" % (email, name)
+    else:
+        return "%s <%s>" % (name, email)
+
+
+def rfc2047_encode_address(name, email):
+    """Return an RFC2047 encoding of a name and an email address.
+
+    name must be a UTF-8 or ISO8859-1 bytestring, and email must be an
+    ASCII bytestring.
+    """
+    try:
+        email.decode('ascii')
+    except UnicodeDecodeError:
+        raise AssertionError("Email addresses must be ASCII.")
+    return rfc822_encode_address(rfc2047_encode(name), email)
 
 
 def extract_dpkg_source(dsc_filepath, target, vendor=None):

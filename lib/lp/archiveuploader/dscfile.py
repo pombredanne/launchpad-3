@@ -189,13 +189,11 @@ class SignableTagFile:
         for any reason, or if the email address then cannot be found within
         the launchpad database.
 
-        Return a dict containing the rfc822 and rfc2047 formatted forms of
-        the address, the person's name, email address and person record within
-        the launchpad database.
+        Return a dict containing the person's name, email address and
+        person record within the launchpad database.
         """
         try:
-            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-                addr, fieldname)
+            (name, email) = safe_fix_maintainer(addr, fieldname)
         except ParseMaintError as error:
             raise UploadError(str(error))
 
@@ -226,8 +224,6 @@ class SignableTagFile:
                               % (name, email))
 
         return {
-            "rfc822": rfc822,
-            "rfc2047": rfc2047,
             "name": name,
             "email": email,
             "person": person,

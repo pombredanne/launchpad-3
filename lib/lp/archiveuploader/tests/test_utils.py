@@ -142,7 +142,11 @@ class TestUtilities(TestCase):
     def testFixMaintainerOkay(self):
         """lp.archiveuploader.utils.fix_maintainer should parse correct values
         """
-        from lp.archiveuploader.utils import fix_maintainer
+        from lp.archiveuploader.utils import (
+            fix_maintainer,
+            rfc2047_encode_address,
+            rfc822_encode_address,
+            )
         cases = (
             ("No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
              "No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
@@ -152,7 +156,7 @@ class TestUtilities(TestCase):
 
             ("No\xe8l K\xf6the <noel@debian.org>",
              "No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
-             "=?iso-8859-1?q?No=E8l_K=F6the?= <noel@debian.org>",
+             "=?utf-8?b?Tm/DqGwgS8O2dGhl?= <noel@debian.org>",
              "No\xc3\xa8l K\xc3\xb6the",
              "noel@debian.org"),
 
@@ -206,11 +210,11 @@ class TestUtilities(TestCase):
              )
 
         for case in cases:
-            (a, b, c, d) = fix_maintainer(case[0])
-            self.assertEquals(case[1], a)
-            self.assertEquals(case[2], b)
-            self.assertEquals(case[3], c)
-            self.assertEquals(case[4], d)
+            (name, email) = fix_maintainer(case[0])
+            self.assertEquals(case[3], name)
+            self.assertEquals(case[4], email)
+            self.assertEquals(case[1], rfc822_encode_address(name, email))
+            self.assertEquals(case[2], rfc2047_encode_address(name, email))
 
     def testFixMaintainerRaises(self):
         """lp.archiveuploader.utils.fix_maintainer should raise on incorrect

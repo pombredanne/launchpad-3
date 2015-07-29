@@ -22,6 +22,8 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import (
     ParseMaintError,
+    rfc2047_encode_address,
+    rfc822_encode_address,
     safe_fix_maintainer,
     )
 from lp.registry.interfaces.person import IPersonSet
@@ -587,8 +589,11 @@ def fix_email(fullemail, field_name):
         return None, None, None
 
     try:
-        rfc822, rfc2047, _, email = safe_fix_maintainer(fullemail, field_name)
-        return rfc2047, rfc822.decode('utf-8'), email
+        name, email = safe_fix_maintainer(fullemail, field_name)
+        return (
+            rfc2047_encode_address(name, email),
+            rfc822_encode_address(name, email).decode('utf-8'),
+            email)
     except ParseMaintError:
         return None, None, None
 

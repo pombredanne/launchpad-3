@@ -37,6 +37,7 @@ from lp.archiveuploader.utils import (
     re_changes_file_name,
     re_isadeb,
     re_issource,
+    rfc822_encode_address,
     UploadError,
     UploadWarning,
     )
@@ -355,9 +356,10 @@ class ChangesFile(SignableTagFile):
          -- <CHANGED-BY>  <DATE>
         }}}
         """
-        changes_author = (
-            '\n\n -- %s  %s' %
-            (self.changed_by['rfc822'], self.date))
+        changes_author = '\n\n -- %s  %s' % (
+            rfc822_encode_address(
+                self.changed_by['name'], self.changed_by['email']),
+            self.date)
         return self.changes_comment + changes_author
 
 
