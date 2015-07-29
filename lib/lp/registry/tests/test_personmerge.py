@@ -4,8 +4,8 @@
 """Tests for merge_people."""
 
 from datetime import datetime
-
 from operator import attrgetter
+
 import pytz
 from testtools.matchers import MatchesStructure
 import transaction
