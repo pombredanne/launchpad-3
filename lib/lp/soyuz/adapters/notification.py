@@ -285,6 +285,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     if spr:
         information['SPR_URL'] = canonical_url(
             distroseries.distribution.getSourcePackageRelease(spr))
+
     # Some syncs (e.g. from Debian) will involve packages whose
     # changed-by person was auto-created in LP and hence does not have a
     # preferred email address set.  We'll get a None here.
@@ -292,6 +293,14 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     if info['changedby']:
         information['CHANGEDBY'] = (
             '\nChanged-By: %s' % rfc822_encode_address(*info['changedby']))
+    if (blamer is not None and blamer != changedby_person
+            and blamer.preferredemail):
+        information['SIGNER'] = '\nSigned-By: %s' % rfc822_encode_address(
+            blamer.displayname, blamer.preferredemail.email)
+    if info['maintainer'] and info['maintainer'] != info['changedby']:
+        information['MAINTAINER'] = (
+            '\nMaintainer: %s' % rfc822_encode_address(*info['maintainer']))
+
     origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
@@ -302,13 +311,6 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
 
-    if (blamer is not None and blamer != changedby_person
-            and blamer.preferredemail):
-        information['SIGNER'] = '\nSigned-By: %s' % rfc822_encode_address(
-            blamer.displayname, blamer.preferredemail.email)
-    if info['maintainer'] and info['maintainer'] != info['changedby']:
-        information['MAINTAINER'] = (
-            '\nMaintainer: %s' % rfc822_encode_address(*info['maintainer']))
     return get_template(archive, action) % information
 
 
@@ -581,11 +583,10 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by):
 
 
 def fetch_information(spr, bprs, changes, previous_version=None):
-    changedby = None
-    maintainer = None
+    changelog = date = changedby = maintainer = None
 
     if changes:
-        changesfile = ChangesFile.formatChangesComment(
+        changelog = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         date = changes.get('Date')
         try:
@@ -601,7 +602,7 @@ def fetch_information(spr, bprs, changes, previous_version=None):
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
-        changesfile = spr.aggregate_changelog(previous_version)
+        changelog = spr.aggregate_changelog(previous_version)
         date = spr.dateuploaded
         if spr.creator and spr.creator.preferredemail:
             changedby = (
@@ -610,11 +611,9 @@ def fetch_information(spr, bprs, changes, previous_version=None):
             maintainer = (
                 spr.maintainer.displayname,
                 spr.maintainer.preferredemail.email)
-    else:
-        changesfile = date = None
 
     return {
-        'changelog': changesfile,
+        'changelog': changelog,
         'date': date,
         'changedby': changedby,
         'maintainer': maintainer,
