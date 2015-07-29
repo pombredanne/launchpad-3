@@ -32,7 +32,6 @@ __all__ = [
 
 
 from collections import defaultdict
-from email.header import Header
 import os
 import re
 import signal
