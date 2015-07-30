@@ -35,12 +35,8 @@ COMMENT ON COLUMN Snap.require_virtualized IS 'If True, this snap package must b
 
 CREATE INDEX snap__registrant__idx
     ON Snap (registrant);
-CREATE INDEX snap__owner__idx
-    ON Snap (owner);
 CREATE INDEX snap__distro_series__idx
     ON Snap (distro_series);
-CREATE INDEX snap__name__idx
-    ON Snap (name);
 
 CREATE TABLE SnapBuild (
     id serial PRIMARY KEY,
