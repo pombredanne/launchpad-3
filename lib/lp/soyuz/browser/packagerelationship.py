@@ -45,8 +45,8 @@ def relationship_builder(relationship_line, getter):
         else:
             url = None
         if rel['version'] is None:
-            operator = ''
-            version = ''
+            operator = u''
+            version = u''
         else:
             operator, version = rel['version']
         relationship_set.add(name, operator, version, url)

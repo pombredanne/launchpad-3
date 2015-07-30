@@ -74,12 +74,12 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
 
   >>> for dep in firefox_parsed_depends:
   ...    dep.name, dep.operator, dep.version, dep.url
-  ('gcc-3.4', '>=', '3.4.1-4sarge1', None)
-  ('gcc-3.4', '<<', '3.4.2', None)
-  ('gcc-3.4-base', None, '', None)
-  ('libc6', '>=', '2.3.2.ds1-4', None)
-  ('libstdc++6-dev', '>=', '3.4.1-4sarge1', None)
-  ('pmount', None, '', u'http://launchpad.dev/ubuntu/warty/+package/pmount')
+  (u'gcc-3.4', u'>=', u'3.4.1-4sarge1', None)
+  (u'gcc-3.4', u'<<', u'3.4.2', None)
+  (u'gcc-3.4-base', None, u'', None)
+  (u'libc6', u'>=', u'2.3.2.ds1-4', None)
+  (u'libstdc++6-dev', u'>=', u'3.4.1-4sarge1', None)
+  (u'pmount', None, u'', u'http://launchpad.dev/ubuntu/warty/+package/pmount')
 
 
   >>> firefox_parsed_dependsindep = firefox_view.builddependsindep
@@ -89,10 +89,10 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
 
   >>> for dep in firefox_parsed_dependsindep:
   ...    dep.name, dep.operator, dep.version, dep.url
-  ('bacula-common', '=', '1.34.6-2', None)
-  ('bacula-director-common', '=', '1.34.6-2', None)
-  ('pmount', None, '', u'http://launchpad.dev/ubuntu/warty/+package/pmount')
-  ('postgresql-client', '>=', '7.4', None)
+  (u'bacula-common', u'=', u'1.34.6-2', None)
+  (u'bacula-director-common', u'=', u'1.34.6-2', None)
+  (u'pmount', None, u'', u'http://launchpad.dev/ubuntu/warty/+package/pmount')
+  (u'postgresql-client', u'>=', u'7.4', None)
 
 Ensure we have fixed bug 31039, by properly escape the
 sourcepackagename before passing to regexp.
