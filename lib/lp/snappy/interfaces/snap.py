@@ -11,12 +11,13 @@ __all__ = [
     'ISnap',
     'ISnapSet',
     'ISnapView',
+    'NoSuchSnap',
     'SNAP_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
+    'SnapBuildDisallowedArchitecture',
     'SnapFeatureDisabled',
     'SnapNotOwner',
-    'NoSuchSnap',
     ]
 
 import httplib
@@ -31,6 +32,7 @@ from lazr.restful.declarations import (
     export_destructor_operation,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
@@ -48,6 +50,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -59,6 +62,7 @@ from zope.security.interfaces import (
 from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -101,6 +105,16 @@ class SnapBuildArchiveOwnerMismatch(Forbidden):
         super(SnapBuildArchiveOwnerMismatch, self).__init__(
             "Snap package builds against private archives are only allowed "
             "if the snap package owner and the archive owner are equal.")
+
+
+@error_status(httplib.BAD_REQUEST)
+class SnapBuildDisallowedArchitecture(Exception):
+    """A build was requested for a disallowed architecture."""
+
+    def __init__(self, das):
+        super(SnapBuildDisallowedArchitecture, self).__init__(
+            "This snap package is not allowed to build for %s." %
+            das.displayname)
 
 
 @error_status(httplib.UNAUTHORIZED)
@@ -260,9 +274,29 @@ class ISnapAdminAttributes(Interface):
         title=_("Require virtualized builders"), required=True, readonly=False,
         description=_("Only build this snap package on virtual builders.")))
 
+    processors = exported(CollectionField(
+        title=_("Processors"),
+        description=_(
+            "The architectures for which the snap package should be built."),
+        value_type=Reference(schema=IProcessor),
+        readonly=False))
+
+
+class ISnapAdmin(Interface):
+    """`ISnap` methods that require launchpad.Admin permission."""
+
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setProcessors(processors):
+        """Set the architectures for which the snap package should be built."""
+
 
 class ISnap(
-    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes):
+    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
+    ISnapAdmin):
     """A buildable snap package."""
 
     # XXX cjwatson 2015-07-17 bug=760849: "beta" is a lie to get WADL
@@ -284,7 +318,7 @@ class ISnapSet(Interface):
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, date_created=None):
+            require_virtualized=True, processors=None, date_created=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):
@@ -299,7 +333,7 @@ class ISnapSet(Interface):
     def getByName(owner, name):
         """Return the appropriate `ISnap` for the given objects."""
 
-    def getByPerson(owner):
+    def findByPerson(owner):
         """Return all snap packages with the given `owner`."""
 
     @collection_default_content()

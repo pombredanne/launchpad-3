@@ -23,6 +23,8 @@ from zope.component import getUtility
 from zope.interface import implementer
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.database.constants import (
     DEFAULT,
@@ -46,6 +48,7 @@ from lp.snappy.interfaces.snap import (
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
+    SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
     NoSuchSnap,
@@ -124,6 +127,44 @@ class Snap(Storm):
         self.date_created = date_created
         self.date_last_modified = date_created
 
+    def _getProcessors(self):
+        return list(Store.of(self).find(
+            Processor,
+            Processor.id == SnapArch.processor_id,
+            SnapArch.snap == self))
+
+    def setProcessors(self, processors):
+        """See `ISnap`."""
+        enablements = dict(Store.of(self).find(
+            (Processor, SnapArch),
+            Processor.id == SnapArch.processor_id,
+            SnapArch.snap == self))
+        for proc in enablements:
+            if proc not in processors:
+                Store.of(self).remove(enablements[proc])
+        for proc in processors:
+            if proc not in self.processors:
+                snaparch = SnapArch()
+                snaparch.snap = self
+                snaparch.processor = proc
+                Store.of(self).add(snaparch)
+
+    processors = property(_getProcessors, setProcessors)
+
+    def _getAllowedArchitectures(self):
+        """Return all distroarchseries that this package can build for.
+
+        :return: Sequence of `IDistroArchSeries` instances.
+        """
+        return [
+            das for das in self.distro_series.buildable_architectures
+            if (
+                das.enabled
+                and das.processor in self.processors
+                and (
+                    das.processor.supports_virtualized
+                    or not self.require_virtualized))]
+
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
         if not requester.inTeam(self.owner):
@@ -132,6 +173,8 @@ class Snap(Storm):
                 (requester.displayname, self.owner.displayname))
         if not archive.enabled:
             raise ArchiveDisabled(archive.displayname)
+        if distro_arch_series not in self._getAllowedArchitectures():
+            raise SnapBuildDisallowedArchitecture(distro_arch_series)
         if archive.private and self.owner != archive.owner:
             # See rationale in `SnapBuildArchiveOwnerMismatch` docstring.
             raise SnapBuildArchiveOwnerMismatch()
@@ -212,7 +255,22 @@ class Snap(Storm):
         """See `ISnap`."""
         if not self.builds.is_empty():
             raise CannotDeleteSnap("Cannot delete a snap package with builds.")
-        IStore(Snap).remove(self)
+        store = IStore(Snap)
+        store.find(SnapArch, SnapArch.snap == self).remove()
+        store.remove(self)
+
+
+class SnapArch(Storm):
+    """Link table to back `Snap.processors`."""
+
+    __storm_table__ = 'SnapArch'
+    __storm_primary__ = ('snap_id', 'processor_id')
+
+    snap_id = Int(name='snap', allow_none=False)
+    snap = Reference(snap_id, 'Snap.id')
+
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, 'Processor.id')
 
 
 @implementer(ISnapSet)
@@ -221,7 +279,7 @@ class SnapSet:
 
     def new(self, registrant, owner, distro_series, name, description=None,
             branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, date_created=DEFAULT):
+            require_virtualized=True, processors=None, date_created=DEFAULT):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -245,6 +303,12 @@ class SnapSet:
         except IntegrityError:
             raise DuplicateSnapName
 
+        if processors is None:
+            processors = [
+                p for p in getUtility(IProcessorSet).getAll()
+                if p.build_by_default]
+        snap.setProcessors(processors)
+
         return snap
 
     def _getByName(self, owner, name):
@@ -262,7 +326,7 @@ class SnapSet:
             raise NoSuchSnap(name)
         return snap
 
-    def getByPerson(self, owner):
+    def findByPerson(self, owner):
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.owner == owner)
 

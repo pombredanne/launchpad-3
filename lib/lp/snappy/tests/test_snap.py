@@ -24,6 +24,7 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -37,10 +38,12 @@ from lp.snappy.interfaces.snap import (
     ISnapView,
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
+    SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     api_url,
     login,
@@ -83,7 +86,7 @@ class TestSnap(TestCaseWithFactory):
     def test_implements_interfaces(self):
         # Snap implements ISnap.
         snap = self.factory.makeSnap()
-        with person_logged_in(snap.owner):
+        with admin_logged_in():
             self.assertProvides(snap, ISnap)
 
     def test_avoids_problematic_snapshots(self):
@@ -107,11 +110,21 @@ class TestSnap(TestCaseWithFactory):
             removeSecurityProxy(snap), snap, [ISnap["name"]]))
         self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
 
+    def makeBuildableDistroArchSeries(self, **kwargs):
+        das = self.factory.makeDistroArchSeries(**kwargs)
+        fake_chroot = self.factory.makeLibraryFileAlias(
+            filename="fake_chroot.tar.gz", db_only=True)
+        das.addOrUpdateChroot(fake_chroot)
+        return das
+
     def test_requestBuild(self):
         # requestBuild creates a new SnapBuild.
-        snap = self.factory.makeSnap()
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=snap.distro_series)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries,
+            processors=[distroarchseries.processor])
         build = snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
@@ -135,9 +148,12 @@ class TestSnap(TestCaseWithFactory):
 
     def test_requestBuild_score(self):
         # Build requests have a relatively low queue score (2505).
-        snap = self.factory.makeSnap()
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=snap.distro_series)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries,
+            processors=[distroarchseries.processor])
         build = snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
@@ -147,11 +163,13 @@ class TestSnap(TestCaseWithFactory):
 
     def test_requestBuild_relative_build_score(self):
         # Offsets for archives are respected.
-        snap = self.factory.makeSnap()
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries, processors=[processor])
         archive = self.factory.makeArchive(owner=snap.owner)
         removeSecurityProxy(archive).relative_build_score = 100
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=snap.distro_series)
         build = snap.requestBuild(
             snap.owner, archive, distroarchseries,
             PackagePublishingPocket.RELEASE)
@@ -161,35 +179,68 @@ class TestSnap(TestCaseWithFactory):
 
     def test_requestBuild_rejects_repeats(self):
         # requestBuild refuses if there is already a pending build.
-        snap = self.factory.makeSnap()
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=snap.distro_series)
+        distroseries = self.factory.makeDistroSeries()
+        procs = []
+        arches = []
+        for i in range(2):
+            procs.append(self.factory.makeProcessor(supports_virtualized=True))
+            arches.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=procs[i]))
+        snap = self.factory.makeSnap(
+            distroseries=distroseries, processors=[procs[0], procs[1]])
         old_build = snap.requestBuild(
-            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            snap.owner, snap.distro_series.main_archive, arches[0],
             PackagePublishingPocket.RELEASE)
         self.assertRaises(
             SnapBuildAlreadyPending, snap.requestBuild,
-            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            snap.owner, snap.distro_series.main_archive, arches[0],
             PackagePublishingPocket.RELEASE)
         # We can build for a different archive.
         snap.requestBuild(
-            snap.owner, self.factory.makeArchive(owner=snap.owner),
-            distroarchseries, PackagePublishingPocket.RELEASE)
+            snap.owner, self.factory.makeArchive(owner=snap.owner), arches[0],
+            PackagePublishingPocket.RELEASE)
         # We can build for a different distroarchseries.
         snap.requestBuild(
-            snap.owner, snap.distro_series.main_archive,
-            self.factory.makeDistroArchSeries(distroseries=snap.distro_series),
+            snap.owner, snap.distro_series.main_archive, arches[1],
             PackagePublishingPocket.RELEASE)
         # Changing the status of the old build allows a new build.
         old_build.updateStatus(BuildStatus.BUILDING)
         old_build.updateStatus(BuildStatus.FULLYBUILT)
         snap.requestBuild(
-            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.RELEASE)
+
+    def test_requestBuild_rejects_unconfigured_arch(self):
+        # Snap.requestBuild only allows dispatching a build for one of the
+        # configured architectures.
+        distroseries = self.factory.makeDistroSeries()
+        procs = []
+        arches = []
+        for i in range(2):
+            procs.append(self.factory.makeProcessor(supports_virtualized=True))
+            arches.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=procs[i]))
+        snap = self.factory.makeSnap(
+            distroseries=distroseries, processors=[procs[0]])
+        snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.RELEASE)
+        self.assertRaises(
+            SnapBuildDisallowedArchitecture, snap.requestBuild,
+            snap.owner, snap.distro_series.main_archive, arches[1],
             PackagePublishingPocket.RELEASE)
 
     def test_requestBuild_virtualization(self):
         # New builds are virtualized if any of the processor, snap or
         # archive require it.
+        proc_arches = {}
+        for proc_nonvirt in True, False:
+            processor = self.factory.makeProcessor(
+                supports_virtualized=True,
+                supports_nonvirtualized=proc_nonvirt)
+            distroarchseries = self.makeBuildableDistroArchSeries(
+                processor=processor)
+            proc_arches[proc_nonvirt] = (processor, distroarchseries)
         for proc_nonvirt, snap_virt, archive_virt, build_virt in (
                 (True, False, False, False),
                 (True, False, True, True),
@@ -200,12 +251,10 @@ class TestSnap(TestCaseWithFactory):
                 (False, True, False, True),
                 (False, True, True, True),
                 ):
-            distroarchseries = self.factory.makeDistroArchSeries(
-                processor=self.factory.makeProcessor(
-                    supports_nonvirtualized=proc_nonvirt))
+            processor, distroarchseries = proc_arches[proc_nonvirt]
             snap = self.factory.makeSnap(
                 distroseries=distroarchseries.distroseries,
-                require_virtualized=snap_virt)
+                require_virtualized=snap_virt, processors=[processor])
             archive = self.factory.makeArchive(
                 distribution=distroarchseries.distroseries.distribution,
                 owner=snap.owner, virtualized=archive_virt)
@@ -213,6 +262,25 @@ class TestSnap(TestCaseWithFactory):
                 snap.owner, archive, distroarchseries,
                 PackagePublishingPocket.RELEASE)
             self.assertEqual(build_virt, build.virtualized)
+
+    def test_requestBuild_nonvirtualized(self):
+        # A non-virtualized processor can build a snap package iff the snap
+        # has require_virtualized set to False.
+        processor = self.factory.makeProcessor(
+            supports_virtualized=False, supports_nonvirtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries, processors=[processor])
+        self.assertRaises(
+            SnapBuildDisallowedArchitecture, snap.requestBuild,
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+        with admin_logged_in():
+            snap.require_virtualized = False
+        snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
 
     def test_getBuilds(self):
         # Test the various getBuilds methods.
@@ -360,8 +428,8 @@ class TestSnapSet(TestCaseWithFactory):
             getUtility(ISnapSet).exists(self.factory.makePerson(), snap.name))
         self.assertFalse(getUtility(ISnapSet).exists(snap.owner, u"different"))
 
-    def test_getByPerson(self):
-        # ISnapSet.getByPerson returns all Snaps with the given owner.
+    def test_findByPerson(self):
+        # ISnapSet.findByPerson returns all Snaps with the given owner.
         owners = [self.factory.makePerson() for i in range(2)]
         snaps = []
         for owner in owners:
@@ -369,9 +437,60 @@ class TestSnapSet(TestCaseWithFactory):
                 snaps.append(self.factory.makeSnap(
                     registrant=owner, owner=owner))
         self.assertContentEqual(
-            snaps[:2], getUtility(ISnapSet).getByPerson(owners[0]))
+            snaps[:2], getUtility(ISnapSet).findByPerson(owners[0]))
         self.assertContentEqual(
-            snaps[2:], getUtility(ISnapSet).getByPerson(owners[1]))
+            snaps[2:], getUtility(ISnapSet).findByPerson(owners[1]))
+
+
+class TestSnapProcessors(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestSnapProcessors, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.default_procs = [
+            getUtility(IProcessorSet).getByName("386"),
+            getUtility(IProcessorSet).getByName("amd64")]
+        self.unrestricted_procs = (
+            self.default_procs + [getUtility(IProcessorSet).getByName("hppa")])
+        self.arm = self.factory.makeProcessor(
+            name="arm", restricted=True, build_by_default=False)
+
+    def test_new_default_processors(self):
+        # SnapSet.new creates a SnapArch for each Processor with
+        # build_by_default set.
+        self.factory.makeProcessor(name="default", build_by_default=True)
+        self.factory.makeProcessor(name="nondefault", build_by_default=False)
+        owner = self.factory.makePerson()
+        snap = getUtility(ISnapSet).new(
+            registrant=owner, owner=owner,
+            distro_series=self.factory.makeDistroSeries(), name=u"snap",
+            branch=self.factory.makeAnyBranch())
+        self.assertContentEqual(
+            ["386", "amd64", "hppa", "default"],
+            [processor.name for processor in snap.processors])
+
+    def test_new_override_processors(self):
+        # SnapSet.new can be given a custom set of processors.
+        owner = self.factory.makePerson()
+        snap = getUtility(ISnapSet).new(
+            registrant=owner, owner=owner,
+            distro_series=self.factory.makeDistroSeries(), name=u"snap",
+            branch=self.factory.makeAnyBranch(), processors=[self.arm])
+        self.assertContentEqual(
+            ["arm"], [processor.name for processor in snap.processors])
+
+    def test_set(self):
+        # The property remembers its value correctly.
+        snap = self.factory.makeSnap()
+        snap.setProcessors([self.arm])
+        self.assertContentEqual([self.arm], snap.processors)
+        snap.setProcessors(self.unrestricted_procs + [self.arm])
+        self.assertContentEqual(
+            self.unrestricted_procs + [self.arm], snap.processors)
+        snap.processors = []
+        self.assertContentEqual([], snap.processors)
 
 
 class TestSnapWebservice(TestCaseWithFactory):
@@ -391,7 +510,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         return self.webservice.getAbsoluteUrl(api_url(obj))
 
     def makeSnap(self, owner=None, distroseries=None, branch=None,
-                 git_ref=None, webservice=None):
+                 git_ref=None, processors=None, webservice=None):
         if owner is None:
             owner = self.person
         if distroseries is None:
@@ -409,6 +528,9 @@ class TestSnapWebservice(TestCaseWithFactory):
         if git_ref is not None:
             kwargs["git_repository"] = api_url(git_ref.repository)
             kwargs["git_path"] = git_ref.path
+        if processors is not None:
+            kwargs["processors"] = [
+                api_url(processor) for processor in processors]
         logout()
         response = webservice.named_post(
             "/+snaps", "new", owner=owner_url, distro_series=distroseries_url,
@@ -526,15 +648,23 @@ class TestSnapWebservice(TestCaseWithFactory):
             "No such snap package with this owner: 'nonexistent'.",
             response.body)
 
+    def makeBuildableDistroArchSeries(self, **kwargs):
+        das = self.factory.makeDistroArchSeries(**kwargs)
+        fake_chroot = self.factory.makeLibraryFileAlias(
+            filename="fake_chroot.tar.gz", db_only=True)
+        das.addOrUpdateChroot(fake_chroot)
+        return das
+
     def test_requestBuild(self):
         # Build requests can be performed and end up in snap.builds and
         # snap.pending_builds.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, owner=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive_url = api_url(distroseries.main_archive)
-        snap = self.makeSnap(distroseries=distroseries)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
         response = self.webservice.named_post(
             snap["self_link"], "requestBuild", archive=archive_url,
             distro_arch_series=distroarchseries_url, pocket="Release")
@@ -550,11 +680,12 @@ class TestSnapWebservice(TestCaseWithFactory):
     def test_requestBuild_rejects_repeats(self):
         # Build requests are rejected if already pending.
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, owner=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive_url = api_url(distroseries.main_archive)
-        snap = self.makeSnap(distroseries=distroseries)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
         response = self.webservice.named_post(
             snap["self_link"], "requestBuild", archive=archive_url,
             distro_arch_series=distroarchseries_url, pocket="Release")
@@ -572,8 +703,9 @@ class TestSnapWebservice(TestCaseWithFactory):
         # build requests are rejected.
         other_team = self.factory.makeTeam(displayname="Other Team")
         distroseries = self.factory.makeDistroSeries(registrant=self.person)
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, owner=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive_url = api_url(distroseries.main_archive)
         other_webservice = webservice_for_person(
@@ -582,7 +714,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         login(ANONYMOUS)
         snap = self.makeSnap(
             owner=other_team, distroseries=distroseries,
-            webservice=other_webservice)
+            processors=[processor], webservice=other_webservice)
         response = self.webservice.named_post(
             snap["self_link"], "requestBuild", archive=archive_url,
             distro_arch_series=distroarchseries_url, pocket="Release")
@@ -596,14 +728,15 @@ class TestSnapWebservice(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=getUtility(IDistributionSet)['ubuntu'],
             registrant=self.person)
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, owner=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive = self.factory.makeArchive(
             distribution=distroseries.distribution, owner=self.person,
             enabled=False, displayname="Disabled Archive")
         archive_url = api_url(archive)
-        snap = self.makeSnap(distroseries=distroseries)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
         response = self.webservice.named_post(
             snap["self_link"], "requestBuild", archive=archive_url,
             distro_arch_series=distroarchseries_url, pocket="Release")
@@ -616,14 +749,15 @@ class TestSnapWebservice(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=getUtility(IDistributionSet)['ubuntu'],
             registrant=self.person)
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, owner=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive = self.factory.makeArchive(
             distribution=distroseries.distribution, owner=self.person,
             private=True)
         archive_url = api_url(archive)
-        snap = self.makeSnap(distroseries=distroseries)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
         response = self.webservice.named_post(
             snap["self_link"], "requestBuild", archive=archive_url,
             distro_arch_series=distroarchseries_url, pocket="Release")
@@ -635,13 +769,14 @@ class TestSnapWebservice(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=getUtility(IDistributionSet)['ubuntu'],
             registrant=self.person)
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, owner=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archive = self.factory.makeArchive(
             distribution=distroseries.distribution, private=True)
         archive_url = api_url(archive)
-        snap = self.makeSnap(distroseries=distroseries)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
         response = self.webservice.named_post(
             snap["self_link"], "requestBuild", archive=archive_url,
             distro_arch_series=distroarchseries_url, pocket="Release")
@@ -657,15 +792,16 @@ class TestSnapWebservice(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=getUtility(IDistributionSet)['ubuntu'],
             registrant=self.person)
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, owner=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
         distroarchseries_url = api_url(distroarchseries)
         archives = [
             self.factory.makeArchive(
                 distribution=distroseries.distribution, owner=self.person)
             for x in range(4)]
         archive_urls = [api_url(archive) for archive in archives]
-        snap = self.makeSnap(distroseries=distroseries)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
         builds = []
         for archive_url in archive_urls:
             response = self.webservice.named_post(
