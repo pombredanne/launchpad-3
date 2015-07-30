@@ -26,6 +26,7 @@
             set_schema="lp.snappy.interfaces.snap.ISnapEditableAttributes" />
         <require
             permission="launchpad.Admin"
+            interface="lp.snappy.interfaces.snap.ISnapAdmin"
             set_schema="lp.snappy.interfaces.snap.ISnapAdminAttributes" />
     </class>
     <subscriber
