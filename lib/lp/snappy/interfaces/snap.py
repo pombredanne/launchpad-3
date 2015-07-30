@@ -242,7 +242,7 @@ class ISnapSet(Interface):
     def getByName(owner, name):
         """Return the appropriate `ISnap` for the given objects."""
 
-    def getByPerson(owner):
+    def findByPerson(owner):
         """Return all snap packages with the given `owner`."""
 
     def empty_list():

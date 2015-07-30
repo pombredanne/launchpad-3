@@ -150,8 +150,8 @@ class TestSnapSet(TestCaseWithFactory):
             getUtility(ISnapSet).exists(self.factory.makePerson(), snap.name))
         self.assertFalse(getUtility(ISnapSet).exists(snap.owner, u"different"))
 
-    def test_getByPerson(self):
-        # ISnapSet.getByPerson returns all Snaps with the given owner.
+    def test_findByPerson(self):
+        # ISnapSet.findByPerson returns all Snaps with the given owner.
         owners = [self.factory.makePerson() for i in range(2)]
         snaps = []
         for owner in owners:
@@ -159,9 +159,9 @@ class TestSnapSet(TestCaseWithFactory):
                 snaps.append(self.factory.makeSnap(
                     registrant=owner, owner=owner))
         self.assertContentEqual(
-            snaps[:2], getUtility(ISnapSet).getByPerson(owners[0]))
+            snaps[:2], getUtility(ISnapSet).findByPerson(owners[0]))
         self.assertContentEqual(
-            snaps[2:], getUtility(ISnapSet).getByPerson(owners[1]))
+            snaps[2:], getUtility(ISnapSet).findByPerson(owners[1]))
 
 
 class TestSnapProcessors(TestCaseWithFactory):

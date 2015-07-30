@@ -227,7 +227,7 @@ class SnapSet:
             raise NoSuchSnap(name)
         return snap
 
-    def getByPerson(self, owner):
+    def findByPerson(self, owner):
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.owner == owner)
 
