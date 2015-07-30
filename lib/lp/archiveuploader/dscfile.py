@@ -24,9 +24,12 @@ import glob
 import os
 import shutil
 import tempfile
+import warnings
 
-import apt_pkg
-from debian.deb822 import Deb822Dict
+from debian.deb822 import (
+    Deb822Dict,
+    PkgRelation,
+    )
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
@@ -394,16 +397,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "%s: invalid %s field produced by a broken version "
                         "of dpkg-dev (1.10.11)" % (self.filename, field_name))
                 try:
-                    apt_pkg.parse_src_depends(field)
-                except (SystemExit, KeyboardInterrupt):
-                    raise
-                except Exception as error:
-                    # Swallow everything apt_pkg throws at us because
-                    # it is not desperately pythonic and can raise odd
-                    # or confusing exceptions at times and is out of
-                    # our control.
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("error")
+                        PkgRelation.parse_relations(field)
+                except Warning as error:
                     yield UploadError(
-                        "%s: invalid %s field; cannot be parsed by apt: %s"
+                        "%s: invalid %s field; cannot be parsed by deb822: %s"
                         % (self.filename, field_name, error))
 
         # Verify if version declared in changesfile is the same than that

@@ -17,8 +17,10 @@ from operator import (
     attrgetter,
     itemgetter,
     )
+import warnings
 
 import apt_pkg
+from debian.deb822 import PkgRelation
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
@@ -508,26 +510,19 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         Return a triple containing the corresponding (name, version,
         relation) for the given dependency token.
         """
-        try:
-            name, version, relation = token
-        except ValueError:
-            raise AssertionError(
-                "APT is not dealing correctly with a dependency token "
-                "'%r' from %s (%s) with the following dependencies: %s\n"
-                "It is expected to be a tuple containing only another "
-                "tuple with 3 elements  (name, version, relation)."
-                % (token, self.title, self.id, self.dependencies))
-        # Map relations to the canonical form used in control files.
-        if relation == '<':
-            relation = '<<'
-        elif relation == '>':
-            relation = '>>'
-        return (name, version, relation)
+        assert 'name' in token
+        assert 'version' in token
+        if token['version'] is None:
+            relation = ''
+            version = ''
+        else:
+            relation, version = token['version']
+        return (token['name'], version, relation)
 
     def _checkDependencyVersion(self, available, required, relation):
         """Return True if the available version satisfies the context."""
         # This dict maps the package version relationship syntax in lambda
-        # functions which returns boolean according to the results of
+        # functions which returns boolean according to the results of the
         # apt_pkg.version_compare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
@@ -579,13 +574,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 
         return False
 
-    def _toAptFormat(self, token):
-        """Rebuild dependencies line in apt format."""
-        name, version, relation = self._parseDependencyToken(token)
-        if relation and version:
-            return '%s (%s %s)' % (name, relation, version)
-        return '%s' % name
-
     def updateDependencies(self):
         """See `IBuild`."""
 
@@ -593,10 +581,12 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # properly.
         apt_pkg.init_system()
 
-        # Check package build dependencies using apt_pkg
+        # Check package build dependencies using debian.deb822
         try:
-            parsed_deps = apt_pkg.parse_depends(self.dependencies)
-        except (ValueError, TypeError):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                parsed_deps = PkgRelation.parse_relations(self.dependencies)
+        except (AttributeError, Warning):
             raise UnparsableDependencies(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"
                 "It indicates that something is wrong in buildd-slaves."
@@ -605,11 +595,10 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         remaining_deps = []
         for or_dep in parsed_deps:
             if not any(self._isDependencySatisfied(token) for token in or_dep):
-                remaining_deps.append(
-                    " | ".join(self._toAptFormat(token) for token in or_dep))
+                remaining_deps.append(or_dep)
 
         # Update dependencies line
-        self.dependencies = u", ".join(remaining_deps)
+        self.dependencies = unicode(PkgRelation.str(remaining_deps))
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
