@@ -37,6 +37,10 @@ CREATE INDEX snap__registrant__idx
     ON Snap (registrant);
 CREATE INDEX snap__distro_series__idx
     ON Snap (distro_series);
+CREATE INDEX snap__branch__idx
+    ON Snap (branch);
+CREATE INDEX snap__git_repository__idx
+    ON Snap (git_repository);
 
 CREATE TABLE SnapBuild (
     id serial PRIMARY KEY,
