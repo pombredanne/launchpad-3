@@ -48,6 +48,7 @@ from lp.snappy.interfaces.snap import (
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
+    SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
     NoSuchSnap,
@@ -150,6 +151,20 @@ class Snap(Storm):
 
     processors = property(_getProcessors, setProcessors)
 
+    def _getAllowedArchitectures(self):
+        """Return all distroarchseries that this package can build for.
+
+        :return: Sequence of `IDistroArchSeries` instances.
+        """
+        return [
+            das for das in self.distro_series.buildable_architectures
+            if (
+                das.enabled
+                and das.processor in self.processors
+                and (
+                    das.processor.supports_virtualized
+                    or not self.require_virtualized))]
+
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
         if not requester.inTeam(self.owner):
@@ -158,6 +173,8 @@ class Snap(Storm):
                 (requester.displayname, self.owner.displayname))
         if not archive.enabled:
             raise ArchiveDisabled(archive.displayname)
+        if distro_arch_series not in self._getAllowedArchitectures():
+            raise SnapBuildDisallowedArchitecture(distro_arch_series)
         if archive.private and self.owner != archive.owner:
             # See rationale in `SnapBuildArchiveOwnerMismatch` docstring.
             raise SnapBuildArchiveOwnerMismatch()
