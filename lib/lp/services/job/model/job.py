@@ -102,8 +102,8 @@ class Job(SQLBase):
              JobStatus.FAILED,
              JobStatus.SUSPENDED,
              JobStatus.WAITING),
-        JobStatus.FAILED: (),
-        JobStatus.COMPLETED: (),
+        JobStatus.FAILED: (JobStatus.WAITING,),
+        JobStatus.COMPLETED: (JobStatus.WAITING,),
         JobStatus.SUSPENDED:
             (JobStatus.WAITING,),
         }
@@ -203,7 +203,8 @@ class Job(SQLBase):
                 transaction.abort()
             # Commit the transaction to update the DB time.
             transaction.commit()
-        self._set_status(JobStatus.WAITING)
+        if self.status != JobStatus.WAITING:
+            self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
         if add_commit_hook is not None:
             add_commit_hook()
