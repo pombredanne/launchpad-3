@@ -16,8 +16,12 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+from storm.store import Store
+from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.database.constants import (
     DEFAULT,
@@ -104,6 +108,30 @@ class Snap(Storm):
         self.date_created = date_created
         self.date_last_modified = date_created
 
+    def _getProcessors(self):
+        return list(Store.of(self).find(
+            Processor,
+            Processor.id == SnapArch.processor_id,
+            SnapArch.snap == self))
+
+    def setProcessors(self, processors):
+        """See `ISnap`."""
+        enablements = dict(Store.of(self).find(
+            (Processor, SnapArch),
+            Processor.id == SnapArch.processor_id,
+            SnapArch.snap == self))
+        for proc in enablements:
+            if proc not in processors:
+                Store.of(self).remove(enablements[proc])
+        for proc in processors:
+            if proc not in self.processors:
+                snaparch = SnapArch()
+                snaparch.snap = self
+                snaparch.processor = proc
+                Store.of(self).add(snaparch)
+
+    processors = property(_getProcessors, setProcessors)
+
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
         raise NotImplementedError
@@ -133,13 +161,26 @@ class Snap(Storm):
         raise NotImplementedError
 
 
+class SnapArch(Storm):
+    """Link table to back `Snap.processors`."""
+
+    __storm_table__ = 'SnapArch'
+    __storm_primary__ = ('snap_id', 'processor_id')
+
+    snap_id = Int(name='snap', allow_none=False)
+    snap = Reference(snap_id, 'Snap.id')
+
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, 'Processor.id')
+
+
 @implementer(ISnapSet)
 class SnapSet:
     """See `ISnapSet`."""
 
     def new(self, registrant, owner, distro_series, name, description=None,
             branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, date_created=DEFAULT):
+            require_virtualized=True, processors=None, date_created=DEFAULT):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -157,6 +198,12 @@ class SnapSet:
             branch=branch, git_repository=git_repository, git_path=git_path,
             require_virtualized=require_virtualized, date_created=date_created)
         store.add(snap)
+
+        if processors is None:
+            processors = [
+                p for p in getUtility(IProcessorSet).getAll()
+                if p.build_by_default]
+        snap.setProcessors(processors)
 
         try:
             store.flush()

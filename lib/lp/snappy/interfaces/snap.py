@@ -20,6 +20,7 @@ __all__ = [
     ]
 
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     ReferenceChoice,
     )
@@ -42,6 +43,7 @@ from zope.security.interfaces import (
 from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -205,9 +207,24 @@ class ISnapAdminAttributes(Interface):
         title=_("Require virtualized builders"), required=True, readonly=False,
         description=_("Only build this snap package on virtual builders."))
 
+    processors = CollectionField(
+        title=_("Processors"),
+        description=_(
+            "The architectures for which the snap package should be built."),
+        value_type=Reference(schema=IProcessor),
+        readonly=False)
+
+
+class ISnapAdmin(Interface):
+    """`ISnap` methods that require launchpad.Admin permission."""
+
+    def setProcessors(processors):
+        """Set the architectures for which the snap package should be built."""
+
 
 class ISnap(
-    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes):
+    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
+    ISnapAdmin):
     """A buildable snap package."""
 
 
@@ -216,7 +233,7 @@ class ISnapSet(Interface):
 
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, date_created=None):
+            require_virtualized=True, processors=None, date_created=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):

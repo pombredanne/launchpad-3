@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.snappy.interfaces.snap import (
@@ -23,7 +24,7 @@ from lp.snappy.interfaces.snap import (
     SnapFeatureDisabled,
     )
 from lp.testing import (
-    person_logged_in,
+    admin_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -55,7 +56,7 @@ class TestSnap(TestCaseWithFactory):
     def test_implements_interfaces(self):
         # Snap implements ISnap.
         snap = self.factory.makeSnap()
-        with person_logged_in(snap.owner):
+        with admin_logged_in():
             self.assertProvides(snap, ISnap)
 
     def test_initial_date_last_modified(self):
@@ -161,3 +162,54 @@ class TestSnapSet(TestCaseWithFactory):
             snaps[:2], getUtility(ISnapSet).getByPerson(owners[0]))
         self.assertContentEqual(
             snaps[2:], getUtility(ISnapSet).getByPerson(owners[1]))
+
+
+class TestSnapProcessors(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestSnapProcessors, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.default_procs = [
+            getUtility(IProcessorSet).getByName("386"),
+            getUtility(IProcessorSet).getByName("amd64")]
+        self.unrestricted_procs = (
+            self.default_procs + [getUtility(IProcessorSet).getByName("hppa")])
+        self.arm = self.factory.makeProcessor(
+            name="arm", restricted=True, build_by_default=False)
+
+    def test_new_default_processors(self):
+        # SnapSet.new creates a SnapArch for each Processor with
+        # build_by_default set.
+        self.factory.makeProcessor(name="default", build_by_default=True)
+        self.factory.makeProcessor(name="nondefault", build_by_default=False)
+        owner = self.factory.makePerson()
+        snap = getUtility(ISnapSet).new(
+            registrant=owner, owner=owner,
+            distro_series=self.factory.makeDistroSeries(), name=u"snap",
+            branch=self.factory.makeAnyBranch())
+        self.assertContentEqual(
+            ["386", "amd64", "hppa", "default"],
+            [processor.name for processor in snap.processors])
+
+    def test_new_override_processors(self):
+        # SnapSet.new can be given a custom set of processors.
+        owner = self.factory.makePerson()
+        snap = getUtility(ISnapSet).new(
+            registrant=owner, owner=owner,
+            distro_series=self.factory.makeDistroSeries(), name=u"snap",
+            branch=self.factory.makeAnyBranch(), processors=[self.arm])
+        self.assertContentEqual(
+            ["arm"], [processor.name for processor in snap.processors])
+
+    def test_set(self):
+        # The property remembers its value correctly.
+        snap = self.factory.makeSnap()
+        snap.setProcessors([self.arm])
+        self.assertContentEqual([self.arm], snap.processors)
+        snap.setProcessors(self.unrestricted_procs + [self.arm])
+        self.assertContentEqual(
+            self.unrestricted_procs + [self.arm], snap.processors)
+        snap.processors = []
+        self.assertContentEqual([], snap.processors)
