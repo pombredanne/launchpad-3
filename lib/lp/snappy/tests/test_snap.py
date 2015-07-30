@@ -9,27 +9,17 @@ from datetime import datetime
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
-from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import (
-    BuildQueueStatus,
-    BuildStatus,
-    )
-from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.snappy.interfaces.snap import (
-    CannotDeleteSnap,
     ISnap,
     ISnapSet,
     SNAP_FEATURE_FLAG,
-    SnapBuildAlreadyPending,
     SnapFeatureDisabled,
     )
 from lp.testing import (
