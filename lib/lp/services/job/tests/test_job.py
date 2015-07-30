@@ -186,21 +186,6 @@ class TestJob(TestCaseWithFactory):
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.WAITING)
 
-    def test_queue_when_completed_is_invalid(self):
-        """When a job is completed, attempting to queue is invalid."""
-        job = Job(_status=JobStatus.COMPLETED)
-        self.assertRaises(InvalidTransition, job.queue)
-
-    def test_queue_when_waiting_is_invalid(self):
-        """When a job is waiting, attempting to queue is invalid."""
-        job = Job(_status=JobStatus.WAITING)
-        self.assertRaises(InvalidTransition, job.queue)
-
-    def test_queue_when_failed_is_invalid(self):
-        """When a job is failed, attempting to queue is invalid."""
-        job = Job(_status=JobStatus.FAILED)
-        self.assertRaises(InvalidTransition, job.queue)
-
     def test_suspend(self):
         """A job that is in the WAITING state can be suspended."""
         job = Job(_status=JobStatus.WAITING)
