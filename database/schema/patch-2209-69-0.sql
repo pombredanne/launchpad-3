@@ -18,7 +18,7 @@ CREATE TABLE Snap (
     require_virtualized boolean DEFAULT true NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name)),
     CONSTRAINT consistent_git_ref CHECK ((git_repository IS NULL) = (git_path IS NULL)),
-    CONSTRAINT one_vcs CHECK ((branch IS NULL) != (git_repository IS NULL)),
+    CONSTRAINT consistent_vcs CHECK (null_count(ARRAY[branch, git_repository]) >= 1),
     CONSTRAINT snap__owner__name__key UNIQUE (owner, name)
 );
 
