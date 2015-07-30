@@ -11,12 +11,12 @@ __all__ = [
     'ISnap',
     'ISnapSet',
     'ISnapView',
+    'NoSuchSnap',
     'SNAP_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapFeatureDisabled',
     'SnapNotOwner',
-    'NoSuchSnap',
     ]
 
 from lazr.restful.fields import (
