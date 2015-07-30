@@ -42,6 +42,16 @@ CREATE INDEX snap__branch__idx
 CREATE INDEX snap__git_repository__idx
     ON Snap (git_repository);
 
+CREATE TABLE SnapArch (
+    snap integer NOT NULL REFERENCES snap,
+    processor integer NOT NULL REFERENCES processor,
+    PRIMARY KEY (snap, processor)
+);
+
+COMMENT ON TABLE SnapArch IS 'The architectures a snap package should be built for.';
+COMMENT ON COLUMN SnapArch.snap IS 'The snap package for which an architecture is specified.';
+COMMENT ON COLUMN SnapArch.processor IS 'The architecture for which the snap package should be built.';
+
 CREATE TABLE SnapBuild (
     id serial PRIMARY KEY,
     requester integer NOT NULL REFERENCES person,
