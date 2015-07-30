@@ -11,6 +11,7 @@ __all__ = [
     'ISnap',
     'ISnapSet',
     'ISnapView',
+    'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
@@ -106,6 +107,15 @@ class SnapNotOwner(Unauthorized):
 class NoSuchSnap(NameLookupFailed):
     """The requested snap package does not exist."""
     _message_prefix = "No such snap package with this owner"
+
+
+class NoSourceForSnap(Exception):
+    """Snap packages must have a source (Bazaar branch or Git repository)."""
+
+    def __init__(self):
+        super(NoSourceForSnap, self).__init__(
+            "New snap packages must have either a Bazaar branch or a Git "
+            "repository.")
 
 
 class CannotDeleteSnap(Exception):

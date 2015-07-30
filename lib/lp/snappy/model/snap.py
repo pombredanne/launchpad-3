@@ -39,6 +39,7 @@ from lp.snappy.interfaces.snap import (
     SNAP_FEATURE_FLAG,
     SnapFeatureDisabled,
     SnapNotOwner,
+    NoSourceForSnap,
     NoSuchSnap,
     )
 
@@ -191,6 +192,9 @@ class SnapSet:
                 raise SnapNotOwner(
                     "%s cannot create snap packages owned by %s." %
                     (registrant.displayname, owner.displayname))
+
+        if branch is None and git_repository is None:
+            raise NoSourceForSnap
 
         store = IMasterStore(Snap)
         snap = Snap(
