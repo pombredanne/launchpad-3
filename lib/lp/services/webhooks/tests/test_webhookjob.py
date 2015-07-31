@@ -21,8 +21,8 @@ from testtools.matchers import (
     GreaterThan,
     Is,
     KeysEqual,
-    LessThan,
     MatchesAll,
+    MatchesDict,
     MatchesStructure,
     Not,
     )
@@ -144,34 +144,54 @@ class TestWebhookClient(TestCase):
 
         return reqs, result
 
+    @property
+    def request_matcher(self):
+        return MatchesDict({
+            'url': Equals('http://hookep.com/foo'),
+            'method': Equals('POST'),
+            'headers': Equals(
+                {'Content-Type': 'application/json',
+                'Content-Length': '14'}),
+            'body': Equals('{"foo": "bar"}'),
+            })
+
     def test_sends_request(self):
         [request], result = self.sendToWebhook()
-        self.assertEqual(
-            {'Content-Type': 'application/json', 'Content-Length': '14'},
-            result['request']['headers'])
-        self.assertEqual('{"foo": "bar"}', result['request']['body'])
-        self.assertEqual(200, result['response']['status_code'])
-        self.assertEqual({}, result['response']['headers'])
-        self.assertEqual('Content', result['response']['body'])
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'response': MatchesDict({
+                    'status_code': Equals(200),
+                    'headers': Equals({}),
+                    'body': Equals('Content'),
+                    }),
+                }))
 
     def test_accepts_404(self):
         [request], result = self.sendToWebhook(response_status=404)
-        self.assertEqual(
-            {'Content-Type': 'application/json', 'Content-Length': '14'},
-            result['request']['headers'])
-        self.assertEqual('{"foo": "bar"}', result['request']['body'])
-        self.assertEqual(404, result['response']['status_code'])
-        self.assertEqual({}, result['response']['headers'])
-        self.assertEqual('Content', result['response']['body'])
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'response': MatchesDict({
+                    'status_code': Equals(404),
+                    'headers': Equals({}),
+                    'body': Equals('Content'),
+                    }),
+                }))
 
     def test_connection_error(self):
         # Attempts that fail to connect have a connection_error rather
         # than a response.
         reqs, result = self.sendToWebhook(
             raises=requests.ConnectionError('Connection refused'))
-        self.assertNotIn('response', result)
-        self.assertEqual(
-            'Connection refused', result['connection_error'])
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'connection_error': Equals('Connection refused'),
+                }))
         self.assertEqual([], reqs)
 
 
