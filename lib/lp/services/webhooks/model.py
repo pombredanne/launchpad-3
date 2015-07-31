@@ -21,6 +21,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+import lp.app.versioninfo
 from pytz import utc
 from storm.properties import (
     Bool,
@@ -372,9 +373,11 @@ class WebhookDeliveryJob(WebhookJobDerived):
             return timedelta(hours=1)
 
     def run(self):
+        user_agent = '%s-Webhooks/r%s' % (
+            config.vhost.mainsite.hostname, lp.app.versioninfo.revno)
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
-            self.payload)
+            user_agent, 30, self.payload)
         # Request and response headers and body may be large, so don't
         # store them in the frequently-used JSON. We could store them in
         # the librarian if we wanted them in future.

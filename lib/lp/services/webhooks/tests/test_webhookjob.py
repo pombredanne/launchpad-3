@@ -25,10 +25,12 @@ from testtools.matchers import (
     MatchesDict,
     MatchesStructure,
     Not,
+    StartsWith,
     )
 import transaction
 from zope.component import getUtility
 
+from lp.app.versioninfo import revno
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
@@ -140,7 +142,7 @@ class TestWebhookClient(TestCase):
             result = WebhookClient().deliver(
                 'http://hookep.com/foo',
                 {'http': 'http://squid.example.com:3128'},
-                {'foo': 'bar'})
+                'TestWebhookClient', 30, {'foo': 'bar'})
 
         return reqs, result
 
@@ -151,7 +153,8 @@ class TestWebhookClient(TestCase):
             'method': Equals('POST'),
             'headers': Equals(
                 {'Content-Type': 'application/json',
-                'Content-Length': '14'}),
+                 'Content-Length': '14',
+                 'User-Agent': 'TestWebhookClient'}),
             'body': Equals('{"foo": "bar"}'),
             })
 
@@ -202,14 +205,14 @@ class MockWebhookClient:
         self.raises = raises
         self.requests = []
 
-    def deliver(self, url, proxy, payload):
-        result = {'request': {}}
+    def deliver(self, url, proxy, user_agent, timeout, payload):
+        result = {'request': {'headers': {'User-Agent': user_agent}}}
         if isinstance(self.raises, requests.ConnectionError):
             result['connection_error'] = str(self.raises)
         elif self.raises is not None:
             raise self.raises
         else:
-            self.requests.append(('POST', url))
+            self.requests.append(('POST', url, {'User-Agent': user_agent}))
             result['response'] = {'status_code': self.response_status}
         return result
 
@@ -255,7 +258,10 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                             {'response': ContainsDict(
                                 {'status_code': Equals(200)})}))})))
         self.assertEqual(1, len(reqs))
-        self.assertEqual([('POST', 'http://hookep.com/foo')], reqs)
+        self.assertEqual([
+            ('POST', 'http://hookep.com/foo',
+             {'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno}),
+            ], reqs)
         self.assertEqual([], oopses.oopses)
 
     def test_run_404(self):

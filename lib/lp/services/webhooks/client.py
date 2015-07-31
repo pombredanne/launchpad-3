@@ -17,7 +17,7 @@ from lp.services.webhooks.interfaces import IWebhookClient
 @implementer(IWebhookClient)
 class WebhookClient:
 
-    def deliver(self, url, proxy, payload):
+    def deliver(self, url, proxy, user_agent, timeout, payload):
         """See `IWebhookClient`."""
         # We never want to execute a job if there's no proxy configured, as
         # we'd then be sending near-arbitrary requests from a trusted
@@ -32,8 +32,8 @@ class WebhookClient:
         session = requests.Session()
         session.trust_env = False
         session.headers = {}
-        preq = session.prepare_request(
-            requests.Request('POST', url, json=payload))
+        preq = session.prepare_request(requests.Request(
+            'POST', url, json=payload, headers={'User-Agent': user_agent}))
         result = {
             'request': {
                 'url': url,
@@ -43,7 +43,7 @@ class WebhookClient:
                 },
             }
         try:
-            resp = session.send(preq, proxies=proxies)
+            resp = session.send(preq, proxies=proxies, timeout=timeout)
             result['response'] = {
                 'status_code': resp.status_code,
                 'headers': dict(resp.headers),
