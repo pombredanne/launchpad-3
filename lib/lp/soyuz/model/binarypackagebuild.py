@@ -517,6 +517,10 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             version = ''
         else:
             relation, version = token['version']
+            if relation == '<':
+                relation = '<<'
+            elif relation == '>':
+                relation = '>>'
         return (token['name'], version, relation)
 
     def _checkDependencyVersion(self, available, required, relation):
