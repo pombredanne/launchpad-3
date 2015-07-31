@@ -535,18 +535,19 @@ the bug so that they are not calculated for every recipient.
 
 The build() method of a builder accepts a number of parameters and returns
 an instance of email.mime.text.MIMEText. The most basic invocation of this
-method requires a from address, a to address, a body, a subject and a
-sending date for the mail.
+method requires a from address, a to person, a body, a subject and a sending
+date for the mail.
 
     >>> from datetime import datetime
     >>> import pytz
 
     >>> from_address = get_bugmail_from_address(lp_janitor, bug_four)
+    >>> to_person = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> sending_date = pytz.timezone('Europe/Prague').localize(
     ...     datetime(2008, 5, 20, 11, 5, 47))
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
+    ...     from_address, to_person,
     ...     "A test body.", "A test subject.", sending_date)
 
 The fields of the generated notification email will be set according to
@@ -572,7 +573,7 @@ The <builder>.build() method also accepts parameters for rationale,
 references and message_id.
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
+    ...     from_address, to_person,
     ...     "A test body.", "A test subject.", sending_date,
     ...     rationale='Because-I-said-so',
     ...     references=['<12345@launchpad.net>'],
@@ -598,7 +599,7 @@ will be auto-generated if it is not supplied.
 The message subject will always have [Bug <bug_id>] prepended to it.
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
+    ...     from_address, to_person,
     ...     "A test body.", "Yet another message", sending_date)
 
     >>> print notification_email['Subject']
@@ -608,8 +609,7 @@ If the subject passed is None the email subject will be set to [Bug
 <bug_id>].
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
-    ...     "A test body.", None, sending_date)
+    ...     from_address, to_person, "A test body.", None, sending_date)
 
     >>> print notification_email['Subject']
     [Bug 4]

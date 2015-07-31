@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions related to sending bug notifications."""
@@ -182,7 +182,6 @@ def construct_email_notifications(bug_notifications):
         recipients.items(), key=lambda t: t[0].preferredemail.email)
 
     for email_person, data in sorted_recipients:
-        address = str(email_person.preferredemail.email)
         # Choosing the first source is a bit arbitrary, but it
         # is simple for the user to understand.  We may want to reconsider
         # this in the future.
@@ -240,7 +239,7 @@ def construct_email_notifications(bug_notifications):
         body_template = get_email_template(email_template, 'bugs')
         body = (body_template % body_data).strip()
         msg = bug_notification_builder.build(
-            from_address, address, body, subject, email_date,
+            from_address, email_person, body, subject, email_date,
             rationale, references, msgid, filters=data['filter descriptions'])
         messages.append(msg)
 
