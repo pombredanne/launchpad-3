@@ -8,16 +8,24 @@ __all__ = [
     'WebhookClient',
     ]
 
+import hashlib
+import hmac
+import json
 import requests
 from zope.interface import implementer
 
 from lp.services.webhooks.interfaces import IWebhookClient
 
 
+def sign_body(secret, body):
+    hexdigest = hmac.new(secret, body, digestmod=hashlib.sha1).hexdigest()
+    return 'sha1=%s' % hexdigest
+
+
 @implementer(IWebhookClient)
 class WebhookClient:
 
-    def deliver(self, url, proxy, user_agent, timeout, payload):
+    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
         """See `IWebhookClient`."""
         # We never want to execute a job if there's no proxy configured, as
         # we'd then be sending near-arbitrary requests from a trusted
@@ -32,8 +40,17 @@ class WebhookClient:
         session = requests.Session()
         session.trust_env = False
         session.headers = {}
+
+        body = json.dumps(payload)
+        headers = {
+            'User-Agent': user_agent,
+            'Content-Type': 'application/json',
+            }
+        if secret is not None:
+            headers['X-Hub-Signature'] = sign_body(secret, body)
         preq = session.prepare_request(requests.Request(
-            'POST', url, json=payload, headers={'User-Agent': user_agent}))
+            'POST', url, json=payload, headers=headers))
+
         result = {
             'request': {
                 'url': url,

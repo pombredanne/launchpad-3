@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+import json
 
 from httmock import (
     HTTMock,
@@ -25,7 +26,6 @@ from testtools.matchers import (
     MatchesDict,
     MatchesStructure,
     Not,
-    StartsWith,
     )
 import transaction
 from zope.component import getUtility
@@ -36,7 +36,10 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.job.tests import block_on_job
 from lp.services.scripts.tests import run_script
-from lp.services.webhooks.client import WebhookClient
+from lp.services.webhooks.client import (
+    WebhookClient,
+    sign_body,
+    )
 from lp.services.webhooks.interfaces import (
     IWebhookClient,
     IWebhookDeliveryJob,
@@ -142,7 +145,7 @@ class TestWebhookClient(TestCase):
             result = WebhookClient().deliver(
                 'http://hookep.com/foo',
                 {'http': 'http://squid.example.com:3128'},
-                'TestWebhookClient', 30, {'foo': 'bar'})
+                'TestWebhookClient', 30, 'sekrit', {'foo': 'bar'})
 
         return reqs, result
 
@@ -154,7 +157,10 @@ class TestWebhookClient(TestCase):
             'headers': Equals(
                 {'Content-Type': 'application/json',
                  'Content-Length': '14',
-                 'User-Agent': 'TestWebhookClient'}),
+                 'User-Agent': 'TestWebhookClient',
+                 'X-Hub-Signature':
+                    'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
+                 }),
             'body': Equals('{"foo": "bar"}'),
             })
 
@@ -205,14 +211,17 @@ class MockWebhookClient:
         self.raises = raises
         self.requests = []
 
-    def deliver(self, url, proxy, user_agent, timeout, payload):
+    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
         result = {'request': {'headers': {'User-Agent': user_agent}}}
+        if secret is not None:
+            result['request']['headers']['X-Hub-Signature'] = sign_body(
+                secret, json.dumps(payload))
         if isinstance(self.raises, requests.ConnectionError):
             result['connection_error'] = str(self.raises)
         elif self.raises is not None:
             raise self.raises
         else:
-            self.requests.append(('POST', url, {'User-Agent': user_agent}))
+            self.requests.append(('POST', url, result['request']['headers']))
             result['response'] = {'status_code': self.response_status}
         return result
 
@@ -222,8 +231,10 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def makeAndRunJob(self, response_status=200, raises=None, mock=True):
-        hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
+    def makeAndRunJob(self, response_status=200, raises=None, mock=True,
+                      secret=None):
+        hook = self.factory.makeWebhook(
+            delivery_url=u'http://hookep.com/foo', secret=secret)
         job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
 
         client = MockWebhookClient(
@@ -261,6 +272,20 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([
             ('POST', 'http://hookep.com/foo',
              {'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno}),
+            ], reqs)
+        self.assertEqual([], oopses.oopses)
+
+    def test_run_signature(self):
+        # If the webhook has a secret, the request is signed in a
+        # PubSubHubbub-compatible way.
+        with CaptureOops() as oopses:
+            job, reqs = self.makeAndRunJob(
+                response_status=200, secret=u'sekrit')
+        self.assertEqual([
+            ('POST', 'http://hookep.com/foo',
+             {'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
+              'X-Hub-Signature':
+                'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd'}),
             ], reqs)
         self.assertEqual([], oopses.oopses)
 

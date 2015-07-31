@@ -4522,14 +4522,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             LiveFSFile(livefsbuild=livefsbuild, libraryfile=libraryfile))
 
-    def makeWebhook(self, target=None, delivery_url=None):
+    def makeWebhook(self, target=None, delivery_url=None, secret=None):
         if target is None:
             target = self.makeGitRepository()
         if delivery_url is None:
             delivery_url = self.getUniqueURL().decode('utf-8')
         return getUtility(IWebhookSource).new(
-            target, self.makePerson(), delivery_url, [], True,
-            self.getUniqueUnicode())
+            target, self.makePerson(), delivery_url, [], True, secret)
 
 
 # Some factory methods return simple Python types. We don't add

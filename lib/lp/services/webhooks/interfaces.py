@@ -249,7 +249,7 @@ class IWebhookDeliveryJobSource(IJobSource):
 
 class IWebhookClient(Interface):
 
-    def deliver(self, url, proxy, user_agent, timeout, payload):
+    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
         """Deliver a payload to a webhook endpoint.
 
         Returns a dict of request and response details. The 'request' key
@@ -264,6 +264,9 @@ class IWebhookClient(Interface):
         The timeout is just given to the underlying requests library, so
         it only provides connect and inter-read timeouts. An reliable
         overall request timeout will require another mechanism.
+
+        If secret is not None, a PubSubHubbub-compatible X-Hub-Signature
+        header will be sent using HMAC-SHA1.
         """
 
 patch_collection_property(IWebhook, 'deliveries', IWebhookDeliveryJob)
