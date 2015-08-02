@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import timedelta
-import json
 
 from httmock import (
     HTTMock,
