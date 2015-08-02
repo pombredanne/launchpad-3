@@ -37,8 +37,8 @@ from lp.services.job.runner import JobRunner
 from lp.services.job.tests import block_on_job
 from lp.services.scripts.tests import run_script
 from lp.services.webhooks.client import (
+    create_request,
     WebhookClient,
-    sign_body,
     )
 from lp.services.webhooks.interfaces import (
     IWebhookClient,
@@ -204,7 +204,7 @@ class TestWebhookClient(TestCase):
         self.assertEqual([], reqs)
 
 
-class MockWebhookClient:
+class MockWebhookClient(WebhookClient):
 
     def __init__(self, response_status=200, raises=None):
         self.response_status = response_status
@@ -212,10 +212,15 @@ class MockWebhookClient:
         self.requests = []
 
     def deliver(self, url, proxy, user_agent, timeout, secret, payload):
-        result = {'request': {'headers': {'User-Agent': user_agent}}}
-        if secret is not None:
-            result['request']['headers']['X-Hub-Signature'] = sign_body(
-                secret, json.dumps(payload))
+        body, headers = create_request(user_agent, secret, payload)
+        result = {
+            'request': {
+                'url': url,
+                'method': 'POST',
+                'headers': headers,
+                'body': body,
+                },
+            }
         if isinstance(self.raises, requests.ConnectionError):
             result['connection_error'] = str(self.raises)
         elif self.raises is not None:
@@ -271,7 +276,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(1, len(reqs))
         self.assertEqual([
             ('POST', 'http://hookep.com/foo',
-             {'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno}),
+             {'Content-Type': 'application/json',
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno}),
             ], reqs)
         self.assertEqual([], oopses.oopses)
 
@@ -283,7 +289,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 response_status=200, secret=u'sekrit')
         self.assertEqual([
             ('POST', 'http://hookep.com/foo',
-             {'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
+             {'Content-Type': 'application/json',
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
               'X-Hub-Signature':
                 'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd'}),
             ], reqs)

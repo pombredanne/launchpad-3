@@ -22,6 +22,17 @@ def sign_body(secret, body):
     return 'sha1=%s' % hexdigest
 
 
+def create_request(user_agent, secret, payload):
+    body = json.dumps(payload)
+    headers = {
+        'User-Agent': user_agent,
+        'Content-Type': 'application/json',
+        }
+    if secret is not None:
+        headers['X-Hub-Signature'] = sign_body(secret, body)
+    return (body, headers)
+
+
 @implementer(IWebhookClient)
 class WebhookClient:
 
@@ -41,15 +52,9 @@ class WebhookClient:
         session.trust_env = False
         session.headers = {}
 
-        body = json.dumps(payload)
-        headers = {
-            'User-Agent': user_agent,
-            'Content-Type': 'application/json',
-            }
-        if secret is not None:
-            headers['X-Hub-Signature'] = sign_body(secret, body)
+        body, headers = create_request(user_agent, secret, payload)
         preq = session.prepare_request(requests.Request(
-            'POST', url, json=payload, headers=headers))
+            'POST', url, data=body, headers=headers))
 
         result = {
             'request': {
