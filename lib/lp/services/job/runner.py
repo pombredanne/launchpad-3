@@ -110,6 +110,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
     celery_responses = None
 
     retry_delay = timedelta(minutes=10)
+    soft_time_limit = timedelta(minutes=5)
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -235,6 +236,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
             eta = self.job.lease_expires
         return cls.apply_async(
             (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta,
+            soft_time_limit=self.soft_time_limit.total_seconds(),
             task_id=self.taskId())
 
     def getDBClass(self):

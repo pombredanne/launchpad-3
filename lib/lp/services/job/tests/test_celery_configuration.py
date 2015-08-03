@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from contextlib import contextmanager
+from testtools.matchers import MatchesRegex
 
 from lp.services.config import config
 from lp.testing import TestCase
@@ -33,13 +34,10 @@ class TestCeleryConfiguration(TestCase):
         for name in queue_names:
             self.assertEqual(name, queues[name]['binding_key'])
 
-        self.assertEqual('localhost', config['BROKER_HOST'])
-        # BROKER_PORT changes between test runs, so just check that it
-        # is defined.
-        self.assertTrue('BROKER_PORT' in config)
-        self.assertEqual('guest', config['BROKER_USER'])
-        self.assertEqual('guest', config['BROKER_PASSWORD'])
-        self.assertEqual('/', config['BROKER_VHOST'])
+        # The port changes between test runs.
+        self.assertThat(
+            config['BROKER_URL'],
+            MatchesRegex(r'amqp://guest:guest@localhost:\d+//\Z'))
         self.assertFalse(config['CELERY_CREATE_MISSING_QUEUES'])
         self.assertEqual('job', config['CELERY_DEFAULT_EXCHANGE'])
         self.assertEqual('launchpad_job', config['CELERY_DEFAULT_QUEUE'])
