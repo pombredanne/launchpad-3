@@ -40,4 +40,35 @@
         <allow interface="lp.snappy.interfaces.snap.ISnapSet" />
     </securedutility>
 
+    <!-- SnapBuild -->
+    <class class="lp.snappy.model.snapbuild.SnapBuild">
+        <require
+            permission="launchpad.View"
+            interface="lp.snappy.interfaces.snapbuild.ISnapBuildView" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.snappy.interfaces.snapbuild.ISnapBuildEdit" />
+        <require
+            permission="launchpad.Admin"
+            interface="lp.snappy.interfaces.snapbuild.ISnapBuildAdmin" />
+    </class>
+
+    <!-- SnapBuildSet -->
+    <securedutility
+        class="lp.snappy.model.snapbuild.SnapBuildSet"
+        provides="lp.snappy.interfaces.snapbuild.ISnapBuildSet">
+        <allow interface="lp.snappy.interfaces.snapbuild.ISnapBuildSet" />
+    </securedutility>
+    <securedutility
+        class="lp.snappy.model.snapbuild.SnapBuildSet"
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
+        name="SNAPBUILD">
+        <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource" />
+    </securedutility>
+
+    <!-- SnapFile -->
+    <class class="lp.snappy.model.snapbuild.SnapFile">
+        <allow interface="lp.snappy.interfaces.snapbuild.ISnapFile" />
+    </class>
+
 </configure>
