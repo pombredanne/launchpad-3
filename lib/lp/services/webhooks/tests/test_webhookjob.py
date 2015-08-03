@@ -399,7 +399,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         # Deliveries are retried every 5 minutes for the first hour, and
         # every hour thereafter.
         job, reqs = self.makeAndRunJob(response_status=404)
-        self.assertEqual(timedelta(minutes=5), job.retry_delay)
+        self.assertEqual(timedelta(minutes=1), job.retry_delay)
         job.json_data['date_first_sent'] = (
             job.date_first_sent - timedelta(minutes=30)).isoformat()
         self.assertEqual(timedelta(minutes=5), job.retry_delay)

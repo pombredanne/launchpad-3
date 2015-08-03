@@ -374,7 +374,9 @@ class WebhookDeliveryJob(WebhookJobDerived):
 
     @property
     def retry_delay(self):
-        if self._time_since_first_attempt < timedelta(hours=1):
+        if self._time_since_first_attempt < timedelta(minutes=10):
+            return timedelta(minutes=1)
+        elif self._time_since_first_attempt < timedelta(hours=1):
             return timedelta(minutes=5)
         else:
             return timedelta(hours=1)
