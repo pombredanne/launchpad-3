@@ -37,7 +37,7 @@ class TestCeleryConfiguration(TestCase):
         # The port changes between test runs.
         self.assertThat(
             config['BROKER_URL'],
-            MatchesRegex('^amqp://guest:guest@localhost:\\d+//'))
+            MatchesRegex(r'amqp://guest:guest@localhost:\d+//\Z'))
         self.assertFalse(config['CELERY_CREATE_MISSING_QUEUES'])
         self.assertEqual('job', config['CELERY_DEFAULT_EXCHANGE'])
         self.assertEqual('launchpad_job', config['CELERY_DEFAULT_QUEUE'])
