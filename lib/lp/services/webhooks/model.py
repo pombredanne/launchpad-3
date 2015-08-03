@@ -21,7 +21,6 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-import lp.app.versioninfo
 from pytz import utc
 from storm.properties import (
     Bool,
@@ -39,6 +38,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+import lp.app.versioninfo
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import load_related

@@ -11,15 +11,11 @@ __all__ = [
 import hashlib
 import hmac
 import json
+
 import requests
 from zope.interface import implementer
 
 from lp.services.webhooks.interfaces import IWebhookClient
-
-
-def sign_body(secret, body):
-    hexdigest = hmac.new(secret, body, digestmod=hashlib.sha1).hexdigest()
-    return 'sha1=%s' % hexdigest
 
 
 def create_request(user_agent, secret, payload):
@@ -29,7 +25,8 @@ def create_request(user_agent, secret, payload):
         'Content-Type': 'application/json',
         }
     if secret is not None:
-        headers['X-Hub-Signature'] = sign_body(secret, body)
+        hexdigest = hmac.new(secret, body, digestmod=hashlib.sha1).hexdigest()
+        headers['X-Hub-Signature'] = 'sha1=%s' % hexdigest
     return (body, headers)
 
 

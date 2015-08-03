@@ -262,7 +262,7 @@ class IWebhookClient(Interface):
         the proxy being offline will raise an exception.
 
         The timeout is just given to the underlying requests library, so
-        it only provides connect and inter-read timeouts. An reliable
+        it only provides connect and inter-read timeouts. A reliable
         overall request timeout will require another mechanism.
 
         If secret is not None, a PubSubHubbub-compatible X-Hub-Signature
