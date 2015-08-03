@@ -21,19 +21,37 @@ __all__ = [
     'SnapNotOwner',
     ]
 
+import httplib
+
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    error_status,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_entry,
+    REQUEST_USER,
+    )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     ReferenceChoice,
     )
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Bool,
+    Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -49,16 +67,21 @@ from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     )
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 SNAP_FEATURE_FLAG = u"snap.allow_new"
 
 
+@error_status(httplib.BAD_REQUEST)
 class SnapBuildAlreadyPending(Exception):
     """A build was requested when an identical build was already pending."""
 
@@ -67,6 +90,7 @@ class SnapBuildAlreadyPending(Exception):
             "An identical build of this snap package is already pending.")
 
 
+@error_status(httplib.FORBIDDEN)
 class SnapBuildArchiveOwnerMismatch(Forbidden):
     """Builds against private archives require that owners match.
 
@@ -84,6 +108,7 @@ class SnapBuildArchiveOwnerMismatch(Forbidden):
             "if the snap package owner and the archive owner are equal.")
 
 
+@error_status(httplib.BAD_REQUEST)
 class SnapBuildDisallowedArchitecture(Exception):
     """A build was requested for a disallowed architecture."""
 
@@ -93,6 +118,7 @@ class SnapBuildDisallowedArchitecture(Exception):
             das.displayname)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class SnapFeatureDisabled(Unauthorized):
     """Only certain users can create new snap-related objects."""
 
@@ -102,6 +128,7 @@ class SnapFeatureDisabled(Unauthorized):
             "builds.")
 
 
+@error_status(httplib.BAD_REQUEST)
 class DuplicateSnapName(Exception):
     """Raised for snap packages with duplicate name/owner."""
 
@@ -110,6 +137,7 @@ class DuplicateSnapName(Exception):
             "There is already a snap package with the same name and owner.")
 
 
+@error_status(httplib.UNAUTHORIZED)
 class SnapNotOwner(Unauthorized):
     """The registrant/requester is not the owner or a member of its team."""
 
@@ -119,6 +147,7 @@ class NoSuchSnap(NameLookupFailed):
     _message_prefix = "No such snap package with this owner"
 
 
+@error_status(httplib.BAD_REQUEST)
 class NoSourceForSnap(Exception):
     """Snap packages must have a source (Bazaar branch or Git repository)."""
 
@@ -128,6 +157,7 @@ class NoSourceForSnap(Exception):
             "repository.")
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotDeleteSnap(Exception):
     """This snap package cannot be deleted."""
 
@@ -137,14 +167,22 @@ class ISnapView(Interface):
 
     id = Int(title=_("ID"), required=True, readonly=True)
 
-    date_created = Datetime(
-        title=_("Date created"), required=True, readonly=True)
+    date_created = exported(Datetime(
+        title=_("Date created"), required=True, readonly=True))
 
-    registrant = PublicPersonChoice(
+    registrant = exported(PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
         vocabulary="ValidPersonOrTeam",
-        description=_("The person who registered this snap package."))
+        description=_("The person who registered this snap package.")))
 
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=IArchive),
+        distro_arch_series=Reference(schema=IDistroArchSeries),
+        pocket=Choice(vocabulary=PackagePublishingPocket))
+    # Really ISnapBuild, patched in _schema_circular_imports.py.
+    @export_factory_operation(Interface, [])
+    @operation_for_version("devel")
     def requestBuild(requester, archive, distro_arch_series, pocket):
         """Request that the snap package be built.
 
@@ -155,16 +193,36 @@ class ISnapView(Interface):
         :return: `ISnapBuild`.
         """
 
-    builds = Attribute("All builds of this snap package.")
+    builds = exported(doNotSnapshot(CollectionField(
+        title=_("All builds of this snap package."),
+        description=_(
+            "All builds of this snap package, sorted in descending order "
+            "of finishing (or starting if not completed successfully)."),
+        # Really ISnapBuild, patched in _schema_circular_imports.py.
+        value_type=Reference(schema=Interface), readonly=True)))
 
-    completed_builds = Attribute("Completed builds of this snap package.")
+    completed_builds = exported(doNotSnapshot(CollectionField(
+        title=_("Completed builds of this snap package."),
+        description=_(
+            "Completed builds of this snap package, sorted in descending "
+            "order of finishing."),
+        # Really ISnapBuild, patched in _schema_circular_imports.py.
+        value_type=Reference(schema=Interface), readonly=True)))
 
-    pending_builds = Attribute("Pending builds of this snap package.")
+    pending_builds = exported(doNotSnapshot(CollectionField(
+        title=_("Pending builds of this snap package."),
+        description=_(
+            "Pending builds of this snap package, sorted in descending "
+            "order of creation."),
+        # Really ISnapBuild, patched in _schema_circular_imports.py.
+        value_type=Reference(schema=Interface), readonly=True)))
 
 
 class ISnapEdit(Interface):
     """`ISnap` methods that require launchpad.Edit permission."""
 
+    @export_destructor_operation()
+    @operation_for_version("devel")
     def destroySelf():
         """Delete this snap package, provided that it has no builds."""
 
@@ -174,48 +232,48 @@ class ISnapEditableAttributes(IHasOwner):
 
     These attributes need launchpad.View to see, and launchpad.Edit to change.
     """
-    date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=True)
+    date_last_modified = exported(Datetime(
+        title=_("Date last modified"), required=True, readonly=True))
 
-    owner = PersonChoice(
+    owner = exported(PersonChoice(
         title=_("Owner"), required=True, readonly=False,
         vocabulary="AllUserTeamsParticipationPlusSelf",
-        description=_("The owner of this snap package."))
+        description=_("The owner of this snap package.")))
 
-    distro_series = Reference(
+    distro_series = exported(Reference(
         IDistroSeries, title=_("Distro Series"), required=True, readonly=False,
         description=_(
-            "The series for which the snap package should be built."))
+            "The series for which the snap package should be built.")))
 
-    name = TextLine(
+    name = exported(TextLine(
         title=_("Name"), required=True, readonly=False,
         constraint=name_validator,
-        description=_("The name of the snap package."))
+        description=_("The name of the snap package.")))
 
-    description = Text(
+    description = exported(Text(
         title=_("Description"), required=False, readonly=False,
-        description=_("A description of the snap package."))
+        description=_("A description of the snap package.")))
 
-    branch = ReferenceChoice(
+    branch = exported(ReferenceChoice(
         title=_("Bazaar branch"), schema=IBranch, vocabulary="Branch",
         required=False, readonly=False,
         description=_(
             "A Bazaar branch containing a snapcraft.yaml recipe at the top "
-            "level."))
+            "level.")))
 
-    git_repository = ReferenceChoice(
+    git_repository = exported(ReferenceChoice(
         title=_("Git repository"),
         schema=IGitRepository, vocabulary="GitRepository",
         required=False, readonly=False,
         description=_(
             "A Git repository with a branch containing a snapcraft.yaml "
-            "recipe at the top level."))
+            "recipe at the top level.")))
 
-    git_path = TextLine(
+    git_path = exported(TextLine(
         title=_("Git branch path"), required=False, readonly=False,
         description=_(
             "The path of the Git branch containing a snapcraft.yaml recipe at "
-            "the top level."))
+            "the top level.")))
 
 
 class ISnapAdminAttributes(Interface):
@@ -223,21 +281,26 @@ class ISnapAdminAttributes(Interface):
 
     These attributes need launchpad.View to see, and launchpad.Admin to change.
     """
-    require_virtualized = Bool(
+    require_virtualized = exported(Bool(
         title=_("Require virtualized builders"), required=True, readonly=False,
-        description=_("Only build this snap package on virtual builders."))
+        description=_("Only build this snap package on virtual builders.")))
 
-    processors = CollectionField(
+    processors = exported(CollectionField(
         title=_("Processors"),
         description=_(
             "The architectures for which the snap package should be built."),
         value_type=Reference(schema=IProcessor),
-        readonly=False)
+        readonly=False))
 
 
 class ISnapAdmin(Interface):
     """`ISnap` methods that require launchpad.Admin permission."""
 
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
     def setProcessors(processors):
         """Set the architectures for which the snap package should be built."""
 
@@ -247,10 +310,23 @@ class ISnap(
     ISnapAdmin):
     """A buildable snap package."""
 
+    # XXX cjwatson 2015-07-17 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(as_of="beta")
+
 
 class ISnapSet(Interface):
     """A utility to create and access snap packages."""
 
+    export_as_webservice_collection(ISnap)
+
+    @call_with(registrant=REQUEST_USER)
+    @export_factory_operation(
+        ISnap, [
+            "owner", "distro_series", "name", "description", "branch",
+            "git_repository", "git_path"])
+    @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_repository=None, git_path=None,
             require_virtualized=True, processors=None, date_created=None):
@@ -259,12 +335,19 @@ class ISnapSet(Interface):
     def exists(owner, name):
         """Check to see if a matching snap exists."""
 
+    @operation_parameters(
+        owner=Reference(IPerson, title=_("Owner"), required=True),
+        name=TextLine(title=_("Snap name"), required=True))
+    @operation_returns_entry(ISnap)
+    @export_read_operation()
+    @operation_for_version("devel")
     def getByName(owner, name):
         """Return the appropriate `ISnap` for the given objects."""
 
     def findByPerson(owner):
         """Return all snap packages with the given `owner`."""
 
+    @collection_default_content()
     def empty_list():
         """Return an empty collection of snap packages.
 

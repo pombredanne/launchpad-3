@@ -5,11 +5,15 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
 from storm.locals import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.event import notify
@@ -22,13 +26,16 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
     CannotDeleteSnap,
     ISnap,
     ISnapSet,
+    ISnapView,
     NoSourceForSnap,
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
@@ -38,13 +45,23 @@ from lp.snappy.interfaces.snap import (
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.testing import (
     admin_logged_in,
+    ANONYMOUS,
+    api_url,
+    login,
+    logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    HasQueryCount,
+    )
+from lp.testing.pages import webservice_for_person
 
 
 class TestSnapFeatureFlag(TestCaseWithFactory):
@@ -72,6 +89,12 @@ class TestSnap(TestCaseWithFactory):
         snap = self.factory.makeSnap()
         with admin_logged_in():
             self.assertProvides(snap, ISnap)
+
+    def test_avoids_problematic_snapshots(self):
+        self.assertThat(
+            self.factory.makeSnap(),
+            DoesNotSnapshot(
+                ["builds", "completed_builds", "pending_builds"], ISnapView))
 
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
@@ -478,3 +501,375 @@ class TestSnapProcessors(TestCaseWithFactory):
             self.unrestricted_procs + [self.arm], snap.processors)
         snap.processors = []
         self.assertContentEqual([], snap.processors)
+
+
+class TestSnapWebservice(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapWebservice, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.person = self.factory.makePerson(displayname="Test Person")
+        self.webservice = webservice_for_person(
+            self.person, permission=OAuthPermission.WRITE_PUBLIC)
+        self.webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+
+    def getURL(self, obj):
+        return self.webservice.getAbsoluteUrl(api_url(obj))
+
+    def makeSnap(self, owner=None, distroseries=None, branch=None,
+                 git_ref=None, processors=None, webservice=None):
+        if owner is None:
+            owner = self.person
+        if distroseries is None:
+            distroseries = self.factory.makeDistroSeries(registrant=owner)
+        if branch is None and git_ref is None:
+            branch = self.factory.makeAnyBranch()
+        kwargs = {}
+        if webservice is None:
+            webservice = self.webservice
+        transaction.commit()
+        distroseries_url = api_url(distroseries)
+        owner_url = api_url(owner)
+        if branch is not None:
+            kwargs["branch"] = api_url(branch)
+        if git_ref is not None:
+            kwargs["git_repository"] = api_url(git_ref.repository)
+            kwargs["git_path"] = git_ref.path
+        if processors is not None:
+            kwargs["processors"] = [
+                api_url(processor) for processor in processors]
+        logout()
+        response = webservice.named_post(
+            "/+snaps", "new", owner=owner_url, distro_series=distroseries_url,
+            name="mir", **kwargs)
+        self.assertEqual(201, response.status)
+        return webservice.get(response.getHeader("Location")).jsonBody()
+
+    def getCollectionLinks(self, entry, member):
+        """Return a list of self_link attributes of entries in a collection."""
+        collection = self.webservice.get(
+            entry["%s_collection_link" % member]).jsonBody()
+        return [entry["self_link"] for entry in collection["entries"]]
+
+    def test_new_bzr(self):
+        # Ensure Snap creation based on a Bazaar branch works.
+        team = self.factory.makeTeam(owner=self.person)
+        distroseries = self.factory.makeDistroSeries(registrant=team)
+        branch = self.factory.makeAnyBranch()
+        snap = self.makeSnap(
+            owner=team, distroseries=distroseries, branch=branch)
+        with person_logged_in(self.person):
+            self.assertEqual(self.getURL(self.person), snap["registrant_link"])
+            self.assertEqual(self.getURL(team), snap["owner_link"])
+            self.assertEqual(
+                self.getURL(distroseries), snap["distro_series_link"])
+            self.assertEqual("mir", snap["name"])
+            self.assertEqual(self.getURL(branch), snap["branch_link"])
+            self.assertIsNone(snap["git_repository_link"])
+            self.assertIsNone(snap["git_path"])
+            self.assertTrue(snap["require_virtualized"])
+
+    def test_new_git(self):
+        # Ensure Snap creation based on a Git branch works.
+        team = self.factory.makeTeam(owner=self.person)
+        distroseries = self.factory.makeDistroSeries(registrant=team)
+        [ref] = self.factory.makeGitRefs()
+        snap = self.makeSnap(
+            owner=team, distroseries=distroseries, git_ref=ref)
+        with person_logged_in(self.person):
+            self.assertEqual(self.getURL(self.person), snap["registrant_link"])
+            self.assertEqual(self.getURL(team), snap["owner_link"])
+            self.assertEqual(
+                self.getURL(distroseries), snap["distro_series_link"])
+            self.assertEqual("mir", snap["name"])
+            self.assertIsNone(snap["branch_link"])
+            self.assertEqual(
+                self.getURL(ref.repository), snap["git_repository_link"])
+            self.assertEqual(ref.path, snap["git_path"])
+            self.assertTrue(snap["require_virtualized"])
+
+    def test_duplicate(self):
+        # An attempt to create a duplicate Snap fails.
+        team = self.factory.makeTeam(owner=self.person)
+        branch = self.factory.makeAnyBranch()
+        branch_url = api_url(branch)
+        self.makeSnap(owner=team)
+        with person_logged_in(self.person):
+            owner_url = api_url(team)
+            distroseries_url = api_url(self.factory.makeDistroSeries())
+        response = self.webservice.named_post(
+            "/+snaps", "new", owner=owner_url, distro_series=distroseries_url,
+            name="mir", branch=branch_url)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "There is already a snap package with the same name and owner.",
+            response.body)
+
+    def test_not_owner(self):
+        # If the registrant is not the owner or a member of the owner team,
+        # Snap creation fails.
+        other_person = self.factory.makePerson(displayname="Other Person")
+        other_team = self.factory.makeTeam(
+            owner=other_person, displayname="Other Team")
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        branch = self.factory.makeAnyBranch()
+        transaction.commit()
+        other_person_url = api_url(other_person)
+        other_team_url = api_url(other_team)
+        distroseries_url = api_url(distroseries)
+        branch_url = api_url(branch)
+        logout()
+        response = self.webservice.named_post(
+            "/+snaps", "new", owner=other_person_url,
+            distro_series=distroseries_url, name="dummy", branch=branch_url)
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person cannot create snap packages owned by Other Person.",
+            response.body)
+        response = self.webservice.named_post(
+            "/+snaps", "new", owner=other_team_url,
+            distro_series=distroseries_url, name="dummy", branch=branch_url)
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person is not a member of Other Team.", response.body)
+
+    def test_getByName(self):
+        # lp.snaps.getByName returns a matching Snap.
+        snap = self.makeSnap()
+        with person_logged_in(self.person):
+            owner_url = api_url(self.person)
+        response = self.webservice.named_get(
+            "/+snaps", "getByName", owner=owner_url, name="mir")
+        self.assertEqual(200, response.status)
+        self.assertEqual(snap, response.jsonBody())
+
+    def test_getByName_missing(self):
+        # lp.snaps.getByName returns 404 for a non-existent Snap.
+        logout()
+        with person_logged_in(self.person):
+            owner_url = api_url(self.person)
+        response = self.webservice.named_get(
+            "/+snaps", "getByName", owner=owner_url, name="nonexistent")
+        self.assertEqual(404, response.status)
+        self.assertEqual(
+            "No such snap package with this owner: 'nonexistent'.",
+            response.body)
+
+    def makeBuildableDistroArchSeries(self, **kwargs):
+        das = self.factory.makeDistroArchSeries(**kwargs)
+        fake_chroot = self.factory.makeLibraryFileAlias(
+            filename="fake_chroot.tar.gz", db_only=True)
+        das.addOrUpdateChroot(fake_chroot)
+        return das
+
+    def test_requestBuild(self):
+        # Build requests can be performed and end up in snap.builds and
+        # snap.pending_builds.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive_url = api_url(distroseries.main_archive)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(201, response.status)
+        build = self.webservice.get(response.getHeader("Location")).jsonBody()
+        self.assertEqual(
+            [build["self_link"]], self.getCollectionLinks(snap, "builds"))
+        self.assertEqual([], self.getCollectionLinks(snap, "completed_builds"))
+        self.assertEqual(
+            [build["self_link"]],
+            self.getCollectionLinks(snap, "pending_builds"))
+
+    def test_requestBuild_rejects_repeats(self):
+        # Build requests are rejected if already pending.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive_url = api_url(distroseries.main_archive)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(201, response.status)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "An identical build of this snap package is already pending.",
+            response.body)
+
+    def test_requestBuild_not_owner(self):
+        # If the requester is not the owner or a member of the owner team,
+        # build requests are rejected.
+        other_team = self.factory.makeTeam(displayname="Other Team")
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive_url = api_url(distroseries.main_archive)
+        other_webservice = webservice_for_person(
+            other_team.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+        snap = self.makeSnap(
+            owner=other_team, distroseries=distroseries,
+            processors=[processor], webservice=other_webservice)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person cannot create snap package builds owned by Other "
+            "Team.", response.body)
+
+    def test_requestBuild_archive_disabled(self):
+        # Build requests against a disabled archive are rejected.
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, owner=self.person,
+            enabled=False, displayname="Disabled Archive")
+        archive_url = api_url(archive)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(403, response.status)
+        self.assertEqual("Disabled Archive is disabled.", response.body)
+
+    def test_requestBuild_archive_private_owners_match(self):
+        # Build requests against a private archive are allowed if the Snap
+        # and Archive owners match exactly.
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, owner=self.person,
+            private=True)
+        archive_url = api_url(archive)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(201, response.status)
+
+    def test_requestBuild_archive_private_owners_mismatch(self):
+        # Build requests against a private archive are rejected if the Snap
+        # and Archive owners do not match exactly.
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, private=True)
+        archive_url = api_url(archive)
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=distroarchseries_url, pocket="Release")
+        self.assertEqual(403, response.status)
+        self.assertEqual(
+            "Snap package builds against private archives are only allowed "
+            "if the snap package owner and the archive owner are equal.",
+            response.body)
+
+    def test_getBuilds(self):
+        # The builds, completed_builds, and pending_builds properties are as
+        # expected.
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        distroarchseries_url = api_url(distroarchseries)
+        archives = [
+            self.factory.makeArchive(
+                distribution=distroseries.distribution, owner=self.person)
+            for x in range(4)]
+        archive_urls = [api_url(archive) for archive in archives]
+        snap = self.makeSnap(distroseries=distroseries, processors=[processor])
+        builds = []
+        for archive_url in archive_urls:
+            response = self.webservice.named_post(
+                snap["self_link"], "requestBuild", archive=archive_url,
+                distro_arch_series=distroarchseries_url, pocket="Proposed")
+            self.assertEqual(201, response.status)
+            build = self.webservice.get(
+                response.getHeader("Location")).jsonBody()
+            builds.insert(0, build["self_link"])
+        self.assertEqual(builds, self.getCollectionLinks(snap, "builds"))
+        self.assertEqual([], self.getCollectionLinks(snap, "completed_builds"))
+        self.assertEqual(
+            builds, self.getCollectionLinks(snap, "pending_builds"))
+        snap = self.webservice.get(snap["self_link"]).jsonBody()
+
+        with person_logged_in(self.person):
+            db_snap = getUtility(ISnapSet).getByName(self.person, snap["name"])
+            db_builds = list(db_snap.builds)
+            db_builds[0].updateStatus(
+                BuildStatus.BUILDING, date_started=db_snap.date_created)
+            db_builds[0].updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=db_snap.date_created + timedelta(minutes=10))
+        snap = self.webservice.get(snap["self_link"]).jsonBody()
+        # Builds that have not yet been started are listed last.  This does
+        # mean that pending builds that have never been started are sorted
+        # to the end, but means that builds that were cancelled before
+        # starting don't pollute the start of the collection forever.
+        self.assertEqual(builds, self.getCollectionLinks(snap, "builds"))
+        self.assertEqual(
+            builds[:1], self.getCollectionLinks(snap, "completed_builds"))
+        self.assertEqual(
+            builds[1:], self.getCollectionLinks(snap, "pending_builds"))
+
+        with person_logged_in(self.person):
+            db_builds[1].updateStatus(
+                BuildStatus.BUILDING, date_started=db_snap.date_created)
+            db_builds[1].updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=db_snap.date_created + timedelta(minutes=20))
+        snap = self.webservice.get(snap["self_link"]).jsonBody()
+        self.assertEqual(
+            [builds[1], builds[0], builds[2], builds[3]],
+            self.getCollectionLinks(snap, "builds"))
+        self.assertEqual(
+            [builds[1], builds[0]],
+            self.getCollectionLinks(snap, "completed_builds"))
+        self.assertEqual(
+            builds[2:], self.getCollectionLinks(snap, "pending_builds"))
+
+    def test_query_count(self):
+        # Snap has a reasonable query count.
+        snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
+        url = api_url(snap)
+        logout()
+        store = Store.of(snap)
+        store.flush()
+        store.invalidate()
+        with StormStatementRecorder() as recorder:
+            self.webservice.get(url)
+        self.assertThat(recorder, HasQueryCount(Equals(15)))
