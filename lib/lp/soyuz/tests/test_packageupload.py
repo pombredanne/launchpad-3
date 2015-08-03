@@ -20,8 +20,6 @@ from zope.component import getUtility
 from zope.schema import getFields
 from zope.security.interfaces import Unauthorized as ZopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
-from zope.testbrowser.browser import Browser
-from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -861,14 +859,6 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
-class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
-    """A `mechanize.Browser` that does not handle redirects."""
-
-    default_features = [
-        feature for feature in PublisherMechanizeBrowser.default_features
-        if feature != "_redirect"]
-
-
 class TestPackageUploadWebservice(TestCaseWithFactory):
     """Test the exposure of queue methods to the web service."""
 
@@ -946,17 +936,6 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 distroseries=self.distroseries, **kwargs)
         transaction.commit()
         return upload, self.load(upload, person)
-
-    def makeNonRedirectingBrowser(self, person):
-        # The test browser can only work with the appserver, not the
-        # librarian, so follow one layer of redirection through the
-        # appserver and then ask the librarian for the real file.
-        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
-        browser.handleErrors = False
-        with person_logged_in(person):
-            browser.addHeader(
-                "Authorization", "Basic %s:test" % person.preferredemail.email)
-        return browser
 
     def assertCanOpenRedirectedUrl(self, browser, url):
         redirection = self.assertRaises(HTTPError, browser.open, url)
@@ -1042,7 +1021,7 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in upload.sourcepackagerelease.files]
         self.assertContentEqual(source_file_urls, ws_source_file_urls)
 
-        browser = self.makeNonRedirectingBrowser(person)
+        browser = self.getNonRedirectingBrowser(user=person)
         for ws_source_file_url in ws_source_file_urls:
             self.assertCanOpenRedirectedUrl(browser, ws_source_file_url)
         self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
@@ -1131,7 +1110,7 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in bpr.files]
         self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
 
-        browser = self.makeNonRedirectingBrowser(person)
+        browser = self.getNonRedirectingBrowser(user=person)
         for ws_binary_file_url in ws_binary_file_urls:
             self.assertCanOpenRedirectedUrl(browser, ws_binary_file_url)
         self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
@@ -1294,7 +1273,7 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in upload.customfiles]
         self.assertContentEqual(custom_file_urls, ws_custom_file_urls)
 
-        browser = self.makeNonRedirectingBrowser(person)
+        browser = self.getNonRedirectingBrowser(user=person)
         for ws_custom_file_url in ws_custom_file_urls:
             self.assertCanOpenRedirectedUrl(browser, ws_custom_file_url)
         self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
