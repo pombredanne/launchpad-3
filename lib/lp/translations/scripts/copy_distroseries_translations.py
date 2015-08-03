@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Copy `DistroSeries` translations from its parent series."""
@@ -78,7 +78,9 @@ class SeriesStateKeeper:
 
 
 def copy_distroseries_translations(source, target, txn, logger,
-                                   published_sources_only=False):
+                                   published_sources_only=False,
+                                   check_archive=None,
+                                   check_distroseries=None):
     """Copy translations into a new `DistroSeries`.
 
     Wraps around `copy_active_translations`, but also ensures that the
@@ -109,10 +111,15 @@ def copy_distroseries_translations(source, target, txn, logger,
             " translation state.")
 
         if published_sources_only:
+            if check_archive is None:
+                check_archive = target.main_archive
+            if check_distroseries is None:
+                check_distroseries = target
             spns = bulk.load(
                 SourcePackageName,
-                target.main_archive.getPublishedSources(
-                        distroseries=target, status=active_publishing_status)
+                check_archive.getPublishedSources(
+                        distroseries=check_distroseries,
+                        status=active_publishing_status)
                     .config(distinct=True)
                     .order_by(
                         SourcePackagePublishingHistory.sourcepackagenameID)

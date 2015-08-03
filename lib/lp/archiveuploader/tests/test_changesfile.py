@@ -8,7 +8,11 @@ __metaclass__ = type
 import os
 
 from debian.deb822 import Changes
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 
 from lp.archiveuploader.changesfile import (
@@ -252,8 +256,13 @@ class ChangesFileTests(TestCase):
         self.assertEquals(None, changes.changed_by)
         errors = list(changes.processAddresses())
         self.assertEquals(0, len(errors), "Errors: %r" % errors)
-        self.assertEquals(
-            "Somebody <somebody@ubuntu.com>", changes.changed_by['rfc822'])
+        self.assertThat(
+            changes.changed_by,
+            MatchesDict({
+                "name": Equals(u"Somebody"),
+                "email": Equals(u"somebody@ubuntu.com"),
+                "person": MatchesStructure.byEquality(displayname=u"Somebody"),
+                }))
 
     def test_simulated_changelog(self):
         # The simulated_changelog property returns a changelog entry based on

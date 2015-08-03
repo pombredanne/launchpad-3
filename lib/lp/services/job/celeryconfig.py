@@ -65,21 +65,29 @@ def configure(argv):
         if queue not in celery_queues:
             raise ConfigurationError(
                 'Queue %s is not configured in schema-lazr.conf' % queue)
+        # XXX wgrant 2015-08-03: This should be set in the apply_async
+        # now that we're on Celery 3.1.
         result['CELERYD_TASK_SOFT_TIME_LIMIT'] = config[queue].timeout
         if config[queue].fallback_queue != '':
+            # XXX wgrant 2015-08-03: lazr.jobrunner actually looks for
+            # FALLBACK_QUEUE; this probably isn't doing anything.
             result['FALLBACK'] = config[queue].fallback_queue
+        # XXX wgrant 2015-08-03: This is mostly per-queue because we
+        # can't run *_job and *_job_slow in the same worker, which will be
+        # fixed once the CELERYD_TASK_SOFT_TIME_LIMIT override is gone.
         result['CELERYD_CONCURRENCY'] = config[queue].concurrency
 
-    host, port = config.rabbitmq.host.split(':')
-
-    result['BROKER_HOST'] = host
-    result['BROKER_PORT'] = port
-    result['BROKER_USER'] = config.rabbitmq.userid
-    result['BROKER_PASSWORD'] = config.rabbitmq.password
-    result['BROKER_VHOST'] = config.rabbitmq.virtual_host
+    result['BROKER_URL'] = 'amqp://%s:%s@%s/%s' % (
+        config.rabbitmq.userid, config.rabbitmq.password,
+        config.rabbitmq.host, config.rabbitmq.virtual_host)
+    # XXX wgrant 2015-08-03: Celery 3.2 won't read pickles by default,
+    # and Celery 3.1 can send only pickles for some things. Let's accept
+    # both until they sort things out.
+    result['CELERY_ACCEPT_CONTENT'] = ['pickle', 'json']
     result['CELERY_CREATE_MISSING_QUEUES'] = False
     result['CELERY_DEFAULT_EXCHANGE'] = 'job'
     result['CELERY_DEFAULT_QUEUE'] = 'launchpad_job'
+    result['CELERY_ENABLE_UTC'] = True
     result['CELERY_IMPORTS'] = ("lp.services.job.celeryjob", )
     result['CELERY_QUEUES'] = celery_queues
     result['CELERY_RESULT_BACKEND'] = 'amqp'

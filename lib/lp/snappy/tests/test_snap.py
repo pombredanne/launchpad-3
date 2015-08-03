@@ -36,6 +36,7 @@ from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapSet,
     ISnapView,
+    NoSourceForSnap,
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildDisallowedArchitecture,
@@ -72,7 +73,7 @@ class TestSnapFeatureFlag(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertRaises(
             SnapFeatureDisabled, getUtility(ISnapSet).new,
-            person, person, None, None, True, None)
+            person, person, None, None, branch=self.factory.makeAnyBranch())
 
 
 class TestSnap(TestCaseWithFactory):
@@ -419,6 +420,15 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(ref.repository, snap.git_repository)
         self.assertEqual(ref.path, snap.git_path)
         self.assertTrue(snap.require_virtualized)
+
+    def test_creation_no_source(self):
+        # Attempting to create a Snap with neither a Bazaar branch nor a Git
+        # repository fails.
+        registrant = self.factory.makePerson()
+        self.assertRaises(
+            NoSourceForSnap, getUtility(ISnapSet).new,
+            registrant, registrant, self.factory.makeDistroSeries(),
+            self.factory.getUniqueString(u"snap-name"))
 
     def test_exists(self):
         # ISnapSet.exists checks for matching Snaps.

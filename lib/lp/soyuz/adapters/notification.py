@@ -12,7 +12,6 @@ __all__ = [
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formataddr
 import os
 
 from zope.component import getUtility
@@ -21,8 +20,9 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import (
+    parse_maintainer_bytes,
     ParseMaintError,
-    safe_fix_maintainer,
+    rfc822_encode_address,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -229,11 +229,11 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     info = fetch_information(spr, bprs, changes)
     from_addr = info['changedby']
-    from_email = info['changedby_email']
-    if announce_from_person is not None:
-        if announce_from_person.preferredemail is not None:
-            from_addr = format_address_for_person(announce_from_person)
-            from_email = announce_from_person.preferredemail.email
+    if (announce_from_person is not None
+            and announce_from_person.preferredemail is not None):
+        from_addr = (
+            announce_from_person.displayname,
+            announce_from_person.preferredemail.email)
 
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
@@ -242,7 +242,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         and not archive.is_ppa
         and pocket != PackagePublishingPocket.BACKPORTS
         and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
-        and not is_auto_sync_upload(spr, bprs, pocket, from_email)):
+        and not is_auto_sync_upload(spr, bprs, pocket, from_addr)):
         name = None
         bcc_addr = None
         if spr:
@@ -255,8 +255,9 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
                 bcc_addr = email_base.format(package_name=name)
 
         build_and_send_mail(
-            'announcement', [str(distroseries.changeslist)], from_addr,
-            bcc_addr, previous_version=previous_version)
+            'announcement', [str(distroseries.changeslist)],
+            format_address(*from_addr) if from_addr else None, bcc_addr,
+            previous_version=previous_version)
 
 
 def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
@@ -284,9 +285,22 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     if spr:
         information['SPR_URL'] = canonical_url(
             distroseries.distribution.getSourcePackageRelease(spr))
-    changedby_displayname = info['changedby_displayname']
-    if changedby_displayname:
-        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby_displayname
+
+    # Some syncs (e.g. from Debian) will involve packages whose
+    # changed-by person was auto-created in LP and hence does not have a
+    # preferred email address set.  We'll get a None here.
+    changedby_person = addr_to_person(info['changedby'])
+    if info['changedby']:
+        information['CHANGEDBY'] = (
+            '\nChanged-By: %s' % rfc822_encode_address(*info['changedby']))
+    if (blamer is not None and blamer != changedby_person
+            and blamer.preferredemail):
+        information['SIGNER'] = '\nSigned-By: %s' % rfc822_encode_address(
+            blamer.displayname, blamer.preferredemail.email)
+    if info['maintainer'] and info['maintainer'] != info['changedby']:
+        information['MAINTAINER'] = (
+            '\nMaintainer: %s' % rfc822_encode_address(*info['maintainer']))
+
     origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
@@ -297,20 +311,6 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
 
-    # Some syncs (e.g. from Debian) will involve packages whose
-    # changed-by person was auto-created in LP and hence does not have a
-    # preferred email address set.  We'll get a None here.
-    changedby_person = email_to_person(info['changedby_email'])
-
-    if blamer is not None and blamer != changedby_person:
-        signer_signature = person_to_email(blamer)
-        if signer_signature != info['changedby']:
-            information['SIGNER'] = '\nSigned-By: %s' % signer_signature
-    # Add maintainer if present and different from changed-by.
-    maintainer_displayname = info['maintainer_displayname']
-    if (maintainer_displayname and
-            maintainer_displayname != changedby_displayname):
-        information['MAINTAINER'] = '\nMaintainer: %s' % maintainer_displayname
     return get_template(archive, action) % information
 
 
@@ -461,8 +461,8 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
     candidate_recipients = [blamer]
     info = fetch_information(spr, bprs, changes)
 
-    changer = email_to_person(info['changedby_email'])
-    maintainer = email_to_person(info['maintainer_email'])
+    changer = addr_to_person(info['changedby'])
+    maintainer = addr_to_person(info['maintainer'])
 
     if blamer is None and not archive.is_copy:
         debug(logger, "Changes file is unsigned; adding changer as recipient.")
@@ -555,52 +555,26 @@ def build_summary(spr, files, action):
     return summary
 
 
-def email_to_person(email):
-    """Return an `IPerson` given an email address (without a name).
+def addr_to_person(addr):
+    """Return an `IPerson` given a name and email address.
 
-    :param email: Potential email address.
+    :param addr: (name, email) tuple. The name is ignored.
     :return: `IPerson` with the given email address.  None if there
-        isn't one, or if `email` is None.
+        isn't one, or if `addr` is None.
     """
-    if not email:
+    if addr is None:
         return None
-    return getUtility(IPersonSet).getByEmail(email)
+    return getUtility(IPersonSet).getByEmail(addr[1])
 
 
-def person_to_email(person):
-    """Return a string of full name <email address> given an IPerson."""
-    if person and person.preferredemail:
-        # This will use email.header to encode any non-ASCII characters.
-        return format_address_for_person(person)
-
-
-def fix_email(fullemail, field_name):
-    """Turn an email address from .changes into various useful forms.
-
-    The input address may be None, or anything that `fix_maintainer`
-    understands.
-
-    :return: A tuple of (RFC2047-compatible address, Unicode
-        RFC822-compatible address, email).
-    """
-    if not fullemail:
-        return None, None, None
-
-    try:
-        rfc822, rfc2047, _, email = safe_fix_maintainer(fullemail, field_name)
-        return rfc2047, rfc822.decode('utf-8'), email
-    except ParseMaintError:
-        return None, None, None
-
-
-def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
+def is_auto_sync_upload(spr, bprs, pocket, changed_by):
     """Return True if this is a (Debian) auto sync upload.
 
     Sync uploads are source-only, unsigned and not targeted to
     the security pocket. The Changed-By field is also the Katie
     user (archive@ubuntu.com).
     """
-    changed_by = email_to_person(changed_by_email)
+    changed_by = addr_to_person(changed_by)
     return (
         spr and
         not bprs and
@@ -609,50 +583,40 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
 
 
 def fetch_information(spr, bprs, changes, previous_version=None):
-    changedby = None
-    changedby_displayname = None
-    changedby_email = None
-    maintainer = None
-    maintainer_displayname = None
-    maintainer_email = None
+    changelog = date = changedby = maintainer = None
 
     if changes:
-        changesfile = ChangesFile.formatChangesComment(
+        changelog = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         date = changes.get('Date')
-        changedby, changedby_displayname, changedby_email = fix_email(
-            changes.get('Changed-By'), 'Changed-By')
-        maintainer, maintainer_displayname, maintainer_email = fix_email(
-            changes.get('Maintainer'), 'Maintainer')
+        try:
+            changedby = parse_maintainer_bytes(
+                changes.get('Changed-By'), 'Changed-By')
+        except ParseMaintError:
+            pass
+        try:
+            maintainer = parse_maintainer_bytes(
+                changes.get('Maintainer'), 'Maintainer')
+        except ParseMaintError:
+            pass
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
-        changesfile = spr.aggregate_changelog(previous_version)
+        changelog = spr.aggregate_changelog(previous_version)
         date = spr.dateuploaded
-        changedby = person_to_email(spr.creator)
-        maintainer = person_to_email(spr.maintainer)
-        if changedby:
-            addr = formataddr((spr.creator.displayname,
-                               spr.creator.preferredemail.email))
-            changedby_displayname = sanitize_string(addr)
-            changedby_email = spr.creator.preferredemail.email
-        if maintainer:
-            addr = formataddr((spr.maintainer.displayname,
-                               spr.maintainer.preferredemail.email))
-            maintainer_displayname = sanitize_string(addr)
-            maintainer_email = spr.maintainer.preferredemail.email
-    else:
-        changesfile = date = None
+        if spr.creator and spr.creator.preferredemail:
+            changedby = (
+                spr.creator.displayname, spr.creator.preferredemail.email)
+        if spr.maintainer and spr.maintainer.preferredemail:
+            maintainer = (
+                spr.maintainer.displayname,
+                spr.maintainer.preferredemail.email)
 
     return {
-        'changelog': changesfile,
+        'changelog': changelog,
         'date': date,
         'changedby': changedby,
-        'changedby_displayname': changedby_displayname,
-        'changedby_email': changedby_email,
         'maintainer': maintainer,
-        'maintainer_displayname': maintainer_displayname,
-        'maintainer_email': maintainer_email,
         }
 
 

@@ -51,6 +51,7 @@ from lp.snappy.interfaces.snap import (
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
+    NoSourceForSnap,
     NoSuchSnap,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
@@ -290,6 +291,9 @@ class SnapSet:
                 raise SnapNotOwner(
                     "%s cannot create snap packages owned by %s." %
                     (registrant.displayname, owner.displayname))
+
+        if branch is None and git_repository is None:
+            raise NoSourceForSnap
 
         store = IMasterStore(Snap)
         snap = Snap(

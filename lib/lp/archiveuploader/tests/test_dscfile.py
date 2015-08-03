@@ -187,6 +187,16 @@ class TestSignableTagFile(TestCaseWithFactory):
             UploadError,
             self.makeSignableTagFile().parseAddress, "invalid@bad-address")
 
+    def test_parseAddress_decodes_utf8(self):
+        name = u'B\u0105r'
+        email = u'bar@example.com'
+        results = self.makeSignableTagFile().parseAddress(
+            '%s <%s>' % (name.encode('utf-8'), email.encode('utf-8')))
+        self.assertEqual(email, results['email'])
+        self.assertEqual(name, results['name'])
+        self.assertEqual(name, results['person'].displayname)
+        self.assertEqual(email, results['person'].guessedemails[0].email)
+
 
 class TestDscFileLibrarian(TestCaseWithFactory):
     """Tests for DscFile that may use the Librarian."""

@@ -46,6 +46,7 @@ from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
     LeaseHeld,
     )
+from pytz import utc
 from storm.exceptions import LostObjectError
 import transaction
 from twisted.internet import reactor
@@ -109,6 +110,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
     celery_responses = None
 
     retry_delay = timedelta(minutes=10)
+    soft_time_limit = timedelta(minutes=5)
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -226,12 +228,15 @@ class BaseRunnableJob(BaseRunnableJobSource):
             cls = CeleryRunJob
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
-        if self.job.lease_expires is not None:
-            eta = datetime.now() + self.retry_delay
-        else:
-            eta = None
+        eta = self.job.scheduled_start
+        # Don't schedule the job while its lease is still held, or
+        # celery will skip it.
+        if (self.job.lease_expires is not None
+                and (eta is None or eta < self.job.lease_expires)):
+            eta = self.job.lease_expires
         return cls.apply_async(
             (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta,
+            soft_time_limit=self.soft_time_limit.total_seconds(),
             task_id=self.taskId())
 
     def getDBClass(self):
@@ -254,6 +259,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
+        if self.job.attempt_count > 0:
+            self.job.scheduled_start = datetime.now(utc) + self.retry_delay
         self.job.queue(
             manage_transaction, abort_transaction,
             add_commit_hook=self.celeryRunOnCommit)

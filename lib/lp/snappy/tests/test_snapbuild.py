@@ -93,10 +93,10 @@ class TestSnapBuild(TestCaseWithFactory):
         self.assertEqual(bq, self.build.buildqueue_record)
 
     def test_current_component_primary(self):
-        # SnapBuilds for primary archives always build in universe for the
+        # SnapBuilds for primary archives always build in multiverse for the
         # time being.
         self.assertEqual(ArchivePurpose.PRIMARY, self.build.archive.purpose)
-        self.assertEqual("universe", self.build.current_component.name)
+        self.assertEqual("multiverse", self.build.current_component.name)
 
     def test_current_component_ppa(self):
         # PPAs only have indices for main, so SnapBuilds for PPAs always

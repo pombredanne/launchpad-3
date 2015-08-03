@@ -347,6 +347,23 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.updateDependencies()
         self.assertEqual(u'dep-tools', depwait_build.dependencies)
 
+    def testAptVersionConstraints(self):
+        # launchpad-buildd can return apt-style version constraints
+        # using < and > rather than << and >>.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (> 666), dep-bin (< 777)'})
+        depwait_build.updateDependencies()
+        self.assertEqual(depwait_build.dependencies, u'dep-bin (> 666)')
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (> 665)'})
+        depwait_build.updateDependencies()
+        self.assertEqual(depwait_build.dependencies, u'')
+
 
 class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
 

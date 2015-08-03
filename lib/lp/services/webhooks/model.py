@@ -10,7 +10,10 @@ __all__ = [
     'WebhookTargetMixin',
     ]
 
-import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import iso8601
 from lazr.delegates import delegate_to
@@ -18,7 +21,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-import pytz
+from pytz import utc
 from storm.properties import (
     Bool,
     DateTime,
@@ -60,6 +63,8 @@ from lp.services.webhooks.interfaces import (
     IWebhookJob,
     IWebhookJobSource,
     IWebhookSource,
+    WebhookDeliveryFailure,
+    WebhookDeliveryRetry,
     WebhookFeatureDisabled,
     )
 
@@ -87,8 +92,8 @@ class Webhook(StormBase):
 
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
-    date_created = DateTime(tzinfo=pytz.UTC, allow_none=False)
-    date_last_modified = DateTime(tzinfo=pytz.UTC, allow_none=False)
+    date_created = DateTime(tzinfo=utc, allow_none=False)
+    date_last_modified = DateTime(tzinfo=utc, allow_none=False)
 
     delivery_url = Unicode(allow_none=False)
     active = Bool(default=True, allow_none=False)
@@ -247,7 +252,7 @@ class WebhookJob(StormBase):
     def deleteByIDs(webhookjob_ids):
         """See `IWebhookJobSource`."""
         # Assumes that Webhook's PK is its FK to Job.id.
-        webookjob_ids = list(webhookjob_ids)
+        webhookjob_ids = list(webhookjob_ids)
         IStore(WebhookJob).find(
             WebhookJob, WebhookJob.job_id.is_in(webhookjob_ids)).remove()
         IStore(Job).find(Job, Job.id.is_in(webhookjob_ids)).remove()
@@ -288,6 +293,13 @@ class WebhookDeliveryJob(WebhookJobDerived):
 
     class_job_type = WebhookJobType.DELIVERY
 
+    retry_error_types = (WebhookDeliveryRetry,)
+    user_error_types = (WebhookDeliveryFailure,)
+
+    # Effectively infinite, as we give up by checking
+    # retry_automatically and raising a fatal exception instead.
+    max_retries = 1000
+
     config = config.IWebhookDeliveryJobSource
 
     @classmethod
@@ -306,10 +318,25 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def successful(self):
         if 'result' not in self.json_data:
             return None
-        if 'connection_error' in self.json_data['result']:
-            return False
+        return self.failure_detail is None
+
+    @property
+    def failure_detail(self):
+        if 'result' not in self.json_data:
+            return None
+        connection_error = self.json_data['result'].get('connection_error')
+        if connection_error is not None:
+            return 'Connection error: %s' % connection_error
         status_code = self.json_data['result']['response']['status_code']
-        return 200 <= status_code <= 299
+        if 200 <= status_code <= 299:
+            return None
+        return 'Bad HTTP response: %d' % status_code
+
+    @property
+    def date_first_sent(self):
+        if 'date_first_sent' not in self.json_data:
+            return None
+        return iso8601.parse_date(self.json_data['date_first_sent'])
 
     @property
     def date_sent(self):
@@ -320,6 +347,29 @@ class WebhookDeliveryJob(WebhookJobDerived):
     @property
     def payload(self):
         return self.json_data['payload']
+
+    @property
+    def _time_since_first_attempt(self):
+        return datetime.now(utc) - (self.date_first_sent or self.date_created)
+
+    def retry(self):
+        """See `IWebhookDeliveryJob`."""
+        # Unset any retry delay and reset attempt_count to prevent
+        # queue() from delaying it again.
+        self.scheduled_start = None
+        self.attempt_count = 0
+        self.queue()
+
+    @property
+    def retry_automatically(self):
+        return self._time_since_first_attempt < timedelta(days=1)
+
+    @property
+    def retry_delay(self):
+        if self._time_since_first_attempt < timedelta(hours=1):
+            return timedelta(minutes=5)
+        else:
+            return timedelta(hours=1)
 
     def run(self):
         result = getUtility(IWebhookClient).deliver(
@@ -334,5 +384,13 @@ class WebhookDeliveryJob(WebhookJobDerived):
                     del result[direction][attr]
         updated_data = self.json_data
         updated_data['result'] = result
-        updated_data['date_sent'] = datetime.datetime.now(pytz.UTC).isoformat()
+        updated_data['date_sent'] = datetime.now(utc).isoformat()
+        if 'date_first_sent' not in updated_data:
+            updated_data['date_first_sent'] = updated_data['date_sent']
         self.json_data = updated_data
+
+        if not self.successful:
+            if self.retry_automatically:
+                raise WebhookDeliveryRetry()
+            else:
+                raise WebhookDeliveryFailure(self.failure_detail)

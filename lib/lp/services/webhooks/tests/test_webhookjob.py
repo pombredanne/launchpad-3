@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
+
 from httmock import (
     HTTMock,
     urlmatch,
@@ -16,8 +18,10 @@ from testtools.matchers import (
     Contains,
     ContainsDict,
     Equals,
+    GreaterThan,
     Is,
     KeysEqual,
+    LessThan,
     MatchesAll,
     MatchesStructure,
     Not,
@@ -235,15 +239,15 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([], oopses.oopses)
 
     def test_run_404(self):
-        # The job succeeds even if the response is an error. A job only
-        # fails if it was definitely a problem on our end.
+        # A request that returns a non-2xx response is a failure and
+        # gets retried.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(response_status=404)
         self.assertThat(
             job,
             MatchesStructure(
-                status=Equals(JobStatus.COMPLETED),
-                pending=Equals(False),
+                status=Equals(JobStatus.WAITING),
+                pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
                 json_data=ContainsDict(
@@ -256,16 +260,16 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([], oopses.oopses)
 
     def test_run_connection_error(self):
-        # Jobs that fail to connecthave a connection_error rather than a
-        # response.
+        # Jobs that fail to connect have a connection_error rather than a
+        # response. They too trigger a retry.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(
                 raises=requests.ConnectionError('Connection refused'))
         self.assertThat(
             job,
             MatchesStructure(
-                status=Equals(JobStatus.COMPLETED),
-                pending=Equals(False),
+                status=Equals(JobStatus.WAITING),
+                pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
                 json_data=ContainsDict(
@@ -298,6 +302,134 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(
             'No webhook proxy configured.', oopses.oopses[0]['value'])
 
+    def test_date_first_sent(self):
+        job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertEqual(job.date_first_sent, job.date_sent)
+        orig_first_sent = job.date_first_sent
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(1, job.attempt_count)
+        job.lease_expires = None
+        job.scheduled_start = None
+        with dbuser("webhookrunner"):
+            JobRunner([job]).runAll()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(2, job.attempt_count)
+        self.assertNotEqual(job.date_first_sent, job.date_sent)
+        self.assertEqual(orig_first_sent, job.date_first_sent)
+
+    def test_retry_delay(self):
+        # Deliveries are retried every 5 minutes for the first hour, and
+        # every hour thereafter.
+        job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertEqual(timedelta(minutes=5), job.retry_delay)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=30)).isoformat()
+        self.assertEqual(timedelta(minutes=5), job.retry_delay)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=30)).isoformat()
+        self.assertEqual(timedelta(hours=1), job.retry_delay)
+
+    def test_retry_automatically(self):
+        # Deliveries are automatically retried until 24 hours after the
+        # initial attempt.
+        job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertTrue(job.retry_automatically)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=24)).isoformat()
+        self.assertFalse(job.retry_automatically)
+
+    def runJob(self, job):
+        with dbuser("webhookrunner"):
+            runner = JobRunner([job])
+            runner.runAll()
+        job.lease_expires = None
+        if len(runner.completed_jobs) == 1 and not runner.incomplete_jobs:
+            return True
+        if len(runner.incomplete_jobs) == 1 and not runner.completed_jobs:
+            return False
+        if not runner.incomplete_jobs and not runner.completed_jobs:
+            return None
+        raise Exception("Unexpected jobs.")
+
+    def test_automatic_retries(self):
+        hook = self.factory.makeWebhook()
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        client = MockWebhookClient(response_status=404)
+        self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
+
+        # The first attempt fails but schedules a retry five minutes later.
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(False, job.successful)
+        self.assertTrue(job.pending)
+        self.assertIsNot(None, job.date_sent)
+        last_date_sent = job.date_sent
+
+        # Pretend we're five minutes in the future and try again. The
+        # job will be retried again.
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=5)).isoformat()
+        job.scheduled_start -= timedelta(minutes=5)
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(False, job.successful)
+        self.assertTrue(job.pending)
+        self.assertThat(job.date_sent, GreaterThan(last_date_sent))
+
+        # If the job was first tried a day ago, the next attempt gives up.
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=24)).isoformat()
+        job.scheduled_start -= timedelta(hours=24)
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertEqual(False, job.successful)
+        self.assertFalse(job.pending)
+
+    def test_manual_retries(self):
+        hook = self.factory.makeWebhook()
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        client = MockWebhookClient(response_status=404)
+        self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
+
+        # Simulate a first attempt failure.
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIsNot(None, job.scheduled_start)
+
+        # A manual retry brings the scheduled start forward.
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIs(None, job.scheduled_start)
+
+        # Force the next attempt to fail hard by pretending it was more
+        # than 24 hours later.
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=24)).isoformat()
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.FAILED, job.status)
+
+        # A manual retry brings the job out of FAILED and schedules it
+        # to run as soon as possible. If it fails again, it fails hard;
+        # the initial attempt more than 24 hours ago is remembered.
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIs(None, job.scheduled_start)
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.FAILED, job.status)
+
+        # A completed job can be retried just like a failed one. The
+        # endpoint may have erroneously returned a 200 without recording
+        # the event.
+        client.response_status = 200
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(True, self.runJob(job))
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertEqual(True, self.runJob(job))
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+
 
 class TestViaCronscript(TestCaseWithFactory):
 
@@ -313,9 +445,12 @@ class TestViaCronscript(TestCaseWithFactory):
             'cronscripts/process-job-source.py', ['IWebhookDeliveryJobSource'],
             expect_returncode=0)
         self.assertEqual('', stdout)
-        self.assertIn('INFO    Ran 1 WebhookDeliveryJob jobs.\n', stderr)
+        self.assertIn(
+            'WARNING Scheduling retry due to WebhookDeliveryRetry', stderr)
+        self.assertIn(
+            'INFO    1 WebhookDeliveryJob jobs did not complete.\n', stderr)
 
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(JobStatus.WAITING, job.status)
         self.assertIn(
             'Cannot connect to proxy',
             job.json_data['result']['connection_error'])
@@ -335,7 +470,7 @@ class TestViaCelery(TestCaseWithFactory):
             job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
             transaction.commit()
 
-        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(JobStatus.WAITING, job.status)
         self.assertIn(
             'Cannot connect to proxy',
             job.json_data['result']['connection_error'])

@@ -21,7 +21,6 @@ import string
 import urllib
 
 from apt_pkg import (
-    parse_src_depends,
     upstream_version,
     version_compare,
     )
@@ -505,12 +504,10 @@ class SourcePackageView(LaunchpadView):
     def _relationship_parser(self, content):
         """Wrap the relationship_builder for SourcePackages.
 
-        Define apt_pkg.parse_src_depends as a relationship 'parser' and
-        IDistroSeries.getBinaryPackage as 'getter'.
+        Define IDistroSeries.getBinaryPackage as a relationship 'getter'.
         """
         getter = self.context.distroseries.getBinaryPackage
-        parser = parse_src_depends
-        return relationship_builder(content, parser=parser, getter=getter)
+        return relationship_builder(content, getter=getter)
 
     @property
     def builddepends(self):

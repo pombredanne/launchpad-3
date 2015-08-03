@@ -3,6 +3,10 @@
 
 """Tests for job-running facilities."""
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
 import re
 import sys
@@ -13,7 +17,13 @@ from lazr.jobrunner.jobrunner import (
     LeaseHeld,
     SuspendJobException,
     )
-from testtools.matchers import MatchesRegex
+from pytz import UTC
+from testtools.matchers import (
+    GreaterThan,
+    LessThan,
+    MatchesAll,
+    MatchesRegex,
+    )
 from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implementer
@@ -325,9 +335,16 @@ class TestJobRunner(TestCaseWithFactory):
         """If a job raises a retry_error, it should be re-queued."""
         job = RaisingRetryJob('completion')
         runner = JobRunner([job])
+        self.assertIs(None, job.scheduled_start)
         with self.expectedLog('Scheduling retry due to RetryError'):
             runner.runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
+        expected_delay = datetime.now(UTC) + timedelta(minutes=10)
+        self.assertThat(
+            job.scheduled_start,
+            MatchesAll(
+                GreaterThan(expected_delay - timedelta(minutes=1)),
+                LessThan(expected_delay + timedelta(minutes=1))))
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
 

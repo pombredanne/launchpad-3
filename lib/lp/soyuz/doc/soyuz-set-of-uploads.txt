@@ -337,7 +337,7 @@ Check the email recipient for displayname containing special chars,
     Date: Tue, 25 Apr 2006 10:36:14 -0300
     Changed-By: cprov@ubuntu.com (Celso R. Providelo)
     Maintainer: Launchpad team <launchpad@lists.canonical.com>
-    Signed-By: "Foo B. Bar" <foo.bar@canonical.com>
+    Signed-By: foo.bar@canonical.com (Foo B. Bar)
     http://launchpad.dev/ubuntutest/+source/bar/1.0-4
     <BLANKLINE>
     =3D=3D

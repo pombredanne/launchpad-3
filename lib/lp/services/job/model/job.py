@@ -102,8 +102,8 @@ class Job(SQLBase):
              JobStatus.FAILED,
              JobStatus.SUSPENDED,
              JobStatus.WAITING),
-        JobStatus.FAILED: (),
-        JobStatus.COMPLETED: (),
+        JobStatus.FAILED: (JobStatus.WAITING,),
+        JobStatus.COMPLETED: (JobStatus.WAITING,),
         JobStatus.SUSPENDED:
             (JobStatus.WAITING,),
         }
@@ -129,7 +129,11 @@ class Job(SQLBase):
     @property
     def is_runnable(self):
         """See `IJob`."""
-        return self.status == JobStatus.WAITING
+        if self.status != JobStatus.WAITING:
+            return False
+        if self.scheduled_start is None:
+            return True
+        return self.scheduled_start <= datetime.datetime.now(UTC)
 
     @classmethod
     def createMultiple(self, store, num_jobs, requester=None):
@@ -199,7 +203,8 @@ class Job(SQLBase):
                 transaction.abort()
             # Commit the transaction to update the DB time.
             transaction.commit()
-        self._set_status(JobStatus.WAITING)
+        if self.status != JobStatus.WAITING:
+            self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
         if add_commit_hook is not None:
             add_commit_hook()

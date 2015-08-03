@@ -12,6 +12,7 @@ __all__ = [
 
 import operator as std_operator
 
+from debian.deb822 import PkgRelation
 from zope.interface import implementer
 
 from lp.services.webapp import canonical_url
@@ -21,11 +22,11 @@ from lp.soyuz.interfaces.packagerelationship import (
     )
 
 
-def relationship_builder(relationship_line, parser, getter):
+def relationship_builder(relationship_line, getter):
     """Parse relationship_line into a IPackageRelationshipSet.
 
-    'relationship_line' is parsed via given 'parser' funcion
-    It also lookup the corresponding URL via the given 'getter'.
+    'relationship_line' is parsed via PkgRelation.parse_relations.
+    It also looks up the corresponding URL via the given 'getter'.
     Return empty list if no line is given.
     """
     relationship_set = PackageRelationshipSet()
@@ -34,20 +35,20 @@ def relationship_builder(relationship_line, parser, getter):
         return relationship_set
 
     parsed_relationships = [
-        token[0] for token in parser(relationship_line)]
+        token[0] for token in PkgRelation.parse_relations(relationship_line)]
 
-    for name, version, operator in parsed_relationships:
+    for rel in parsed_relationships:
+        name = rel['name']
         target_object = getter(name)
         if target_object is not None:
             url = canonical_url(target_object)
         else:
             url = None
-        # The apt_pkg 0.8 API returns '<' and '>' rather than the '<<' and
-        # '>>' form used in control files.
-        if operator == '<':
-            operator = '<<'
-        elif operator == '>':
-            operator = '>>'
+        if rel['version'] is None:
+            operator = u''
+            version = u''
+        else:
+            operator, version = rel['version']
         relationship_set.add(name, operator, version, url)
 
     return relationship_set
