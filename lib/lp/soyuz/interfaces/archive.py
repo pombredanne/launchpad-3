@@ -2290,6 +2290,8 @@ def validate_external_dependencies(ext_deps):
     :param ext_deps: The dependencies form field to check.
     """
     errors = []
+    if ext_deps is None:
+        return errors
     # The field can consist of multiple entries separated by
     # newlines, so process each in turn.
     for dep in ext_deps.splitlines():
