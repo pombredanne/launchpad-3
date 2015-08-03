@@ -109,6 +109,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     celery_responses = None
 
+    lease_duration = timedelta(minutes=5)
     retry_delay = timedelta(minutes=10)
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
@@ -191,6 +192,11 @@ class BaseRunnableJob(BaseRunnableJobSource):
         """Generate an OOPS report using the given OOPS configuration."""
         return oops_config.create(
             context=dict(exc_info=info))
+
+    def acquireLease(self, duration=None):
+        if duration is None:
+            duration = self.lease_duration.total_seconds()
+        self.job.acquireLease(duration)
 
     def taskId(self):
         """Return a task ID that gives a clue what this job is about.

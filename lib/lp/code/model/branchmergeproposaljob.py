@@ -342,6 +342,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     max_retries = 20
 
+    lease_duration = timedelta(minutes=10)
+
     def checkReady(self):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
@@ -356,9 +358,6 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             if bmp.source_branch.pending_writes:
                 raise BranchHasPendingWrites(
                     'The source branch of %s has pending writes.' % url)
-
-    def acquireLease(self, duration=600):
-        return self.job.acquireLease(duration)
 
     def run(self):
         """See `IRunnableJob`."""
@@ -577,8 +576,7 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
 
     config = config.IBranchMergeProposalJobSource
 
-    def acquireLease(self, duration=600):
-        return self.job.acquireLease(duration)
+    lease_duration = timedelta(minutes=10)
 
     def run(self):
         revision_set = getUtility(IRevisionSet)
