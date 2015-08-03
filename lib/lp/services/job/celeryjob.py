@@ -114,8 +114,8 @@ class RunMissingReady(Task):
             info('Scheduled %d missing jobs.', count)
             transaction.commit()
 
-    def apply_async(self, args=None, kwargs=None, task_id=None, publisher=None,
-                    connection=None, router=None, queues=None, **options):
+    def apply_async(self, args=None, kwargs=None, task_id=None, producer=None,
+                    link=None, link_error=None, **options):
         """Create a task_id if none is specified.
 
         Override the quite generic default task_id with one containing
@@ -126,8 +126,7 @@ class RunMissingReady(Task):
         if task_id is None:
             task_id = '%s_%s' % (self.__class__.__name__, uuid4())
         return super(RunMissingReady, self).apply_async(
-            args, kwargs, task_id, publisher, connection, router, queues,
-            **options)
+            args, kwargs, task_id, producer, link, link_error, **options)
 
 
 needs_zcml = True
