@@ -133,7 +133,7 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
 
 
 def expand_dependencies(archive, distro_arch_series, pocket, component,
-                        source_package_name):
+                        source_package_name, tools_archive=None):
     """Return the set of dependency archives, pockets and components.
 
     :param archive: the context `IArchive`.
@@ -141,6 +141,8 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
     :param pocket: the context `PackagePublishingPocket`.
     :param component: the context `IComponent`.
     :param source_package_name: A source package name (as text)
+    :param tools_archive: if not None, an archive to use as an additional
+        dependency for build tools, just before the default primary archive.
     :return: a list of (archive, distro_arch_series, pocket, [component]),
         representing the dependencies defined by the given build context.
     """
@@ -172,6 +174,15 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
                 (archive_dependency.dependency, distro_arch_series, pocket,
                  components))
 
+    # Consider build tools archive dependencies.
+    if tools_archive is not None:
+        components = [
+            component.name for component in tools_archive.getComponentsForSeries(
+                distro_series)]
+        deps.append(
+            (tools_archive, distro_arch_series,
+             PackagePublishingPocket.RELEASE, components))
+
     # Consider primary archive dependency override. Add the default
     # primary archive dependencies if it's not present.
     if archive.getArchiveDependency(
@@ -201,7 +212,8 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
     return deps
 
 
-def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
+def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
+                                  tools_archive=None):
     """Return the sources_list entries required to build the given item.
 
     The entries are returned in the order that is most useful;
@@ -213,11 +225,14 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     :param build: a context `IBuild`.
     :param distroarchseries: A `IDistroArchSeries`
     :param sourcepackagename: A source package name (as text)
+    :param tools_archive: if not None, an archive to use as an additional
+        dependency for build tools, just before the default primary archive.
     :return: a deb sources_list entries (lines).
     """
     deps = expand_dependencies(
         build.archive, distroarchseries, build.pocket,
-        build.current_component, sourcepackagename)
+        build.current_component, sourcepackagename,
+        tools_archive=tools_archive)
     sources_list_lines = \
         _get_sources_list_for_dependencies(deps)
 

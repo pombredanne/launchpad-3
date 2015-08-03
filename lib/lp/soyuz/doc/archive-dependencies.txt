@@ -499,6 +499,34 @@ Now builds in Celso's PPA will use the external dependencies.
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
+    >>> cprov.archive.external_dependencies = None
+
+
+== Tools archives ==
+
+We can force a "tools archive" to be added to the sources.list, which is
+useful for specialised build types.
+
+    >>> tools_archive = factory.makeArchive(
+    ...     distribution=ubuntu, owner=cprov, name="tools",
+    ...     purpose=ArchivePurpose.PPA)
+    >>> pub_binaries = test_publisher.getPubBinaries(
+    ...     binaryname="tool", archive=tools_archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> for line in get_sources_list_for_building(
+    ...         a_build, a_build.distro_arch_series,
+    ...         a_build.source_package_release.name,
+    ...         tools_archive=tools_archive):
+    ...     print line
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/tools/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
+        main restricted universe multiverse
+
 
 == Overlays ==
 
