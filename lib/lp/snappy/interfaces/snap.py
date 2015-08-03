@@ -16,6 +16,7 @@ __all__ = [
     'SNAP_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
+    'SnapBuildDisallowedArchitecture',
     'SnapFeatureDisabled',
     'SnapNotOwner',
     ]
@@ -81,6 +82,15 @@ class SnapBuildArchiveOwnerMismatch(Forbidden):
         super(SnapBuildArchiveOwnerMismatch, self).__init__(
             "Snap package builds against private archives are only allowed "
             "if the snap package owner and the archive owner are equal.")
+
+
+class SnapBuildDisallowedArchitecture(Exception):
+    """A build was requested for a disallowed architecture."""
+
+    def __init__(self, das):
+        super(SnapBuildDisallowedArchitecture, self).__init__(
+            "This snap package is not allowed to build for %s." %
+            das.displayname)
 
 
 class SnapFeatureDisabled(Unauthorized):

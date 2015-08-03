@@ -4536,7 +4536,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSnap(self, registrant=None, owner=None, distroseries=None,
                  name=None, branch=None, git_ref=None,
-                 require_virtualized=True, date_created=DEFAULT):
+                 require_virtualized=True, processors=None,
+                 date_created=DEFAULT):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4556,8 +4557,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             kwargs["git_path"] = git_ref.path
         snap = getUtility(ISnapSet).new(
             registrant, owner, distroseries, name,
-            require_virtualized=require_virtualized, date_created=date_created,
-            **kwargs)
+            require_virtualized=require_virtualized, processors=processors,
+            date_created=date_created, **kwargs)
         IStore(snap).flush()
         return snap
 
