@@ -23,7 +23,9 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
@@ -65,6 +67,20 @@ class TestSnapBuildFeatureFlag(TestCaseWithFactory):
             SnapFeatureDisabled, getUtility(ISnapBuildSet).new,
             None, MockSnap(), self.factory.makeArchive(),
             self.factory.makeDistroArchSeries(), None)
+
+
+expected_body = """\
+ * Snap Package: snap-1
+ * Archive: distro
+ * Distroseries: distro unstable
+ * Architecture: i386
+ * Pocket: RELEASE
+ * State: Failed to build
+ * Duration: 10 minutes
+ * Build Log: %s
+ * Upload Log: %s
+ * Builder: http://launchpad.dev/builders/bob
+"""
 
 
 class TestSnapBuild(TestCaseWithFactory):
@@ -200,6 +216,55 @@ class TestSnapBuild(TestCaseWithFactory):
         self.assertFalse(self.build.verifySuccessfulUpload())
         self.factory.makeSnapFile(snapbuild=self.build)
         self.assertTrue(self.build.verifySuccessfulUpload())
+
+    def test_notify_fullybuilt(self):
+        # notify does not send mail when a SnapBuild completes normally.
+        person = self.factory.makePerson(name="person")
+        build = self.factory.makeSnapBuild(
+            requester=person, status=BuildStatus.FULLYBUILT)
+        build.notify()
+        self.assertEqual(0, len(pop_notifications()))
+
+    def test_notify_packagefail(self):
+        # notify sends mail when a SnapBuild fails.
+        person = self.factory.makePerson(name="person")
+        distribution = self.factory.makeDistribution(name="distro")
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution, name="unstable")
+        processor = getUtility(IProcessorSet).getByName("386")
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="i386",
+            processor=processor)
+        build = self.factory.makeSnapBuild(
+            name=u"snap-1", requester=person, owner=person,
+            distroarchseries=distroarchseries,
+            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
+            status=BuildStatus.FAILEDTOBUILD,
+            builder=self.factory.makeBuilder(name="bob"),
+            duration=timedelta(minutes=10))
+        build.setLog(self.factory.makeLibraryFileAlias())
+        build.notify()
+        [notification] = pop_notifications()
+        self.assertEqual(
+            config.canonical.noreply_from_address, notification["From"])
+        self.assertEqual(
+            "Person <%s>" % person.preferredemail.email, notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
+        self.assertEqual(
+            "[Snap build #%d] i386 build of snap-1 snap package in distro "
+            "unstable" % build.id, subject)
+        self.assertEqual(
+            "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(
+            "snap-build-status",
+            notification["X-Launchpad-Notification-Type"])
+        self.assertEqual(
+            "FAILEDTOBUILD", notification["X-Launchpad-Build-State"])
+        body, footer = notification.get_payload(decode=True).split("\n-- \n")
+        self.assertEqual(expected_body % (build.log_url, ""), body)
+        self.assertEqual(
+            "http://launchpad.dev/~person/+snap/snap-1/+build/%d\n"
+            "You are the requester of the build.\n" % build.id, footer)
 
     def addFakeBuildLog(self, build):
         build.setLog(self.factory.makeLibraryFileAlias("mybuildlog.txt"))

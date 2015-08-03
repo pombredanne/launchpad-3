@@ -34,6 +34,7 @@ from lp.buildmaster.model.buildfarmjob import SpecificBuildFarmJobSourceMixin
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Person
+from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import DEFAULT
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -57,6 +58,7 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuildSet,
     ISnapFile,
     )
+from lp.snappy.mail.snapbuild import SnapBuildMailer
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.archive import Archive
 
@@ -289,6 +291,15 @@ class SnapBuild(PackageBuildMixin, Storm):
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
         return not self.getFiles().is_empty()
+
+    def notify(self, extra_info=None):
+        """See `IPackageBuild`."""
+        if not config.builddmaster.send_build_notification:
+            return
+        if self.status == BuildStatus.FULLYBUILT:
+            return
+        mailer = SnapBuildMailer.forStatus(self)
+        mailer.sendAll()
 
     def lfaUrl(self, lfa):
         """Return the URL for a LibraryFileAlias in this context."""
