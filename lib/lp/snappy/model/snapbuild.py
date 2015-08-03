@@ -183,8 +183,9 @@ class SnapBuild(PackageBuildMixin, Storm):
         if component is not None:
             return component
         else:
-            # XXX cjwatson 2015-07-17: Hardcode to universe for the time being.
-            return getUtility(IComponentSet)["universe"]
+            # XXX cjwatson 2015-07-17: Hardcode to multiverse for the time
+            # being.
+            return getUtility(IComponentSet)["multiverse"]
 
     @property
     def score(self):
