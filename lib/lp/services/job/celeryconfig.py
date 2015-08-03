@@ -70,13 +70,13 @@ def configure(argv):
             result['FALLBACK'] = config[queue].fallback_queue
         result['CELERYD_CONCURRENCY'] = config[queue].concurrency
 
-    host, port = config.rabbitmq.host.split(':')
-
-    result['BROKER_HOST'] = host
-    result['BROKER_PORT'] = port
-    result['BROKER_USER'] = config.rabbitmq.userid
-    result['BROKER_PASSWORD'] = config.rabbitmq.password
-    result['BROKER_VHOST'] = config.rabbitmq.virtual_host
+    result['BROKER_URL'] = 'amqp://%s:%s@%s/%s' % (
+        config.rabbitmq.userid, config.rabbitmq.password,
+        config.rabbitmq.host, config.rabbitmq.virtual_host)
+    # XXX wgrant 2015-08-03: Celery 3.2 won't read pickles by default,
+    # and Celery 3.1 can send only pickles for some things. Let's accept
+    # both until they sort things out.
+    result['CELERY_ACCEPT_CONTENT'] = ['pickle', 'json']
     result['CELERY_CREATE_MISSING_QUEUES'] = False
     result['CELERY_DEFAULT_EXCHANGE'] = 'job'
     result['CELERY_DEFAULT_QUEUE'] = 'launchpad_job'
