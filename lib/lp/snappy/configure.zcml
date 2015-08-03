@@ -66,6 +66,13 @@
         <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource" />
     </securedutility>
 
+    <!-- SnapBuildBehaviour -->
+    <adapter
+        for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehaviour.IBuildFarmJobBehaviour"
+        factory="lp.snappy.model.snapbuildbehaviour.SnapBuildBehaviour"
+        permission="zope.Public" />
+
     <!-- SnapFile -->
     <class class="lp.snappy.model.snapbuild.SnapFile">
         <allow interface="lp.snappy.interfaces.snapbuild.ISnapFile" />
