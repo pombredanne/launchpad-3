@@ -182,11 +182,6 @@ from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
     )
-from lp.snappy.interfaces.snap import ISnapView
-from lp.snappy.interfaces.snapbuild import (
-    ISnapBuild,
-    ISnapFile,
-    )
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
@@ -610,15 +605,6 @@ patch_choice_property(IPackageUpload, 'pocket', PackagePublishingPocket)
 patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
 patch_reference_property(IPackageUpload, 'copy_source_archive', IArchive)
-
-# ISnapFile
-patch_reference_property(ISnapFile, 'snapbuild', ISnapBuild)
-
-# ISnapView
-patch_entry_return_type(ISnapView, 'requestBuild', ISnapBuild)
-patch_collection_property(ISnapView, 'builds', ISnapBuild)
-patch_collection_property(ISnapView, 'completed_builds', ISnapBuild)
-patch_collection_property(ISnapView, 'pending_builds', ISnapBuild)
 
 # IStructuralSubscription
 patch_collection_property(

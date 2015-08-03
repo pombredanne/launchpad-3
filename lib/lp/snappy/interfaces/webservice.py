@@ -15,14 +15,27 @@ __all__ = [
     'ISnapSet',
     ]
 
-# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
-# import bugs.  Break this up into a per-package thing.
-from lp import _schema_circular_imports
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_entry_return_type,
+    patch_reference_property,
+    )
 from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapSet,
+    ISnapView,
     )
-from lp.snappy.interfaces.snapbuild import ISnapBuild
+from lp.snappy.interfaces.snapbuild import (
+    ISnapBuild,
+    ISnapFile,
+    )
 
 
-_schema_circular_imports
+# ISnapFile
+patch_reference_property(ISnapFile, 'snapbuild', ISnapBuild)
+
+# ISnapView
+patch_entry_return_type(ISnapView, 'requestBuild', ISnapBuild)
+patch_collection_property(ISnapView, 'builds', ISnapBuild)
+patch_collection_property(ISnapView, 'completed_builds', ISnapBuild)
+patch_collection_property(ISnapView, 'pending_builds', ISnapBuild)
