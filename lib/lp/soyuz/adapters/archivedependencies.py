@@ -177,7 +177,8 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
     # Consider build tools archive dependencies.
     if tools_archive is not None:
         components = [
-            component.name for component in tools_archive.getComponentsForSeries(
+            component.name
+            for component in tools_archive.getComponentsForSeries(
                 distro_series)]
         deps.append(
             (tools_archive, distro_arch_series,
