@@ -29,7 +29,6 @@ from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.interfaces.security import IAuthorization
-from lp.app.interfaces.services import IService
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
@@ -192,6 +191,7 @@ from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
     )
+from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -3080,3 +3080,39 @@ class ViewWebhookDeliveryJob(DelegatedAuthorization):
     def __init__(self, obj):
         super(ViewWebhookDeliveryJob, self).__init__(
             obj, obj.webhook, 'launchpad.View')
+
+
+class ViewSnap(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ISnap
+
+    def __init__(self, obj):
+        super(ViewSnap, self).__init__(obj, obj.owner, 'launchpad.View')
+
+
+class EditSnap(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ISnap
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj) or
+            user.in_commercial_admin or user.in_admin)
+
+
+class AdminSnap(AuthorizationBase):
+    """Restrict changing build settings on snap packages.
+
+    The security of the non-virtualised build farm depends on these
+    settings, so they can only be changed by commercial admins, or by "PPA"
+    self admins on snap packages that they can already edit.
+    """
+    permission = 'launchpad.Admin'
+    usedfor = ISnap
+
+    def checkAuthenticated(self, user):
+        if user.in_commercial_admin or user.in_admin:
+            return True
+        return (
+            user.in_ppa_self_admins
+            and EditSnap(self.obj).checkAuthenticated(user))

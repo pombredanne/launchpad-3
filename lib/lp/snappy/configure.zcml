@@ -1,0 +1,43 @@
+<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://namespaces.canonical.com/lp"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+
+    <include package=".browser" />
+
+    <!-- Snap -->
+    <class class="lp.snappy.model.snap.Snap">
+        <require
+            permission="launchpad.View"
+            interface="lp.snappy.interfaces.snap.ISnapView
+                       lp.snappy.interfaces.snap.ISnapEditableAttributes
+                       lp.snappy.interfaces.snap.ISnapAdminAttributes" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.snappy.interfaces.snap.ISnapEdit"
+            set_schema="lp.snappy.interfaces.snap.ISnapEditableAttributes" />
+        <require
+            permission="launchpad.Admin"
+            interface="lp.snappy.interfaces.snap.ISnapAdmin"
+            set_schema="lp.snappy.interfaces.snap.ISnapAdminAttributes" />
+    </class>
+    <subscriber
+        for="lp.snappy.interfaces.snap.ISnap zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler="lp.snappy.model.snap.snap_modified" />
+
+    <!-- SnapSet -->
+    <securedutility
+        class="lp.snappy.model.snap.SnapSet"
+        provides="lp.snappy.interfaces.snap.ISnapSet">
+        <allow interface="lp.snappy.interfaces.snap.ISnapSet" />
+    </securedutility>
+
+</configure>

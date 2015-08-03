@@ -399,6 +399,7 @@ The current references to the branch table are shown here.
     productseries.branch
     productseries.translations_branch
     seriessourcepackagebranch.branch
+    snap.branch
     sourcepackagerecipedata.base_branch
     sourcepackagerecipedatainstruction.branch
     specificationbranch.branch
