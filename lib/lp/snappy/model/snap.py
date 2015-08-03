@@ -11,15 +11,18 @@ from storm.exceptions import IntegrityError
 from storm.locals import (
     Bool,
     DateTime,
+    Desc,
     Int,
+    Not,
     Reference,
+    Store,
     Storm,
     Unicode,
     )
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.role import IHasOwner
@@ -31,16 +34,32 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.stormexpr import (
+    Greatest,
+    NullsLast,
+    )
 from lp.services.features import getFeatureFlag
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.snappy.interfaces.snap import (
+    CannotDeleteSnap,
     DuplicateSnapName,
     ISnap,
     ISnapSet,
     SNAP_FEATURE_FLAG,
+    SnapBuildAlreadyPending,
+    SnapBuildArchiveOwnerMismatch,
+    SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
     NoSourceForSnap,
     NoSuchSnap,
+    )
+from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.model.snapbuild import SnapBuild
+from lp.soyuz.interfaces.archive import ArchiveDisabled
+from lp.soyuz.model.archive import (
+    Archive,
+    get_enabled_archive_filter,
     )
 
 
@@ -133,33 +152,113 @@ class Snap(Storm):
 
     processors = property(_getProcessors, setProcessors)
 
+    def _getAllowedArchitectures(self):
+        """Return all distroarchseries that this package can build for.
+
+        :return: Sequence of `IDistroArchSeries` instances.
+        """
+        return [
+            das for das in self.distro_series.buildable_architectures
+            if (
+                das.enabled
+                and das.processor in self.processors
+                and (
+                    das.processor.supports_virtualized
+                    or not self.require_virtualized))]
+
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
-        raise NotImplementedError
+        if not requester.inTeam(self.owner):
+            raise SnapNotOwner(
+                "%s cannot create snap package builds owned by %s." %
+                (requester.displayname, self.owner.displayname))
+        if not archive.enabled:
+            raise ArchiveDisabled(archive.displayname)
+        if distro_arch_series not in self._getAllowedArchitectures():
+            raise SnapBuildDisallowedArchitecture(distro_arch_series)
+        if archive.private and self.owner != archive.owner:
+            # See rationale in `SnapBuildArchiveOwnerMismatch` docstring.
+            raise SnapBuildArchiveOwnerMismatch()
+
+        pending = IStore(self).find(
+            SnapBuild,
+            SnapBuild.snap_id == self.id,
+            SnapBuild.archive_id == archive.id,
+            SnapBuild.distro_arch_series_id == distro_arch_series.id,
+            SnapBuild.pocket == pocket,
+            SnapBuild.status == BuildStatus.NEEDSBUILD)
+        if pending.any() is not None:
+            raise SnapBuildAlreadyPending
+
+        build = getUtility(ISnapBuildSet).new(
+            requester, self, archive, distro_arch_series, pocket)
+        build.queueBuild()
+        return build
+
+    def _getBuilds(self, filter_term, order_by):
+        """The actual query to get the builds."""
+        query_args = [
+            SnapBuild.snap == self,
+            SnapBuild.archive_id == Archive.id,
+            Archive._enabled == True,
+            get_enabled_archive_filter(
+                getUtility(ILaunchBag).user, include_public=True,
+                include_subscribed=True)
+            ]
+        if filter_term is not None:
+            query_args.append(filter_term)
+        result = Store.of(self).find(SnapBuild, *query_args)
+        result.order_by(order_by)
+        return result
 
     @property
     def builds(self):
         """See `ISnap`."""
-        return []
+        order_by = (
+            NullsLast(Desc(Greatest(
+                SnapBuild.date_started,
+                SnapBuild.date_finished))),
+            Desc(SnapBuild.date_created),
+            Desc(SnapBuild.id))
+        return self._getBuilds(None, order_by)
 
     @property
     def _pending_states(self):
         """All the build states we consider pending (non-final)."""
-        raise NotImplementedError
+        return [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            BuildStatus.CANCELLING,
+            ]
 
     @property
     def completed_builds(self):
         """See `ISnap`."""
-        return []
+        filter_term = (Not(SnapBuild.status.is_in(self._pending_states)))
+        order_by = (
+            NullsLast(Desc(Greatest(
+                SnapBuild.date_started,
+                SnapBuild.date_finished))),
+            Desc(SnapBuild.id))
+        return self._getBuilds(filter_term, order_by)
 
     @property
     def pending_builds(self):
         """See `ISnap`."""
-        return []
+        filter_term = (SnapBuild.status.is_in(self._pending_states))
+        # We want to order by date_created but this is the same as ordering
+        # by id (since id increases monotonically) and is less expensive.
+        order_by = Desc(SnapBuild.id)
+        return self._getBuilds(filter_term, order_by)
 
     def destroySelf(self):
         """See `ISnap`."""
-        raise NotImplementedError
+        if not self.builds.is_empty():
+            raise CannotDeleteSnap("Cannot delete a snap package with builds.")
+        store = IStore(Snap)
+        store.find(SnapArch, SnapArch.snap == self).remove()
+        store.remove(self)
 
 
 class SnapArch(Storm):

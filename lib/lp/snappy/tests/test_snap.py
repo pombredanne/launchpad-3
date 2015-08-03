@@ -9,23 +9,36 @@ from datetime import datetime
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
+from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.snappy.interfaces.snap import (
+    CannotDeleteSnap,
     ISnap,
     ISnapSet,
     NoSourceForSnap,
     SNAP_FEATURE_FLAG,
+    SnapBuildAlreadyPending,
+    SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     )
+from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.testing import (
     admin_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -74,6 +87,248 @@ class TestSnap(TestCaseWithFactory):
         notify(ObjectModifiedEvent(
             removeSecurityProxy(snap), snap, [ISnap["name"]]))
         self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
+
+    def makeBuildableDistroArchSeries(self, **kwargs):
+        das = self.factory.makeDistroArchSeries(**kwargs)
+        fake_chroot = self.factory.makeLibraryFileAlias(
+            filename="fake_chroot.tar.gz", db_only=True)
+        das.addOrUpdateChroot(fake_chroot)
+        return das
+
+    def test_requestBuild(self):
+        # requestBuild creates a new SnapBuild.
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries,
+            processors=[distroarchseries.processor])
+        build = snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+        self.assertTrue(ISnapBuild.providedBy(build))
+        self.assertEqual(snap.owner, build.requester)
+        self.assertEqual(snap.distro_series.main_archive, build.archive)
+        self.assertEqual(distroarchseries, build.distro_arch_series)
+        self.assertEqual(PackagePublishingPocket.RELEASE, build.pocket)
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+        store = Store.of(build)
+        store.flush()
+        build_queue = store.find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id ==
+                removeSecurityProxy(build).build_farm_job_id).one()
+        self.assertProvides(build_queue, IBuildQueue)
+        self.assertEqual(
+            snap.distro_series.main_archive.require_virtualized,
+            build_queue.virtualized)
+        self.assertEqual(BuildQueueStatus.WAITING, build_queue.status)
+
+    def test_requestBuild_score(self):
+        # Build requests have a relatively low queue score (2505).
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries,
+            processors=[distroarchseries.processor])
+        build = snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(2505, queue_record.lastscore)
+
+    def test_requestBuild_relative_build_score(self):
+        # Offsets for archives are respected.
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries, processors=[processor])
+        archive = self.factory.makeArchive(owner=snap.owner)
+        removeSecurityProxy(archive).relative_build_score = 100
+        build = snap.requestBuild(
+            snap.owner, archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(2605, queue_record.lastscore)
+
+    def test_requestBuild_rejects_repeats(self):
+        # requestBuild refuses if there is already a pending build.
+        distroseries = self.factory.makeDistroSeries()
+        procs = []
+        arches = []
+        for i in range(2):
+            procs.append(self.factory.makeProcessor(supports_virtualized=True))
+            arches.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=procs[i]))
+        snap = self.factory.makeSnap(
+            distroseries=distroseries, processors=[procs[0], procs[1]])
+        old_build = snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.RELEASE)
+        self.assertRaises(
+            SnapBuildAlreadyPending, snap.requestBuild,
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.RELEASE)
+        # We can build for a different archive.
+        snap.requestBuild(
+            snap.owner, self.factory.makeArchive(owner=snap.owner), arches[0],
+            PackagePublishingPocket.RELEASE)
+        # We can build for a different distroarchseries.
+        snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, arches[1],
+            PackagePublishingPocket.RELEASE)
+        # Changing the status of the old build allows a new build.
+        old_build.updateStatus(BuildStatus.BUILDING)
+        old_build.updateStatus(BuildStatus.FULLYBUILT)
+        snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.RELEASE)
+
+    def test_requestBuild_rejects_unconfigured_arch(self):
+        # Snap.requestBuild only allows dispatching a build for one of the
+        # configured architectures.
+        distroseries = self.factory.makeDistroSeries()
+        procs = []
+        arches = []
+        for i in range(2):
+            procs.append(self.factory.makeProcessor(supports_virtualized=True))
+            arches.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=procs[i]))
+        snap = self.factory.makeSnap(
+            distroseries=distroseries, processors=[procs[0]])
+        snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.RELEASE)
+        self.assertRaises(
+            SnapBuildDisallowedArchitecture, snap.requestBuild,
+            snap.owner, snap.distro_series.main_archive, arches[1],
+            PackagePublishingPocket.RELEASE)
+
+    def test_requestBuild_virtualization(self):
+        # New builds are virtualized if any of the processor, snap or
+        # archive require it.
+        proc_arches = {}
+        for proc_nonvirt in True, False:
+            processor = self.factory.makeProcessor(
+                supports_virtualized=True,
+                supports_nonvirtualized=proc_nonvirt)
+            distroarchseries = self.makeBuildableDistroArchSeries(
+                processor=processor)
+            proc_arches[proc_nonvirt] = (processor, distroarchseries)
+        for proc_nonvirt, snap_virt, archive_virt, build_virt in (
+                (True, False, False, False),
+                (True, False, True, True),
+                (True, True, False, True),
+                (True, True, True, True),
+                (False, False, False, True),
+                (False, False, True, True),
+                (False, True, False, True),
+                (False, True, True, True),
+                ):
+            processor, distroarchseries = proc_arches[proc_nonvirt]
+            snap = self.factory.makeSnap(
+                distroseries=distroarchseries.distroseries,
+                require_virtualized=snap_virt, processors=[processor])
+            archive = self.factory.makeArchive(
+                distribution=distroarchseries.distroseries.distribution,
+                owner=snap.owner, virtualized=archive_virt)
+            build = snap.requestBuild(
+                snap.owner, archive, distroarchseries,
+                PackagePublishingPocket.RELEASE)
+            self.assertEqual(build_virt, build.virtualized)
+
+    def test_requestBuild_nonvirtualized(self):
+        # A non-virtualized processor can build a snap package iff the snap
+        # has require_virtualized set to False.
+        processor = self.factory.makeProcessor(
+            supports_virtualized=False, supports_nonvirtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries, processors=[processor])
+        self.assertRaises(
+            SnapBuildDisallowedArchitecture, snap.requestBuild,
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+        with admin_logged_in():
+            snap.require_virtualized = False
+        snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+
+    def test_getBuilds(self):
+        # Test the various getBuilds methods.
+        snap = self.factory.makeSnap()
+        builds = [self.factory.makeSnapBuild(snap=snap) for x in range(3)]
+        # We want the latest builds first.
+        builds.reverse()
+
+        self.assertEqual(builds, list(snap.builds))
+        self.assertEqual([], list(snap.completed_builds))
+        self.assertEqual(builds, list(snap.pending_builds))
+
+        # Change the status of one of the builds and retest.
+        builds[0].updateStatus(BuildStatus.BUILDING)
+        builds[0].updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(builds, list(snap.builds))
+        self.assertEqual(builds[:1], list(snap.completed_builds))
+        self.assertEqual(builds[1:], list(snap.pending_builds))
+
+    def test_getBuilds_cancelled_never_started_last(self):
+        # A cancelled build that was never even started sorts to the end.
+        snap = self.factory.makeSnap()
+        fullybuilt = self.factory.makeSnapBuild(snap=snap)
+        instacancelled = self.factory.makeSnapBuild(snap=snap)
+        fullybuilt.updateStatus(BuildStatus.BUILDING)
+        fullybuilt.updateStatus(BuildStatus.FULLYBUILT)
+        instacancelled.updateStatus(BuildStatus.CANCELLED)
+        self.assertEqual([fullybuilt, instacancelled], list(snap.builds))
+        self.assertEqual(
+            [fullybuilt, instacancelled], list(snap.completed_builds))
+        self.assertEqual([], list(snap.pending_builds))
+
+    def test_getBuilds_privacy(self):
+        # The various getBuilds methods exclude builds against invisible
+        # archives.
+        snap = self.factory.makeSnap()
+        archive = self.factory.makeArchive(
+            distribution=snap.distro_series.distribution, owner=snap.owner,
+            private=True)
+        with person_logged_in(snap.owner):
+            build = self.factory.makeSnapBuild(snap=snap, archive=archive)
+            self.assertEqual([build], list(snap.builds))
+            self.assertEqual([build], list(snap.pending_builds))
+        self.assertEqual([], list(snap.builds))
+        self.assertEqual([], list(snap.pending_builds))
+
+    def test_delete_without_builds(self):
+        # A snap package with no builds can be deleted.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        snap = self.factory.makeSnap(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            name=u"condemned")
+        self.assertTrue(getUtility(ISnapSet).exists(owner, u"condemned"))
+        with person_logged_in(snap.owner):
+            snap.destroySelf()
+        self.assertFalse(getUtility(ISnapSet).exists(owner, u"condemned"))
+
+    def test_delete_with_builds(self):
+        # A snap package with builds cannot be deleted.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        snap = self.factory.makeSnap(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            name=u"condemned")
+        self.factory.makeSnapBuild(snap=snap)
+        self.assertTrue(getUtility(ISnapSet).exists(owner, u"condemned"))
+        with person_logged_in(snap.owner):
+            self.assertRaises(CannotDeleteSnap, snap.destroySelf)
+        self.assertTrue(getUtility(ISnapSet).exists(owner, u"condemned"))
 
 
 class TestSnapSet(TestCaseWithFactory):
