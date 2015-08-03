@@ -5,12 +5,16 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from httmock import (
     HTTMock,
     urlmatch,
     )
+from pytz import utc
 import requests
 from storm.store import Store
 from testtools import TestCase
@@ -21,6 +25,7 @@ from testtools.matchers import (
     GreaterThan,
     Is,
     KeysEqual,
+    LessThan,
     MatchesAll,
     MatchesDict,
     MatchesStructure,
@@ -28,6 +33,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.versioninfo import revno
 from lp.services.features.testing import FeatureFixture
@@ -254,6 +260,21 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         hook = self.factory.makeWebhook()
         self.assertProvides(
             WebhookDeliveryJob.create(hook, payload={}), IWebhookDeliveryJob)
+
+    def test_short_lease_and_timeout(self):
+        # Webhook jobs have a request timeout of 30 seconds, a celery
+        # timeout of 45 seconds, and a lease of 60 seconds, to give
+        # reasonable time for sluggish things to catch up.
+        hook = self.factory.makeWebhook()
+        job = hook.ping()
+        job.acquireLease()
+        self.assertThat(
+            job.lease_expires - datetime.now(utc),
+            MatchesAll(
+                GreaterThan(timedelta(seconds=50)),
+                LessThan(timedelta(seconds=60))))
+        self.assertEqual(
+            timedelta(seconds=45), removeSecurityProxy(job).soft_time_limit)
 
     def test_run_200(self):
         # A request that returns 200 is a success.

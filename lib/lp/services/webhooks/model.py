@@ -297,6 +297,13 @@ class WebhookDeliveryJob(WebhookJobDerived):
     retry_error_types = (WebhookDeliveryRetry,)
     user_error_types = (WebhookDeliveryFailure,)
 
+    # The request timeout is 30 seconds, requests timeouts aren't
+    # totally reliable so we also have a relatively low celery timeout
+    # as a backup. The celery timeout and lease expiry have a bit of
+    # slack to cope with slow job start/finish without conflicts.
+    soft_time_limit = timedelta(seconds=45)
+    lease_duration = timedelta(seconds=60)
+
     # Effectively infinite, as we give up by checking
     # retry_automatically and raising a fatal exception instead.
     max_retries = 1000
