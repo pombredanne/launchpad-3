@@ -574,7 +574,7 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(duplicate, mergee)
         login_person(mergee)
         duplicate, mergee = self._do_merge(duplicate, mergee)
-        self.assertEqual(1, getUtility(ISnapSet).getByPerson(mergee).count())
+        self.assertEqual(1, getUtility(ISnapSet).findByPerson(mergee).count())
 
     def test_merge_with_duplicated_snaps(self):
         # If both the from and to people have snap packages with the same
@@ -592,7 +592,7 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         login_person(mergee)
         duplicate, mergee = self._do_merge(duplicate, mergee)
         snaps = sorted(
-            getUtility(ISnapSet).getByPerson(mergee), key=attrgetter("name"))
+            getUtility(ISnapSet).findByPerson(mergee), key=attrgetter("name"))
         self.assertEqual(2, len(snaps))
         self.assertIsNone(snaps[0].branch)
         self.assertEqual(ref.repository, snaps[0].git_repository)
