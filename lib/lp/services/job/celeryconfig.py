@@ -65,9 +65,16 @@ def configure(argv):
         if queue not in celery_queues:
             raise ConfigurationError(
                 'Queue %s is not configured in schema-lazr.conf' % queue)
+        # XXX wgrant 2015-08-03: This should be set in the apply_async
+        # now that we're on Celery 3.1.
         result['CELERYD_TASK_SOFT_TIME_LIMIT'] = config[queue].timeout
         if config[queue].fallback_queue != '':
+            # XXX wgrant 2015-08-03: lazr.jobrunner actually looks for
+            # FALLBACK_QUEUE; this probably isn't doing anything.
             result['FALLBACK'] = config[queue].fallback_queue
+        # XXX wgrant 2015-08-03: This is mostly per-queue because we
+        # can't run *_job and *_job_slow in the same worker, which will be
+        # fixed once the CELERYD_TASK_SOFT_TIME_LIMIT override is gone.
         result['CELERYD_CONCURRENCY'] = config[queue].concurrency
 
     result['BROKER_URL'] = 'amqp://%s:%s@%s/%s' % (
