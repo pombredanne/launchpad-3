@@ -778,6 +778,18 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
+    def getNonRedirectingBrowser(self, url=None, user=None):
+        from lp.testing.pages import setupBrowser
+        if user == ANONYMOUS:
+            browser = setupBrowser()
+        else:
+            browser = self.getUserBrowser(user=user)
+        browser.mech_browser.set_handle_redirect(False)
+        browser.mech_browser.set_handle_equiv(False)
+        if url is not None:
+            browser.open(url)
+        return browser
+
     def createBranchAtURL(self, branch_url, format=None):
         """Create a branch at the supplied URL.
 

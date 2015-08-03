@@ -17,17 +17,13 @@ from urllib2 import (
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from zope.testbrowser.browser import Browser
-from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
-from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
@@ -250,14 +246,6 @@ class TestSnapBuildSet(TestCaseWithFactory):
             [], getUtility(ISnapBuildSet).getByBuildFarmJobs([]))
 
 
-class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
-    """A `mechanize.Browser` that does not handle redirects."""
-
-    default_features = [
-        feature for feature in PublisherMechanizeBrowser.default_features
-        if feature != "_redirect"]
-
-
 class TestSnapBuildWebservice(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -378,17 +366,6 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         build = self.webservice.get(build_url).jsonBody()
         self.assertEqual(5000, build["score"])
 
-    def makeNonRedirectingBrowser(self, person):
-        # The test browser can only work with the appserver, not the
-        # librarian, so follow one layer of redirection through the
-        # appserver and then ask the librarian for the real file.
-        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
-        browser.handleErrors = False
-        with person_logged_in(person):
-            browser.addHeader(
-                "Authorization", "Basic %s:test" % person.preferredemail.email)
-        return browser
-
     def assertCanOpenRedirectedUrl(self, browser, url):
         redirection = self.assertRaises(HTTPError, browser.open, url)
         self.assertEqual(303, redirection.code)
@@ -402,7 +379,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         build_url = api_url(db_build)
         logout()
         build = self.webservice.get(build_url).jsonBody()
-        browser = self.makeNonRedirectingBrowser(self.person)
+        browser = self.getNonRedirectingBrowser(user=self.person)
         self.assertIsNotNone(build["build_log_url"])
         self.assertCanOpenRedirectedUrl(browser, build["build_log_url"])
         self.assertIsNotNone(build["upload_log_url"])
@@ -421,6 +398,6 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         response = self.webservice.named_get(build_url, "getFileUrls")
         self.assertEqual(200, response.status)
         self.assertContentEqual(file_urls, response.jsonBody())
-        browser = self.makeNonRedirectingBrowser(self.person)
+        browser = self.getNonRedirectingBrowser(user=self.person)
         for file_url in file_urls:
             self.assertCanOpenRedirectedUrl(browser, file_url)
