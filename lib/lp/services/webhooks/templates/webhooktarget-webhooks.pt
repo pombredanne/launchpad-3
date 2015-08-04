@@ -1,0 +1,24 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="main">
+    <table class="listing">
+      <tbody>
+        <tr tal:repeat="webhook view/batchnav/currentBatch">
+          <td>
+            <a tal:content="webhook/delivery_url"
+               tal:attributes="href webhook/fmt:url">http://example.com/ep</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,23 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+<body>
+  <div metal:fill-slot="main">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <div class="actions" id="launchpad-form-actions"
+           metal:fill-slot="buttons">
+        <tal:actions repeat="action view/actions">
+          <input tal:replace="structure action/render"
+                 tal:condition="action/available"/>
+        </tal:actions>
+        <a tal:attributes="href context/fmt:url/+delete">Delete webhook</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
