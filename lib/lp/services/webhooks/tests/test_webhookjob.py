@@ -148,8 +148,7 @@ class TestWebhookClient(TestCase):
 
         with HTTMock(endpoint_mock):
             result = WebhookClient().deliver(
-                'http://hookep.com/foo',
-                {'http': 'http://squid.example.com:3128'},
+                'http://hookep.com/foo', 'http://squid.example.com:3128',
                 'TestWebhookClient', 30, 'sekrit', {'foo': 'bar'})
 
         return reqs, result
