@@ -31,12 +31,14 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     operation_for_version,
+    operation_parameters,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -111,8 +113,15 @@ class IWebhook(Interface):
         title=_("URL"), required=True, readonly=False))
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
+
+    # Do not export this.
     secret = TextLine(
-        title=_("Unique name"), required=False, readonly=True)
+        title=_("Secret"), required=False,
+        description=_(
+            "An optional string used to sign delivery bodies with HMAC-SHA1 "
+            "in the X-Hub-Signature header. This must be less than 200 bytes "
+            "long."),
+        max_length=200)
 
     deliveries = exported(doNotSnapshot(CollectionField(
         title=_("Recent deliveries for this webhook."),
@@ -131,6 +140,12 @@ class IWebhook(Interface):
     @operation_for_version('devel')
     def destroySelf():
         """Delete this webhook."""
+
+    @export_write_operation()
+    @operation_parameters(secret=copy_field(secret))
+    @operation_for_version('devel')
+    def setSecret(secret):
+        """Set the secret used to sign deliveries."""
 
 
 class IWebhookSource(Interface):
@@ -159,9 +174,10 @@ class IWebhookTarget(Interface):
 
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(
-        IWebhook, ['delivery_url', 'active', 'event_types'])
+        IWebhook, ['delivery_url', 'active', 'event_types', 'secret'])
     @operation_for_version("devel")
-    def newWebhook(registrant, delivery_url, event_types, active=True):
+    def newWebhook(registrant, delivery_url, event_types, active=True,
+                   secret=None):
         """Create a new webhook."""
 
 
@@ -210,6 +226,13 @@ class IWebhookDeliveryJob(IRunnableJob):
             "no attempts have been made yet."),
         required=False, readonly=True))
 
+    error_message = exported(TextLine(
+        title=_("Error message"),
+        description=_(
+            "Details of the error encountered by the most recent delivery "
+            "attempt."),
+        required=False, readonly=True))
+
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
 
@@ -228,8 +251,13 @@ class IWebhookDeliveryJob(IRunnableJob):
         key_type=TextLine(), required=True, readonly=True))
 
     @export_write_operation()
+    @operation_parameters(reset=Bool(
+        title=_("Reset automatic retries"),
+        description=_(
+            "Restart the 24 hour automatic retry window as well as trying "
+            "again now.")))
     @operation_for_version("devel")
-    def retry():
+    def retry(reset=False):
         """Attempt to deliver the event again.
 
         Launchpad will automatically retry regularly for 24 hours, but

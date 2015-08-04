@@ -155,8 +155,6 @@ class TestJobsViaCelery(TestCaseWithFactory):
         self.assertEqual(JobStatus.WAITING, job_forever.status)
         self.assertThat(
             job_future.date_started, GreaterThan(job_past.date_started))
-        self.assertThat(
-            job_future.date_started, GreaterThan(job_whenever.date_started))
 
     def test_jobs_with_retry_exceptions_are_queued_again(self):
         # A job that raises a retry error is automatically queued
@@ -200,7 +198,7 @@ class TestJobsViaCelery(TestCaseWithFactory):
                     LessThan(dates_started[0] + timedelta(seconds=8))),
                 MatchesAll(
                     GreaterThan(dates_started[1] + timedelta(seconds=8)),
-                    LessThan(dates_started[1] + timedelta(seconds=12))),
+                    LessThan(dates_started[1] + timedelta(seconds=13))),
                 ]))
         self.assertEqual(3, job.attempt_count)
         self.assertEqual(JobStatus.COMPLETED, job.status)
