@@ -27,6 +27,7 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webhooks.interfaces import (
     IWebhook,
     IWebhookSource,
@@ -79,6 +80,20 @@ class WebhooksView(LaunchpadView):
             self.request)
 
 
+class WebhookBreadcrumb(Breadcrumb):
+
+    @property
+    def text(self):
+        return self.context.delivery_url
+
+    @property
+    def inside(self):
+        return Breadcrumb(
+            self.context.target,
+            url=canonical_url(self.context.target, view_name="+webhooks"),
+            text="Webhooks", inside=self.context.target)
+
+
 class WebhookEditSchema(Interface):
     # XXX wgrant 2015-08-04: Need custom widgets for secret and
     # event_types.
@@ -117,11 +132,8 @@ class WebhookDeleteView(LaunchpadFormView):
 
     schema = Interface
 
-    @property
-    def page_title(self):
-        return "Delete webhook for %s" % self.context.delivery_url
-
-    label = page_title
+    page_title = "Delete"
+    label = "Delete webhook"
 
     @property
     def cancel_url(self):
@@ -133,4 +145,4 @@ class WebhookDeleteView(LaunchpadFormView):
         self.context.destroySelf()
         self.request.response.addNotification(
             "Webhook for %s deleted." % self.context.delivery_url)
-        self.next_url = canonical_url(target)
+        self.next_url = canonical_url(target, view_name="+webhooks")

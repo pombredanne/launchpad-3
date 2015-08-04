@@ -66,6 +66,11 @@
         class="lp.services.webhooks.browser.WebhooksView"
         template="templates/webhooktarget-webhooks.pt" />
 
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.services.webhooks.interfaces.IWebhook"
+        factory="lp.services.webhooks.browser.WebhookBreadcrumb"
+        permission="zope.Public"/>
     <browser:page
         for="lp.services.webhooks.interfaces.IWebhook"
         name="+index"
