@@ -241,9 +241,10 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def makeAndRunJob(self, response_status=200, raises=None, mock=True,
-                      secret=None):
+                      secret=None, active=True):
         hook = self.factory.makeWebhook(
-            delivery_url=u'http://example.com/ep', secret=secret)
+            delivery_url=u'http://example.com/ep', secret=secret,
+            active=active)
         job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
 
         client = MockWebhookClient(
@@ -286,6 +287,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(False),
                 successful=Equals(True),
                 date_sent=Not(Is(None)),
+                error_message=Is(None),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -327,6 +329,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
+                error_message=Equals('Bad HTTP response: 404'),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -349,6 +352,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
+                error_message=Equals('Connection error: Connection refused'),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'connection_error'),
@@ -373,11 +377,33 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(False),
                 successful=Is(None),
                 date_sent=Is(None),
+                error_message=Is(None),
                 json_data=Not(Contains('result'))))
         self.assertEqual([], reqs)
         self.assertEqual(1, len(oopses.oopses))
         self.assertEqual(
             'No webhook proxy configured.', oopses.oopses[0]['value'])
+
+    def test_run_inactive(self):
+        # A delivery for a webhook that has been deactivated immediately
+        # fails.
+        with CaptureOops() as oopses:
+            job, reqs = self.makeAndRunJob(
+                raises=requests.ConnectionError('Connection refused'),
+                active=False)
+        self.assertThat(
+            job,
+            MatchesStructure(
+                status=Equals(JobStatus.FAILED),
+                pending=Equals(False),
+                successful=Equals(False),
+                date_sent=Is(None),
+                error_message=Equals('Webhook deactivated'),
+                json_data=ContainsDict(
+                    {'result': MatchesDict(
+                        {'webhook_deactivated': Equals(True)})})))
+        self.assertEqual([], reqs)
+        self.assertEqual([], oopses.oopses)
 
     def test_date_first_sent(self):
         job, reqs = self.makeAndRunJob(response_status=404)
@@ -512,6 +538,31 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertEqual(True, self.runJob(job))
         self.assertEqual(JobStatus.COMPLETED, job.status)
+
+    def test_manual_retry_with_reset(self):
+        # retry(reset=True) unsets date_first_sent so the automatic
+        # retries can be resumed. This can be useful for recovering from
+        # systemic errors that erroneously failed many deliveries.
+        hook = self.factory.makeWebhook()
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        client = MockWebhookClient(response_status=404)
+        self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
+
+        # Simulate a first attempt failure.
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIsNot(None, job.date_first_sent)
+
+        # A manual retry brings the scheduled start forward.
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIsNot(None, job.date_first_sent)
+
+        # When reset=True, date_first_sent is unset to restart the 24
+        # hour auto-retry window.
+        job.retry(reset=True)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIs(None, job.date_first_sent)
 
 
 class TestViaCronscript(TestCaseWithFactory):
