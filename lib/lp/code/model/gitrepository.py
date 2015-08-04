@@ -962,11 +962,6 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                     self._markProposalMerged(
                         proposal, merged_revision_id, logger=logger)
 
-    @property
-    def snaps(self):
-        """See `IHasSnaps`."""
-        return getUtility(ISnapSet).findByGitRepository(self)
-
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.
@@ -1009,7 +1004,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
         alteration_operations.extend(
-            ClearSnapRepository(snap, self) for snap in self.snaps)
+            ClearSnapRepository(snap, self)
+            for snap in getUtility(ISnapSet).findByGitRepository(self))
 
         return (alteration_operations, deletion_operations)
 

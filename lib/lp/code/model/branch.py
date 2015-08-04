@@ -816,7 +816,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             DeletionCallable.forSourcePackageRecipe(recipe)
             for recipe in self.recipes)
         alteration_operations.extend(
-            ClearSnapBranch(snap, self) for snap in self.snaps)
+            ClearSnapBranch(snap, self)
+            for snap in getUtility(ISnapSet).findByBranch(self))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1422,11 +1423,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(self._recipes, pre_iter_hook=hook)
-
-    @property
-    def snaps(self):
-        """See `IHasSnaps`."""
-        return getUtility(ISnapSet).findByBranch(self)
 
 
 class DeletionOperation:

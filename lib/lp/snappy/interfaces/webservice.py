@@ -20,7 +20,6 @@ from lp.services.webservice.apihelpers import (
     patch_entry_return_type,
     patch_reference_property,
     )
-from lp.snappy.interfaces.hassnaps import IHasSnaps
 from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapSet,
@@ -31,9 +30,6 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapFile,
     )
 
-
-# IHasSnaps
-patch_collection_property(IHasSnaps, 'snaps', ISnap)
 
 # ISnapFile
 patch_reference_property(ISnapFile, 'snapbuild', ISnapBuild)

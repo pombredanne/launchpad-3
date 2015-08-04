@@ -105,7 +105,6 @@ from lp.services.webapp.escaping import (
     structured,
     )
 from lp.services.webapp.interfaces import ITableBatchNavigator
-from lp.snappy.interfaces.hassnaps import IHasSnaps
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -276,7 +275,7 @@ class IBranchAnyone(Interface):
 
 
 class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
-                  IHasRecipes, IHasSnaps):
+                  IHasRecipes):
     """IBranch attributes that require launchpad.View permission."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
