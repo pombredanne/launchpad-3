@@ -241,9 +241,10 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def makeAndRunJob(self, response_status=200, raises=None, mock=True,
-                      secret=None):
+                      secret=None, active=True):
         hook = self.factory.makeWebhook(
-            delivery_url=u'http://example.com/ep', secret=secret)
+            delivery_url=u'http://example.com/ep', secret=secret,
+            active=active)
         job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
 
         client = MockWebhookClient(
@@ -382,6 +383,27 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(1, len(oopses.oopses))
         self.assertEqual(
             'No webhook proxy configured.', oopses.oopses[0]['value'])
+
+    def test_run_inactive(self):
+        # A delivery for a webhook that has been deactivated immediately
+        # fails.
+        with CaptureOops() as oopses:
+            job, reqs = self.makeAndRunJob(
+                raises=requests.ConnectionError('Connection refused'),
+                active=False)
+        self.assertThat(
+            job,
+            MatchesStructure(
+                status=Equals(JobStatus.FAILED),
+                pending=Equals(False),
+                successful=Equals(False),
+                date_sent=Is(None),
+                error_message=Equals('Webhook deactivated'),
+                json_data=ContainsDict(
+                    {'result': MatchesDict(
+                        {'webhook_deactivated': Equals(True)})})))
+        self.assertEqual([], reqs)
+        self.assertEqual([], oopses.oopses)
 
     def test_date_first_sent(self):
         job, reqs = self.makeAndRunJob(response_status=404)

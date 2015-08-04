@@ -31,6 +31,7 @@ from storm.properties import (
     )
 from storm.references import Reference
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     implementer,
@@ -337,6 +338,8 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def error_message(self):
         if 'result' not in self.json_data:
             return None
+        if self.json_data['result'].get('webhook_deactivated'):
+            return 'Webhook deactivated'
         connection_error = self.json_data['result'].get('connection_error')
         if connection_error is not None:
             return 'Connection error: %s' % connection_error
@@ -391,6 +394,13 @@ class WebhookDeliveryJob(WebhookJobDerived):
             return timedelta(hours=1)
 
     def run(self):
+        if not self.webhook.active:
+            updated_data = self.json_data
+            updated_data['result'] = {'webhook_deactivated': True}
+            self.json_data = updated_data
+            # Job.fail will abort the transaction.
+            transaction.commit()
+            raise WebhookDeliveryFailure(self.error_message)
         user_agent = '%s-Webhooks/r%s' % (
             config.vhost.mainsite.hostname, lp.app.versioninfo.revno)
         secret = self.webhook.secret
@@ -411,6 +421,7 @@ class WebhookDeliveryJob(WebhookJobDerived):
         if 'date_first_sent' not in updated_data:
             updated_data['date_first_sent'] = updated_data['date_sent']
         self.json_data = updated_data
+        transaction.commit()
 
         if not self.successful:
             if self.retry_automatically:
