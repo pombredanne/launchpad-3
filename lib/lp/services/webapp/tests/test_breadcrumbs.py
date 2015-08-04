@@ -123,7 +123,7 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         request = LaunchpadTestRequest()
         request.traversed_objects = [self.product, test_view]
         hierarchy_view = Hierarchy(test_view, request)
-        breadcrumb = hierarchy_view.makeBreadcrumbForRequestedPage()
+        [breadcrumb] = hierarchy_view.makeBreadcrumbsForRequestedPage()
         self.assertEquals(breadcrumb.text, 'breadcrumb test')
 
 
