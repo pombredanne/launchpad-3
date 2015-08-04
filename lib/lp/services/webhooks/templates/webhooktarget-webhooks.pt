@@ -28,7 +28,7 @@
         </li>
       </ul>
     </div>
-    <div class="portlet">
+    <div class="portlet" tal:condition="view/batchnav/currentBatch">
       <tal:navigation
           condition="view/batchnav/has_multiple_pages"
           replace="structure view/batchnav/@@+navigation-links-upper" />
