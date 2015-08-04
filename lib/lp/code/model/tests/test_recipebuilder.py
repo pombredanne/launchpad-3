@@ -137,8 +137,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives = get_sources_list_for_building(
             job.build, distroarchseries, None)
-        expected_archives.append(
-            "deb http://foo %s main" % job.build.distroseries.name)
+        expected_archives.insert(
+            0, "deb http://foo %s main" % job.build.distroseries.name)
         self.assertEqual({
            'archive_private': False,
            'arch_tag': 'i386',
@@ -238,7 +238,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries, logger))
         self.assertIn(
-            "Exception processing bzr_builder_sources_list:",
+            "Exception processing build tools sources.list entry:",
             logger.getLogBuffer())
 
     def test_extraBuildArgs_withNoBZrBuilderConfigSet(self):
