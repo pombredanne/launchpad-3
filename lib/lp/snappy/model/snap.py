@@ -302,16 +302,16 @@ class SnapSet:
             require_virtualized=require_virtualized, date_created=date_created)
         store.add(snap)
 
+        try:
+            store.flush()
+        except IntegrityError:
+            raise DuplicateSnapName
+
         if processors is None:
             processors = [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default]
         snap.setProcessors(processors)
-
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicateSnapName
 
         return snap
 

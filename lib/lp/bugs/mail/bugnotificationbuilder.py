@@ -16,6 +16,7 @@ from email.utils import formatdate
 import rfc822
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
@@ -25,7 +26,10 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.config import config
 from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
-from lp.services.mail.sendmail import format_address
+from lp.services.mail.sendmail import (
+    append_footer,
+    format_address,
+    )
 
 
 def format_rfc2822_date(date):
@@ -161,12 +165,13 @@ class BugNotificationBuilder:
             self.common_headers.append(
                 ('X-Launchpad-Bug-Duplicate', str(bug.duplicateof.id)))
 
-    def build(self, from_address, to_address, body, subject, email_date,
+    def build(self, from_address, to_person, body, subject, email_date,
               rationale=None, references=None, message_id=None, filters=None):
         """Construct the notification.
 
         :param from_address: The From address of the notification.
-        :param to_address: The To address for the notification.
+        :param to_person: The `IPerson` to use as the To address for the
+            notification.
         :param body: The body text of the notification.
         :type body: unicode
         :param subject: The Subject of the notification.
@@ -178,34 +183,47 @@ class BugNotificationBuilder:
 
         :return: An `email.mime.text.MIMEText` object.
         """
-        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-        message['Date'] = format_rfc2822_date(email_date)
-        message['From'] = from_address
-        message['To'] = to_address
+        headers = [
+            ('Date', format_rfc2822_date(email_date)),
+            ('From', from_address),
+            ('To', str(removeSecurityProxy(to_person).preferredemail.email)),
+            ]
 
         # Add the common headers.
-        for header in self.common_headers:
-            message.add_header(*header)
+        headers.extend(self.common_headers)
 
         if references:
-            message['References'] = ' '.join(references)
+            headers.append(('References', ' '.join(references)))
         if message_id is not None:
-            message['Message-Id'] = message_id
+            headers.append(('Message-Id', message_id))
 
         subject_prefix = "[Bug %d]" % self.bug.id
         if subject is None:
-            message['Subject'] = subject_prefix
+            headers.append(('Subject', subject_prefix))
         elif subject_prefix in subject:
-            message['Subject'] = subject
+            headers.append(('Subject', subject))
         else:
-            message['Subject'] = "%s %s" % (subject_prefix, subject)
+            headers.append(('Subject', "%s %s" % (subject_prefix, subject)))
 
         if rationale is not None:
-            message.add_header('X-Launchpad-Message-Rationale', rationale)
+            headers.append(('X-Launchpad-Message-Rationale', rationale))
 
         if filters is not None:
             for filter in filters:
-                message.add_header(
-                    'X-Launchpad-Subscription', filter)
+                headers.append(('X-Launchpad-Subscription', filter))
 
+        # XXX cjwatson 2015-07-31: This is cloned-and-hacked from
+        # BaseMailer; it would ultimately be better to convert bug
+        # notifications to that framework.
+        if to_person.expanded_notification_footers:
+            lines = []
+            for key, value in headers:
+                if key.startswith('X-Launchpad-'):
+                    lines.append('%s: %s\n' % (key[2:], value))
+            if lines:
+                body = append_footer(body, ''.join(lines))
+
+        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+        for header in headers:
+            message.add_header(*header)
         return message

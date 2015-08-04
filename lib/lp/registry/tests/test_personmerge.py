@@ -4,6 +4,7 @@
 """Tests for merge_people."""
 
 from datetime import datetime
+from operator import attrgetter
 
 import pytz
 from testtools.matchers import MatchesStructure
@@ -39,6 +40,10 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
+    )
+from lp.snappy.interfaces.snap import (
+    ISnapSet,
+    SNAP_FEATURE_FLAG,
     )
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.livefs import (
@@ -558,6 +563,45 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         project_names = [l.metadata['project'] for l in livefses]
         self.assertEqual(['TO', 'FROM'], project_names)
         self.assertEqual(u'foo-1', livefses[1].name)
+
+    def test_merge_moves_snaps(self):
+        # When person/teams are merged, snap packages owned by the from
+        # person are moved.
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        duplicate = self.factory.makePerson()
+        mergee = self.factory.makePerson()
+        self.factory.makeSnap(registrant=duplicate, owner=duplicate)
+        self._do_premerge(duplicate, mergee)
+        login_person(mergee)
+        duplicate, mergee = self._do_merge(duplicate, mergee)
+        self.assertEqual(1, getUtility(ISnapSet).findByPerson(mergee).count())
+
+    def test_merge_with_duplicated_snaps(self):
+        # If both the from and to people have snap packages with the same
+        # name, merging renames the duplicate from the from person's side.
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        duplicate = self.factory.makePerson()
+        mergee = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch()
+        [ref] = self.factory.makeGitRefs()
+        self.factory.makeSnap(
+            registrant=duplicate, owner=duplicate, name=u'foo', branch=branch)
+        self.factory.makeSnap(
+            registrant=mergee, owner=mergee, name=u'foo', git_ref=ref)
+        self._do_premerge(duplicate, mergee)
+        login_person(mergee)
+        duplicate, mergee = self._do_merge(duplicate, mergee)
+        snaps = sorted(
+            getUtility(ISnapSet).findByPerson(mergee), key=attrgetter("name"))
+        self.assertEqual(2, len(snaps))
+        self.assertIsNone(snaps[0].branch)
+        self.assertEqual(ref.repository, snaps[0].git_repository)
+        self.assertEqual(ref.path, snaps[0].git_path)
+        self.assertEqual(u'foo', snaps[0].name)
+        self.assertEqual(branch, snaps[1].branch)
+        self.assertIsNone(snaps[1].git_repository)
+        self.assertIsNone(snaps[1].git_path)
+        self.assertEqual(u'foo-1', snaps[1].name)
 
 
 class TestMergeMailingListSubscriptions(TestCaseWithFactory):

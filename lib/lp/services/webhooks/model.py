@@ -38,6 +38,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+import lp.app.versioninfo
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -296,6 +297,13 @@ class WebhookDeliveryJob(WebhookJobDerived):
     retry_error_types = (WebhookDeliveryRetry,)
     user_error_types = (WebhookDeliveryFailure,)
 
+    # The request timeout is 30 seconds, requests timeouts aren't
+    # totally reliable so we also have a relatively low celery timeout
+    # as a backup. The celery timeout and lease expiry have a bit of
+    # slack to cope with slow job start/finish without conflicts.
+    soft_time_limit = timedelta(seconds=45)
+    lease_duration = timedelta(seconds=60)
+
     # Effectively infinite, as we give up by checking
     # retry_automatically and raising a fatal exception instead.
     max_retries = 1000
@@ -366,14 +374,20 @@ class WebhookDeliveryJob(WebhookJobDerived):
 
     @property
     def retry_delay(self):
-        if self._time_since_first_attempt < timedelta(hours=1):
+        if self._time_since_first_attempt < timedelta(minutes=10):
+            return timedelta(minutes=1)
+        elif self._time_since_first_attempt < timedelta(hours=1):
             return timedelta(minutes=5)
         else:
             return timedelta(hours=1)
 
     def run(self):
+        user_agent = '%s-Webhooks/r%s' % (
+            config.vhost.mainsite.hostname, lp.app.versioninfo.revno)
+        secret = self.webhook.secret
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
+            user_agent, 30, secret.encode('utf-8') if secret else None,
             self.payload)
         # Request and response headers and body may be large, so don't
         # store them in the frequently-used JSON. We could store them in

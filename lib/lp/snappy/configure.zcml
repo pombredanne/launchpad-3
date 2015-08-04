@@ -71,4 +71,6 @@
         <allow interface="lp.snappy.interfaces.snapbuild.ISnapFile" />
     </class>
 
+    <webservice:register module="lp.snappy.interfaces.webservice" />
+
 </configure>

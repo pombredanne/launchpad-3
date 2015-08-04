@@ -157,6 +157,7 @@ from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.livefs import ILiveFSSet
@@ -797,6 +798,7 @@ class LaunchpadRootNavigation(Navigation):
         '+processors': IProcessorSet,
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,
+        '+snaps': ISnapSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,

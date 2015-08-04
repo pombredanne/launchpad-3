@@ -33,6 +33,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.helpers import get_email_template
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.livefs import ILiveFSSet
@@ -616,6 +617,24 @@ def _mergeLiveFS(cur, from_person, to_person):
         IStore(livefses[0]).flush()
 
 
+def _mergeSnap(cur, from_person, to_person):
+    # This shouldn't use removeSecurityProxy.
+    snaps = getUtility(ISnapSet).findByPerson(from_person)
+    existing_names = [
+        s.name for s in getUtility(ISnapSet).findByPerson(to_person)]
+    for snap in snaps:
+        new_name = snap.name
+        count = 1
+        while new_name in existing_names:
+            new_name = '%s-%s' % (snap.name, count)
+            count += 1
+        naked_snap = removeSecurityProxy(snap)
+        naked_snap.owner = to_person
+        naked_snap.name = new_name
+    if not snaps.is_empty():
+        IStore(snaps[0]).flush()
+
+
 def _purgeUnmergableTeamArtifacts(from_team, to_team, reviewer):
     """Purge team artifacts that cannot be merged, but can be removed."""
     # A team cannot have more than one mailing list.
@@ -713,9 +732,6 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
         # Obsolete table.
         ('branchmergequeue', 'owner'),
-        # This needs handling before we deploy the snap code, but can be
-        # ignored for the purpose of deploying the database tables.
-        ('snap', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -847,6 +863,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeLiveFS(cur, from_person, to_person)
     skip.append(('livefs', 'owner'))
+
+    _mergeSnap(cur, from_person, to_person)
+    skip.append(('snap', 'owner'))
 
     # Sanity check. If we have a reference that participates in a
     # UNIQUE index, it must have already been handled by this point.
