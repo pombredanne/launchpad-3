@@ -286,6 +286,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(False),
                 successful=Equals(True),
                 date_sent=Not(Is(None)),
+                error_message=Is(None),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -327,6 +328,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
+                error_message=Equals('Bad HTTP response: 404'),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -349,6 +351,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(True),
                 successful=Equals(False),
                 date_sent=Not(Is(None)),
+                error_message=Equals('Connection error: Connection refused'),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'connection_error'),
@@ -373,6 +376,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Equals(False),
                 successful=Is(None),
                 date_sent=Is(None),
+                error_message=Is(None),
                 json_data=Not(Contains('result'))))
         self.assertEqual([], reqs)
         self.assertEqual(1, len(oopses.oopses))

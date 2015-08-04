@@ -331,10 +331,10 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def successful(self):
         if 'result' not in self.json_data:
             return None
-        return self.failure_detail is None
+        return self.error_message is None
 
     @property
-    def failure_detail(self):
+    def error_message(self):
         if 'result' not in self.json_data:
             return None
         connection_error = self.json_data['result'].get('connection_error')
@@ -412,4 +412,4 @@ class WebhookDeliveryJob(WebhookJobDerived):
             if self.retry_automatically:
                 raise WebhookDeliveryRetry()
             else:
-                raise WebhookDeliveryFailure(self.failure_detail)
+                raise WebhookDeliveryFailure(self.error_message)

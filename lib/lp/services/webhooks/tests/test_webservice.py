@@ -186,14 +186,17 @@ class TestWebhookDelivery(TestCaseWithFactory):
             MatchesAll(
                 KeysEqual(
                     'date_created', 'date_first_sent', 'date_sent',
-                    'http_etag', 'payload', 'pending', 'resource_type_link',
-                    'self_link', 'successful', 'web_link', 'webhook_link'),
-                ContainsDict(
-                    {'payload': Equals({'ping': True}),
+                    'error_message', 'http_etag', 'payload', 'pending',
+                    'resource_type_link', 'self_link', 'successful',
+                    'web_link', 'webhook_link'),
+                ContainsDict({
+                    'payload': Equals({'ping': True}),
                     'pending': Equals(True),
                     'successful': Is(None),
                     'date_created': Not(Is(None)),
-                    'date_sent': Is(None)})))
+                    'date_sent': Is(None),
+                    'error_message': Is(None),
+                    })))
 
     def test_retry(self):
         with person_logged_in(self.owner):

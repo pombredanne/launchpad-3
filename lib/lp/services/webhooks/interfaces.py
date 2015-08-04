@@ -224,6 +224,13 @@ class IWebhookDeliveryJob(IRunnableJob):
             "no attempts have been made yet."),
         required=False, readonly=True))
 
+    error_message = exported(TextLine(
+        title=_("Error message"),
+        description=_(
+            "Details of the error encountered by the most recent delivery "
+            "attempt."),
+        required=False, readonly=True))
+
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
 
