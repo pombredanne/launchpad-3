@@ -5,12 +5,16 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from httmock import (
     HTTMock,
     urlmatch,
     )
+from pytz import utc
 import requests
 from storm.store import Store
 from testtools import TestCase
@@ -23,18 +27,24 @@ from testtools.matchers import (
     KeysEqual,
     LessThan,
     MatchesAll,
+    MatchesDict,
     MatchesStructure,
     Not,
     )
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.app.versioninfo import revno
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.job.tests import block_on_job
 from lp.services.scripts.tests import run_script
-from lp.services.webhooks.client import WebhookClient
+from lp.services.webhooks.client import (
+    create_request,
+    WebhookClient,
+    )
 from lp.services.webhooks.interfaces import (
     IWebhookClient,
     IWebhookDeliveryJob,
@@ -129,7 +139,7 @@ class TestWebhookClient(TestCase):
     def sendToWebhook(self, response_status=200, raises=None):
         reqs = []
 
-        @urlmatch(netloc='hookep.com')
+        @urlmatch(netloc='example.com')
         def endpoint_mock(url, request):
             if raises:
                 raise raises
@@ -138,58 +148,89 @@ class TestWebhookClient(TestCase):
 
         with HTTMock(endpoint_mock):
             result = WebhookClient().deliver(
-                'http://hookep.com/foo',
-                {'http': 'http://squid.example.com:3128'},
-                {'foo': 'bar'})
+                'http://example.com/ep', 'http://squid.example.com:3128',
+                'TestWebhookClient', 30, 'sekrit', {'foo': 'bar'})
 
         return reqs, result
 
+    @property
+    def request_matcher(self):
+        return MatchesDict({
+            'url': Equals('http://example.com/ep'),
+            'method': Equals('POST'),
+            'headers': Equals(
+                {'Content-Type': 'application/json',
+                 'Content-Length': '14',
+                 'User-Agent': 'TestWebhookClient',
+                 'X-Hub-Signature':
+                    'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
+                 }),
+            'body': Equals('{"foo": "bar"}'),
+            })
+
     def test_sends_request(self):
         [request], result = self.sendToWebhook()
-        self.assertEqual(
-            {'Content-Type': 'application/json', 'Content-Length': '14'},
-            result['request']['headers'])
-        self.assertEqual('{"foo": "bar"}', result['request']['body'])
-        self.assertEqual(200, result['response']['status_code'])
-        self.assertEqual({}, result['response']['headers'])
-        self.assertEqual('Content', result['response']['body'])
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'response': MatchesDict({
+                    'status_code': Equals(200),
+                    'headers': Equals({}),
+                    'body': Equals('Content'),
+                    }),
+                }))
 
     def test_accepts_404(self):
         [request], result = self.sendToWebhook(response_status=404)
-        self.assertEqual(
-            {'Content-Type': 'application/json', 'Content-Length': '14'},
-            result['request']['headers'])
-        self.assertEqual('{"foo": "bar"}', result['request']['body'])
-        self.assertEqual(404, result['response']['status_code'])
-        self.assertEqual({}, result['response']['headers'])
-        self.assertEqual('Content', result['response']['body'])
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'response': MatchesDict({
+                    'status_code': Equals(404),
+                    'headers': Equals({}),
+                    'body': Equals('Content'),
+                    }),
+                }))
 
     def test_connection_error(self):
         # Attempts that fail to connect have a connection_error rather
         # than a response.
         reqs, result = self.sendToWebhook(
             raises=requests.ConnectionError('Connection refused'))
-        self.assertNotIn('response', result)
-        self.assertEqual(
-            'Connection refused', result['connection_error'])
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'connection_error': Equals('Connection refused'),
+                }))
         self.assertEqual([], reqs)
 
 
-class MockWebhookClient:
+class MockWebhookClient(WebhookClient):
 
     def __init__(self, response_status=200, raises=None):
         self.response_status = response_status
         self.raises = raises
         self.requests = []
 
-    def deliver(self, url, proxy, payload):
-        result = {'request': {}}
+    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
+        body, headers = create_request(user_agent, secret, payload)
+        result = {
+            'request': {
+                'url': url,
+                'method': 'POST',
+                'headers': headers,
+                'body': body,
+                },
+            }
         if isinstance(self.raises, requests.ConnectionError):
             result['connection_error'] = str(self.raises)
         elif self.raises is not None:
             raise self.raises
         else:
-            self.requests.append(('POST', url))
+            self.requests.append(('POST', url, result['request']['headers']))
             result['response'] = {'status_code': self.response_status}
         return result
 
@@ -199,8 +240,10 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def makeAndRunJob(self, response_status=200, raises=None, mock=True):
-        hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
+    def makeAndRunJob(self, response_status=200, raises=None, mock=True,
+                      secret=None):
+        hook = self.factory.makeWebhook(
+            delivery_url=u'http://example.com/ep', secret=secret)
         job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
 
         client = MockWebhookClient(
@@ -216,6 +259,21 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         hook = self.factory.makeWebhook()
         self.assertProvides(
             WebhookDeliveryJob.create(hook, payload={}), IWebhookDeliveryJob)
+
+    def test_short_lease_and_timeout(self):
+        # Webhook jobs have a request timeout of 30 seconds, a celery
+        # timeout of 45 seconds, and a lease of 60 seconds, to give
+        # reasonable time for sluggish things to catch up.
+        hook = self.factory.makeWebhook()
+        job = hook.ping()
+        job.acquireLease()
+        self.assertThat(
+            job.lease_expires - datetime.now(utc),
+            MatchesAll(
+                GreaterThan(timedelta(seconds=50)),
+                LessThan(timedelta(seconds=60))))
+        self.assertEqual(
+            timedelta(seconds=45), removeSecurityProxy(job).soft_time_limit)
 
     def test_run_200(self):
         # A request that returns 200 is a success.
@@ -235,7 +293,26 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                             {'response': ContainsDict(
                                 {'status_code': Equals(200)})}))})))
         self.assertEqual(1, len(reqs))
-        self.assertEqual([('POST', 'http://hookep.com/foo')], reqs)
+        self.assertEqual([
+            ('POST', 'http://example.com/ep',
+             {'Content-Type': 'application/json',
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno}),
+            ], reqs)
+        self.assertEqual([], oopses.oopses)
+
+    def test_run_signature(self):
+        # If the webhook has a secret, the request is signed in a
+        # PubSubHubbub-compatible way.
+        with CaptureOops() as oopses:
+            job, reqs = self.makeAndRunJob(
+                response_status=200, secret=u'sekrit')
+        self.assertEqual([
+            ('POST', 'http://example.com/ep',
+             {'Content-Type': 'application/json',
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
+              'X-Hub-Signature':
+                'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd'}),
+            ], reqs)
         self.assertEqual([], oopses.oopses)
 
     def test_run_404(self):
@@ -318,9 +395,15 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(orig_first_sent, job.date_first_sent)
 
     def test_retry_delay(self):
-        # Deliveries are retried every 5 minutes for the first hour, and
-        # every hour thereafter.
+        # Deliveries are retried every minute for the first 10 minutes,
+        # every 5 minutes up to an hour, and every hour thereafter.
         job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertEqual(timedelta(minutes=1), job.retry_delay)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=5)).isoformat()
+        self.assertEqual(timedelta(minutes=1), job.retry_delay)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=5)).isoformat()
         self.assertEqual(timedelta(minutes=5), job.retry_delay)
         job.json_data['date_first_sent'] = (
             job.date_first_sent - timedelta(minutes=30)).isoformat()
@@ -436,7 +519,7 @@ class TestViaCronscript(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def test_run_from_cronscript(self):
-        hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
+        hook = self.factory.makeWebhook(delivery_url=u'http://example.com/ep')
         job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
         self.assertEqual(JobStatus.WAITING, job.status)
         transaction.commit()
@@ -462,7 +545,7 @@ class TestViaCelery(TestCaseWithFactory):
 
     def test_WebhookDeliveryJob(self):
         """WebhookDeliveryJob runs under Celery."""
-        hook = self.factory.makeWebhook(delivery_url=u'http://hookep.com/foo')
+        hook = self.factory.makeWebhook(delivery_url=u'http://example.com/ep')
 
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'WebhookDeliveryJob'}))

@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from contextlib import contextmanager
+
 from testtools.matchers import MatchesRegex
 
 from lp.services.config import config
