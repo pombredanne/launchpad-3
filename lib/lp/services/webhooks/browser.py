@@ -60,8 +60,6 @@ class WebhookTargetNavigationMixin:
             return None
         return webhook
 
-# XXX: Need webhook breadcrumb, ideally inside a "Webhooks" one.
-
 
 class WebhooksView(LaunchpadView):
 
