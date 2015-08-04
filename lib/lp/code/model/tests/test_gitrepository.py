@@ -81,6 +81,7 @@ from lp.code.model.gitjob import (
     )
 from lp.code.model.gitrepository import (
     ClearPrerequisiteRepository,
+    ClearSnapRepository,
     DeletionCallable,
     DeletionOperation,
     GitRepository,
@@ -104,12 +105,14 @@ from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -620,6 +623,30 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
             self.factory.makePerson(), self.factory.makePerson())
         merge_proposal.target_git_repository.destroySelf(break_references=True)
 
+    def test_snap_requirements(self):
+        # If a repository is used by a snap package, the deletion
+        # requirements indicate this.
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=ref)
+        self.assertEqual(
+            {snap: ("alter", _("This snap package uses this repository."))},
+            ref.repository.getDeletionRequirements())
+
+    def test_snap_deletion(self):
+        # break_references allows deleting a repository used by a snap package.
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        repository = self.factory.makeGitRepository()
+        [ref1, ref2] = self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/1", u"refs/heads/2"])
+        snap1 = self.factory.makeSnap(git_ref=ref1)
+        snap2 = self.factory.makeSnap(git_ref=ref2)
+        repository.destroySelf(break_references=True)
+        self.assertIsNone(snap1.git_repository)
+        self.assertIsNone(snap1.git_path)
+        self.assertIsNone(snap2.git_repository)
+        self.assertIsNone(snap2.git_path)
+
     def test_ClearPrerequisiteRepository(self):
         # ClearPrerequisiteRepository.__call__ must clear the prerequisite
         # repository.
@@ -628,6 +655,15 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
                 merge_proposal.prerequisite_git_repository.owner):
             ClearPrerequisiteRepository(merge_proposal)()
         self.assertIsNone(merge_proposal.prerequisite_git_repository)
+
+    def test_ClearSnapRepository(self):
+        # ClearSnapRepository.__call__ must clear the repository and path.
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=ref)
+        ClearSnapRepository(snap, ref.repository)()
+        self.assertIsNone(snap.git_repository)
+        self.assertIsNone(snap.git_path)
 
     def test_DeletionOperation(self):
         # DeletionOperation.__call__ is not implemented.

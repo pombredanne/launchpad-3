@@ -815,6 +815,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
             for recipe in self.recipes)
+        alteration_operations.extend(
+            ClearSnapBranch(snap, self) for snap in self.snaps)
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1519,6 +1521,19 @@ class DeleteCodeImport(DeletionOperation):
     def __call__(self):
         from lp.code.model.codeimport import CodeImportSet
         CodeImportSet().delete(self.affected_object)
+
+
+class ClearSnapBranch(DeletionOperation):
+    """Deletion operation that clears a snap package's branch."""
+
+    def __init__(self, snap, branch):
+        DeletionOperation.__init__(
+            self, snap, _('This snap package uses this branch.'))
+        self.branch = branch
+
+    def __call__(self):
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
 
 
 @implementer(IBranchSet)

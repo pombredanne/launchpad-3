@@ -1008,6 +1008,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
+        alteration_operations.extend(
+            ClearSnapRepository(snap, self) for snap in self.snaps)
 
         return (alteration_operations, deletion_operations)
 
@@ -1131,6 +1133,20 @@ class ClearPrerequisiteRepository(DeletionOperation):
         self.affected_object.prerequisite_git_repository = None
         self.affected_object.prerequisite_git_path = None
         self.affected_object.prerequisite_git_commit_sha1 = None
+
+
+class ClearSnapRepository(DeletionOperation):
+    """Deletion operation that clears a snap package's repository."""
+
+    def __init__(self, snap, repository):
+        DeletionOperation.__init__(
+            self, snap, msg("This snap package uses this repository."))
+        self.repository = repository
+
+    def __call__(self):
+        if self.affected_object.git_repository == self.repository:
+            self.affected_object.git_repository = None
+            self.affected_object.git_path = None
 
 
 @implementer(IGitRepositorySet)
