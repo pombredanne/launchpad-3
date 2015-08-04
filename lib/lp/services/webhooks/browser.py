@@ -122,6 +122,10 @@ class WebhookAddView(LaunchpadFormView):
     def initial_values(self):
         return {'active': True}
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+webhooks")
+
     @action("Add webhook", name="new")
     def new_action(self, action, data):
         webhook = self.context.newWebhook(
