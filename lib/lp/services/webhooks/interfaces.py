@@ -31,12 +31,14 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     operation_for_version,
+    operation_parameters,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -111,8 +113,13 @@ class IWebhook(Interface):
         title=_("URL"), required=True, readonly=False))
     active = exported(Bool(
         title=_("Active"), required=True, readonly=False))
+
+    # Do not export this.
     secret = TextLine(
-        title=_("Unique name"), required=False, readonly=True)
+        title=_("Secret"), required=False,
+        description=_(
+            "An optional string used to sign delivery bodies with HMAC-SHA1 "
+            "in the X-Hub-Signature header."))
 
     deliveries = exported(doNotSnapshot(CollectionField(
         title=_("Recent deliveries for this webhook."),
@@ -131,6 +138,12 @@ class IWebhook(Interface):
     @operation_for_version('devel')
     def destroySelf():
         """Delete this webhook."""
+
+    @export_write_operation()
+    @operation_parameters(secret=copy_field(secret))
+    @operation_for_version('devel')
+    def setSecret(secret):
+        """Set the secret used to sign deliveries."""
 
 
 class IWebhookSource(Interface):
@@ -159,9 +172,10 @@ class IWebhookTarget(Interface):
 
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(
-        IWebhook, ['delivery_url', 'active', 'event_types'])
+        IWebhook, ['delivery_url', 'active', 'event_types', 'secret'])
     @operation_for_version("devel")
-    def newWebhook(registrant, delivery_url, event_types, active=True):
+    def newWebhook(registrant, delivery_url, event_types, active=True,
+                   secret=None):
         """Create a new webhook."""
 
 

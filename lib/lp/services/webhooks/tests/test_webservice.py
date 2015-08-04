@@ -136,6 +136,31 @@ class TestWebhook(TestCaseWithFactory):
             self.webhook_url, api_version='devel')
         self.assertEqual(404, get_response.status)
 
+    def test_setSecret(self):
+        with person_logged_in(self.owner):
+            self.assertIs(None, self.webhook.secret)
+        self.assertEqual(
+            200,
+            self.webservice.named_post(
+                self.webhook_url, 'setSecret', secret='sekrit',
+                api_version='devel').status)
+        with person_logged_in(self.owner):
+            self.assertEqual(u'sekrit', self.webhook.secret)
+        self.assertEqual(
+            200,
+            self.webservice.named_post(
+                self.webhook_url, 'setSecret', secret='shhh',
+                api_version='devel').status)
+        with person_logged_in(self.owner):
+            self.assertEqual(u'shhh', self.webhook.secret)
+        self.assertEqual(
+            200,
+            self.webservice.named_post(
+                self.webhook_url, 'setSecret', secret=None,
+                api_version='devel').status)
+        with person_logged_in(self.owner):
+            self.assertIs(None, self.webhook.secret)
+
 
 class TestWebhookDelivery(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -243,6 +268,21 @@ class TestWebhookTarget(TestCaseWithFactory):
             [('http://example.com/ep', ['foo', 'bar'], True)],
             [(entry['delivery_url'], entry['event_types'], entry['active'])
              for entry in representation['entries']])
+
+    def test_newWebhook_secret(self):
+        self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
+        response = self.webservice.named_post(
+            self.target_url, 'newWebhook',
+            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            secret='sekrit', api_version='devel')
+        self.assertEqual(201, response.status)
+
+        # The secret is set, but cannot be read back through the API.
+        with person_logged_in(self.owner):
+            self.assertEqual(u'sekrit', self.target.webhooks.one().secret)
+        representation = self.webservice.get(
+            self.target_url + '/webhooks', api_version='devel').jsonBody()
+        self.assertNotIn(u'secret', representation['entries'][0])
 
     def test_newWebhook_permissions(self):
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))

@@ -144,6 +144,10 @@ class Webhook(StormBase):
         updated_data['event_types'] = event_types
         self.json_data = updated_data
 
+    def setSecret(self, secret):
+        """See `IWebhook`."""
+        self.secret = secret
+
 
 @implementer(IWebhookSource)
 class WebhookSource:
@@ -195,11 +199,12 @@ class WebhookTargetMixin:
             getUtility(IWebhookSource).findByTarget(self),
             pre_iter_hook=preload_registrants)
 
-    def newWebhook(self, registrant, delivery_url, event_types, active=True):
+    def newWebhook(self, registrant, delivery_url, event_types, active=True,
+                   secret=None):
         if not getFeatureFlag('webhooks.new.enabled'):
             raise WebhookFeatureDisabled()
         return getUtility(IWebhookSource).new(
-            self, registrant, delivery_url, event_types, active, None)
+            self, registrant, delivery_url, event_types, active, secret)
 
 
 class WebhookJobType(DBEnumeratedType):
