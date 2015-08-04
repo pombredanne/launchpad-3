@@ -8,22 +8,44 @@
 <body>
 
   <div metal:fill-slot="main">
-    <tal:navigation
-        condition="view/batchnav/has_multiple_pages"
-        replace="structure view/batchnav/@@+navigation-links-upper" />
-    <table class="listing">
-      <tbody>
-        <tr tal:repeat="webhook view/batchnav/currentBatch">
-          <td>
-            <a tal:content="webhook/delivery_url"
-               tal:attributes="href webhook/fmt:url">http://example.com/ep</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <tal:navigation
-        condition="view/batchnav/has_multiple_pages"
-        replace="structure view/batchnav/@@+navigation-links-lower" />
+    <div class="top-portlet">
+      <p>
+        Webhooks let you configure Launchpad to notify external services
+        when certain events occur. When an event happens, Launchpad will
+        send a POST request to any matching webhook URLs that you've
+        specified.
+      </p>
+      <div>
+        <div class="beta" style="display: inline">
+          <img class="beta" alt="[BETA]" src="/@@/beta" /></div>
+        The only currently supported events are Git pushes. We'll be
+        rolling webhooks out to other types of events soon.
+      </div>
+      <ul class="horizontal">
+        <li>
+          <a class="sprite add"
+            tal:attributes="href context/fmt:url/+new-webhook">Add webhook</a>
+        </li>
+      </ul>
+    </div>
+    <div class="portlet">
+      <tal:navigation
+          condition="view/batchnav/has_multiple_pages"
+          replace="structure view/batchnav/@@+navigation-links-upper" />
+      <table class="listing">
+        <tbody>
+          <tr tal:repeat="webhook view/batchnav/currentBatch">
+            <td>
+              <a tal:content="webhook/delivery_url"
+                tal:attributes="href webhook/fmt:url">http://example.com/ep</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <tal:navigation
+          condition="view/batchnav/has_multiple_pages"
+          replace="structure view/batchnav/@@+navigation-links-lower" />
+    </div>
   </div>
 
 </body>

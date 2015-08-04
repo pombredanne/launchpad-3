@@ -65,6 +65,12 @@
         permission="launchpad.Edit"
         class="lp.services.webhooks.browser.WebhooksView"
         template="templates/webhooktarget-webhooks.pt" />
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhookTarget"
+        name="+new-webhook"
+        permission="launchpad.Edit"
+        class="lp.services.webhooks.browser.WebhookAddView"
+        template="../../app/templates/generic-edit.pt" />
 
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"

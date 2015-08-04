@@ -100,9 +100,29 @@ class WebhookEditSchema(Interface):
     use_template(IWebhook, include=['delivery_url', 'event_types', 'active'])
 
 
+class WebhookAddView(LaunchpadFormView):
+
+    page_title = label = 'Add webhook'
+
+    schema = WebhookEditSchema
+
+    @property
+    def initial_values(self):
+        return {'active': True}
+
+    @action("Add webhook", name="new")
+    def new_action(self, action, data):
+        webhook = self.context.newWebhook(
+            registrant=self.user, delivery_url=data['delivery_url'],
+            event_types=data['event_types'], active=data['active'])
+        self.next_url = canonical_url(webhook)
+
+
 class WebhookView(LaunchpadEditFormView):
 
     schema = WebhookEditSchema
+
+    label = "Manage webhook"
 
     @property
     def next_url(self):
@@ -113,15 +133,6 @@ class WebhookView(LaunchpadEditFormView):
     @property
     def adapters(self):
         return {self.schema: self.context}
-
-    @property
-    def page_title(self):
-        return "Manage webhook for %s" % self.context.delivery_url
-
-    # XXX: No URL or context (except in breadcrumbs)
-    @property
-    def label(self):
-        return "Manage webhook"
 
     @action("Save webhook", name="save")
     def save_action(self, action, data):
