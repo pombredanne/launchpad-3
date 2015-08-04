@@ -119,7 +119,9 @@ class IWebhook(Interface):
         title=_("Secret"), required=False,
         description=_(
             "An optional string used to sign delivery bodies with HMAC-SHA1 "
-            "in the X-Hub-Signature header."))
+            "in the X-Hub-Signature header. This must be less than 200 bytes "
+            "long."),
+        max_length=200)
 
     deliveries = exported(doNotSnapshot(CollectionField(
         title=_("Recent deliveries for this webhook."),

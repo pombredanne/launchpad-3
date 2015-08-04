@@ -542,7 +542,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
     def test_manual_retry_with_reset(self):
         # retry(reset=True) unsets date_first_sent so the automatic
         # retries can be resumed. This can be useful for recovering from
-        # systemic errors the erroneously failed many deliveries.
+        # systemic errors that erroneously failed many deliveries.
         hook = self.factory.makeWebhook()
         job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
         client = MockWebhookClient(response_status=404)
