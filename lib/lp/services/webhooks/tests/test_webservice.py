@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import json
 
+from pytz import utc
 from testtools.matchers import (
     ContainsDict,
     Equals,
@@ -16,6 +18,7 @@ from testtools.matchers import (
     MatchesAll,
     Not,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
@@ -136,6 +139,31 @@ class TestWebhook(TestCaseWithFactory):
             self.webhook_url, api_version='devel')
         self.assertEqual(404, get_response.status)
 
+    def test_setSecret(self):
+        with person_logged_in(self.owner):
+            self.assertIs(None, self.webhook.secret)
+        self.assertEqual(
+            200,
+            self.webservice.named_post(
+                self.webhook_url, 'setSecret', secret='sekrit',
+                api_version='devel').status)
+        with person_logged_in(self.owner):
+            self.assertEqual(u'sekrit', self.webhook.secret)
+        self.assertEqual(
+            200,
+            self.webservice.named_post(
+                self.webhook_url, 'setSecret', secret='shhh',
+                api_version='devel').status)
+        with person_logged_in(self.owner):
+            self.assertEqual(u'shhh', self.webhook.secret)
+        self.assertEqual(
+            200,
+            self.webservice.named_post(
+                self.webhook_url, 'setSecret', secret=None,
+                api_version='devel').status)
+        with person_logged_in(self.owner):
+            self.assertIs(None, self.webhook.secret)
+
 
 class TestWebhookDelivery(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -161,28 +189,46 @@ class TestWebhookDelivery(TestCaseWithFactory):
             MatchesAll(
                 KeysEqual(
                     'date_created', 'date_first_sent', 'date_sent',
-                    'http_etag', 'payload', 'pending', 'resource_type_link',
-                    'self_link', 'successful', 'web_link', 'webhook_link'),
-                ContainsDict(
-                    {'payload': Equals({'ping': True}),
+                    'error_message', 'http_etag', 'payload', 'pending',
+                    'resource_type_link', 'self_link', 'successful',
+                    'web_link', 'webhook_link'),
+                ContainsDict({
+                    'payload': Equals({'ping': True}),
                     'pending': Equals(True),
                     'successful': Is(None),
                     'date_created': Not(Is(None)),
-                    'date_sent': Is(None)})))
+                    'date_sent': Is(None),
+                    'error_message': Is(None),
+                    })))
 
     def test_retry(self):
         with person_logged_in(self.owner):
             self.delivery.start()
+            removeSecurityProxy(self.delivery).json_data['date_first_sent'] = (
+                datetime.now(utc).isoformat())
             self.delivery.fail()
         representation = self.webservice.get(
             self.delivery_url, api_version='devel').jsonBody()
         self.assertFalse(representation['pending'])
+
+        # A normal retry just makes the job pending again.
         response = self.webservice.named_post(
             self.delivery_url, 'retry', api_version='devel')
         self.assertEqual(200, response.status)
         representation = self.webservice.get(
             self.delivery_url, api_version='devel').jsonBody()
         self.assertTrue(representation['pending'])
+        self.assertIsNot(None, representation['date_first_sent'])
+
+        # retry(reset=True) unsets date_first_sent as well, restarting
+        # the automatic retry window.
+        response = self.webservice.named_post(
+            self.delivery_url, 'retry', reset=True, api_version='devel')
+        self.assertEqual(200, response.status)
+        representation = self.webservice.get(
+            self.delivery_url, api_version='devel').jsonBody()
+        self.assertTrue(representation['pending'])
+        self.assertIs(None, representation['date_first_sent'])
 
 
 class TestWebhookTarget(TestCaseWithFactory):
@@ -243,6 +289,21 @@ class TestWebhookTarget(TestCaseWithFactory):
             [('http://example.com/ep', ['foo', 'bar'], True)],
             [(entry['delivery_url'], entry['event_types'], entry['active'])
              for entry in representation['entries']])
+
+    def test_newWebhook_secret(self):
+        self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
+        response = self.webservice.named_post(
+            self.target_url, 'newWebhook',
+            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            secret='sekrit', api_version='devel')
+        self.assertEqual(201, response.status)
+
+        # The secret is set, but cannot be read back through the API.
+        with person_logged_in(self.owner):
+            self.assertEqual(u'sekrit', self.target.webhooks.one().secret)
+        representation = self.webservice.get(
+            self.target_url + '/webhooks', api_version='devel').jsonBody()
+        self.assertNotIn(u'secret', representation['entries'][0])
 
     def test_newWebhook_permissions(self):
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
