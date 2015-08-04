@@ -200,7 +200,7 @@ class TestJobsViaCelery(TestCaseWithFactory):
                     LessThan(dates_started[0] + timedelta(seconds=8))),
                 MatchesAll(
                     GreaterThan(dates_started[1] + timedelta(seconds=8)),
-                    LessThan(dates_started[1] + timedelta(seconds=12))),
+                    LessThan(dates_started[1] + timedelta(seconds=13))),
                 ]))
         self.assertEqual(3, job.attempt_count)
         self.assertEqual(JobStatus.COMPLETED, job.status)
