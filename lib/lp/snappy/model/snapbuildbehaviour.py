@@ -11,10 +11,7 @@ __all__ = [
     'SnapBuildBehaviour',
     ]
 
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import adapter
 from zope.interface import implementer
 
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -31,10 +28,7 @@ from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
-from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled,
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import ArchiveDisabled
 
 
 @adapter(ISnapBuild)
