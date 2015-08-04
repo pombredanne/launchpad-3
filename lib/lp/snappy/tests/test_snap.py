@@ -451,6 +451,34 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertContentEqual(
             snaps[2:], getUtility(ISnapSet).findByPerson(owners[1]))
 
+    def test_findByBranch(self):
+        # ISnapSet.findByBranch returns all Snaps with the given Bazaar branch.
+        branches = [self.factory.makeAnyBranch() for i in range(2)]
+        snaps = []
+        for branch in branches:
+            for i in range(2):
+                snaps.append(self.factory.makeSnap(branch=branch))
+        self.assertContentEqual(
+            snaps[:2], getUtility(ISnapSet).findByBranch(branches[0]))
+        self.assertContentEqual(
+            snaps[2:], getUtility(ISnapSet).findByBranch(branches[1]))
+
+    def test_findByGitRepository(self):
+        # ISnapSet.findByGitRepository returns all Snaps with the given Git
+        # repository.
+        repositories = [self.factory.makeGitRepository() for i in range(2)]
+        snaps = []
+        for repository in repositories:
+            for i in range(2):
+                [ref] = self.factory.makeGitRefs(repository=repository)
+                snaps.append(self.factory.makeSnap(git_ref=ref))
+        self.assertContentEqual(
+            snaps[:2],
+            getUtility(ISnapSet).findByGitRepository(repositories[0]))
+        self.assertContentEqual(
+            snaps[2:],
+            getUtility(ISnapSet).findByGitRepository(repositories[1]))
+
 
 class TestSnapProcessors(TestCaseWithFactory):
 

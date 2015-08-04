@@ -148,6 +148,7 @@ from lp.services.propertycache import (
 from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSource
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 object_type_map = {
@@ -960,6 +961,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 if merged_revision_id is not None:
                     self._markProposalMerged(
                         proposal, merged_revision_id, logger=logger)
+
+    @property
+    def snaps(self):
+        """See `IHasSnaps`."""
+        return getUtility(ISnapSet).findByGitRepository(self)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

@@ -347,6 +347,12 @@ class ISnapSet(Interface):
     def findByPerson(owner):
         """Return all snap packages with the given `owner`."""
 
+    def findByBranch(branch):
+        """Return all snap packages for the given Bazaar branch."""
+
+    def findByGitRepository(repository):
+        """Return all snap packages for the given Git repository."""
+
     @collection_default_content()
     def empty_list():
         """Return an empty collection of snap packages.

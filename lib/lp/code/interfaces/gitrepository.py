@@ -78,6 +78,7 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.services.webhooks.interfaces import IWebhookTarget
+from lp.snappy.interfaces.hassnaps import IHasSnaps
 
 
 GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE = _(
@@ -117,7 +118,7 @@ def git_repository_name_validator(name):
     return True
 
 
-class IGitRepositoryView(Interface):
+class IGitRepositoryView(IHasSnaps):
     """IGitRepository attributes that require launchpad.View permission."""
 
     id = Int(title=_("ID"), readonly=True, required=True)

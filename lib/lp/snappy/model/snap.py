@@ -334,6 +334,14 @@ class SnapSet:
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.owner == owner)
 
+    def findByBranch(self, branch):
+        """See `ISnapSet`."""
+        return IStore(Snap).find(Snap, Snap.branch == branch)
+
+    def findByGitRepository(self, repository):
+        """See `ISnapSet`."""
+        return IStore(Snap).find(Snap, Snap.git_repository == repository)
+
     def empty_list(self):
         """See `ISnapSet`."""
         return []

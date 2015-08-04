@@ -179,6 +179,7 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
@@ -1419,6 +1420,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(self._recipes, pre_iter_hook=hook)
+
+    @property
+    def snaps(self):
+        """See `IHasSnaps`."""
+        return getUtility(ISnapSet).findByBranch(self)
 
 
 class DeletionOperation:
