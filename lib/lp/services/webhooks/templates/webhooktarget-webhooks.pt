@@ -8,6 +8,9 @@
 <body>
 
   <div metal:fill-slot="main">
+    <tal:navigation
+        condition="view/batchnav/has_multiple_pages"
+        replace="structure view/batchnav/@@+navigation-links-upper" />
     <table class="listing">
       <tbody>
         <tr tal:repeat="webhook view/batchnav/currentBatch">
@@ -18,6 +21,9 @@
         </tr>
       </tbody>
     </table>
+    <tal:navigation
+        condition="view/batchnav/has_multiple_pages"
+        replace="structure view/batchnav/@@+navigation-links-lower" />
   </div>
 
 </body>

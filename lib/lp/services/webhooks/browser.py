@@ -26,10 +26,7 @@ from lp.services.webapp import (
     Navigation,
     stepthrough,
     )
-from lp.services.webapp.batching import (
-    BatchNavigator,
-    StormRangeFactory,
-    )
+from lp.services.webapp.batching import BatchNavigator
 from lp.services.webhooks.interfaces import (
     IWebhook,
     IWebhookSource,
@@ -77,9 +74,9 @@ class WebhooksView(LaunchpadView):
 
     @cachedproperty
     def batchnav(self):
-        result = getUtility(IWebhookSource).findByTarget(self.context)
         return BatchNavigator(
-            result, self.request, range_factory=StormRangeFactory(result))
+            getUtility(IWebhookSource).findByTarget(self.context),
+            self.request)
 
 
 class WebhookEditSchema(Interface):
