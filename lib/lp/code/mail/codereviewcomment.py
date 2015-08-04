@@ -125,7 +125,7 @@ class CodeReviewCommentMailer(BMPMailer):
         # Include both the canonical_url for the proposal and the reason
         # in the footer to the email.
         reason, rationale = self._recipients.getReason(email)
-        footer = "%(proposal_url)s\n%(reason)s" % {
+        footer = "%(proposal_url)s\n%(reason)s\n" % {
             'proposal_url': self.proposal_url,
             'reason': reason.getReason()}
         return ''.join((

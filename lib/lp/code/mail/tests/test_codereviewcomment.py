@@ -23,6 +23,7 @@ from lp.services.webapp import canonical_url
 from lp.testing import (
     login,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
@@ -191,6 +192,27 @@ class TestCodeReviewComment(TestCaseWithFactory):
             ['-- ', 'I am a wacky guy.', '',
              canonical_url(mailer.merge_proposal),
              'You are subscribed to branch %s.' % branch_name])
+
+    def test_appendExpandedFooter(self):
+        """Check that expanded notification footers are sensible."""
+        mailer, subscriber = self.makeMailer(as_reply=True)
+        with person_logged_in(subscriber):
+            subscriber.expanded_notification_footers = True
+        ctrl = mailer.generateEmail(
+            subscriber.preferredemail.email, subscriber)
+        source_branch = mailer.merge_proposal.source_branch
+        rationale = mailer._recipients.getReason('subscriber@example.com')[1]
+        expected_footer = [
+            '-- ', canonical_url(mailer.merge_proposal),
+            'You are subscribed to branch %s.' % source_branch.bzr_identity,
+            '',
+            'Launchpad-Message-Rationale: %s' % rationale,
+            'Launchpad-Notification-Type: code-review',
+            'Launchpad-Branch: %s' % source_branch.unique_name,
+            'Launchpad-Project: %s' % source_branch.product.name,
+            ]
+        self.assertEqual(
+            expected_footer, ctrl.body.splitlines()[-len(expected_footer):])
 
     def test_generateEmailWithVote(self):
         """Ensure that votes are displayed."""
