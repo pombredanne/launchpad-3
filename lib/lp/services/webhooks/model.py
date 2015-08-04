@@ -365,10 +365,14 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def _time_since_first_attempt(self):
         return datetime.now(utc) - (self.date_first_sent or self.date_created)
 
-    def retry(self):
+    def retry(self, reset=False):
         """See `IWebhookDeliveryJob`."""
         # Unset any retry delay and reset attempt_count to prevent
         # queue() from delaying it again.
+        if reset:
+            updated_data = self.json_data
+            del updated_data['date_first_sent']
+            self.json_data = updated_data
         self.scheduled_start = None
         self.attempt_count = 0
         self.queue()

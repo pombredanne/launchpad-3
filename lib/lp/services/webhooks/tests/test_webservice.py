@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import json
 
+from pytz import utc
 from testtools.matchers import (
     ContainsDict,
     Equals,
@@ -16,6 +18,7 @@ from testtools.matchers import (
     MatchesAll,
     Not,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
@@ -201,16 +204,31 @@ class TestWebhookDelivery(TestCaseWithFactory):
     def test_retry(self):
         with person_logged_in(self.owner):
             self.delivery.start()
+            removeSecurityProxy(self.delivery).json_data['date_first_sent'] = (
+                datetime.now(utc).isoformat())
             self.delivery.fail()
         representation = self.webservice.get(
             self.delivery_url, api_version='devel').jsonBody()
         self.assertFalse(representation['pending'])
+
+        # A normal retry just makes the job pending again.
         response = self.webservice.named_post(
             self.delivery_url, 'retry', api_version='devel')
         self.assertEqual(200, response.status)
         representation = self.webservice.get(
             self.delivery_url, api_version='devel').jsonBody()
         self.assertTrue(representation['pending'])
+        self.assertIsNot(None, representation['date_first_sent'])
+
+        # retry(reset=True) unsets date_first_sent as well, restarting
+        # the automatic retry window.
+        response = self.webservice.named_post(
+            self.delivery_url, 'retry', reset=True, api_version='devel')
+        self.assertEqual(200, response.status)
+        representation = self.webservice.get(
+            self.delivery_url, api_version='devel').jsonBody()
+        self.assertTrue(representation['pending'])
+        self.assertIs(None, representation['date_first_sent'])
 
 
 class TestWebhookTarget(TestCaseWithFactory):

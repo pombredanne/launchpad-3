@@ -249,8 +249,13 @@ class IWebhookDeliveryJob(IRunnableJob):
         key_type=TextLine(), required=True, readonly=True))
 
     @export_write_operation()
+    @operation_parameters(reset=Bool(
+        title=_("Reset automatic retries"),
+        description=_(
+            "Restart the 24 hour automatic retry window as well as trying "
+            "again now.")))
     @operation_for_version("devel")
-    def retry():
+    def retry(reset=False):
         """Attempt to deliver the event again.
 
         Launchpad will automatically retry regularly for 24 hours, but

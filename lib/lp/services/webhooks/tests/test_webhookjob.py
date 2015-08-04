@@ -517,6 +517,31 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual(True, self.runJob(job))
         self.assertEqual(JobStatus.COMPLETED, job.status)
 
+    def test_manual_retry_with_reset(self):
+        # retry(reset=True) unsets date_first_sent so the automatic
+        # retries can be resumed. This can be useful for recovering from
+        # systemic errors the erroneously failed many deliveries.
+        hook = self.factory.makeWebhook()
+        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        client = MockWebhookClient(response_status=404)
+        self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
+
+        # Simulate a first attempt failure.
+        self.assertEqual(False, self.runJob(job))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIsNot(None, job.date_first_sent)
+
+        # A manual retry brings the scheduled start forward.
+        job.retry()
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIsNot(None, job.date_first_sent)
+
+        # When reset=True, date_first_sent is unset to restart the 24
+        # hour auto-retry window.
+        job.retry(reset=True)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertIs(None, job.date_first_sent)
+
 
 class TestViaCronscript(TestCaseWithFactory):
 
