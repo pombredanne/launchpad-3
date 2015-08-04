@@ -46,8 +46,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         das = self.build.distro_arch_series
 
         # Examples:
-        #   buildlog_ubuntu_wily_amd64_name_FULLYBUILT.txt
-        return 'buildlog_%s_%s_%s_%s_%s.txt' % (
+        #   buildlog_snap_ubuntu_wily_amd64_name_FULLYBUILT.txt
+        return 'buildlog_snap_%s_%s_%s_%s_%s.txt' % (
             das.distroseries.distribution.name, das.distroseries.name,
             das.architecturetag, self.build.snap.name, self.build.status.name)
 
