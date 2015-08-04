@@ -80,6 +80,19 @@ class WebhooksView(LaunchpadView):
             self.request)
 
 
+class WebhooksBreadcrumb(Breadcrumb):
+
+    text = "Webhooks"
+
+    @property
+    def url(self):
+        return canonical_url(self.context, view_name="+webhooks")
+
+    @property
+    def inside(self):
+        return self.context
+
+
 class WebhookBreadcrumb(Breadcrumb):
 
     @property
@@ -88,10 +101,7 @@ class WebhookBreadcrumb(Breadcrumb):
 
     @property
     def inside(self):
-        return Breadcrumb(
-            self.context.target,
-            url=canonical_url(self.context.target, view_name="+webhooks"),
-            text="Webhooks", inside=self.context.target)
+        return WebhooksBreadcrumb(self.context.target)
 
 
 class WebhookEditSchema(Interface):
@@ -102,9 +112,13 @@ class WebhookEditSchema(Interface):
 
 class WebhookAddView(LaunchpadFormView):
 
-    page_title = label = 'Add webhook'
+    page_title = label = "Add webhook"
 
     schema = WebhookEditSchema
+
+    @property
+    def inside_breadcrumb(self):
+        return WebhooksBreadcrumb(self.context)
 
     @property
     def initial_values(self):
@@ -143,8 +157,7 @@ class WebhookDeleteView(LaunchpadFormView):
 
     schema = Interface
 
-    page_title = "Delete"
-    label = "Delete webhook"
+    page_title = label = "Delete webhook"
 
     @property
     def cancel_url(self):
