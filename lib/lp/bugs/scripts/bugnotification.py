@@ -237,7 +237,7 @@ def construct_email_notifications(bug_notifications):
             email_template = 'bug-notification.txt'
 
         body_template = get_email_template(email_template, 'bugs')
-        body = (body_template % body_data).strip()
+        body = (body_template % body_data).strip() + "\n"
         msg = bug_notification_builder.build(
             from_address, email_person, body, subject, email_date,
             rationale, references, msgid, filters=data['filter descriptions'])
