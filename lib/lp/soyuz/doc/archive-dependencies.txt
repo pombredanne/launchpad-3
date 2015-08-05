@@ -499,6 +499,50 @@ Now builds in Celso's PPA will use the external dependencies.
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
+    >>> cprov.archive.external_dependencies = None
+
+
+== Build tools sources.list entries ==
+
+We can force an extra build tools line to be added to the sources.list,
+which is useful for specialised build types.
+
+    >>> for line in get_sources_list_for_building(
+    ...         a_build, a_build.distro_arch_series,
+    ...         a_build.source_package_release.name,
+    ...         tools_source="deb http://example.org %(series)s main"):
+    ...     print line
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://example.org hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
+        main restricted universe multiverse
+
+If tools_source is badly formatted, we log the error but don't blow up.
+(Note the missing "s" at the end of "%(series)".)
+
+    >>> from lp.services.log.logger import BufferLogger
+    >>> logger = BufferLogger()
+    >>> for line in get_sources_list_for_building(
+    ...         a_build, a_build.distro_arch_series,
+    ...         a_build.source_package_release.name,
+    ...         tools_source="deb http://example.org %(series) main",
+    ...         logger=logger):
+    ...     print line
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
+        main restricted universe multiverse
+    >>> print logger.getLogBuffer()
+    ERROR Exception processing build tools sources.list entry:
+    ...
+
 
 == Overlays ==
 

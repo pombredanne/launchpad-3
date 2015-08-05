@@ -8,8 +8,6 @@ __all__ = [
     'RecipeBuildBehaviour',
     ]
 
-import traceback
-
 from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -67,31 +65,11 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
             None)
-        args['archives'] = get_sources_list_for_building(self.build,
-            distroarchseries, None)
+        args['archives'] = get_sources_list_for_building(
+            self.build, distroarchseries, None,
+            tools_source=config.builddmaster.bzr_builder_sources_list,
+            logger=logger)
         args['archive_private'] = self.build.archive.private
-
-        # config.builddmaster.bzr_builder_sources_list can contain a
-        # sources.list entry for an archive that will contain a
-        # bzr-builder package that needs to be used to build this
-        # recipe.
-        try:
-            extra_archive = config.builddmaster.bzr_builder_sources_list
-        except AttributeError:
-            extra_archive = None
-
-        if extra_archive is not None:
-            try:
-                sources_line = extra_archive % (
-                    {'series': self.build.distroseries.name})
-                args['archives'].append(sources_line)
-            except StandardError:
-                # Someone messed up the config, don't add it.
-                if logger:
-                    logger.error(
-                        "Exception processing bzr_builder_sources_list:\n%s"
-                        % traceback.format_exc())
-
         args['distroseries_name'] = self.build.distroseries.name
         return args
 
