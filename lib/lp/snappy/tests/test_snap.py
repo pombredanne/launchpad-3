@@ -5,13 +5,9 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 
 from lazr.lifecycle.event import ObjectModifiedEvent
-import pytz
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
@@ -28,7 +24,10 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.constants import UTC_NOW
+from lp.services.database.constants import (
+    ONE_DAY_AGO,
+    UTC_NOW,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
@@ -98,15 +97,13 @@ class TestSnap(TestCaseWithFactory):
 
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
-        snap = self.factory.makeSnap(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+        snap = self.factory.makeSnap(date_created=ONE_DAY_AGO)
         self.assertEqual(snap.date_created, snap.date_last_modified)
 
     def test_modifiedevent_sets_date_last_modified(self):
         # When a Snap receives an object modified event, the last modified
         # date is set to UTC_NOW.
-        snap = self.factory.makeSnap(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+        snap = self.factory.makeSnap(date_created=ONE_DAY_AGO)
         notify(ObjectModifiedEvent(
             removeSecurityProxy(snap), snap, [ISnap["name"]]))
         self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
@@ -450,6 +447,74 @@ class TestSnapSet(TestCaseWithFactory):
             snaps[:2], getUtility(ISnapSet).findByPerson(owners[0]))
         self.assertContentEqual(
             snaps[2:], getUtility(ISnapSet).findByPerson(owners[1]))
+
+    def test_findByBranch(self):
+        # ISnapSet.findByBranch returns all Snaps with the given Bazaar branch.
+        branches = [self.factory.makeAnyBranch() for i in range(2)]
+        snaps = []
+        for branch in branches:
+            for i in range(2):
+                snaps.append(self.factory.makeSnap(branch=branch))
+        self.assertContentEqual(
+            snaps[:2], getUtility(ISnapSet).findByBranch(branches[0]))
+        self.assertContentEqual(
+            snaps[2:], getUtility(ISnapSet).findByBranch(branches[1]))
+
+    def test_findByGitRepository(self):
+        # ISnapSet.findByGitRepository returns all Snaps with the given Git
+        # repository.
+        repositories = [self.factory.makeGitRepository() for i in range(2)]
+        snaps = []
+        for repository in repositories:
+            for i in range(2):
+                [ref] = self.factory.makeGitRefs(repository=repository)
+                snaps.append(self.factory.makeSnap(git_ref=ref))
+        self.assertContentEqual(
+            snaps[:2],
+            getUtility(ISnapSet).findByGitRepository(repositories[0]))
+        self.assertContentEqual(
+            snaps[2:],
+            getUtility(ISnapSet).findByGitRepository(repositories[1]))
+
+    def test_detachFromBranch(self):
+        # ISnapSet.detachFromBranch clears the given Bazaar branch from all
+        # Snaps.
+        branches = [self.factory.makeAnyBranch() for i in range(2)]
+        snaps = []
+        for branch in branches:
+            for i in range(2):
+                snaps.append(self.factory.makeSnap(
+                    branch=branch, date_created=ONE_DAY_AGO))
+        getUtility(ISnapSet).detachFromBranch(branches[0])
+        self.assertEqual(
+            [None, None, branches[1], branches[1]],
+            [snap.branch for snap in snaps])
+        for snap in snaps[:2]:
+            self.assertSqlAttributeEqualsDate(
+                snap, "date_last_modified", UTC_NOW)
+
+    def test_detachFromGitRepository(self):
+        # ISnapSet.detachFromGitRepository clears the given Git repository
+        # from all Snaps.
+        repositories = [self.factory.makeGitRepository() for i in range(2)]
+        snaps = []
+        paths = []
+        for repository in repositories:
+            for i in range(2):
+                [ref] = self.factory.makeGitRefs(repository=repository)
+                paths.append(ref.path)
+                snaps.append(self.factory.makeSnap(
+                    git_ref=ref, date_created=ONE_DAY_AGO))
+        getUtility(ISnapSet).detachFromGitRepository(repositories[0])
+        self.assertEqual(
+            [None, None, repositories[1], repositories[1]],
+            [snap.git_repository for snap in snaps])
+        self.assertEqual(
+            [None, None, paths[2], paths[3]],
+            [snap.git_path for snap in snaps])
+        for snap in snaps[:2]:
+            self.assertSqlAttributeEqualsDate(
+                snap, "date_last_modified", UTC_NOW)
 
 
 class TestSnapProcessors(TestCaseWithFactory):

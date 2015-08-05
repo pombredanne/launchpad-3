@@ -179,6 +179,7 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
@@ -814,6 +815,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
             for recipe in self.recipes)
+        if not getUtility(ISnapSet).findByBranch(self).is_empty():
+            alteration_operations.append(DeletionCallable(
+                None, _('Some snap packages build from this branch.'),
+                getUtility(ISnapSet).detachFromBranch, self))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1436,12 +1441,14 @@ class DeletionOperation:
 class DeletionCallable(DeletionOperation):
     """Deletion operation that invokes a callable."""
 
-    def __init__(self, affected_object, rationale, func):
+    def __init__(self, affected_object, rationale, func, *args, **kwargs):
         DeletionOperation.__init__(self, affected_object, rationale)
         self.func = func
+        self.args = args
+        self.kwargs = kwargs
 
     def __call__(self):
-        self.func()
+        self.func(*self.args, **self.kwargs)
 
     @classmethod
     def forSourcePackageRecipe(cls, recipe):
