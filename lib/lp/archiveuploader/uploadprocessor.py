@@ -60,6 +60,7 @@ from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
     NascentUpload,
     )
+from lp.archiveuploader.snapupload import SnapUpload
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     UploadPolicyError,
@@ -77,6 +78,7 @@ from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
+from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
@@ -611,6 +613,31 @@ class BuildUploadHandler(UploadHandler):
             self.processor.ztm.abort()
             raise
 
+    def processSnap(self, logger=None):
+        """Process a snap package upload."""
+        assert ISnapBuild.providedBy(self.build)
+        if logger is None:
+            logger = self.processor.log
+        try:
+            logger.info("Processing Snap upload %s" % self.upload_path)
+            SnapUpload(self.upload_path, logger).process(self.build)
+
+            if self.processor.dry_run:
+                logger.info("Dry run, aborting transaction.")
+                self.processor.ztm.abort()
+            else:
+                logger.info(
+                    "Committing the transaction and any mails associated "
+                    "with this upload.")
+                self.processor.ztm.commit()
+            return UploadStatusEnum.ACCEPTED
+        except UploadError as e:
+            logger.error(str(e))
+            return UploadStatusEnum.REJECTED
+        except:
+            self.processor.ztm.abort()
+            raise
+
     def process(self):
         """Process an upload that is the result of a build.
 
@@ -641,11 +668,12 @@ class BuildUploadHandler(UploadHandler):
             # because we want the standard cleanup to occur.
             recipe_deleted = (ISourcePackageRecipeBuild.providedBy(self.build)
                 and self.build.recipe is None)
-            is_livefs = ILiveFSBuild.providedBy(self.build)
             if recipe_deleted:
                 result = UploadStatusEnum.FAILED
-            elif is_livefs:
+            elif ILiveFSBuild.providedBy(self.build):
                 result = self.processLiveFS(logger)
+            elif ISnapBuild.providedBy(self.build):
+                result = self.processSnap(logger)
             else:
                 self.processor.log.debug("Build %s found" % self.build.id)
                 [changes_file] = self.locateChangesFiles()
