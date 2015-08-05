@@ -483,12 +483,15 @@ class TestSnapSet(TestCaseWithFactory):
         snaps = []
         for branch in branches:
             for i in range(2):
-                snaps.append(self.factory.makeSnap(branch=branch))
+                snaps.append(self.factory.makeSnap(
+                    branch=branch, date_created=ONE_DAY_AGO))
         getUtility(ISnapSet).detachFromBranch(branches[0])
-        transaction.commit()
         self.assertEqual(
             [None, None, branches[1], branches[1]],
             [snap.branch for snap in snaps])
+        for snap in snaps[:2]:
+            self.assertSqlAttributeEqualsDate(
+                snap, "date_last_modified", UTC_NOW)
 
     def test_detachFromGitRepository(self):
         # ISnapSet.detachFromGitRepository clears the given Git repository
@@ -500,15 +503,18 @@ class TestSnapSet(TestCaseWithFactory):
             for i in range(2):
                 [ref] = self.factory.makeGitRefs(repository=repository)
                 paths.append(ref.path)
-                snaps.append(self.factory.makeSnap(git_ref=ref))
+                snaps.append(self.factory.makeSnap(
+                    git_ref=ref, date_created=ONE_DAY_AGO))
         getUtility(ISnapSet).detachFromGitRepository(repositories[0])
-        transaction.commit()
         self.assertEqual(
             [None, None, repositories[1], repositories[1]],
             [snap.git_repository for snap in snaps])
         self.assertEqual(
             [None, None, paths[2], paths[3]],
             [snap.git_path for snap in snaps])
+        for snap in snaps[:2]:
+            self.assertSqlAttributeEqualsDate(
+                snap, "date_last_modified", UTC_NOW)
 
 
 class TestSnapProcessors(TestCaseWithFactory):

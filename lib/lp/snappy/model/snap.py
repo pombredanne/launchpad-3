@@ -344,12 +344,13 @@ class SnapSet:
 
     def detachFromBranch(self, branch):
         """See `ISnapSet`."""
-        self.findByBranch(branch).set(branch_id=None)
+        self.findByBranch(branch).set(
+            branch_id=None, date_last_modified=UTC_NOW)
 
     def detachFromGitRepository(self, repository):
         """See `ISnapSet`."""
         self.findByGitRepository(repository).set(
-            git_repository_id=None, git_path=None)
+            git_repository_id=None, git_path=None, date_last_modified=UTC_NOW)
 
     def empty_list(self):
         """See `ISnapSet`."""
