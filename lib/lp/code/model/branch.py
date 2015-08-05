@@ -817,7 +817,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             for recipe in self.recipes)
         if not getUtility(ISnapSet).findByBranch(self).is_empty():
             alteration_operations.append(DeletionCallable(
-                None, _('Some snap packages use this branch.'),
+                None, _('Some snap packages build from this branch.'),
                 getUtility(ISnapSet).detachFromBranch, self))
         return (alteration_operations, deletion_operations)
 

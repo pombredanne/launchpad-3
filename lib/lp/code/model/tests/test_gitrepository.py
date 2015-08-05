@@ -629,7 +629,8 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
         [ref] = self.factory.makeGitRefs()
         self.factory.makeSnap(git_ref=ref)
         self.assertEqual(
-            {None: ("alter", _("Some snap packages use this repository."))},
+            {None:
+             ("alter", _("Some snap packages build from this repository."))},
             ref.repository.getDeletionRequirements())
 
     def test_snap_deletion(self):

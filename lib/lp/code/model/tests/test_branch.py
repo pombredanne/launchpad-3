@@ -1678,7 +1678,7 @@ class TestBranchDeletionConsequences(TestCase):
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.factory.makeSnap(branch=self.branch)
         self.assertEqual(
-            {None: ('alter', _('Some snap packages use this branch.'))},
+            {None: ('alter', _('Some snap packages build from this branch.'))},
             self.branch.deletionRequirements())
 
     def test_snap_deletion(self):
