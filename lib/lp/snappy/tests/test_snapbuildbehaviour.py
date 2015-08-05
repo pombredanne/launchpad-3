@@ -193,6 +193,21 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
              job._extraBuildArgs()),
             job.composeBuildRequest(None))
 
+    def test_composeBuildRequest_deleted(self):
+        # If the source branch/repository has been deleted,
+        # composeBuildRequest raises CannotBuild.
+        branch = self.factory.makeBranch()
+        owner = self.factory.makePerson(name="snap-owner")
+        job = self.makeJob(registrant=owner, owner=owner, branch=branch)
+        branch.destroySelf(break_references=True)
+        self.assertIsNone(job.build.snap.branch)
+        self.assertIsNone(job.build.snap.git_repository)
+        self.assertRaisesWithContent(
+            CannotBuild,
+            "Source branch/repository for ~snap-owner/test-snap has been "
+            "deleted.",
+            job.composeBuildRequest, None)
+
 
 class MakeSnapBuildMixin:
     """Provide the common makeBuild method returning a queued build."""

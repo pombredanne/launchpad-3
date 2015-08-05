@@ -86,10 +86,13 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         args["archive_private"] = build.archive.private
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
-        else:
-            assert build.snap.git_repository is not None
+        elif build.snap.git_repository is not None:
             args["git_repository"] = build.snap.git_repository.git_https_url
             args["git_path"] = build.snap.git_path
+        else:
+            raise CannotBuild(
+                "Source branch/repository for ~%s/%s has been deleted." %
+                (build.snap.owner.name, build.snap.name))
         return args
 
     def composeBuildRequest(self, logger):
