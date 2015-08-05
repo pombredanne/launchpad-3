@@ -815,9 +815,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
             for recipe in self.recipes)
-        alteration_operations.extend(
-            ClearSnapBranch(snap, self)
-            for snap in getUtility(ISnapSet).findByBranch(self))
+        if not getUtility(ISnapSet).findByBranch(self).is_empty():
+            alteration_operations.append(DeletionCallable(
+                None, _('Some snap packages use this branch.'),
+                getUtility(ISnapSet).detachFromBranch, self))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1440,12 +1441,14 @@ class DeletionOperation:
 class DeletionCallable(DeletionOperation):
     """Deletion operation that invokes a callable."""
 
-    def __init__(self, affected_object, rationale, func):
+    def __init__(self, affected_object, rationale, func, *args, **kwargs):
         DeletionOperation.__init__(self, affected_object, rationale)
         self.func = func
+        self.args = args
+        self.kwargs = kwargs
 
     def __call__(self):
-        self.func()
+        self.func(*self.args, **self.kwargs)
 
     @classmethod
     def forSourcePackageRecipe(cls, recipe):
@@ -1517,19 +1520,6 @@ class DeleteCodeImport(DeletionOperation):
     def __call__(self):
         from lp.code.model.codeimport import CodeImportSet
         CodeImportSet().delete(self.affected_object)
-
-
-class ClearSnapBranch(DeletionOperation):
-    """Deletion operation that clears a snap package's branch."""
-
-    def __init__(self, snap, branch):
-        DeletionOperation.__init__(
-            self, snap, _('This snap package uses this branch.'))
-        self.branch = branch
-
-    def __call__(self):
-        if self.affected_object.branch == self.branch:
-            self.affected_object.branch = None
 
 
 @implementer(IBranchSet)

@@ -1003,9 +1003,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
-        alteration_operations.extend(
-            ClearSnapRepository(snap, self)
-            for snap in getUtility(ISnapSet).findByGitRepository(self))
+        if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
+            alteration_operations.append(DeletionCallable(
+                None, msg("Some snap packages use this repository."),
+                getUtility(ISnapSet).detachFromGitRepository, self))
 
         return (alteration_operations, deletion_operations)
 
@@ -1107,12 +1108,14 @@ class DeletionOperation:
 class DeletionCallable(DeletionOperation):
     """Deletion operation that invokes a callable."""
 
-    def __init__(self, affected_object, rationale, func):
+    def __init__(self, affected_object, rationale, func, *args, **kwargs):
         super(DeletionCallable, self).__init__(affected_object, rationale)
         self.func = func
+        self.args = args
+        self.kwargs = kwargs
 
     def __call__(self):
-        self.func()
+        self.func(*self.args, **self.kwargs)
 
 
 class ClearPrerequisiteRepository(DeletionOperation):
@@ -1129,20 +1132,6 @@ class ClearPrerequisiteRepository(DeletionOperation):
         self.affected_object.prerequisite_git_repository = None
         self.affected_object.prerequisite_git_path = None
         self.affected_object.prerequisite_git_commit_sha1 = None
-
-
-class ClearSnapRepository(DeletionOperation):
-    """Deletion operation that clears a snap package's repository."""
-
-    def __init__(self, snap, repository):
-        DeletionOperation.__init__(
-            self, snap, msg("This snap package uses this repository."))
-        self.repository = repository
-
-    def __call__(self):
-        if self.affected_object.git_repository == self.repository:
-            self.affected_object.git_repository = None
-            self.affected_object.git_path = None
 
 
 @implementer(IGitRepositorySet)

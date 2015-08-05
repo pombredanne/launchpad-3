@@ -479,6 +479,40 @@ class TestSnapSet(TestCaseWithFactory):
             snaps[2:],
             getUtility(ISnapSet).findByGitRepository(repositories[1]))
 
+    def test_detachFromBranch(self):
+        # ISnapSet.detachFromBranch clears the given Bazaar branch from all
+        # Snaps.
+        branches = [self.factory.makeAnyBranch() for i in range(2)]
+        snaps = []
+        for branch in branches:
+            for i in range(2):
+                snaps.append(self.factory.makeSnap(branch=branch))
+        getUtility(ISnapSet).detachFromBranch(branches[0])
+        transaction.commit()
+        self.assertEqual(
+            [None, None, branches[1], branches[1]],
+            [snap.branch for snap in snaps])
+
+    def test_detachFromGitRepository(self):
+        # ISnapSet.detachFromGitRepository clears the given Git repository
+        # from all Snaps.
+        repositories = [self.factory.makeGitRepository() for i in range(2)]
+        snaps = []
+        paths = []
+        for repository in repositories:
+            for i in range(2):
+                [ref] = self.factory.makeGitRefs(repository=repository)
+                paths.append(ref.path)
+                snaps.append(self.factory.makeSnap(git_ref=ref))
+        getUtility(ISnapSet).detachFromGitRepository(repositories[0])
+        transaction.commit()
+        self.assertEqual(
+            [None, None, repositories[1], repositories[1]],
+            [snap.git_repository for snap in snaps])
+        self.assertEqual(
+            [None, None, paths[2], paths[3]],
+            [snap.git_path for snap in snaps])
+
 
 class TestSnapProcessors(TestCaseWithFactory):
 

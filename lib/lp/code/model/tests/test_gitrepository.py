@@ -81,7 +81,6 @@ from lp.code.model.gitjob import (
     )
 from lp.code.model.gitrepository import (
     ClearPrerequisiteRepository,
-    ClearSnapRepository,
     DeletionCallable,
     DeletionOperation,
     GitRepository,
@@ -628,9 +627,9 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
         # requirements indicate this.
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         [ref] = self.factory.makeGitRefs()
-        snap = self.factory.makeSnap(git_ref=ref)
+        self.factory.makeSnap(git_ref=ref)
         self.assertEqual(
-            {snap: ("alter", _("This snap package uses this repository."))},
+            {None: ("alter", _("Some snap packages use this repository."))},
             ref.repository.getDeletionRequirements())
 
     def test_snap_deletion(self):
@@ -642,6 +641,7 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
         snap1 = self.factory.makeSnap(git_ref=ref1)
         snap2 = self.factory.makeSnap(git_ref=ref2)
         repository.destroySelf(break_references=True)
+        transaction.commit()
         self.assertIsNone(snap1.git_repository)
         self.assertIsNone(snap1.git_path)
         self.assertIsNone(snap2.git_repository)
@@ -655,15 +655,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
                 merge_proposal.prerequisite_git_repository.owner):
             ClearPrerequisiteRepository(merge_proposal)()
         self.assertIsNone(merge_proposal.prerequisite_git_repository)
-
-    def test_ClearSnapRepository(self):
-        # ClearSnapRepository.__call__ must clear the repository and path.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-        [ref] = self.factory.makeGitRefs()
-        snap = self.factory.makeSnap(git_ref=ref)
-        ClearSnapRepository(snap, ref.repository)()
-        self.assertIsNone(snap.git_repository)
-        self.assertIsNone(snap.git_path)
 
     def test_DeletionOperation(self):
         # DeletionOperation.__call__ is not implemented.

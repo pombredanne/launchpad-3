@@ -353,6 +353,20 @@ class ISnapSet(Interface):
     def findByGitRepository(repository):
         """Return all snap packages for the given Git repository."""
 
+    def detachFromBranch(branch):
+        """Detach all snap packages from the given Bazaar branch.
+
+        After this, any snap packages that previously used this branch will
+        have no source and so cannot dispatch new builds.
+        """
+
+    def detachFromGitRepository(repository):
+        """Detach all snap packages from the given Git repository.
+
+        After this, any snap packages that previously used this repository
+        will have no source and so cannot dispatch new builds.
+        """
+
     @collection_default_content()
     def empty_list():
         """Return an empty collection of snap packages.

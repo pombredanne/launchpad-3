@@ -92,7 +92,6 @@ from lp.code.model.branch import (
     ClearDependentBranch,
     ClearOfficialPackageBranch,
     ClearSeriesBranch,
-    ClearSnapBranch,
     DeleteCodeImport,
     DeletionCallable,
     DeletionOperation,
@@ -1677,9 +1676,9 @@ class TestBranchDeletionConsequences(TestCase):
         # If a branch is used by a snap package, the deletion requirements
         # indicate this.
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-        snap = self.factory.makeSnap(branch=self.branch)
+        self.factory.makeSnap(branch=self.branch)
         self.assertEqual(
-            {snap: ('alter', _('This snap package uses this branch.'))},
+            {None: ('alter', _('Some snap packages use this branch.'))},
             self.branch.deletionRequirements())
 
     def test_snap_deletion(self):
@@ -1688,6 +1687,7 @@ class TestBranchDeletionConsequences(TestCase):
         snap1 = self.factory.makeSnap(branch=self.branch)
         snap2 = self.factory.makeSnap(branch=self.branch)
         self.branch.destroySelf(break_references=True)
+        transaction.commit()
         self.assertIsNone(snap1.branch)
         self.assertIsNone(snap2.branch)
 
@@ -1719,13 +1719,6 @@ class TestBranchDeletionConsequences(TestCase):
             branch=self.branch))
         ClearSeriesBranch(series, self.branch)()
         self.assertEqual(None, series.branch)
-
-    def test_ClearSnapBranch(self):
-        """ClearSnapBranch.__call__ must clear the branch."""
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-        snap = self.factory.makeSnap(branch=self.branch)
-        ClearSnapBranch(snap, self.branch)()
-        self.assertIsNone(snap.branch)
 
     def test_DeletionOperation(self):
         """DeletionOperation.__call__ is not implemented."""
