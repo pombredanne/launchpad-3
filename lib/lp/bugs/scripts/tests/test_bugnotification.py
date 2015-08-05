@@ -1213,7 +1213,7 @@ class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
         self.assertTrue(notifications.is_empty())
 
 
-class TestManageNotificationsMessage(EmailNotificationTestBase):
+class TestManageNotificationsMessage(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
