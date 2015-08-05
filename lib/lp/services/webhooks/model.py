@@ -31,6 +31,7 @@ from storm.properties import (
     )
 from storm.references import Reference
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     implementer,
@@ -38,6 +39,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+import lp.app.versioninfo
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -143,6 +145,10 @@ class Webhook(StormBase):
         updated_data['event_types'] = event_types
         self.json_data = updated_data
 
+    def setSecret(self, secret):
+        """See `IWebhook`."""
+        self.secret = secret
+
 
 @implementer(IWebhookSource)
 class WebhookSource:
@@ -194,11 +200,12 @@ class WebhookTargetMixin:
             getUtility(IWebhookSource).findByTarget(self),
             pre_iter_hook=preload_registrants)
 
-    def newWebhook(self, registrant, delivery_url, event_types, active=True):
+    def newWebhook(self, registrant, delivery_url, event_types, active=True,
+                   secret=None):
         if not getFeatureFlag('webhooks.new.enabled'):
             raise WebhookFeatureDisabled()
         return getUtility(IWebhookSource).new(
-            self, registrant, delivery_url, event_types, active, None)
+            self, registrant, delivery_url, event_types, active, secret)
 
 
 class WebhookJobType(DBEnumeratedType):
@@ -296,6 +303,13 @@ class WebhookDeliveryJob(WebhookJobDerived):
     retry_error_types = (WebhookDeliveryRetry,)
     user_error_types = (WebhookDeliveryFailure,)
 
+    # The request timeout is 30 seconds, requests timeouts aren't
+    # totally reliable so we also have a relatively low celery timeout
+    # as a backup. The celery timeout and lease expiry have a bit of
+    # slack to cope with slow job start/finish without conflicts.
+    soft_time_limit = timedelta(seconds=45)
+    lease_duration = timedelta(seconds=60)
+
     # Effectively infinite, as we give up by checking
     # retry_automatically and raising a fatal exception instead.
     max_retries = 1000
@@ -318,12 +332,14 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def successful(self):
         if 'result' not in self.json_data:
             return None
-        return self.failure_detail is None
+        return self.error_message is None
 
     @property
-    def failure_detail(self):
+    def error_message(self):
         if 'result' not in self.json_data:
             return None
+        if self.json_data['result'].get('webhook_deactivated'):
+            return 'Webhook deactivated'
         connection_error = self.json_data['result'].get('connection_error')
         if connection_error is not None:
             return 'Connection error: %s' % connection_error
@@ -352,10 +368,14 @@ class WebhookDeliveryJob(WebhookJobDerived):
     def _time_since_first_attempt(self):
         return datetime.now(utc) - (self.date_first_sent or self.date_created)
 
-    def retry(self):
+    def retry(self, reset=False):
         """See `IWebhookDeliveryJob`."""
         # Unset any retry delay and reset attempt_count to prevent
         # queue() from delaying it again.
+        if reset:
+            updated_data = self.json_data
+            del updated_data['date_first_sent']
+            self.json_data = updated_data
         self.scheduled_start = None
         self.attempt_count = 0
         self.queue()
@@ -366,14 +386,27 @@ class WebhookDeliveryJob(WebhookJobDerived):
 
     @property
     def retry_delay(self):
-        if self._time_since_first_attempt < timedelta(hours=1):
+        if self._time_since_first_attempt < timedelta(minutes=10):
+            return timedelta(minutes=1)
+        elif self._time_since_first_attempt < timedelta(hours=1):
             return timedelta(minutes=5)
         else:
             return timedelta(hours=1)
 
     def run(self):
+        if not self.webhook.active:
+            updated_data = self.json_data
+            updated_data['result'] = {'webhook_deactivated': True}
+            self.json_data = updated_data
+            # Job.fail will abort the transaction.
+            transaction.commit()
+            raise WebhookDeliveryFailure(self.error_message)
+        user_agent = '%s-Webhooks/r%s' % (
+            config.vhost.mainsite.hostname, lp.app.versioninfo.revno)
+        secret = self.webhook.secret
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
+            user_agent, 30, secret.encode('utf-8') if secret else None,
             self.payload)
         # Request and response headers and body may be large, so don't
         # store them in the frequently-used JSON. We could store them in
@@ -388,9 +421,10 @@ class WebhookDeliveryJob(WebhookJobDerived):
         if 'date_first_sent' not in updated_data:
             updated_data['date_first_sent'] = updated_data['date_sent']
         self.json_data = updated_data
+        transaction.commit()
 
         if not self.successful:
             if self.retry_automatically:
                 raise WebhookDeliveryRetry()
             else:
-                raise WebhookDeliveryFailure(self.failure_detail)
+                raise WebhookDeliveryFailure(self.error_message)

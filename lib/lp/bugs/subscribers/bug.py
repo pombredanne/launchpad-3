@@ -16,6 +16,8 @@ __all__ = [
 
 import datetime
 
+from zope.security.proxy import removeSecurityProxy
+
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
     BugTaskAssigneeChange,
@@ -226,7 +228,8 @@ def send_bug_details_to_new_bug_subscribers(
 
     bug_notification_builder = BugNotificationBuilder(bug, event_creator)
     for to_person in sorted(to_persons):
-        reason, rationale = recipients.getReason(to_person)
+        reason, rationale = recipients.getReason(
+            str(removeSecurityProxy(to_person).preferredemail.email))
         subject, contents = generate_bug_add_email(
             bug, new_recipients=True, subscribed_by=subscribed_by,
             reason=reason, event_creator=event_creator)
