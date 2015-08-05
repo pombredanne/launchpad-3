@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
@@ -72,7 +72,6 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchjob import (
     IBranchScanJobSource,
     IBranchUpgradeJobSource,
-    IReclaimBranchSpaceJobSource,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
@@ -143,6 +142,7 @@ from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
     OAuthPermission,
     )
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -1671,6 +1671,25 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal.nominateReviewer(self.factory.makePerson(),
                                         self.factory.makePerson())
         merge_proposal.target_branch.destroySelf(break_references=True)
+
+    def test_snap_requirements(self):
+        # If a branch is used by a snap package, the deletion requirements
+        # indicate this.
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.factory.makeSnap(branch=self.branch)
+        self.assertEqual(
+            {None: ('alter', _('Some snap packages build from this branch.'))},
+            self.branch.deletionRequirements())
+
+    def test_snap_deletion(self):
+        # break_references allows deleting a branch used by a snap package.
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        snap1 = self.factory.makeSnap(branch=self.branch)
+        snap2 = self.factory.makeSnap(branch=self.branch)
+        self.branch.destroySelf(break_references=True)
+        transaction.commit()
+        self.assertIsNone(snap1.branch)
+        self.assertIsNone(snap2.branch)
 
     def test_ClearDependentBranch(self):
         """ClearDependent.__call__ must clear the prerequisite branch."""

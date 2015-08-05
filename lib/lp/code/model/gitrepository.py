@@ -148,6 +148,7 @@ from lp.services.propertycache import (
 from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSource
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 object_type_map = {
@@ -1002,6 +1003,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
+        if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
+            alteration_operations.append(DeletionCallable(
+                None, msg("Some snap packages build from this repository."),
+                getUtility(ISnapSet).detachFromGitRepository, self))
 
         return (alteration_operations, deletion_operations)
 
@@ -1103,12 +1108,14 @@ class DeletionOperation:
 class DeletionCallable(DeletionOperation):
     """Deletion operation that invokes a callable."""
 
-    def __init__(self, affected_object, rationale, func):
+    def __init__(self, affected_object, rationale, func, *args, **kwargs):
         super(DeletionCallable, self).__init__(affected_object, rationale)
         self.func = func
+        self.args = args
+        self.kwargs = kwargs
 
     def __call__(self):
-        self.func()
+        self.func(*self.args, **self.kwargs)
 
 
 class ClearPrerequisiteRepository(DeletionOperation):

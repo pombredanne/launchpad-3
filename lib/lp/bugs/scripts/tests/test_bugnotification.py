@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for construction bug notification emails for sending."""
 
@@ -15,7 +15,10 @@ import unittest
 
 import pytz
 from storm.store import Store
-from testtools.matchers import Not
+from testtools.matchers import (
+    MatchesRegex,
+    Not,
+    )
 from transaction import commit
 from zope.component import (
     getSiteManager,
@@ -80,6 +83,7 @@ from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 from lp.testing import (
     login,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -1243,6 +1247,30 @@ class TestNotificationSignatureSeparator(TestCase):
         for name in names:
             template = get_email_template(name, 'bugs')
             self.assertTrue(re.search('^-- $', template, re.MULTILINE))
+
+
+class TestExpandedNotificationFooters(EmailNotificationTestBase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_expanded_footer(self):
+        # Recipients with expanded_notification_footers receive an expanded
+        # footer on messages, which is separated by the correct number of
+        # newlines.
+        with lp_dbuser(), person_logged_in(self.bug_subscriber):
+            self.bug_subscriber.expanded_notification_footers = True
+            expected_to = str(self.bug_subscriber.preferredemail.email)
+        self.bug.addChange(BugTitleChange(
+            self.ten_minutes_ago, self.person, "title",
+            "Old summary", "New summary"))
+        [payload] = [
+            payload for message, payload in self.get_messages()
+            if message["to"] == expected_to]
+        self.assertThat(payload, MatchesRegex(
+            r'.*To manage notifications about this bug go to:\n'
+            r'http://.*\+subscriptions\n'
+            r'\n'
+            r'Launchpad-Notification-Type: bug\n', re.S))
 
 
 class TestDeferredNotifications(TestCaseWithFactory):
