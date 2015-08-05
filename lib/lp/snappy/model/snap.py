@@ -18,7 +18,6 @@ from storm.locals import (
     Store,
     Storm,
     Unicode,
-    Update,
     )
 from zope.component import getUtility
 from zope.interface import implementer
@@ -345,14 +344,12 @@ class SnapSet:
 
     def detachFromBranch(self, branch):
         """See `ISnapSet`."""
-        IStore(Snap).execute(Update(
-            {Snap.branch_id: None}, Snap.branch == branch))
+        self.findByBranch(branch).set(branch_id=None)
 
     def detachFromGitRepository(self, repository):
         """See `ISnapSet`."""
-        IStore(Snap).execute(Update(
-            {Snap.git_repository_id: None, Snap.git_path: None},
-            Snap.git_repository == repository))
+        self.findByGitRepository(repository).set(
+            git_repository_id=None, git_path=None)
 
     def empty_list(self):
         """See `ISnapSet`."""
