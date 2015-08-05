@@ -5,13 +5,9 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 
 from lazr.lifecycle.event import ObjectModifiedEvent
-import pytz
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
@@ -28,7 +24,10 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.constants import UTC_NOW
+from lp.services.database.constants import (
+    ONE_DAY_AGO,
+    UTC_NOW,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
@@ -98,15 +97,13 @@ class TestSnap(TestCaseWithFactory):
 
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
-        snap = self.factory.makeSnap(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+        snap = self.factory.makeSnap(date_created=ONE_DAY_AGO)
         self.assertEqual(snap.date_created, snap.date_last_modified)
 
     def test_modifiedevent_sets_date_last_modified(self):
         # When a Snap receives an object modified event, the last modified
         # date is set to UTC_NOW.
-        snap = self.factory.makeSnap(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+        snap = self.factory.makeSnap(date_created=ONE_DAY_AGO)
         notify(ObjectModifiedEvent(
             removeSecurityProxy(snap), snap, [ISnap["name"]]))
         self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
