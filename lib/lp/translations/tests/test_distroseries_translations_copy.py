@@ -1,10 +1,13 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for distroseries translations initialization."""
 
 __metaclass__ = type
 
+from itertools import chain
+
+from testtools.matchers import ContainsAll
 import transaction
 from zope.component import getUtility
 
@@ -127,3 +130,49 @@ class TestDistroSeriesTranslationsCopying(TestCaseWithFactory):
             dapper, feisty, transaction, DevNullLogger(),
             sourcepackagenames=spns)
         self.assertContentEqual(spns, get_template_spns(feisty))
+
+    def test_skip_duplicates(self):
+        # Normally the target distroseries must be empty.
+        # skip_duplicates=True works around this, simply by skipping any
+        # templates whose source package names match templates already in
+        # the target.
+        distro = self.factory.makeDistribution(name='notbuntu')
+        source_series = self.factory.makeDistroSeries(
+            distribution=distro, name='source')
+        target_series = self.factory.makeDistroSeries(
+            distribution=distro, name='target')
+        spns = [self.factory.makeSourcePackageName() for i in range(3)]
+        for spn in spns:
+            template = self.factory.makePOTemplate(
+                distroseries=source_series, sourcepackagename=spn)
+            self.factory.makePOFile(potemplate=template)
+        target_templates = []
+        target_pofiles = []
+        for spn in spns[:2]:
+            template = self.factory.makePOTemplate(
+                distroseries=target_series, sourcepackagename=spn)
+            target_templates.append(template)
+            target_pofiles.append(self.factory.makePOFile(potemplate=template))
+
+        def get_template_spns(series):
+            return [
+                pot.sourcepackagename for pot in
+                getUtility(IPOTemplateSet).getSubset(distroseries=series)]
+
+        self.assertContentEqual(spns[:2], get_template_spns(target_series))
+        self.assertRaises(
+            AssertionError, copy_active_translations,
+            source_series, target_series, transaction, DevNullLogger())
+        copy_active_translations(
+            source_series, target_series, transaction, DevNullLogger(),
+            skip_duplicates=True)
+        self.assertContentEqual(spns, get_template_spns(target_series))
+        # The original POTemplates in the target distroseries are untouched,
+        # along with their POFiles.
+        self.assertThat(
+            list(getUtility(IPOTemplateSet).getSubset(
+                distroseries=target_series)),
+            ContainsAll(target_templates))
+        self.assertContentEqual(
+            target_pofiles,
+            chain.from_iterable(pot.pofiles for pot in target_templates))

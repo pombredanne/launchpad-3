@@ -80,7 +80,8 @@ class SeriesStateKeeper:
 def copy_distroseries_translations(source, target, txn, logger,
                                    published_sources_only=False,
                                    check_archive=None,
-                                   check_distroseries=None):
+                                   check_distroseries=None,
+                                   skip_duplicates=False):
     """Copy translations into a new `DistroSeries`.
 
     Wraps around `copy_active_translations`, but also ensures that the
@@ -128,7 +129,8 @@ def copy_distroseries_translations(source, target, txn, logger,
         else:
             spns = None
         copy_active_translations(
-            source, target, txn, logger, sourcepackagenames=spns)
+            source, target, txn, logger, sourcepackagenames=spns,
+            skip_duplicates=skip_duplicates)
     except:
         copy_failed = True
         # Give us a fresh transaction for proper cleanup.
