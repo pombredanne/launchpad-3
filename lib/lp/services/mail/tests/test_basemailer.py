@@ -179,6 +179,9 @@ class TestBaseMailer(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertEqual('Good <good@example.com>', notifications[0]['To'])
+        # And an OOPS is logged.
+        self.assertEqual(1, len(self.oopses))
+        self.assertIn("SMTPException: boom", self.oopses[0]["tb_text"])
 
     def test_sendall_first_failure_strips_attachments(self):
         # If sending an email fails, we try again without the (almost
@@ -213,3 +216,5 @@ class TestBaseMailer(TestCaseWithFactory):
         self.assertEqual(
             'Excessively large attachments removed.',
             bad_parts[1].get_payload(decode=True))
+        # And no OOPS is logged.
+        self.assertEqual(0, len(self.oopses))
