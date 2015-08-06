@@ -186,7 +186,8 @@ class WebhookSource:
             target_filter = Webhook.git_repository == target
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
-        return IStore(Webhook).find(Webhook, target_filter)
+        return IStore(Webhook).find(Webhook, target_filter).order_by(
+            Webhook.id)
 
 
 class WebhookTargetMixin:

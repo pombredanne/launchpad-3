@@ -68,6 +68,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -147,7 +148,7 @@ class GitRepositoryEditMenu(NavigationMenu):
     usedfor = IGitRepository
     facet = "branches"
     title = "Edit Git repository"
-    links = ["edit", "reviewer", "delete"]
+    links = ["edit", "reviewer", "webhooks", "delete"]
 
     @enabled_with_permission("launchpad.Edit")
     def edit(self):
@@ -158,6 +159,13 @@ class GitRepositoryEditMenu(NavigationMenu):
     def reviewer(self):
         text = "Set repository reviewer"
         return Link("+reviewer", text, icon="edit")
+
+    @enabled_with_permission("launchpad.Edit")
+    def webhooks(self):
+        text = "Manage webhooks"
+        return Link(
+            "+webhooks", text, icon="edit",
+            enabled=bool(getFeatureFlag('webhooks.new.enabled')))
 
     @enabled_with_permission("launchpad.Edit")
     def delete(self):

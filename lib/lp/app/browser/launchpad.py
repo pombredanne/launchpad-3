@@ -322,9 +322,7 @@ class Hierarchy(LaunchpadView):
                         remaining_crumb.rootsite_override = facet.rootsite
                     break
         if len(breadcrumbs) > 0:
-            page_crumb = self.makeBreadcrumbForRequestedPage()
-            if page_crumb:
-                breadcrumbs.append(page_crumb)
+            breadcrumbs.extend(self.makeBreadcrumbsForRequestedPage())
         return breadcrumbs
 
     @property
@@ -356,15 +354,15 @@ class Hierarchy(LaunchpadView):
         else:
             return None
 
-    def makeBreadcrumbForRequestedPage(self):
-        """Return an `IBreadcrumb` for the requested page.
+    def makeBreadcrumbsForRequestedPage(self):
+        """Return a sequence of `IBreadcrumb`s for the requested page.
 
         The `IBreadcrumb` for the requested page is created using the current
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the view is the default one for the object or the current
-        facet, return None -- we'll have injected a facet Breadcrumb
-        earlier in the hierarchy which links here.
+        facet, no breadcrumbs are returned -- we'll have injected a
+        facet Breadcrumb earlier in the hierarchy which links here.
         """
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
@@ -374,16 +372,22 @@ class Hierarchy(LaunchpadView):
         facet = queryUtility(IFacet, name=get_facet(view))
         if facet is not None:
             default_views.append(facet.default_view)
+        crumbs = []
+
+        # Views may provide an additional breadcrumb to precede them.
+        # This is useful to have an add view link back to its
+        # collection despite its parent being the context of the collection.
+        if hasattr(view, 'inside_breadcrumb'):
+            crumbs.append(view.inside_breadcrumb)
+
         if hasattr(view, '__name__') and view.__name__ not in default_views:
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
-            breadcrumb = Breadcrumb(None, url=url, text=title)
-            return breadcrumb
-        else:
-            return None
+            crumbs.append(Breadcrumb(None, url=url, text=title))
+        return crumbs
 
     @property
     def display_breadcrumbs(self):

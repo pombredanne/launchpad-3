@@ -59,5 +59,38 @@
 
     <webservice:register module="lp.services.webhooks.webservice" />
 
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhookTarget"
+        name="+webhooks"
+        permission="launchpad.Edit"
+        class="lp.services.webhooks.browser.WebhooksView"
+        template="templates/webhooktarget-webhooks.pt" />
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhookTarget"
+        name="+new-webhook"
+        permission="launchpad.Edit"
+        class="lp.services.webhooks.browser.WebhookAddView"
+        template="../../app/templates/generic-edit.pt" />
+
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.services.webhooks.interfaces.IWebhook"
+        factory="lp.services.webhooks.browser.WebhookBreadcrumb"
+        permission="zope.Public"/>
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhook"
+        name="+index"
+        permission="launchpad.View"
+        class="lp.services.webhooks.browser.WebhookView"
+        template="templates/webhook-index.pt" />
+    <browser:defaultView
+        for="lp.services.webhooks.interfaces.IWebhook"
+        name="+index" />
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhook"
+        name="+delete"
+        permission="launchpad.View"
+        class="lp.services.webhooks.browser.WebhookDeleteView"
+        template="templates/webhook-delete.pt" />
 
 </configure>
