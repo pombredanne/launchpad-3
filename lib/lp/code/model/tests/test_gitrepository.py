@@ -816,6 +816,15 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
                 config.codehosting.git_ssh_root, repository.shortened_path)
             self.assertEqual(expected_url, repository.git_ssh_url)
 
+    def test_getCodebrowseUrlForRevision(self):
+        # IGitRepository.getCodebrowseUrlForRevision gives the URL to the
+        # browser for a specific commit of the code
+        repository = self.factory.makeGitRepository()
+        commit = u'0' * 40
+        urlByCommit = repository.getCodebrowseUrlForRevision(commit)
+        url = repository.getCodebrowseUrl()
+        self.assertEqual(urlByCommit, "%s/commit/?id=%s" % (url, commit))
+
 
 class TestGitRepositoryNamespace(TestCaseWithFactory):
     """Test `IGitRepository.namespace`."""
