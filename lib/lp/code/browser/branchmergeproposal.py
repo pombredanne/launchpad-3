@@ -207,6 +207,12 @@ class BranchMergeCandidateView(LaunchpadView):
                 formatter.displaydate())
         return result
 
+    @property
+    def link_to_branch_target_commit(self):
+        """The link to the code browser at the merged commit."""
+        revision = self.context.merged_revision
+        return self.context.merge_target.getCodebrowseUrlForRevision(revision)
+
 
 class BranchMergeProposalMenuMixin:
     """Mixin class for merge proposal menus."""

@@ -330,6 +330,9 @@ class IGitRepositoryView(Interface):
     def getCodebrowseUrl():
         """Construct a browsing URL for this Git repository."""
 
+    def getCodebrowseUrlForRevision(commit):
+        """The URL to the commit of the merge to the target branch"""
+
     def visibleByUser(user):
         """Can the specified user see this repository?"""
 

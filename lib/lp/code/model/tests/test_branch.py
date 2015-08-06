@@ -2193,6 +2193,16 @@ class TestRevisionHistory(TestCaseWithFactory):
         since = branch.getRevisionsSince(mid_revision.revision.revision_date)
         self.assertEqual(revisions[:mid_sequence], list(since))
 
+    def test_getCodebrowseUrlForRevision(self):
+        # IBranch.getCodebrowseUrlForRevision gives the URL to the browser
+        # for a specific revision of the code
+        branch = self.factory.makeBranch()
+        revision = 42
+        self.factory.makeRevisionsForBranch(branch, count=revision)
+        urlByRevision = branch.getCodebrowseUrlForRevision(42)
+        url = branch.getCodebrowseUrl()
+        self.assertEqual(urlByRevision, "%s/revision/%s" % (url, revision))
+
     def test_top_ancestor_has_no_parents(self):
         # The top-most revision of a branch (i.e. the first one) has no
         # parents.

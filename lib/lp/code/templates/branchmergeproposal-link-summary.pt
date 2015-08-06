@@ -18,7 +18,10 @@
   </tal:source-branch>
   <tal:for-merging condition="context/queue_status/enumvalue:MERGED">
     <tal:have-revision condition="context/merged_revision">
-      at revision <tal:revision replace="context/merged_revision"/>
+      at
+      <a tal:attributes="href view/link_to_branch_target_commit">
+        revision <tal:revision replace="context/merged_revision"/>
+      </a>
     </tal:have-revision>
   </tal:for-merging>
 </tal:root>
