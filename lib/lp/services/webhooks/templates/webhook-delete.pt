@@ -14,7 +14,8 @@
           Deleting this webhook will prevent future events from being
           sent to
           <tt tal:content="context/delivery_url">http://example.com/ep</tt>,
-          and any pending deliveries will be permanently lost.
+          and any pending deliveries or logs of past deliveries will be
+          permanently lost.
         </p>
         <p>
           If you just want to temporarily suspend deliveries, deactivate
