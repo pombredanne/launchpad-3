@@ -1,0 +1,52 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="main">
+    <div class="top-portlet">
+      <p>
+        Webhooks let you configure Launchpad to notify external services
+        when certain events occur. When an event happens, Launchpad will
+        send a POST request to any matching webhook URLs that you've
+        specified.
+      </p>
+      <div>
+        <div class="beta" style="display: inline">
+          <img class="beta" alt="[BETA]" src="/@@/beta" /></div>
+        The only currently supported events are Git pushes. We'll be
+        rolling out webhooks for more soon.
+      </div>
+      <ul class="horizontal">
+        <li>
+          <a class="sprite add"
+            tal:attributes="href context/fmt:url/+new-webhook">Add webhook</a>
+        </li>
+      </ul>
+    </div>
+    <div class="portlet" tal:condition="view/batchnav/currentBatch">
+      <tal:navigation
+          condition="view/batchnav/has_multiple_pages"
+          replace="structure view/batchnav/@@+navigation-links-upper" />
+      <table class="listing">
+        <tbody>
+          <tr tal:repeat="webhook view/batchnav/currentBatch">
+            <td>
+              <a tal:content="webhook/delivery_url"
+                tal:attributes="href webhook/fmt:url">http://example.com/ep</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <tal:navigation
+          condition="view/batchnav/has_multiple_pages"
+          replace="structure view/batchnav/@@+navigation-links-lower" />
+    </div>
+  </div>
+
+</body>
+</html>

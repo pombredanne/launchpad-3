@@ -91,12 +91,12 @@ breadcrumbs starting with the breadcrumb closest to the hierarchy root.
     >>> from lp.app.browser.launchpad import Hierarchy
     >>> from lp.services.webapp.breadcrumb import Breadcrumb
 
-    # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't
+    # Monkey patch Hierarchy.makeBreadcrumbsForRequestedPage so that we don't
     # have to create fake views and other stuff to test breadcrumbs here. The
     # functionality provided by that method is tested in
     # webapp/tests/test_breadcrumbs.py.
-    >>> make_breadcrumb_func = Hierarchy.makeBreadcrumbForRequestedPage
-    >>> Hierarchy.makeBreadcrumbForRequestedPage = lambda self: None
+    >>> make_breadcrumb_func = Hierarchy.makeBreadcrumbsForRequestedPage
+    >>> Hierarchy.makeBreadcrumbsForRequestedPage = lambda self: []
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
@@ -294,4 +294,4 @@ considered to be on the home page if there are no breadcrumbs.
 
 Put the monkey patched method back.
 
-    >>> Hierarchy.makeBreadcrumbForRequestedPage = make_breadcrumb_func
+    >>> Hierarchy.makeBreadcrumbsForRequestedPage = make_breadcrumb_func

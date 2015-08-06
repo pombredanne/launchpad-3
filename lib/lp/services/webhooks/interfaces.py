@@ -54,6 +54,7 @@ from zope.schema import (
 
 from lp import _
 from lp.registry.interfaces.person import IPerson
+from lp.services.fields import URIField
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
@@ -109,10 +110,13 @@ class IWebhook(Interface):
     date_last_modified = exported(Datetime(
         title=_("Date last modified"), required=True, readonly=True))
 
-    delivery_url = exported(TextLine(
-        title=_("URL"), required=True, readonly=False))
+    delivery_url = exported(URIField(
+        title=_("Delivery URL"), allowed_schemes=['http', 'https'],
+        required=True, readonly=False))
     active = exported(Bool(
-        title=_("Active"), required=True, readonly=False))
+        title=_("Active"),
+        description=_("Deliver details of subscribed events."),
+        required=True, readonly=False))
 
     # Do not export this.
     secret = TextLine(
