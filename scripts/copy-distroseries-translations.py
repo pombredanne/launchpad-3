@@ -65,6 +65,12 @@ class TranslationsCopier(LaunchpadCronScript):
             action="store_true", default=False,
             help="Don't check if target's UI and imports are blocked; "
                  "actively block them.")
+        self.parser.add_option('--skip-duplicates', dest='skip_duplicates',
+            action="store_true", default=False,
+            help=(
+                "Allow the target distroseries to have some translation "
+                "templates; skip any templates and translations for "
+                "sources that already have a template in the target."))
 
     def main(self):
         target = getUtility(IDistributionSet)[self.options.distro][
@@ -111,7 +117,8 @@ class TranslationsCopier(LaunchpadCronScript):
         copy_distroseries_translations(
             source, target, self.txn, self.logger,
             published_sources_only=self.options.published_sources_only,
-            check_archive=check_archive, check_distroseries=check_distroseries)
+            check_archive=check_archive, check_distroseries=check_distroseries,
+            skip_duplicates=self.options.skip_duplicates)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
