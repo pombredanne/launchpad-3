@@ -13,12 +13,18 @@ __all__ = [
 
 from itertools import groupby
 from operator import itemgetter
+from smtplib import SMTPException
+import sys
 
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 
-from lp.bugs.enums import BugNotificationLevel
+from lp.bugs.enums import (
+    BugNotificationLevel,
+    BugNotificationStatus,
+    )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder,
@@ -26,10 +32,14 @@ from lp.bugs.mail.bugnotificationbuilder import (
     )
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.model.person import get_recipients
+from lp.services.database.constants import UTC_NOW
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.sendmail import sendmail
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.logger import log
 from lp.services.webapp import canonical_url
+from lp.services.webapp.errorlog import ScriptRequest
 
 
 def get_activity_key(notification):
@@ -326,3 +336,59 @@ def process_deferred_notifications(bug_notifications):
             message=message,
             recipients=recipients,
             activity=activity)
+
+
+class SendBugNotifications(LaunchpadCronScript):
+    def main(self):
+        notifications_sent = False
+        bug_notification_set = getUtility(IBugNotificationSet)
+        deferred_notifications = \
+            bug_notification_set.getDeferredNotifications()
+        process_deferred_notifications(deferred_notifications)
+        pending_notifications = get_email_notifications(
+            bug_notification_set.getNotificationsToSend())
+        for (bug_notifications,
+             omitted_notifications,
+             messages) in pending_notifications:
+            try:
+                for message in messages:
+                    try:
+                        self.logger.info("Notifying %s about bug %d." % (
+                            message['To'], bug_notifications[0].bug.id))
+                        sendmail(message)
+                        self.logger.debug(message.as_string())
+                    except SMTPException:
+                        request = ScriptRequest([
+                            ("script_name", self.name),
+                            ("path", sys.argv[0]),
+                            ])
+                        error_utility = getUtility(IErrorReportingUtility)
+                        oops_vars = {
+                            "message_id": message.get("Message-Id"),
+                            "notification_type": "bug",
+                            "recipient": message["To"],
+                            "subject": message["Subject"],
+                            }
+                        with error_utility.oopsMessage(oops_vars):
+                            error_utility.raising(sys.exc_info(), request)
+                        self.logger.info(request.oopsid)
+                        self.txn.abort()
+                        # Re-raise to get out of this loop and go to the
+                        # next iteration of the outer loop.
+                        raise
+            except SMTPException:
+                continue
+            for notification in bug_notifications:
+                notification.date_emailed = UTC_NOW
+                notification.status = BugNotificationStatus.SENT
+            for notification in omitted_notifications:
+                notification.date_emailed = UTC_NOW
+                notification.status = BugNotificationStatus.OMITTED
+            notifications_sent = True
+            # Commit after each batch of email sent, so that we won't
+            # re-mail the notifications in case of something going wrong
+            # in the middle.
+            self.txn.commit()
+
+        if not notifications_sent:
+            self.logger.debug("No notifications are pending to be sent.")
