@@ -10,6 +10,10 @@ __all__ = ['BaseMailer', 'RecipientReason']
 from collections import OrderedDict
 import logging
 from smtplib import SMTPException
+import sys
+
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -35,7 +39,7 @@ class BaseMailer:
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, message_id=None, notification_type=None,
-                 mail_controller_class=None):
+                 mail_controller_class=None, request=None):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -49,6 +53,8 @@ class BaseMailer:
             not supplied, random message-ids will be used.
         :param mail_controller_class: The class of the mail controller to
             use to send the mails.  Defaults to `MailController`.
+        :param request: An optional `IErrorReportRequest` to use when
+            logging OOPSes.
         """
         self._subject_template = subject
         self._template_name = template_name
@@ -63,6 +69,7 @@ class BaseMailer:
         if mail_controller_class is None:
             mail_controller_class = MailController
         self._mail_controller_class = mail_controller_class
+        self.request = request
 
     def _getToAddresses(self, recipient, email):
         return [format_address(recipient.displayname, email)]
@@ -165,20 +172,29 @@ class BaseMailer:
         """Send notifications to all recipients."""
         # We never want SMTP errors to propagate from this function.
         for email, recipient in self._recipients.getRecipientPersons():
+            ctrl = self.generateEmail(email, recipient)
             try:
-                ctrl = self.generateEmail(email, recipient)
                 ctrl.send()
-            except SMTPException as e:
+            except SMTPException:
                 # If the initial sending failed, try again without
                 # attachments.
+                ctrl = self.generateEmail(
+                    email, recipient, force_no_attachments=True)
                 try:
-                    ctrl = self.generateEmail(
-                        email, recipient, force_no_attachments=True)
                     ctrl.send()
-                except SMTPException as e:
-                    # Don't want an entire stack trace, just some details.
-                    self.logger.warning(
-                        'send failed for %s, %s' % (email, e))
+                except SMTPException:
+                    error_utility = getUtility(IErrorReportingUtility)
+                    oops_vars = {
+                        "message_id": ctrl.headers.get("Message-Id"),
+                        "notification_type": self.notification_type,
+                        "recipient": ", ".join(ctrl.to_addrs),
+                        "subject": ctrl.subject,
+                        }
+                    with error_utility.oopsMessage(oops_vars):
+                        oops = error_utility.raising(
+                            sys.exc_info(), self.request)
+                    self.logger.info(
+                        "Mail resulted in OOPS: %s" % oops.get("id"))
 
 
 class RecipientReason:
