@@ -1,0 +1,96 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+
+<body>
+  <metal:registering fill-slot="registering">
+    Created by
+      <tal:registrant replace="structure context/registrant/fmt:link"/>
+    on
+      <tal:created-on replace="structure context/date_created/fmt:date"/>
+    and last modified on
+      <tal:last-modified replace="structure context/date_last_modified/fmt:date"/>
+  </metal:registering>
+
+  <metal:side fill-slot="side">
+    <div tal:replace="structure context/@@+global-actions"/>
+  </metal:side>
+
+  <metal:heading fill-slot="heading">
+    <h1 tal:content="context/name"/>
+  </metal:heading>
+
+  <div metal:fill-slot="main">
+    <h2>Snap package information</h2>
+    <div class="two-column-list">
+      <dl id="owner">
+        <dt>Owner:</dt>
+        <dd tal:content="structure context/owner/fmt:link"/>
+      </dl>
+      <dl id="distro_series">
+        <dt>Distribution series:</dt>
+        <dd tal:define="distro_series context/distro_series">
+          <a tal:attributes="href distro_series/fmt:url"
+             tal:content="distro_series/fullseriesname"/>
+        </dd>
+      </dl>
+    </div>
+
+    <h2>Latest builds</h2>
+    <table id="latest-builds-listing" class="listing"
+           style="margin-bottom: 1em;">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>When complete</th>
+          <th>Architecture</th>
+          <th>Archive</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tal:snap-builds repeat="build view/builds">
+          <tal:build-view define="buildview nocall:build/@@+index">
+            <tr tal:attributes="id string:build-${build/id}">
+              <td>
+                <span tal:replace="structure build/image:icon"/>
+                <a tal:content="build/status/title"
+                   tal:attributes="href build/fmt:url"/>
+              </td>
+              <td>
+                <tal:date replace="buildview/date/fmt:displaydate"/>
+                <tal:estimate condition="buildview/estimate">
+                  (estimated)
+                </tal:estimate>
+
+                <tal:build-log define="file build/log" tal:condition="file">
+                  <a class="sprite download"
+                     tal:attributes="href build/log_url">buildlog</a>
+                  (<span tal:replace="file/content/filesize/fmt:bytes"/>)
+                </tal:build-log>
+              </td>
+              <td>
+                <a class="sprite distribution"
+                   tal:define="archseries build/distro_arch_series"
+                   tal:attributes="href archseries/fmt:url"
+                   tal:content="archseries/architecturetag"/>
+              </td>
+              <td>
+                <tal:archive replace="structure build/archive/fmt:link"/>
+              </td>
+            </tr>
+          </tal:build-view>
+        </tal:snap-builds>
+      </tbody>
+    </table>
+    <p tal:condition="not: view/builds">
+      This snap package has not been built yet.
+    </p>
+  </div>
+
+</body>
+</html>

@@ -13,9 +13,23 @@
             for="lp.snappy.interfaces.snap.ISnap"
             path_expression="string:+snap/${name}"
             attribute_to_parent="owner" />
+        <browser:defaultView
+            for="lp.snappy.interfaces.snap.ISnap"
+            name="+index" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapView"
+            permission="launchpad.View"
+            name="+index"
+            template="../templates/snap-index.pt" />
         <browser:navigation
             module="lp.snappy.browser.snap"
             classes="SnapNavigation" />
+        <adapter
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
+            for="lp.snappy.interfaces.snap.ISnap"
+            factory="lp.snappy.browser.snap.SnapBreadcrumb"
+            permission="zope.Public" />
         <browser:url
             for="lp.snappy.interfaces.snap.ISnapSet"
             path_expression="string:+snaps"
@@ -24,8 +38,37 @@
             for="lp.snappy.interfaces.snapbuild.ISnapBuild"
             path_expression="string:+build/${id}"
             attribute_to_parent="snap" />
+        <browser:menus
+            module="lp.snappy.browser.snapbuild"
+            classes="SnapBuildContextMenu" />
         <browser:navigation
             module="lp.snappy.browser.snapbuild"
             classes="SnapBuildNavigation" />
+        <browser:defaultView
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            name="+index" />
+        <browser:page
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            class="lp.snappy.browser.snapbuild.SnapBuildView"
+            permission="launchpad.View"
+            name="+index"
+            template="../templates/snapbuild-index.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            class="lp.snappy.browser.snapbuild.SnapBuildCancelView"
+            permission="launchpad.Edit"
+            name="+cancel"
+            template="../../app/templates/generic-edit.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            class="lp.snappy.browser.snapbuild.SnapBuildRescoreView"
+            permission="launchpad.Admin"
+            name="+rescore"
+            template="../../app/templates/generic-edit.pt" />
+        <adapter
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
+            permission="zope.Public" />
     </facet>
 </configure>
