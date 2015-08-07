@@ -38,7 +38,11 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
+from lp.translations.model.translationpackagingjob import (
+    TranslationPackagingJob,
+    )
 
 
 class TestRosettaTranslations(TestCaseWithFactory):
@@ -242,17 +246,20 @@ class TestRosettaTranslations(TestCaseWithFactory):
     def test_basic_from_copy(self):
         spr, pu, lfa = self.makeJobElementsFromCopyJob()
         transaction.commit()
-        process_rosetta_translations(pu, lfa)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(pu, lfa)
 
     def test_basic_from_upload(self):
         spr, pu, lfa = self.makeJobElements()
         transaction.commit()
-        process_rosetta_translations(pu, lfa)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(pu, lfa)
 
     def test_correct_job_is_created_from_upload(self):
         spr, packageupload, libraryfilealias = self.makeJobElements()
         transaction.commit()
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
@@ -265,7 +272,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
         spr, packageupload, libraryfilealias = (
             self.makeJobElementsFromCopyJob())
         transaction.commit()
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
@@ -280,7 +288,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
             distroseries_name="vivid", archive_name="stable-phone-overlay")
         self.ensureDistroSeries("ubuntu-rtm", "15.04")
         transaction.commit()
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
@@ -295,7 +304,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
             distroseries_name="wily", archive_name="stable-phone-overlay")
         self.ensureDistroSeries("ubuntu-rtm", "15.04")
         transaction.commit()
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(0, len(jobs))
@@ -306,7 +316,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
             distroseries_name="vivid", archive_name="landing-001")
         self.ensureDistroSeries("ubuntu-rtm", "15.04")
         transaction.commit()
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(0, len(jobs))
@@ -317,7 +328,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
         transaction.commit()
         sourcepackage = packageupload.distroseries.getSourcePackage(spr.name)
         self.assertIsNone(sourcepackage.packaging)
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
         self.assertIsNone(sourcepackage.packaging)
 
     def test_skips_packaging_for_redirected_ppa_no_original(self):
@@ -331,7 +343,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
         transaction.commit()
         sourcepackage = packageupload.distroseries.getSourcePackage(spr.name)
         self.assertIsNone(sourcepackage.packaging)
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
         self.assertIsNone(sourcepackage.packaging)
 
     def test_skips_existing_packaging_for_redirected_ppa(self):
@@ -353,7 +366,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
         transaction.commit()
         self.assertEqual(
             current_upstream, sourcepackage.packaging.productseries)
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
         self.assertEqual(
             current_upstream, sourcepackage.packaging.productseries)
 
@@ -373,5 +387,11 @@ class TestRosettaTranslations(TestCaseWithFactory):
         transaction.commit()
         sourcepackage = redirected_series.getSourcePackage(spr.name)
         self.assertIsNone(sourcepackage.packaging)
-        process_rosetta_translations(packageupload, libraryfilealias)
+        with dbuser("process_accepted"):
+            process_rosetta_translations(packageupload, libraryfilealias)
         self.assertEqual(upstream, sourcepackage.packaging.productseries)
+        # TranslationPackagingJobs are created to handle the Packaging
+        # change (one TranslationMergeJob for each of ubuntu/vivid and
+        # ubuntu-rtm/15.04).
+        jobs = list(TranslationPackagingJob.iterReady())
+        self.assertEqual(2, len(jobs))
