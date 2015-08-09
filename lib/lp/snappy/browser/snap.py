@@ -50,15 +50,6 @@ class SnapView(LaunchpadView):
     """Default view of a Snap."""
 
     @property
-    def page_title(self):
-        return "%(name)s's %(snap_name)s snap package" % {
-            'name': self.context.owner.displayname,
-            'snap_name': self.context.name,
-            }
-
-    label = page_title
-
-    @property
     def builds(self):
         return builds_for_snap(self.context)
 
