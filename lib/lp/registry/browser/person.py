@@ -756,6 +756,12 @@ class PersonMenuMixin(CommonMenuLinks):
         text = 'Change details'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def password(self):
+        target = config.launchpad.openid_provider_root
+        text = 'Change password'
+        return Link(target, text, icon='edit')
+
     @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         target = '+review'
@@ -4399,7 +4405,8 @@ class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
     usedfor = IPersonIndexMenu
     facet = 'overview'
     title = 'Change person'
-    links = ('edit', 'administer', 'administer_account', 'branding')
+    links = ('edit', 'administer', 'administer_account', 'branding',
+             'password')
 
 
 classImplements(PersonIndexView, IPersonIndexMenu)

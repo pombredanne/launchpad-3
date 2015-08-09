@@ -291,6 +291,18 @@ class TestPersonIndexView(BrowserTestCase):
         view = create_initialized_view(person, '+index')
         self.assertThat(view.page_description, Equals(person_description))
 
+    def test_person_view_change_password(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=person)
+        with person_logged_in(person):
+            markup = self.get_markup(view, person)
+        password_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Change password', 'a',
+                attrs={'href': 'http://testopenid.dev/'},
+                text='Change password'))
+        self.assertThat(markup, password_match)
+
     def test_assigned_blueprints(self):
         person = self.factory.makePerson()
         public_spec = self.factory.makeSpecification(
