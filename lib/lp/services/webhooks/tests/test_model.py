@@ -22,6 +22,7 @@ from lp.services.webhooks.model import WebhookJob
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
+    ExpectedException,
     login_person,
     person_logged_in,
     StormStatementRecorder,
@@ -48,6 +49,24 @@ class TestWebhook(TestCaseWithFactory):
             self.assertThat(
                 webhook.date_last_modified,
                 GreaterThan(old_mtime))
+
+    def test_event_types(self):
+        # Webhook.event_types is a list of event type strings.
+        webhook = self.factory.makeWebhook()
+        with admin_logged_in():
+            self.assertContentEqual([], webhook.event_types)
+            webhook.event_types = ['foo', 'bar']
+            self.assertContentEqual(['foo', 'bar'], webhook.event_types)
+
+    def test_event_types_bad_structure(self):
+        # It's not possible to set Webhook.event_types to a list of the
+        # wrong type.
+        webhook = self.factory.makeWebhook()
+        with admin_logged_in():
+            self.assertContentEqual([], webhook.event_types)
+            with ExpectedException(AssertionError, '.*'):
+                webhook.event_types = ['foo', [1]]
+            self.assertContentEqual([], webhook.event_types)
 
 
 class TestWebhookPermissions(TestCaseWithFactory):

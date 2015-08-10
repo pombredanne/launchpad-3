@@ -21,6 +21,15 @@
         provides="lp.services.webhooks.interfaces.IWebhookSource">
         <allow interface="lp.services.webhooks.interfaces.IWebhookSource"/>
     </securedutility>
+    <securedutility
+        name="WebhookEventType"
+        component="lp.services.webhooks.interfaces.WebhookEventTypeVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+    <class class="lp.services.webhooks.interfaces.WebhookEventTypeVocabulary">
+        <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+    </class>
 
     <securedutility
         component="lp.services.webhooks.model.WebhookJob"

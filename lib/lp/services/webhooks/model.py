@@ -140,6 +140,8 @@ class Webhook(StormBase):
     @event_types.setter
     def event_types(self, event_types):
         updated_data = self.json_data or {}
+        # The correctness of the values is also checked by zope.schema,
+        # but best to be safe.
         assert isinstance(event_types, (list, tuple))
         assert all(isinstance(v, basestring) for v in event_types)
         updated_data['event_types'] = event_types

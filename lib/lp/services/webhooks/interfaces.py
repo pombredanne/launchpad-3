@@ -17,6 +17,7 @@ __all__ = [
     'WebhookDeliveryFailure',
     'WebhookDeliveryRetry',
     'WebhookFeatureDisabled',
+    'WebhookEventTypeVocabulary',
     ]
 
 import httplib
@@ -45,12 +46,14 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Datetime,
     Dict,
     Int,
     List,
     TextLine,
     )
+from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
 from lp.registry.interfaces.person import IPerson
@@ -65,6 +68,11 @@ from lp.services.webservice.apihelpers import (
     patch_entry_return_type,
     patch_reference_property,
     )
+
+
+WEBHOOK_EVENT_TYPES = {
+    "git:push:0.1": "Git push",
+    }
 
 
 @error_status(httplib.UNAUTHORIZED)
@@ -86,6 +94,15 @@ class WebhookDeliveryRetry(Exception):
     pass
 
 
+class WebhookEventTypeVocabulary(SimpleVocabulary):
+
+    def __init__(self, context):
+        terms = [
+            self.createTerm(key, key, value)
+            for key, value in WEBHOOK_EVENT_TYPES.iteritems()]
+        super(WebhookEventTypeVocabulary, self).__init__(terms)
+
+
 class IWebhook(Interface):
 
     export_as_webservice_entry(as_of='beta')
@@ -97,7 +114,7 @@ class IWebhook(Interface):
         required=True, readonly=True,
         description=_("The object for which this webhook receives events.")))
     event_types = exported(List(
-        TextLine(), title=_("Event types"),
+        Choice(vocabulary='WebhookEventType'), title=_("Event types"),
         description=_(
             "The event types for which this webhook receives events."),
         required=True, readonly=False))
