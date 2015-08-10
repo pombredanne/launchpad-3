@@ -115,8 +115,6 @@ class IWebhook(Interface):
         description=_("The object for which this webhook receives events.")))
     event_types = exported(List(
         Choice(vocabulary='WebhookEventType'), title=_("Event types"),
-        description=_(
-            "The event types for which this webhook receives events."),
         required=True, readonly=False))
     registrant = exported(Reference(
         title=_("Registrant"), schema=IPerson, required=True, readonly=True,
