@@ -268,6 +268,9 @@ class IWebhookDeliveryJob(IRunnableJob):
         description=_("Timestamp of the last delivery attempt."),
         required=False, readonly=True))
 
+    event_type = exported(
+        TextLine(title=_('Event type'), required=True, readonly=True))
+
     payload = exported(Dict(
         title=_('Event payload'),
         key_type=TextLine(), required=True, readonly=True))

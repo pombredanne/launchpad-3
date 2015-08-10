@@ -245,7 +245,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         hook = self.factory.makeWebhook(
             delivery_url=u'http://example.com/ep', secret=secret,
             active=active)
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
 
         client = MockWebhookClient(
             response_status=response_status, raises=raises)
@@ -255,11 +255,15 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             JobRunner([job]).runAll()
         return job, client.requests
 
-    def test_provides_interface(self):
+    def test_create(self):
         # `WebhookDeliveryJob` objects provide `IWebhookDeliveryJob`.
         hook = self.factory.makeWebhook()
-        self.assertProvides(
-            WebhookDeliveryJob.create(hook, payload={}), IWebhookDeliveryJob)
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
+        self.assertProvides(job, IWebhookDeliveryJob)
+        self.assertThat(
+            job,
+            MatchesStructure.byEquality(
+                webhook=hook, event_type='test', payload={'foo': 'bar'}))
 
     def test_short_lease_and_timeout(self):
         # Webhook jobs have a request timeout of 30 seconds, a celery
@@ -462,7 +466,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
 
     def test_automatic_retries(self):
         hook = self.factory.makeWebhook()
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         client = MockWebhookClient(response_status=404)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
@@ -496,7 +500,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
 
     def test_manual_retries(self):
         hook = self.factory.makeWebhook()
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         client = MockWebhookClient(response_status=404)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
@@ -544,7 +548,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         # retries can be resumed. This can be useful for recovering from
         # systemic errors that erroneously failed many deliveries.
         hook = self.factory.makeWebhook()
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         client = MockWebhookClient(response_status=404)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
@@ -571,7 +575,7 @@ class TestViaCronscript(TestCaseWithFactory):
 
     def test_run_from_cronscript(self):
         hook = self.factory.makeWebhook(delivery_url=u'http://example.com/ep')
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         self.assertEqual(JobStatus.WAITING, job.status)
         transaction.commit()
 
@@ -601,7 +605,8 @@ class TestViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'WebhookDeliveryJob'}))
         with block_on_job():
-            job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+            job = WebhookDeliveryJob.create(
+                hook, 'test', payload={'foo': 'bar'})
             transaction.commit()
 
         self.assertEqual(JobStatus.WAITING, job.status)
