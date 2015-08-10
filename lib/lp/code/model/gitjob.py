@@ -214,7 +214,7 @@ class GitRefScanJob(GitJobDerived):
             if old != new:
                 ref_changes[ref] = {"old": old, "new": new}
         return {
-            "git_repository_path": repository.unique_name,
+            "git_repository_path": repository.shortened_path,
             "ref_changes": ref_changes,
             }
 
