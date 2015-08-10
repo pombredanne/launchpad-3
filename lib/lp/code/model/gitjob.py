@@ -196,6 +196,24 @@ class GitRefScanJob(GitJobDerived):
         job.celeryRunOnCommit()
         return job
 
+    @staticmethod
+    def composeWebhookPayload(repository, refs_to_upsert, refs_to_remove):
+        old_refs = {ref.path: ref for ref in repository.refs}
+        ref_changes = {}
+        for ref in refs_to_upsert.keys() + refs_to_remove:
+            ref_changes[ref] = {
+                "old":
+                    {"commit_sha1": old_refs[ref].commit_sha1}
+                    if ref in old_refs else None,
+                "new":
+                    {"commit_sha1": refs_to_upsert[ref]['sha1']}
+                    if ref in refs_to_upsert else None,
+                }
+        return {
+            "git_repository": repository.unique_name,
+            "changes": ref_changes,
+            }
+
     def run(self):
         """See `IGitRefScanJob`."""
         try:

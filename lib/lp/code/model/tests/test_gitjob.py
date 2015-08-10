@@ -178,6 +178,37 @@ class TestGitRefScanJob(TestCaseWithFactory):
                 JobRunner([job]).runAll()
         self.assertEqual([], list(repository.refs))
 
+    def test_composeWebhookPayload(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository, paths=[u'refs/heads/master', u'refs/tags/1.0'])
+
+        sha1 = lambda s: hashlib.sha1(s).hexdigest()
+        new_refs = {
+            'refs/heads/master': {
+                'sha1': sha1('master-ng'),
+                'type': 'commit'},
+            'refs/tags/2.0': {
+                'sha1': sha1('2.0'),
+                'type': 'commit'},
+            }
+        removed_refs = ['refs/tags/1.0']
+        payload = GitRefScanJob.composeWebhookPayload(
+            repository, new_refs, removed_refs)
+        self.assertEqual(
+            {'git_repository': repository.unique_name,
+             'changes': {
+                'refs/heads/master': {
+                    'old': {'commit_sha1': sha1('refs/heads/master')},
+                    'new': {'commit_sha1': sha1('master-ng')}},
+                'refs/tags/1.0': {
+                    'old': {'commit_sha1': sha1('refs/tags/1.0')},
+                    'new': None},
+                'refs/tags/2.0': {
+                    'old': None,
+                    'new': {'commit_sha1': sha1('2.0')}}}},
+            payload)
+
 
 class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
     """Tests for `ReclaimGitRepositorySpaceJob`."""
