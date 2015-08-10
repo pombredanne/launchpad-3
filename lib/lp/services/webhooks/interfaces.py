@@ -181,6 +181,9 @@ class IWebhookSet(Interface):
     def findByTarget(target):
         """Find all webhooks for the given target."""
 
+    def trigger(target, event_type, payload):
+        """Trigger subscribed webhooks to deliver a payload."""
+
 
 class IWebhookTarget(Interface):
 

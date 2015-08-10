@@ -191,6 +191,14 @@ class WebhookSet:
         return IStore(Webhook).find(Webhook, target_filter).order_by(
             Webhook.id)
 
+    def trigger(self, target, event_type, payload):
+        # XXX wgrant 2015-08-10: Two INSERTs and one celery submission
+        # for each webhook, but the set should be small and we'd have to
+        # defer the triggering itself to a job to fix it.
+        for webhook in self.findByTarget(target):
+            if webhook.active and event_type in webhook.event_types:
+                WebhookDeliveryJob.create(webhook, payload)
+
 
 class WebhookTargetMixin:
 
