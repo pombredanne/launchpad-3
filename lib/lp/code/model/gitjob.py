@@ -51,6 +51,7 @@ from lp.services.database.locking import (
     try_advisory_lock,
     )
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -58,6 +59,7 @@ from lp.services.job.model.job import (
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.scripts import log
+from lp.services.webhooks.interfaces import IWebhookSet
 
 
 class GitJobType(DBEnumeratedType):
@@ -200,15 +202,17 @@ class GitRefScanJob(GitJobDerived):
     def composeWebhookPayload(repository, refs_to_upsert, refs_to_remove):
         old_refs = {ref.path: ref for ref in repository.refs}
         ref_changes = {}
-        for ref in refs_to_upsert.keys() + refs_to_remove:
-            ref_changes[ref] = {
-                "old":
-                    {"commit_sha1": old_refs[ref].commit_sha1}
-                    if ref in old_refs else None,
-                "new":
-                    {"commit_sha1": refs_to_upsert[ref]['sha1']}
-                    if ref in refs_to_upsert else None,
-                }
+        for ref in refs_to_upsert.keys() + list(refs_to_remove):
+            old = (
+                {"commit_sha1": old_refs[ref].commit_sha1}
+                if ref in old_refs else None)
+            new = (
+                {"commit_sha1": refs_to_upsert[ref]['sha1']}
+                if ref in refs_to_upsert else None)
+            # planRefChanges can return an unchanged ref if the cached
+            # commit details differ.
+            if old != new:
+                ref_changes[ref] = {"old": old, "new": new}
         return {
             "git_repository": repository.unique_name,
             "changes": ref_changes,
@@ -225,6 +229,13 @@ class GitRefScanJob(GitJobDerived):
                     self.repository.planRefChanges(hosting_path, logger=log))
                 self.repository.fetchRefCommits(
                     hosting_path, refs_to_upsert, logger=log)
+                # The webhook delivery includes old ref information, so
+                # prepare it before we actually execute the changes.
+                if getFeatureFlag('code.git.webhooks.enabled'):
+                    payload = self.composeWebhookPayload(
+                        self.repository, refs_to_upsert, refs_to_remove)
+                    getUtility(IWebhookSet).trigger(
+                        self.repository, 'git:push:0.1', payload)
                 self.repository.synchroniseRefs(
                     refs_to_upsert, refs_to_remove, logger=log)
                 props = getUtility(IGitHostingClient).getProperties(

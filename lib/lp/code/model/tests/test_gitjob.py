@@ -13,6 +13,8 @@ import hashlib
 
 import pytz
 from testtools.matchers import (
+    Equals,
+    MatchesDict,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -34,6 +36,7 @@ from lp.code.model.gitjob import (
     ReclaimGitRepositorySpaceJob,
     )
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
 from lp.testing import (
     TestCaseWithFactory,
@@ -177,6 +180,37 @@ class TestGitRefScanJob(TestCaseWithFactory):
             with dbuser("branchscanner"):
                 JobRunner([job]).runAll()
         self.assertEqual([], list(repository.refs))
+
+    def test_triggers_webhooks(self):
+        # Jobs trigger any relevant webhooks when they're enabled.
+        self.useFixture(FeatureFixture({'code.git.webhooks.enabled': 'on'}))
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository, paths=[u'refs/heads/master', u'refs/tags/1.0'])
+        hook = self.factory.makeWebhook(
+            target=repository, event_types=['git:push:0.1'])
+        job = GitRefScanJob.create(repository)
+        paths = (u'refs/heads/master', u'refs/tags/2.0')
+        hosting_client = FakeGitHostingClient(self.makeFakeRefs(paths), [])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        with dbuser('branchscanner'):
+            JobRunner([job]).runAll()
+        delivery = hook.deliveries.one()
+        sha1 = lambda s: hashlib.sha1(s).hexdigest()
+        self.assertThat(
+            delivery,
+            MatchesStructure(
+                event_type=Equals('git:push:0.1'),
+                payload=MatchesDict({
+                    'git_repository': Equals(repository.unique_name),
+                    'changes': Equals({
+                        'refs/tags/1.0': {
+                            'old': {'commit_sha1': sha1('refs/tags/1.0')},
+                            'new': None},
+                        'refs/tags/2.0': {
+                            'old': None,
+                            'new': {'commit_sha1': sha1('refs/tags/2.0')}},
+                    })})))
 
     def test_composeWebhookPayload(self):
         repository = self.factory.makeGitRepository()
