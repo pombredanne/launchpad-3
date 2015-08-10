@@ -202,8 +202,8 @@ class TestGitRefScanJob(TestCaseWithFactory):
             MatchesStructure(
                 event_type=Equals('git:push:0.1'),
                 payload=MatchesDict({
-                    'git_repository': Equals(repository.unique_name),
-                    'changes': Equals({
+                    'git_repository_path': Equals(repository.unique_name),
+                    'ref_changes': Equals({
                         'refs/tags/1.0': {
                             'old': {'commit_sha1': sha1('refs/tags/1.0')},
                             'new': None},
@@ -230,8 +230,8 @@ class TestGitRefScanJob(TestCaseWithFactory):
         payload = GitRefScanJob.composeWebhookPayload(
             repository, new_refs, removed_refs)
         self.assertEqual(
-            {'git_repository': repository.unique_name,
-             'changes': {
+            {'git_repository_path': repository.unique_name,
+             'ref_changes': {
                 'refs/heads/master': {
                     'old': {'commit_sha1': sha1('refs/heads/master')},
                     'new': {'commit_sha1': sha1('master-ng')}},
