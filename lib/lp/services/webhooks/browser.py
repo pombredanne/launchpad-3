@@ -16,9 +16,11 @@ from zope.interface import Interface
 
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -30,7 +32,7 @@ from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webhooks.interfaces import (
     IWebhook,
-    IWebhookSource,
+    IWebhookSet,
     )
 
 
@@ -55,7 +57,7 @@ class WebhookTargetNavigationMixin:
             id = int(id)
         except ValueError:
             return None
-        webhook = getUtility(IWebhookSource).getByID(id)
+        webhook = getUtility(IWebhookSet).getByID(id)
         if webhook is None or webhook.target != self.context:
             return None
         return webhook
@@ -74,7 +76,7 @@ class WebhooksView(LaunchpadView):
     @cachedproperty
     def batchnav(self):
         return BatchNavigator(
-            getUtility(IWebhookSource).findByTarget(self.context),
+            getUtility(IWebhookSet).findByTarget(self.context),
             self.request)
 
 
@@ -103,8 +105,7 @@ class WebhookBreadcrumb(Breadcrumb):
 
 
 class WebhookEditSchema(Interface):
-    # XXX wgrant 2015-08-04: Need custom widgets for secret and
-    # event_types.
+    # XXX wgrant 2015-08-04: Need custom widget for secret.
     use_template(IWebhook, include=['delivery_url', 'event_types', 'active'])
 
 
@@ -113,6 +114,7 @@ class WebhookAddView(LaunchpadFormView):
     page_title = label = "Add webhook"
 
     schema = WebhookEditSchema
+    custom_widget('event_types', LabeledMultiCheckBoxWidget)
 
     @property
     def inside_breadcrumb(self):
@@ -136,9 +138,10 @@ class WebhookAddView(LaunchpadFormView):
 
 class WebhookView(LaunchpadEditFormView):
 
-    schema = WebhookEditSchema
-
     label = "Manage webhook"
+
+    schema = WebhookEditSchema
+    custom_widget('event_types', LabeledMultiCheckBoxWidget)
 
     @property
     def next_url(self):

@@ -261,7 +261,7 @@ from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.sorting import sorted_version_numbers
-from lp.services.webhooks.interfaces import IWebhookSource
+from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
@@ -4531,7 +4531,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target = self.makeGitRepository()
         if delivery_url is None:
             delivery_url = self.getUniqueURL().decode('utf-8')
-        return getUtility(IWebhookSource).new(
+        return getUtility(IWebhookSet).new(
             target, self.makePerson(), delivery_url, [], active, secret)
 
     def makeSnap(self, registrant=None, owner=None, distroseries=None,

@@ -16,6 +16,7 @@ from testtools.matchers import (
     Is,
     KeysEqual,
     MatchesAll,
+    MatchesStructure,
     Not,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -73,7 +74,7 @@ class TestWebhook(TestCaseWithFactory):
         old_mtime = representation['date_last_modified']
         patch = json.dumps(
             {'active': False, 'delivery_url': 'http://example.com/ep2',
-             'event_types': ['foo', 'bar']})
+             'event_types': ['git:push:0.1']})
         self.webservice.patch(
             self.webhook_url, 'application/json', patch, api_version='devel')
         representation = self.webservice.get(
@@ -84,7 +85,33 @@ class TestWebhook(TestCaseWithFactory):
                 {'active': Equals(False),
                  'delivery_url': Equals('http://example.com/ep2'),
                  'date_last_modified': GreaterThan(old_mtime),
-                 'event_types': Equals(['foo', 'bar'])}))
+                 'event_types': Equals(['git:push:0.1'])}))
+
+    def test_patch_event_types(self):
+        representation = self.webservice.get(
+            self.webhook_url, api_version='devel').jsonBody()
+        self.assertThat(
+            representation, ContainsDict({'event_types': Equals([])}))
+
+        # Including a valid type in event_types works.
+        response = self.webservice.patch(
+            self.webhook_url, 'application/json',
+            json.dumps({'event_types': ['git:push:0.1']}), api_version='devel')
+        self.assertEqual(209, response.status)
+        representation = self.webservice.get(
+            self.webhook_url, api_version='devel').jsonBody()
+        self.assertThat(
+            representation,
+            ContainsDict({'event_types': Equals(['git:push:0.1'])}))
+
+        # But an unknown type is rejected.
+        response = self.webservice.patch(
+            self.webhook_url, 'application/json',
+            json.dumps({'event_types': ['hg:push:0.1']}), api_version='devel')
+        self.assertThat(response,
+            MatchesStructure.byEquality(
+                status=400,
+                body="event_types: u'hg:push:0.1' isn't a valid token"))
 
     def test_anon_forbidden(self):
         response = LaunchpadWebServiceCaller().get(
@@ -279,14 +306,14 @@ class TestWebhookTarget(TestCaseWithFactory):
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
-            api_version='devel')
+            delivery_url='http://example.com/ep',
+            event_types=['git:push:0.1'], api_version='devel')
         self.assertEqual(201, response.status)
 
         representation = self.webservice.get(
             self.target_url + '/webhooks', api_version='devel').jsonBody()
         self.assertContentEqual(
-            [('http://example.com/ep', ['foo', 'bar'], True)],
+            [('http://example.com/ep', ['git:push:0.1'], True)],
             [(entry['delivery_url'], entry['event_types'], entry['active'])
              for entry in representation['entries']])
 
@@ -294,7 +321,7 @@ class TestWebhookTarget(TestCaseWithFactory):
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            delivery_url='http://example.com/ep', event_types=['git:push:0.1'],
             secret='sekrit', api_version='devel')
         self.assertEqual(201, response.status)
 
@@ -310,7 +337,7 @@ class TestWebhookTarget(TestCaseWithFactory):
         webservice = LaunchpadWebServiceCaller()
         response = webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            delivery_url='http://example.com/ep', event_types=['git:push:0.1'],
             api_version='devel')
         self.assertEqual(401, response.status)
         self.assertIn('launchpad.Edit', response.body)
@@ -318,7 +345,7 @@ class TestWebhookTarget(TestCaseWithFactory):
     def test_newWebhook_feature_flag_guard(self):
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', event_types=['foo', 'bar'],
+            delivery_url='http://example.com/ep', event_types=['git:push:0.1'],
             api_version='devel')
         self.assertEqual(401, response.status)
         self.assertEqual(

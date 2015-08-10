@@ -64,7 +64,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookDeliveryJobSource,
     IWebhookJob,
     IWebhookJobSource,
-    IWebhookSource,
+    IWebhookSet,
     WebhookDeliveryFailure,
     WebhookDeliveryRetry,
     WebhookFeatureDisabled,
@@ -131,7 +131,7 @@ class Webhook(StormBase):
         return WebhookDeliveryJob.create(self, {'ping': True})
 
     def destroySelf(self):
-        getUtility(IWebhookSource).delete([self])
+        getUtility(IWebhookSet).delete([self])
 
     @property
     def event_types(self):
@@ -140,6 +140,8 @@ class Webhook(StormBase):
     @event_types.setter
     def event_types(self, event_types):
         updated_data = self.json_data or {}
+        # The correctness of the values is also checked by zope.schema,
+        # but best to be safe.
         assert isinstance(event_types, (list, tuple))
         assert all(isinstance(v, basestring) for v in event_types)
         updated_data['event_types'] = event_types
@@ -150,9 +152,9 @@ class Webhook(StormBase):
         self.secret = secret
 
 
-@implementer(IWebhookSource)
-class WebhookSource:
-    """See `IWebhookSource`."""
+@implementer(IWebhookSet)
+class WebhookSet:
+    """See `IWebhookSet`."""
 
     def new(self, target, registrant, delivery_url, event_types, active,
             secret):
@@ -198,14 +200,14 @@ class WebhookTargetMixin:
             load_related(Person, rows, ['registrant_id'])
 
         return DecoratedResultSet(
-            getUtility(IWebhookSource).findByTarget(self),
+            getUtility(IWebhookSet).findByTarget(self),
             pre_iter_hook=preload_registrants)
 
     def newWebhook(self, registrant, delivery_url, event_types, active=True,
                    secret=None):
         if not getFeatureFlag('webhooks.new.enabled'):
             raise WebhookFeatureDisabled()
-        return getUtility(IWebhookSource).new(
+        return getUtility(IWebhookSet).new(
             self, registrant, delivery_url, event_types, active, secret)
 
 
