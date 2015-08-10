@@ -28,6 +28,7 @@ from testtools.matchers import (
     LessThan,
     MatchesAll,
     MatchesDict,
+    MatchesRegex,
     MatchesStructure,
     Not,
     )
@@ -149,7 +150,8 @@ class TestWebhookClient(TestCase):
         with HTTMock(endpoint_mock):
             result = WebhookClient().deliver(
                 'http://example.com/ep', 'http://squid.example.com:3128',
-                'TestWebhookClient', 30, 'sekrit', {'foo': 'bar'})
+                'TestWebhookClient', 30, 'sekrit', '1234', 'test',
+                {'foo': 'bar'})
 
         return reqs, result
 
@@ -158,12 +160,14 @@ class TestWebhookClient(TestCase):
         return MatchesDict({
             'url': Equals('http://example.com/ep'),
             'method': Equals('POST'),
-            'headers': Equals(
-                {'Content-Type': 'application/json',
-                 'Content-Length': '14',
-                 'User-Agent': 'TestWebhookClient',
-                 'X-Hub-Signature':
-                    'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
+            'headers': MatchesDict(
+                {'Content-Type': Equals('application/json'),
+                 'Content-Length': Equals('14'),
+                 'User-Agent': Equals('TestWebhookClient'),
+                 'X-Launchpad-Event-Type': Equals('test'),
+                 'X-Launchpad-Delivery': MatchesRegex(r'\d+'),
+                 'X-Hub-Signature': Equals(
+                    'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd'),
                  }),
             'body': Equals('{"foo": "bar"}'),
             })
@@ -215,8 +219,10 @@ class MockWebhookClient(WebhookClient):
         self.raises = raises
         self.requests = []
 
-    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
-        body, headers = create_request(user_agent, secret, payload)
+    def deliver(self, url, proxy, user_agent, timeout, secret, delivery_id,
+                event_type, payload):
+        body, headers = create_request(
+            user_agent, secret, delivery_id, event_type, payload)
         result = {
             'request': {
                 'url': url,
@@ -302,7 +308,9 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([
             ('POST', 'http://example.com/ep',
              {'Content-Type': 'application/json',
-              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno}),
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
+              'X-Launchpad-Event-Type': 'test',
+              'X-Launchpad-Delivery': str(job.job_id)}),
             ], reqs)
         self.assertEqual([], oopses.oopses)
 
@@ -317,7 +325,9 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
              {'Content-Type': 'application/json',
               'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
               'X-Hub-Signature':
-                'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd'}),
+                'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
+              'X-Launchpad-Event-Type': 'test',
+              'X-Launchpad-Delivery': str(job.job_id)}),
             ], reqs)
         self.assertEqual([], oopses.oopses)
 

@@ -302,7 +302,8 @@ class IWebhookDeliveryJobSource(IJobSource):
 
 class IWebhookClient(Interface):
 
-    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
+    def deliver(self, url, proxy, user_agent, timeout, secret, delivery_id,
+                event_type, payload):
         """Deliver a payload to a webhook endpoint.
 
         Returns a dict of request and response details. The 'request' key
