@@ -149,7 +149,8 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
             "+new-webhook", method="POST",
             form={
                 "field.delivery_url": "http://example.com/test",
-                "field.active": "on", "field.event_types.count": "0",
+                "field.active": "on", "field.event_types-empty-marker": "1",
+                "field.event_types": "git:push:0.1",
                 "field.actions.new": "Add webhook"})
         self.assertEqual([], view.errors)
         hook = self.target.webhooks.one()
@@ -160,7 +161,7 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
                 registrant=self.owner,
                 delivery_url="http://example.com/test",
                 active=True,
-                event_types=[]))
+                event_types=["git:push:0.1"]))
 
     def test_rejects_bad_scheme(self):
         transaction.commit()
@@ -168,7 +169,7 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
             "+new-webhook", method="POST",
             form={
                 "field.delivery_url": "ftp://example.com/test",
-                "field.active": "on", "field.event_types.count": "0",
+                "field.active": "on", "field.event_types-empty-marker": "1",
                 "field.actions.new": "Add webhook"})
         self.assertEqual(
             ['delivery_url'], [error.field_name for error in view.errors])
@@ -220,7 +221,7 @@ class TestWebhookView(WebhookViewTestHelpers, TestCaseWithFactory):
             "+index", method="POST",
             form={
                 "field.delivery_url": "http://example.com/edited",
-                "field.active": "off", "field.event_types.count": "0",
+                "field.active": "off", "field.event_types-empty-marker": "1",
                 "field.actions.save": "Save webhook"})
         self.assertEqual([], view.errors)
         self.assertThat(
@@ -236,7 +237,7 @@ class TestWebhookView(WebhookViewTestHelpers, TestCaseWithFactory):
             "+index", method="POST",
             form={
                 "field.delivery_url": "ftp://example.com/edited",
-                "field.active": "off", "field.event_types.count": "0",
+                "field.active": "off", "field.event_types-empty-marker": "1",
                 "field.actions.save": "Save webhook"})
         self.assertEqual(
             ['delivery_url'], [error.field_name for error in view.errors])

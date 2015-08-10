@@ -16,12 +16,13 @@ from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.services.webhooks.interfaces import (
     IWebhook,
-    IWebhookSource,
+    IWebhookSet,
     )
 from lp.services.webhooks.model import WebhookJob
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
+    ExpectedException,
     login_person,
     person_logged_in,
     StormStatementRecorder,
@@ -48,6 +49,24 @@ class TestWebhook(TestCaseWithFactory):
             self.assertThat(
                 webhook.date_last_modified,
                 GreaterThan(old_mtime))
+
+    def test_event_types(self):
+        # Webhook.event_types is a list of event type strings.
+        webhook = self.factory.makeWebhook()
+        with admin_logged_in():
+            self.assertContentEqual([], webhook.event_types)
+            webhook.event_types = ['foo', 'bar']
+            self.assertContentEqual(['foo', 'bar'], webhook.event_types)
+
+    def test_event_types_bad_structure(self):
+        # It's not possible to set Webhook.event_types to a list of the
+        # wrong type.
+        webhook = self.factory.makeWebhook()
+        with admin_logged_in():
+            self.assertContentEqual([], webhook.event_types)
+            with ExpectedException(AssertionError, '.*'):
+                webhook.event_types = ['foo', [1]]
+            self.assertContentEqual([], webhook.event_types)
 
 
 class TestWebhookPermissions(TestCaseWithFactory):
@@ -95,7 +114,7 @@ class TestWebhookPermissions(TestCaseWithFactory):
             expected_set_permissions, checker.set_permissions, 'set')
 
 
-class TestWebhookSource(TestCaseWithFactory):
+class TestWebhookSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -103,7 +122,7 @@ class TestWebhookSource(TestCaseWithFactory):
         target = self.factory.makeGitRepository()
         login_person(target.owner)
         person = self.factory.makePerson()
-        hook = getUtility(IWebhookSource).new(
+        hook = getUtility(IWebhookSet).new(
             target, person, u'http://path/to/something', ['git:push'], True,
             u'sekrit')
         Store.of(hook).flush()
@@ -121,11 +140,11 @@ class TestWebhookSource(TestCaseWithFactory):
         hook2 = self.factory.makeWebhook()
         with admin_logged_in():
             self.assertEqual(
-                hook1, getUtility(IWebhookSource).getByID(hook1.id))
+                hook1, getUtility(IWebhookSet).getByID(hook1.id))
             self.assertEqual(
-                hook2, getUtility(IWebhookSource).getByID(hook2.id))
+                hook2, getUtility(IWebhookSet).getByID(hook2.id))
             self.assertIs(
-                None, getUtility(IWebhookSource).getByID(1234))
+                None, getUtility(IWebhookSet).getByID(1234))
 
     def test_findByTarget(self):
         target1 = self.factory.makeGitRepository()
@@ -139,13 +158,13 @@ class TestWebhookSource(TestCaseWithFactory):
                 [u'http://path/one/0', u'http://path/one/1',
                  u'http://path/one/2'],
                 [hook.delivery_url for hook in
-                getUtility(IWebhookSource).findByTarget(target1)])
+                getUtility(IWebhookSet).findByTarget(target1)])
         with person_logged_in(target2.owner):
             self.assertContentEqual(
                 [u'http://path/two/0', u'http://path/two/1',
                  u'http://path/two/2'],
                 [hook.delivery_url for hook in
-                getUtility(IWebhookSource).findByTarget(target2)])
+                getUtility(IWebhookSet).findByTarget(target2)])
 
     def test_delete(self):
         target = self.factory.makeGitRepository()
@@ -159,16 +178,16 @@ class TestWebhookSource(TestCaseWithFactory):
         self.assertContentEqual(
             [u'http://path/to/0', u'http://path/to/1', u'http://path/to/2'],
             [hook.delivery_url for hook in
-             getUtility(IWebhookSource).findByTarget(target)])
+             getUtility(IWebhookSet).findByTarget(target)])
 
         transaction.commit()
         with StormStatementRecorder() as recorder:
-            getUtility(IWebhookSource).delete(hooks[:2])
+            getUtility(IWebhookSet).delete(hooks[:2])
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
         self.assertContentEqual(
             [u'http://path/to/2'],
             [hook.delivery_url for hook in
-             getUtility(IWebhookSource).findByTarget(target)])
+             getUtility(IWebhookSet).findByTarget(target)])
         self.assertEqual(1, IStore(WebhookJob).find(WebhookJob).count())
         self.assertEqual(1, hooks[2].deliveries.count())
