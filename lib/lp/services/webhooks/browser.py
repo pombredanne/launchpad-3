@@ -32,7 +32,7 @@ from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webhooks.interfaces import (
     IWebhook,
-    IWebhookSource,
+    IWebhookSet,
     )
 
 
@@ -57,7 +57,7 @@ class WebhookTargetNavigationMixin:
             id = int(id)
         except ValueError:
             return None
-        webhook = getUtility(IWebhookSource).getByID(id)
+        webhook = getUtility(IWebhookSet).getByID(id)
         if webhook is None or webhook.target != self.context:
             return None
         return webhook
@@ -76,7 +76,7 @@ class WebhooksView(LaunchpadView):
     @cachedproperty
     def batchnav(self):
         return BatchNavigator(
-            getUtility(IWebhookSource).findByTarget(self.context),
+            getUtility(IWebhookSet).findByTarget(self.context),
             self.request)
 
 

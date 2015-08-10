@@ -17,9 +17,9 @@
         for="lp.services.webhooks.interfaces.IWebhook zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.services.webhooks.model.webhook_modified"/>
     <securedutility
-        class="lp.services.webhooks.model.WebhookSource"
-        provides="lp.services.webhooks.interfaces.IWebhookSource">
-        <allow interface="lp.services.webhooks.interfaces.IWebhookSource"/>
+        class="lp.services.webhooks.model.WebhookSet"
+        provides="lp.services.webhooks.interfaces.IWebhookSet">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookSet"/>
     </securedutility>
     <securedutility
         name="WebhookEventType"

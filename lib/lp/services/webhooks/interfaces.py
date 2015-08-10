@@ -12,7 +12,7 @@ __all__ = [
     'IWebhookDeliveryJobSource',
     'IWebhookJob',
     'IWebhookJobSource',
-    'IWebhookSource',
+    'IWebhookSet',
     'IWebhookTarget',
     'WebhookDeliveryFailure',
     'WebhookDeliveryRetry',
@@ -167,7 +167,7 @@ class IWebhook(Interface):
         """Set the secret used to sign deliveries."""
 
 
-class IWebhookSource(Interface):
+class IWebhookSet(Interface):
 
     def new(target, registrant, delivery_url, event_types, active, secret):
         """Create a new webhook."""
