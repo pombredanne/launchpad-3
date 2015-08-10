@@ -21,6 +21,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
@@ -69,7 +70,7 @@ def snap_modified(snap, event):
     This method is registered as a subscriber to `IObjectModifiedEvent`
     events on snap packages.
     """
-    snap.date_last_modified = UTC_NOW
+    removeSecurityProxy(snap).date_last_modified = UTC_NOW
 
 
 @implementer(ISnap, IHasOwner)

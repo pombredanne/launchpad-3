@@ -570,6 +570,12 @@
       factory="lp.app.browser.tales.BuildImageDisplayAPI"
       name="image"
       />
+  <adapter
+      for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.BuildImageDisplayAPI"
+      name="image"
+      />
 
   <adapter
       for="lp.soyuz.interfaces.archive.IArchive"
