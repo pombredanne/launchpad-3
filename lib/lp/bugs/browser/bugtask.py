@@ -242,12 +242,10 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         get_property_cache(comment._message).bugattachments = []
 
     for attachment in bugtask.bug.attachments_unpopulated:
-        message_id = attachment.message.id
-        # All attachments are related to a message, so we can be
-        # sure that the BugComment is already created.
+        message_id = attachment._messageID
         if message_id not in comments:
             # We are not showing this message.
-            break
+            continue
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
         cache = get_property_cache(attachment.message)

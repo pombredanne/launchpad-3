@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from lazr.restfulclient.errors import HTTPError
+from testtools.matchers import HasLength
 import transaction
 from zope.component import getUtility
 from zope.security.management import endInteraction
@@ -16,13 +17,20 @@ from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
+    admin_logged_in,
+    api_url,
     launchpadlib_for,
     login_celebrity,
+    logout,
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class TestMessageTraversal(WebServiceTestCase):
@@ -68,6 +76,41 @@ class TestMessageTraversal(WebServiceTestCase):
         # An IMessage's representation.
         lp_message = self.wsObject(message_2, user)
         self.assertIs(None, lp_message.parent)
+
+
+class TestBugMessage(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_attachments(self):
+        # A bug's attachments and the union of its messages' attachments
+        # are the same set.
+        with admin_logged_in():
+            bug = self.factory.makeBug()
+            created_attachment_ids = set(
+                self.factory.makeBugAttachment(bug).id for i in range(3))
+            bug_url = api_url(bug)
+        self.assertThat(created_attachment_ids, HasLength(3))
+        logout()
+
+        webservice = LaunchpadWebServiceCaller('test', None)
+        bug_attachments = webservice.get(
+            bug_url + '/attachments').jsonBody()['entries']
+        bug_attachment_ids = set(
+            int(att['self_link'].rsplit('/', 1)[1]) for att in bug_attachments)
+        self.assertContentEqual(created_attachment_ids, bug_attachment_ids)
+
+        messages = webservice.get(bug_url + '/messages').jsonBody()['entries']
+        message_attachments = []
+        for message in messages[1:]:
+            attachments_url = message['bug_attachments_collection_link']
+            attachments = webservice.get(attachments_url).jsonBody()['entries']
+            self.assertThat(attachments, HasLength(1))
+            message_attachments.append(attachments[0])
+        message_attachment_ids = set(
+            int(att['self_link'].rsplit('/', 1)[1])
+            for att in message_attachments)
+        self.assertContentEqual(bug_attachment_ids, message_attachment_ids)
 
 
 class TestSetCommentVisibility(TestCaseWithFactory):
