@@ -938,7 +938,7 @@ class FormattersAPI:
 
         for css_class, row, _, _, line in parse_diff(text):
             result.append('<tr id="diff-line-%s">' % row)
-            result.append('<td class="line-no">%s</td>' % row)
+            result.append('<td class="line-no unselectable">%s</td>' % row)
             result.append(
                 structured(
                     '<td class="%s">%s</td>', css_class, line).escapedtext)
