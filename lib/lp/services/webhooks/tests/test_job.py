@@ -325,7 +325,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
              {'Content-Type': 'application/json',
               'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
               'X-Hub-Signature':
-                'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
+                  'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
               'X-Launchpad-Event-Type': 'test',
               'X-Launchpad-Delivery': str(job.job_id)}),
             ], reqs)
