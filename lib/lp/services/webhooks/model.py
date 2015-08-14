@@ -128,7 +128,7 @@ class Webhook(StormBase):
         return self.deliveries.find(WebhookJob.job_id == id).one()
 
     def ping(self):
-        return WebhookDeliveryJob.create(self, {'ping': True})
+        return WebhookDeliveryJob.create(self, 'ping', {'ping': True})
 
     def destroySelf(self):
         getUtility(IWebhookSet).delete([self])
@@ -190,6 +190,14 @@ class WebhookSet:
             raise AssertionError("Unsupported target: %r" % (target,))
         return IStore(Webhook).find(Webhook, target_filter).order_by(
             Webhook.id)
+
+    def trigger(self, target, event_type, payload):
+        # XXX wgrant 2015-08-10: Two INSERTs and one celery submission
+        # for each webhook, but the set should be small and we'd have to
+        # defer the triggering itself to a job to fix it.
+        for webhook in self.findByTarget(target):
+            if webhook.active and event_type in webhook.event_types:
+                WebhookDeliveryJob.create(webhook, event_type, payload)
 
 
 class WebhookTargetMixin:
@@ -320,9 +328,10 @@ class WebhookDeliveryJob(WebhookJobDerived):
     config = config.IWebhookDeliveryJobSource
 
     @classmethod
-    def create(cls, webhook, payload):
+    def create(cls, webhook, event_type, payload):
         webhook_job = WebhookJob(
-            webhook, cls.class_job_type, {"payload": payload})
+            webhook, cls.class_job_type,
+            {"event_type": event_type, "payload": payload})
         job = cls(webhook_job)
         job.celeryRunOnCommit()
         return job
@@ -362,6 +371,10 @@ class WebhookDeliveryJob(WebhookJobDerived):
         if 'date_sent' not in self.json_data:
             return None
         return iso8601.parse_date(self.json_data['date_sent'])
+
+    @property
+    def event_type(self):
+        return self.json_data['event_type']
 
     @property
     def payload(self):
@@ -410,7 +423,7 @@ class WebhookDeliveryJob(WebhookJobDerived):
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
             user_agent, 30, secret.encode('utf-8') if secret else None,
-            self.payload)
+            str(self.job_id), self.event_type, self.payload)
         # Request and response headers and body may be large, so don't
         # store them in the frequently-used JSON. We could store them in
         # the librarian if we wanted them in future.

@@ -28,6 +28,7 @@ from testtools.matchers import (
     LessThan,
     MatchesAll,
     MatchesDict,
+    MatchesRegex,
     MatchesStructure,
     Not,
     )
@@ -149,7 +150,8 @@ class TestWebhookClient(TestCase):
         with HTTMock(endpoint_mock):
             result = WebhookClient().deliver(
                 'http://example.com/ep', 'http://squid.example.com:3128',
-                'TestWebhookClient', 30, 'sekrit', {'foo': 'bar'})
+                'TestWebhookClient', 30, 'sekrit', '1234', 'test',
+                {'foo': 'bar'})
 
         return reqs, result
 
@@ -158,12 +160,14 @@ class TestWebhookClient(TestCase):
         return MatchesDict({
             'url': Equals('http://example.com/ep'),
             'method': Equals('POST'),
-            'headers': Equals(
-                {'Content-Type': 'application/json',
-                 'Content-Length': '14',
-                 'User-Agent': 'TestWebhookClient',
-                 'X-Hub-Signature':
-                    'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
+            'headers': MatchesDict(
+                {'Content-Type': Equals('application/json'),
+                 'Content-Length': Equals('14'),
+                 'User-Agent': Equals('TestWebhookClient'),
+                 'X-Launchpad-Event-Type': Equals('test'),
+                 'X-Launchpad-Delivery': MatchesRegex(r'\d+'),
+                 'X-Hub-Signature': Equals(
+                    'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd'),
                  }),
             'body': Equals('{"foo": "bar"}'),
             })
@@ -215,8 +219,10 @@ class MockWebhookClient(WebhookClient):
         self.raises = raises
         self.requests = []
 
-    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
-        body, headers = create_request(user_agent, secret, payload)
+    def deliver(self, url, proxy, user_agent, timeout, secret, delivery_id,
+                event_type, payload):
+        body, headers = create_request(
+            user_agent, secret, delivery_id, event_type, payload)
         result = {
             'request': {
                 'url': url,
@@ -245,7 +251,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         hook = self.factory.makeWebhook(
             delivery_url=u'http://example.com/ep', secret=secret,
             active=active)
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
 
         client = MockWebhookClient(
             response_status=response_status, raises=raises)
@@ -255,11 +261,15 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             JobRunner([job]).runAll()
         return job, client.requests
 
-    def test_provides_interface(self):
+    def test_create(self):
         # `WebhookDeliveryJob` objects provide `IWebhookDeliveryJob`.
         hook = self.factory.makeWebhook()
-        self.assertProvides(
-            WebhookDeliveryJob.create(hook, payload={}), IWebhookDeliveryJob)
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
+        self.assertProvides(job, IWebhookDeliveryJob)
+        self.assertThat(
+            job,
+            MatchesStructure.byEquality(
+                webhook=hook, event_type='test', payload={'foo': 'bar'}))
 
     def test_short_lease_and_timeout(self):
         # Webhook jobs have a request timeout of 30 seconds, a celery
@@ -298,7 +308,9 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([
             ('POST', 'http://example.com/ep',
              {'Content-Type': 'application/json',
-              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno}),
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
+              'X-Launchpad-Event-Type': 'test',
+              'X-Launchpad-Delivery': str(job.job_id)}),
             ], reqs)
         self.assertEqual([], oopses.oopses)
 
@@ -313,7 +325,9 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
              {'Content-Type': 'application/json',
               'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
               'X-Hub-Signature':
-                'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd'}),
+                  'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
+              'X-Launchpad-Event-Type': 'test',
+              'X-Launchpad-Delivery': str(job.job_id)}),
             ], reqs)
         self.assertEqual([], oopses.oopses)
 
@@ -462,7 +476,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
 
     def test_automatic_retries(self):
         hook = self.factory.makeWebhook()
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         client = MockWebhookClient(response_status=404)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
@@ -496,7 +510,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
 
     def test_manual_retries(self):
         hook = self.factory.makeWebhook()
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         client = MockWebhookClient(response_status=404)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
@@ -544,7 +558,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         # retries can be resumed. This can be useful for recovering from
         # systemic errors that erroneously failed many deliveries.
         hook = self.factory.makeWebhook()
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         client = MockWebhookClient(response_status=404)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
@@ -571,7 +585,7 @@ class TestViaCronscript(TestCaseWithFactory):
 
     def test_run_from_cronscript(self):
         hook = self.factory.makeWebhook(delivery_url=u'http://example.com/ep')
-        job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         self.assertEqual(JobStatus.WAITING, job.status)
         transaction.commit()
 
@@ -601,7 +615,8 @@ class TestViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'WebhookDeliveryJob'}))
         with block_on_job():
-            job = WebhookDeliveryJob.create(hook, payload={'foo': 'bar'})
+            job = WebhookDeliveryJob.create(
+                hook, 'test', payload={'foo': 'bar'})
             transaction.commit()
 
         self.assertEqual(JobStatus.WAITING, job.status)
