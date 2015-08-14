@@ -117,6 +117,7 @@ class IBugAttachment(IHasBug):
         Bytes(title=_("The attachment content."),
               required=True,
               readonly=True))
+    _messageID = Int(title=_("Message ID"))
     message = exported(
         Reference(IMessage, title=_("The message that was created when we "
                                     "added this attachment.")))
