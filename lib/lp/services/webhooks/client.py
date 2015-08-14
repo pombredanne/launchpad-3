@@ -18,11 +18,13 @@ from zope.interface import implementer
 from lp.services.webhooks.interfaces import IWebhookClient
 
 
-def create_request(user_agent, secret, payload):
+def create_request(user_agent, secret, delivery_id, event_type, payload):
     body = json.dumps(payload)
     headers = {
         'User-Agent': user_agent,
         'Content-Type': 'application/json',
+        'X-Launchpad-Event-Type': event_type,
+        'X-Launchpad-Delivery': delivery_id,
         }
     if secret is not None:
         hexdigest = hmac.new(secret, body, digestmod=hashlib.sha1).hexdigest()
@@ -33,7 +35,8 @@ def create_request(user_agent, secret, payload):
 @implementer(IWebhookClient)
 class WebhookClient:
 
-    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
+    def deliver(self, url, proxy, user_agent, timeout, secret, delivery_id,
+                event_type, payload):
         """See `IWebhookClient`."""
         # We never want to execute a job if there's no proxy configured, as
         # we'd then be sending near-arbitrary requests from a trusted
@@ -49,7 +52,8 @@ class WebhookClient:
         session.trust_env = False
         session.headers = {}
 
-        body, headers = create_request(user_agent, secret, payload)
+        body, headers = create_request(
+            user_agent, secret, delivery_id, event_type, payload)
         preq = session.prepare_request(requests.Request(
             'POST', url, data=body, headers=headers))
 

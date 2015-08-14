@@ -181,6 +181,9 @@ class IWebhookSet(Interface):
     def findByTarget(target):
         """Find all webhooks for the given target."""
 
+    def trigger(target, event_type, payload):
+        """Trigger subscribed webhooks to deliver a payload."""
+
 
 class IWebhookTarget(Interface):
 
@@ -265,6 +268,9 @@ class IWebhookDeliveryJob(IRunnableJob):
         description=_("Timestamp of the last delivery attempt."),
         required=False, readonly=True))
 
+    event_type = exported(
+        TextLine(title=_('Event type'), required=True, readonly=True))
+
     payload = exported(Dict(
         title=_('Event payload'),
         key_type=TextLine(), required=True, readonly=True))
@@ -296,7 +302,8 @@ class IWebhookDeliveryJobSource(IJobSource):
 
 class IWebhookClient(Interface):
 
-    def deliver(self, url, proxy, user_agent, timeout, secret, payload):
+    def deliver(self, url, proxy, user_agent, timeout, secret, delivery_id,
+                event_type, payload):
         """Deliver a payload to a webhook endpoint.
 
         Returns a dict of request and response details. The 'request' key
