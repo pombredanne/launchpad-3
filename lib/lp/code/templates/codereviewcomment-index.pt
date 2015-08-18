@@ -9,8 +9,8 @@
 <body>
 
   <h1 metal:fill-slot="heading"
-      tal:define="branch context/branch_merge_proposal/source_branch">
-    Code review comment for <tal:source content="branch/bzr_identity"/>
+      tal:define="source context/branch_merge_proposal/merge_source">
+    Code review comment for <tal:source content="source/identity"/>
   </h1>
 
   <div metal:fill-slot="main">
