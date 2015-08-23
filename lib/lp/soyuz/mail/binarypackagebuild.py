@@ -150,9 +150,10 @@ class BinaryPackageBuildMailer(BaseMailer):
         self.build = build
         self.extra_info = extra_info
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """See `BaseMailer`."""
-        headers = super(BinaryPackageBuildMailer, self)._getHeaders(email)
+        headers = super(BinaryPackageBuildMailer, self)._getHeaders(
+            email, recipient)
         build = self.build
         headers.update({
             "X-Launchpad-Archive": build.archive.reference,
@@ -234,7 +235,7 @@ class BinaryPackageBuildMailer(BaseMailer):
             })
         return params
 
-    def _getFooter(self, params):
+    def _getFooter(self, email, recipient, params):
         """See `BaseMailer`."""
         return ("%(build_title)s\n"
                 "%(build_url)s\n\n"

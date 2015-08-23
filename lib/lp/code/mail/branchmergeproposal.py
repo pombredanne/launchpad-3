@@ -97,7 +97,7 @@ class BMPMailer(BranchMailer):
         """Return the address to use for the reply-to header."""
         return self.merge_proposal.address
 
-    def _getToAddresses(self, recipient, email):
+    def _getToAddresses(self, email, recipient):
         """Return the addresses to use for the to header.
 
         If the email is being sent directly to the recipient, their email
@@ -105,7 +105,7 @@ class BMPMailer(BranchMailer):
         reviewers are returned.
         """
         if self.direct_email:
-            return BaseMailer._getToAddresses(self, recipient, email)
+            return BaseMailer._getToAddresses(self, email, recipient)
         to_addrs = [self.merge_proposal.address]
         for vote in self.merge_proposal.votes:
             if vote.reviewer == vote.registrant:
@@ -117,9 +117,9 @@ class BMPMailer(BranchMailer):
             to_addrs.append(self._format_user_address(vote.reviewer))
         return to_addrs
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """Return the mail headers to use."""
-        headers = BranchMailer._getHeaders(self, email)
+        headers = BranchMailer._getHeaders(self, email, recipient)
         if self.merge_proposal.root_message_id is not None:
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
