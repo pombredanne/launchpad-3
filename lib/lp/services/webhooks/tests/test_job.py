@@ -137,7 +137,7 @@ class TestWebhookJobDerived(TestCaseWithFactory):
 class TestWebhookClient(TestCase):
     """Tests for `WebhookClient`."""
 
-    def sendToWebhook(self, response_status=200, raises=None):
+    def sendToWebhook(self, response_status=200, raises=None, headers=None):
         reqs = []
 
         @urlmatch(netloc='example.com')
@@ -145,7 +145,9 @@ class TestWebhookClient(TestCase):
             if raises:
                 raise raises
             reqs.append(request)
-            return {'status_code': response_status, 'content': 'Content'}
+            return {
+                'status_code': response_status, 'content': 'Content',
+                'headers': headers}
 
         with HTTMock(endpoint_mock):
             result = WebhookClient().deliver(
@@ -210,6 +212,32 @@ class TestWebhookClient(TestCase):
                 'connection_error': Equals('Connection refused'),
                 }))
         self.assertEqual([], reqs)
+
+    def test_proxy_error_known(self):
+        # Squid error headers are interpreted to populate
+        # connection_error.
+        [request], result = self.sendToWebhook(
+            response_status=403,
+            headers={"X-Squid-Error": "ERR_ACCESS_DENIED 0"})
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'connection_error': Equals('URL not allowed'),
+                }))
+
+    def test_proxy_error_unknown(self):
+        # Squid errors that don't have a human-readable mapping are
+        # included verbatim.
+        [request], result = self.sendToWebhook(
+            response_status=403,
+            headers={"X-Squid-Error": "ERR_BORKED 1234"})
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'connection_error': Equals('Proxy error: ERR_BORKED 1234'),
+                }))
 
 
 class MockWebhookClient(WebhookClient):
