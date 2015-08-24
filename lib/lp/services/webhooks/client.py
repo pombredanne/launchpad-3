@@ -91,7 +91,7 @@ class WebhookClient:
         # If there was a request error, try to interpret any Squid
         # error.
         squid_error = resp.headers.get('X-Squid-Error')
-        if resp.status_code < 200 or resp.status_code > 299 and squid_error:
+        if (resp.status_code < 200 or resp.status_code > 299) and squid_error:
             human_readable = SQUID_ERROR_MESSAGES.get(
                 squid_error.split(' ', 1)[0])
             if human_readable:
