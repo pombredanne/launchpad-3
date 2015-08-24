@@ -25,7 +25,7 @@ SQUID_ERROR_MESSAGES = {
     "ERR_READ_ERROR": "Connection read error",
     "ERR_WRITE_ERROR": "Connection write error",
     "ERR_CONNECT_FAIL": "Connection failed",
-    "ERR_SOCKET_FAILURE": "Connection failed",
+    "ERR_SOCKET_FAILURE": "Socket creation failed",
     "ERR_DNS_FAIL": "DNS lookup failed",
     "ERR_TOO_BIG": "HTTP request or reply too large",
     "ERR_INVALID_RESP": "HTTP response invalid",
