@@ -31,31 +31,31 @@ and-coming (sorted by the starting date):
 
     >>> for sprint in firefox.coming_sprints:
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
-    futurista 2015-08-16
+    futurista 2025-08-16
 
     >>> for sprint in ubuntu.coming_sprints:
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
-    futurista 2015-08-16
+    futurista 2025-08-16
 
     >>> for sprint in mozilla.coming_sprints:
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
-    futurista 2015-08-16
+    futurista 2025-08-16
 
 And we have sprints, giving us all sprints relevant to that pillar
 (sorted descending by the starting date):
 
     >>> for sprint in firefox.sprints:
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
-    futurista 2015-08-16
+    futurista 2025-08-16
     ubz 2005-10-07
 
     >>> for sprint in ubuntu.sprints:
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
-    futurista 2015-08-16
+    futurista 2025-08-16
 
     >>> for sprint in mozilla.sprints:
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
-    futurista 2015-08-16
+    futurista 2025-08-16
     ubz 2005-10-07
 
 We also have past_sprints, giving all sprints relevant to that pillar
