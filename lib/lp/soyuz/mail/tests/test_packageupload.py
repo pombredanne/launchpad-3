@@ -129,7 +129,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             dict(notifications[1]),
             ContainsDict({
                 "From": Equals("Lemmy Kilmister <lemmy@example.com>"),
-                "X-Launchpad-Message-Rationale": Equals("Changes-List"),
+                "X-Launchpad-Message-Rationale": Equals("Announcement"),
                 "X-Launchpad-Notification-Type": Equals("package-upload"),
                 }))
 
@@ -161,7 +161,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             ContainsDict({
                 "From": Equals(
                     "=?utf-8?q?Lo=C3=AFc_Mot=C3=B6rhead?= <loic@example.com>"),
-                "X-Launchpad-Message-Rationale": Equals("Changes-List"),
+                "X-Launchpad-Message-Rationale": Equals("Announcement"),
                 "X-Launchpad-Notification-Type": Equals("package-upload"),
                 }))
 
@@ -183,7 +183,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             dict(notifications[1]),
             ContainsDict({
                 "Bcc": Contains(expected_email),
-                "X-Launchpad-Message-Rationale": Equals("Changes-List"),
+                "X-Launchpad-Message-Rationale": Equals("Announcement"),
                 "X-Launchpad-Notification-Type": Equals("package-upload"),
                 }))
 
@@ -499,7 +499,7 @@ class TestNotification(TestCaseWithFactory):
         recipients = dict(mailer._recipients.getRecipientPersons())
         for email, rationale in (
                 (blamer.preferredemail.email, "Requester"),
-                (uploader.preferredemail.email, "PPA-Uploader")):
+                (uploader.preferredemail.email, "PPA Uploader")):
             headers = mailer._getHeaders(email, recipients[email])
             self.assertThat(
                 headers,

@@ -66,15 +66,15 @@ class PackageUploadRecipientReason(RecipientReason):
 
     @classmethod
     def forPPAUploader(cls, uploader, recipient):
-        header = cls.makeRationale("PPA-Uploader", uploader)
+        header = cls.makeRationale("PPA Uploader", uploader)
         reason = (
             "You are receiving this email because you have upload permissions "
             "to this PPA.")
         return cls(uploader, recipient, header, reason)
 
     @classmethod
-    def forChangesList(cls, recipient):
-        return cls(recipient, recipient, "Changes-List", "")
+    def forAnnouncement(cls, recipient):
+        return cls(recipient, recipient, "Announcement", "")
 
     def getReason(self):
         """See `RecipientReason`."""
@@ -365,7 +365,7 @@ class PackageUploadMailer(BaseMailer):
                     spr, bprs, pocket, announce_from_addr)):
             recipient = StubPerson(distroseries.changeslist)
             recipients[recipient] = (
-                PackageUploadRecipientReason.forChangesList(recipient))
+                PackageUploadRecipientReason.forAnnouncement(recipient))
 
         if announce_from_addr is not None:
             announce_from_address = format_address(*announce_from_addr)
