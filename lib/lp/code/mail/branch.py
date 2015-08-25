@@ -244,8 +244,8 @@ class BranchMailer(BaseMailer):
             revision_id=revision_id,
             notification_type='branch-revision', full_subject=subject)
 
-    def _getHeaders(self, email):
-        headers = BaseMailer._getHeaders(self, email)
+    def _getHeaders(self, email, recipient):
+        headers = BaseMailer._getHeaders(self, email, recipient)
         reason, rationale = self._recipients.getReason(email)
         headers['X-Launchpad-Branch'] = reason.branch.unique_name
         if IGitRef.providedBy(reason.branch):
