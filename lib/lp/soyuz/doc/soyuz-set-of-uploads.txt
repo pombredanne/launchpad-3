@@ -304,10 +304,11 @@ to a different 'bar_1.0.orig.tar.gz'.
     Rejected uploads: ['bar_1.0-3']
 
     >>> read_email()
-    To:
-	Daniel Silverstone <daniel.silverstone@canonical.com>,
-	Foo Bar <foo.bar@canonical.com>
-    Subject: [ubuntutest] bar_1.0-3_source.changes rejected
+    To: Daniel Silverstone <daniel.silverstone@canonical.com>
+    Subject: [ubuntutest] bar_1.0-3_source.changes (Rejected)
+    ...
+    To: Foo Bar <foo.bar@canonical.com>
+    Subject: [ubuntutest] bar_1.0-3_source.changes (Rejected)
     ...
 
 Force weird behaviour with rfc2047 sentences containing '.' on
@@ -321,10 +322,8 @@ Check the email recipient for displayname containing special chars,
 '.', must be rfc2047 compliant:
 
     >>> simulate_upload('bar_1.0-4')
-    >>> uninteresting_email = stub.test_emails.pop()
     >>> read_email()
-    To: "Foo B. Bar" <foo.bar@canonical.com>,
-	  Celso Providelo <celso.providelo@canonical.com>
+    To: "Foo B. Bar" <foo.bar@canonical.com>
     Subject: [ubuntutest/breezy] bar 1.0-4 (Accepted)
     Content-Type: text/plain; charset="utf-8"
     MIME-Version: 1.0
@@ -353,10 +352,13 @@ Check the email recipient for displayname containing special chars,
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you made this upload.
     <BLANKLINE>
     <BLANKLINE>
+    To: Celso Providelo <celso.providelo@canonical.com>
+    ...
+    To: breezy-changes@ubuntu.com
+    ...
 
 Revert changes:
 
@@ -468,9 +470,8 @@ ubututest/breezy-RELEASE:
     DEBUG above if files already exist in other distroseries.
     DEBUG
     DEBUG --
-    DEBUG You are receiving this email because you are the uploader,
-    maintainer or
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
     INFO  Committing the transaction and any mails associated with this
     upload.
     ...

@@ -347,9 +347,11 @@ Accepting queue items results in an email to the uploader (and the changer
 if it is someone other than the uploader) and (usually) an email to the
 distroseries' announcement list (see nascentupload-announcements.txt).
 
-    >>> [notification, announcement] = pop_notifications()
-    >>> print sort_addresses(notification['To'])
-    Daniel Silverstone <daniel.silverstone@canonical.com>,
+    >>> [changer_notification, signer_notification,
+    ...  announcement] = pop_notifications()
+    >>> print changer_notification['To']
+    Daniel Silverstone <daniel.silverstone@canonical.com>
+    >>> print signer_notification['To']
     Foo Bar <foo.bar@canonical.com>
     >>> print announcement['To']
     autotest_changes@ubuntu.com
@@ -511,6 +513,8 @@ Rejecting items
 
 Rejecting 'alsa-utils' source:
 
+    >>> stub.test_emails = []
+
     >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['4']
     >>> upload_manager_browser.getControl(name="Reject").disabled
     False
@@ -543,8 +547,8 @@ and how that's stated in the notification email body.
     Rejected:
     Rejected by Sample Person: Foo
     ...
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you are the most recent person
+    listed in this package's changelog.
     <BLANKLINE>
 
 The override controls are now available for rejected packages.
