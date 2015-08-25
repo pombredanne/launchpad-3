@@ -131,15 +131,15 @@ class CodeReviewCommentMailer(BMPMailer):
         return ''.join((
             self.body_prefix, append_footer(self.body_main, footer)))
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """Return the mail headers to use."""
-        headers = BMPMailer._getHeaders(self, email)
+        headers = BMPMailer._getHeaders(self, email, recipient)
         headers['Message-Id'] = self.message.rfc822msgid
         if self.message.parent is not None:
             headers['In-Reply-To'] = self.message.parent.rfc822msgid
         return headers
 
-    def _getToAddresses(self, recipient, email):
+    def _getToAddresses(self, email, recipient):
         """Provide to addresses as if this were a mailing list.
 
         CodeReviewComments which are not replies shall list the merge proposer

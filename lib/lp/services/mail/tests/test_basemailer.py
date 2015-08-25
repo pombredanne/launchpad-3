@@ -32,10 +32,17 @@ class BaseMailerSubclass(BaseMailer):
         return 'body'
 
 
+class FromAddressUpper(BaseMailerSubclass):
+    """Subclass of BaseMailer providing an example getFromAddress."""
+
+    def _getFromAddress(self, email, recipient):
+        return self.from_address.upper()
+
+
 class ToAddressesUpper(BaseMailerSubclass):
     """Subclass of BaseMailer providing an example getToAddresses."""
 
-    def _getToAddresses(self, recipient, email):
+    def _getToAddresses(self, email, recipient):
         return email.upper()
 
 
@@ -94,6 +101,19 @@ class TestBaseMailer(TestCaseWithFactory):
         ctrl = mailer.generateEmail('to@example.com', fake_to)
         self.assertEqual(['to@example.com'], ctrl.envelope_to)
         self.assertEqual(['Example To <to@example.com>'], ctrl.to_addrs)
+
+    def test_generateEmail_uses_getFromAddress(self):
+        """BaseMailer.generateEmail uses getFromAddress.
+
+        We verify this by using a subclass that provides getFromAddress
+        returning the uppercased email address.
+        """
+        fake_to = self.factory.makePerson(email='to@example.com')
+        recipients = {fake_to: FakeSubscription()}
+        mailer = FromAddressUpper(
+            'subject', None, recipients, 'from@example.com')
+        ctrl = mailer.generateEmail('to@example.com', fake_to)
+        self.assertEqual('FROM@EXAMPLE.COM', ctrl.from_addr)
 
     def test_generateEmail_uses_getToAddresses(self):
         """BaseMailer.generateEmail uses getToAddresses.

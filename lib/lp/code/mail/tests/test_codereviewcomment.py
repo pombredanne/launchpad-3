@@ -351,11 +351,10 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """To address for a comment with no parent should be the proposer."""
         comment = self.makeCommentAndParticipants()
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        to = mailer._getToAddresses(
-            comment.message.owner, 'comment@gmail.com')
+        to = mailer._getToAddresses('comment@gmail.com', comment.message.owner)
         self.assertEqual(['Proposer <proposer@email.com>'], to)
         to = mailer._getToAddresses(
-            comment.branch_merge_proposal.registrant, 'propose@gmail.com')
+            'propose@gmail.com', comment.branch_merge_proposal.registrant)
         self.assertEqual(['Proposer <propose@gmail.com>'], to)
 
     def test_generateEmail_addresses(self):
@@ -379,10 +378,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
         reply = comment.branch_merge_proposal.createComment(
             second_commenter, 'hello2', parent=comment)
         mailer = CodeReviewCommentMailer.forCreation(reply)
-        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        to = mailer._getToAddresses('comment2@gmail.com', second_commenter)
         self.assertEqual(['Commenter <commenter@email.com>'], to)
-        to = mailer._getToAddresses(
-            comment.message.owner, 'comment@gmail.com')
+        to = mailer._getToAddresses('comment@gmail.com', comment.message.owner)
         self.assertEqual(['Commenter <comment@gmail.com>'], to)
 
     def test_getToAddresses_with_hidden_address(self):
@@ -394,7 +392,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         reply = comment.branch_merge_proposal.createComment(
             second_commenter, 'hello2', parent=comment)
         mailer = CodeReviewCommentMailer.forCreation(reply)
-        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        to = mailer._getToAddresses('comment2@gmail.com', second_commenter)
         self.assertEqual([mailer.merge_proposal.address], to)
 
 
