@@ -86,6 +86,8 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             'recipe-build-status',
             ctrl.headers['X-Launchpad-Notification-Type'])
         self.assertEqual(
+            '~archiveowner/ubuntu/ppa', ctrl.headers['X-Launchpad-Archive'])
+        self.assertEqual(
             'FULLYBUILT', ctrl.headers['X-Launchpad-Build-State'])
 
     def test_generateEmail_with_null_fields(self):
@@ -118,6 +120,8 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         self.assertEqual(
             'recipe-build-status',
             ctrl.headers['X-Launchpad-Notification-Type'])
+        self.assertEqual(
+            '~archiveowner/ubuntu/ppa', ctrl.headers['X-Launchpad-Archive'])
         self.assertEqual(
             'SUPERSEDED', ctrl.headers['X-Launchpad-Build-State'])
 
