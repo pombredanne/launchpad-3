@@ -305,7 +305,7 @@ Upload a new "bar" source so we can accept it later.
 Swallow any email generated at the upload:
 
     >>> from lp.services.mail import stub
-    >>> from lp.testing.mail_helpers import pop_notifications, sort_addresses
+    >>> from lp.testing.mail_helpers import pop_notifications
     >>> swallow = pop_notifications()
 
 Set up a second browser on the same page to simulate accidentally posting to
