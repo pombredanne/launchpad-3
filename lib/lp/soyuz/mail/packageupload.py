@@ -355,7 +355,8 @@ class PackageUploadMailer(BaseMailer):
                         PackageUploadRecipientReason.forChangedBy,
                         logger=logger)
 
-        if announce_from_person is not None:
+        if (announce_from_person is not None and
+                announce_from_person.preferredemail is not None):
             announce_from_addr = (
                 announce_from_person.displayname,
                 announce_from_person.preferredemail.email)
