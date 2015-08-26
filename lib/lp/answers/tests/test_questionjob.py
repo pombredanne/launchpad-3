@@ -358,7 +358,7 @@ class TestViaCelery(TestCaseWithFactory):
         make_question_job(
             self.factory, QuestionRecipientSet.ASKER_SUBSCRIBER,
             question=question, body=body)
-        with dbuser(config.answertracker.dbuser), block_on_job(self):
+        with block_on_job(self):
             transaction.commit()
         transaction.commit()
         mail = pop_remote_notifications()
