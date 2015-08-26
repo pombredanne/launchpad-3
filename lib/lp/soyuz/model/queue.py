@@ -82,7 +82,6 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.soyuz.adapters.notification import notify
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
@@ -115,6 +114,7 @@ from lp.soyuz.interfaces.queue import (
     QueueStateWriteProtectedError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.mail.packageupload import PackageUploadMailer
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
@@ -915,11 +915,14 @@ class PackageUpload(SQLBase):
         else:
             changesfile_content = 'No changes file content available.'
         blamee = self.findPersonToNotify()
-        notify(
-            blamee, self.sourcepackagerelease, self.builds, self.customfiles,
-            self.archive, self.distroseries, self.pocket, summary_text,
-            changes, changesfile_content, changes_file_object,
-            status_action[self.status], dry_run=dry_run, logger=logger)
+        mailer = PackageUploadMailer.forAction(
+            status_action[self.status], blamee, self.sourcepackagerelease,
+            self.builds, self.customfiles, self.archive, self.distroseries,
+            self.pocket, summary_text=summary_text, changes=changes,
+            changesfile_content=changesfile_content,
+            changesfile_object=changes_file_object, dry_run=dry_run,
+            logger=logger)
+        mailer.sendAll()
 
     @property
     def components(self):

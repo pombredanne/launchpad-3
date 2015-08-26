@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test notification behaviour for cross-distro package syncs."""
@@ -149,10 +149,10 @@ class TestSyncNotification(TestCaseWithFactory):
         In a situation like that, we should not bother those people with the
         failure.  We notify the person who requested the sync instead.
 
-        (The logic in lp.soyuz.adapters.notification may still notify the
-        author of the last change, if that person is also an uploader for the
-        archive that the failure happened in.  For this particular situation
-        we consider that not so much an intended behaviour, as an emergent one
+        (The logic in lp.soyuz.mail.packageupload may still notify the author
+        of the last change, if that person is also an uploader for the archive
+        that the failure happened in.  For this particular situation we
+        consider that not so much an intended behaviour, as an emergent one
         that does not seem inappropriate.  It'd be hard to change if we wanted
         to.)
 

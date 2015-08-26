@@ -135,6 +135,10 @@ class BaseMailer:
         """
         pass
 
+    def _getTemplateName(self, email, recipient):
+        """Return the name of the template to use for this email body."""
+        return self._template_name
+
     def _getTemplateParams(self, email, recipient):
         """Return a dict of values to use in the body and subject."""
         reason, rationale = self._recipients.getReason(email)
@@ -150,7 +154,8 @@ class BaseMailer:
 
     def _getBody(self, email, recipient):
         """Return the complete body to use for this email."""
-        template = get_email_template(self._template_name, app=self.app)
+        template = get_email_template(
+            self._getTemplateName(email, recipient), app=self.app)
         params = self._getTemplateParams(email, recipient)
         body = template % params
         footer = self._getFooter(email, recipient, params)
