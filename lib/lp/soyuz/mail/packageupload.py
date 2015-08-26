@@ -52,29 +52,38 @@ class PackageUploadRecipientReason(RecipientReason):
     def forMaintainer(cls, maintainer, recipient):
         header = cls.makeRationale("Maintainer", maintainer)
         reason = (
-            "You are receiving this email because you are listed as this "
-            "package's maintainer.")
+            "You are receiving this email because %(lc_entity_is)s listed as "
+            "this package's maintainer.")
         return cls(maintainer, recipient, header, reason)
 
     @classmethod
     def forChangedBy(cls, changed_by, recipient):
         header = cls.makeRationale("Changed-By", changed_by)
         reason = (
-            "You are receiving this email because you are the most recent "
-            "person listed in this package's changelog.")
+            "You are receiving this email because %(lc_entity_is)s the most "
+            "recent person listed in this package's changelog.")
         return cls(changed_by, recipient, header, reason)
 
     @classmethod
     def forPPAUploader(cls, uploader, recipient):
         header = cls.makeRationale("PPA Uploader", uploader)
         reason = (
-            "You are receiving this email because you have upload permissions "
-            "to this PPA.")
+            "You are receiving this email because %(lc_entity_has)s upload "
+            "permissions to this PPA.")
         return cls(uploader, recipient, header, reason)
 
     @classmethod
     def forAnnouncement(cls, recipient):
         return cls(recipient, recipient, "Announcement", "")
+
+    def _getTemplateValues(self):
+        template_values = super(
+            PackageUploadRecipientReason, self)._getTemplateValues()
+        template_values["lc_entity_has"] = "you have"
+        if self.recipient != self.subscriber or self.subscriber.is_team:
+            template_values["lc_entity_has"] = (
+                "your team %s has" % self.subscriber.displayname)
+        return template_values
 
     def getReason(self):
         """See `RecipientReason`."""
