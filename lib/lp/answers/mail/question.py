@@ -16,7 +16,7 @@ class QuestionRecipientReason(RecipientReason):
         header = cls.makeRationale("Subscriber", subscriber)
         reason = (
             "You received this question notification because "
-            "%(lc_entity_is)s a direct subscriber of the question.")
+            "%(lc_entity_is)s subscribed to the question.")
         return cls(subscriber, recipient, header, reason)
 
     @classmethod
@@ -32,7 +32,7 @@ class QuestionRecipientReason(RecipientReason):
         header = cls.makeRationale("Assignee", assignee)
         reason = (
             "You received this question notification because "
-            "%(lc_entity_is)s the assignee for this question.")
+            "%(lc_entity_is)s assigned to this question.")
         return cls(assignee, recipient, header, reason)
 
     @classmethod

@@ -296,8 +296,8 @@ The question's assignee is also part of the indirect subscription list:
     ...     package_question.assignee)
     >>> print header, removeSecurityProxy(reason).getReason()
     Assignee
-    You received this question notification because you are the assignee for
-    this question.
+    You received this question notification because you are assigned to this
+    question.
 
 The getIndirectSubscribers() method iterates like the indirect_recipients
 method, but it returns a sorted list instead of a NotificationRecipientSet.
