@@ -71,7 +71,10 @@ class BaseMailer:
         self._mail_controller_class = mail_controller_class
         self.request = request
 
-    def _getToAddresses(self, recipient, email):
+    def _getFromAddress(self, email, recipient):
+        return self.from_address
+
+    def _getToAddresses(self, email, recipient):
         return [format_address(recipient.displayname, email)]
 
     def generateEmail(self, email, recipient, force_no_attachments=False):
@@ -81,15 +84,16 @@ class BaseMailer:
         :param recipient: The Person to send to.
         :return: (headers, subject, body) of the email.
         """
-        to_addresses = self._getToAddresses(recipient, email)
-        headers = self._getHeaders(email)
+        from_address = self._getFromAddress(email, recipient)
+        to_addresses = self._getToAddresses(email, recipient)
+        headers = self._getHeaders(email, recipient)
         subject = self._getSubject(email, recipient)
         body = self._getBody(email, recipient)
         expanded_footer = self._getExpandedFooter(headers, recipient)
         if expanded_footer:
             body = append_footer(body, expanded_footer)
         ctrl = self._mail_controller_class(
-            self.from_address, to_addresses, subject, body, headers,
+            from_address, to_addresses, subject, body, headers,
             envelope_to=[email])
         if force_no_attachments:
             ctrl.addAttachment(
@@ -108,7 +112,7 @@ class BaseMailer:
         """Return the address to use for the reply-to header."""
         return None
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """Return the mail headers to use."""
         reason, rationale = self._recipients.getReason(email)
         headers = OrderedDict()
@@ -131,6 +135,10 @@ class BaseMailer:
         """
         pass
 
+    def _getTemplateName(self, email, recipient):
+        """Return the name of the template to use for this email body."""
+        return self._template_name
+
     def _getTemplateParams(self, email, recipient):
         """Return a dict of values to use in the body and subject."""
         reason, rationale = self._recipients.getReason(email)
@@ -146,15 +154,16 @@ class BaseMailer:
 
     def _getBody(self, email, recipient):
         """Return the complete body to use for this email."""
-        template = get_email_template(self._template_name, app=self.app)
+        template = get_email_template(
+            self._getTemplateName(email, recipient), app=self.app)
         params = self._getTemplateParams(email, recipient)
         body = template % params
-        footer = self._getFooter(params)
+        footer = self._getFooter(email, recipient, params)
         if footer is not None:
             body = append_footer(body, footer)
         return body
 
-    def _getFooter(self, params):
+    def _getFooter(self, email, recipient, params):
         """Provide a footer to attach to the body, or None."""
         return None
 
@@ -168,33 +177,35 @@ class BaseMailer:
                 lines.append('%s: %s\n' % (key[2:], value))
         return ''.join(lines)
 
-    def sendAll(self):
-        """Send notifications to all recipients."""
+    def sendOne(self, email, recipient):
+        """Send notification to one recipient."""
         # We never want SMTP errors to propagate from this function.
-        for email, recipient in self._recipients.getRecipientPersons():
-            ctrl = self.generateEmail(email, recipient)
+        ctrl = self.generateEmail(email, recipient)
+        try:
+            ctrl.send()
+        except SMTPException:
+            # If the initial sending failed, try again without
+            # attachments.
+            ctrl = self.generateEmail(
+                email, recipient, force_no_attachments=True)
             try:
                 ctrl.send()
             except SMTPException:
-                # If the initial sending failed, try again without
-                # attachments.
-                ctrl = self.generateEmail(
-                    email, recipient, force_no_attachments=True)
-                try:
-                    ctrl.send()
-                except SMTPException:
-                    error_utility = getUtility(IErrorReportingUtility)
-                    oops_vars = {
-                        "message_id": ctrl.headers.get("Message-Id"),
-                        "notification_type": self.notification_type,
-                        "recipient": ", ".join(ctrl.to_addrs),
-                        "subject": ctrl.subject,
-                        }
-                    with error_utility.oopsMessage(oops_vars):
-                        oops = error_utility.raising(
-                            sys.exc_info(), self.request)
-                    self.logger.info(
-                        "Mail resulted in OOPS: %s" % oops.get("id"))
+                error_utility = getUtility(IErrorReportingUtility)
+                oops_vars = {
+                    "message_id": ctrl.headers.get("Message-Id"),
+                    "notification_type": self.notification_type,
+                    "recipient": ", ".join(ctrl.to_addrs),
+                    "subject": ctrl.subject,
+                    }
+                with error_utility.oopsMessage(oops_vars):
+                    oops = error_utility.raising(sys.exc_info(), self.request)
+                self.logger.info("Mail resulted in OOPS: %s" % oops.get("id"))
+
+    def sendAll(self):
+        """Send notifications to all recipients."""
+        for email, recipient in sorted(self._recipients.getRecipientPersons()):
+            self.sendOne(email, recipient)
 
 
 class RecipientReason:

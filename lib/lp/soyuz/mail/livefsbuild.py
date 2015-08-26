@@ -39,9 +39,9 @@ class LiveFSBuildMailer(BaseMailer):
             notification_type="livefs-build-status")
         self.build = build
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """See `BaseMailer`."""
-        headers = super(LiveFSBuildMailer, self)._getHeaders(email)
+        headers = super(LiveFSBuildMailer, self)._getHeaders(email, recipient)
         headers["X-Launchpad-Build-State"] = self.build.status.name
         return headers
 
@@ -77,7 +77,7 @@ class LiveFSBuildMailer(BaseMailer):
             params["builder_url"] = canonical_url(build.builder)
         return params
 
-    def _getFooter(self, params):
+    def _getFooter(self, email, recipient, params):
         """See `BaseMailer`."""
         return ("%(build_url)s\n"
                 "%(reason)s\n" % params)

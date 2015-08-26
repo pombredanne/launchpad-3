@@ -6,6 +6,7 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
+    HasLength,
     )
 import transaction
 from zope.component import getUtility
@@ -191,3 +192,39 @@ class TestWebhookSet(TestCaseWithFactory):
              getUtility(IWebhookSet).findByTarget(target)])
         self.assertEqual(1, IStore(WebhookJob).find(WebhookJob).count())
         self.assertEqual(1, hooks[2].deliveries.count())
+
+    def test_trigger(self):
+        owner = self.factory.makePerson()
+        target1 = self.factory.makeGitRepository(owner=owner)
+        target2 = self.factory.makeGitRepository(owner=owner)
+        hook1a = self.factory.makeWebhook(
+            target=target1, event_types=[])
+        hook1b = self.factory.makeWebhook(
+            target=target1, event_types=['git:push:0.1'])
+        hook2a = self.factory.makeWebhook(
+            target=target2, event_types=['git:push:0.1'])
+        hook2b = self.factory.makeWebhook(
+            target=target2, event_types=['git:push:0.1'], active=False)
+
+        # Only webhooks subscribed to the relevant target and event type
+        # are triggered.
+        getUtility(IWebhookSet).trigger(
+            target1, 'git:push:0.1', {'some': 'payload'})
+        with admin_logged_in():
+            self.assertThat(list(hook1a.deliveries), HasLength(0))
+            self.assertThat(list(hook1b.deliveries), HasLength(1))
+            self.assertThat(list(hook2a.deliveries), HasLength(0))
+            self.assertThat(list(hook2b.deliveries), HasLength(0))
+            delivery = hook1b.deliveries.one()
+            self.assertEqual(delivery.payload, {'some': 'payload'})
+
+        # Disabled webhooks aren't triggered.
+        getUtility(IWebhookSet).trigger(
+            target2, 'git:push:0.1', {'other': 'payload'})
+        with admin_logged_in():
+            self.assertThat(list(hook1a.deliveries), HasLength(0))
+            self.assertThat(list(hook1b.deliveries), HasLength(1))
+            self.assertThat(list(hook2a.deliveries), HasLength(1))
+            self.assertThat(list(hook2b.deliveries), HasLength(0))
+            delivery = hook2a.deliveries.one()
+            self.assertEqual(delivery.payload, {'other': 'payload'})

@@ -42,11 +42,12 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             notification_type='recipe-build-status')
         self.build = build
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """See `BaseMailer`"""
         headers = super(
-            SourcePackageRecipeBuildMailer, self)._getHeaders(email)
+            SourcePackageRecipeBuildMailer, self)._getHeaders(email, recipient)
         headers.update({
+            'X-Launchpad-Archive': self.build.archive.reference,
             'X-Launchpad-Build-State': self.build.status.name,
             })
         return headers
@@ -81,7 +82,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             params['upload_log_url'] = self.build.upload_log_url
         return params
 
-    def _getFooter(self, params):
+    def _getFooter(self, email, recipient, params):
         """See `BaseMailer`"""
         return ('%(build_url)s\n'
                 '%(reason)s\n' % params)

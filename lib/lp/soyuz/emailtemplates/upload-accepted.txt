@@ -10,7 +10,3 @@
 %(ANNOUNCE)s
 
 Thank you for your contribution to %(DISTRO)s.
-
--- 
-You are receiving this email because you are the uploader, maintainer or
-signer of the above package.

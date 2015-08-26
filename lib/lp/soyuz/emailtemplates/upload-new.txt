@@ -9,7 +9,3 @@ packages are usually added to the overrides about once a week.
 
 You may have gotten the distroseries wrong.  If so, you may get warnings
 above if files already exist in other distroseries.
-
--- 
-You are receiving this email because you are the uploader, maintainer or
-signer of the above package.

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -29,7 +29,6 @@ from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail import stub
-from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackagePublishingStatus,
@@ -195,9 +194,9 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload()
         upload.acceptFromQueue()
         self.assertEqual(2, len(stub.test_emails))
-        # Emails sent are the announcement and the uploader's notification:
+        # Emails sent are the uploader's notification and the announcement:
+        self.assertEmail([uploader.preferredemail.email])
         self.assertEmail(["autotest_changes@ubuntu.com"])
-        self.assertEmail([format_address_for_person(uploader)])
 
     def test_acceptFromQueue_source_backports_sends_no_announcement(self):
         # Accepting a source package into BACKPORTS does not send an
@@ -211,7 +210,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(stub.test_emails))
         # Only one email is sent, to the person in the changed-by field.  No
         # announcement email is sent.
-        self.assertEmail([format_address_for_person(uploader)])
+        self.assertEmail([uploader.preferredemail.email])
 
     def test_acceptFromQueue_source_translations_sends_no_email(self):
         # Accepting source packages in the "translations" section (i.e.
@@ -316,7 +315,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(1, len(stub.test_emails))
-        self.assertEmail([format_address_for_person(uploader)])
+        self.assertEmail([uploader.preferredemail.email])
 
     def test_rejectFromQueue_binary_sends_email(self):
         # Rejecting a binary package sends an email to the uploader.
@@ -324,7 +323,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeBuildPackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(1, len(stub.test_emails))
-        self.assertEmail([format_address_for_person(uploader)])
+        self.assertEmail([uploader.preferredemail.email])
 
     def test_rejectFromQueue_source_translations_sends_no_email(self):
         # Rejecting a language pack sends no email.
