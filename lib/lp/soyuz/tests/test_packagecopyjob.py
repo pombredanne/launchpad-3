@@ -1230,12 +1230,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # do it here.
         emails = pop_notifications(sort_key=operator.itemgetter('To'))
 
-        # We expect an uploader email and an announcement to the changeslist.
-        self.assertEqual(2, len(emails))
-        self.assertIn("requester@example.com", emails[0]['To'])
-        self.assertIn("changes@example.com", emails[1]['To'])
+        # We expect an email to the signer, an email to the uploader, and an
+        # announcement to the changeslist.
+        self.assertEqual(3, len(emails))
+        self.assertIn("foo.bar@canonical.com", emails[0]['To'])
+        self.assertIn("requester@example.com", emails[1]['To'])
+        self.assertIn("changes@example.com", emails[2]['To'])
         self.assertEqual(
-            "Nancy Requester <requester@example.com>", emails[1]['From'])
+            "Nancy Requester <requester@example.com>", emails[2]['From'])
 
     def test_silent(self):
         # Copies into a non-PPA archive normally send emails. They can

@@ -2,35 +2,35 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from textwrap import dedent
 
-from storm.store import Store
+from testtools.matchers import (
+    Contains,
+    ContainsDict,
+    Equals,
+    KeysEqual,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.log.logger import BufferLogger
-from lp.services.mail.sendmail import format_address_for_person
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.publisher import canonical_url
-from lp.soyuz.adapters.notification import (
-    assemble_body,
-    calculate_subject,
-    fetch_information,
-    get_upload_notification_recipients,
-    is_auto_sync_upload,
-    notify,
-    reject_changes_file,
-    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,
     )
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.mail.packageupload import (
+    calculate_subject,
+    fetch_information,
+    is_auto_sync_upload,
+    PackageUploadMailer,
+    )
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
@@ -49,7 +49,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_notify_from_unicode_names(self):
+    def test_mail_from_unicode_names(self):
         # People with unicode in their names should appear correctly in the
         # email and not get smashed to ASCII or otherwise transliterated.
         creator = self.factory.makePerson(displayname=u"Loïc")
@@ -60,9 +60,9 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         distroseries.changeslist = "blah@example.com"
         blamer = self.factory.makePerson(displayname=u"Stéphane")
-        notify(
-            blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted')
+        mailer = PackageUploadMailer.forAction(
+            "accepted", blamer, spr, [], [], archive, distroseries, pocket)
+        mailer.sendAll()
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         msg = notifications[1].get_payload(0)
@@ -98,13 +98,15 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         blamer = self.factory.makePerson()
         if from_person is None:
             from_person = self.factory.makePerson()
-        notify(
-            blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted', announce_from_person=from_person)
+        mailer = PackageUploadMailer.forAction(
+            "accepted", blamer, spr, [], [], archive, distroseries, pocket,
+            announce_from_person=from_person)
+        mailer.sendAll()
 
-    def test_notify_from_person_override(self):
-        # notify() takes an optional from_person to override the calculated
-        # From: address in announcement emails.
+    def test_forAction_announce_from_person_override(self):
+        # PackageUploadMailer.forAction() takes an optional
+        # announce_from_person to override the calculated From: address in
+        # announcement emails.
         spr = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
@@ -114,21 +116,28 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         blamer = self.factory.makePerson()
         from_person = self.factory.makePerson(
             email="lemmy@example.com", displayname="Lemmy Kilmister")
-        notify(
-            blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted', announce_from_person=from_person)
+        mailer = PackageUploadMailer.forAction(
+            "accepted", blamer, spr, [], [], archive, distroseries, pocket,
+            announce_from_person=from_person)
+        mailer.sendAll()
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         # The first notification is to the blamer, the second notification is
         # to the announce list, which is the one that gets the overridden
         # From:
-        self.assertEqual(
-            "Lemmy Kilmister <lemmy@example.com>", notifications[1]["From"])
+        self.assertThat(
+            dict(notifications[1]),
+            ContainsDict({
+                "From": Equals("Lemmy Kilmister <lemmy@example.com>"),
+                "X-Launchpad-Message-Rationale": Equals("Announcement"),
+                "X-Launchpad-Notification-Type": Equals("package-upload"),
+                }))
 
-    def test_notify_from_person_override_with_unicode_names(self):
-        # notify() takes an optional from_person to override the calculated
-        # From: address in announcement emails. Non-ASCII real names should be
-        # correctly encoded in the From heade.
+    def test_forAction_announce_from_person_override_with_unicode_names(self):
+        # PackageUploadMailer.forAction() takes an optional
+        # announce_from_person to override the calculated From: address in
+        # announcement emails.  Non-ASCII real names should be correctly
+        # encoded in the From header.
         spr = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
@@ -138,21 +147,28 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         blamer = self.factory.makePerson()
         from_person = self.factory.makePerson(
             email="loic@example.com", displayname=u"Loïc Motörhead")
-        notify(
-            blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted', announce_from_person=from_person)
+        mailer = PackageUploadMailer.forAction(
+            "accepted", blamer, spr, [], [], archive, distroseries, pocket,
+            announce_from_person=from_person)
+        mailer.sendAll()
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         # The first notification is to the blamer, the second notification is
         # to the announce list, which is the one that gets the overridden
         # From:
-        self.assertEqual(
-            "=?utf-8?q?Lo=C3=AFc_Mot=C3=B6rhead?= <loic@example.com>",
-            notifications[1]["From"])
+        self.assertThat(
+            dict(notifications[1]),
+            ContainsDict({
+                "From": Equals(
+                    "=?utf-8?q?Lo=C3=AFc_Mot=C3=B6rhead?= <loic@example.com>"),
+                "X-Launchpad-Message-Rationale": Equals("Announcement"),
+                "X-Launchpad-Notification-Type": Equals("package-upload"),
+                }))
 
-    def test_notify_bcc_to_derivatives_list(self):
-        # notify() will BCC the announcement email to the address defined in
-        # Distribution.package_derivatives_email if it's defined.
+    def test_forAction_bcc_to_derivatives_list(self):
+        # PackageUploadMailer.forAction() will BCC the announcement email to
+        # the address defined in Distribution.package_derivatives_email if
+        # it's defined.
         email = "{package_name}_thing@foo.com"
         distroseries = self.factory.makeDistroSeries()
         with person_logged_in(distroseries.distribution.owner):
@@ -162,9 +178,14 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
 
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
-        bcc_address = notifications[1]["Bcc"]
         expected_email = email.format(package_name=spr.sourcepackagename.name)
-        self.assertIn(expected_email, bcc_address)
+        self.assertThat(
+            dict(notifications[1]),
+            ContainsDict({
+                "Bcc": Contains(expected_email),
+                "X-Launchpad-Message-Rationale": Equals("Announcement"),
+                "X-Launchpad-Notification-Type": Equals("package-upload"),
+                }))
 
     def test_fetch_information_spr_multiple_changelogs(self):
         # If previous_version is passed the "changelog" entry in the
@@ -182,9 +203,9 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         self.assertIn("foo (1.1)", info['changelog'])
         self.assertIn("foo (1.2)", info['changelog'])
 
-    def test_notify_bpr_rejected(self):
-        # If we notify about a rejected bpr with no source, a notification is
-        # sent.
+    def test_forAction_bpr_rejected(self):
+        # If we try to send mail about a rejected bpr with no source, a
+        # notification is sent.
         bpr = self.factory.makeBinaryPackageRelease()
         changelog = self.factory.makeChangelog(spn="foo", versions=["1.1"])
         removeSecurityProxy(
@@ -196,31 +217,30 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         person = self.factory.makePerson(
             displayname=u'Blamer', email='blamer@example.com')
-        notify(
-            person, None, [bpr], [], archive, distroseries, pocket,
-            summary_text="Rejected by archive administrator.",
-            action='rejected')
+        mailer = PackageUploadMailer.forAction(
+            "rejected", person, None, [bpr], [], archive, distroseries, pocket,
+            summary_text="Rejected by archive administrator.")
+        mailer.sendAll()
         [notification] = pop_notifications()
-        body = notification.get_payload()[0].get_payload()
+        body = notification.get_payload(decode=True)
         self.assertEqual('Blamer <blamer@example.com>', notification['To'])
         expected_body = dedent("""\
             Rejected:
             Rejected by archive administrator.
 
-            foo (1.1) unstable; urgency=3Dlow
+            foo (1.1) unstable; urgency=low
 
               * 1.1.
 
-            =3D=3D=3D
+            ===
 
             If you don't understand why your files were rejected please send an email
             to launchpad-users@lists.launchpad.net for help (requires membership).
 
-            --
+            %s
             http://launchpad.dev/~archiver/+archive/ubuntu/ppa
-            You are receiving this email because you are the uploader of the above
-            PPA package.
-            """)
+            You are receiving this email because you made this upload.
+            """ % "-- ")
         self.assertEqual(expected_body, body)
 
 
@@ -295,42 +315,41 @@ class TestNotification(TestCaseWithFactory):
             None, [bpr], [], archive, distroseries, pocket, 'accepted')
         self.assertEqual(expected_subject, subject)
 
-    def test_notify_bpr(self):
-        # If we notify about an accepted bpr with no source, it is from a
-        # build, and no notification is sent.
+    def test_forAction_bpr(self):
+        # If we try to send mail about an accepted bpr with no source, it is
+        # from a build, and no notification is sent.
         bpr = self.factory.makeBinaryPackageRelease()
         archive = self.factory.makeArchive()
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
         person = self.factory.makePerson()
-        notify(
-            person, None, [bpr], [], archive, distroseries, pocket,
-            action='accepted')
+        mailer = PackageUploadMailer.forAction(
+            "accepted", person, None, [bpr], [], archive, distroseries, pocket)
+        mailer.sendAll()
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
 
     def test_reject_changes_file_no_email(self):
-        # If we are rejecting a mail, and the person to notify has no
+        # If we are rejecting an upload, and the person to notify has no
         # preferred email, we should return early.
         archive = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
         uploader = self.factory.makePerson()
         get_property_cache(uploader).preferredemail = None
-        email = '%s <foo@example.com>' % uploader.displayname
-        changes = {'Changed-By': email, 'Maintainer': email}
-        logger = BufferLogger()
-        reject_changes_file(
-            uploader, '/tmp/changes', changes, archive, distroseries, '',
-            logger=logger)
-        self.assertIn(
-            'No recipients have a preferred email.', logger.getLogBuffer())
+        info = fetch_information(None, None, None)
+        recipients, _ = PackageUploadMailer.getRecipientsForAction(
+            'rejected', info, uploader, None, [], archive, distroseries,
+            PackagePublishingPocket.RELEASE)
+        self.assertEqual({}, recipients)
 
     def test_reject_with_no_changes(self):
         # If we don't have any files and no changes content, nothing happens.
         archive = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
-        notify(None, None, (), (), archive, distroseries, pocket)
+        mailer = PackageUploadMailer.forAction(
+            "rejected", None, None, (), (), archive, distroseries, pocket)
+        mailer.sendAll()
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
 
@@ -351,20 +370,18 @@ class TestNotification(TestCaseWithFactory):
         # Now set the uploaders.
         component = getUtility(IComponentSet).ensure('main')
         if component not in distroseries.components:
-            store = Store.of(distroseries)
-            store.add(
-                ComponentSelection(
-                    distroseries=distroseries, component=component))
+            self.factory.makeComponentSelection(
+                distroseries=distroseries, component=component)
         distribution.main_archive.newComponentUploader(maintainer, component)
         distribution.main_archive.newComponentUploader(changer, component)
-        observed = get_upload_notification_recipients(
-            blamer, archive, distroseries, logger=None, changes=changes)
-        self.assertContentEqual(
-            [format_address_for_person(person) for person in expected],
-            observed)
+        info = fetch_information(None, None, changes)
+        observed, _ = PackageUploadMailer.getRecipientsForAction(
+            'accepted', info, blamer, None, [], archive, distroseries,
+            PackagePublishingPocket.RELEASE)
+        self.assertThat(observed, KeysEqual(*expected))
 
-    def test_get_upload_notification_recipients_good_emails(self):
-        # Test get_upload_notification_recipients with good email addresses..
+    def test_getRecipientsForAction_good_emails(self):
+        # Test getRecipientsForAction with good email addresses..
         blamer, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
@@ -376,7 +393,7 @@ class TestNotification(TestCaseWithFactory):
             [blamer, maintainer, changer],
             changes, blamer, maintainer, changer)
 
-    def test_get_upload_notification_recipients_bad_maintainer_email(self):
+    def test_getRecipientsForAction_bad_maintainer_email(self):
         blamer, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
@@ -387,9 +404,8 @@ class TestNotification(TestCaseWithFactory):
         self.assertRecipientsEqual(
             [blamer, changer], changes, blamer, maintainer, changer)
 
-    def test_get_upload_notification_recipients_bad_changedby_email(self):
-        # Test get_upload_notification_recipients with invalid changedby
-        # email address.
+    def test_getRecipientsForAction_bad_changedby_email(self):
+        # Test getRecipientsForAction with invalid changedby email address.
         blamer, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
@@ -400,7 +416,7 @@ class TestNotification(TestCaseWithFactory):
         self.assertRecipientsEqual(
             [blamer, maintainer], changes, blamer, maintainer, changer)
 
-    def test_get_upload_notification_recipients_unsigned_copy_archive(self):
+    def test_getRecipientsForAction_unsigned_copy_archive(self):
         # Notifications for unsigned build uploads to copy archives only go
         # to the archive owner.
         _, maintainer, changer = self._setup_recipients()
@@ -414,9 +430,92 @@ class TestNotification(TestCaseWithFactory):
             [], changes, None, maintainer, changer,
             purpose=ArchivePurpose.COPY)
 
-    def test_assemble_body_handles_no_preferred_email_for_changer(self):
+    def test__getHeaders_primary(self):
+        # _getHeaders returns useful values for headers used for filtering.
+        # For a primary archive, this includes the maintainer and changer.
+        blamer, maintainer, changer = self._setup_recipients()
+        distroseries = self.factory.makeDistroSeries()
+        archive = distroseries.distribution.main_archive
+        component = getUtility(IComponentSet).ensure("main")
+        if component not in distroseries.components:
+            self.factory.makeComponentSelection(
+                distroseries=distroseries, component=component)
+        archive.newComponentUploader(maintainer, component)
+        archive.newComponentUploader(changer, component)
+        spr = self.factory.makeSourcePackageRelease(
+            component=component, section_name="libs")
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
+            'Changes': ' * Foo!',
+            }
+        mailer = PackageUploadMailer.forAction(
+            "accepted", blamer, spr, [], [], archive, distroseries,
+            PackagePublishingPocket.RELEASE, changes=changes)
+        recipients = dict(mailer._recipients.getRecipientPersons())
+        for email, rationale in (
+                (blamer.preferredemail.email, "Requester"),
+                ("maintainer@example.com", "Maintainer"),
+                ("changer@example.com", "Changed-By")):
+            headers = mailer._getHeaders(email, recipients[email])
+            self.assertThat(
+                headers,
+                ContainsDict({
+                    "X-Launchpad-Message-Rationale": Equals(rationale),
+                    "X-Launchpad-Notification-Type": Equals("package-upload"),
+                    "X-Katie": Equals("Launchpad actually"),
+                    "X-Launchpad-Archive": Equals(archive.reference),
+                    "X-Launchpad-Component": Equals(
+                        "component=main, section=libs"),
+                    }))
+            self.assertNotIn("X-Launchpad-PPA", headers)
+
+    def test__getHeaders_ppa(self):
+        # _getHeaders returns useful values for headers used for filtering.
+        # For a PPA, this includes other people with component upload
+        # permissions.
+        blamer = self.factory.makePerson()
+        uploader = self.factory.makePerson()
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, purpose=ArchivePurpose.PPA)
+        component = getUtility(IComponentSet).ensure("main")
+        if component not in distroseries.components:
+            self.factory.makeComponentSelection(
+                distroseries=distroseries, component=component)
+        archive.newComponentUploader(uploader, component)
+        spr = self.factory.makeSourcePackageRelease(
+            component=component, section_name="libs")
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
+            'Changes': ' * Foo!',
+            }
+        mailer = PackageUploadMailer.forAction(
+            "accepted", blamer, spr, [], [], archive, distroseries,
+            PackagePublishingPocket.RELEASE, changes=changes)
+        recipients = dict(mailer._recipients.getRecipientPersons())
+        for email, rationale in (
+                (blamer.preferredemail.email, "Requester"),
+                (uploader.preferredemail.email, "PPA Uploader")):
+            headers = mailer._getHeaders(email, recipients[email])
+            self.assertThat(
+                headers,
+                ContainsDict({
+                    "X-Launchpad-Message-Rationale": Equals(rationale),
+                    "X-Launchpad-Notification-Type": Equals("package-upload"),
+                    "X-Katie": Equals("Launchpad actually"),
+                    "X-Launchpad-Archive": Equals(archive.reference),
+                    "X-Launchpad-PPA": Equals(get_ppa_reference(archive)),
+                    "X-Launchpad-Component": Equals(
+                        "component=main, section=libs"),
+                    }))
+
+    def test__getTemplateParams_handles_no_preferred_email_for_changer(self):
         # If changer has no preferred email address,
-        # assemble_body should still work.
+        # _getTemplateParams should still work.
         spr = self.factory.makeSourcePackageRelease()
         blamer = self.factory.makePerson()
         archive = self.factory.makeArchive()
@@ -424,11 +523,14 @@ class TestNotification(TestCaseWithFactory):
 
         spr.creator.setPreferredEmail(None)
 
-        body = assemble_body(blamer, spr, [], archive, series, "",
-                             None, "unapproved")
-        self.assertIn("Waiting for approval", body)
+        mailer = PackageUploadMailer.forAction(
+            "unapproved", blamer, spr, [], [], archive, series,
+            PackagePublishingPocket.RELEASE)
+        email, recipient = list(mailer._recipients.getRecipientPersons())[0]
+        params = mailer._getTemplateParams(email, recipient)
+        self.assertEqual("Waiting for approval", params["STATUS"])
 
-    def test_assemble_body_inserts_package_url_for_distro_upload(self):
+    def test__getTemplateParams_inserts_package_url_for_distro_upload(self):
         # The email body should contain the canonical url to the package
         # page in the target distroseries.
         spr = self.factory.makeSourcePackageRelease()
@@ -436,13 +538,16 @@ class TestNotification(TestCaseWithFactory):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         series = self.factory.makeDistroSeries()
 
-        body = assemble_body(blamer, spr, [], archive, series, "",
-                             None, "unapproved")
+        mailer = PackageUploadMailer.forAction(
+            "unapproved", blamer, spr, [], [], archive, series,
+            PackagePublishingPocket.RELEASE)
+        email, recipient = list(mailer._recipients.getRecipientPersons())[0]
+        params = mailer._getTemplateParams(email, recipient)
         dsspr = DistributionSourcePackageRelease(series.distribution, spr)
         url = canonical_url(dsspr)
-        self.assertIn(url, body)
+        self.assertEqual(url, params["SPR_URL"])
 
-    def test__is_auto_sync_upload__no_preferred_email_for_changer(self):
+    def test_is_auto_sync_upload__no_preferred_email_for_changer(self):
         # If changer has no preferred email address,
         # is_auto_sync_upload should still work.
         result = is_auto_sync_upload(

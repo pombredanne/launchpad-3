@@ -1,13 +1,10 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import datetime
-from textwrap import (
-    dedent,
-    fill,
-    )
+from textwrap import dedent
 
 import pytz
 from testtools.content import text_content
@@ -1426,24 +1423,20 @@ class TestDoDirectCopy(BaseDoCopyTests, TestCaseWithFactory):
         [notification] = pop_notifications()
         self.assertEqual(
             target_archive.reference, notification['X-Launchpad-Archive'])
-        body = notification.get_payload()[0].get_payload()
-        expected = (dedent("""\
+        body = notification.get_payload(decode=True)
+        expected = dedent("""\
             Accepted:
              OK: foo_1.0-2.dsc
                  -> Component: main Section: base
 
-            foo (1.0-2) unstable; urgency=3Dlow
+            foo (1.0-2) unstable; urgency=low
 
               * 1.0-2.
 
-            --
+            %s
             http://launchpad.dev/~archiver/+archive/ubuntutest/ppa
-            """) +
-            # Slight contortion to avoid a long line.
-            fill(dedent("""\
-            You are receiving this email because you are the uploader of the
-            above PPA package.
-            """), 72) + "\n")
+            You are receiving this email because you made this upload.
+            """ % "-- ")
         self.assertEqual(expected, body)
 
     def test_copy_generates_notification(self):
@@ -1481,8 +1474,7 @@ class TestDoDirectCopy(BaseDoCopyTests, TestCaseWithFactory):
         # Spurious newlines are a pain and don't really affect the end
         # results so stripping is the easiest route here.
         expected_text.strip()
-        body = mail.get_payload()[0].get_payload()
-        self.assertEqual(expected_text, body)
+        body = announcement.get_payload()[0].get_payload()
         self.assertEqual(expected_text, body)
 
     def test_sponsored_copy_notification(self):
