@@ -38,6 +38,10 @@ from lp.services.webapp import canonical_url
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
+class AnnouncementStubPerson(StubPerson):
+    """Marker class for sending announcements to distroseries changes lists."""
+
+
 class PackageUploadRecipientReason(RecipientReason):
 
     @classmethod
@@ -373,7 +377,7 @@ class PackageUploadMailer(BaseMailer):
                     pocket == PackagePublishingPocket.SECURITY and spr is None)
                 and not is_auto_sync_upload(
                     spr, bprs, pocket, announce_from_addr)):
-            recipient = StubPerson(distroseries.changeslist)
+            recipient = AnnouncementStubPerson(distroseries.changeslist)
             recipients[recipient] = (
                 PackageUploadRecipientReason.forAnnouncement(recipient))
 
@@ -455,7 +459,7 @@ class PackageUploadMailer(BaseMailer):
 
     def _getFromAddress(self, email, recipient):
         """See `BaseMailer`."""
-        if (zope_isinstance(recipient, StubPerson) and
+        if (zope_isinstance(recipient, AnnouncementStubPerson) and
                 self.announce_from_address is not None):
             return self.announce_from_address
         else:
@@ -485,7 +489,7 @@ class PackageUploadMailer(BaseMailer):
         bcc_text = format_address(
             config.uploader.default_recipient_name,
             config.uploader.default_recipient_address)
-        if zope_isinstance(recipient, StubPerson):
+        if zope_isinstance(recipient, AnnouncementStubPerson):
             name = None
             if self.spr:
                 name = self.spr.name
@@ -513,7 +517,7 @@ class PackageUploadMailer(BaseMailer):
 
     def _getTemplateName(self, email, recipient):
         """See `BaseMailer`."""
-        if zope_isinstance(recipient, StubPerson):
+        if zope_isinstance(recipient, AnnouncementStubPerson):
             return "upload-announcement.txt"
         else:
             return self._template_name
@@ -580,7 +584,7 @@ class PackageUploadMailer(BaseMailer):
 
     def _getFooter(self, email, recipient, params):
         """See `BaseMailer`."""
-        if zope_isinstance(recipient, StubPerson):
+        if zope_isinstance(recipient, AnnouncementStubPerson):
             return None
         else:
             footer_lines = []
