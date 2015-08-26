@@ -244,7 +244,7 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 
 
 def build_uploaded_files_list(spr, builds, customfiles, logger):
-    """Return a list of tuples of (filename, component, section).
+    """Generate a list of tuples of (filename, component, section).
 
     Component and section are only set where the file is a source upload.
     If an empty list is returned, it means there are no files.
