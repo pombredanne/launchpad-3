@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question models."""
@@ -66,6 +66,7 @@ from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.mail.question import QuestionRecipientReason
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
 from lp.answers.model.questionreopening import create_questionreopening
@@ -586,26 +587,30 @@ class Question(SQLBase, BugLinkTargetMixin):
     @cachedproperty
     def direct_recipients(self):
         """See `IQuestion`."""
+        # Circular import.
+        from lp.registry.model.person import get_recipients
         subscribers = NotificationRecipientSet()
-        reason = ("You received this question notification because you are "
-                  "a direct subscriber of the question.")
-        subscribers.add(self.subscribers, reason, 'Subscriber')
-        if self.owner in subscribers:
-            subscribers.remove(self.owner)
-            reason = (
-                "You received this question notification because you "
-                "asked the question.")
-            subscribers.add(self.owner, reason, 'Asker')
+        for subscriber in self.subscribers:
+            if subscriber == self.owner:
+                reason_factory = QuestionRecipientReason.forAsker
+            else:
+                reason_factory = QuestionRecipientReason.forSubscriber
+            for recipient in get_recipients(subscriber):
+                reason = reason_factory(subscriber, recipient)
+                subscribers.add(recipient, reason, reason.mail_header)
         return subscribers
 
     @cachedproperty
     def indirect_recipients(self):
         """See `IQuestion`."""
+        # Circular import.
+        from lp.registry.model.person import get_recipients
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
-            reason = ('You received this question notification because you '
-                      'are the assignee for this question.')
-            subscribers.add(self.assignee, reason, 'Assignee')
+            for recipient in get_recipients(self.assignee):
+                reason = QuestionRecipientReason.forAssignee(
+                    self.assignee, recipient)
+                subscribers.add(recipient, reason, reason.mail_header)
         return subscribers
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
@@ -1423,24 +1428,18 @@ class QuestionTargetMixin:
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
+        # Circular import.
+        from lp.registry.model.person import get_recipients
         if language is None:
             contacts = self.answer_contacts
         else:
             contacts = self.getAnswerContactsForLanguage(language)
         recipients = NotificationRecipientSet()
-        for person in contacts:
-            reason_start = (
-                "You received this question notification because you are ")
-            if person.is_team:
-                reason = reason_start + (
-                    'a member of %s, which is an answer contact for %s.' % (
-                        person.displayname, self.displayname))
-                header = 'Answer Contact (%s) @%s' % (self.name, person.name)
-            else:
-                reason = reason_start + (
-                    'an answer contact for %s.' % self.displayname)
-                header = 'Answer Contact (%s)' % self.displayname
-            recipients.add(person, reason, header)
+        for contact in contacts:
+            for recipient in get_recipients(contact):
+                reason = QuestionRecipientReason.forAnswerContact(
+                    contact, recipient, self.name, self.displayname)
+                recipients.add(recipient, reason, reason.mail_header)
         return recipients
 
     def removeAnswerContact(self, person, subscribed_by):
