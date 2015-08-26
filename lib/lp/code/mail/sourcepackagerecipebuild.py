@@ -47,6 +47,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
         headers = super(
             SourcePackageRecipeBuildMailer, self)._getHeaders(email, recipient)
         headers.update({
+            'X-Launchpad-Archive': self.build.archive.reference,
             'X-Launchpad-Build-State': self.build.status.name,
             })
         return headers
