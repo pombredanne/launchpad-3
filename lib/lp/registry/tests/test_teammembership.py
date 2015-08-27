@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -61,6 +61,7 @@ from lp.services.database.sqlbase import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
 from lp.services.log.logger import BufferLogger
+from lp.services.mail.sendmail import format_address_for_person
 from lp.testing import (
     login,
     login_celebrity,
@@ -1085,8 +1086,7 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         message = notifications[0]
         self.assertEqual(
             'Your membership in red is about to expire', message['subject'])
-        self.assertEqual(
-            self.member.preferredemail.email, message['to'])
+        self.assertEqual(format_address_for_person(self.member), message['to'])
 
     def test_no_message_sent_for_expired_memberships(self):
         # Members whose membership has expired do not get a message.

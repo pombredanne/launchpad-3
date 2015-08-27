@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions dealing with emails in tests.
@@ -54,7 +54,8 @@ def sort_addresses(header):
 
 
 def print_emails(include_reply_to=False, group_similar=False,
-                 include_rationale=False, notifications=None):
+                 include_rationale=False, notifications=None,
+                 include_notification_type=False):
     """Pop all messages from stub.test_emails and print them with
      their recipients.
 
@@ -71,6 +72,8 @@ def print_emails(include_reply_to=False, group_similar=False,
         header.
     :param notifications: Use the provided list of notifications instead of
         the stack.
+    :param include_notification_type: Include the
+        X-Launchpad-Notification-Type header.
     """
     distinct_bodies = {}
     if notifications is None:
@@ -99,16 +102,22 @@ def print_emails(include_reply_to=False, group_similar=False,
         if include_rationale and rationale_header in message:
             print (
                 '%s: %s' % (rationale_header, message[rationale_header]))
+        notification_type_header = 'X-Launchpad-Notification-Type'
+        if include_notification_type and notification_type_header in message:
+            print '%s: %s' % (
+                notification_type_header, message[notification_type_header])
         print 'Subject:', message['Subject']
         print body
         print "-" * 40
 
 
-def print_distinct_emails(include_reply_to=False, include_rationale=True):
+def print_distinct_emails(include_reply_to=False, include_rationale=True,
+                          include_notification_type=True):
     """A convenient shortcut for `print_emails`(group_similar=True)."""
     return print_emails(group_similar=True,
                         include_reply_to=include_reply_to,
-                        include_rationale=include_rationale)
+                        include_rationale=include_rationale,
+                        include_notification_type=include_notification_type)
 
 
 def run_mail_jobs():

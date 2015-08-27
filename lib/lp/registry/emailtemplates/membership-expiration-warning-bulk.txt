@@ -1,8 +1,7 @@
-Hello %(recipient_name)s,
+Hello %(recipient)s,
 
 On %(expiration_date)s, %(approximate_duration)s from now, the membership
-of %(member_name)s (which you are
-the owner of) in the %(team_name)s Launchpad team
+of %(member)s (which you are the owner of) in the %(team)s Launchpad team
 is due to expire.
 <%(team_url)s>
 
