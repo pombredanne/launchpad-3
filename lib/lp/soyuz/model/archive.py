@@ -2022,12 +2022,40 @@ class Archive(SQLBase):
                 AND BinaryPackageBuild.status = %s;
             """, params=(status.value, self.id, BuildStatus.NEEDSBUILD.value))
 
+    def _recalculateBuildVirtualization(self):
+        """Update BinaryPackageBuild.virtualized for this archive."""
+        store = Store.of(self)
+        if self.require_virtualized:
+            # We can avoid the Processor join in this case.
+            builds = store.find(
+                BinaryPackageBuild,
+                BinaryPackageBuild.archive == self,
+                BinaryPackageBuild.status == BuildStatus.NEEDSBUILD)
+            builds.set(virtualized=True)
+        else:
+            store.execute("""
+                UPDATE BinaryPackageBuild
+                SET virtualized = NOT Processor.supports_nonvirtualized
+                FROM Processor
+                WHERE
+                    -- insert self.id here
+                    BinaryPackageBuild.archive = %s
+                    AND BinaryPackageBuild.processor = Processor.id
+                    -- Build is in state BuildStatus.NEEDSBUILD (0)
+                    AND BinaryPackageBuild.status = %s;
+                """, params=(self.id, BuildStatus.NEEDSBUILD.value))
+            store.invalidate()
+
     def enable(self):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
         assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
         self._setBuildQueueStatuses(BuildQueueStatus.WAITING)
+        # Suspended builds may have the wrong virtualization setting (due to
+        # changes to either Archive.require_virtualized or
+        # Processor.supports_nonvirtualized) and need to be updated.
+        self._recalculateBuildVirtualization()
 
     def disable(self):
         """See `IArchive`."""
