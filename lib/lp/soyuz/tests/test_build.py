@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -251,6 +251,23 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(None, build.log)
         self.assertEquals(None, build.upload_log)
         self.assertEquals(0, build.failure_count)
+
+    def test_retry_resets_virtualized(self):
+        # Retrying a build recalculates its virtualization.
+        archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution, virtualized=False)
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=self.das, archive=archive,
+            processor=self.processor)
+        self.assertFalse(build.virtualized)
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        build.gotFailure()
+        self.processor.supports_nonvirtualized = False
+        with person_logged_in(self.admin):
+            build.retry()
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+        self.assertTrue(build.virtualized)
 
     def test_create_bpr(self):
         # Test that we can create a BPR from a given build.
