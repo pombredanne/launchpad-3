@@ -108,7 +108,7 @@ class BaseMailer:
         return (self._subject_template %
                     self._getTemplateParams(email, recipient))
 
-    def _getReplyToAddress(self):
+    def _getReplyToAddress(self, email, recipient):
         """Return the address to use for the reply-to header."""
         return None
 
@@ -119,7 +119,7 @@ class BaseMailer:
         headers['X-Launchpad-Message-Rationale'] = reason.mail_header
         if self.notification_type is not None:
             headers['X-Launchpad-Notification-Type'] = self.notification_type
-        reply_to = self._getReplyToAddress()
+        reply_to = self._getReplyToAddress(email, recipient)
         if reply_to is not None:
             headers['Reply-To'] = reply_to
         if self.message_id is not None:

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branch merge proposals."""
@@ -93,7 +93,7 @@ class BMPMailer(BranchMailer):
             merge_proposal, from_address, message_id=get_msgid(),
             preview_diff=merge_proposal.preview_diff, direct_email=True)
 
-    def _getReplyToAddress(self):
+    def _getReplyToAddress(self, email, recipient):
         """Return the address to use for the reply-to header."""
         return self.merge_proposal.address
 
