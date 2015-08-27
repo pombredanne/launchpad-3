@@ -16,6 +16,7 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 
 from lp.services.mail.helpers import get_email_template
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
     append_footer,
@@ -39,7 +40,8 @@ class BaseMailer:
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, message_id=None, notification_type=None,
-                 mail_controller_class=None, request=None):
+                 mail_controller_class=None, request=None, wrap=False,
+                 force_wrap=False):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -55,6 +57,8 @@ class BaseMailer:
             use to send the mails.  Defaults to `MailController`.
         :param request: An optional `IErrorReportRequest` to use when
             logging OOPSes.
+        :param wrap: Wrap body text using `MailWrapper`.
+        :param force_wrap: See `MailWrapper.format`.
         """
         self._subject_template = subject
         self._template_name = template_name
@@ -70,6 +74,8 @@ class BaseMailer:
             mail_controller_class = MailController
         self._mail_controller_class = mail_controller_class
         self.request = request
+        self._wrap = wrap
+        self._force_wrap = force_wrap
 
     def _getFromAddress(self, email, recipient):
         return self.from_address
@@ -158,6 +164,9 @@ class BaseMailer:
             self._getTemplateName(email, recipient), app=self.app)
         params = self._getTemplateParams(email, recipient)
         body = template % params
+        if self._wrap:
+            body = MailWrapper().format(
+                body, force_wrap=self._force_wrap) + "\n"
         footer = self._getFooter(email, recipient, params)
         if footer is not None:
             body = append_footer(body, footer)
