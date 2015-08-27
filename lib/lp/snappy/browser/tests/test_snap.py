@@ -74,17 +74,12 @@ class TestSnapView(BrowserTestCase):
         self.factory.makeBuilder(virtualized=True)
 
     def makeSnap(self, branch=None, git_ref=None):
-        kwargs = {}
         if branch is None and git_ref is None:
             branch = self.factory.makeAnyBranch()
-        if branch is not None:
-            kwargs["branch"] = branch
-        else:
-            kwargs["git_repository"] = git_ref.repository
-            kwargs["git_path"] = git_ref.path
         return self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name=u"snap-name", **kwargs)
+            distroseries=self.distroseries, name=u"snap-name", branch=branch,
+            git_ref=git_ref)
 
     def makeBuild(self, snap=None, archive=None, date_created=None, **kwargs):
         if snap is None:
@@ -98,15 +93,41 @@ class TestSnapView(BrowserTestCase):
             distroarchseries=self.distroarchseries, date_created=date_created,
             **kwargs)
 
-    def test_index(self):
+    def test_index_bzr(self):
+        branch = self.factory.makePersonalBranch(
+            owner=self.person, name="snap-branch")
+        snap = self.makeSnap(branch=branch)
         build = self.makeBuild(
-            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=30))
+            snap=snap, status=BuildStatus.FULLYBUILT,
+            duration=timedelta(minutes=30))
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Snap packages snap-name
             .*
             Snap package information
             Owner: Test Person
             Distribution series: Ubuntu Shiny
+            Source: lp://dev/~test-person/\\+junk/snap-branch
+            Latest builds
+            Status When complete Architecture Archive
+            Successfully built 30 minutes ago i386
+            Primary Archive for Ubuntu Linux
+            """, self.getMainText(build.snap))
+
+    def test_index_git(self):
+        [ref] = self.factory.makeGitRefs(
+            owner=self.person, target=self.person, name=u"snap-repository",
+            paths=[u"refs/heads/master"])
+        snap = self.makeSnap(git_ref=ref)
+        build = self.makeBuild(
+            snap=snap, status=BuildStatus.FULLYBUILT,
+            duration=timedelta(minutes=30))
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Snap packages snap-name
+            .*
+            Snap package information
+            Owner: Test Person
+            Distribution series: Ubuntu Shiny
+            Source: ~test-person/\\+git/snap-repository:master
             Latest builds
             Status When complete Architecture Archive
             Successfully built 30 minutes ago i386

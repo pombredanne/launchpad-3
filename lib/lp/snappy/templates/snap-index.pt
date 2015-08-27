@@ -39,6 +39,10 @@
              tal:content="distro_series/fullseriesname"/>
         </dd>
       </dl>
+      <dl id="source" tal:define="source view/source" tal:condition="source">
+        <dt>Source:</dt>
+        <dd tal:content="structure source/fmt:link"/>
+      </dl>
     </div>
 
     <h2>Latest builds</h2>

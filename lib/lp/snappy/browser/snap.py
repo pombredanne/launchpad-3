@@ -53,6 +53,16 @@ class SnapView(LaunchpadView):
     def builds(self):
         return builds_for_snap(self.context)
 
+    @property
+    def source(self):
+        if self.context.branch is not None:
+            return self.context.branch
+        elif self.context.git_repository is not None:
+            return self.context.git_repository.getRefByPath(
+                self.context.git_path)
+        else:
+            return None
+
 
 def builds_for_snap(snap):
     """A list of interesting builds.
