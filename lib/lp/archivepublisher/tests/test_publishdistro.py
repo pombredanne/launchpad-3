@@ -198,8 +198,16 @@ class TestPublishDistro(TestNativePublishingBase):
             os.path.join("%s" % distsroot, distroseries, 'Release'))
         shutil.rmtree(tmp_path)
 
+    def setUpRequireSigningKeys(self):
+        config.push('ppa-require-signing-keys', """
+            [personalpackagearchive]
+            require_signing_keys: true
+            """)
+        self.addCleanup(config.pop, 'ppa-require-signing-keys')
+
     def testForPPAWithoutSigningKey(self):
         """publish-distro skips PPAs that do not yet have a signing key."""
+        self.setUpRequireSigningKeys()
         cprov = getUtility(IPersonSet).getByName('cprov')
         pub_source = self.getPubSource(archive=cprov.archive)
         removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
@@ -232,6 +240,7 @@ class TestPublishDistro(TestNativePublishingBase):
         naked_archive = removeSecurityProxy(name16.archive)
         naked_archive.distribution = self.ubuntutest
 
+        self.setUpRequireSigningKeys()
         tac = KeyServerTac()
         tac.setUp()
         self.addCleanup(tac.tearDown)
@@ -281,6 +290,7 @@ class TestPublishDistro(TestNativePublishingBase):
             sourcename='baz', filecontent='baz', archive=private_ppa)
         self.layer.txn.commit()
 
+        self.setUpRequireSigningKeys()
         tac = KeyServerTac()
         tac.setUp()
         self.addCleanup(tac.tearDown)
