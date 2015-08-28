@@ -66,6 +66,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
@@ -2024,25 +2025,36 @@ class Archive(SQLBase):
             """, params=(status.value, self.id, BuildStatus.NEEDSBUILD.value))
 
     def _recalculateBuildVirtualization(self):
-        """Update BinaryPackageBuild.virtualized for this archive."""
+        """Update virtualized columns for this archive."""
         store = Store.of(self)
-        clauses = [
+        bpb_clauses = [
             BinaryPackageBuild.archive == self,
             BinaryPackageBuild.status == BuildStatus.NEEDSBUILD,
             ]
+        bq_clauses = bpb_clauses + [
+            BuildQueue._build_farm_job_id ==
+                BinaryPackageBuild.build_farm_job_id,
+            ]
         if self.require_virtualized:
             # We can avoid the Processor join in this case.
-            builds = store.find(BinaryPackageBuild, *clauses)
-            builds.set(virtualized=True)
+            value = True
+            proc_tables = []
+            proc_clauses = []
+            # BulkUpdate doesn't support an empty list of values.
+            store.find(BinaryPackageBuild, *bpb_clauses).set(virtualized=value)
         else:
-            update_filter = And(
-                BinaryPackageBuild.processor_id == Processor.id, *clauses)
+            value = Not(Processor.supports_nonvirtualized)
+            proc_tables = [Processor]
+            proc_clauses = [BinaryPackageBuild.processor_id == Processor.id]
             store.execute(BulkUpdate(
-                {BinaryPackageBuild.virtualized:
-                    Not(Processor.supports_nonvirtualized)},
-                table=BinaryPackageBuild, values=Processor,
-                where=update_filter))
-            store.invalidate()
+                {BinaryPackageBuild.virtualized: value},
+                table=BinaryPackageBuild, values=proc_tables,
+                where=And(*(bpb_clauses + proc_clauses))))
+        store.execute(BulkUpdate(
+            {BuildQueue.virtualized: value},
+            table=BuildQueue, values=([BinaryPackageBuild] + proc_tables),
+            where=And(*(bq_clauses + proc_clauses))))
+        store.invalidate()
 
     def enable(self):
         """See `IArchive`."""

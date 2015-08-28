@@ -359,15 +359,18 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         for build in pending_builds + [completed_build, other_build]:
             self.assertFalse(build.virtualized)
             build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
         removeSecurityProxy(archive).disable()
         removeSecurityProxy(archive).require_virtualized = True
         removeSecurityProxy(archive).enable()
         # Pending builds in the just-enabled archive are now virtualized.
         for build in pending_builds:
             self.assertTrue(build.virtualized)
+            self.assertTrue(build.buildqueue_record.virtualized)
         # Completed builds and builds in other archives are untouched.
         for build in completed_build, other_build:
             self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
 
     def test_enableArchive_nonvirt_sets_virtualized(self):
         # Enabling an archive that does not require virtualized builds
@@ -397,16 +400,20 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         for build in pending_builds + [completed_build, other_build]:
             self.assertFalse(build.virtualized)
             build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
         removeSecurityProxy(archive).disable()
         procs[0].supports_nonvirtualized = False
         removeSecurityProxy(archive).enable()
         # Pending builds in the just-enabled archive are now virtualized iff
         # their processor does not support non-virtualized builds.
         self.assertTrue(pending_builds[0].virtualized)
+        self.assertTrue(pending_builds[0].buildqueue_record.virtualized)
         self.assertFalse(pending_builds[1].virtualized)
+        self.assertFalse(pending_builds[1].buildqueue_record.virtualized)
         # Completed builds and builds in other archives are untouched.
         for build in completed_build, other_build:
             self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
 
     def test_enableArchiveAlreadyEnabled(self):
         # Enabling an already enabled Archive should raise an AssertionError.
