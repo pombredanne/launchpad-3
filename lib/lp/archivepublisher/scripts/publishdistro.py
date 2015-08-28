@@ -291,7 +291,7 @@ class PublishDistro(PublisherScript):
 
                 if archive.status == ArchiveStatus.DELETING:
                     work_done = self.deleteArchive(archive, publisher)
-                elif archive.publish:
+                elif archive.can_be_published:
                     for suite in self.options.dirty_suites:
                         distroseries, pocket = self.findSuite(
                             distribution, suite)
