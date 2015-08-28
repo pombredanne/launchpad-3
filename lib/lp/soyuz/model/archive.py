@@ -105,6 +105,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import BulkUpdate
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -2025,25 +2026,22 @@ class Archive(SQLBase):
     def _recalculateBuildVirtualization(self):
         """Update BinaryPackageBuild.virtualized for this archive."""
         store = Store.of(self)
+        clauses = [
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.NEEDSBUILD,
+            ]
         if self.require_virtualized:
             # We can avoid the Processor join in this case.
-            builds = store.find(
-                BinaryPackageBuild,
-                BinaryPackageBuild.archive == self,
-                BinaryPackageBuild.status == BuildStatus.NEEDSBUILD)
+            builds = store.find(BinaryPackageBuild, *clauses)
             builds.set(virtualized=True)
         else:
-            store.execute("""
-                UPDATE BinaryPackageBuild
-                SET virtualized = NOT Processor.supports_nonvirtualized
-                FROM Processor
-                WHERE
-                    -- insert self.id here
-                    BinaryPackageBuild.archive = %s
-                    AND BinaryPackageBuild.processor = Processor.id
-                    -- Build is in state BuildStatus.NEEDSBUILD (0)
-                    AND BinaryPackageBuild.status = %s;
-                """, params=(self.id, BuildStatus.NEEDSBUILD.value))
+            update_filter = And(
+                BinaryPackageBuild.processor_id == Processor.id, *clauses)
+            store.execute(BulkUpdate(
+                {BinaryPackageBuild.virtualized:
+                    Not(Processor.supports_nonvirtualized)},
+                table=BinaryPackageBuild, values=Processor,
+                where=update_filter))
             store.invalidate()
 
     def enable(self):
