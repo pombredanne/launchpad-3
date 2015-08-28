@@ -413,6 +413,19 @@ class Archive(SQLBase):
         return self.status == ArchiveStatus.ACTIVE
 
     @property
+    def can_be_published(self):
+        """See `IArchive`."""
+        # The explicit publish flag must be set.
+        if not self.publish:
+            return False
+        # In production configurations, PPAs can only be published once
+        # their signing key has been generated.
+        return (
+            not config.personalpackagearchive.require_signing_keys or
+            not self.is_ppa or
+            self.signing_key is not None)
+
+    @property
     def reference(self):
         template = ARCHIVE_REFERENCE_TEMPLATES.get(self.purpose)
         if template is None:
