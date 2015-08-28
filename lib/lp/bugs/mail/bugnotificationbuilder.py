@@ -215,7 +215,7 @@ class BugNotificationBuilder:
         # XXX cjwatson 2015-07-31: This is cloned-and-hacked from
         # BaseMailer; it would ultimately be better to convert bug
         # notifications to that framework.
-        if to_person.expanded_notification_footers:
+        if removeSecurityProxy(to_person).expanded_notification_footers:
             lines = []
             for key, value in headers:
                 if key.startswith('X-Launchpad-'):

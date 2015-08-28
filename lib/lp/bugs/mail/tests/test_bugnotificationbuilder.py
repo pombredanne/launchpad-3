@@ -6,16 +6,21 @@
 from datetime import datetime
 
 import pytz
+from zope.security.interfaces import Unauthorized
 
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
-from lp.testing import TestCaseWithFactory
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.registry.enums import PersonVisibility
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugNotificationBuilder(TestCaseWithFactory):
     """Test emails sent when subscribed by someone else."""
 
-    layer = ZopelessDatabaseLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Run the tests as a logged-in user.
@@ -71,9 +76,26 @@ class TestBugNotificationBuilder(TestCaseWithFactory):
         # Recipients with expanded_notification_footers receive an expanded
         # footer on messages.
         utc_now = datetime.now(pytz.UTC)
-        self.bug.owner.expanded_notification_footers = True
+        with person_logged_in(self.bug.owner):
+            self.bug.owner.expanded_notification_footers = True
         message = self.builder.build(
             'from', self.bug.owner, 'body', 'subject', utc_now, filters=[])
         self.assertIn(
             "\n-- \nLaunchpad-Notification-Type: bug\n",
             message.get_payload(decode=True))
+
+    def test_private_team(self):
+        # Recipients can be invisible private teams, as
+        # BugNotificationBuilder runs in the context of the user making
+        # the change. They work fine.
+        private_team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE, email="private@example.com")
+        random = self.factory.makePerson()
+        with person_logged_in(random):
+            self.assertRaises(
+                Unauthorized, getattr, private_team,
+                'expanded_notification_footers')
+            utc_now = datetime.now(pytz.UTC)
+            message = self.builder.build(
+                'from', private_team, 'body', 'subject', utc_now, filters=[])
+        self.assertIn("private@example.com", str(message))
