@@ -125,15 +125,17 @@ class GitHostingClient:
                 "Failed to get commit details from Git repository: %s" %
                 unicode(e))
 
-    def getMergeDiff(self, path, base, head, logger=None):
+    def getMergeDiff(self, path, base, head, prerequisite=None, logger=None):
         """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info(
                     "Requesting merge diff for %s from %s to %s" % (
                         path, base, head))
-            return self._get(
-                "/repo/%s/compare-merge/%s:%s" % (path, base, head))
+            url = "/repo/%s/compare-merge/%s:%s" % (path, base, head)
+            if prerequisite is not None:
+                url += "?sha1_prerequisite=%s" % prerequisite
+            return self._get(url)
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get merge diff from Git repository: %s" %
