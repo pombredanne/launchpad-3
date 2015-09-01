@@ -86,7 +86,7 @@ class WebhookClient:
         connection_error = None
         try:
             resp = session.send(preq, proxies=proxies, timeout=timeout)
-        except requests.ConnectionError as e:
+        except (requests.ConnectionError, requests.exceptions.ProxyError) as e:
             connection_error = str(e)
         except requests.exceptions.ReadTimeout:
             connection_error = 'Request timeout'
