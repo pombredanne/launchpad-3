@@ -19,7 +19,7 @@ from zope.component import (
 
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.mail.team import TeamMailer
+from lp.registry.mail.teammembership import TeamMembershipMailer
 from lp.services.config import config
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_email_template
@@ -49,7 +49,8 @@ def notify_invitation_to_join_team(event):
     The notification will include a link to a page in which any team admin can
     accept the invitation.
     """
-    TeamMailer.forInvitationToJoinTeam(event.member, event.team).sendAll()
+    TeamMembershipMailer.forInvitationToJoinTeam(
+        event.member, event.team).sendAll()
 
 
 @block_implicit_flushes
@@ -60,7 +61,7 @@ def notify_team_join(event):
     is pending approval. Otherwise it'll say that the person has joined the
     team and who added that person to the team.
     """
-    TeamMailer.forTeamJoin(event.person, event.team).sendAll()
+    TeamMembershipMailer.forTeamJoin(event.person, event.team).sendAll()
 
 
 def notify_mailinglist_activated(mailinglist, event):

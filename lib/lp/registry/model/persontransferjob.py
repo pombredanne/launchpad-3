@@ -44,7 +44,7 @@ from lp.registry.interfaces.persontransferjob import (
     IPersonTransferJobSource,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from lp.registry.mail.team import TeamMailer
+from lp.registry.mail.teammembership import TeamMembershipMailer
 from lp.registry.model.person import Person
 from lp.registry.personmerge import merge_people
 from lp.services.config import config
@@ -229,7 +229,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
     def run(self):
         """See `IMembershipNotificationJob`."""
         from lp.services.scripts import log
-        TeamMailer.forMembershipStatusChange(
+        TeamMembershipMailer.forMembershipStatusChange(
             self.member, self.team, self.reviewer, self.old_status,
             self.new_status, self.last_change_comment).sendAll()
         log.debug('MembershipNotificationJob sent email')

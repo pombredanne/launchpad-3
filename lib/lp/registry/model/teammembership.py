@@ -120,8 +120,8 @@ class TeamMembership(SQLBase):
     def sendSelfRenewalNotification(self):
         """See `ITeamMembership`."""
         # Circular import.
-        from lp.registry.mail.team import TeamMailer
-        TeamMailer.forSelfRenewal(
+        from lp.registry.mail.teammembership import TeamMembershipMailer
+        TeamMembershipMailer.forSelfRenewal(
             self.person, self.team, self.dateexpires).sendAll()
 
     def canChangeStatusSilently(self, user):
@@ -157,7 +157,7 @@ class TeamMembership(SQLBase):
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
         # Circular import.
-        from lp.registry.mail.team import TeamMailer
+        from lp.registry.mail.teammembership import TeamMembershipMailer
         if self.dateexpires is None:
             raise AssertionError(
                 '%s in team %s has no membership expiration date.' %
@@ -167,7 +167,7 @@ class TeamMembership(SQLBase):
             # there is nothing to do. The member will have received emails
             # from previous calls by flag-expired-memberships.py
             return
-        TeamMailer.forExpiringMembership(
+        TeamMembershipMailer.forExpiringMembership(
             self.person, self.team, self, self.dateexpires).sendAll()
 
     def setStatus(self, status, user, comment=None, silent=False):

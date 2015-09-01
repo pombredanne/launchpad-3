@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'TeamMailer',
+    'TeamMembershipMailer',
     ]
 
 from collections import OrderedDict
@@ -34,7 +34,7 @@ from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.url import urlappend
 
 
-class TeamRecipientReason(RecipientReason):
+class TeamMembershipRecipientReason(RecipientReason):
 
     @classmethod
     def forInvitation(cls, admin, team, recipient, proposed_member, **kwargs):
@@ -83,7 +83,7 @@ class TeamRecipientReason(RecipientReason):
     def __init__(self, subscriber, recipient, mail_header, reason_template,
                  subject=None, template_name=None, reply_to=None,
                  recipient_class=None):
-        super(TeamRecipientReason, self).__init__(
+        super(TeamMembershipRecipientReason, self).__init__(
             subscriber, recipient, mail_header, reason_template)
         self.subject = subject
         self.template_name = template_name
@@ -91,7 +91,7 @@ class TeamRecipientReason(RecipientReason):
         self.recipient_class = recipient_class
 
 
-class TeamMailer(BaseMailer):
+class TeamMembershipMailer(BaseMailer):
 
     app = 'registry'
 
@@ -111,7 +111,7 @@ class TeamMailer(BaseMailer):
         recipients = OrderedDict()
         for admin in member.adminmembers:
             for recipient in get_recipients(admin):
-                recipients[recipient] = TeamRecipientReason.forAdmin(
+                recipients[recipient] = TeamMembershipRecipientReason.forAdmin(
                     admin, member, recipient)
         from_addr = format_address(
             team.displayname, config.canonical.noreply_from_address)
@@ -144,9 +144,10 @@ class TeamMailer(BaseMailer):
                 template_name = "new-member-notification.txt"
                 subject = "You have been added to %s" % team.name
             for recipient in get_recipients(member):
-                recipients[recipient] = TeamRecipientReason.forNewMember(
-                    member, team, recipient, subject=subject,
-                    template_name=template_name)
+                recipients[recipient] = (
+                    TeamMembershipRecipientReason.forNewMember(
+                        member, team, recipient, subject=subject,
+                        template_name=template_name))
         # Open teams do not notify admins about new members.
         if team.membership_policy != TeamMembershipPolicy.OPEN:
             reply_to = None
@@ -177,9 +178,11 @@ class TeamMailer(BaseMailer):
                     # two notifications in that case.
                     if recipient not in recipients:
                         if recipient == team.teamowner:
-                            reason_factory = TeamRecipientReason.forOwner
+                            reason_factory = (
+                                TeamMembershipRecipientReason.forOwner)
                         else:
-                            reason_factory = TeamRecipientReason.forAdmin
+                            reason_factory = (
+                                TeamMembershipRecipientReason.forAdmin)
                         recipients[recipient] = reason_factory(
                             admin, team, recipient, subject=subject,
                             template_name=template_name, reply_to=reply_to)
@@ -240,8 +243,10 @@ class TeamMailer(BaseMailer):
                     recipient_class = "bulk"
                 else:
                     recipient_class = "personal"
-                recipients[recipient] = TeamRecipientReason.forMember(
-                    member, team, recipient, recipient_class=recipient_class)
+                recipients[recipient] = (
+                    TeamMembershipRecipientReason.forMember(
+                        member, team, recipient,
+                        recipient_class=recipient_class))
         # Don't send admin notifications for open teams: they're
         # unrestricted, so notifications on join/leave do not help the
         # admins.
@@ -251,8 +256,10 @@ class TeamMailer(BaseMailer):
                     # The new member may also be a team admin; don't send
                     # two notifications in that case.
                     if recipient not in recipients:
-                        recipients[recipient] = TeamRecipientReason.forAdmin(
-                            admin, team, recipient, recipient_class="bulk")
+                        recipients[recipient] = (
+                            TeamMembershipRecipientReason.forAdmin(
+                                admin, team, recipient,
+                                recipient_class="bulk"))
 
         extra_params = {
             "old_status": old_status,
@@ -310,7 +317,7 @@ class TeamMailer(BaseMailer):
 
         recipients = OrderedDict()
         for recipient in get_recipients(target):
-            recipients[recipient] = TeamRecipientReason.forMember(
+            recipients[recipient] = TeamMembershipRecipientReason.forMember(
                 member, team, recipient)
 
         formatter = DurationFormatterAPI(dateexpires - datetime.now(pytz.UTC))
@@ -337,7 +344,7 @@ class TeamMailer(BaseMailer):
         recipients = OrderedDict()
         for admin in team.adminmembers:
             for recipient in get_recipients(admin):
-                recipients[recipient] = TeamRecipientReason.forAdmin(
+                recipients[recipient] = TeamMembershipRecipientReason.forAdmin(
                     admin, team, recipient)
         extra_params = {"dateexpires": dateexpires.strftime("%Y-%m-%d")}
         from_addr = format_address(
@@ -351,7 +358,7 @@ class TeamMailer(BaseMailer):
                  notification_type, member, team, reviewer, membership=None,
                  extra_params={}, wrap=True, force_wrap=True):
         """See `BaseMailer`."""
-        super(TeamMailer, self).__init__(
+        super(TeamMembershipMailer, self).__init__(
             subject, template_name, recipients, from_address,
             notification_type=notification_type, wrap=wrap,
             force_wrap=force_wrap)
@@ -386,7 +393,8 @@ class TeamMailer(BaseMailer):
 
     def _getTemplateParams(self, email, recipient):
         """See `BaseMailer`."""
-        params = super(TeamMailer, self)._getTemplateParams(email, recipient)
+        params = super(TeamMembershipMailer, self)._getTemplateParams(
+            email, recipient)
         params["recipient"] = recipient.displayname
         reason, _ = self._recipients.getReason(email)
         if reason.recipient_class is not None:
