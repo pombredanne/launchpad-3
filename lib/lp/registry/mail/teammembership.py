@@ -277,8 +277,11 @@ class TeamMembershipMailer(BaseMailer):
             member, team, reviewer, extra_params=extra_params)
 
     @classmethod
-    def forExpiringMembership(cls, member, team, membership, dateexpires):
+    def forExpiringMembership(cls, member, team, dateexpires):
         """Create a mailer for warning about expiring membership."""
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member, team)
+        assert membership is not None
         if member.is_team:
             target = member.teamowner
             template_name = "membership-expiration-warning-bulk.txt"
@@ -306,8 +309,8 @@ class TeamMembershipMailer(BaseMailer):
             else:
                 for admin in admins:
                     admins_names.append(
-                        "%s <%s>" % (admin.unique_displayname,
-                                        canonical_url(admin)))
+                        "%s <%s>" % (
+                            admin.unique_displayname, canonical_url(admin)))
 
                 how_to_renew = (
                     "To prevent this membership from expiring, you should "

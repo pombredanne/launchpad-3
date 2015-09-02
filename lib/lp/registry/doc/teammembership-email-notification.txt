@@ -180,7 +180,7 @@ The same goes for approving a proposed member.
     # Remove notification of daf's membership pending approval from
     # stub.test_emails
 
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> dummy = pop_notifications()
 
     >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED,
@@ -490,7 +490,7 @@ Similarly, a notification is sent if the invitation is declined.
     # Reset stub.test_emails as we don't care about the notification triggered
     # by the addMember() call.
 
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> stub.test_emails = []
 
     >>> comment = "Landscape has nothing to do with ubuntu, unfortunately."
@@ -625,7 +625,7 @@ team's admins.
     ...     utc_now + timedelta(days=9), mark)
     >>> flush_database_updates()
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: Launchpad Beta Testers Owner <beta-admin@launchpad.net>
@@ -672,7 +672,7 @@ to renew his own membership.
     ...     utc_now + timedelta(days=9), mark)
     >>> flush_database_updates()
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: Colin Watson <colin.watson@ubuntulinux.com>
@@ -700,7 +700,7 @@ to renew his own membership.
     ----------------------------------------
 
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: Launchpad Beta Testers Owner <beta-admin@launchpad.net>
@@ -746,7 +746,7 @@ his memberhip page, where he can extend it.
     ...     utc_now + timedelta(days=9), sampleperson)
     >>> flush_database_updates()
     >>> sampleperson_on_landscape.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Landscape Developers <noreply@launchpad.net>
     To: Sample Person <test@canonical.com>
@@ -1039,6 +1039,7 @@ notification email contain subscription information.
     >>> member = factory.makePerson(
     ...     name='team-member', email='team-member@example.com')
     >>> ignored = team_one.addMember(member, owner)
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Team One ...
     To: Team-member <team-member...>
@@ -1065,6 +1066,7 @@ emails contain subscription information.
     >>> team_two = factory.makeTeam(
     ...     name='team-two', email='team-two@example.com', owner=owner)
     >>> ignored = team_one.addMember(team_two, owner, force_team_add=True)
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Team One ...
     To: Team Two <team-two...>
@@ -1085,5 +1087,3 @@ emails contain subscription information.
     You received this email because your team Team Two is the new member.
     <BLANKLINE>
     ----------------------------------------
-
-

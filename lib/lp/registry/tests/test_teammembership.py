@@ -33,6 +33,10 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.persontransferjob import (
+    IExpiringMembershipNotificationJobSource,
+    ITeamJoinNotificationJobSource,
+    )
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
     ITeamMembershipSet,
@@ -59,6 +63,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.runner import JobRunner
 from lp.services.job.tests import block_on_job
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address_for_person
@@ -282,11 +287,17 @@ class TeamParticipationTestCase(TestCaseWithFactory):
 class TestTeamParticipationQuery(TeamParticipationTestCase):
     """A test case for teammembership.test_find_team_participations."""
 
+    def runMailJobs(self):
+        with dbuser("person-transfer-job"):
+            JobRunner.fromReady(
+                getUtility(ITeamJoinNotificationJobSource)).runAll()
+
     def test_find_team_participations(self):
         # The correct team participations are found and the query count is 1.
         self.team1.addMember(self.no_priv, self.foo_bar)
         self.team2.addMember(self.no_priv, self.foo_bar)
         self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.runMailJobs()
 
         people = [self.team1, self.team2]
         with StormStatementRecorder() as recorder:
@@ -302,9 +313,12 @@ class TestTeamParticipationQuery(TeamParticipationTestCase):
         self.team1.addMember(self.no_priv, self.foo_bar)
         self.team2.addMember(self.no_priv, self.foo_bar)
         self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.runMailJobs()
 
         people = [self.foo_bar, self.team2]
         teams = [self.team1, self.team2]
+        # Repopulate Storm cache after running mail jobs.
+        [team.is_team for team in teams]
         with StormStatementRecorder() as recorder:
             people_teams = find_team_participations(people, teams)
         self.assertThat(recorder, HasQueryCount(Equals(1)))
@@ -1068,6 +1082,12 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
             self.member, self.team)
         pop_notifications()
 
+    def runMailJobs(self):
+        with dbuser("person-transfer-job"):
+            JobRunner.fromReady(
+                getUtility(IExpiringMembershipNotificationJobSource)).runAll()
+        return pop_notifications()
+
     def test_error_raised_when_no_expiration(self):
         # An exception is raised if the membership does not have an
         # expiration date.
@@ -1081,7 +1101,7 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
         removeSecurityProxy(self.tm).dateexpires = tomorrow
         self.tm.sendExpirationWarningEmail()
-        notifications = pop_notifications()
+        notifications = self.runMailJobs()
         self.assertEqual(1, len(notifications))
         message = notifications[0]
         self.assertEqual(
@@ -1093,7 +1113,7 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         yesterday = datetime.now(pytz.UTC) - timedelta(days=1)
         removeSecurityProxy(self.tm).dateexpires = yesterday
         self.tm.sendExpirationWarningEmail()
-        notifications = pop_notifications()
+        notifications = self.runMailJobs()
         self.assertEqual(0, len(notifications))
 
     def test_no_message_sent_for_non_active_users(self):
@@ -1104,7 +1124,7 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         now = datetime.now(pytz.UTC)
         removeSecurityProxy(self.tm).dateexpires = now + timedelta(days=1)
         self.tm.sendExpirationWarningEmail()
-        notifications = pop_notifications()
+        notifications = self.runMailJobs()
         self.assertEqual(0, len(notifications))
 
 

@@ -12,11 +12,17 @@ import transaction
 from zope.component import getUtility
 
 from lp.registry.interfaces.persontransferjob import (
+    IExpiringMembershipNotificationJobSource,
     IMembershipNotificationJobSource,
+    ISelfRenewalNotificationJobSource,
+    ITeamInvitationNotificationJobSource,
+    ITeamJoinNotificationJobSource,
     )
+from lp.services.config import config
 from lp.services.job.runner import JobRunner
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
+from lp.testing.dbuser import dbuser
 
 
 def pop_notifications(sort_key=None, commit=True):
@@ -130,7 +136,15 @@ def run_mail_jobs():
     # Commit the transaction to make sure that the JobRunner can find
     # the queued jobs.
     transaction.commit()
-    job_source = getUtility(IMembershipNotificationJobSource)
-    logger = DevNullLogger()
-    runner = JobRunner.fromReady(job_source, logger)
-    runner.runAll()
+    for interface in (
+            IExpiringMembershipNotificationJobSource,
+            IMembershipNotificationJobSource,
+            ISelfRenewalNotificationJobSource,
+            ITeamInvitationNotificationJobSource,
+            ITeamJoinNotificationJobSource,
+            ):
+        job_source = getUtility(interface)
+        logger = DevNullLogger()
+        with dbuser(getattr(config, interface.__name__).dbuser):
+            runner = JobRunner.fromReady(job_source, logger)
+            runner.runAll()

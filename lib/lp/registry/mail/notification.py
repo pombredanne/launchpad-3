@@ -19,12 +19,14 @@ from zope.component import (
 
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.mail.teammembership import TeamMembershipMailer
+from lp.registry.interfaces.persontransferjob import (
+    ITeamInvitationNotificationJobSource,
+    ITeamJoinNotificationJobSource,
+    )
 from lp.services.config import config
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
-from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
     format_address,
     sendmail,
@@ -36,11 +38,6 @@ from lp.services.messages.interfaces.message import (
     )
 from lp.services.webapp.publisher import canonical_url
 
-# Silence lint warnings.
-NotificationRecipientSet
-
-CC = "CC"
-
 
 @block_implicit_flushes
 def notify_invitation_to_join_team(event):
@@ -49,8 +46,8 @@ def notify_invitation_to_join_team(event):
     The notification will include a link to a page in which any team admin can
     accept the invitation.
     """
-    TeamMembershipMailer.forInvitationToJoinTeam(
-        event.member, event.team).sendAll()
+    getUtility(ITeamInvitationNotificationJobSource).create(
+        event.member, event.team)
 
 
 @block_implicit_flushes
@@ -61,7 +58,7 @@ def notify_team_join(event):
     is pending approval. Otherwise it'll say that the person has joined the
     team and who added that person to the team.
     """
-    TeamMembershipMailer.forTeamJoin(event.person, event.team).sendAll()
+    getUtility(ITeamJoinNotificationJobSource).create(event.person, event.team)
 
 
 def notify_mailinglist_activated(mailinglist, event):

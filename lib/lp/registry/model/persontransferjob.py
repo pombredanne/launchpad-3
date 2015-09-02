@@ -9,7 +9,10 @@ __all__ = [
     'PersonTransferJob',
     ]
 
+from datetime import datetime
+
 from lazr.delegates import delegate_to
+import pytz
 import simplejson
 from storm.expr import (
     And,
@@ -34,6 +37,8 @@ from lp.registry.interfaces.person import (
     ITeam,
     )
 from lp.registry.interfaces.persontransferjob import (
+    IExpiringMembershipNotificationJob,
+    IExpiringMembershipNotificationJobSource,
     IMembershipNotificationJob,
     IMembershipNotificationJobSource,
     IPersonDeactivateJob,
@@ -42,6 +47,12 @@ from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJobSource,
     IPersonTransferJob,
     IPersonTransferJobSource,
+    ISelfRenewalNotificationJob,
+    ISelfRenewalNotificationJobSource,
+    ITeamInvitationNotificationJob,
+    ITeamInvitationNotificationJobSource,
+    ITeamJoinNotificationJob,
+    ITeamJoinNotificationJobSource,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.mail.teammembership import TeamMembershipMailer
@@ -61,6 +72,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.scripts import log
 
 
 @implementer(IPersonTransferJob)
@@ -170,6 +182,17 @@ class PersonTransferJobDerived(BaseRunnableJob):
             ])
         return vars
 
+    _time_format = '%Y-%m-%d %H:%M:%S.%f'
+
+    @classmethod
+    def _serialiseDateTime(cls, dt):
+        return dt.strftime(cls._time_format)
+
+    @classmethod
+    def _deserialiseDateTime(cls, dt_str):
+        dt = datetime.strptime(dt_str, cls._time_format)
+        return dt.replace(tzinfo=pytz.UTC)
+
 
 @implementer(IMembershipNotificationJob)
 @provider(IMembershipNotificationJobSource)
@@ -228,7 +251,6 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
     def run(self):
         """See `IMembershipNotificationJob`."""
-        from lp.services.scripts import log
         TeamMembershipMailer.forMembershipStatusChange(
             self.member, self.team, self.reviewer, self.old_status,
             self.new_status, self.last_change_comment).sendAll()
@@ -321,7 +343,6 @@ class PersonMergeJob(PersonTransferJobDerived):
         from_person_name = self.from_person.name
         to_person_name = self.to_person.name
 
-        from lp.services.scripts import log
         if self.metadata.get('delete', False):
             log.debug(
                 "%s is about to delete ~%s", self.log_name,
@@ -402,7 +423,6 @@ class PersonDeactivateJob(PersonTransferJobDerived):
 
     def run(self):
         """Perform the merge."""
-        from lp.services.scripts import log
         person_name = self.person.name
         log.debug('about to deactivate ~%s', person_name)
         self.person.deactivate(validate=False, pre_deactivate=False)
@@ -415,3 +435,160 @@ class PersonDeactivateJob(PersonTransferJobDerived):
 
     def getOperationDescription(self):
         return 'deactivating ~%s' % self.person.name
+
+
+@implementer(ITeamInvitationNotificationJob)
+@provider(ITeamInvitationNotificationJobSource)
+class TeamInvitationNotificationJob(PersonTransferJobDerived):
+    """A Job that sends a notification of an invitation to join a team."""
+
+    class_job_type = PersonTransferJobType.TEAM_INVITATION_NOTIFICATION
+
+    config = config.ITeamInvitationNotificationJobSource
+
+    @classmethod
+    def create(cls, member, team):
+        if not ITeam.providedBy(team):
+            raise TypeError('team must be ITeam: %s' % repr(team))
+        return super(TeamInvitationNotificationJob, cls).create(
+            minor_person=member, major_person=team, metadata={})
+
+    @property
+    def member(self):
+        return self.minor_person
+
+    @property
+    def team(self):
+        return self.major_person
+
+    def run(self):
+        """See `ITeamInvitationNotificationJob`."""
+        TeamMembershipMailer.forInvitationToJoinTeam(
+            self.member, self.team).sendAll()
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} for invitation of "
+            "~{self.minor_person.name} to join ~{self.major_person.name}; "
+            "status={self.job.status}>").format(self=self)
+
+
+@implementer(ITeamJoinNotificationJob)
+@provider(ITeamJoinNotificationJobSource)
+class TeamJoinNotificationJob(PersonTransferJobDerived):
+    """A Job that sends a notification of a new member joining a team."""
+
+    class_job_type = PersonTransferJobType.TEAM_JOIN_NOTIFICATION
+
+    config = config.ITeamJoinNotificationJobSource
+
+    @classmethod
+    def create(cls, member, team):
+        if not ITeam.providedBy(team):
+            raise TypeError('team must be ITeam: %s' % repr(team))
+        return super(TeamJoinNotificationJob, cls).create(
+            minor_person=member, major_person=team, metadata={})
+
+    @property
+    def member(self):
+        return self.minor_person
+
+    @property
+    def team(self):
+        return self.major_person
+
+    def run(self):
+        """See `ITeamJoinNotificationJob`."""
+        TeamMembershipMailer.forTeamJoin(self.member, self.team).sendAll()
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} for "
+            "~{self.minor_person.name} joining ~{self.major_person.name}; "
+            "status={self.job.status}>").format(self=self)
+
+
+@implementer(IExpiringMembershipNotificationJob)
+@provider(IExpiringMembershipNotificationJobSource)
+class ExpiringMembershipNotificationJob(PersonTransferJobDerived):
+    """A Job that sends a warning about expiring membership."""
+
+    class_job_type = PersonTransferJobType.EXPIRING_MEMBERSHIP_NOTIFICATION
+
+    config = config.IExpiringMembershipNotificationJobSource
+
+    @classmethod
+    def create(cls, member, team, dateexpires):
+        if not ITeam.providedBy(team):
+            raise TypeError('team must be ITeam: %s' % repr(team))
+        metadata = {
+            'dateexpires': cls._serialiseDateTime(dateexpires),
+            }
+        return super(ExpiringMembershipNotificationJob, cls).create(
+            minor_person=member, major_person=team, metadata=metadata)
+
+    @property
+    def member(self):
+        return self.minor_person
+
+    @property
+    def team(self):
+        return self.major_person
+
+    @property
+    def dateexpires(self):
+        return self._deserialiseDateTime(self.metadata['dateexpires'])
+
+    def run(self):
+        """See `IExpiringMembershipNotificationJob`."""
+        TeamMembershipMailer.forExpiringMembership(
+            self.member, self.team, self.dateexpires).sendAll()
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} for upcoming expiry of "
+            "~{self.minor_person.name} from ~{self.major_person.name}; "
+            "status={self.job.status}>").format(self=self)
+
+
+@implementer(ISelfRenewalNotificationJob)
+@provider(ISelfRenewalNotificationJobSource)
+class SelfRenewalNotificationJob(PersonTransferJobDerived):
+    """A Job that sends a notification of a self-renewal."""
+
+    class_job_type = PersonTransferJobType.SELF_RENEWAL_NOTIFICATION
+
+    config = config.ISelfRenewalNotificationJobSource
+
+    @classmethod
+    def create(cls, member, team, dateexpires):
+        if not ITeam.providedBy(team):
+            raise TypeError('team must be ITeam: %s' % repr(team))
+        metadata = {
+            'dateexpires': cls._serialiseDateTime(dateexpires),
+            }
+        return super(SelfRenewalNotificationJob, cls).create(
+            minor_person=member, major_person=team, metadata=metadata)
+
+    @property
+    def member(self):
+        return self.minor_person
+
+    @property
+    def team(self):
+        return self.major_person
+
+    @property
+    def dateexpires(self):
+        return self._deserialiseDateTime(self.metadata['dateexpires'])
+
+    def run(self):
+        """See `ISelfRenewalNotificationJob`."""
+        TeamMembershipMailer.forSelfRenewal(
+            self.member, self.team, self.dateexpires).sendAll()
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} for self-renewal of "
+            "~{self.minor_person.name} in ~{self.major_person.name}; "
+            "status={self.job.status}>").format(self=self)

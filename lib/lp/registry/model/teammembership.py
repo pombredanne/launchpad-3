@@ -35,7 +35,9 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.interfaces.persontransferjob import (
+    IExpiringMembershipNotificationJobSource,
     IMembershipNotificationJobSource,
+    ISelfRenewalNotificationJobSource,
     )
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import (
@@ -119,10 +121,8 @@ class TeamMembership(SQLBase):
 
     def sendSelfRenewalNotification(self):
         """See `ITeamMembership`."""
-        # Circular import.
-        from lp.registry.mail.teammembership import TeamMembershipMailer
-        TeamMembershipMailer.forSelfRenewal(
-            self.person, self.team, self.dateexpires).sendAll()
+        getUtility(ISelfRenewalNotificationJobSource).create(
+            self.person, self.team, self.dateexpires)
 
     def canChangeStatusSilently(self, user):
         """Ensure that the user is in the Launchpad Administrators group.
@@ -156,8 +156,6 @@ class TeamMembership(SQLBase):
 
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
-        # Circular import.
-        from lp.registry.mail.teammembership import TeamMembershipMailer
         if self.dateexpires is None:
             raise AssertionError(
                 '%s in team %s has no membership expiration date.' %
@@ -167,8 +165,8 @@ class TeamMembership(SQLBase):
             # there is nothing to do. The member will have received emails
             # from previous calls by flag-expired-memberships.py
             return
-        TeamMembershipMailer.forExpiringMembership(
-            self.person, self.team, self, self.dateexpires).sendAll()
+        getUtility(IExpiringMembershipNotificationJobSource).create(
+            self.person, self.team, self.dateexpires)
 
     def setStatus(self, status, user, comment=None, silent=False):
         """See `ITeamMembership`."""
