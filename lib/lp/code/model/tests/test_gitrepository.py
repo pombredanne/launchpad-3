@@ -749,7 +749,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
             notify(ObjectModifiedEvent(
                 repository, repository_before_modification, ["name"],
                 user=repository.owner))
-        with dbuser("branchscanner"):
+        with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
             JobRunner.fromReady(
                 getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
         self.assertEqual(1, len(stub.test_emails))
