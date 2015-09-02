@@ -95,7 +95,7 @@ previous one.  The size limit is one of the following:
   * Send the entire diff
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
+    >>> from lp.code.interfaces.branch import IBranch
     >>> personset = getUtility(IPersonSet)
 
     >>> def subscribe_user_by_email(branch, email, level, size, level2):
@@ -424,12 +424,14 @@ Resubscribe our test user.
     >>> from lp.code.interfaces.branchjob import IBranchModifiedMailJobSource
     >>> from lp.services.config import config
     >>> from lp.services.job.runner import JobRunner
+    >>> from lp.services.log.logger import DevNullLogger
     >>> from lp.testing.dbuser import dbuser
 
     >>> def run_modified_mail_jobs():
     ...     job_source = getUtility(IBranchModifiedMailJobSource)
+    ...     logger = DevNullLogger()
     ...     with dbuser(config.IBranchModifiedMailJobSource.dbuser):
-    ...         JobRunner.fromReady(job_source).runAll()
+    ...         JobRunner.fromReady(job_source, logger=logger).runAll()
 
     >>> login('test@canonical.com')
     >>> before_modification = Snapshot(branch, providing=IBranch)
