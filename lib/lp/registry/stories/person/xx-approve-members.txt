@@ -47,6 +47,7 @@ Person's. A comment is also sent to the applying users and the team admins.
     ...
     Mark Shuttleworth said:
      Thanks for your interest
+    ...
 
 As we can see, Andrew is now listed among the active members and Sample Person
 as an inactive one.
@@ -74,4 +75,3 @@ And now we see that there are no pending members left.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-
