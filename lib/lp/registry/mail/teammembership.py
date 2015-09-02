@@ -118,7 +118,7 @@ class TeamMembershipMailer(BaseMailer):
         subject = "Invitation for %s to join" % member.name
         return cls(
             subject, "membership-invitation.txt", recipients, from_addr,
-            "membership-invitation", member, team, membership.proposed_by,
+            "team-membership-invitation", member, team, membership.proposed_by,
             membership=membership)
 
     @classmethod
@@ -129,7 +129,7 @@ class TeamMembershipMailer(BaseMailer):
         assert membership is not None
         subject = None
         template_name = None
-        notification_type = "new-member"
+        notification_type = "team-membership-new"
         recipients = OrderedDict()
         reviewer = membership.proposed_by
         if reviewer != member and membership.status in [
@@ -167,7 +167,7 @@ class TeamMembershipMailer(BaseMailer):
                 else:
                     reply_to = member.preferredemail.email
                     template_name = "pending-membership-approval.txt"
-                notification_type = "pending-membership-approval"
+                notification_type = "team-membership-pending"
                 subject = "%s wants to join" % member.name
             else:
                 raise AssertionError(
@@ -196,17 +196,20 @@ class TeamMembershipMailer(BaseMailer):
     def forMembershipStatusChange(cls, member, team, reviewer,
                                   old_status, new_status, last_change_comment):
         """Create a mailer for a membership status change."""
-        notification_type = 'membership-statuschange'
+        template_name = 'membership-statuschange'
+        notification_type = 'team-membership-change'
         subject = (
             'Membership change: %(member)s in %(team)s' %
             {'member': member.name, 'team': team.name})
         if new_status == TeamMembershipStatus.EXPIRED:
-            notification_type = 'membership-expired'
+            template_name = 'membership-expired'
+            notification_type = 'team-membership-expired'
             subject = '%s expired from team' % member.name
         elif (new_status == TeamMembershipStatus.APPROVED and
             old_status != TeamMembershipStatus.ADMIN):
             if old_status == TeamMembershipStatus.INVITED:
-                notification_type = 'membership-invitation-accepted'
+                template_name = 'membership-invitation-accepted'
+                notification_type = 'team-membership-invitation-accepted'
                 subject = (
                     'Invitation to %s accepted by %s' %
                     (member.name, reviewer.name))
@@ -215,7 +218,8 @@ class TeamMembershipMailer(BaseMailer):
             else:
                 subject = '%s added by %s' % (member.name, reviewer.name)
         elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
-            notification_type = 'membership-invitation-declined'
+            template_name = 'membership-invitation-declined'
+            notification_type = 'team-membership-invitation-declined'
             subject = (
                 'Invitation to %s declined by %s' %
                 (member.name, reviewer.name))
@@ -228,7 +232,7 @@ class TeamMembershipMailer(BaseMailer):
         else:
             # Use the default template and subject.
             pass
-        template_name = notification_type + "-%(recipient_class)s.txt"
+        template_name += "-%(recipient_class)s.txt"
 
         if last_change_comment:
             comment = "\n%s said:\n %s\n" % (
@@ -331,7 +335,7 @@ class TeamMembershipMailer(BaseMailer):
             team.displayname, config.canonical.noreply_from_address)
         return cls(
             subject, template_name, recipients, from_addr,
-            "membership-expiration-warning", member, team,
+            "team-membership-expiration-warning", member, team,
             membership.proposed_by, membership=membership,
             extra_params=extra_params, wrap=False, force_wrap=False)
 
@@ -351,7 +355,7 @@ class TeamMembershipMailer(BaseMailer):
             team.displayname, config.canonical.noreply_from_address)
         return cls(
             subject, template_name, recipients, from_addr,
-            "membership-member-renewed", member, team, None,
+            "team-membership-renewed", member, team, None,
             extra_params=extra_params)
 
     def __init__(self, subject, template_name, recipients, from_address,

@@ -90,7 +90,7 @@ generates a notification email only to Ubuntu Team administrators.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
     Reply-To: robertc@robertcollins.net
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: pending-membership-approval
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: lifeless wants to join
     <BLANKLINE>
     Robert Collins (lifeless) wants to be a member of Ubuntu Team (ubuntu-
@@ -109,7 +109,7 @@ generates a notification email only to Ubuntu Team administrators.
     To: Mark Shuttleworth <mark@example.com>
     Reply-To: robertc@robertcollins.net
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
-    X-Launchpad-Notification-Type: pending-membership-approval
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: lifeless wants to join
     ...
     You received this email because you are the owner of the Ubuntu Team team.
@@ -140,7 +140,7 @@ job now.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: lifeless declined by mark
     <BLANKLINE>
     The membership status of Robert Collins (lifeless) in the team Ubuntu
@@ -156,7 +156,7 @@ job now.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Robert Collins <robertc@robertcollins.net>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: lifeless declined by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -198,7 +198,7 @@ The same goes for approving a proposed member.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf approved by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -216,7 +216,7 @@ The same goes for approving a proposed member.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Dafydd Harries <daf@canonical.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf approved by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -248,7 +248,7 @@ The same for deactivating a membership.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf deactivated by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -263,7 +263,7 @@ The same for deactivating a membership.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Dafydd Harries <daf@canonical.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf deactivated by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -294,7 +294,7 @@ message sent.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
     Reply-To: mark@example.com
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: pending-membership-approval
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: admins wants to join
     <BLANKLINE>
     Mark Shuttleworth (mark) wants to make Launchpad Administrators
@@ -313,7 +313,7 @@ message sent.
     To: Mark Shuttleworth <mark@example.com>
     Reply-To: mark@example.com
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
-    X-Launchpad-Notification-Type: pending-membership-approval
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: admins wants to join
      ...
     You received this email because you are the owner of the Ubuntu Team team.
@@ -342,7 +342,7 @@ Now, the emails have been sent.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Marilize Coetzee <marilize@hbd.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: You have been added to ubuntu-team
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
@@ -360,7 +360,7 @@ Now, the emails have been sent.
         Foo Bar <foo.bar@canonical.com>,
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: marilize joined ubuntu-team
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
@@ -377,7 +377,7 @@ Now, the emails have been sent.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: marilize joined ubuntu-team
       ...
     You received this email because you are the owner of the Ubuntu Team team.
@@ -401,7 +401,7 @@ membership will only be activated if they accept the invitation.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-mirror-admins)
-    X-Launchpad-Notification-Type: membership-invitation
+    X-Launchpad-Notification-Type: team-membership-invitation
     Subject: Invitation for ubuntu-mirror-admins to join
     <BLANKLINE>
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
@@ -443,7 +443,7 @@ team.
         Foo Bar <foo.bar@canonical.com>,
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-invitation-accepted
+    X-Launchpad-Notification-Type: team-membership-invitation-accepted
     Subject: Invitation to ubuntu-mirror-admins accepted by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has accepted the invitation to make Mirror
@@ -463,7 +463,7 @@ team.
     To: Karl Tilbury <karl@canonical.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team) @ubuntu-mirror-admins
-    X-Launchpad-Notification-Type: membership-invitation-accepted
+    X-Launchpad-Notification-Type: team-membership-invitation-accepted
     Subject: Invitation to ubuntu-mirror-admins accepted by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has accepted the invitation to make Mirror
@@ -509,7 +509,7 @@ Similarly, a notification is sent if the invitation is declined.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-invitation-declined
+    X-Launchpad-Notification-Type: team-membership-invitation-declined
     Subject: Invitation to landscape-developers declined by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has declined the invitation to make Landscape
@@ -528,7 +528,7 @@ Similarly, a notification is sent if the invitation is declined.
     To: Guilherme Salgado <guilherme.salgado@canonical.com>,
         Sample Person <test@canonical.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team) @landscape-developers
-    X-Launchpad-Notification-Type: membership-invitation-declined
+    X-Launchpad-Notification-Type: team-membership-invitation-declined
     Subject: Invitation to landscape-developers declined by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has declined the invitation to make Landscape
@@ -561,7 +561,7 @@ passing force_team_add=True to the addMember() method.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Foo Bar <foo.bar@canonical.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team) @launchpad
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: launchpad joined ubuntu-team
      ...
     You received this email because your team Launchpad Developers is the
@@ -574,7 +574,7 @@ passing force_team_add=True to the addMember() method.
         Colin Watson <colin.watson@ubuntulinux.com>,
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: launchpad joined ubuntu-team
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
@@ -591,7 +591,7 @@ passing force_team_add=True to the addMember() method.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: launchpad joined ubuntu-team
      ...
     You received this email because you are the owner of the Ubuntu Team team.
@@ -631,7 +631,7 @@ team's admins.
     To: Launchpad Beta Testers Owner <beta-admin@launchpad.net>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
                                    @launchpad-beta-testers
-    X-Launchpad-Notification-Type: membership-expiration-warning
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., 9 days from now, the membership
@@ -677,7 +677,7 @@ to renew his own membership.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Colin Watson <colin.watson@ubuntulinux.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-expiration-warning
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., 9 days from now, your membership
@@ -706,7 +706,7 @@ to renew his own membership.
     To: Launchpad Beta Testers Owner <beta-admin@launchpad.net>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
                                    @launchpad-beta-testers
-    X-Launchpad-Notification-Type: membership-expiration-warning
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., 9 days from now, the membership
@@ -751,7 +751,7 @@ his memberhip page, where he can extend it.
     From: Landscape Developers <noreply@launchpad.net>
     To: Sample Person <test@canonical.com>
     X-Launchpad-Message-Rationale: Member (landscape-developers)
-    X-Launchpad-Notification-Type: membership-expiration-warning
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: Your membership in landscape-developers is about to expire
     <BLANKLINE>
     On ..., 9 days from now, your membership
@@ -812,7 +812,7 @@ notification is sent to all team admins.
     From: Mirror Administrators <noreply@launchpad.net>
     To: Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-mirror-admins)
-    X-Launchpad-Notification-Type: membership-member-renewed
+    X-Launchpad-Notification-Type: team-membership-renewed
     Subject: karl extended their membership
     <BLANKLINE>
     Karl Tilbury (karl) renewed their own membership in the Mirror
@@ -869,7 +869,7 @@ email notification.
         Jeff Waugh <jeff.waugh@ubuntulinux.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: cprov made admin by mark
     <BLANKLINE>
     The membership status of Celso Providelo (cprov) in the team Ubuntu Team
@@ -884,7 +884,7 @@ email notification.
     From: Ubuntu Team <noreply@launchpad.net>
     To: Celso Providelo <celso.providelo@canonical.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: cprov made admin by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -916,7 +916,7 @@ will only be sent to the team administrators.
         Foo Bar <foo.bar@canonical.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: Membership change: jdub in ubuntu-team
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
@@ -950,7 +950,7 @@ wouldn't make sense to the members of the team reading it.
         Colin Watson <colin.watson@ubuntulinux.com>,
         Foo Bar <foo.bar@canonical.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: ubuntu-mirror-admins deactivated by mark
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
@@ -965,7 +965,7 @@ wouldn't make sense to the members of the team reading it.
     To: Karl Tilbury <karl@canonical.com>,
         Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team) @ubuntu-mirror-admins
-    X-Launchpad-Notification-Type: membership-statuschange
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: ubuntu-mirror-admins deactivated by mark
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
@@ -1043,7 +1043,7 @@ notification email contain subscription information.
     From: Team One ...
     To: Team-member <team-member...>
     X-Launchpad-Message-Rationale: Member (team-one)
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: You have been added to team-one
     <BLANKLINE>
     Team-owner (team-owner) added you as a member of Team One (team-one).
@@ -1069,7 +1069,7 @@ emails contain subscription information.
     From: Team One ...
     To: Team Two <team-two...>
     X-Launchpad-Message-Rationale: Member (team-one) @team-two
-    X-Launchpad-Notification-Type: new-member
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: team-two joined team-one
     <BLANKLINE>
     Team-owner (team-owner) added Team Two (team-two) (which you are a
