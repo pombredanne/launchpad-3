@@ -56,7 +56,10 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.githosting import IGitHostingClient
-from lp.code.interfaces.gitjob import IGitRefScanJobSource
+from lp.code.interfaces.gitjob import (
+    IGitRefScanJobSource,
+    IGitRepositoryModifiedMailJobSource,
+    )
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
@@ -746,7 +749,9 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
             notify(ObjectModifiedEvent(
                 repository, repository_before_modification, ["name"],
                 user=repository.owner))
-        transaction.commit()
+        with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
+            JobRunner.fromReady(
+                getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
         self.assertEqual(1, len(stub.test_emails))
         message = email.message_from_string(stub.test_emails[0][2])
         body = message.get_payload(decode=True)

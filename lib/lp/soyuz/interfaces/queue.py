@@ -355,7 +355,7 @@ class IPackageUpload(Interface):
     @export_write_operation()
     @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def acceptFromQueue(logger=None, dry_run=False, user=None):
+    def acceptFromQueue(user=None):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
@@ -366,7 +366,7 @@ class IPackageUpload(Interface):
         comment=TextLine(title=_("Rejection comment"), required=False))
     @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def rejectFromQueue(user, logger=None, dry_run=False, comment=None):
+    def rejectFromQueue(user, comment=None):
         """Call setRejected, do a syncUpdate, and send notification email."""
 
     def realiseUpload(logger=None):
