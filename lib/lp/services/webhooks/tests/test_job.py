@@ -16,6 +16,7 @@ from httmock import (
     )
 from pytz import utc
 import requests
+import requests.exceptions
 from storm.store import Store
 from testtools import TestCase
 from testtools.matchers import (
@@ -210,6 +211,19 @@ class TestWebhookClient(TestCase):
             MatchesDict({
                 'request': self.request_matcher,
                 'connection_error': Equals('Connection refused'),
+                }))
+        self.assertEqual([], reqs)
+
+    def test_timeout_error(self):
+        # Attempts that don't return within the timeout have a
+        # connection_error rather than a response.
+        reqs, result = self.sendToWebhook(
+            raises=requests.exceptions.ReadTimeout())
+        self.assertThat(
+            result,
+            MatchesDict({
+                'request': self.request_matcher,
+                'connection_error': Equals('Request timeout'),
                 }))
         self.assertEqual([], reqs)
 
