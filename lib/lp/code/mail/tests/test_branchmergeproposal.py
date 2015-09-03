@@ -32,6 +32,7 @@ from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.database.interfaces import IStore
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
@@ -135,7 +136,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
-        reviewer_id = mailer._format_user_address(reviewer)
+        reviewer_id = format_address_for_person(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
 
@@ -284,7 +285,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         ctrl = mailer.generateEmail(bmp.registrant.preferredemail.email,
                                     bmp.registrant)
         reviewer = request.recipient
-        reviewer_id = mailer._format_user_address(reviewer)
+        reviewer_id = format_address_for_person(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_team_reviewers(self):
@@ -297,7 +298,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         ctrl = mailer.generateEmail(subscriber.preferredemail.email,
                                     subscriber)
         reviewer = bmp.target_branch.owner
-        reviewer_id = mailer._format_user_address(reviewer)
+        reviewer_id = format_address_for_person(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_people_with_hidden_addresses(self):
@@ -557,7 +558,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             request, request.merge_proposal, requester)
         ctrl = mailer.generateEmail(request.recipient.preferredemail.email,
                                     request.recipient)
-        recipient_addr = mailer._format_user_address(request.recipient)
+        recipient_addr = format_address_for_person(request.recipient)
         self.assertEqual([recipient_addr], ctrl.to_addrs)
 
     def test_forReviewRequestMessageId(self):

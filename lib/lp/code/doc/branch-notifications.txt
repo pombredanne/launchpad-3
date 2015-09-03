@@ -421,6 +421,15 @@ Resubscribe our test user.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.code.interfaces.branchjob import IBranchModifiedMailJobSource
+    >>> from lp.services.config import config
+    >>> from lp.services.job.runner import JobRunner
+    >>> from lp.testing.dbuser import dbuser
+
+    >>> def run_modified_mail_jobs():
+    ...     job_source = getUtility(IBranchModifiedMailJobSource)
+    ...     with dbuser(config.IBranchModifiedMailJobSource.dbuser):
+    ...         JobRunner.fromReady(job_source).runAll()
 
     >>> login('test@canonical.com')
     >>> before_modification = Snapshot(branch, providing=IBranch)
@@ -433,6 +442,7 @@ names just now, we'll pass them through anyway
     >>> notify(ObjectModifiedEvent(branch,
     ...                               before_modification,
     ...                               ['whiteboard']))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -482,6 +492,7 @@ something like this:
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -521,6 +532,7 @@ must also handle the unicode.
     >>> updated_fields = ['whiteboard']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -563,6 +575,7 @@ Login as an admin user so we can alter the branch.
     >>> updated_fields = ['whiteboard']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)

@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from datetime import datetime
 import doctest
 from itertools import chain
@@ -39,6 +40,7 @@ from zope.app.testing.functional import (
     SimpleCookie,
     )
 from zope.component import getUtility
+from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser
@@ -52,6 +54,7 @@ from lp.services.oauth.interfaces import (
     OAUTH_REALM,
     )
 from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlsplit
@@ -61,7 +64,9 @@ from lp.testing import (
     login,
     login_person,
     logout,
+    person_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import PageTestLayer
 from lp.testing.systemdocs import (
@@ -754,6 +759,26 @@ def setupRosettaExpertBrowser():
     return setupBrowser(auth='Basic re@ex.com:test')
 
 
+@contextmanager
+def permissive_security_policy(dbuser_name=None):
+    """Context manager to run code with a permissive security policy.
+
+    This is just enough to run code such as `BaseMailer` that normally
+    expects to be called only from environments that use a permissive
+    security policy, such as jobs or scripts.
+    """
+    try:
+        old_policy = setSecurityPolicy(LaunchpadPermissiveSecurityPolicy)
+        if dbuser_name is not None:
+            dbuser_context = dbuser(dbuser_name)
+        else:
+            dbuser_context = contextmanager([None].__iter__)
+        with person_logged_in(ANONYMOUS), dbuser_context:
+            yield
+    finally:
+        setSecurityPolicy(old_policy)
+
+
 def setUpGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller()
@@ -794,6 +819,7 @@ def setUpGlobs(test):
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['permissive_security_policy'] = permissive_security_policy
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['print_action_links'] = print_action_links
     test.globs['print_errors'] = print_errors
