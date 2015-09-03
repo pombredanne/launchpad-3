@@ -83,10 +83,15 @@ class WebhookClient:
                 'body': preq.body,
                 },
             }
+        connection_error = None
         try:
             resp = session.send(preq, proxies=proxies, timeout=timeout)
-        except requests.ConnectionError as e:
-            result['connection_error'] = str(e)
+        except (requests.ConnectionError, requests.exceptions.ProxyError) as e:
+            connection_error = str(e)
+        except requests.exceptions.ReadTimeout:
+            connection_error = 'Request timeout'
+        if connection_error is not None:
+            result['connection_error'] = connection_error
             return result
         # If there was a request error, try to interpret any Squid
         # error.
