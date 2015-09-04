@@ -22,7 +22,7 @@
   </metal:side>
 
   <metal:heading fill-slot="heading">
-    <h1 tal:content="context/name"/>
+    <h1 tal:replace="structure view/name_widget"/>
   </metal:heading>
 
   <div metal:fill-slot="main">
@@ -30,18 +30,22 @@
     <div class="two-column-list">
       <dl id="owner">
         <dt>Owner:</dt>
-        <dd tal:content="structure context/owner/fmt:link"/>
+        <dd tal:content="structure view/person_picker"/>
       </dl>
       <dl id="distro_series">
         <dt>Distribution series:</dt>
         <dd tal:define="distro_series context/distro_series">
           <a tal:attributes="href distro_series/fmt:url"
              tal:content="distro_series/fullseriesname"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
       <dl id="source" tal:define="source view/source" tal:condition="source">
         <dt>Source:</dt>
-        <dd tal:content="structure source/fmt:link"/>
+        <dd>
+          <a tal:replace="structure source/fmt:link"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
       </dl>
     </div>
 

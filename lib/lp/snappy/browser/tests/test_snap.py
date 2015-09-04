@@ -10,18 +10,31 @@ from datetime import (
     timedelta,
     )
 
+from fixtures import FakeLogger
+from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
+from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
-from lp.snappy.browser.snap import SnapView
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.snappy.browser.snap import (
+    SnapAdminView,
+    SnapEditView,
+    SnapView,
+    )
 from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     BrowserTestCase,
+    login,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     time_counter,
@@ -29,6 +42,15 @@ from lp.testing import (
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    )
+from lp.testing.matchers import (
+    MatchesPickerText,
+    MatchesTagText,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
     )
 from lp.testing.publication import test_traverse
 
@@ -53,6 +75,184 @@ class TestSnapNavigation(TestCaseWithFactory):
         obj, _, _ = test_traverse(
             "http://launchpad.dev/~%s/+snap/%s" % (snap.owner.name, snap.name))
         self.assertEqual(snap, obj)
+
+
+class TestSnapAdminView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapAdminView, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FakeLogger())
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+    def test_unauthorized(self):
+        # A non-admin user cannot administer a snap package.
+        login_person(self.person)
+        snap = self.factory.makeSnap(registrant=self.person)
+        snap_url = canonical_url(snap)
+        browser = self.getViewBrowser(snap, user=self.person)
+        self.assertRaises(
+            LinkNotFoundError, browser.getLink, "Administer snap package")
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser, snap_url + "/+admin",
+            user=self.person)
+
+    def test_admin_snap(self):
+        # Admins can change require_virtualized.
+        login("admin@canonical.com")
+        commercial_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        login_person(self.person)
+        snap = self.factory.makeSnap(registrant=self.person)
+        self.assertTrue(snap.require_virtualized)
+        browser = self.getViewBrowser(snap, user=commercial_admin)
+        browser.getLink("Administer snap package").click()
+        browser.getControl("Require virtualized builders").selected = False
+        browser.getControl("Update snap package").click()
+        login_person(self.person)
+        self.assertFalse(snap.require_virtualized)
+
+    def test_admin_snap_sets_date_last_modified(self):
+        # Administering a snap package sets the date_last_modified property.
+        login("admin@canonical.com")
+        commercial_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        login_person(self.person)
+        date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
+        snap = self.factory.makeSnap(
+            registrant=self.person, date_created=date_created)
+        login_person(commercial_admin)
+        view = SnapAdminView(snap, LaunchpadTestRequest())
+        view.initialize()
+        view.request_action.success({"require_virtualized": False})
+        self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
+
+
+class TestSnapEditView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapEditView, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FakeLogger())
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+    def test_edit_snap(self):
+        archive = self.factory.makeArchive()
+        old_series = self.factory.makeDistroSeries(
+            distribution=archive.distribution, status=SeriesStatus.CURRENT)
+        old_branch = self.factory.makeAnyBranch()
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, distroseries=old_series,
+            branch=old_branch)
+        self.factory.makeTeam(
+            name="new-team", displayname="New Team", members=[self.person])
+        new_series = self.factory.makeDistroSeries(
+            distribution=archive.distribution, status=SeriesStatus.DEVELOPMENT)
+        [new_git_ref] = self.factory.makeGitRefs()
+
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Owner").value = ["new-team"]
+        browser.getControl("Name").value = "new-name"
+        browser.getControl(name="field.distro_series").value = [
+            str(new_series.id)]
+        browser.getControl("Git", index=0).click()
+        browser.getControl("Git repository").value = (
+            new_git_ref.repository.identity)
+        browser.getControl("Git branch path").value = new_git_ref.path
+        browser.getControl("Update snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("new-name\nEdit", extract_text(content.h1))
+        self.assertThat("New Team", MatchesPickerText(content, "edit-owner"))
+        self.assertThat(
+            "Distribution series:\n%s\nEdit snap package" %
+            new_series.fullseriesname,
+            MatchesTagText(content, "distro_series"))
+        self.assertThat(
+            "Source:\n%s\nEdit snap package" % new_git_ref.display_name,
+            MatchesTagText(content, "source"))
+
+    def test_edit_snap_sets_date_last_modified(self):
+        # Editing a snap package sets the date_last_modified property.
+        date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
+        snap = self.factory.makeSnap(
+            registrant=self.person, date_created=date_created)
+        with person_logged_in(self.person):
+            view = SnapEditView(snap, LaunchpadTestRequest())
+            view.initialize()
+            view.request_action.success({
+                "owner": snap.owner,
+                "name": u"changed",
+                "distro_series": snap.distro_series,
+                })
+        self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
+
+    def test_edit_snap_already_exists(self):
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, name=u"one")
+        self.factory.makeSnap(
+            registrant=self.person, owner=self.person, name=u"two")
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Name").value = "two"
+        browser.getControl("Update snap package").click()
+        self.assertEqual(
+            "There is already a snap package owned by Test Person with this "
+            "name.",
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
+
+class TestSnapDeleteView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapDeleteView, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+    def test_unauthorized(self):
+        # A user without edit access cannot delete a snap package.
+        self.useFixture(FakeLogger())
+        snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
+        snap_url = canonical_url(snap)
+        other_person = self.factory.makePerson()
+        browser = self.getViewBrowser(snap, user=other_person)
+        self.assertRaises(
+            LinkNotFoundError, browser.getLink, "Delete snap package")
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser, snap_url + "/+delete",
+            user=other_person)
+
+    def test_delete_snap_without_builds(self):
+        # A snap package without builds can be deleted.
+        self.useFixture(FakeLogger())
+        snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
+        snap_url = canonical_url(snap)
+        owner_url = canonical_url(self.person)
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Delete snap package").click()
+        browser.getControl("Delete snap package").click()
+        self.assertEqual(owner_url, browser.url)
+        self.assertRaises(NotFound, browser.open, snap_url)
+
+    def test_delete_snap_with_builds(self):
+        # A snap package with builds cannot be deleted.
+        snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
+        self.factory.makeSnapBuild(snap=snap)
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Delete snap package").click()
+        self.assertIn("This snap package cannot be deleted", browser.contents)
+        self.assertRaises(
+            LookupError, browser.getControl, "Delete snap package")
 
 
 class TestSnapView(BrowserTestCase):
