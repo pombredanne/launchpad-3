@@ -75,10 +75,6 @@
             <dt>Urgency:<sup>*</sup></dt>
             <dd tal:content="current/urgency/title"/>
           </dl>
-          <dl style="clear:both">
-            <dt>Component:<sup>*</sup></dt>
-            <dd tal:content="current/component/name"/>
-          </dl>
           <dl>
             <dt>Architectures:<sup>*</sup></dt>
             <dd tal:content="current/architecturehintlist"/>
