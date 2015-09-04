@@ -1,10 +1,7 @@
 Queue Notify
 ============
 
-PackageUpload has a notify() method to send emails. We need to be logged
-into the security model in order to get any further.
-
-    >>> login('foo.bar@canonical.com')
+PackageUpload has a notify() method to send emails.
 
 Get a packageupload object for netapplet, which has a relatively intact
 set of supporting sample data.  It has rows in distribution,
