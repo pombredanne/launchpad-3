@@ -22,7 +22,7 @@
   </metal:side>
 
   <metal:heading fill-slot="heading">
-    <h1 tal:replace="structure view/name_widget"/>
+    <h1 tal:content="context/name"/>
   </metal:heading>
 
   <div metal:fill-slot="main">

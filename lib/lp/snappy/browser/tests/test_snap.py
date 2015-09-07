@@ -169,7 +169,7 @@ class TestSnapEditView(BrowserTestCase):
         browser.getControl("Update snap package").click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual("new-name\nEdit", extract_text(content.h1))
+        self.assertEqual("new-name", extract_text(content.h1))
         self.assertThat("New Team", MatchesPickerText(content, "edit-owner"))
         self.assertThat(
             "Distribution series:\n%s\nEdit snap package" %

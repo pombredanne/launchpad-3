@@ -26,10 +26,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.lazrjs import (
-    InlinePersonEditPickerWidget,
-    TextLineEditorWidget,
-    )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.enums import VCSType
@@ -105,13 +102,6 @@ class SnapView(LaunchpadView):
     @property
     def builds(self):
         return builds_for_snap(self.context)
-
-    @property
-    def name_widget(self):
-        name = ISnap['name']
-        title = "Edit the snap package name"
-        return TextLineEditorWidget(
-            self.context, name, title, 'h1', max_width='95%', truncate_lines=1)
 
     @property
     def person_picker(self):
