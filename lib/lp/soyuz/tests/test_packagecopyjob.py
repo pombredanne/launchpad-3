@@ -1716,13 +1716,20 @@ class TestViaCelery(TestCaseWithFactory):
 
     layer = CeleryJobLayer
 
-    def test_run(self):
-        # A proper test run synchronizes packages.
-        # Turn on Celery handling of PCJs.
+    def setUp(self):
+        super(TestViaCelery, self).setUp()
+        # Turn on Celery handling of PCJs and the resulting notification jobs.
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'PlainPackageCopyJob',
+            'jobs.celery.enabled_classes':
+                'PlainPackageCopyJob PackageUploadNotificationJob',
         }))
 
+    def tearDown(self):
+        super(TestViaCelery, self).tearDown()
+        pop_remote_notifications()
+
+    def test_run(self):
+        # A proper test run synchronizes packages.
         job = create_proper_job(self.factory)
         self.assertEqual("libc", job.package_name)
         self.assertEqual("2.8-1", job.package_version)
@@ -1743,10 +1750,6 @@ class TestViaCelery(TestCaseWithFactory):
     def test_resume_from_queue(self):
         # Accepting a suspended copy from the queue sends it back
         # through celery.
-        self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'PlainPackageCopyJob',
-        }))
-
         source_pub = self.factory.makeSourcePackagePublishingHistory(
             component=u"main", status=PackagePublishingStatus.PUBLISHED)
         target_series = self.factory.makeDistroSeries()
