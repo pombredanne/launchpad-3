@@ -132,6 +132,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.pages import webservice_for_person
@@ -675,7 +676,7 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
 
 class TestGitRepositoryModifications(TestCaseWithFactory):
-    """Tests for Git repository modification notifications."""
+    """Tests for Git repository modifications."""
 
     layer = DatabaseFunctionalLayer
 
@@ -731,6 +732,12 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         repository.removeRefs(set([ref.path]))
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
+
+
+class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
+    """Tests for Git repository modification notifications."""
+
+    layer = ZopelessDatabaseLayer
 
     def test_sends_notifications(self):
         # Attribute modifications send mail to subscribers.
