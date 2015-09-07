@@ -36,7 +36,7 @@
               <table>
                 <tr>
                   <td>
-                    <label tal:replace="structure view/vcs_bzr" />
+                    <label tal:replace="structure view/vcs_bzr_radio" />
                     <table class="subordinate">
                       <tal:widget define="widget nocall:view/widgets/branch">
                         <metal:block use-macro="context/@@launchpad_form/widget_row" />
@@ -47,7 +47,7 @@
 
                 <tr>
                   <td>
-                    <label tal:replace="structure view/vcs_git" />
+                    <label tal:replace="structure view/vcs_git_radio" />
                     <table class="subordinate">
                       <tal:widget define="widget nocall:view/widgets/git_repository">
                         <metal:block use-macro="context/@@launchpad_form/widget_row" />

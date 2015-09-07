@@ -180,7 +180,7 @@ class BaseSnapAddEditView(LaunchpadEditFormView):
         widget = self.widgets.get('vcs')
         if widget is not None:
             current_value = widget._getFormValue()
-            self.vcs_bzr, self.vcs_git = [
+            self.vcs_bzr_radio, self.vcs_git_radio = [
                 render_radio_widget_part(widget, value, current_value)
                 for value in (VCSType.BZR, VCSType.GIT)]
 
