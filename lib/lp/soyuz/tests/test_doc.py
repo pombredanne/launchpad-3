@@ -134,6 +134,26 @@ special = {
         setUp=setUp,
         layer=LaunchpadZopelessLayer,
         ),
+    'build-failedtoupload-workflow.txt': LayeredDocFileSuite(
+        '../doc/build-failedtoupload-workflow.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer,
+        ),
+    'distroseriesqueue.txt': LayeredDocFileSuite(
+        '../doc/distroseriesqueue.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer,
+        ),
+    'distroseriesqueue-notify.txt': LayeredDocFileSuite(
+        '../doc/distroseriesqueue-notify.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer,
+        ),
+    'distroseriesqueue-translations.txt': LayeredDocFileSuite(
+        '../doc/distroseriesqueue-translations.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer,
+        ),
     }
 
 
