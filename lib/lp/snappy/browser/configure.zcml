@@ -22,9 +22,30 @@
             permission="launchpad.View"
             name="+index"
             template="../templates/snap-index.pt" />
+        <browser:menus
+            module="lp.snappy.browser.snap"
+            classes="SnapNavigationMenu" />
         <browser:navigation
             module="lp.snappy.browser.snap"
             classes="SnapNavigation" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapAdminView"
+            permission="launchpad.Admin"
+            name="+admin"
+            template="../../app/templates/generic-edit.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapEditView"
+            permission="launchpad.Edit"
+            name="+edit"
+            template="../templates/snap-edit.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapDeleteView"
+            permission="launchpad.Edit"
+            name="+delete"
+            template="../templates/snap-delete.pt" />
         <adapter
             provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.snappy.interfaces.snap.ISnap"

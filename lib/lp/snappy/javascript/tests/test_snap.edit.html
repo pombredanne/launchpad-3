@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!--
+Copyright 2015 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<html>
+  <head>
+      <title>snappy.snap.edit Tests</title>
+
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test-console/assets/skins/sam/test-console.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
+
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
+
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+
+      <!-- Dependencies -->
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/lp.js"></script>
+
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../snap.edit.js"></script>
+
+      <!-- The test suite -->
+      <script type="text/javascript" src="test_snap.edit.js"></script>
+
+      <script type="text/javascript">
+        YUI().use('lp.snappy.snap.edit', function(Y) {
+          Y.on('domready', Y.lp.snappy.snap.edit.setup);
+        });
+      </script>
+
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <li>lp.snappy.snap.edit.test</li>
+        </ul>
+        <div id="snap.edit">
+        <form action="." name="launchpadform" method="post"
+              enctype="multipart/form-data"
+              accept-charset="UTF-8">
+
+          <table class="form">
+            <tr>
+              <td colspan="2">
+                <div>
+                  <label for="field.vcs">Source:</label>
+                  <table>
+                    <tr>
+                      <td>
+                        <label>
+                          <input class="radioType"
+                                 id="field.vcs.Bazaar"
+                                 name="field.vcs"
+                                 type="radio"
+                                 value="BZR" />
+                          Bazaar
+                        </label>
+                        <table class="subordinate">
+                          <tr>
+                            <td colspan="2">
+                              <div>
+                                <label for="field.branch">Bazaar branch:</label>
+                                <div>
+                                  <input type="text"
+                                         value=""
+                                         id="field.branch"
+                                         name="field.branch"
+                                         size="35"
+                                         class="" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <label>
+                          <input class="radioType"
+                                 id="field.vcs.Git"
+                                 name="field.vcs"
+                                 type="radio"
+                                 value="GIT" />
+                          Git
+                        </label>
+                        <table class="subordinate">
+                          <tr>
+                            <td colspan="2">
+                              <div>
+                                <label for="field.git_repository">Git repository:</label>
+                                <div>
+                                  <input type="text"
+                                         value=""
+                                         id="field.git_repository"
+                                         name="field.git_repository"
+                                         size="20"
+                                         class="" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2">
+                              <div>
+                                <label for="field.git_path">Git path:</label>
+                                <div>
+                                  <input class="textType"
+                                         id="field.git_path"
+                                         name="field.git_path"
+                                         size="20"
+                                         type="text"
+                                         value="" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <input type="submit" id="field.actions.update"
+                 name="field.actions.update" value="Update snap package"
+                 class="button" />
+          or&nbsp;
+          <a href="https://launchpad.dev/~me/+snap/s">Cancel</a>
+        </form>
+        </div>
+    </body>
+</html>
