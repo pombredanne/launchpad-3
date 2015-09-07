@@ -237,10 +237,10 @@ class SnapAdminView(BaseSnapEditView):
     """View for administering snap packages."""
 
     @property
-    def title(self):
+    def page_title(self):
         return 'Administer %s snap package' % self.context.name
 
-    label = title
+    label = page_title
 
     field_names = ['require_virtualized']
 
@@ -253,10 +253,10 @@ class SnapEditView(BaseSnapEditView):
     """View for editing snap packages."""
 
     @property
-    def title(self):
+    def page_title(self):
         return 'Edit %s snap package' % self.context.name
 
-    label = title
+    label = page_title
 
     field_names = [
         'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_repository',
@@ -295,10 +295,10 @@ class SnapDeleteView(BaseSnapEditView):
     """View for deleting snap packages."""
 
     @property
-    def title(self):
+    def page_title(self):
         return 'Delete %s snap package' % self.context.name
 
-    label = title
+    label = page_title
 
     field_names = []
 
