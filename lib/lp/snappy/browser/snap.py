@@ -234,10 +234,6 @@ class SnapAdminView(BaseSnapEditView):
 
     field_names = ['require_virtualized']
 
-    @property
-    def initial_values(self):
-        return {'require_virtualized': self.context.require_virtualized}
-
 
 class SnapEditView(BaseSnapEditView):
     """View for editing snap packages."""
@@ -260,10 +256,7 @@ class SnapEditView(BaseSnapEditView):
             vcs = VCSType.GIT
         else:
             vcs = VCSType.BZR
-        return {
-            'distro_series': self.context.distro_series,
-            'vcs': vcs,
-            }
+        return {'vcs': vcs}
 
     def validate(self, data):
         super(SnapEditView, self).validate(data)
