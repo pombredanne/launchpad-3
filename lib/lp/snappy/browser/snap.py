@@ -84,7 +84,7 @@ class SnapNavigationMenu(NavigationMenu):
 
     facet = 'overview'
 
-    links = ('admin', 'delete', 'edit')
+    links = ('edit', 'delete', 'admin')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
