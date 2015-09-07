@@ -23,7 +23,8 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.dbuser import dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -44,7 +45,7 @@ REASONS = {
 
 class TestBuildNotify(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestBuildNotify, self).setUp()
@@ -188,7 +189,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # admins and the source package creator.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))
@@ -199,7 +201,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # and the archive owner, but not the buildd admins.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (self.creator, "signer"),
             (self.ppa.owner, "owner"),
@@ -211,7 +214,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # be built.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.NEEDSBUILD.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))
@@ -222,7 +226,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # to be built.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.NEEDSBUILD.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (self.creator, "signer"),
             (self.ppa.owner, "owner"),
@@ -233,7 +238,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # Successful builds don't notify anyone.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.FULLYBUILT.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         self.assertEqual([], pop_notifications())
 
     def test_notify_dependency_wait(self):
@@ -241,7 +247,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # find a dependency.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.MANUALDEPWAIT.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))
@@ -252,7 +259,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # can't find a dependency.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.MANUALDEPWAIT.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (self.creator, "signer"),
             (self.ppa.owner, "owner"),
@@ -264,7 +272,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # build attempted to be built on has an internal problem.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.CHROOTWAIT.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))
@@ -275,7 +284,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # build attempted to be built on has an internal problem.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.CHROOTWAIT.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (self.creator, "signer"),
             (self.ppa.owner, "owner"),
@@ -288,7 +298,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # chance to be dispatched.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.SUPERSEDED.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))
@@ -300,7 +311,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # chance to be dispatched.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.SUPERSEDED.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (self.creator, "signer"),
             (self.ppa.owner, "owner"),
@@ -312,7 +324,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # currently building.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.BUILDING.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))
@@ -323,7 +336,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # currently building.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.BUILDING.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (self.creator, "signer"),
             (self.ppa.owner, "owner"),
@@ -335,7 +349,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # completed, and binary packages are being uploaded by the builder.
         self.create_builds(self.archive)
         build = self.builds[BuildStatus.UPLOADING.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))
@@ -346,7 +361,8 @@ class TestBuildNotify(TestCaseWithFactory):
         # completed, and binary packages are being uploaded by the builder.
         self.create_builds(self.ppa)
         build = self.builds[BuildStatus.UPLOADING.value]
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (self.creator, "signer"),
             (self.ppa.owner, "owner"),
@@ -362,7 +378,8 @@ class TestBuildNotify(TestCaseWithFactory):
         ppa_spph = spph.copyTo(
             self.distroseries, PackagePublishingPocket.RELEASE, self.ppa)
         [ppa_build] = ppa_spph.createMissingBuilds()
-        ppa_build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            ppa_build.notify()
         self._assert_mails_are_correct(
             ppa_build, [(self.ppa.owner, "owner")], ppa=True)
 
@@ -377,7 +394,8 @@ class TestBuildNotify(TestCaseWithFactory):
             notify_owner: False
             """)
         config.push('notify_owner', notify_owner)
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         self._assert_mails_are_correct(
             build,
             [(person, "buildd-admin")
@@ -395,7 +413,8 @@ class TestBuildNotify(TestCaseWithFactory):
             send_build_notification: False
             """)
         config.push('send_build_notification', send_build_notification)
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
         # And undo what we just did.
@@ -411,7 +430,8 @@ class TestBuildNotify(TestCaseWithFactory):
         spr = build.current_source_publication.sourcepackagerelease
         # Push past the security proxy
         removeSecurityProxy(spr).dscsigningkey = key
-        build.notify()
+        with dbuser(config.builddmaster.dbuser):
+            build.notify()
         expected_reasons = [
             (person, "buildd-admin") for person in self.buildd_admins_members]
         expected_reasons.append((self.creator, "creator"))

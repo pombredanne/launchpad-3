@@ -366,7 +366,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             stub.test_emails[0][-1])
 
 
-class TestPackageUploadPrivacy(TestCaseWithFactory):
+class TestPackageUploadSecurity(TestCaseWithFactory):
     """Test PackageUpload security."""
 
     layer = LaunchpadFunctionalLayer
@@ -383,6 +383,25 @@ class TestPackageUploadPrivacy(TestCaseWithFactory):
         with person_logged_in(self.factory.makePerson()):
             self.assertRaises(
                 ZopeUnauthorized, getattr, upload, "contains_source")
+
+    def test_non_queue_admin_cannot_edit_upload(self):
+        upload = self.factory.makePackageUpload()
+        with admin_logged_in():
+            upload.addSource(
+                self.factory.makeSourcePackageRelease(component="main"))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(ZopeUnauthorized, getattr, upload, "setDone")
+
+    def test_queue_admin_can_edit_upload(self):
+        archive = self.factory.makeArchive()
+        queue_admin = self.factory.makePerson()
+        with admin_logged_in():
+            archive.newQueueAdmin(queue_admin, "main")
+            upload = self.factory.makePackageUpload(archive=archive)
+            upload.addSource(
+                self.factory.makeSourcePackageRelease(component="main"))
+        with person_logged_in(queue_admin):
+            upload.setDone()
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
