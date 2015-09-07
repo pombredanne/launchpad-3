@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the CodeImportWorkerMonitor and related classes."""
@@ -15,7 +15,10 @@ import tempfile
 import urllib
 
 from bzrlib.branch import Branch
-from bzrlib.tests import TestCase as BzrTestCase
+from bzrlib.tests import (
+    TestCase as BzrTestCase,
+    TestCaseInTempDir,
+    )
 import oops_twisted
 from testtools.deferredruntest import (
     assert_fails_with,
@@ -666,13 +669,13 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
         return protocol
 
 
-class TestWorkerMonitorIntegration(BzrTestCase):
+class TestWorkerMonitorIntegration(TestCaseInTempDir):
 
     layer = ZopelessAppServerLayer
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=60)
 
     def setUp(self):
-        BzrTestCase.setUp(self)
+        super(TestWorkerMonitorIntegration, self).setUp()
         login('no-priv@canonical.com')
         self.factory = LaunchpadObjectFactory()
         nuke_codeimport_sample_data()
@@ -682,7 +685,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         self.foreign_commit_count = 0
 
     def tearDown(self):
-        BzrTestCase.tearDown(self)
+        super(TestWorkerMonitorIntegration, self).tearDown()
         logout()
 
     def makeCVSCodeImport(self):

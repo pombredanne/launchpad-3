@@ -264,7 +264,6 @@ There's also a section on the page that gives some package information:
     Package information
     Maintainer: Foo Bar
     Urgency:* Low Urgency
-    Component:* main
     Architectures:* any
     Latest upload: 1.0
     *actual publishing details may vary in this distribution, these are just
