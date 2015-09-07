@@ -417,6 +417,26 @@
             interface="lp.soyuz.interfaces.archive.IArchiveSet"/>
     </securedutility>
 
+    <!-- ArchiveJob -->
+
+    <class class="lp.soyuz.model.archivejob.ArchiveJob">
+        <allow interface="lp.soyuz.interfaces.archivejob.IArchiveJob"/>
+    </class>
+    <class class="lp.soyuz.model.archivejob.PackageUploadNotificationJob">
+        <allow interface="lp.soyuz.interfaces.archivejob.IArchiveJob"/>
+        <allow interface="lp.soyuz.interfaces.archivejob.IPackageUploadNotificationJob"/>
+    </class>
+    <securedutility
+        component="lp.soyuz.model.archivejob.ArchiveJob"
+        provides="lp.soyuz.interfaces.archivejob.IArchiveJobSource">
+        <allow interface="lp.soyuz.interfaces.archivejob.IArchiveJobSource"/>
+    </securedutility>
+    <securedutility
+        component="lp.soyuz.model.archivejob.PackageUploadNotificationJob"
+        provides="lp.soyuz.interfaces.archivejob.IPackageUploadNotificationJobSource">
+        <allow interface="lp.soyuz.interfaces.archivejob.IPackageUploadNotificationJobSource"/>
+    </securedutility>
+
     <!-- ArchivePermission -->
 
     <class
