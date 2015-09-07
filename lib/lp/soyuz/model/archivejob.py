@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-import json
 import logging
 import StringIO
 
@@ -11,8 +10,8 @@ from lazr.delegates import delegate_to
 from storm.expr import And
 from storm.locals import (
     Int,
+    JSON,
     Reference,
-    Unicode,
     )
 from zope.component import getUtility
 from zope.interface import (
@@ -59,11 +58,7 @@ class ArchiveJob(StormBase):
 
     job_type = EnumCol(enum=ArchiveJobType, notNull=True)
 
-    _json_data = Unicode('json_data')
-
-    @property
-    def metadata(self):
-        return json.loads(self._json_data)
+    metadata = JSON('json_data')
 
     def __init__(self, archive, job_type, metadata):
         """Create an ArchiveJob.
@@ -77,7 +72,7 @@ class ArchiveJob(StormBase):
         self.job = Job()
         self.archive = archive
         self.job_type = job_type
-        self._json_data = unicode(json.dumps(metadata, ensure_ascii=False))
+        self.metadata = metadata
 
 
 @delegate_to(IArchiveJob)

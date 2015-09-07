@@ -41,7 +41,7 @@ class TestArchiveJob(TestCaseWithFactory):
         # deserialized from JSON, so the representation returned by
         # archive_job.metadata will be different from what we originally
         # passed in.
-        metadata_expected = [u'some', u'arbitrary', u'metadata']
+        metadata_expected = (u'some', u'arbitrary', u'metadata')
         self.assertEqual(metadata_expected, archive_job.metadata)
 
 
