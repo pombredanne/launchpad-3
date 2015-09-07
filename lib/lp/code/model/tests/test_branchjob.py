@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchJobs."""
@@ -827,6 +827,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             "added:" '\n'
             "  hello.txt" '\n' % tree.branch.nick)
         job = RevisionsAddedJob.create(db_branch, '', '', '')
+        switch_dbuser(config.IRevisionsAddedJobSource.dbuser)
         self.assertEqual(
             job.getRevisionMessage(first_revision, 1), expected)
 
@@ -861,6 +862,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.updateDBRevisions(db_branch, tree.branch,
             branch_revision_history(tree.branch))
         job = RevisionsAddedJob.create(db_branch, '', '', '')
+        switch_dbuser(config.IRevisionsAddedJobSource.dbuser)
         message = job.getRevisionMessage(rev_id, 1)
         # The revision message must be a unicode object.
         expected = (
