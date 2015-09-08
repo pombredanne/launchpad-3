@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import
@@ -184,6 +184,7 @@ from lp.testing._webservice import (
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
+from lp.testing.mail_helpers import pop_notifications
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
@@ -743,6 +744,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                         attribute_names - expected_permissions[permission]),
                     sorted(
                         expected_permissions[permission] - attribute_names)))
+
+    def assertEmailQueueLength(self, length, sort_key=None):
+        """Pop the email queue, assert its length, and return it.
+
+        This commits the transaction as part of pop_notifications.
+        """
+        notifications = pop_notifications(sort_key=sort_key)
+        self.assertEqual(
+            length, len(notifications),
+            "Expected %d emails, got %d" % (length, len(notifications)))
+        return notifications
 
 
 class TestCaseWithFactory(TestCase):
