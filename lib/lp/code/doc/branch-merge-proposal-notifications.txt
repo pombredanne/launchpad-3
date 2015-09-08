@@ -11,15 +11,14 @@ Subscription
 When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from difflib import unified_diff
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IBranchMergeProposalJobSource)
-    >>> from lp.code.model.diff import PreviewDiff
     >>> from lp.code.tests.helpers import make_merge_proposal_without_reviewers
+    >>> from lp.services.config import config
+    >>> from lp.testing.dbuser import dbuser
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
@@ -113,7 +112,8 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> bmp.next_preview_diff_job.start()
     >>> bmp.next_preview_diff_job.complete()
     >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
-    >>> job.run()
+    >>> with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+    ...     job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
@@ -169,7 +169,8 @@ in the email.
     >>> bmp.next_preview_diff_job.start()
     >>> bmp.next_preview_diff_job.complete()
     >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
-    >>> job.run()
+    >>> with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+    ...     job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:

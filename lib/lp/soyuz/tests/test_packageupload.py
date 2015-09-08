@@ -27,6 +27,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail import stub
 from lp.soyuz.adapters.overrides import SourceOverride
@@ -35,6 +36,7 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.archivejob import IPackageUploadNotificationJobSource
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
@@ -54,6 +56,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -182,6 +185,13 @@ class PackageUploadTestCase(TestCaseWithFactory):
         transaction.commit()
         return upload, uploader
 
+    def runPackageUploadNotificationJob(self):
+        """Expect one package upload notification job, and run it."""
+        job_source = getUtility(IPackageUploadNotificationJobSource)
+        [job] = list(job_source.iterReady())
+        with dbuser(config.IPackageUploadNotificationJobSource.dbuser):
+            JobRunner([job]).runAll()
+
     def assertEmail(self, expected_to_addrs):
         """Pop an email from the stub queue and check its recipients."""
         _, to_addrs, _ = stub.test_emails.pop()
@@ -193,6 +203,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeSourcePackageUpload()
         upload.acceptFromQueue()
+        self.runPackageUploadNotificationJob()
         self.assertEqual(2, len(stub.test_emails))
         # Emails sent are the uploader's notification and the announcement:
         self.assertEmail([uploader.preferredemail.email])
@@ -207,6 +218,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload(
             pocket=PackagePublishingPocket.BACKPORTS)
         upload.acceptFromQueue()
+        self.runPackageUploadNotificationJob()
         self.assertEqual(1, len(stub.test_emails))
         # Only one email is sent, to the person in the changed-by field.  No
         # announcement email is sent.
@@ -221,6 +233,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.PROPOSED,
             section_name="translations")
         upload.acceptFromQueue()
+        self.runPackageUploadNotificationJob()
         self.assertEqual("DONE", upload.status.name)
         self.assertEqual(0, len(stub.test_emails))
 
@@ -267,6 +280,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, _ = self.makeBuildPackageUpload()
         upload.acceptFromQueue()
+        self.runPackageUploadNotificationJob()
         self.assertEqual(0, len(stub.test_emails))
 
     def test_acceptFromQueue_handles_duplicates(self):
@@ -314,6 +328,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeSourcePackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
+        self.runPackageUploadNotificationJob()
         self.assertEqual(1, len(stub.test_emails))
         self.assertEmail([uploader.preferredemail.email])
 
@@ -322,6 +337,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeBuildPackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
+        self.runPackageUploadNotificationJob()
         self.assertEqual(1, len(stub.test_emails))
         self.assertEmail([uploader.preferredemail.email])
 
@@ -333,6 +349,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.PROPOSED,
             section_name="translations")
         upload.rejectFromQueue(self.factory.makePerson())
+        self.runPackageUploadNotificationJob()
         self.assertEqual(0, len(stub.test_emails))
 
     def test_rejectFromQueue_source_with_reason(self):
@@ -342,13 +359,14 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload()
         person = self.factory.makePerson()
         upload.rejectFromQueue(user=person, comment='Because.')
+        self.runPackageUploadNotificationJob()
         self.assertEqual(1, len(stub.test_emails))
         self.assertIn(
             'Rejected:\nRejected by %s: Because.' % person.displayname,
             stub.test_emails[0][-1])
 
 
-class TestPackageUploadPrivacy(TestCaseWithFactory):
+class TestPackageUploadSecurity(TestCaseWithFactory):
     """Test PackageUpload security."""
 
     layer = LaunchpadFunctionalLayer
@@ -365,6 +383,25 @@ class TestPackageUploadPrivacy(TestCaseWithFactory):
         with person_logged_in(self.factory.makePerson()):
             self.assertRaises(
                 ZopeUnauthorized, getattr, upload, "contains_source")
+
+    def test_non_queue_admin_cannot_edit_upload(self):
+        upload = self.factory.makePackageUpload()
+        with admin_logged_in():
+            upload.addSource(
+                self.factory.makeSourcePackageRelease(component="main"))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(ZopeUnauthorized, getattr, upload, "setDone")
+
+    def test_queue_admin_can_edit_upload(self):
+        archive = self.factory.makeArchive()
+        queue_admin = self.factory.makePerson()
+        with admin_logged_in():
+            archive.newQueueAdmin(queue_admin, "main")
+            upload = self.factory.makePackageUpload(archive=archive)
+            upload.addSource(
+                self.factory.makeSourcePackageRelease(component="main"))
+        with person_logged_in(queue_admin):
+            upload.setDone()
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):

@@ -6,7 +6,6 @@
 import testtools
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
@@ -17,6 +16,7 @@ from lp.code.mail.codereviewcomment import (
     build_inline_comments_section,
     CodeReviewCommentMailer,
     )
+from lp.services.config import config
 from lp.services.mail.sendmail import format_address
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp import canonical_url
@@ -26,13 +26,17 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.dbuser import (
+    lp_dbuser,
+    switch_dbuser,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
     """Test that comments are generated as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Prepare test fixtures."""
@@ -68,6 +72,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Return a CodeReviewCommentMailer and the sole subscriber."""
         comment, subscriber = self.makeCommentAndSubscriber(
             body=body, as_reply=as_reply, vote=vote, vote_tag=vote_tag)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         return CodeReviewCommentMailer.forCreation(comment), subscriber
 
     def assertRecipientsMatches(self, recipients, mailer):
@@ -78,6 +83,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_forCreation(self):
         """Ensure that forCreation produces a mailer with expected values."""
         comment, subscriber = self.makeCommentAndSubscriber()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(comment.message.subject,
                          mailer._subject_template)
@@ -99,6 +105,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Ensure that subscriptions with STATUS aren't used."""
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.STATUS)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         bmp = comment.branch_merge_proposal
         # The branch owners are implicitly subscribed to their branches
@@ -110,6 +117,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Ensure that subscriptions with NOEMAIL aren't used."""
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.NOEMAIL)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         bmp = comment.branch_merge_proposal
         # The branch owners are implicitly subscribed to their branches
@@ -121,6 +129,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         # The mailer should not attempt to expand templates in the subject.
         comment, subscriber = self.makeCommentAndSubscriber(
             subject='A %(carefully)s constructed subject')
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(
             'A %(carefully)s constructed subject',
@@ -178,6 +187,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment, subscriber = self.makeCommentAndSubscriber()
         second_comment = self.factory.makeCodeReviewComment(
             merge_proposal=comment.branch_merge_proposal)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(second_comment)
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
@@ -200,7 +210,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_appendExpandedFooter(self):
         """Check that expanded notification footers are sensible."""
         mailer, subscriber = self.makeMailer(as_reply=True)
-        with person_logged_in(subscriber):
+        with lp_dbuser(), person_logged_in(subscriber):
             subscriber.expanded_notification_footers = True
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
@@ -267,6 +277,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """
         comment = self.makeCommentWithInlineComments(
             inline_comments={'3': 'Is this from Pl\u0060net Earth ?'})
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
@@ -306,6 +317,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
                 ('inc.diff', 'text/x-diff', 'This is a diff.'),
                 ('pic.jpg', 'image/jpeg', 'Binary data')])
         comment = self.makeComment(msg)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         # The attachments of the mailer should have only the diff.
         [outgoing_attachment] = mailer.attachments
@@ -326,6 +338,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             attachments=[('inc.diff', 'text/x-diff', 'This is a diff.')],
             encode_attachments=True)
         comment = self.makeComment(msg)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         person = comment.branch_merge_proposal.target_branch.owner
         message = mailer.generateEmail(
@@ -354,6 +367,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_getToAddresses_no_parent(self):
         """To address for a comment with no parent should be the proposer."""
         comment = self.makeCommentAndParticipants()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         to = mailer._getToAddresses('comment@gmail.com', comment.message.owner)
         self.assertEqual(['Proposer <proposer@email.com>'], to)
@@ -368,6 +382,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         should not affect the actual recipient list.
         """
         comment = self.makeCommentAndParticipants()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         ctrl = mailer.generateEmail('commenter@email.com',
                                     comment.message.owner)
@@ -381,6 +396,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             email='commenter2@email.com', displayname='Commenter2')
         reply = comment.branch_merge_proposal.createComment(
             second_commenter, 'hello2', parent=comment)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(reply)
         to = mailer._getToAddresses('comment2@gmail.com', second_commenter)
         self.assertEqual(['Commenter <commenter@email.com>'], to)
@@ -390,11 +406,12 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_getToAddresses_with_hidden_address(self):
         """Don't show address if Person.hide_email_addresses."""
         comment = self.makeCommentAndParticipants()
-        removeSecurityProxy(comment.message.owner).hide_email_addresses = True
+        comment.message.owner.hide_email_addresses = True
         second_commenter = self.factory.makePerson(
             email='commenter2@email.com', displayname='Commenter2')
         reply = comment.branch_merge_proposal.createComment(
             second_commenter, 'hello2', parent=comment)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(reply)
         to = mailer._getToAddresses('comment2@gmail.com', second_commenter)
         self.assertEqual([mailer.merge_proposal.address], to)

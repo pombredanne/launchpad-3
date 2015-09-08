@@ -343,6 +343,78 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.assertNoBuildQueuesHaveStatus(archive, BuildQueueStatus.SUSPENDED)
         self.assertTrue(archive.enabled)
 
+    def test_enableArchive_virt_sets_virtualized(self):
+        # Enabling an archive that requires virtualized builds changes all
+        # its pending builds to be virtualized.
+        archive = self.factory.makeArchive(virtualized=False)
+        other_archive = self.factory.makeArchive(virtualized=False)
+        pending_builds = [
+            self.factory.makeBinaryPackageBuild(
+                archive=archive, status=BuildStatus.NEEDSBUILD)
+            for _ in range(2)]
+        completed_build = self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.FULLYBUILT)
+        other_build = self.factory.makeBinaryPackageBuild(
+            archive=other_archive, status=BuildStatus.NEEDSBUILD)
+        for build in pending_builds + [completed_build, other_build]:
+            self.assertFalse(build.virtualized)
+            build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
+        removeSecurityProxy(archive).disable()
+        removeSecurityProxy(archive).require_virtualized = True
+        removeSecurityProxy(archive).enable()
+        # Pending builds in the just-enabled archive are now virtualized.
+        for build in pending_builds:
+            self.assertTrue(build.virtualized)
+            self.assertTrue(build.buildqueue_record.virtualized)
+        # Completed builds and builds in other archives are untouched.
+        for build in completed_build, other_build:
+            self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
+
+    def test_enableArchive_nonvirt_sets_virtualized(self):
+        # Enabling an archive that does not require virtualized builds
+        # changes its pending builds to be virtualized or not depending on
+        # whether their processor supports non-virtualized builds.
+        distroseries = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, virtualized=False)
+        other_archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, virtualized=False)
+        procs = [self.factory.makeProcessor() for _ in range(2)]
+        dases = [
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, processor=procs[i])
+            for i in range(2)]
+        pending_builds = [
+            self.factory.makeBinaryPackageBuild(
+                distroarchseries=dases[i], archive=archive,
+                status=BuildStatus.NEEDSBUILD, processor=procs[i])
+            for i in range(2)]
+        completed_build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=dases[0], archive=archive,
+            status=BuildStatus.FULLYBUILT, processor=procs[0])
+        other_build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=dases[0], archive=other_archive,
+            status=BuildStatus.NEEDSBUILD, processor=procs[0])
+        for build in pending_builds + [completed_build, other_build]:
+            self.assertFalse(build.virtualized)
+            build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
+        removeSecurityProxy(archive).disable()
+        procs[0].supports_nonvirtualized = False
+        removeSecurityProxy(archive).enable()
+        # Pending builds in the just-enabled archive are now virtualized iff
+        # their processor does not support non-virtualized builds.
+        self.assertTrue(pending_builds[0].virtualized)
+        self.assertTrue(pending_builds[0].buildqueue_record.virtualized)
+        self.assertFalse(pending_builds[1].virtualized)
+        self.assertFalse(pending_builds[1].buildqueue_record.virtualized)
+        # Completed builds and builds in other archives are untouched.
+        for build in completed_build, other_build:
+            self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
+
     def test_enableArchiveAlreadyEnabled(self):
         # Enabling an already enabled Archive should raise an AssertionError.
         archive = self.factory.makeArchive(enabled=True)

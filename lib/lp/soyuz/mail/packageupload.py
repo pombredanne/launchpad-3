@@ -426,9 +426,8 @@ class PackageUploadMailer(BaseMailer):
     def __init__(self, subject, template_name, recipients, from_address,
                  action, info, blamee, spr, bprs, customfiles, archive,
                  distroseries, pocket, summary_text=None, changes=None,
-                 changesfile_content=None, dry_run=False,
-                 announce_from_address=None, previous_version=None,
-                 logger=None):
+                 changesfile_content=None, announce_from_address=None,
+                 previous_version=None, logger=None):
         super(PackageUploadMailer, self).__init__(
             subject, template_name, recipients, from_address,
             notification_type="package-upload")
@@ -443,7 +442,6 @@ class PackageUploadMailer(BaseMailer):
         self.pocket = pocket
         self.changes = changes
         self.changesfile_content = changesfile_content
-        self.dry_run = dry_run
         self.logger = logger
         self.announce_from_address = announce_from_address
         self.previous_version = previous_version
@@ -597,10 +595,7 @@ class PackageUploadMailer(BaseMailer):
         """See `BaseMailer`."""
         ctrl = super(PackageUploadMailer, self).generateEmail(
             email, recipient, force_no_attachments=force_no_attachments)
-        if self.dry_run:
-            debug(self.logger, "Would have sent a mail:")
-        else:
-            debug(self.logger, "Sent a mail:")
+        debug(self.logger, "Sent a mail:")
         debug(self.logger, "  Subject: %s" % ctrl.subject)
         debug(self.logger, "  Sender: %s" % ctrl.from_addr)
         debug(self.logger, "  Recipients: %s" % ", ".join(ctrl.to_addrs))
@@ -612,11 +607,3 @@ class PackageUploadMailer(BaseMailer):
                 line = line.decode('utf-8', 'replace')
             debug(self.logger, line)
         return ctrl
-
-    def sendOne(self, email, recipient):
-        """See `BaseMailer`."""
-        if self.dry_run:
-            # Just generate the email for the sake of debugging output.
-            self.generateEmail(email, recipient)
-        else:
-            super(PackageUploadMailer, self).sendOne(email, recipient)

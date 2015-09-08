@@ -406,6 +406,11 @@ class IArchiveSubscriberView(Interface):
         description=_("Whether or not to update the apt repository.  If "
             "disabled, nothing will be published.  If the archive is "
             "private then additionally no builds will be dispatched."))
+    can_be_published = Bool(
+        title=_("Can be published"), required=True,
+        description=_(
+            "True if this archive can be published, considering both the "
+            "explicit publish flag and any other constraints."))
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     signing_key = Object(

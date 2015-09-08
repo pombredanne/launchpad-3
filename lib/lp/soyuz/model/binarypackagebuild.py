@@ -142,6 +142,13 @@ PRIVATE_ARCHIVE_SCORE_BONUS = 10000
 COPY_ARCHIVE_SCORE_PENALTY = 2600
 
 
+def is_build_virtualized(archive, processor):
+    """Should a build for this `IArchive` and `IProcessor` be virtualized?"""
+    return (
+        archive.require_virtualized
+        or not processor.supports_nonvirtualized)
+
+
 @implementer(IBinaryPackageBuild)
 class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     _table = 'BinaryPackageBuild'
@@ -475,6 +482,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         self.upload_log = None
         self.dependencies = None
         self.failure_count = 0
+        self.virtualized = is_build_virtualized(self.archive, self.processor)
         self.queueBuild()
 
     def rescore(self, score):
@@ -762,9 +770,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
         processor = distro_arch_series.processor
-        virtualized = (
-            archive.require_virtualized
-            or not processor.supports_nonvirtualized)
+        virtualized = is_build_virtualized(archive, processor)
         return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
