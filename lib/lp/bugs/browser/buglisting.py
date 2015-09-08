@@ -140,7 +140,10 @@ from lp.services.webapp import (
     NavigationMenu,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.batching import (
+    get_batch_properties_for_json_cache,
+    TableBatchNavigator,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -1077,6 +1080,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['view_name'] = view_names.pop()
             batch_navigator = self.search()
             cache.objects['mustache_model'] = batch_navigator.model
+            cache.objects.update(
+                get_batch_properties_for_json_cache(self, batch_navigator))
             cache.objects['field_visibility'] = (
                 batch_navigator.field_visibility)
             cache.objects['field_visibility_defaults'] = (
@@ -1084,24 +1089,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['cbl_cookie_name'] = (
                 batch_navigator.getCookieName())
 
-            def _getBatchInfo(batch):
-                if batch is None:
-                    return None
-                return {'memo': batch.range_memo,
-                        'start': batch.startNumber() - 1}
-
-            next_batch = batch_navigator.batch.nextBatch()
-            cache.objects['next'] = _getBatchInfo(next_batch)
-            prev_batch = batch_navigator.batch.prevBatch()
-            cache.objects['prev'] = _getBatchInfo(prev_batch)
-            cache.objects['total'] = batch_navigator.batch.total()
             cache.objects['order_by'] = ','.join(
                 get_sortorder_from_request(self.request))
-            cache.objects['forwards'] = (
-                batch_navigator.batch.range_forwards)
-            last_batch = batch_navigator.batch.lastBatch()
-            cache.objects['last_start'] = last_batch.startNumber() - 1
-            cache.objects.update(_getBatchInfo(batch_navigator.batch))
             cache.objects['sort_keys'] = SORT_KEYS
 
     @property
