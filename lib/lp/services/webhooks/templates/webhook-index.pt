@@ -5,6 +5,20 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
+<head>
+  <metal:block fill-slot="head_epilogue">
+    <script tal:content="structure string:
+      LPJS.use('base', 'node', 'event', 'lp.services.webhooks.deliveries',
+          function(Y) {
+              Y.on('domready', function() {
+                  var config = {'srcNode': '#webhook-deliveries'};
+                  var deliveries_widget = new Y.lp.services.webhooks.deliveries.WebhookDeliveries(config);
+                  deliveries_widget.render();
+              });
+          });
+    "/>
+  </metal:block>
+</head>
 <body>
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form">
@@ -16,6 +30,28 @@
         </tal:actions>
         <a tal:attributes="href context/fmt:url/+delete">Delete webhook</a>
       </div>
+    </div>
+    <h2>Recent deliveries</h2>
+    <div id="webhook-deliveries">
+      <div class="lesser"
+          tal:content="structure view/deliveries/@@+navigation-links-upper" />
+
+      <table id="webhook-deliveries-table" class="listing">
+        <colgroup>
+          <col style="width: 18px" />
+        </colgroup>
+        <tbody>
+          <tr id='webhook-deliveries-table-loading'>
+            <td colspan="3" style="padding-left: 0.25em">
+              <img class="spinner" src="/@@/spinner" alt="Loading..." />
+              Loading...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="lesser"
+          tal:content="structure view/deliveries/@@+navigation-links-lower" />
     </div>
   </div>
 </body>
