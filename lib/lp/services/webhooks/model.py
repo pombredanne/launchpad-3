@@ -22,6 +22,7 @@ from lazr.enum import (
     DBItem,
     )
 from pytz import utc
+from storm.expr import Desc
 from storm.properties import (
     Bool,
     DateTime,
@@ -116,7 +117,7 @@ class Webhook(StormBase):
             WebhookJob,
             WebhookJob.webhook == self,
             WebhookJob.job_type == WebhookJobType.DELIVERY,
-            ).order_by(WebhookJob.job_id)
+            ).order_by(Desc(WebhookJob.job_id))
 
         def preload_jobs(rows):
             load_related(Job, rows, ['job_id'])
