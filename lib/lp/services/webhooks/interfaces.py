@@ -258,6 +258,11 @@ class IWebhookDeliveryJob(IRunnableJob):
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
 
+    date_scheduled = exported(Datetime(
+        title=_("Date scheduled"),
+        description=_("Timestamp of the next delivery attempt."),
+        required=False, readonly=True))
+
     date_first_sent = exported(Datetime(
         title=_("Date first sent"),
         description=_("Timestamp of the first delivery attempt."),

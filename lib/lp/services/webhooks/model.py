@@ -362,6 +362,10 @@ class WebhookDeliveryJob(WebhookJobDerived):
         return 'Bad HTTP response: %d' % status_code
 
     @property
+    def date_scheduled(self):
+        return self.scheduled_start
+
+    @property
     def date_first_sent(self):
         if 'date_first_sent' not in self.json_data:
             return None
