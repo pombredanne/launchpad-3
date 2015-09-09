@@ -11,7 +11,7 @@
       LPJS.use('base', 'node', 'event', 'lp.services.webhooks.deliveries',
           function(Y) {
               Y.on('domready', function() {
-                  var ns = Y.lp.services.webhooks.deliveries
+                  var ns = Y.lp.services.webhooks.deliveries;
                   var deliveries_widget = new ns.WebhookDeliveries({
                     srcNode: '#webhook-deliveries'});
 
@@ -32,7 +32,6 @@
                   navigator.clickAction('.previous', navigator.prev_batch);
                   navigator.clickAction('.last', navigator.last_batch);
                   navigator.update_navigation_links();
-                  var self = this;
                   navigator.subscribe(
                       ns.WebhookDeliveriesListingNavigator.UPDATE_CONTENT,
                       function(e) {
