@@ -11,9 +11,10 @@
       LPJS.use('base', 'node', 'event', 'lp.services.webhooks.deliveries',
           function(Y) {
               Y.on('domready', function() {
-                  var config = {'srcNode': '#webhook-deliveries'};
-                  var deliveries_widget = new Y.lp.services.webhooks.deliveries.WebhookDeliveries(config);
+                  var deliveries_widget = new Y.lp.services.webhooks.deliveries.WebhookDeliveries({
+                    srcNode: '#webhook-deliveries'});
                   deliveries_widget.render();
+                  deliveries_widget.set('deliveries', LP.cache.deliveries);
               });
           });
     "/>
