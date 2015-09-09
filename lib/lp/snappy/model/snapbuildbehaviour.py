@@ -86,9 +86,9 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         args["archive_private"] = build.archive.private
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
-        elif build.snap.git_repository is not None:
+        elif build.snap.git_ref is not None:
             args["git_repository"] = build.snap.git_repository.git_https_url
-            args["git_path"] = build.snap.git_path
+            args["git_path"] = build.snap.git_ref.name
         else:
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %

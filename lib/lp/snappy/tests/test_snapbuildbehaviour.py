@@ -180,7 +180,7 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             "archives": expected_archives,
             "arch_tag": "i386",
             "git_repository": ref.repository.git_https_url,
-            "git_path": ref.path,
+            "git_path": ref.name,
             "name": u"test-snap",
             }, job._extraBuildArgs())
 
@@ -202,6 +202,21 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         branch.destroySelf(break_references=True)
         self.assertIsNone(job.build.snap.branch)
         self.assertIsNone(job.build.snap.git_repository)
+        self.assertRaisesWithContent(
+            CannotBuild,
+            "Source branch/repository for ~snap-owner/test-snap has been "
+            "deleted.",
+            job.composeBuildRequest, None)
+
+    def test_composeBuildRequest_git_ref_deleted(self):
+        # If the source Git reference has been deleted, composeBuildRequest
+        # raises CannotBuild.
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        owner = self.factory.makePerson(name="snap-owner")
+        job = self.makeJob(registrant=owner, owner=owner, git_ref=ref)
+        repository.removeRefs([ref.path])
+        self.assertIsNone(job.build.snap.git_ref)
         self.assertRaisesWithContent(
             CannotBuild,
             "Source branch/repository for ~snap-owner/test-snap has been "

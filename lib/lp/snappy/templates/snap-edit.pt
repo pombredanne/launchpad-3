@@ -49,10 +49,7 @@
                   <td>
                     <label tal:replace="structure view/vcs_git_radio" />
                     <table class="subordinate">
-                      <tal:widget define="widget nocall:view/widgets/git_repository">
-                        <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                      </tal:widget>
-                      <tal:widget define="widget nocall:view/widgets/git_path">
+                      <tal:widget define="widget nocall:view/widgets/git_ref">
                         <metal:block use-macro="context/@@launchpad_form/widget_row" />
                       </tal:widget>
                     </table>
