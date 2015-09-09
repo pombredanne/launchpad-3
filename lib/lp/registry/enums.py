@@ -354,6 +354,31 @@ class PersonTransferJobType(DBEnumeratedType):
         the user from teams.
         """)
 
+    TEAM_INVITATION_NOTIFICATION = DBItem(3, """
+        Notification of invitation to join team
+
+        Notify team admins that the team has been invited to join another
+        team.
+        """)
+
+    TEAM_JOIN_NOTIFICATION = DBItem(4, """
+        Notification of new member joining team
+
+        Notify that a new member has been added to a team.
+        """)
+
+    EXPIRING_MEMBERSHIP_NOTIFICATION = DBItem(5, """
+        Notification of expiring membership
+
+        Notify a member that their membership of a team is about to expire.
+        """)
+
+    SELF_RENEWAL_NOTIFICATION = DBItem(6, """
+        Notification of self-renewal
+
+        Notify team admins that a member renewed their own membership.
+        """)
+
 
 class ProductJobType(DBEnumeratedType):
     """Values that IProductJob.job_type can take."""

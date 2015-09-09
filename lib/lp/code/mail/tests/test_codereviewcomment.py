@@ -140,7 +140,10 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer, subscriber = self.makeMailer()
         merge_proposal = mailer.code_review_comment.branch_merge_proposal
         expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
-        self.assertEqual(expected, mailer._getReplyToAddress())
+        self.assertEqual(
+            expected,
+            mailer._getReplyToAddress(
+                subscriber.preferredemail.email, subscriber))
 
     def test_generateEmail(self):
         """Ensure mailer's generateEmail method produces expected values."""
@@ -164,7 +167,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
                     'X-Launchpad-Notification-Type': 'code-review',
                     'X-Launchpad-Project': source_branch.product.name,
                     'Message-Id': message.rfc822msgid,
-                    'Reply-To': mailer._getReplyToAddress(),
+                    'Reply-To': mailer._getReplyToAddress(
+                        subscriber.preferredemail.email, subscriber),
                     'In-Reply-To': message.parent.rfc822msgid}
         for header, value in expected.items():
             self.assertEqual(value, ctrl.headers[header], header)
