@@ -65,6 +65,8 @@
       <table id="webhook-deliveries-table" class="listing">
         <colgroup>
           <col style="width: 18px" />
+          <col style="width: 10em" />
+          <col style="width: 5em" />
         </colgroup>
         <tbody>
           <tr id='webhook-deliveries-table-loading'>
