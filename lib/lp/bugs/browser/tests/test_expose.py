@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for helpers that expose data about a user to on-page JavaScript."""
@@ -183,6 +183,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         context = self.factory.makeProduct(owner=self.user)
         self._setup_teams(self.user)
 
+        IStore(Person).flush()
         IStore(Person).invalidate()
         clear_cache()
         with StormStatementRecorder() as recorder:
@@ -201,6 +202,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             pt.addMember(
                 self.user, pt.teamowner, status=TeamMembershipStatus.ADMIN)
 
+        IStore(Person).flush()
         IStore(Person).invalidate()
         clear_cache()
         del IJSONRequestCache(self.request).objects['administratedTeams']

@@ -1,10 +1,12 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for the Jobs system to change memberships or merge persons."""
 
 __metaclass__ = type
 __all__ = [
+    'IExpiringMembershipNotificationJob',
+    'IExpiringMembershipNotificationJobSource',
     'IMembershipNotificationJob',
     'IMembershipNotificationJobSource',
     'IPersonDeactivateJob',
@@ -13,6 +15,12 @@ __all__ = [
     'IPersonMergeJobSource',
     'IPersonTransferJob',
     'IPersonTransferJobSource',
+    'ISelfRenewalNotificationJob',
+    'ISelfRenewalNotificationJobSource',
+    'ITeamInvitationNotificationJob',
+    'ITeamInvitationNotificationJobSource',
+    'ITeamJoinNotificationJob',
+    'ITeamJoinNotificationJobSource',
     ]
 
 from zope.interface import Attribute
@@ -161,3 +169,87 @@ class IPersonDeactivateJobSource(IJobSource):
         :param person: Match jobs on `person`, or `None` to ignore.
         :return: A `ResultSet` yielding `IPersonDeactivateJob`.
         """
+
+
+class ITeamInvitationNotificationJob(IPersonTransferJob):
+    """A Job to notify about team joining invitations."""
+
+    member = PublicPersonChoice(
+        title=_('Alias for minor_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    team = PublicPersonChoice(
+        title=_('Alias for major_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+
+class ITeamInvitationNotificationJobSource(IJobSource):
+    """An interface for acquiring ITeamInvitationNotificationJobs."""
+
+    def create(member, team):
+        """Create a new ITeamInvitationNotificationJob."""
+
+
+class ITeamJoinNotificationJob(IPersonTransferJob):
+    """A Job to notify about a new member joining a team."""
+
+    member = PublicPersonChoice(
+        title=_('Alias for minor_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    team = PublicPersonChoice(
+        title=_('Alias for major_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+
+class ITeamJoinNotificationJobSource(IJobSource):
+    """An interface for acquiring ITeamJoinNotificationJobs."""
+
+    def create(member, team):
+        """Create a new ITeamJoinNotificationJob."""
+
+
+class IExpiringMembershipNotificationJob(IPersonTransferJob):
+    """A Job to send a warning about expiring membership."""
+
+    member = PublicPersonChoice(
+        title=_('Alias for minor_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    team = PublicPersonChoice(
+        title=_('Alias for major_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+
+class IExpiringMembershipNotificationJobSource(IJobSource):
+    """An interface for acquiring IExpiringMembershipNotificationJobs."""
+
+    def create(member, team, dateexpires):
+        """Create a new IExpiringMembershipNotificationJob."""
+
+
+class ISelfRenewalNotificationJob(IPersonTransferJob):
+    """A Job to notify about a self-renewal."""
+
+    member = PublicPersonChoice(
+        title=_('Alias for minor_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    team = PublicPersonChoice(
+        title=_('Alias for major_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+
+class ISelfRenewalNotificationJobSource(IJobSource):
+    """An interface for acquiring ISelfRenewalNotificationJobs."""
+
+    def create(member, team, dateexpires):
+        """Create a new ISelfRenewalNotificationJob."""

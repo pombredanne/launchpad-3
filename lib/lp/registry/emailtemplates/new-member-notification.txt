@@ -1,4 +1,4 @@
-Hello %(recipient_name)s,
+Hello %(recipient)s,
 
 %(reviewer)s added you as a member of %(team)s.
   <%(team_url)s>

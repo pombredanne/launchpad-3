@@ -84,10 +84,13 @@ generates a notification email only to Ubuntu Team administrators.
 
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>
     Reply-To: robertc@robertcollins.net
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: lifeless wants to join
     <BLANKLINE>
     Robert Collins (lifeless) wants to be a member of Ubuntu Team (ubuntu-
@@ -100,14 +103,17 @@ generates a notification email only to Ubuntu Team administrators.
     -- =
     <BLANKLINE>
     You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: mark@example.com
+    To: Mark Shuttleworth <mark@example.com>
     Reply-To: robertc@robertcollins.net
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: lifeless wants to join
     ...
     You received this email because you are the owner of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
 
 Declining a proposed member should generate notifications for both the
@@ -128,22 +134,39 @@ job now.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: lifeless declined by mark
     <BLANKLINE>
     The membership status of Robert Collins (lifeless) in the team Ubuntu
     Team (ubuntu-team) was changed by Mark Shuttleworth (mark) from
     Proposed to Declined.
     <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: robertc@robertcollins.net
+    To: Robert Collins <robertc@robertcollins.net>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: lifeless declined by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (mark) from Proposed to Declined.
     <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are the affected member.
+    <BLANKLINE>
     ----------------------------------------
 
 The same goes for approving a proposed member.
@@ -157,7 +180,7 @@ The same goes for approving a proposed member.
     # Remove notification of daf's membership pending approval from
     # stub.test_emails
 
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> dummy = pop_notifications()
 
     >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED,
@@ -169,8 +192,13 @@ The same goes for approving a proposed member.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf approved by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
@@ -180,9 +208,15 @@ The same goes for approving a proposed member.
     <BLANKLINE>
     Mark Shuttleworth said:
      This is a nice guy; I like him
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: daf@canonical.com
+    To: Dafydd Harries <daf@canonical.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf approved by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
@@ -191,6 +225,10 @@ The same goes for approving a proposed member.
     <BLANKLINE>
     Mark Shuttleworth said:
      This is a nice guy; I like him
+    -- =
+    <BLANKLINE>
+    You received this email because you are the affected member.
+    <BLANKLINE>
     ----------------------------------------
 
 The same for deactivating a membership.
@@ -204,22 +242,37 @@ The same for deactivating a membership.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf deactivated by mark
     <BLANKLINE>
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (mark) from Approved to
     Deactivated.
     <http://launchpad.dev/~ubuntu-team>
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: daf@canonical.com
+    To: Dafydd Harries <daf@canonical.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: daf deactivated by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (mark) from Approved to Deactivated.
     <http://launchpad.dev/~ubuntu-team>
+    -- =
+    <BLANKLINE>
+    You received this email because you are the affected member.
+    <BLANKLINE>
     ----------------------------------------
 
 Team admins can propose their teams using the join() method as well, but
@@ -235,10 +288,13 @@ message sent.
 
     >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>
     Reply-To: mark@example.com
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: admins wants to join
     <BLANKLINE>
     Mark Shuttleworth (mark) wants to make Launchpad Administrators
@@ -251,14 +307,17 @@ message sent.
     -- =
     <BLANKLINE>
     You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: mark@example.com
+    To: Mark Shuttleworth <mark@example.com>
     Reply-To: mark@example.com
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-pending
     Subject: admins wants to join
      ...
     You received this email because you are the owner of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
 
 
@@ -281,22 +340,27 @@ Now, the emails have been sent.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: marilize@hbd.com
+    To: Marilize Coetzee <marilize@hbd.com>
     X-Launchpad-Message-Rationale: Member (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: You have been added to ubuntu-team
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
     team).
-    <http://launchpad.dev/~ubuntu-team>
+      <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     -- =
     <BLANKLINE>
     You received this email because you are the new member.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: marilize joined ubuntu-team
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
@@ -308,13 +372,16 @@ Now, the emails have been sent.
     -- =
     <BLANKLINE>
     You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: mark@example.com
+    To: Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: marilize joined ubuntu-team
       ...
     You received this email because you are the owner of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
 
 By default, if the newly added member is actually a team, we'll only
@@ -332,7 +399,9 @@ membership will only be activated if they accept the invitation.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: mark@example.com
+    To: Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-mirror-admins)
+    X-Launchpad-Notification-Type: team-membership-invitation
     Subject: Invitation for ubuntu-mirror-admins to join
     <BLANKLINE>
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
@@ -346,6 +415,13 @@ membership will only be activated if they accept the invitation.
     <BLANKLINE>
     Regards,
     The Launchpad team
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Mirror
+    Administrato=
+    rs team.
+    <BLANKLINE>
     ----------------------------------------
 
 If one of the admins accept the invitation, then a notification is sent
@@ -362,9 +438,12 @@ team.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, karl@canonical.com, limi@plone.org,
-        mark@example.com
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-invitation-accepted
     Subject: Invitation to ubuntu-mirror-admins accepted by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has accepted the invitation to make Mirror
@@ -374,6 +453,33 @@ team.
     <BLANKLINE>
     Mark Shuttleworth said:
      Of course I want to be part of ubuntu!
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: Karl Tilbury <karl@canonical.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team) @ubuntu-mirror-admins
+    X-Launchpad-Notification-Type: team-membership-invitation-accepted
+    Subject: Invitation to ubuntu-mirror-admins accepted by mark
+    <BLANKLINE>
+    Mark Shuttleworth (mark) has accepted the invitation to make Mirror
+    Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
+    team).
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    Mark Shuttleworth said:
+     Of course I want to be part of ubuntu!
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because your team Mirror Administrators is the
+    affe=
+    cted member.
+    <BLANKLINE>
     ----------------------------------------
 
 Similarly, a notification is sent if the invitation is declined.
@@ -384,7 +490,7 @@ Similarly, a notification is sent if the invitation is declined.
     # Reset stub.test_emails as we don't care about the notification triggered
     # by the addMember() call.
 
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> stub.test_emails = []
 
     >>> comment = "Landscape has nothing to do with ubuntu, unfortunately."
@@ -397,9 +503,13 @@ Similarly, a notification is sent if the invitation is declined.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        guilherme.salgado@canonical.com, jeff.waugh@ubuntulinux.com,
-        limi@plone.org, mark@example.com, test@canonical.com
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-invitation-declined
     Subject: Invitation to landscape-developers declined by mark
     <BLANKLINE>
     Mark Shuttleworth (mark) has declined the invitation to make Landscape
@@ -408,6 +518,32 @@ Similarly, a notification is sent if the invitation is declined.
     <BLANKLINE>
     Mark Shuttleworth said:
      Landscape has nothing to do with ubuntu, unfortunately.
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: Guilherme Salgado <guilherme.salgado@canonical.com>,
+        Sample Person <test@canonical.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team) @landscape-developers
+    X-Launchpad-Notification-Type: team-membership-invitation-declined
+    Subject: Invitation to landscape-developers declined by mark
+    <BLANKLINE>
+    Mark Shuttleworth (mark) has declined the invitation to make Landscape
+    Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    Mark Shuttleworth said:
+     Landscape has nothing to do with ubuntu, unfortunately.
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because your team Landscape Developers is the
+    affec=
+    ted member.
+    <BLANKLINE>
     ----------------------------------------
 
 It's also possible to forcibly add a team as a member of another one, by
@@ -423,16 +559,22 @@ passing force_team_add=True to the addMember() method.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: foo.bar@canonical.com
-    X-Launchpad-Message-Rationale: Indirect member (ubuntu-team)
+    To: Foo Bar <foo.bar@canonical.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team) @launchpad
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: launchpad joined ubuntu-team
      ...
-    You received this email because launchpad is the new member.
+    You received this email because your team Launchpad Developers is the
+    new m=
+    ember.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com,
-        limi@plone.org
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>
     X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: launchpad joined ubuntu-team
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
@@ -444,13 +586,16 @@ passing force_team_add=True to the addMember() method.
     -- =
     <BLANKLINE>
     You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: mark@example.com
+    To: Mark Shuttleworth <mark@example.com>
     X-Launchpad-Message-Rationale: Owner (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: launchpad joined ubuntu-team
      ...
     You received this email because you are the owner of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
 
 
@@ -480,16 +625,19 @@ team's admins.
     ...     utc_now + timedelta(days=9), mark)
     >>> flush_database_updates()
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: beta-admin@launchpad.net
+    To: Launchpad Beta Testers Owner <beta-admin@launchpad.net>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
+                                   @launchpad-beta-testers
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., 9 days from now, the membership
-    of Launchpad Beta Testers (launchpad-beta-testers) (which you are
-    the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
-    is due to expire.
+    of Launchpad Beta Testers (launchpad-beta-testers) (which you are the
+    owner=
+    of) in the Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     To prevent this membership from expiring, you should get in touch
@@ -505,6 +653,12 @@ team's admins.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because your team Launchpad Beta Testers is the
+    aff=
+    ected member.
+    <BLANKLINE>
     ----------------------------------------
 
 If the team's renewal policy is ONDEMAND, though, the member is invited
@@ -518,10 +672,12 @@ to renew his own membership.
     ...     utc_now + timedelta(days=9), mark)
     >>> flush_database_updates()
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com
+    To: Colin Watson <colin.watson@ubuntulinux.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., 9 days from now, your membership
@@ -537,19 +693,26 @@ to renew his own membership.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are the affected member.
+    <BLANKLINE>
     ----------------------------------------
 
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: beta-admin@launchpad.net
+    To: Launchpad Beta Testers Owner <beta-admin@launchpad.net>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
+                                   @launchpad-beta-testers
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., 9 days from now, the membership
-    of Launchpad Beta Testers (launchpad-beta-testers) (which you are
-    the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
-    is due to expire.
+    of Launchpad Beta Testers (launchpad-beta-testers) (which you are the
+    owner=
+    of) in the Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     If you want, you can renew this membership at
@@ -559,6 +722,12 @@ to renew his own membership.
     you know it's happened.
     <BLANKLINE>
     Thanks for using Launchpad!
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because your team Launchpad Beta Testers is the
+    aff=
+    ected member.
     <BLANKLINE>
     ----------------------------------------
 
@@ -577,15 +746,18 @@ his memberhip page, where he can extend it.
     ...     utc_now + timedelta(days=9), sampleperson)
     >>> flush_database_updates()
     >>> sampleperson_on_landscape.sendExpirationWarningEmail()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Landscape Developers <noreply@launchpad.net>
-    To: test@canonical.com
+    To: Sample Person <test@canonical.com>
+    X-Launchpad-Message-Rationale: Member (landscape-developers)
+    X-Launchpad-Notification-Type: team-membership-expiration-warning
     Subject: Your membership in landscape-developers is about to expire
     <BLANKLINE>
     On ..., 9 days from now, your membership
-    in the Landscape Developers (landscape-developers) Launchpad team
-    is due to expire.
+    in the Landscape Developers (landscape-developers) Launchpad team is due
+    to=
+    expire.
     <http://launchpad.dev/~landscape-developers>
     <BLANKLINE>
     To stay a member of this team you should extend your membership at
@@ -595,6 +767,10 @@ his memberhip page, where he can extend it.
     you know it's happened.
     <BLANKLINE>
     Thanks for using Launchpad!
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are the affected member.
     <BLANKLINE>
     ----------------------------------------
 
@@ -634,7 +810,9 @@ notification is sent to all team admins.
 
     >>> print_distinct_emails()
     From: Mirror Administrators <noreply@launchpad.net>
-    To: mark@example.com
+    To: Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-mirror-admins)
+    X-Launchpad-Notification-Type: team-membership-renewed
     Subject: karl extended their membership
     <BLANKLINE>
     Karl Tilbury (karl) renewed their own membership in the Mirror
@@ -643,6 +821,13 @@ notification is sent to all team admins.
     <BLANKLINE>
     Regards,
     The Launchpad team
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this email because you are an admin of the Mirror
+    Administrato=
+    rs team.
+    <BLANKLINE>
     ----------------------------------------
 
 
@@ -678,22 +863,37 @@ email notification.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        jeff.waugh@ubuntulinux.com, limi@plone.org, mark@example.com
+    To: Alexander Limi <limi@plone.org>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: cprov made admin by mark
     <BLANKLINE>
     The membership status of Celso Providelo (cprov) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (mark) from Approved to
     Administrator.
     <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    -- =
+    You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
-    To: celso.providelo@canonical.com
+    To: Celso Providelo <celso.providelo@canonical.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: cprov made admin by mark
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (mark) from Approved to Administrator.
     <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    -- =
+    You received this email because you are the affected member.
+    <BLANKLINE>
     ----------------------------------------
 
 If a team admin changes his own membership, the notification sent will
@@ -710,14 +910,23 @@ will only be sent to the team administrators.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-        foo.bar@canonical.com, limi@plone.org, mark@example.com
+    To: Alexander Limi <limi@plone.org>,
+        Celso Providelo <celso.providelo@canonical.com>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: Membership change: jdub in ubuntu-team
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
     (ubuntu-team) was changed by the user from Administrator to
     Approved.
     <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    -- =
+    You received this email because you are an admin of the Ubuntu Team team.
+    <BLANKLINE>
     ----------------------------------------
 
 Deactivating the membership of a team also generates notifications for
@@ -736,15 +945,38 @@ wouldn't make sense to the members of the team reading it.
 
     >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
-    To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
-        foo.bar@canonical.com, karl@canonical.com, limi@plone.org,
-        mark@example.com
+    To: Alexander Limi <limi@plone.org>,
+        Celso Providelo <celso.providelo@canonical.com>,
+        Colin Watson <colin.watson@ubuntulinux.com>,
+        Foo Bar <foo.bar@canonical.com>
+    X-Launchpad-Message-Rationale: Admin (ubuntu-team)
+    X-Launchpad-Notification-Type: team-membership-change
     Subject: ubuntu-mirror-admins deactivated by mark
     <BLANKLINE>
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
     the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
     (mark) from Approved to Deactivated.
     <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    -- =
+    You received this email because you are an admin of the Ubuntu Team team.
+    ----------------------------------------
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: Karl Tilbury <karl@canonical.com>,
+        Mark Shuttleworth <mark@example.com>
+    X-Launchpad-Message-Rationale: Member (ubuntu-team) @ubuntu-mirror-admins
+    X-Launchpad-Notification-Type: team-membership-change
+    Subject: ubuntu-mirror-admins deactivated by mark
+    <BLANKLINE>
+    The membership status of Mirror Administrators (ubuntu-mirror-admins) in
+    the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
+    (mark) from Approved to Deactivated.
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    -- =
+    You received this email because your team Mirror Administrators is the
+    affe=
+    cted member.
     ----------------------------------------
 
 Deactivating memberships can also be done silently (no email
@@ -807,10 +1039,12 @@ notification email contain subscription information.
     >>> member = factory.makePerson(
     ...     name='team-member', email='team-member@example.com')
     >>> ignored = team_one.addMember(member, owner)
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Team One ...
-    To: team-member...
+    To: Team-member <team-member...>
     X-Launchpad-Message-Rationale: Member (team-one)
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: You have been added to team-one
     <BLANKLINE>
     Team-owner (team-owner) added you as a member of Team One (team-one).
@@ -818,11 +1052,12 @@ notification email contain subscription information.
     <BLANKLINE>
     If you would like to subscribe to the team list, use the link below
     to update your Mailing List Subscription preferences.
-      <http://launchpad.dev/people/+me/+editmailinglists>
+      <http://launchpad.dev/~/+editmailinglists>
     <BLANKLINE>
     -- =
     <BLANKLINE>
     You received this email because you are the new member.
+    <BLANKLINE>
     ----------------------------------------
 
 When a team join a team with a mailing list, the new member notification
@@ -831,10 +1066,12 @@ emails contain subscription information.
     >>> team_two = factory.makeTeam(
     ...     name='team-two', email='team-two@example.com', owner=owner)
     >>> ignored = team_one.addMember(team_two, owner, force_team_add=True)
+    >>> run_mail_jobs()
     >>> print_distinct_emails()
     From: Team One ...
-    To: team-two...
-    X-Launchpad-Message-Rationale: Indirect member (team-one)
+    To: Team Two <team-two...>
+    X-Launchpad-Message-Rationale: Member (team-one) @team-two
+    X-Launchpad-Notification-Type: team-membership-new
     Subject: team-two joined team-one
     <BLANKLINE>
     Team-owner (team-owner) added Team Two (team-two) (which you are a
@@ -843,11 +1080,10 @@ emails contain subscription information.
     <BLANKLINE>
     If you would like to subscribe to the team list, use the link below
     to update your Mailing List Subscription preferences.
-      <http://launchpad.dev/people/+me/+editmailinglists>
+      <http://launchpad.dev/~/+editmailinglists>
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You received this email because team-two is the new member.
+    You received this email because your team Team Two is the new member.
+    <BLANKLINE>
     ----------------------------------------
-
-
