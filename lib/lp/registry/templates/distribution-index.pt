@@ -97,16 +97,16 @@
 
       <div id="packages-archives" class="portlet">
         <ul>
-          <li>
+          <li tal:condition="context/supports_mirrors">
             <a tal:replace="structure overview_menu/cdimage_mirrors/fmt:link" />
           </li>
-          <li>
+          <li tal:condition="context/supports_mirrors">
             <a tal:replace="structure overview_menu/archive_mirrors/fmt:link" />
           </li>
-          <li>
+          <li tal:condition="context/supports_ppas">
             <a tal:replace="structure overview_menu/ppas/fmt:link" />
           </li>
-          <li>
+          <li tal:condition="context/official_packages">
             <a tal:replace="structure overview_menu/builds/fmt:link" />
           </li>
         </ul>
