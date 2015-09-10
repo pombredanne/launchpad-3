@@ -1047,6 +1047,9 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
 
         return sprite_str
 
+    def icon(self):
+        return '<span class="%s"></span>' % self.sprite_css()
+
     def badges(self):
 
         badges = ''
