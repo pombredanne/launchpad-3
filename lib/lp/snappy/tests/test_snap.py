@@ -382,8 +382,7 @@ class TestSnapSet(TestCaseWithFactory):
         if branch is not None:
             components["branch"] = branch
         else:
-            components["git_repository"] = git_ref.repository
-            components["git_path"] = git_ref.path
+            components["git_ref"] = git_ref
         return components
 
     def test_creation_bzr(self):
@@ -392,7 +391,6 @@ class TestSnapSet(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         components = self.makeSnapComponents(branch=branch)
         snap = getUtility(ISnapSet).new(**components)
-        transaction.commit()
         self.assertEqual(components["registrant"], snap.registrant)
         self.assertEqual(components["owner"], snap.owner)
         self.assertEqual(components["distro_series"], snap.distro_series)
@@ -400,6 +398,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(branch, snap.branch)
         self.assertIsNone(snap.git_repository)
         self.assertIsNone(snap.git_path)
+        self.assertIsNone(snap.git_ref)
         self.assertTrue(snap.require_virtualized)
 
     def test_creation_git(self):
@@ -408,7 +407,6 @@ class TestSnapSet(TestCaseWithFactory):
         [ref] = self.factory.makeGitRefs()
         components = self.makeSnapComponents(git_ref=ref)
         snap = getUtility(ISnapSet).new(**components)
-        transaction.commit()
         self.assertEqual(components["registrant"], snap.registrant)
         self.assertEqual(components["owner"], snap.owner)
         self.assertEqual(components["distro_series"], snap.distro_series)
@@ -416,6 +414,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertIsNone(snap.branch)
         self.assertEqual(ref.repository, snap.git_repository)
         self.assertEqual(ref.path, snap.git_path)
+        self.assertEqual(ref, snap.git_ref)
         self.assertTrue(snap.require_virtualized)
 
     def test_creation_no_source(self):
@@ -499,10 +498,12 @@ class TestSnapSet(TestCaseWithFactory):
         repositories = [self.factory.makeGitRepository() for i in range(2)]
         snaps = []
         paths = []
+        refs = []
         for repository in repositories:
             for i in range(2):
                 [ref] = self.factory.makeGitRefs(repository=repository)
                 paths.append(ref.path)
+                refs.append(ref)
                 snaps.append(self.factory.makeSnap(
                     git_ref=ref, date_created=ONE_DAY_AGO))
         getUtility(ISnapSet).detachFromGitRepository(repositories[0])
@@ -512,6 +513,8 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(
             [None, None, paths[2], paths[3]],
             [snap.git_path for snap in snaps])
+        self.assertEqual(
+            [None, None, refs[2], refs[3]], [snap.git_ref for snap in snaps])
         for snap in snaps[:2]:
             self.assertSqlAttributeEqualsDate(
                 snap, "date_last_modified", UTC_NOW)
@@ -601,8 +604,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         if branch is not None:
             kwargs["branch"] = api_url(branch)
         if git_ref is not None:
-            kwargs["git_repository"] = api_url(git_ref.repository)
-            kwargs["git_path"] = git_ref.path
+            kwargs["git_ref"] = api_url(git_ref)
         if processors is not None:
             kwargs["processors"] = [
                 api_url(processor) for processor in processors]
@@ -635,6 +637,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertEqual(self.getURL(branch), snap["branch_link"])
             self.assertIsNone(snap["git_repository_link"])
             self.assertIsNone(snap["git_path"])
+            self.assertIsNone(snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
 
     def test_new_git(self):
@@ -654,6 +657,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(ref.repository), snap["git_repository_link"])
             self.assertEqual(ref.path, snap["git_path"])
+            self.assertEqual(self.getURL(ref), snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
 
     def test_duplicate(self):

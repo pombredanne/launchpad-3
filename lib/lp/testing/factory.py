@@ -4548,18 +4548,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroSeries()
         if name is None:
             name = self.getUniqueString(u"snap-name")
-        kwargs = {}
         if branch is None and git_ref is None:
             branch = self.makeAnyBranch()
-        if branch is not None:
-            kwargs["branch"] = branch
-        elif git_ref is not None:
-            kwargs["git_repository"] = git_ref.repository
-            kwargs["git_path"] = git_ref.path
         snap = getUtility(ISnapSet).new(
             registrant, owner, distroseries, name,
             require_virtualized=require_virtualized, processors=processors,
-            date_created=date_created, **kwargs)
+            date_created=date_created, branch=branch, git_ref=git_ref)
         IStore(snap).flush()
         return snap
 

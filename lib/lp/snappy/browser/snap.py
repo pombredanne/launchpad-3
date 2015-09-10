@@ -29,6 +29,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.code.browser.widgets.gitref import GitRefWidget
 from lp.registry.enums import VCSType
 from lp.services.webapp import (
     canonical_url,
@@ -116,9 +117,8 @@ class SnapView(LaunchpadView):
     def source(self):
         if self.context.branch is not None:
             return self.context.branch
-        elif self.context.git_repository is not None:
-            return self.context.git_repository.getRefByPath(
-                self.context.git_path)
+        elif self.context.git_ref is not None:
+            return self.context.git_ref
         else:
             return None
 
@@ -162,8 +162,7 @@ class ISnapEditSchema(Interface):
     # Each of these is only required if vcs has an appropriate value.  Later
     # validation takes care of adjusting the required attribute.
     branch = copy_field(ISnap['branch'], required=True)
-    git_repository = copy_field(ISnap['git_repository'], required=True)
-    git_path = copy_field(ISnap['git_path'], required=True)
+    git_ref = copy_field(ISnap['git_ref'], required=True)
 
 
 class BaseSnapAddEditView(LaunchpadEditFormView):
@@ -193,12 +192,10 @@ class BaseSnapAddEditView(LaunchpadEditFormView):
             vcs = data.get('vcs')
             if vcs == VCSType.BZR:
                 self.widgets['branch'].context.required = True
-                self.widgets['git_repository'].context.required = False
-                self.widgets['git_path'].context.required = False
+                self.widgets['git_ref'].context.required = False
             elif vcs == VCSType.GIT:
                 self.widgets['branch'].context.required = False
-                self.widgets['git_repository'].context.required = True
-                self.widgets['git_path'].context.required = True
+                self.widgets['git_ref'].context.required = True
             else:
                 raise AssertionError("Unknown branch type %s" % vcs)
         super(BaseSnapAddEditView, self).validate_widgets(data, names=names)
@@ -210,8 +207,7 @@ class BaseSnapEditView(BaseSnapAddEditView):
     def request_action(self, action, data):
         vcs = data.pop('vcs', None)
         if vcs == VCSType.BZR:
-            data['git_repository'] = None
-            data['git_path'] = None
+            data['git_ref'] = None
         elif vcs == VCSType.GIT:
             data['branch'] = None
         self.updateContextFromData(data)
@@ -245,14 +241,14 @@ class SnapEditView(BaseSnapEditView):
     page_title = 'Edit'
 
     field_names = [
-        'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_repository',
-        'git_path']
+        'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_ref']
     custom_widget('distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
+    custom_widget('git_ref', GitRefWidget)
 
     @property
     def initial_values(self):
-        if self.context.git_repository is not None:
+        if self.context.git_ref is not None:
             vcs = VCSType.GIT
         else:
             vcs = VCSType.BZR

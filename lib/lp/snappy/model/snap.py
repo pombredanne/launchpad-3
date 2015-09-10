@@ -110,12 +110,12 @@ class Snap(Storm):
     require_virtualized = Bool(name='require_virtualized')
 
     def __init__(self, registrant, owner, distro_series, name,
-                 description=None, branch=None, git_repository=None,
-                 git_path=None, require_virtualized=True,
-                 date_created=DEFAULT):
+                 description=None, branch=None, git_ref=None,
+                 require_virtualized=True, date_created=DEFAULT):
         """Construct a `Snap`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
+
         super(Snap, self).__init__()
         self.registrant = registrant
         self.owner = owner
@@ -123,11 +123,28 @@ class Snap(Storm):
         self.name = name
         self.description = description
         self.branch = branch
-        self.git_repository = git_repository
-        self.git_path = git_path
+        self.git_ref = git_ref
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
+
+    @property
+    def git_ref(self):
+        """See `ISnap`."""
+        if self.git_repository is not None:
+            return self.git_repository.getRefByPath(self.git_path)
+        else:
+            return None
+
+    @git_ref.setter
+    def git_ref(self, value):
+        """See `ISnap`."""
+        if value is not None:
+            self.git_repository = value.repository
+            self.git_path = value.path
+        else:
+            self.git_repository = None
+            self.git_path = None
 
     def _getProcessors(self):
         return list(Store.of(self).find(
@@ -280,8 +297,8 @@ class SnapSet:
     """See `ISnapSet`."""
 
     def new(self, registrant, owner, distro_series, name, description=None,
-            branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, processors=None, date_created=DEFAULT):
+            branch=None, git_ref=None, require_virtualized=True,
+            processors=None, date_created=DEFAULT):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -293,13 +310,13 @@ class SnapSet:
                     "%s cannot create snap packages owned by %s." %
                     (registrant.displayname, owner.displayname))
 
-        if branch is None and git_repository is None:
+        if branch is None and git_ref is None:
             raise NoSourceForSnap
 
         store = IMasterStore(Snap)
         snap = Snap(
             registrant, owner, distro_series, name, description=description,
-            branch=branch, git_repository=git_repository, git_path=git_path,
+            branch=branch, git_ref=git_ref,
             require_virtualized=require_virtualized, date_created=date_created)
         store.add(snap)
 
