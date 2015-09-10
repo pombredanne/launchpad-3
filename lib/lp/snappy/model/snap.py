@@ -123,12 +123,7 @@ class Snap(Storm):
         self.name = name
         self.description = description
         self.branch = branch
-        if git_ref is not None:
-            self.git_repository = git_ref.repository
-            self.git_path = git_ref.path
-        else:
-            self.git_repository = None
-            self.git_path = None
+        self.git_ref = git_ref
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
@@ -144,8 +139,12 @@ class Snap(Storm):
     @git_ref.setter
     def git_ref(self, value):
         """See `ISnap`."""
-        self.git_repository = value.repository
-        self.git_path = value.path
+        if value is not None:
+            self.git_repository = value.repository
+            self.git_path = value.path
+        else:
+            self.git_repository = None
+            self.git_path = None
 
     def _getProcessors(self):
         return list(Store.of(self).find(
