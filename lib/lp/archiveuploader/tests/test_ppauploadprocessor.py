@@ -9,7 +9,7 @@
 
 __metaclass__ = type
 
-from email import message_from_string
+from operator import itemgetter
 import os
 import shutil
 
@@ -27,7 +27,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail import stub
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
@@ -43,6 +42,7 @@ from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.dbuser import switch_dbuser
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -87,20 +87,19 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             "X-Launchpad-PPA" header; it defaults to "name16" and should be
             explicitly set to None for non-PPA or rejection notifications.
         """
-        for item in expected:
+        notifications = self.assertEmailQueueLength(
+            len(expected), sort_key=itemgetter('X-Envelope-To'))
+
+        for item, msg in zip(expected, notifications):
             recipient = item.get("recipient", self.name16_recipient)
             contents = item.get("contents", [])
             ppa_header = item.get("ppa_header", "name16")
-
-            from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-            msg = message_from_string(raw_msg)
 
             # This is now a non-multipart message.
             self.assertFalse(msg.is_multipart())
             body = msg.get_payload(decode=True)
 
-            clean_recipients = [r.strip() for r in to_addrs]
-            self.assertContentEqual([recipient], clean_recipients)
+            self.assertEqual(recipient, msg['X-Envelope-To'])
 
             subject = "Subject: %s\n" % msg['Subject']
             body = subject + body
@@ -111,10 +110,6 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             if ppa_header is not None:
                 self.assertIn('X-Launchpad-PPA', msg.keys())
                 self.assertEqual(msg['X-Launchpad-PPA'], ppa_header)
-
-        self.assertEqual(
-            [], stub.test_emails,
-            "%d emails left over" % len(stub.test_emails))
 
     def checkFilesRestrictedInLibrarian(self, queue_item, condition):
         """Check the libraryfilealias restricted flag.
@@ -300,8 +295,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
-        # Consume the test email so the assertion futher down does not fail.
-        _from_addr, _to_addrs, _raw_msg = stub.test_emails.pop()
+        # Consume the test email so the assertion further down does not fail.
+        pop_notifications()
 
         # The SourcePackageRelease still has a component of universe:
         pub_foo = self.name16.archive.getPublishedSources(name=u"bar").one()
@@ -320,8 +315,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.build_uploadprocessor, upload_dir, build=build)
 
         # No mails are sent for successful binary uploads.
-        self.assertEqual(len(stub.test_emails), 0,
-                         "Unexpected email generated on binary upload.")
+        self.assertEmailQueueLength(0)
 
         # Publish the binary.
         [queue_item] = self.breezy.getPackageUploads(
@@ -477,7 +471,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             name12.preferredemail.email)
         self.assertEmails([
             {"ppa_header": "cprov", "recipient": expected_recipient}
-            for expected_recipient in reversed(sorted(expected_recipients))])
+            for expected_recipient in sorted(expected_recipients)])
 
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroseries of PPA uploads.
@@ -850,9 +844,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Please note: this upload goes to the Ubuntu main archive.
         upload_dir = self.queueUpload("bar_1.0-10")
         self.processUpload(self.uploadprocessor, upload_dir)
-        # Discard the announcement email and check the acceptance message
-        # content.
-        stub.test_emails.pop()
+        pop_notifications()
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
@@ -991,9 +983,9 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             u'Files specified in DSC are broken or missing, skipping package '
             u'unpack verification.')
 
-        # Also, the email generated should be sane.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
+        # Also, the email generated should be sane.  Any of the multiple
+        # notifications will do.
+        msg = pop_notifications()[-1]
         body = msg.get_payload(decode=True)
 
         self.assertTrue(
@@ -1015,8 +1007,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         # The email generated should be sane.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
+        [msg] = pop_notifications()
         body = msg.get_payload(decode=True)
 
         self.assertTrue(
@@ -1148,7 +1139,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         queue_item.setAccepted()
         queue_item.realiseUpload()
         transaction.commit()
-        stub.test_emails.pop()
+        pop_notifications()
 
         # Now upload a 3.0 (quilt) source with missing orig*.tar.* to a
         # PPA. All of the missing files will be retrieved from the

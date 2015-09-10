@@ -29,7 +29,6 @@ from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.mail import stub
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackagePublishingStatus,
@@ -192,10 +191,11 @@ class PackageUploadTestCase(TestCaseWithFactory):
         with dbuser(config.IPackageUploadNotificationJobSource.dbuser):
             JobRunner([job]).runAll()
 
-    def assertEmail(self, expected_to_addrs):
-        """Pop an email from the stub queue and check its recipients."""
-        _, to_addrs, _ = stub.test_emails.pop()
-        self.assertEqual(expected_to_addrs, to_addrs)
+    def assertEmails(self, expected_to_addrs):
+        """Pop emails from the stub queue and check their recipients."""
+        notifications = self.assertEmailQueueLength(len(expected_to_addrs))
+        for expected_to_addr, msg in zip(expected_to_addrs, notifications):
+            self.assertEqual(expected_to_addr, msg["X-Envelope-To"])
 
     def test_acceptFromQueue_source_sends_email(self):
         # Accepting a source package sends emails to the announcement list
@@ -204,10 +204,11 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload()
         upload.acceptFromQueue()
         self.runPackageUploadNotificationJob()
-        self.assertEqual(2, len(stub.test_emails))
         # Emails sent are the uploader's notification and the announcement:
-        self.assertEmail([uploader.preferredemail.email])
-        self.assertEmail(["autotest_changes@ubuntu.com"])
+        self.assertEmails([
+            uploader.preferredemail.email,
+            "autotest_changes@ubuntu.com",
+            ])
 
     def test_acceptFromQueue_source_backports_sends_no_announcement(self):
         # Accepting a source package into BACKPORTS does not send an
@@ -219,10 +220,9 @@ class PackageUploadTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.BACKPORTS)
         upload.acceptFromQueue()
         self.runPackageUploadNotificationJob()
-        self.assertEqual(1, len(stub.test_emails))
         # Only one email is sent, to the person in the changed-by field.  No
         # announcement email is sent.
-        self.assertEmail([uploader.preferredemail.email])
+        self.assertEmails([uploader.preferredemail.email])
 
     def test_acceptFromQueue_source_translations_sends_no_email(self):
         # Accepting source packages in the "translations" section (i.e.
@@ -235,7 +235,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.acceptFromQueue()
         self.runPackageUploadNotificationJob()
         self.assertEqual("DONE", upload.status.name)
-        self.assertEqual(0, len(stub.test_emails))
+        self.assertEmailQueueLength(0)
 
     def test_acceptFromQueue_source_creates_builds(self):
         # Accepting a source package creates build records.
@@ -281,7 +281,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, _ = self.makeBuildPackageUpload()
         upload.acceptFromQueue()
         self.runPackageUploadNotificationJob()
-        self.assertEqual(0, len(stub.test_emails))
+        self.assertEmailQueueLength(0)
 
     def test_acceptFromQueue_handles_duplicates(self):
         # Duplicate queue entries are handled sensibly.
@@ -329,8 +329,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
         self.runPackageUploadNotificationJob()
-        self.assertEqual(1, len(stub.test_emails))
-        self.assertEmail([uploader.preferredemail.email])
+        self.assertEmails([uploader.preferredemail.email])
 
     def test_rejectFromQueue_binary_sends_email(self):
         # Rejecting a binary package sends an email to the uploader.
@@ -338,8 +337,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeBuildPackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
         self.runPackageUploadNotificationJob()
-        self.assertEqual(1, len(stub.test_emails))
-        self.assertEmail([uploader.preferredemail.email])
+        self.assertEmails([uploader.preferredemail.email])
 
     def test_rejectFromQueue_source_translations_sends_no_email(self):
         # Rejecting a language pack sends no email.
@@ -350,7 +348,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             section_name="translations")
         upload.rejectFromQueue(self.factory.makePerson())
         self.runPackageUploadNotificationJob()
-        self.assertEqual(0, len(stub.test_emails))
+        self.assertEmailQueueLength(0)
 
     def test_rejectFromQueue_source_with_reason(self):
         # Rejecting a source package with a reason includes it in the email to
@@ -360,10 +358,10 @@ class PackageUploadTestCase(TestCaseWithFactory):
         person = self.factory.makePerson()
         upload.rejectFromQueue(user=person, comment='Because.')
         self.runPackageUploadNotificationJob()
-        self.assertEqual(1, len(stub.test_emails))
+        [msg] = self.assertEmailQueueLength(1)
         self.assertIn(
             'Rejected:\nRejected by %s: Because.' % person.displayname,
-            stub.test_emails[0][-1])
+            str(msg))
 
 
 class TestPackageUploadSecurity(TestCaseWithFactory):
