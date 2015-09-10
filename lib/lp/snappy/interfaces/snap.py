@@ -65,6 +65,7 @@ from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
@@ -149,12 +150,12 @@ class NoSuchSnap(NameLookupFailed):
 
 @error_status(httplib.BAD_REQUEST)
 class NoSourceForSnap(Exception):
-    """Snap packages must have a source (Bazaar branch or Git repository)."""
+    """Snap packages must have a source (Bazaar or Git branch)."""
 
     def __init__(self):
         super(NoSourceForSnap, self).__init__(
             "New snap packages must have either a Bazaar branch or a Git "
-            "repository.")
+            "branch.")
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -264,16 +265,22 @@ class ISnapEditableAttributes(IHasOwner):
     git_repository = exported(ReferenceChoice(
         title=_("Git repository"),
         schema=IGitRepository, vocabulary="GitRepository",
-        required=False, readonly=False,
+        required=False, readonly=True,
         description=_(
             "A Git repository with a branch containing a snapcraft.yaml "
             "recipe at the top level.")))
 
     git_path = exported(TextLine(
-        title=_("Git branch path"), required=False, readonly=False,
+        title=_("Git branch path"), required=False, readonly=True,
         description=_(
             "The path of the Git branch containing a snapcraft.yaml recipe at "
             "the top level.")))
+
+    git_ref = exported(Reference(
+        IGitRef, title=_("Git branch"), required=False, readonly=False,
+        description=_(
+            "The Git branch containing a snapcraft.yaml recipe at the top "
+            "level.")))
 
 
 class ISnapAdminAttributes(Interface):
@@ -325,11 +332,11 @@ class ISnapSet(Interface):
     @export_factory_operation(
         ISnap, [
             "owner", "distro_series", "name", "description", "branch",
-            "git_repository", "git_path"])
+            "git_ref"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
-            branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, processors=None, date_created=None):
+            branch=None, git_ref=None, require_virtualized=True,
+            processors=None, date_created=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):

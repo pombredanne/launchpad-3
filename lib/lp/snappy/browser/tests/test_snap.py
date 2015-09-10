@@ -165,7 +165,7 @@ class TestSnapEditView(BrowserTestCase):
         browser.getControl("Git", index=0).click()
         browser.getControl("Git repository").value = (
             new_git_ref.repository.identity)
-        browser.getControl("Git branch path").value = new_git_ref.path
+        browser.getControl("Git branch").value = new_git_ref.path
         browser.getControl("Update snap package").click()
 
         content = find_main_content(browser.contents)
