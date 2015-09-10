@@ -176,7 +176,8 @@ $(YUI_DEFAULT_SYMLINK): $(YUI_BUILDS)
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 	-mkdir $@
-	for jsdir in lib/lp/*/javascript; do \
+	-mkdir $@/services
+	for jsdir in lib/lp/*/javascript lib/lp/services/*/javascript; do \
 		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
 		cp -a $$jsdir $@/$$app; \
 	done

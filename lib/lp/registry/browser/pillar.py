@@ -33,7 +33,6 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser.absoluteurl import absoluteURL
 
-from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.tales import MenuAPI
 from lp.app.browser.vocabulary import vocabulary_filters
@@ -61,6 +60,7 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,
+    get_batch_properties_for_json_cache,
     StormRangeFactory,
     )
 from lp.services.webapp.breadcrumb import (
@@ -375,36 +375,17 @@ class PillarSharingView(LaunchpadView):
             self.specification_sharing_policies)
         cache.objects['has_edit_permission'] = check_permission(
             "launchpad.Edit", self.context)
-        view_names = set(reg.name for reg in
-                         iter_view_registrations(self.__class__))
-        if len(view_names) != 1:
-            raise AssertionError("Ambiguous view name.")
-        cache.objects['view_name'] = view_names.pop()
         batch_navigator = self.grantees()
         cache.objects['grantee_data'] = (
             self._getSharingService().jsonGranteeData(batch_navigator.batch))
+        cache.objects.update(
+            get_batch_properties_for_json_cache(self, batch_navigator))
 
         grant_counts = (
             self._getSharingService().getAccessPolicyGrantCounts(self.context))
         cache.objects['invisible_information_types'] = [
             count_info[0].title for count_info in grant_counts
             if count_info[1] == 0]
-
-        def _getBatchInfo(batch):
-            if batch is None:
-                return None
-            return {'memo': batch.range_memo,
-                    'start': batch.startNumber() - 1}
-
-        next_batch = batch_navigator.batch.nextBatch()
-        cache.objects['next'] = _getBatchInfo(next_batch)
-        prev_batch = batch_navigator.batch.prevBatch()
-        cache.objects['prev'] = _getBatchInfo(prev_batch)
-        cache.objects['total'] = batch_navigator.batch.total()
-        cache.objects['forwards'] = batch_navigator.batch.range_forwards
-        last_batch = batch_navigator.batch.lastBatch()
-        cache.objects['last_start'] = last_batch.startNumber() - 1
-        cache.objects.update(_getBatchInfo(batch_navigator.batch))
 
 
 class PillarPersonSharingView(LaunchpadView):

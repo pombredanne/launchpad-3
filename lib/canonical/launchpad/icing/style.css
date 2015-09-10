@@ -871,6 +871,13 @@ div.translation-help-links div {
     }
 
 
+/* === Webhooks === */
+
+table.listing tr.webhook-delivery:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 
 /* ====== Content area styles ====== */
 

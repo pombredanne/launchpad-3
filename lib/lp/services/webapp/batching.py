@@ -34,6 +34,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.browser.launchpad import iter_view_registrations
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import ISlaveStore
@@ -47,6 +48,33 @@ from lp.services.webapp.interfaces import (
     StormRangeFactoryError,
     )
 from lp.services.webapp.publisher import LaunchpadView
+
+
+def get_batch_properties_for_json_cache(view, batchnav):
+    """Get values to insert into `IJSONRequestCache` for JS batchnavs."""
+    properties = {}
+    view_names = set(
+        reg.name for reg in iter_view_registrations(view.__class__))
+    if len(view_names) != 1:
+        raise AssertionError("Ambiguous view name.")
+    properties['view_name'] = view_names.pop()
+
+    def _getBatchInfo(batch):
+        if batch is None:
+            return None
+        return {'memo': batch.range_memo,
+                'start': batch.startNumber() - 1}
+
+    next_batch = batchnav.batch.nextBatch()
+    properties['next'] = _getBatchInfo(next_batch)
+    prev_batch = batchnav.batch.prevBatch()
+    properties['prev'] = _getBatchInfo(prev_batch)
+    properties['total'] = batchnav.batch.total()
+    properties['forwards'] = batchnav.batch.range_forwards
+    last_batch = batchnav.batch.lastBatch()
+    properties['last_start'] = last_batch.startNumber() - 1
+    properties.update(_getBatchInfo(batchnav.batch))
+    return properties
 
 
 @adapter(IResultSet)
