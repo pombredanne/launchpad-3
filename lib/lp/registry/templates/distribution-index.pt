@@ -95,7 +95,8 @@
       define="overview_menu context/menu:overview">
       <tal:menu replace="structure context/@@+global-actions" />
 
-      <div id="packages-archives" class="portlet">
+      <div id="packages-archives" class="portlet"
+           tal:condition="python: context.supports_mirrors or context.supports_ppas or context.official_packages">
         <ul>
           <li tal:condition="context/supports_mirrors">
             <a tal:replace="structure overview_menu/cdimage_mirrors/fmt:link" />
