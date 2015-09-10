@@ -753,7 +753,9 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         notifications = pop_notifications(sort_key=sort_key)
         self.assertEqual(
             length, len(notifications),
-            "Expected %d emails, got %d" % (length, len(notifications)))
+            "Expected %d emails, got %d:\n\n%s" % (
+                length, len(notifications),
+                "\n\n".join(str(n) for n in notifications)))
         return notifications
 
 
