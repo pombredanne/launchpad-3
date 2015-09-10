@@ -48,8 +48,7 @@ class GitRefWidget(BrowserWidget, InputWidget):
             Choice(
                 __name__="repository", title=u"Git repository",
                 required=False, vocabulary="GitRepository"),
-            TextLine(
-                __name__="path", title=u"Git branch path", required=False),
+            TextLine(__name__="path", title=u"Git branch", required=False),
             ]
         for field in fields:
             setUpWidget(
