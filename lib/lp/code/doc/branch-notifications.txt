@@ -60,6 +60,8 @@ also sends the email to the list of recipients.
     ~name12/firefox/main
     >>> print branch_notification['X-Launchpad-Message-Rationale']
     Subscriber
+    >>> print branch_notification['X-Launchpad-Message-For']
+    name12
     >>> notification_body = branch_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     The contents.

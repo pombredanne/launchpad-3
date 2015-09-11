@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductJobs."""
@@ -442,6 +442,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             ('X-Launchpad-Project', '%s (%s)' %
               (product.displayname, product.name)),
             ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ('X-Launchpad-Message-For', product.owner.name),
             ('Reply-To', reply_to),
             ]
         self.assertContentEqual(expected_headers, headers.items())
@@ -458,6 +459,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             ('X-Launchpad-Project', '%s (%s)' %
               (product.displayname, product.name)),
             ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ('X-Launchpad-Message-For', product.owner.name),
             ]
         self.assertContentEqual(expected_headers, headers.items())
 

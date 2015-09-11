@@ -123,6 +123,8 @@ class BaseMailer:
         reason, rationale = self._recipients.getReason(email)
         headers = OrderedDict()
         headers['X-Launchpad-Message-Rationale'] = reason.mail_header
+        if reason.subscriber.name is not None:
+            headers['X-Launchpad-Message-For'] = reason.subscriber.name
         if self.notification_type is not None:
             headers['X-Launchpad-Notification-Type'] = self.notification_type
         reply_to = self._getReplyToAddress(email, recipient)

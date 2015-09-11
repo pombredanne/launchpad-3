@@ -236,6 +236,7 @@ class QuestionEmailJob(BaseRunnableJob):
         for email in recipients.getEmails():
             reason, header = recipients.getReason(email)
             headers['X-Launchpad-Message-Rationale'] = header
+            headers['X-Launchpad-Message-For'] = reason.subscriber.name
             formatted_body = self.buildBody(reason.getReason())
             simple_sendmail(
                 self.from_address, email, self.subject, formatted_body,
