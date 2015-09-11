@@ -17,6 +17,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.interface import Interface
 from zope.schema import (
     Bool,
     Int,
@@ -38,9 +39,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-class ISourcePackageRecipeBuild(IPackageBuild):
-    """A build of a source package."""
-    export_as_webservice_entry()
+class ISourcePackageRecipeBuildView(IPackageBuild):
 
     id = Int(title=_("Identifier for this build."))
 
@@ -83,6 +82,9 @@ class ISourcePackageRecipeBuild(IPackageBuild):
     def getFileByName(filename):
         """Return the file under +files with specified name."""
 
+
+class ISourcePackageRecipeBuildEdit(Interface):
+
     def cancel():
         """Cancel the build if it is either pending or in progress.
 
@@ -99,6 +101,13 @@ class ISourcePackageRecipeBuild(IPackageBuild):
 
     def destroySelf():
         """Delete the build itself."""
+
+
+class ISourcePackageRecipeBuild(ISourcePackageRecipeBuildView,
+                                ISourcePackageRecipeBuildEdit):
+    """A build of a source package."""
+
+    export_as_webservice_entry()
 
 
 class ISourcePackageRecipeBuildSource(ISpecificBuildFarmJobSource):

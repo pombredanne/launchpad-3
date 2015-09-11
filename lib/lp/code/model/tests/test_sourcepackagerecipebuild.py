@@ -38,6 +38,7 @@ from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     login,
     person_logged_in,
@@ -78,7 +79,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # SourcePackageRecipeBuild provides IPackageBuild and
         # ISourcePackageRecipeBuild.
         spb = self.makeSourcePackageRecipeBuild()
-        self.assertProvides(spb, ISourcePackageRecipeBuild)
+        with admin_logged_in():
+            self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_implements_interface(self):
         build = self.makeSourcePackageRecipeBuild()
@@ -88,7 +90,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # A source package recipe build can be stored in the database
         spb = self.makeSourcePackageRecipeBuild()
         transaction.commit()
-        self.assertProvides(spb, ISourcePackageRecipeBuild)
+        with admin_logged_in():
+            self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()
@@ -409,7 +412,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
 
     def test_destroySelf_clears_release(self):
         # Destroying a sourcepackagerecipebuild removes references to it from
@@ -418,7 +422,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         release = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=build)
         self.assertEqual(build, release.source_package_recipe_build)
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
         self.assertIs(None, release.source_package_recipe_build)
         transaction.commit()
 
@@ -431,7 +436,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # Ensure database ids are set.
         store.flush()
         build_farm_job_id = naked_build.build_farm_job_id
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
         self.assertIs(None, store.get(BuildFarmJob, build_farm_job_id))
 
     def test_cancel(self):
@@ -439,7 +445,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
         build.queueBuild()
-        build.cancel()
+        with admin_logged_in():
+            build.cancel()
 
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
@@ -521,7 +528,8 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         build.updateStatus(BuildStatus.FULLYBUILT)
-        cake.destroySelf()
+        with admin_logged_in():
+            cake.destroySelf()
         IStore(build).flush()
         build.notify()
         notifications = pop_notifications()

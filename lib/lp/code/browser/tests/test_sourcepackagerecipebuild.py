@@ -129,7 +129,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
         build = self.makeRecipeBuild()
-        build.cancel()
+        with admin_logged_in():
+            build.cancel()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -210,7 +211,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""
         build = self.makeRecipeBuild()
-        build.cancel()
+        with admin_logged_in():
+            build.cancel()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -227,7 +229,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """
         build = self.factory.makeSourcePackageRecipeBuild()
         build.queueBuild()
-        build.cancel()
+        with admin_logged_in():
+            build.cancel()
         index_url = canonical_url(build)
         browser = self.getViewBrowser(build, '+rescore', user=self.admin)
         self.assertEqual(index_url, browser.url)
