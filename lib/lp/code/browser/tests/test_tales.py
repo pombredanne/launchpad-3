@@ -15,6 +15,7 @@ from zope.traversing.interfaces import IPathAdapter
 
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    admin_logged_in,
     login,
     person_logged_in,
     test_tales,
@@ -220,28 +221,40 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     def test_link(self):
         eric = self.factory.makePerson(name='eric')
         ppa = self.factory.makeArchive(owner=eric, name='ppa')
+        distroseries = self.factory.makeDistroSeries(
+            distribution=ppa.distribution, name='shiny')
+        with admin_logged_in():
+            distroseries.nominatedarchindep = (
+                self.factory.makeDistroArchSeries(distroseries=distroseries))
         build = self.factory.makeSourcePackageRecipeBuild(
-            archive=ppa)
+            archive=ppa, distroseries=distroseries)
         adapter = queryAdapter(build, IPathAdapter, 'fmt')
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">%s recipe build</a> [~eric/ubuntu/ppa]'
+                '<a href="%s">%s recipe build in ubuntu shiny</a> '
+                '[~eric/ubuntu/ppa]'
                 % (canonical_url(build, path_only_if_possible=True),
                    build.recipe.base_branch.unique_name)))
 
     def test_link_no_recipe(self):
         eric = self.factory.makePerson(name='eric')
         ppa = self.factory.makeArchive(owner=eric, name='ppa')
+        distroseries = self.factory.makeDistroSeries(
+            distribution=ppa.distribution, name='shiny')
+        with admin_logged_in():
+            distroseries.nominatedarchindep = (
+                self.factory.makeDistroArchSeries(distroseries=distroseries))
         build = self.factory.makeSourcePackageRecipeBuild(
-            archive=ppa)
+            archive=ppa, distroseries=distroseries)
         with person_logged_in(build.recipe.owner):
             build.recipe.destroySelf()
         adapter = queryAdapter(build, IPathAdapter, 'fmt')
         self.assertThat(
             adapter.link(None),
             Equals(
-                '<a href="%s">build for deleted recipe</a> [~eric/ubuntu/ppa]'
+                '<a href="%s">deleted recipe build in ubuntu shiny</a> '
+                '[~eric/ubuntu/ppa]'
                 % (canonical_url(build, path_only_if_possible=True), )))
 
     def test_link_no_permission(self):
