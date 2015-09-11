@@ -55,15 +55,31 @@ further tests.
 
 == Other distributions PPAs ==
 
-Currently we only support PPAs for ubuntu, although the '+ppas' page
-is presented for other distribution.
+Currently we only support PPAs for a limited number of distros. The
+'+ppas' page isn't linked for other distribution.
+
+    >>> anon_browser.open("http://launchpad.dev/debian")
+    >>> anon_browser.getLink("Personal Package Archives")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+If we enable Debian PPA support, the links appear and the pages present
+coherent data for a distribution with no PPAs.
+
+    >>> from zope.component import getUtility
+    >>> import transaction
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.supports_ppas = True
+    >>> logout()
+    >>> transaction.commit()
 
     >>> anon_browser.open("http://launchpad.dev/debian")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
     Personal Package Archives : Debian
-
-Those pages present coherent data for a distribution with no PPAs.
 
 PPA supported architectures reflects what we have in sampledata.
 
@@ -185,11 +201,6 @@ No data matches the non-existent search string "bustmybuffers".
 
 We have to update the archive caches, in order to be able to search
 them properly, see doc/package-archive.txt.
-
-    >>> from zope.component import getUtility
-
-    >>> import transaction
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -605,20 +616,6 @@ And the sources.list entries point to the right distribution release:
     >>> print text
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
     deb-src http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
-
-
-== Other Distribution PPAs ==
-
-PPAs are targeted to a specific distribution and currently we only
-allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
-
-    >>> anon_browser.open("http://launchpad.dev/ubuntutest")
-    >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> print anon_browser.title
-    Personal Package Archives : ubuntutest
-
-    >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
-    0
 
 
 == Populating 'Most Active' section ==
