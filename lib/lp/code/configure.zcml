@@ -473,6 +473,7 @@
                     branch
                     mail_header
                     recipient
+                    subscriber
                     max_diff_lines
                     review_level"/>
   </class>
