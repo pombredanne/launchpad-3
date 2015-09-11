@@ -527,16 +527,20 @@ If the source package was created from a recipe build, link to it.
     ...     owner=cprov, product=product, name='mybranch')
     >>> recipe = factory.makeSourcePackageRecipe(
     ...     owner=cprov, name=u'myrecipe', branches=[branch])
+    >>> distroseries = factory.makeDistroSeries(
+    ...     distribution=cprov.archive.distribution, name='shiny')
+    >>> removeSecurityProxy(distroseries).nominatedarchindep = (
+    ...     factory.makeDistroArchSeries(distroseries=distroseries))
     >>> ppa_source.sourcepackagerelease.source_package_recipe_build = (
     ...  factory.makeSourcePackageRecipeBuild(recipe=recipe,
-    ...  archive=cprov.archive))
+    ...  archive=cprov.archive, distroseries=distroseries))
     >>> logout()
     >>> anon_browser.open(ppa_build_url)
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'details'))
     Build details
     ...
     Source package recipe build:
-    ~cprov/product/mybranch recipe build [~cprov/ubuntu/ppa]
+    ~cprov/product/mybranch recipe build in ubuntu shiny [~cprov/ubuntu/ppa]
     ...
 
     >>> print anon_browser.getLink('~cprov/product/mybranch recipe build').url

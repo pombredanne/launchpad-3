@@ -111,7 +111,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # A recipe build's title currently consists of the base
         # branch's unique name.
         spb = self.makeSourcePackageRecipeBuild()
-        title = "%s recipe build" % spb.recipe.base_branch.unique_name
+        title = "%s recipe build in %s %s" % (
+            spb.recipe.base_branch.unique_name, spb.distribution.name,
+            spb.distroseries.name)
         self.assertEqual(spb.title, title)
 
     def test_distribution(self):

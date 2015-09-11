@@ -177,10 +177,11 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     @property
     def title(self):
         if self.recipe is None:
-            return 'build for deleted recipe'
+            branch_name = 'deleted'
         else:
             branch_name = self.recipe.base_branch.unique_name
-            return '%s recipe build' % branch_name
+        return '%s recipe build in %s %s' % (
+            branch_name, self.distribution.name, self.distroseries.name)
 
     def __init__(self, build_farm_job, distroseries, recipe, requester,
                  archive, pocket, date_created):
