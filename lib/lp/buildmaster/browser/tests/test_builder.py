@@ -8,10 +8,10 @@ __metaclass__ = type
 from testtools.matchers import Equals
 from zope.component import getUtility
 
+from lp.buildmaster.browser.tests.test_builder_views import BuildCreationMixin
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.services.job.model.job import Job
-from lp.soyuz.browser.tests.test_builder_views import BuildCreationMixin
 from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
