@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build features."""
@@ -257,6 +257,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
             "unstable" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(person.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "livefs-build-status",
             notification["X-Launchpad-Notification-Type"])

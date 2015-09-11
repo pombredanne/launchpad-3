@@ -132,6 +132,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
                 "X-Launchpad-Message-Rationale": Equals("Announcement"),
                 "X-Launchpad-Notification-Type": Equals("package-upload"),
                 }))
+        self.assertNotIn("X-Launchpad-Message-For", dict(notifications[1]))
 
     def test_forAction_announce_from_person_override_with_unicode_names(self):
         # PackageUploadMailer.forAction() takes an optional
@@ -164,6 +165,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
                 "X-Launchpad-Message-Rationale": Equals("Announcement"),
                 "X-Launchpad-Notification-Type": Equals("package-upload"),
                 }))
+        self.assertNotIn("X-Launchpad-Message-For", dict(notifications[1]))
 
     def test_forAction_bcc_to_derivatives_list(self):
         # PackageUploadMailer.forAction() will BCC the announcement email to
@@ -186,6 +188,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
                 "X-Launchpad-Message-Rationale": Equals("Announcement"),
                 "X-Launchpad-Notification-Type": Equals("package-upload"),
                 }))
+        self.assertNotIn("X-Launchpad-Message-For", dict(notifications[1]))
 
     def test_fetch_information_spr_multiple_changelogs(self):
         # If previous_version is passed the "changelog" entry in the
@@ -454,15 +457,17 @@ class TestNotification(TestCaseWithFactory):
             "accepted", blamer, spr, [], [], archive, distroseries,
             PackagePublishingPocket.RELEASE, changes=changes)
         recipients = dict(mailer._recipients.getRecipientPersons())
-        for email, rationale in (
-                (blamer.preferredemail.email, "Requester"),
-                ("maintainer@example.com", "Maintainer"),
-                ("changer@example.com", "Changed-By")):
+        for person, rationale in (
+                (blamer, "Requester"),
+                (maintainer, "Maintainer"),
+                (changer, "Changed-By")):
+            email = person.preferredemail.email
             headers = mailer._getHeaders(email, recipients[email])
             self.assertThat(
                 headers,
                 ContainsDict({
                     "X-Launchpad-Message-Rationale": Equals(rationale),
+                    "X-Launchpad-Message-For": Equals(person.name),
                     "X-Launchpad-Notification-Type": Equals("package-upload"),
                     "X-Katie": Equals("Launchpad actually"),
                     "X-Launchpad-Archive": Equals(archive.reference),
@@ -497,14 +502,16 @@ class TestNotification(TestCaseWithFactory):
             "accepted", blamer, spr, [], [], archive, distroseries,
             PackagePublishingPocket.RELEASE, changes=changes)
         recipients = dict(mailer._recipients.getRecipientPersons())
-        for email, rationale in (
-                (blamer.preferredemail.email, "Requester"),
-                (uploader.preferredemail.email, "PPA Uploader")):
+        for person, rationale in (
+                (blamer, "Requester"),
+                (uploader, "PPA Uploader")):
+            email = person.preferredemail.email
             headers = mailer._getHeaders(email, recipients[email])
             self.assertThat(
                 headers,
                 ContainsDict({
                     "X-Launchpad-Message-Rationale": Equals(rationale),
+                    "X-Launchpad-Message-For": Equals(person.name),
                     "X-Launchpad-Notification-Type": Equals("package-upload"),
                     "X-Katie": Equals("Launchpad actually"),
                     "X-Launchpad-Archive": Equals(archive.reference),

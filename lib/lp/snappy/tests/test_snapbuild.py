@@ -255,6 +255,7 @@ class TestSnapBuild(TestCaseWithFactory):
             "unstable" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(person.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "snap-build-status",
             notification["X-Launchpad-Notification-Type"])

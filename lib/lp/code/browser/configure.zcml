@@ -904,6 +904,11 @@
     <browser:menus
         classes="GitRefContextMenu"
         module="lp.code.browser.gitref"/>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.gitref.IGitRef"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
+        permission="zope.Public"/>
 
     <browser:defaultView
         for="lp.code.interfaces.gitsubscription.IGitSubscription"
