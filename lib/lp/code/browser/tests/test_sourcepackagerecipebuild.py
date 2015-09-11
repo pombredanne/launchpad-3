@@ -86,14 +86,15 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         return build
 
     def test_cancel_build(self):
-        """An admin can cancel a build."""
+        """The archive owner can cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
+        owner = build.archive.owner
         logout()
 
-        browser = self.getUserBrowser(build_url, user=self.admin)
+        browser = self.getUserBrowser(build_url, user=owner)
         browser.getLink('Cancel build').click()
 
         self.assertEqual(
@@ -110,7 +111,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
     def test_cancel_build_not_admin(self):
-        """No one but an admin can cancel a build."""
+        """A normal user can't cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()
@@ -133,9 +134,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             build.cancel()
         transaction.commit()
         build_url = canonical_url(build)
+        owner = build.archive.owner
         logout()
 
-        browser = self.getUserBrowser(build_url, user=self.admin)
+        browser = self.getUserBrowser(build_url, user=owner)
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')

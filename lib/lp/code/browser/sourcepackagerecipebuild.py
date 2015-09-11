@@ -53,7 +53,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     links = ('cancel', 'rescore')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def cancel(self):
         return Link(
             '+cancel', 'Cancel build', icon='remove',
