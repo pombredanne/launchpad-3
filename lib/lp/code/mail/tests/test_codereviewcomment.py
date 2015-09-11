@@ -164,6 +164,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
+                    'X-Launchpad-Message-For': subscriber.name,
                     'X-Launchpad-Notification-Type': 'code-review',
                     'X-Launchpad-Project': source_branch.product.name,
                     'Message-Id': message.rfc822msgid,
@@ -221,6 +222,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             'You are subscribed to branch %s.' % source_branch.bzr_identity,
             '',
             'Launchpad-Message-Rationale: %s' % rationale,
+            'Launchpad-Message-For: %s' % subscriber.name,
             'Launchpad-Notification-Type: code-review',
             'Launchpad-Branch: %s' % source_branch.unique_name,
             'Launchpad-Project: %s' % source_branch.product.name,

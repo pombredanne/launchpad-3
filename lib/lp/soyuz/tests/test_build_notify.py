@@ -105,10 +105,13 @@ class TestBuildNotify(TestCaseWithFactory):
             format_address_for_person(recipient), notification['To'])
         if reason == "buildd-admin":
             rationale = "Buildd-Admin @launchpad-buildd-admins"
+            expected_for = "launchpad-buildd-admins"
         else:
             rationale = reason.title()
+            expected_for = recipient.name
         self.assertEqual(
             rationale, notification['X-Launchpad-Message-Rationale'])
+        self.assertEqual(expected_for, notification['X-Launchpad-Message-For'])
         self.assertEqual(
             'package-build-status',
             notification['X-Launchpad-Notification-Type'])

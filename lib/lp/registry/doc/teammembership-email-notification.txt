@@ -1067,10 +1067,11 @@ emails contain subscription information.
     ...     name='team-two', email='team-two@example.com', owner=owner)
     >>> ignored = team_one.addMember(team_two, owner, force_team_add=True)
     >>> run_mail_jobs()
-    >>> print_distinct_emails()
+    >>> print_distinct_emails(include_for=True)
     From: Team One ...
     To: Team Two <team-two...>
     X-Launchpad-Message-Rationale: Member (team-one) @team-two
+    X-Launchpad-Message-For: team-two
     X-Launchpad-Notification-Type: team-membership-new
     Subject: team-two joined team-one
     <BLANKLINE>

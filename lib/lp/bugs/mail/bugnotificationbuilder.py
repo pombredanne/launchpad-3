@@ -13,6 +13,7 @@ __all__ = [
 
 from email.mime.text import MIMEText
 from email.utils import formatdate
+import re
 import rfc822
 
 from zope.component import getUtility
@@ -207,6 +208,16 @@ class BugNotificationBuilder:
 
         if rationale is not None:
             headers.append(('X-Launchpad-Message-Rationale', rationale))
+            # XXX cjwatson 2015-09-11: The ridiculously complicated way that
+            # bug notifications are built means that we no longer have
+            # direct access to the subscriber name at this point.  As a
+            # stopgap, parse it out of the rationale.
+            match = re.search(r'@([^ ]*)', rationale)
+            if match is not None:
+                message_for = match.group(1)
+            else:
+                message_for = removeSecurityProxy(to_person).name
+            headers.append(('X-Launchpad-Message-For', message_for))
 
         if filters is not None:
             for filter in filters:

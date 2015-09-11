@@ -168,7 +168,8 @@ class TestBaseMailer(TestCaseWithFactory):
     def test_generateEmail_append_expanded_footer(self):
         # Recipients with expanded_notification_footers receive an expanded
         # footer on messages.
-        fake_to = self.factory.makePerson(email='to@example.com')
+        fake_to = self.factory.makePerson(
+            name='to-person', email='to@example.com')
         fake_to.expanded_notification_footers = True
         recipients = {fake_to: FakeSubscription()}
         mailer = BaseMailerSubclass(
@@ -179,6 +180,7 @@ class TestBaseMailer(TestCaseWithFactory):
             ctrl.body, EndsWith(
                 '\n-- \n'
                 'Launchpad-Message-Rationale: pete\n'
+                'Launchpad-Message-For: to-person\n'
                 'Launchpad-Notification-Type: test\n'))
 
     def test_sendall_single_failure_doesnt_kill_all(self):

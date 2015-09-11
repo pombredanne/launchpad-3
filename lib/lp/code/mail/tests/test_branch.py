@@ -227,6 +227,7 @@ class TestBranchMailerHeadersMixin:
         self.assertEqual(
             {'X-Launchpad-Branch': branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Message-For': bob.name,
              'X-Launchpad-Notification-Type': 'branch-updated',
              'X-Launchpad-Project': self.getBranchProjectName(branch),
              'Message-Id': '<foobar-example-com>'},
@@ -247,6 +248,7 @@ class TestBranchMailerHeadersMixin:
         self.assertEqual(
             {'X-Launchpad-Branch': branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Message-For': bob.name,
              'X-Launchpad-Notification-Type': 'branch-revision',
              'X-Launchpad-Branch-Revision-Number': '1',
              'X-Launchpad-Project': self.getBranchProjectName(branch),

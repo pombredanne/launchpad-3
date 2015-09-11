@@ -157,13 +157,15 @@ def encode(value):
 
 
 def send_direct_contact_email(
-    sender_email, recipients_set, subject, body):
+    sender_email, recipients_set, person_or_team, subject, body):
     """Send a direct user-to-user email.
 
     :param sender_email: The email address of the sender.
     :type sender_email: string
     :param recipients_set: The recipients.
-    :type recipients_set:' A ContactViaWebNotificationSet
+    :type recipients_set: `ContactViaWebNotificationSet`
+    :param person_or_team: The party that is the context of the email.
+    :type person_or_team: `IPerson`
     :param subject: The Subject header.
     :type subject: unicode
     :param body: The message body.
@@ -209,7 +211,7 @@ def send_direct_contact_email(
     message = None
     for recipient_email, recipient in recipients_set.getRecipientPersons():
         recipient_name = str(encode(recipient.displayname))
-        reason, rational_header = recipients_set.getReason(recipient_email)
+        reason, rationale_header = recipients_set.getReason(recipient_email)
         reason = str(encode(reason)).replace('\n ', '\n')
         formatted_body = mailwrapper.format(body, force_wrap=True)
         formatted_body += additions % reason
@@ -219,7 +221,8 @@ def send_direct_contact_email(
         message['To'] = formataddr((recipient_name, recipient_email))
         message['Subject'] = subject_header
         message['Message-ID'] = make_msgid('launchpad')
-        message['X-Launchpad-Message-Rationale'] = rational_header
+        message['X-Launchpad-Message-Rationale'] = rationale_header
+        message['X-Launchpad-Message-For'] = person_or_team.name
         # Send the message.
         sendmail(message, bulk=False)
     # Use the information from the last message sent to record the action

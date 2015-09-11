@@ -84,6 +84,8 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         self.assertEqual(
             'Requester', ctrl.headers['X-Launchpad-Message-Rationale'])
         self.assertEqual(
+            build.requester.name, ctrl.headers['X-Launchpad-Message-For'])
+        self.assertEqual(
             'recipe-build-status',
             ctrl.headers['X-Launchpad-Notification-Type'])
         self.assertEqual(
@@ -118,6 +120,8 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
             config.canonical.noreply_from_address, ctrl.from_addr)
         self.assertEqual(
             'Requester', ctrl.headers['X-Launchpad-Message-Rationale'])
+        self.assertEqual(
+            build.requester.name, ctrl.headers['X-Launchpad-Message-For'])
         self.assertEqual(
             'recipe-build-status',
             ctrl.headers['X-Launchpad-Notification-Type'])

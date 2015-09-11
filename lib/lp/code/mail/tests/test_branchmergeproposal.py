@@ -135,6 +135,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Message-For': subscriber.name,
              'X-Launchpad-Notification-Type': 'code-review',
              'X-Launchpad-Project': bmp.source_branch.product.name,
              'Reply-To': bmp.address,

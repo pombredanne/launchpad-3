@@ -4327,7 +4327,7 @@ class EmailToPersonView(LaunchpadFormView):
             return
         try:
             send_direct_contact_email(
-                sender_email, self.recipients, subject, message)
+                sender_email, self.recipients, self.context, subject, message)
         except QuotaReachedError as error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
