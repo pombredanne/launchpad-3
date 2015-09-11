@@ -576,9 +576,11 @@ class BugView(LaunchpadView, BugViewMixin):
             # just 404.
             if not check_permission('launchpad.View', bug):
                 continue
-            dupe = {}
-            dupe['title'] = bug.title
-            dupe['id'] = bug.id
+            dupe = {
+                'title': bug.title,
+                'id': bug.id,
+                'bug': bug,
+                }
             # If the dupe has the same context as the one we're in, link
             # to that bug task directly.
             if bug in dupes_in_current_context:

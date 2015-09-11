@@ -114,7 +114,7 @@ class TestPrivateBugLinks(BrowserTestCase):
                         Tag(
                             "private dupe", "a",
                             text=re.compile("Bug #%d" % visidupe.id),
-                            attrs={"class": "sprite bug"}))),  # XXX: private
+                            attrs={"class": "sprite bug private"}))),
                 Not(HTMLContains(Tag(
                     "invisible dupe", "a",
                     text=re.compile("Bug #%d" % invisidupe.id))))))
