@@ -21,6 +21,9 @@ class FakeSubscription:
 
     mail_header = 'pete'
 
+    def __init__(self, subscriber):
+        self.subscriber = subscriber
+
     def getReason(self):
         return "Because"
 
@@ -95,7 +98,7 @@ class TestBaseMailer(TestCaseWithFactory):
         """
         fake_to = self.factory.makePerson(email='to@example.com',
             displayname='Example To')
-        recipients = {fake_to: FakeSubscription()}
+        recipients = {fake_to: FakeSubscription(fake_to)}
         mailer = BaseMailerSubclass(
             'subject', None, recipients, 'from@example.com')
         ctrl = mailer.generateEmail('to@example.com', fake_to)
@@ -109,7 +112,7 @@ class TestBaseMailer(TestCaseWithFactory):
         returning the uppercased email address.
         """
         fake_to = self.factory.makePerson(email='to@example.com')
-        recipients = {fake_to: FakeSubscription()}
+        recipients = {fake_to: FakeSubscription(fake_to)}
         mailer = FromAddressUpper(
             'subject', None, recipients, 'from@example.com')
         ctrl = mailer.generateEmail('to@example.com', fake_to)
@@ -122,7 +125,7 @@ class TestBaseMailer(TestCaseWithFactory):
         as a single-item list with the uppercased email address.
         """
         fake_to = self.factory.makePerson(email='to@example.com')
-        recipients = {fake_to: FakeSubscription()}
+        recipients = {fake_to: FakeSubscription(fake_to)}
         mailer = ToAddressesUpper(
             'subject', None, recipients, 'from@example.com')
         ctrl = mailer.generateEmail('to@example.com', fake_to)
@@ -131,7 +134,7 @@ class TestBaseMailer(TestCaseWithFactory):
     def test_generateEmail_adds_attachments(self):
         # BaseMailer.generateEmail calls _addAttachments.
         fake_to = self.factory.makePerson(email='to@example.com')
-        recipients = {fake_to: FakeSubscription()}
+        recipients = {fake_to: FakeSubscription(fake_to)}
         mailer = AttachmentMailer(
             'subject', None, recipients, 'from@example.com')
         ctrl = mailer.generateEmail('to@example.com', fake_to)
@@ -141,7 +144,7 @@ class TestBaseMailer(TestCaseWithFactory):
         # If BaseMailer.generateEmail is called with
         # force_no_attachments=True then attachments are not added.
         fake_to = self.factory.makePerson(email='to@example.com')
-        recipients = {fake_to: FakeSubscription()}
+        recipients = {fake_to: FakeSubscription(fake_to)}
         mailer = AttachmentMailer(
             'subject', None, recipients, 'from@example.com')
         ctrl = mailer.generateEmail(
@@ -158,7 +161,7 @@ class TestBaseMailer(TestCaseWithFactory):
         # Recipients without expanded_notification_footers do not receive an
         # expanded footer on messages.
         fake_to = self.factory.makePerson(email='to@example.com')
-        recipients = {fake_to: FakeSubscription()}
+        recipients = {fake_to: FakeSubscription(fake_to)}
         mailer = BaseMailerSubclass(
             'subject', None, recipients, 'from@example.com',
             notification_type='test')
@@ -171,7 +174,7 @@ class TestBaseMailer(TestCaseWithFactory):
         fake_to = self.factory.makePerson(
             name='to-person', email='to@example.com')
         fake_to.expanded_notification_footers = True
-        recipients = {fake_to: FakeSubscription()}
+        recipients = {fake_to: FakeSubscription(fake_to)}
         mailer = BaseMailerSubclass(
             'subject', None, recipients, 'from@example.com',
             notification_type='test')
@@ -186,11 +189,12 @@ class TestBaseMailer(TestCaseWithFactory):
     def test_sendall_single_failure_doesnt_kill_all(self):
         # A failure to send to a particular email address doesn't stop sending
         # to others.
+        good = self.factory.makePerson(name='good', email='good@example.com')
+        bad = self.factory.makePerson(name='bad', email='bad@example.com')
         recipients = {
-            self.factory.makePerson(name='good', email='good@example.com'):
-                FakeSubscription(),
-            self.factory.makePerson(name='bad', email='bad@example.com'):
-                FakeSubscription()}
+            good: FakeSubscription(good),
+            bad: FakeSubscription(bad),
+            }
         controller_factory = RaisingMailControllerFactory(
             'bad@example.com', 2)
         mailer = BaseMailerSubclass(
@@ -208,11 +212,12 @@ class TestBaseMailer(TestCaseWithFactory):
     def test_sendall_first_failure_strips_attachments(self):
         # If sending an email fails, we try again without the (almost
         # certainly) large attachment.
+        good = self.factory.makePerson(name='good', email='good@example.com')
+        bad = self.factory.makePerson(name='bad', email='bad@example.com')
         recipients = {
-            self.factory.makePerson(name='good', email='good@example.com'):
-                FakeSubscription(),
-            self.factory.makePerson(name='bad', email='bad@example.com'):
-                FakeSubscription()}
+            good: FakeSubscription(good),
+            bad: FakeSubscription(bad),
+            }
         # Only raise the first time for bob.
         controller_factory = RaisingMailControllerFactory(
             'bad@example.com', 1)

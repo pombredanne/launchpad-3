@@ -178,7 +178,7 @@ in the email.
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:
-    ...     print "%s, %s" % (
+    ...     print "%s, %s, %s" % (
     ...         notification['X-Envelope-To'],
     ...         notification['X-Launchpad-Message-Rationale'],
     ...         notification['X-Launchpad-Message-For'])
