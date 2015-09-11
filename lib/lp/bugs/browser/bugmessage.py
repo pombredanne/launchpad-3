@@ -28,13 +28,11 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
     schema = IBugMessageAddForm
     initial_focus_widget = None
 
+    page_title = "Add a comment or attachment"
+
     @property
     def label(self):
         return 'Add a comment or attachment to bug #%d' % self.context.bug.id
-
-    @property
-    def page_title(self):
-        return self.label
 
     @property
     def initial_values(self):

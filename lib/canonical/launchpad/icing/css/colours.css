@@ -106,7 +106,8 @@
     color: green;
     }
 .statusINVALID, .statusINVALID a,
-.statusWONTFIX, .statusWONTFIX a {
+.statusWONTFIX, .statusWONTFIX a,
+.statusOPINION, .statusOPINION a {
     color: #555;
     }
 .importanceCRITICAL, .importanceCRITICAL a {

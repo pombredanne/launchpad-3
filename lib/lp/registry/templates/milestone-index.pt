@@ -243,6 +243,7 @@
             <tbody>
               <tr tal:repeat="spec specs">
                 <td class="icon left">
+                  <span class="sortkey" tal:content="spec/title" />
                   <span tal:content="structure spec/image:icon" />
                 </td>
                 <td>

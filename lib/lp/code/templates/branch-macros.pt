@@ -274,8 +274,8 @@
     <div tal:define="merge_proposal python:rev_info['merge_proposal']"
          tal:condition="merge_proposal">
       <dd class="subordinate revision-comment">
-        Merged branch <a tal:attributes="href merge_proposal/fmt:url"
-                    tal:content="merge_proposal/source_branch/displayname">source branch</a>
+        <a tal:attributes="href merge_proposal/fmt:url">Merged</a> branch
+        <a tal:replace="structure merge_proposal/source_branch/fmt:link">source branch</a>
         <tal:linkedbugs
                 define="linked_bugtasks python:rev_info['linked_bugtasks']"
                 condition="linked_bugtasks">
