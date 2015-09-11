@@ -110,7 +110,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         login(ANONYMOUS)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
-    def test_cancel_build_not_admin(self):
+    def test_cancel_build_not_owner(self):
         """A normal user can't cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
