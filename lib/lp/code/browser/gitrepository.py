@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'GitRefBatchNavigator',
+    'GitRepositoriesBreadcrumb',
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
     'GitRepositoryDeletionView',
@@ -86,7 +87,7 @@ from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.services.webapp.batching import TableBatchNavigator
-from lp.services.webapp.breadcrumb import NameBreadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
@@ -107,11 +108,28 @@ class GitRepositoryURL:
         return self.repository.unique_name
 
 
-class GitRepositoryBreadcrumb(NameBreadcrumb):
+class GitRepositoriesBreadcrumb(Breadcrumb):
+
+    text = "Git"
+
+    @property
+    def url(self):
+        return canonical_url(self.context, view_name="+git")
 
     @property
     def inside(self):
-        return self.context.target
+        return self.context
+
+
+class GitRepositoryBreadcrumb(Breadcrumb):
+
+    @property
+    def text(self):
+        return self.context.git_identity
+
+    @property
+    def inside(self):
+        return GitRepositoriesBreadcrumb(self.context.target)
 
 
 class GitRepositoryNavigation(WebhookTargetNavigationMixin, Navigation):
