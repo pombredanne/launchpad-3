@@ -11,7 +11,9 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    operation_for_version,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -25,9 +27,7 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.interfaces.buildfarmjob import (
-    ISpecificBuildFarmJobSource,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -85,6 +85,8 @@ class ISourcePackageRecipeBuildView(IPackageBuild):
 
 class ISourcePackageRecipeBuildEdit(Interface):
 
+    @export_write_operation()
+    @operation_for_version("devel")
     def cancel():
         """Cancel the build if it is either pending or in progress.
 
