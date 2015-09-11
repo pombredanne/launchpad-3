@@ -218,6 +218,16 @@ class TestBuild(TestCaseWithFactory):
         build.updateStatus(BuildStatus.CANCELLED)
         self.assertTrue(build.can_be_retried)
 
+    def test_retry_superseded(self):
+        # A superseded build can be retried
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        build.updateStatus(BuildStatus.SUPERSEDED)
+        self.assertTrue(build.can_be_retried)
+
     def test_uploadlog(self):
         # The upload log can be attached to a build
         spph = self.publisher.getPubSource(
