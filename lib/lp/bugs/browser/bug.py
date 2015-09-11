@@ -572,11 +572,12 @@ class BugView(LaunchpadView, BugViewMixin):
                 BugTaskSearchParams(self.user, bug=any(*duplicate_bugs))))
         dupes = []
         for bug in duplicate_bugs:
+            # Don't disclose even the ID of a private bug. The link will
+            # just 404.
+            if not check_permission('launchpad.View', bug):
+                continue
             dupe = {}
-            try:
-                dupe['title'] = bug.title
-            except Unauthorized:
-                dupe['title'] = 'Private Bug'
+            dupe['title'] = bug.title
             dupe['id'] = bug.id
             # If the dupe has the same context as the one we're in, link
             # to that bug task directly.
