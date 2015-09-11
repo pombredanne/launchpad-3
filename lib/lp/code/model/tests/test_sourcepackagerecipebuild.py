@@ -434,15 +434,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build.destroySelf()
         self.assertIs(None, store.get(BuildFarmJob, build_farm_job_id))
 
-    def test_cancelBuild(self):
+    def test_cancel(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.cancelBuild()
+        build.queueBuild()
+        build.cancel()
 
-        self.assertEqual(
-            BuildStatus.SUPERSEDED,
-            build.status)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the build requester.

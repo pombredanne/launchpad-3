@@ -39,13 +39,6 @@ from lp.services.webapp import (
     )
 
 
-UNEDITABLE_BUILD_STATES = (
-    BuildStatus.FULLYBUILT,
-    BuildStatus.FAILEDTOBUILD,
-    BuildStatus.SUPERSEDED,
-    BuildStatus.FAILEDTOUPLOAD,)
-
-
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
     usedfor = ISourcePackageRecipeBuild
@@ -62,19 +55,15 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def cancel(self):
-        if self.context.status in UNEDITABLE_BUILD_STATES:
-            enabled = False
-        else:
-            enabled = True
-        return Link('+cancel', 'Cancel build', icon='remove', enabled=enabled)
+        return Link(
+            '+cancel', 'Cancel build', icon='remove',
+            enabled=self.context.can_be_cancelled)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
-        if self.context.status in UNEDITABLE_BUILD_STATES:
-            enabled = False
-        else:
-            enabled = True
-        return Link('+rescore', 'Rescore build', icon='edit', enabled=enabled)
+        return Link(
+            '+rescore', 'Rescore build', icon='edit',
+            enabled=self.context.can_be_rescored)
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
@@ -152,7 +141,7 @@ class SourcePackageRecipeBuildCancelView(LaunchpadFormView):
     @action('Cancel build', name='cancel')
     def request_action(self, action, data):
         """Cancel the build."""
-        self.context.cancelBuild()
+        self.context.cancel()
 
 
 class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):

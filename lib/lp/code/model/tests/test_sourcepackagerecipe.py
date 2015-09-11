@@ -666,7 +666,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Cancelled builds are not considered pending.
         recipe = self.factory.makeSourcePackageRecipe()
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
-        build.cancelBuild()
+        build.queueBuild()
+        build.cancel()
         self.assertEqual([build], list(recipe.builds))
         self.assertEqual([build], list(recipe.completed_builds))
         self.assertEqual([], list(recipe.pending_builds))
