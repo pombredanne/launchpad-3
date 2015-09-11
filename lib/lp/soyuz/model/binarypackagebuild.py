@@ -448,6 +448,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             BuildStatus.CHROOTWAIT,
             BuildStatus.FAILEDTOUPLOAD,
             BuildStatus.CANCELLED,
+            BuildStatus.SUPERSEDED,
             ]
 
         # If the build is currently in any of the failed states,
