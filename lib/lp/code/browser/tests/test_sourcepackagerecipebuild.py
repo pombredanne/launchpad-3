@@ -22,7 +22,6 @@ from lp.testing import (
     BrowserTestCase,
     login,
     logout,
-    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -83,17 +82,19 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             daily_build_archive=self.ppa)
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
+        build.queueBuild()
         return build
 
     def test_cancel_build(self):
-        """An admin can cancel a build."""
+        """The archive owner can cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
+        owner = build.archive.owner
         logout()
 
-        browser = self.getUserBrowser(build_url, user=self.admin)
+        browser = self.getUserBrowser(build_url, user=owner)
         browser.getLink('Cancel build').click()
 
         self.assertEqual(
@@ -107,12 +108,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             build_url)
 
         login(ANONYMOUS)
-        self.assertEqual(
-            BuildStatus.SUPERSEDED,
-            build.status)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
 
-    def test_cancel_build_not_admin(self):
-        """No one but an admin can cancel a build."""
+    def test_cancel_build_not_owner(self):
+        """A normal user can't cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()
@@ -131,12 +130,14 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
         build = self.makeRecipeBuild()
-        build.cancelBuild()
+        with admin_logged_in():
+            build.cancel()
         transaction.commit()
         build_url = canonical_url(build)
+        owner = build.archive.owner
         logout()
 
-        browser = self.getUserBrowser(build_url, user=self.admin)
+        browser = self.getUserBrowser(build_url, user=owner)
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
@@ -212,7 +213,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""
         build = self.makeRecipeBuild()
-        build.cancelBuild()
+        with admin_logged_in():
+            build.cancel()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -228,25 +230,11 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         This is the case where the user has a stale link that they click on.
         """
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.cancelBuild()
+        build.queueBuild()
+        with admin_logged_in():
+            build.cancel()
         index_url = canonical_url(build)
         browser = self.getViewBrowser(build, '+rescore', user=self.admin)
-        self.assertEqual(index_url, browser.url)
-        self.assertIn(
-            'Cannot rescore this build because it is not queued.',
-            browser.contents)
-
-    def test_rescore_build_wrong_state_stale_page(self):
-        """Show sane error if you attempt to rescore a non-queued build.
-
-        This is the case where the user is on the rescore page and submits.
-        """
-        build = self.factory.makeSourcePackageRecipeBuild()
-        index_url = canonical_url(build)
-        browser = self.getViewBrowser(build, '+rescore', user=self.admin)
-        with person_logged_in(self.admin):
-            build.cancelBuild()
-        browser.getLink('Rescore build').click()
         self.assertEqual(index_url, browser.url)
         self.assertIn(
             'Cannot rescore this build because it is not queued.',

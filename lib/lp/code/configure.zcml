@@ -1016,7 +1016,12 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
-    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildView"/>
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildEdit"/>
   </class>
 
   <securedutility
