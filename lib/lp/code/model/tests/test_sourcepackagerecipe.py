@@ -64,6 +64,7 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA,
     )
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     launchpadlib_for,
     login,
@@ -327,7 +328,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         build = recipe.requestBuild(ppa, ppa.owner, distroseries,
                 PackagePublishingPocket.RELEASE)
-        self.assertProvides(build, ISourcePackageRecipeBuild)
+        with admin_logged_in():
+            self.assertProvides(build, ISourcePackageRecipeBuild)
         self.assertEqual(build.archive, ppa)
         self.assertEqual(build.distroseries, distroseries)
         self.assertEqual(build.requester, ppa.owner)
@@ -666,8 +668,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Cancelled builds are not considered pending.
         recipe = self.factory.makeSourcePackageRecipe()
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
-        build.queueBuild()
-        build.cancel()
+        with admin_logged_in():
+            build.queueBuild()
+            build.cancel()
         self.assertEqual([build], list(recipe.builds))
         self.assertEqual([build], list(recipe.completed_builds))
         self.assertEqual([], list(recipe.pending_builds))
