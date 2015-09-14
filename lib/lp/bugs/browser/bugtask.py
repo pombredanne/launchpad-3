@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -385,6 +385,7 @@ class BugTaskNavigation(Navigation):
             self.context, slice_info=[slice(index, index + 1)])
         if (comments and
             (comments[0].visible
+             or comments[0].owner == getUtility(ILaunchBag).user
              or check_permission('launchpad.Admin', self.context))):
             return comments[0]
         return None
