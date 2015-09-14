@@ -58,7 +58,7 @@ class TestMessageVisibilityMixin:
         view = self.getView(context=context)
         self.assertNotIn(self.html_comment_text, view.contents)
 
-    def test_comment_owner_could_see_hidden_comment(self):
+    def test_comment_owner_can_see_hidden_comment(self):
         owner = self.factory.makePerson()
         context = self.makeHiddenMessage(comment_owner=owner)
         view = self.getView(context=context, user=owner)

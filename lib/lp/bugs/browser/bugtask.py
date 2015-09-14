@@ -295,8 +295,8 @@ def get_visible_comments(comments, user=None):
         role = PersonRoles(user)
         strip_invisible = not (role.in_admin or role.in_registry_experts)
     if strip_invisible:
-        visible_comments = [c for c in visible_comments if c.visible or
-                            c.owner == user]
+        visible_comments = [c for c in visible_comments
+                            if c.visible or c.owner == user]
 
     return visible_comments
 
