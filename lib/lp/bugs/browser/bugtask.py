@@ -389,11 +389,13 @@ class BugTaskNavigation(Navigation):
         # XXX cjwatson 2015-09-15: Unify with
         # Bug.userCanSetCommentVisibility, which also allows
         # project-privileged users.
-        role = PersonRoles(getUtility(ILaunchBag).user)
-        if (comments and
-            (comments[0].visible
-             or comments[0].owner == getUtility(ILaunchBag).user
-             or role.in_admin or role.in_registry_experts)):
+        user = getUtility(ILaunchBag).user
+        roles = PersonRoles(user) if user else None
+        if (comments and (
+                comments[0].visible
+                or user and (
+                    comments[0].owner == user
+                    or roles.in_admin or roles.in_registry_experts))):
             return comments[0]
         return None
 
