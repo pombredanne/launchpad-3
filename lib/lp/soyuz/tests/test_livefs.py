@@ -219,6 +219,23 @@ class TestLiveFS(TestCaseWithFactory):
                 PackagePublishingPocket.RELEASE)
             self.assertEqual(build_virt, build.virtualized)
 
+    def test_requestBuild_version(self):
+        # requestBuild may optionally override the version.
+        livefs = self.factory.makeLiveFS()
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=livefs.distro_series)
+        build = livefs.requestBuild(
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+        self.assertEqual(
+            build.date_created.strftime("%Y%m%d-%H%M%S"), build.version)
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.FULLYBUILT)
+        build = livefs.requestBuild(
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE, version=u"20150101")
+        self.assertEqual(u"20150101", build.version)
+
     def test_getBuilds(self):
         # Test the various getBuilds methods.
         livefs = self.factory.makeLiveFS()
