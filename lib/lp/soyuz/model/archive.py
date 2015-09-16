@@ -134,6 +134,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
+    ArchiveAlreadyDeleted,
     ArchiveDependencyError,
     ArchiveDisabled,
     ArchiveNotPrivate,
@@ -2088,9 +2089,8 @@ class Archive(SQLBase):
 
     def delete(self, deleted_by):
         """See `IArchive`."""
-        assert self.status not in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED,
-            "This archive is already deleted.")
+        if self.status != ArchiveStatus.ACTIVE:
+            raise ArchiveAlreadyDeleted("Archive already deleted.")
 
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.
