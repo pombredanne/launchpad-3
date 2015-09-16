@@ -33,7 +33,7 @@ class HasSnapsViewMixin:
 
     @property
     def show_snap_information(self):
-        return getFeatureFlag(SNAP_FEATURE_FLAG) or self.snap_count
+        return bool(getFeatureFlag(SNAP_FEATURE_FLAG)) or self.snap_count != 0
 
     @property
     def snap_count_text(self):
