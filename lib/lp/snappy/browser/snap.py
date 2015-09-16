@@ -113,15 +113,6 @@ class SnapView(LaunchpadView):
             self.context, field, format_link(self.context.owner),
             header='Change owner', step_title='Select a new owner')
 
-    @property
-    def source(self):
-        if self.context.branch is not None:
-            return self.context.branch
-        elif self.context.git_ref is not None:
-            return self.context.git_ref
-        else:
-            return None
-
 
 def builds_for_snap(snap):
     """A list of interesting builds.

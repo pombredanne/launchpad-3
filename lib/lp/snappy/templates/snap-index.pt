@@ -40,7 +40,8 @@
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
-      <dl id="source" tal:define="source view/source" tal:condition="source">
+      <dl id="source"
+          tal:define="source context/source" tal:condition="source">
         <dt>Source:</dt>
         <dd>
           <a tal:replace="structure source/fmt:link"/>

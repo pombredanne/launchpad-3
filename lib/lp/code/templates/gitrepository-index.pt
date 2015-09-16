@@ -41,6 +41,13 @@
   </div>
 
   <div class="yui-g">
+    <div id="repository-relations" class="portlet">
+      <tal:repository-snaps
+           replace="structure context/@@++repository-snaps" />
+    </div>
+  </div>
+
+  <div class="yui-g">
     <div id="repository-branches" class="portlet"
          tal:define="branches view/branches">
       <h2>Branches</h2>

@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import operator
-from urllib import quote_plus
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
@@ -181,10 +180,11 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
 from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.model.hassnaps import HasSnapsMixin
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
-class Branch(SQLBase, BzrIdentityMixin):
+class Branch(SQLBase, BzrIdentityMixin, HasSnapsMixin):
     """A sequence of ordered revisions in Bazaar."""
     _table = 'Branch'
 
@@ -820,7 +820,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
             for recipe in self.recipes)
-        if not getUtility(ISnapSet).findByBranch(self).is_empty():
+        if not self.getSnaps().is_empty():
             alteration_operations.append(DeletionCallable(
                 None, _('Some snap packages build from this branch.'),
                 getUtility(ISnapSet).detachFromBranch, self))

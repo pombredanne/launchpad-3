@@ -77,6 +77,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 @implementer(IBranchCollection)
@@ -453,6 +454,34 @@ class GenericBranchCollection:
         # nor now.
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
+
+    def getSnaps(self, owner=None, eager_load=False):
+        """See `IBranchCollection`."""
+        # Circular import.
+        from lp.snappy.model.snap import Snap
+
+        expressions = [Snap.branch_id.is_in(self._getBranchSelect())]
+        if owner is not None:
+            expressions.append(Snap.owner == owner)
+        resultset = self.store.find(Snap, *expressions)
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                getUtility(ISnapSet).preloadDataForSnaps, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
+
+    def getSnapsForPerson(self, person, eager_load=False):
+        """See `IBranchCollection`."""
+        owned = self.ownedBy(person).getSnaps()
+        packaged = self.getSnaps(owner=person)
+        resultset = owned.union(packaged)
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                getUtility(ISnapSet).preloadDataForSnaps, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def getExtendedRevisionDetails(self, user, revisions):
         """See `IBranchCollection`."""

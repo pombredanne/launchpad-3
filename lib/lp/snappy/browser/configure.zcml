@@ -91,5 +91,36 @@
             for="lp.snappy.interfaces.snapbuild.ISnapBuild"
             factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public" />
+
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.snappy.browser.snaplisting.BranchSnapListingView"
+            permission="zope.Public"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.code.interfaces.gitrepository.IGitRepository"
+            class="lp.snappy.browser.snaplisting.GitSnapListingView"
+            permission="zope.Public"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
+            class="lp.snappy.browser.snaplisting.GitSnapListingView"
+            permission="zope.Public"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.snappy.browser.snaplisting.PersonSnapListingView"
+            permission="zope.Public"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.registry.interfaces.product.IProduct"
+            class="lp.snappy.browser.snaplisting.ProjectSnapListingView"
+            permission="zope.Public"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
     </facet>
 </configure>

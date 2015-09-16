@@ -150,6 +150,7 @@ from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.model.hassnaps import HasSnapsMixin
 
 
 object_type_map = {
@@ -172,7 +173,8 @@ def git_repository_modified(repository, event):
 
 
 @implementer(IGitRepository, IHasOwner, IPrivacy, IInformationType)
-class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
+class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin,
+                    HasSnapsMixin):
     """See `IGitRepository`."""
 
     __storm_table__ = 'GitRepository'
@@ -1008,7 +1010,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
-        if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
+        if not self.getSnaps().is_empty():
             alteration_operations.append(DeletionCallable(
                 None, msg("Some snap packages build from this repository."),
                 getUtility(ISnapSet).detachFromGitRepository, self))

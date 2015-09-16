@@ -49,9 +49,10 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.snappy.model.hassnaps import HasSnapsMixin
 
 
-class GitRefMixin:
+class GitRefMixin(HasSnapsMixin):
     """Methods and properties common to GitRef and GitRefFrozen.
 
     These can be derived solely from the repository and path, and so do not

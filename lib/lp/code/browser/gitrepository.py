@@ -91,6 +91,7 @@ from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
+from lp.snappy.browser.hassnaps import HasSnapsViewMixin
 
 
 @implementer(ICanonicalUrlData)
@@ -256,7 +257,8 @@ class GitRefBatchNavigator(TableBatchNavigator):
             return "listing sortable"
 
 
-class GitRepositoryView(InformationTypePortletMixin, LaunchpadView):
+class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
+                        HasSnapsViewMixin):
 
     @property
     def page_title(self):

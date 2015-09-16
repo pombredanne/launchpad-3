@@ -31,6 +31,7 @@ from lp.services.database.constants import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
+    BadSnapSearchContext,
     CannotDeleteSnap,
     ISnap,
     ISnapSet,
@@ -434,18 +435,51 @@ class TestSnapSet(TestCaseWithFactory):
             getUtility(ISnapSet).exists(self.factory.makePerson(), snap.name))
         self.assertFalse(getUtility(ISnapSet).exists(snap.owner, u"different"))
 
-    def test_findByPerson(self):
-        # ISnapSet.findByPerson returns all Snaps with the given owner.
+    def test_findByOwner(self):
+        # ISnapSet.findByOwner returns all Snaps with the given owner.
         owners = [self.factory.makePerson() for i in range(2)]
         snaps = []
         for owner in owners:
             for i in range(2):
                 snaps.append(self.factory.makeSnap(
                     registrant=owner, owner=owner))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:2], snap_set.findByOwner(owners[0]))
+        self.assertContentEqual(snaps[2:], snap_set.findByOwner(owners[1]))
+
+    def test_findByPerson(self):
+        # ISnapSet.findByPerson returns all Snaps with the given owner or
+        # based on branches or repositories with the given owner.
+        owners = [self.factory.makePerson() for i in range(2)]
+        snaps = []
+        for owner in owners:
+            snaps.append(self.factory.makeSnap(registrant=owner, owner=owner))
+            snaps.append(self.factory.makeSnap(
+                branch=self.factory.makeAnyBranch(owner=owner)))
+            [ref] = self.factory.makeGitRefs(owner=owner)
+            snaps.append(self.factory.makeSnap(git_ref=ref))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:3], snap_set.findByPerson(owners[0]))
+        self.assertContentEqual(snaps[3:], snap_set.findByPerson(owners[1]))
+
+    def test_findByProject(self):
+        # ISnapSet.findByProject returns all Snaps based on branches or
+        # repositories for the given project.
+        projects = [self.factory.makeProduct() for i in range(2)]
+        snaps = []
+        for project in projects:
+            snaps.append(self.factory.makeSnap(
+                branch=self.factory.makeProductBranch(product=project)))
+            [ref] = self.factory.makeGitRefs(target=project)
+            snaps.append(self.factory.makeSnap(git_ref=ref))
+        snaps.append(self.factory.makeSnap(
+            branch=self.factory.makePersonalBranch()))
+        [ref] = self.factory.makeGitRefs(target=None)
+        snaps.append(self.factory.makeSnap(git_ref=ref))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:2], snap_set.findByProject(projects[0]))
         self.assertContentEqual(
-            snaps[:2], getUtility(ISnapSet).findByPerson(owners[0]))
-        self.assertContentEqual(
-            snaps[2:], getUtility(ISnapSet).findByPerson(owners[1]))
+            snaps[2:4], snap_set.findByProject(projects[1]))
 
     def test_findByBranch(self):
         # ISnapSet.findByBranch returns all Snaps with the given Bazaar branch.
@@ -454,10 +488,9 @@ class TestSnapSet(TestCaseWithFactory):
         for branch in branches:
             for i in range(2):
                 snaps.append(self.factory.makeSnap(branch=branch))
-        self.assertContentEqual(
-            snaps[:2], getUtility(ISnapSet).findByBranch(branches[0]))
-        self.assertContentEqual(
-            snaps[2:], getUtility(ISnapSet).findByBranch(branches[1]))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:2], snap_set.findByBranch(branches[0]))
+        self.assertContentEqual(snaps[2:], snap_set.findByBranch(branches[1]))
 
     def test_findByGitRepository(self):
         # ISnapSet.findByGitRepository returns all Snaps with the given Git
@@ -468,12 +501,55 @@ class TestSnapSet(TestCaseWithFactory):
             for i in range(2):
                 [ref] = self.factory.makeGitRefs(repository=repository)
                 snaps.append(self.factory.makeSnap(git_ref=ref))
+        snap_set = getUtility(ISnapSet)
         self.assertContentEqual(
-            snaps[:2],
-            getUtility(ISnapSet).findByGitRepository(repositories[0]))
+            snaps[:2], snap_set.findByGitRepository(repositories[0]))
         self.assertContentEqual(
-            snaps[2:],
-            getUtility(ISnapSet).findByGitRepository(repositories[1]))
+            snaps[2:], snap_set.findByGitRepository(repositories[1]))
+
+    def test_findByGitRef(self):
+        # ISnapSet.findByGitRef returns all Snaps with the given Git
+        # reference.
+        repositories = [self.factory.makeGitRepository() for i in range(2)]
+        refs = []
+        snaps = []
+        for repository in repositories:
+            refs.extend(self.factory.makeGitRefs(
+                paths=[u"refs/heads/master", u"refs/heads/other"]))
+            snaps.append(self.factory.makeSnap(git_ref=refs[-2]))
+            snaps.append(self.factory.makeSnap(git_ref=refs[-1]))
+        snap_set = getUtility(ISnapSet)
+        for ref, snap in zip(refs, snaps):
+            self.assertContentEqual([snap], snap_set.findByGitRef(ref))
+
+    def test_findByContext(self):
+        # ISnapSet.findByContext returns all Snaps with the given context.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(owner=person, product=project)
+        other_branch = self.factory.makeProductBranch()
+        repository = self.factory.makeGitRepository(target=project)
+        refs = self.factory.makeGitRefs(
+            repository=repository,
+            paths=[u"refs/heads/master", u"refs/heads/other"])
+        snaps = []
+        snaps.append(self.factory.makeSnap(branch=branch))
+        snaps.append(self.factory.makeSnap(branch=other_branch))
+        snaps.append(
+            self.factory.makeSnap(
+                registrant=person, owner=person, git_ref=refs[0]))
+        snaps.append(self.factory.makeSnap(git_ref=refs[1]))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(
+            [snaps[0], snaps[2]], snap_set.findByContext(person))
+        self.assertContentEqual(
+            [snaps[0], snaps[2], snaps[3]], snap_set.findByContext(project))
+        self.assertContentEqual([snaps[0]], snap_set.findByContext(branch))
+        self.assertContentEqual(snaps[2:], snap_set.findByContext(repository))
+        self.assertContentEqual([snaps[2]], snap_set.findByContext(refs[0]))
+        self.assertRaises(
+            BadSnapSearchContext, snap_set.findByContext,
+            self.factory.makeDistribution())
 
     def test_detachFromBranch(self):
         # ISnapSet.detachFromBranch clears the given Bazaar branch from all
