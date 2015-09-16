@@ -43,6 +43,7 @@ from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.gitrepository import GitRepository
 from lp.services.database.bulk import load_related
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -55,6 +56,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.snappy.browser.hassnaps import HasSnapsViewMixin
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 
 
 # XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
@@ -81,12 +83,20 @@ class GitRefContextMenu(ContextMenu):
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['register_merge']
+    links = ['create_snap', 'register_merge']
 
     def register_merge(self):
         text = 'Propose for merging'
         enabled = self.context.namespace.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
+
+    def create_snap(self):
+        # You can't yet create a snap for a private repository.
+        enabled = (
+            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) and
+            not self.context.private)
+        text = "Create snap package"
+        return Link("+new-snap", text, enabled=enabled, icon="add")
 
 
 class GitRefView(LaunchpadView, HasSnapsViewMixin):

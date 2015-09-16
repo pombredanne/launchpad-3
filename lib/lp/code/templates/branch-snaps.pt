@@ -19,6 +19,12 @@
       </tal:snaps>
       using this branch.
     </div>
+
+    <span
+      tal:define="link context_menu/create_snap"
+      tal:condition="link/enabled"
+      tal:replace="structure link/render"
+      />
   </div>
 
 </div>

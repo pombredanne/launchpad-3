@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'SnapAddView',
     'SnapDeleteView',
     'SnapEditView',
     'SnapNavigation',
@@ -24,13 +25,18 @@ from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
+    LaunchpadFormView,
     render_radio_widget_part,
     )
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.code.browser.widgets.gitref import GitRefWidget
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.enums import VCSType
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -48,6 +54,8 @@ from lp.services.webapp.breadcrumb import (
 from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapSet,
+    SNAP_FEATURE_FLAG,
+    SnapFeatureDisabled,
     NoSuchSnap,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
@@ -156,7 +164,60 @@ class ISnapEditSchema(Interface):
     git_ref = copy_field(ISnap['git_ref'], required=True)
 
 
-class BaseSnapAddEditView(LaunchpadEditFormView):
+class SnapAddView(LaunchpadFormView):
+    """View for creating snap packages."""
+
+    page_title = label = 'Create a new snap package'
+
+    schema = ISnapEditSchema
+    field_names = ['owner', 'name', 'distro_series']
+    custom_widget('distro_series', LaunchpadRadioWidget)
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        if not getFeatureFlag(SNAP_FEATURE_FLAG):
+            raise SnapFeatureDisabled
+        super(SnapAddView, self).initialize()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        series = [
+            term.value for term in BuildableDistroSeries()
+            if term.value.status in (
+                SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)][0]
+        return {
+            'owner': self.user,
+            'distro_series': series,
+            }
+
+    @action('Create snap package', name='create')
+    def request_action(self, action, data):
+        if IGitRef.providedBy(self.context):
+            kwargs = {'git_ref': self.context}
+        else:
+            kwargs = {'branch': self.context}
+        snap = getUtility(ISnapSet).new(
+            self.user, data['owner'], data['distro_series'], data['name'],
+            **kwargs)
+        self.next_url = canonical_url(snap)
+
+    def validate(self, data):
+        super(SnapAddView, self).validate(data)
+        owner = data.get('owner', None)
+        name = data.get('name', None)
+        if owner and name:
+            if getUtility(ISnapSet).exists(owner, name):
+                self.setFieldError(
+                    'name',
+                    'There is already a snap package owned by %s with this '
+                    'name.' % owner.displayname)
+
+
+class BaseSnapEditView(LaunchpadEditFormView):
 
     schema = ISnapEditSchema
 
@@ -166,7 +227,7 @@ class BaseSnapAddEditView(LaunchpadEditFormView):
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
-        super(BaseSnapAddEditView, self).setUpWidgets()
+        super(BaseSnapEditView, self).setUpWidgets()
         widget = self.widgets.get('vcs')
         if widget is not None:
             current_value = widget._getFormValue()
@@ -179,7 +240,7 @@ class BaseSnapAddEditView(LaunchpadEditFormView):
         if 'vcs' in self.widgets:
             # Set widgets as required or optional depending on the vcs
             # field.
-            super(BaseSnapAddEditView, self).validate_widgets(data, ['vcs'])
+            super(BaseSnapEditView, self).validate_widgets(data, ['vcs'])
             vcs = data.get('vcs')
             if vcs == VCSType.BZR:
                 self.widgets['branch'].context.required = True
@@ -189,10 +250,7 @@ class BaseSnapAddEditView(LaunchpadEditFormView):
                 self.widgets['git_ref'].context.required = True
             else:
                 raise AssertionError("Unknown branch type %s" % vcs)
-        super(BaseSnapAddEditView, self).validate_widgets(data, names=names)
-
-
-class BaseSnapEditView(BaseSnapAddEditView):
+        super(BaseSnapEditView, self).validate_widgets(data, names=names)
 
     @action('Update snap package', name='update')
     def request_action(self, action, data):

@@ -30,7 +30,10 @@ from lp.snappy.browser.snap import (
     SnapEditView,
     SnapView,
     )
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
+from lp.snappy.interfaces.snap import (
+    SNAP_FEATURE_FLAG,
+    SnapFeatureDisabled,
+    )
 from lp.testing import (
     BrowserTestCase,
     login,
@@ -53,6 +56,7 @@ from lp.testing.pages import (
     find_tags_by_class,
     )
 from lp.testing.publication import test_traverse
+from lp.testing.views import create_initialized_view
 
 
 class TestSnapNavigation(TestCaseWithFactory):
@@ -75,6 +79,111 @@ class TestSnapNavigation(TestCaseWithFactory):
         obj, _, _ = test_traverse(
             "http://launchpad.dev/~%s/+snap/%s" % (snap.owner.name, snap.name))
         self.assertEqual(snap, obj)
+
+
+class TestSnapViewsFeatureFlag(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_feature_flag_disabled(self):
+        # Without a feature flag, we will not create new Snaps.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(
+            SnapFeatureDisabled, create_initialized_view, branch, "+new-snap")
+
+
+class TestSnapAddView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapAddView, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FakeLogger())
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+    def test_initial_distroseries(self):
+        # The initial distroseries is the newest that is current or in
+        # development.
+        archive = self.factory.makeArchive(owner=self.person)
+        self.factory.makeDistroSeries(
+            distribution=archive.distribution, version="14.04",
+            status=SeriesStatus.DEVELOPMENT)
+        development = self.factory.makeDistroSeries(
+            distribution=archive.distribution, version="14.10",
+            status=SeriesStatus.DEVELOPMENT)
+        self.factory.makeDistroSeries(
+            distribution=archive.distribution, version="15.04",
+            status=SeriesStatus.EXPERIMENTAL)
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.person):
+            view = create_initialized_view(branch, "+new-snap")
+        self.assertEqual(development, view.initial_values["distro_series"])
+
+    def test_create_new_snap_not_logged_in(self):
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(
+            Unauthorized, self.getViewBrowser, branch, view_name="+new-snap",
+            no_login=True)
+
+    def test_create_new_snap_bzr(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution, status=SeriesStatus.DEVELOPMENT)
+        branch = self.factory.makeAnyBranch()
+        source_display = branch.display_name
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl("Name").value = "snap-name"
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("snap-name", extract_text(content.h1))
+        self.assertThat(
+            "Test Person", MatchesPickerText(content, "edit-owner"))
+        self.assertThat(
+            "Distribution series:\n%s\nEdit snap package" %
+            distroseries.fullseriesname,
+            MatchesTagText(content, "distro_series"))
+        self.assertThat(
+            "Source:\n%s\nEdit snap package" % source_display,
+            MatchesTagText(content, "source"))
+
+    def test_create_new_snap_git(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution, status=SeriesStatus.DEVELOPMENT)
+        [git_ref] = self.factory.makeGitRefs()
+        source_display = git_ref.display_name
+        browser = self.getViewBrowser(
+            git_ref, view_name="+new-snap", user=self.person)
+        browser.getControl("Name").value = "snap-name"
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("snap-name", extract_text(content.h1))
+        self.assertThat(
+            "Test Person", MatchesPickerText(content, "edit-owner"))
+        self.assertThat(
+            "Distribution series:\n%s\nEdit snap package" %
+            distroseries.fullseriesname,
+            MatchesTagText(content, "distro_series"))
+        self.assertThat(
+            "Source:\n%s\nEdit snap package" % source_display,
+            MatchesTagText(content, "source"))
+
+    def test_create_new_snap_users_teams_as_owner_options(self):
+        # Teams that the user is in are options for the snap package owner.
+        self.factory.makeTeam(
+            name="test-team", displayname="Test Team", members=[self.person])
+        branch = self.factory.makeAnyBranch()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        options = browser.getControl("Owner").displayOptions
+        self.assertEqual(
+            ["Test Person (test-person)", "Test Team (test-team)"],
+            sorted(str(option) for option in options))
 
 
 class TestSnapAdminView(BrowserTestCase):
