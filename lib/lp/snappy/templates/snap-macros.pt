@@ -18,9 +18,7 @@
       No snap packages
       </tal:no-snaps>
       <tal:snaps condition="view/snap_count">
-        <a href="+snaps" tal:content="structure view/snap_count_text">
-          1 snap package
-        </a>
+        <a href="+snaps" tal:content="view/snap_count_text">1 snap package</a>
       </tal:snaps>
       using this <metal:slot define-slot="context_type">branch</metal:slot>.
     </div>

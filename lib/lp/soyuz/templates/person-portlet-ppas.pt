@@ -35,8 +35,12 @@
       tal:define="recipes_link context/menu:overview/view_recipes;
                   snaps_link context/menu:overview/view_snaps"
       tal:condition="python: recipes_link.enabled or snaps_link.enabled">
-    <li><a tal:replace="structure recipes_link/fmt:link" /></li>
-    <li><a tal:replace="structure snaps_link/fmt:link" /></li>
+    <li tal:condition="recipes_link/enabled">
+      <a tal:replace="structure recipes_link/fmt:link" />
+    </li>
+    <li tal:condition="snaps_link/enabled">
+      <a tal:replace="structure snaps_link/fmt:link" />
+    </li>
   </ul>
 
 
