@@ -155,6 +155,10 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.snappy.browser.hassnaps import (
+    HasSnapsMenuMixin,
+    HasSnapsViewMixin,
+    )
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
@@ -267,7 +271,7 @@ class BranchEditMenu(NavigationMenu):
         return Link('+reviewer', text, icon='edit')
 
 
-class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
     """Context menu for branches."""
 
     usedfor = IBranch
@@ -276,7 +280,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'visibility']
+        'view_snaps', 'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -397,7 +401,7 @@ class BranchMirrorMixin:
 
 
 class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
-                 LaunchpadView):
+                 LaunchpadView, HasSnapsViewMixin):
 
     feed_types = (
         BranchFeedLink,

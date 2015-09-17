@@ -1,0 +1,40 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="main">
+
+    <table id="snaptable" class="listing sortable">
+      <thead>
+        <tr>
+          <th colspan="2">Name</th>
+          <th tal:condition="view/owner_enabled">Owner</th>
+          <th tal:condition="view/source_enabled">Source</th>
+          <th>Registered</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tal:snaps repeat="snap view/snaps">
+          <tr>
+            <td colspan="2">
+              <a tal:attributes="href snap/fmt:url" tal:content="snap/name" />
+            </td>
+            <td tal:condition="view/owner_enabled"
+                tal:content="structure snap/owner/fmt:link" />
+            <td tal:condition="view/source_enabled"
+                tal:content="structure snap/source/fmt:link" />
+            <td tal:content="snap/date_created/fmt:datetime" />
+          </tr>
+        </tal:snaps>
+      </tbody>
+    </table>
+
+  </div>
+</body>
+</html>

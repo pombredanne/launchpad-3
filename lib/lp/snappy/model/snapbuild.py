@@ -33,6 +33,8 @@ from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import SpecificBuildFarmJobSourceMixin
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -50,6 +52,7 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     )
 from lp.snappy.interfaces.snap import (
+    ISnapSet,
     SNAP_FEATURE_FLAG,
     SnapFeatureDisabled,
     )
@@ -61,6 +64,7 @@ from lp.snappy.interfaces.snapbuild import (
 from lp.snappy.mail.snapbuild import SnapBuildMailer
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
 @implementer(ISnapFile)
@@ -357,7 +361,13 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
         load_related(LibraryFileAlias, builds, ["log_id"])
         archives = load_related(Archive, builds, ["archive_id"])
         load_related(Person, archives, ["ownerID"])
-        load_related(Snap, builds, ["snap_id"])
+        distroarchseries = load_related(
+            DistroArchSeries, builds, ['distro_arch_series_id'])
+        distroseries = load_related(
+            DistroSeries, distroarchseries, ['distroseriesID'])
+        load_related(Distribution, distroseries, ['distributionID'])
+        snaps = load_related(Snap, builds, ["snap_id"])
+        getUtility(ISnapSet).preloadDataForSnaps(snaps)
 
     def getByBuildFarmJobs(self, build_farm_jobs):
         """See `ISpecificBuildFarmJobSource`."""

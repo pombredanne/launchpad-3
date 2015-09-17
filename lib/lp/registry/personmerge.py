@@ -619,9 +619,9 @@ def _mergeLiveFS(cur, from_person, to_person):
 
 def _mergeSnap(cur, from_person, to_person):
     # This shouldn't use removeSecurityProxy.
-    snaps = getUtility(ISnapSet).findByPerson(from_person)
+    snaps = getUtility(ISnapSet).findByOwner(from_person)
     existing_names = [
-        s.name for s in getUtility(ISnapSet).findByPerson(to_person)]
+        s.name for s in getUtility(ISnapSet).findByOwner(to_person)]
     for snap in snaps:
         new_name = snap.name
         count = 1

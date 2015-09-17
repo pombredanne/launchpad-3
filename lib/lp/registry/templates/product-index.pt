@@ -203,6 +203,10 @@
                   tal:condition="link/enabled">
                 <a tal:replace="structure link/fmt:link" />
               </li>
+              <li tal:define="link context/menu:overview/view_snaps"
+                  tal:condition="link/enabled">
+                <a tal:replace="structure link/fmt:link" />
+              </li>
             </ul>
           </div>
         </div>
