@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -177,6 +177,7 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     IMultiFacetedBreadcrumb,
     )
+from lp.snappy.browser.hassnaps import HasSnapsMenuMixin
 
 
 @implementer(IObjectPrivacy)
@@ -1614,7 +1615,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         return Link(target, text, icon='team', enabled=enabled)
 
 
-class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin,
+                       HasSnapsMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
@@ -1643,6 +1645,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'ppa',
         'related_software_summary',
         'view_recipes',
+        'view_snaps',
         'subscriptions',
         'structural_subscriptions',
         'upcomingwork',

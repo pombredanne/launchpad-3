@@ -149,7 +149,6 @@ from lp.services.propertycache import (
 from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
-from lp.snappy.interfaces.snap import ISnapSet
 
 
 object_type_map = {
@@ -983,6 +982,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
+        from lp.snappy.interfaces.snap import ISnapSet
+
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target repositories to

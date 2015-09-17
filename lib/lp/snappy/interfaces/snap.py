@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BadSnapSearchContext',
     'CannotDeleteSnap',
     'DuplicateSnapName',
     'ISnap',
@@ -45,7 +46,10 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -163,6 +167,10 @@ class CannotDeleteSnap(Exception):
     """This snap package cannot be deleted."""
 
 
+class BadSnapSearchContext(Exception):
+    """The context is not valid for a snap package search."""
+
+
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""
 
@@ -175,6 +183,9 @@ class ISnapView(Interface):
         title=_("Registrant"), required=True, readonly=True,
         vocabulary="ValidPersonOrTeam",
         description=_("The person who registered this snap package.")))
+
+    source = Attribute(
+        "The source branch for this snap package (VCS-agnostic).")
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
@@ -351,14 +362,51 @@ class ISnapSet(Interface):
     def getByName(owner, name):
         """Return the appropriate `ISnap` for the given objects."""
 
-    def findByPerson(owner):
+    def findByOwner(owner):
         """Return all snap packages with the given `owner`."""
+
+    def findByPerson(person, visible_by_user=None):
+        """Return all snap packages relevant to `person`.
+
+        This returns snap packages for Bazaar or Git branches owned by
+        `person`, or where `person` is the owner of the snap package.
+
+        :param person: An `IPerson`.
+        :param visible_by_user: If not None, only return packages visible by
+            this user.
+        """
+
+    def findByProject(project, visible_by_user=None):
+        """Return all snap packages for the given project.
+
+        :param project: An `IProduct`.
+        :param visible_by_user: If not None, only return packages visible by
+            this user.
+        """
 
     def findByBranch(branch):
         """Return all snap packages for the given Bazaar branch."""
 
     def findByGitRepository(repository):
         """Return all snap packages for the given Git repository."""
+
+    def findByGitRef(ref):
+        """Return all snap packages for the given Git reference."""
+
+    def findByContext(context, visible_by_user=None, order_by_date=True):
+        """Return all snap packages for the given context.
+
+        :param context: An `IPerson`, `IProduct, `IBranch`,
+            `IGitRepository`, or `IGitRef`.
+        :param visible_by_user: If not None, only return packages visible by
+            this user.
+        :param order_by_date: If True, order packages by descending
+            modification date.
+        :raises BadSnapSearchContext: if the context is not understood.
+        """
+
+    def preloadDataForSnaps(snaps, user):
+        """Load the data related to a list of snap packages."""
 
     def detachFromBranch(branch):
         """Detach all snap packages from the given Bazaar branch.

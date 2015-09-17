@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -560,7 +560,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(28)))
+        self.assertThat(recorder, HasQueryCount(Equals(29)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):

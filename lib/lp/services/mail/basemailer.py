@@ -14,6 +14,7 @@ import sys
 
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.security.management import getSecurityPolicy
 
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
@@ -24,6 +25,7 @@ from lp.services.mail.sendmail import (
     MailController,
     )
 from lp.services.utils import text_delta
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 
 
 class BaseMailer:
@@ -60,6 +62,20 @@ class BaseMailer:
         :param wrap: Wrap body text using `MailWrapper`.
         :param force_wrap: See `MailWrapper.format`.
         """
+        # Running mail notifications with web security is too fragile: it's
+        # easy to end up with subtle bugs due to such things as
+        # subscriptions from private teams that are inaccessible to the user
+        # with the current interaction.  BaseMailer always sends one mail
+        # per recipient and thus never leaks information to other users, so
+        # it's safer to require a permissive security policy.
+        #
+        # When converting other notification code to BaseMailer, it may be
+        # necessary to move notifications into jobs, to move unit tests to a
+        # Zopeless-based layer, or to use the permissive_security_policy
+        # context manager.
+        assert getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy, (
+            "BaseMailer may only be used with a permissive security policy.")
+
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()

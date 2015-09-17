@@ -274,6 +274,10 @@ from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.browser.hassnaps import (
+    HasSnapsMenuMixin,
+    HasSnapsViewMixin,
+    )
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
@@ -776,7 +780,7 @@ class PersonMenuMixin(CommonMenuLinks):
 
 
 class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
-                         HasRecipesMenuMixin):
+                         HasRecipesMenuMixin, HasSnapsMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -807,6 +811,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'oauth_tokens',
         'related_software_summary',
         'view_recipes',
+        'view_snaps',
         'subscriptions',
         'structural_subscriptions',
         ]
@@ -1648,7 +1653,8 @@ class ContactViaWebLinksMixin:
             raise AssertionError('Unknown group to contact.')
 
 
-class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
+class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin,
+                 HasSnapsViewMixin):
     """A View class used in almost all Person's pages."""
 
     @property

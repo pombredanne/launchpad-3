@@ -54,6 +54,7 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
+from lp.snappy.browser.hassnaps import HasSnapsViewMixin
 
 
 # XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
@@ -88,7 +89,7 @@ class GitRefContextMenu(ContextMenu):
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
 
-class GitRefView(LaunchpadView):
+class GitRefView(LaunchpadView, HasSnapsViewMixin):
 
     @property
     def label(self):

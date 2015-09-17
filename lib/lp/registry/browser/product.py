@@ -144,6 +144,7 @@ from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.codeimport import validate_import_url
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.code.enums import (
     BranchType,
     RevisionControlSystems,
@@ -159,8 +160,6 @@ from lp.code.interfaces.codeimport import (
     ICodeImport,
     ICodeImportSet,
     )
-from lp.code.interfaces.gitrepository import IGitRepositorySet
-from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser import (
     add_subscribe_link,
@@ -225,6 +224,7 @@ from lp.services.webapp.menu import NavigationMenu
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.snappy.browser.hassnaps import HasSnapsMenuMixin
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
     )
@@ -520,7 +520,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
-                          HasRecipesMenuMixin):
+                          HasRecipesMenuMixin, HasSnapsMenuMixin):
 
     usedfor = IProduct
     facet = 'overview'
@@ -546,6 +546,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'rdf',
         'branding',
         'view_recipes',
+        'view_snaps',
         ]
 
     def top_contributors(self):
