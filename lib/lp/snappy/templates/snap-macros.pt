@@ -1,7 +1,11 @@
-<div
+<tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div
+  metal:define-macro="related-snaps"
   tal:condition="view/show_snap_information"
   tal:define="context_menu context/menu:context"
   id="related-snaps">
@@ -18,8 +22,10 @@
           1 snap package
         </a>
       </tal:snaps>
-      using this repository.
+      using this <metal:slot define-slot="context_type">branch</metal:slot>.
     </div>
   </div>
 
 </div>
+
+</tal:root>

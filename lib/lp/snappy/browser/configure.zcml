@@ -93,6 +93,12 @@
             permission="zope.Public" />
 
         <browser:page
+            for="*"
+            class="lp.app.browser.launchpad.Macro"
+            permission="zope.Public"
+            name="+snap-macros"
+            template="../templates/snap-macros.pt" />
+        <browser:page
             for="lp.code.interfaces.branch.IBranch"
             class="lp.snappy.browser.snaplisting.BranchSnapListingView"
             permission="zope.Public"
