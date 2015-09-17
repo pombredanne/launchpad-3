@@ -11,12 +11,18 @@ __all__ = [
     'PersonSnapListingView',
     ]
 
+from functools import partial
+
+from zope.component import getUtility
+
 from lp.code.browser.decorations import DecoratedBranch
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 class SnapListingView(LaunchpadView, FeedsMixin):
@@ -37,7 +43,11 @@ class SnapListingView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         super(SnapListingView, self).initialize()
-        self.snaps = self.context.getSnaps(eager_load=True)
+        snaps = getUtility(ISnapSet).findByContext(
+            self.context, visible_by_user=self.user)
+        loader = partial(
+            getUtility(ISnapSet).preloadDataForSnaps, user=self.user)
+        self.snaps = DecoratedResultSet(snaps, pre_iter_hook=loader)
         if self.snaps.count() == 1:
             snap = self.snaps.one()
             self.request.response.redirect(canonical_url(snap))

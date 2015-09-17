@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IProduct."""
@@ -147,7 +147,6 @@ from lp.services.webservice.apihelpers import (
     patch_collection_property,
     patch_reference_property,
     )
-from lp.snappy.interfaces.hassnaps import IHasSnaps
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -483,8 +482,7 @@ class IProductView(
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories,
-    IHasSnaps):
+    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories):
     """Public IProduct properties."""
 
     registrant = exported(

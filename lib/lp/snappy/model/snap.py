@@ -383,6 +383,18 @@ class SnapSet:
             raise NoSuchSnap(name)
         return snap
 
+    def _getSnapsFromCollection(self, collection, owner=None):
+        if IBranchCollection.providedBy(collection):
+            id_column = Snap.branch_id
+            ids = collection.getBranchIds()
+        else:
+            id_column = Snap.git_repository_id
+            ids = collection.getRepositoryIds()
+        expressions = [id_column.is_in(ids._get_select())]
+        if owner is not None:
+            expressions.append(Snap.owner == owner)
+        return IStore(Snap).find(Snap, *expressions)
+
     def findByOwner(self, owner):
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.owner == owner)
@@ -391,7 +403,9 @@ class SnapSet:
         """See `ISnapSet`."""
         def _getSnaps(collection):
             collection = collection.visibleByUser(visible_by_user)
-            return collection.getSnapsForPerson(person)
+            owned = self._getSnapsFromCollection(collection.ownedBy(person))
+            packaged = self._getSnapsFromCollection(collection, owner=person)
+            return owned.union(packaged)
 
         bzr_collection = removeSecurityProxy(getUtility(IAllBranches))
         git_collection = removeSecurityProxy(getUtility(IAllGitRepositories))
@@ -400,7 +414,8 @@ class SnapSet:
     def findByProject(self, project, visible_by_user=None):
         """See `ISnapSet`."""
         def _getSnaps(collection):
-            return collection.visibleByUser(visible_by_user).getSnaps()
+            return self._getSnapsFromCollection(
+                collection.visibleByUser(visible_by_user))
 
         bzr_collection = removeSecurityProxy(IBranchCollection(project))
         git_collection = removeSecurityProxy(IGitCollection(project))

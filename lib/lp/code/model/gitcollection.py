@@ -59,7 +59,6 @@ from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import IStore
 from lp.services.propertycache import get_property_cache
-from lp.snappy.interfaces.snap import ISnapSet
 
 
 @implementer(IGitCollection)
@@ -375,37 +374,6 @@ class GenericGitCollection:
         # now.
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
-
-    def getSnaps(self, paths=None, owner=None, eager_load=False):
-        """See `IGitCollection`."""
-        # Circular import.
-        from lp.snappy.model.snap import Snap
-
-        expressions = [
-            Snap.git_repository_id.is_in(self._getRepositorySelect())]
-        if owner is not None:
-            expressions.append(Snap.owner == owner)
-        if paths is not None:
-            expressions.append(Snap.git_path.is_in(paths))
-        resultset = self.store.find(Snap, *expressions)
-        if not eager_load:
-            return resultset
-        else:
-            loader = partial(
-                getUtility(ISnapSet).preloadDataForSnaps, user=self._user)
-            return DecoratedResultSet(resultset, pre_iter_hook=loader)
-
-    def getSnapsForPerson(self, person, paths=None, eager_load=False):
-        """See `IGitCollection`."""
-        owned = self.ownedBy(person).getSnaps(paths=paths)
-        packaged = self.getSnaps(paths=paths, owner=person)
-        resultset = owned.union(packaged)
-        if not eager_load:
-            return resultset
-        else:
-            loader = partial(
-                getUtility(ISnapSet).preloadDataForSnaps, user=self._user)
-            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def getTeamsWithRepositories(self, person):
         """See `IGitCollection`."""

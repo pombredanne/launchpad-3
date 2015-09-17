@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A collection of branches.
@@ -106,27 +106,6 @@ class IBranchCollection(Interface):
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.
-        """
-
-    def getSnaps(owner=None, eager_load=False):
-        """Return a result set of snap packages for the branches in this
-        collection.
-
-        :param owner: If specified, only return snap packages with this
-            owner.
-        :param eager_load: If True, preload all the related information for
-            snap packages.
-        """
-
-    def getSnapsForPerson(person, eager_load=False):
-        """Snap packages for `person`.
-
-        Return snap packages for branches owned by `person`, or where
-        `person` is the owner of the snap package.
-
-        :param person: An `IPerson`.
-        :param eager_load: If True, preload all the related information for
-            snap packages.
         """
 
     def getExtendedRevisionDetails(user, revisions):

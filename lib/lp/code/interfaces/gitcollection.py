@@ -105,31 +105,6 @@ class IGitCollection(Interface):
             states are returned.
         """
 
-    def getSnaps(paths=None, owner=None, eager_load=False):
-        """Return a result set of snap packages for the repositories in this
-        collection.
-
-        :param paths: If specified, only return snap packages based on
-            branches whose paths are in this list.
-        :param owner: If specified, only return snap packages with this
-            owner.
-        :param eager_load: If True, preload all the related information for
-            snap packages.
-        """
-
-    def getSnapsForPerson(person, paths=None, eager_load=False):
-        """Snap packages for `person`.
-
-        Return snap packages for repositories owned by `person`, or where
-        `person` is the owner of the snap package.
-
-        :param person: An `IPerson`.
-        :param paths: If specified, only return snap packages based on
-            branches whose paths are in this list.
-        :param eager_load: If True, preload all the related information for
-            snap packages.
-        """
-
     def getTeamsWithRepositories(person):
         """Return the teams that person is a member of that have
         repositories."""

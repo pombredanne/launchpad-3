@@ -149,8 +149,6 @@ from lp.services.propertycache import (
 from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
-from lp.snappy.interfaces.snap import ISnapSet
-from lp.snappy.model.hassnaps import HasSnapsMixin
 
 
 object_type_map = {
@@ -173,8 +171,7 @@ def git_repository_modified(repository, event):
 
 
 @implementer(IGitRepository, IHasOwner, IPrivacy, IInformationType)
-class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin,
-                    HasSnapsMixin):
+class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     """See `IGitRepository`."""
 
     __storm_table__ = 'GitRepository'
@@ -985,6 +982,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin,
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
+        from lp.snappy.interfaces.snap import ISnapSet
+
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target repositories to
@@ -1010,7 +1009,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin,
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
-        if not self.getSnaps().is_empty():
+        if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, msg("Some snap packages build from this repository."),
                 getUtility(ISnapSet).detachFromGitRepository, self))
