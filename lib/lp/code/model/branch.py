@@ -179,12 +179,10 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
-from lp.snappy.interfaces.snap import ISnapSet
-from lp.snappy.model.hassnaps import HasSnapsMixin
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
-class Branch(SQLBase, BzrIdentityMixin, HasSnapsMixin):
+class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
     _table = 'Branch'
 
@@ -778,6 +776,8 @@ class Branch(SQLBase, BzrIdentityMixin, HasSnapsMixin):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
+        from lp.snappy.interfaces.snap import ISnapSet
+
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.
@@ -820,7 +820,7 @@ class Branch(SQLBase, BzrIdentityMixin, HasSnapsMixin):
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
             for recipe in self.recipes)
-        if not self.getSnaps().is_empty():
+        if not getUtility(ISnapSet).findByContext(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, _('Some snap packages build from this branch.'),
                 getUtility(ISnapSet).detachFromBranch, self))

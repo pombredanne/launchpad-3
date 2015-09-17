@@ -305,7 +305,6 @@ from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
-from lp.snappy.model.hassnaps import HasSnapsMixin
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -477,7 +476,7 @@ _readonly_person_settings = readonly_settings(
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
-    QuestionsPersonMixin, HasSnapsMixin):
+    QuestionsPersonMixin):
     """A Person."""
 
     def __init__(self, *args, **kwargs):

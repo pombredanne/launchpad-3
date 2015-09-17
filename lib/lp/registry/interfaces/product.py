@@ -147,7 +147,6 @@ from lp.services.webservice.apihelpers import (
     patch_collection_property,
     patch_reference_property,
     )
-from lp.snappy.interfaces.hassnaps import IHasSnaps
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -483,8 +482,7 @@ class IProductView(
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories,
-    IHasSnaps):
+    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories):
     """Public IProduct properties."""
 
     registrant = exported(

@@ -167,7 +167,6 @@ from lp.services.webservice.apihelpers import (
     patch_reference_property,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.snappy.interfaces.hassnaps import IHasSnaps
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -696,8 +695,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson, IHasGitRepositories,
-                    IHasSnaps):
+                    IPersonSettings, IQuestionsPerson, IHasGitRepositories):
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)

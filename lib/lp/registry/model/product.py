@@ -206,7 +206,6 @@ from lp.services.propertycache import (
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.snappy.model.hassnaps import HasSnapsMixin
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -366,7 +365,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
               HasCodeImportsMixin, InformationTypeMixin,
-              TranslationPolicyMixin, HasSnapsMixin):
+              TranslationPolicyMixin):
     """A Product."""
 
     _table = 'Product'

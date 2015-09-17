@@ -9,10 +9,15 @@ __all__ = [
     'HasSnapsViewMixin',
     ]
 
+from zope.component import getUtility
+
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import Link
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
+from lp.snappy.interfaces.snap import (
+    ISnapSet,
+    SNAP_FEATURE_FLAG,
+    )
 
 
 class HasSnapsMenuMixin:
@@ -20,7 +25,8 @@ class HasSnapsMenuMixin:
 
     def view_snaps(self):
         text = 'View snap packages'
-        enabled = not self.context.getSnaps().is_empty()
+        enabled = not getUtility(ISnapSet).findByContext(
+            self.context, visible_by_user=self.user).is_empty()
         return Link('+snaps', text, icon='info', enabled=enabled)
 
 
@@ -29,7 +35,8 @@ class HasSnapsViewMixin:
 
     @cachedproperty
     def snap_count(self):
-        return self.context.getSnaps().count()
+        return getUtility(ISnapSet).findByContext(
+            self.context, visible_by_user=self.user).count()
 
     @property
     def show_snap_information(self):
