@@ -40,7 +40,6 @@ from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.gitcollection import GenericGitCollection
-from lp.code.model.gitref import GitRef
 from lp.code.model.gitrepository import GitRepository
 from lp.registry.interfaces.person import (
     IPerson,
@@ -48,10 +47,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.database.bulk import (
-    load,
-    load_related,
-    )
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -462,22 +458,19 @@ class SnapSet:
         snaps = [removeSecurityProxy(snap) for snap in snaps]
 
         branch_ids = set()
-        git_ref_keys = set()
+        git_repository_ids = set()
         person_ids = set()
         for snap in snaps:
             if snap.branch_id is not None:
                 branch_ids.add(snap.branch_id)
             if snap.git_repository_id is not None:
-                git_ref_keys.add((snap.git_repository_id, snap.git_path))
+                git_repository_ids.add(snap.git_repository_id)
             person_ids.add(snap.registrant_id)
             person_ids.add(snap.owner_id)
-        git_repository_ids = set(
-            repository_id for repository_id, _ in git_ref_keys)
 
         branches = load_related(Branch, snaps, ["branch_id"])
         repositories = load_related(
             GitRepository, snaps, ["git_repository_id"])
-        load(GitRef, git_ref_keys)
         # The stacked-on branches are used to check branch visibility.
         GenericBranchCollection.preloadVisibleStackedOnBranches(branches, user)
         GenericGitCollection.preloadVisibleRepositories(repositories, user)
