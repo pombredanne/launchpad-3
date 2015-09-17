@@ -12,7 +12,10 @@ from lazr.restfulclient.errors import (
     Unauthorized as LRUnauthorized,
     )
 from testtools import ExpectedException
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -106,6 +109,40 @@ class TestArchiveWebservice(TestCaseWithFactory):
         recorder1, recorder2 = record_two_runs(
             get_permissions, create_permission, 1)
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_delete(self):
+        with admin_logged_in():
+            ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+            ppa_url = api_url(ppa)
+            ws = webservice_for_person(
+                ppa.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        # DELETE on an archive resource doesn't actually remove it
+        # immediately, but it asks the publisher to delete it later.
+        self.assertEqual(
+            'Active',
+            ws.get(ppa_url, api_version='devel').jsonBody()['status'])
+        self.assertEqual(200, ws.delete(ppa_url, api_version='devel').status)
+        self.assertEqual(
+            'Deleting',
+            ws.get(ppa_url, api_version='devel').jsonBody()['status'])
+
+        # Deleting the PPA again fails.
+        self.assertThat(
+            ws.delete(ppa_url, api_version='devel'),
+            MatchesStructure.byEquality(
+                status=400, body="Archive already deleted."))
+
+    def test_delete_is_restricted(self):
+        with admin_logged_in():
+            ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+            ppa_url = api_url(ppa)
+            ws = webservice_for_person(
+                self.factory.makePerson(),
+                permission=OAuthPermission.WRITE_PRIVATE)
+
+        # A random user can't delete someone else's PPA.
+        self.assertEqual(401, ws.delete(ppa_url, api_version='devel').status)
 
 
 class TestExternalDependencies(WebServiceTestCase):
