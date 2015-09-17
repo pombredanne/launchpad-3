@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.code.browser.decorations import DecoratedBranch
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import Link
@@ -25,8 +26,11 @@ class HasSnapsMenuMixin:
 
     def view_snaps(self):
         text = 'View snap packages'
+        context = self.context
+        if isinstance(context, DecoratedBranch):
+            context = context.branch
         enabled = not getUtility(ISnapSet).findByContext(
-            self.context, visible_by_user=self.user).is_empty()
+            context, visible_by_user=self.user).is_empty()
         return Link('+snaps', text, icon='info', enabled=enabled)
 
 
@@ -35,8 +39,11 @@ class HasSnapsViewMixin:
 
     @cachedproperty
     def snap_count(self):
+        context = self.context
+        if isinstance(context, DecoratedBranch):
+            context = context.branch
         return getUtility(ISnapSet).findByContext(
-            self.context, visible_by_user=self.user).count()
+            context, visible_by_user=self.user).count()
 
     @property
     def show_snap_information(self):
