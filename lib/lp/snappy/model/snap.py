@@ -471,6 +471,10 @@ class SnapSet:
         branches = load_related(Branch, snaps, ["branch_id"])
         repositories = load_related(
             GitRepository, snaps, ["git_repository_id"])
+        if branches:
+            GenericBranchCollection.preloadDataForBranches(branches)
+        if repositories:
+            GenericGitCollection.preloadDataForRepositories(repositories)
         # The stacked-on branches are used to check branch visibility.
         GenericBranchCollection.preloadVisibleStackedOnBranches(branches, user)
         GenericGitCollection.preloadVisibleRepositories(repositories, user)
@@ -478,19 +482,11 @@ class SnapSet:
         # Add branch/repository owners to the list of pre-loaded persons.
         # We need the target repository owner as well; unlike branches,
         # repository unique names aren't trigger-maintained.
-        person_ids.update(
-            branch.ownerID for branch in branches if branch.id in branch_ids)
-        person_ids.update(
-            repository.owner_id for repository in repositories
-            if repository.id in git_repository_ids)
+        person_ids.update(branch.ownerID for branch in branches)
+        person_ids.update(repository.owner_id for repository in repositories)
 
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
-
-        if branches:
-            GenericBranchCollection.preloadDataForBranches(branches)
-        if repositories:
-            GenericGitCollection.preloadDataForRepositories(repositories)
 
     def detachFromBranch(self, branch):
         """See `ISnapSet`."""
