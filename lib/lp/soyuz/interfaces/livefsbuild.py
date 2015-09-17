@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Live filesystem build interfaces."""
@@ -97,7 +97,7 @@ class ILiveFSBuildView(IPackageBuild):
         title=_("If True, this build is virtualized."), readonly=True)
 
     version = exported(TextLine(
-        title=_("A timestamp-based version identifying this build."),
+        title=_("A version string for this build."),
         required=True, readonly=True))
 
     score = exported(Int(
@@ -195,5 +195,6 @@ class ILiveFSBuildSet(ISpecificBuildFarmJobSource):
     """Utility for `ILiveFSBuild`."""
 
     def new(requester, livefs, archive, distro_arch_series, pocket,
-            unique_key=None, metadata_override=None, date_created=DEFAULT):
+            unique_key=None, metadata_override=None, version=None,
+            date_created=DEFAULT):
         """Create an `ILiveFSBuild`."""
