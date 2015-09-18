@@ -348,9 +348,6 @@
             name="++branch-recipes"
             template="../templates/branch-recipes.pt" />
         <browser:page
-            name="++branch-snaps"
-            template="../templates/branch-snaps.pt" />
-        <browser:page
             name="++branch-import-details"
             template="../templates/branch-import-details.pt" />
         <browser:page
@@ -797,9 +794,6 @@
         <browser:page
             name="++repository-management"
             template="../templates/gitrepository-management.pt"/>
-        <browser:page
-            name="++repository-snaps"
-            template="../templates/gitrepository-snaps.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
@@ -884,9 +878,6 @@
         <browser:page
             name="++ref-pending-merges"
             template="../templates/gitref-pending-merges.pt"/>
-        <browser:page
-            name="++ref-snaps"
-            template="../templates/gitref-snaps.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitref.IGitRef"

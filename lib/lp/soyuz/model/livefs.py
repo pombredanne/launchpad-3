@@ -127,7 +127,7 @@ class LiveFS(Storm):
         self.date_last_modified = date_created
 
     def requestBuild(self, requester, archive, distro_arch_series, pocket,
-                     unique_key=None, metadata_override=None):
+                     unique_key=None, metadata_override=None, version=None):
         """See `ILiveFS`."""
         if not requester.inTeam(self.owner):
             raise LiveFSNotOwner(
@@ -152,7 +152,8 @@ class LiveFS(Storm):
 
         build = getUtility(ILiveFSBuildSet).new(
             requester, self, archive, distro_arch_series, pocket,
-            unique_key=unique_key, metadata_override=metadata_override)
+            unique_key=unique_key, metadata_override=metadata_override,
+            version=version)
         build.queueBuild()
         return build
 

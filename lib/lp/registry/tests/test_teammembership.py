@@ -82,6 +82,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     DatabaseLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
@@ -1070,7 +1071,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
 
 class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
     """Test the behaviour of sendExpirationWarningEmail()."""
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestTeamMembershipSendExpirationWarningEmail, self).setUp()

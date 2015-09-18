@@ -22,7 +22,6 @@ from lp.services.config import config
 from lp.services.job.runner import JobRunner
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
-from lp.testing.dbuser import dbuser
 
 
 def pop_notifications(sort_key=None, commit=True):
@@ -137,6 +136,9 @@ def run_mail_jobs():
     extended to run those jobs, so that testing emails doesn't require a
     bunch of different function calls to process different queues.
     """
+    # Circular import.
+    from lp.testing.pages import permissive_security_policy
+
     # Commit the transaction to make sure that the JobRunner can find
     # the queued jobs.
     transaction.commit()
@@ -149,6 +151,7 @@ def run_mail_jobs():
             ):
         job_source = getUtility(interface)
         logger = DevNullLogger()
-        with dbuser(getattr(config, interface.__name__).dbuser):
+        dbuser_name = getattr(config, interface.__name__).dbuser
+        with permissive_security_policy(dbuser_name):
             runner = JobRunner.fromReady(job_source, logger)
             runner.runAll()

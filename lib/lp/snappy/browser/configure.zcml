@@ -105,33 +105,39 @@
             permission="zope.Public" />
 
         <browser:page
+            for="*"
+            class="lp.app.browser.launchpad.Macro"
+            permission="zope.Public"
+            name="+snap-macros"
+            template="../templates/snap-macros.pt" />
+        <browser:page
             for="lp.code.interfaces.branch.IBranch"
             class="lp.snappy.browser.snaplisting.BranchSnapListingView"
-            permission="zope.Public"
+            permission="launchpad.View"
             name="+snaps"
             template="../templates/snap-listing.pt" />
         <browser:page
             for="lp.code.interfaces.gitrepository.IGitRepository"
             class="lp.snappy.browser.snaplisting.GitSnapListingView"
-            permission="zope.Public"
+            permission="launchpad.View"
             name="+snaps"
             template="../templates/snap-listing.pt" />
         <browser:page
             for="lp.code.interfaces.gitref.IGitRef"
             class="lp.snappy.browser.snaplisting.GitSnapListingView"
-            permission="zope.Public"
+            permission="launchpad.View"
             name="+snaps"
             template="../templates/snap-listing.pt" />
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.snappy.browser.snaplisting.PersonSnapListingView"
-            permission="zope.Public"
+            permission="launchpad.View"
             name="+snaps"
             template="../templates/snap-listing.pt" />
         <browser:page
             for="lp.registry.interfaces.product.IProduct"
             class="lp.snappy.browser.snaplisting.ProjectSnapListingView"
-            permission="zope.Public"
+            permission="launchpad.View"
             name="+snaps"
             template="../templates/snap-listing.pt" />
     </facet>

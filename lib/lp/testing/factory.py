@@ -4472,7 +4472,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeLiveFSBuild(self, requester=None, registrant=None, livefs=None,
                         archive=None, distroarchseries=None, pocket=None,
-                        unique_key=None, metadata_override=None,
+                        unique_key=None, metadata_override=None, version=None,
                         date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
                         builder=None, duration=None, **kwargs):
         """Make a new LiveFSBuild."""
@@ -4503,7 +4503,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         livefsbuild = getUtility(ILiveFSBuildSet).new(
             requester, livefs, archive, distroarchseries, pocket,
             unique_key=unique_key, metadata_override=metadata_override,
-            date_created=date_created)
+            version=version, date_created=date_created)
         if duration is not None:
             removeSecurityProxy(livefsbuild).updateStatus(
                 BuildStatus.BUILDING, builder=builder,

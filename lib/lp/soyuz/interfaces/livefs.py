@@ -162,12 +162,13 @@ class ILiveFSView(Interface):
             required=False),
         metadata_override=Dict(
             title=_("A dict of data about the image."),
-            key_type=TextLine(), required=False))
+            key_type=TextLine(), required=False),
+        version=TextLine(title=_("A version string for this build.")))
     # Really ILiveFSBuild, patched in _schema_circular_imports.py.
     @export_factory_operation(Interface, [])
     @operation_for_version("devel")
     def requestBuild(requester, archive, distro_arch_series, pocket,
-                     unique_key=None, metadata_override=None):
+                     unique_key=None, metadata_override=None, version=None):
         """Request that the live filesystem be built.
 
         :param requester: The person requesting the build.
@@ -179,6 +180,9 @@ class ILiveFSView(Interface):
         :param metadata_override: An optional JSON string with a dict of
             data about the image; this will be merged into the metadata dict
             for the live filesystem.
+        :param version: A version string for this build; if not set, a
+            version string will be generated from the date and time when the
+            build was requested.
         :return: `ILiveFSBuild`.
         """
 

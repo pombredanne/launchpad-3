@@ -20,8 +20,7 @@
     <div id="ref-relations" class="portlet">
       <tal:ref-pending-merges
            replace="structure context/@@++ref-pending-merges" />
-      <tal:ref-snaps
-           replace="structure context/@@++ref-snaps" />
+      <div metal:use-macro="context/@@+snap-macros/related-snaps" />
     </div>
   </div>
 

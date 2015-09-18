@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -292,6 +292,9 @@ def get_visible_comments(comments, user=None):
     # cannot see, because they have been marked invisible.
     strip_invisible = True
     if user is not None:
+        # XXX cjwatson 2015-09-15: Unify with
+        # Bug.userCanSetCommentVisibility, which also allows
+        # project-privileged users.
         role = PersonRoles(user)
         strip_invisible = not (role.in_admin or role.in_registry_experts)
     if strip_invisible:
@@ -383,9 +386,16 @@ class BugTaskNavigation(Navigation):
         # Ask the DB to slice out just the comment that we need.
         comments = get_comments_for_bugtask(
             self.context, slice_info=[slice(index, index + 1)])
-        if (comments and
-            (comments[0].visible
-             or check_permission('launchpad.Admin', self.context))):
+        # XXX cjwatson 2015-09-15: Unify with
+        # Bug.userCanSetCommentVisibility, which also allows
+        # project-privileged users.
+        user = getUtility(ILaunchBag).user
+        roles = PersonRoles(user) if user else None
+        if (comments and (
+                comments[0].visible
+                or user and (
+                    comments[0].owner == user
+                    or roles.in_admin or roles.in_registry_experts))):
             return comments[0]
         return None
 
