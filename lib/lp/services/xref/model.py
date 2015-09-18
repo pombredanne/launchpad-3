@@ -25,7 +25,7 @@ from lp.services.xref.interfaces import IXRefSet
 
 class XRef(StormBase):
 
-    __storm_table__ = 'CrossReference'
+    __storm_table__ = 'XRef'
     __storm_primary__ = "object1_id", "object2_id"
 
     object1_id = Unicode()
