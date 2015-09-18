@@ -6,10 +6,11 @@ SET client_min_messages=ERROR;
 CREATE TABLE CrossReference (
     object1_id text NOT NULL,
     object2_id text NOT NULL,
-    creator text,
+    creator integer REFERENCES Person,
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     metadata text,
+    CONSTRAINT objects_in_canonical_order CHECK (object1_id < object2_id),
     PRIMARY KEY (object1_id, object2_id)
 );
 
