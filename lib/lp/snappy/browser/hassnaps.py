@@ -33,6 +33,14 @@ class HasSnapsMenuMixin:
             context, visible_by_user=self.user).is_empty()
         return Link('+snaps', text, icon='info', enabled=enabled)
 
+    def create_snap(self):
+        # You can't yet create a snap for a private branch.
+        enabled = (
+            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) and
+            not self.context.private)
+        text = 'Create snap package'
+        return Link('+new-snap', text, enabled=enabled, icon='add')
+
 
 class HasSnapsViewMixin:
     """A view mixin for objects that implement IHasSnaps."""

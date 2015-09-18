@@ -128,7 +128,6 @@ from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
@@ -160,7 +159,6 @@ from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
     HasSnapsViewMixin,
     )
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
@@ -369,14 +367,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
         enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
-
-    def create_snap(self):
-        # You can't yet create a snap for a private branch.
-        enabled = (
-            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) and
-            not self.context.private)
-        text = 'Create snap package'
-        return Link('+new-snap', text, enabled=enabled, icon='add')
 
 
 class BranchMirrorMixin:
