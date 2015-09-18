@@ -60,11 +60,11 @@ class XRefSet:
         from lp.registry.model.person import Person
 
         store = IStore(XRef)
-        result = store.using(XRef).find(
+        result = list(store.using(XRef).find(
             (XRef.object1_id, XRef.object2_id, XRef.creator_id, XRef.metadata),
             Or(
                 XRef.object1_id.is_in(object_ids),
-                XRef.object2_id.is_in(object_ids)))
+                XRef.object2_id.is_in(object_ids))))
         bulk.load(Person, [r[2] for r in result])
         return {
             (r[0], r[1]): {
