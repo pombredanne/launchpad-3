@@ -29,6 +29,18 @@
             module="lp.snappy.browser.snap"
             classes="SnapNavigation" />
         <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.snappy.browser.snap.SnapAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-snap"
+            template="../templates/snap-new.pt" />
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
+            class="lp.snappy.browser.snap.SnapAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-snap"
+            template="../templates/snap-new.pt" />
+        <browser:page
             for="lp.snappy.interfaces.snap.ISnap"
             class="lp.snappy.browser.snap.SnapAdminView"
             permission="launchpad.Admin"

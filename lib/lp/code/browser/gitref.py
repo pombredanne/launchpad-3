@@ -54,7 +54,10 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.snappy.browser.hassnaps import HasSnapsViewMixin
+from lp.snappy.browser.hassnaps import (
+    HasSnapsMenuMixin,
+    HasSnapsViewMixin,
+    )
 
 
 # XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
@@ -76,12 +79,12 @@ class GitRefNavigation(Navigation):
             return self.redirectSubTree(canonical_url(proposal))
 
 
-class GitRefContextMenu(ContextMenu):
+class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
     """Context menu for Git references."""
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['register_merge']
+    links = ['create_snap', 'register_merge']
 
     def register_merge(self):
         text = 'Propose for merging'

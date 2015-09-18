@@ -277,10 +277,10 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
-        'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'view_snaps', 'visibility']
+        'add_subscriber', 'browse_revisions', 'create_recipe', 'create_snap',
+        'link_bug', 'link_blueprint', 'register_merge', 'source',
+        'subscription', 'edit_status', 'edit_import', 'upgrade_branch',
+        'view_recipes', 'view_snaps', 'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
