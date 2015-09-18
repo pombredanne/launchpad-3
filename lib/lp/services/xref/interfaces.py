@@ -16,18 +16,17 @@ class IXRefSet(Interface):
     def createByIDs(xrefs):
         """Create multiple cross-references by object IDs.
 
-        :param xrefs: A collection of dicts of
-            {'object_ids': [id1, id2], 'creator': `IPerson`,
-             'metadata': arbitrary_json_value}.
+        :param xrefs: A dict of
+            {(id1, id2): {'creator': `IPerson`, 'metadata': value}.
+            The creator and metadata keys are optional.
         """
 
     def findByIDs(object_ids):
         """Find all cross-references involving the given object IDs.
 
         :param object_ids: A collection of object IDs.
-        :return: A collection of dicts of
-            {'object_ids': [id1, id2], 'creator': `IPerson`,
-             'metadata': arbitrary_json_value}.
+        :return: A dict of
+            {(id1, id2): {'creator': `IPerson`, 'metadata': value}.
         """
 
     def deleteByIDs(object_id_pairs):

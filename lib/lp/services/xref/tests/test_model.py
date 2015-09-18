@@ -19,24 +19,18 @@ class TestXRefSet(TestCaseWithFactory):
     def test_create_and_find(self):
         creator = self.factory.makePerson()
         getUtility(IXRefSet).createByIDs(
-            [{'object_ids': ['bar', 'foo'], 'creator': creator,
-              'metadata': {'test': 1234}},
-             {'object_ids': ['foo', 'baz'], 'creator': creator,
-              'metadata': {'test': 2468}}])
+            {('bar', 'foo'): {'creator': creator, 'metadata': {'test': 1234}},
+             ('foo', 'baz'): {'creator': creator, 'metadata': {'test': 2468}}})
 
         self.assertEqual(
-            [{'object_ids': ['bar', 'foo'], 'creator': creator,
-              'metadata': {'test': 1234}}],
+            {('bar', 'foo'): {'creator': creator, 'metadata': {'test': 1234}}},
             getUtility(IXRefSet).findByIDs(['bar']))
         self.assertEqual(
-            [{'object_ids': ['bar', 'foo'], 'creator': creator,
-              'metadata': {'test': 1234}},
-             {'object_ids': ['baz', 'foo'], 'creator': creator,
-              'metadata': {'test': 2468}}],
+            {('bar', 'foo'): {'creator': creator, 'metadata': {'test': 1234}},
+             ('baz', 'foo'): {'creator': creator, 'metadata': {'test': 2468}}},
             getUtility(IXRefSet).findByIDs(['foo']))
         self.assertEqual(
-            [{'object_ids': ['baz', 'foo'], 'creator': creator,
-              'metadata': {'test': 2468}}],
+            {('baz', 'foo'): {'creator': creator, 'metadata': {'test': 2468}}},
             getUtility(IXRefSet).findByIDs(['baz']))
         self.assertEqual(
             getUtility(IXRefSet).findByIDs(['foo']),
@@ -44,8 +38,7 @@ class TestXRefSet(TestCaseWithFactory):
 
     def test_deleteByIDs(self):
         getUtility(IXRefSet).createByIDs(
-            [{'object_ids': ['bar', 'foo']},
-             {'object_ids': ['foo', 'baz']}])
+            {('bar', 'foo'): {}, ('foo', 'baz'): {}})
         self.assertEqual(['bar', 'baz'], getUtility(IXRefSet).findIDs('foo'))
         getUtility(IXRefSet).deleteByIDs([['foo', 'bar']])
         self.assertEqual(['baz'], getUtility(IXRefSet).findIDs('foo'))

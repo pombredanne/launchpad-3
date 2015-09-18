@@ -44,9 +44,8 @@ class XRefSet:
     def createByIDs(self, xrefs):
         bulk.create(
             (XRef.object1_id, XRef.object2_id, XRef.creator, XRef.metadata),
-            [list(sorted(x['object_ids']))
-             + [x.get('creator'), x.get('metadata')]
-             for x in xrefs])
+            [list(sorted(ids)) + [props.get('creator'), props.get('metadata')]
+             for ids, props in xrefs.items()])
 
     def deleteByIDs(self, object_id_pairs):
         canonical_pairs = [list(sorted(pair)) for pair in object_id_pairs]
@@ -67,12 +66,12 @@ class XRefSet:
                 XRef.object1_id.is_in(object_ids),
                 XRef.object2_id.is_in(object_ids)))
         bulk.load(Person, [r[2] for r in result])
-        return [
-            {"object_ids": [r[0], r[1]], "creator": store.get(Person, r[2]),
-             "metadata": r[3]}
-            for r in result]
+        return {
+            (r[0], r[1]): {
+                "creator": store.get(Person, r[2]), "metadata": r[3]}
+            for r in result}
 
     def findIDs(self, object_id):
         return [
-            [id for id in x.get("object_ids") if id != object_id][0]
-            for x in self.findByIDs([object_id])]
+            [id for id in ids if id != object_id][0]
+            for ids, _ in self.findByIDs([object_id]).items()]
