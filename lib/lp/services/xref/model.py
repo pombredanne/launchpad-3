@@ -74,4 +74,4 @@ class XRefSet:
     def findIDs(self, object_id):
         return [
             [id for id in ids if id != object_id][0]
-            for ids, _ in self.findByIDs([object_id]).items()]
+            for ids in self.findByIDs([object_id]).keys()]
