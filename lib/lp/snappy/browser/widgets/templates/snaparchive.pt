@@ -1,0 +1,32 @@
+<tal:root
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    omit-tag="">
+
+<table>
+  <tr>
+    <td colspan="2">
+      <label>
+        <input
+            type="radio" value="primary"
+            tal:replace="structure view/options/primary" />
+        <tal:primary-displayname replace="view/main_archive/displayname" />
+      </label>
+    </td>
+  </tr>
+
+  <tr>
+    <td>
+      <label>
+        <input
+            type="radio" value="ppa"
+            tal:replace="structure view/options/ppa" />
+        PPA
+      </label>
+    </td>
+    <td>
+      <tal:ppa tal:replace="structure view/ppa_widget" />
+    </td>
+  </tr>
+</table>
+
+</tal:root>
