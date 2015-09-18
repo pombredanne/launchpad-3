@@ -217,7 +217,7 @@ class GitRepositoryContextMenu(ContextMenu):
         return Link("+addsubscriber", text, icon="add")
 
     def source(self):
-        """Return a link to the branch's browsing interface."""
+        """Return a link to the repository's browsing interface."""
         text = "Browse the code"
         url = self.context.getCodebrowseUrl()
         return Link(url, text, icon="info")
