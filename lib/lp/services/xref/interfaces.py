@@ -29,3 +29,17 @@ class IXRefSet(Interface):
             {'object_ids': [id1, id2], 'creator': `IPerson`,
              'metadata': arbitrary_json_value}.
         """
+
+    def deleteByIDs(object_id_pairs):
+        """Delete cross-references by pairs of object IDs.
+
+        :param object_ids: A collection of pairs of object IDs to remove
+            references between.
+        """
+
+    def findIDs(object_id):
+        """Find all object IDs linked to the given object ID.
+
+        :param object_ids: An object ID.
+        :return: A list of linked object IDs.
+        """

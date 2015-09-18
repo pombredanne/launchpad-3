@@ -41,3 +41,11 @@ class TestXRefSet(TestCaseWithFactory):
         self.assertEqual(
             getUtility(IXRefSet).findByIDs(['foo']),
             getUtility(IXRefSet).findByIDs(['bar', 'baz']))
+
+    def test_deleteByIDs(self):
+        getUtility(IXRefSet).createByIDs(
+            [{'object_ids': ['bar', 'foo']},
+             {'object_ids': ['foo', 'baz']}])
+        self.assertEqual(['bar', 'baz'], getUtility(IXRefSet).findIDs('foo'))
+        getUtility(IXRefSet).deleteByIDs([['foo', 'bar']])
+        self.assertEqual(['baz'], getUtility(IXRefSet).findIDs('foo'))
