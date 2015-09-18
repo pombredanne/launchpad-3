@@ -30,12 +30,11 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.code.browser.widgets.gitref import GitRefWidget
 from lp.code.interfaces.gitref import IGitRef
-from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.enums import VCSType
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
@@ -185,10 +184,10 @@ class SnapAddView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        series = [
-            term.value for term in BuildableDistroSeries()
-            if term.value.status in (
-                SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)][0]
+        # XXX cjwatson 2015-09-18: Hack to ensure that we don't end up
+        # accidentally selecting ubuntu-rtm/14.09 or similar.
+        # ubuntu.currentseries will always be in BuildableDistroSeries.
+        series = getUtility(ILaunchpadCelebrities).ubuntu.currentseries
         return {
             'owner': self.user,
             'distro_series': series,
