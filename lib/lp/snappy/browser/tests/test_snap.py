@@ -570,8 +570,8 @@ class TestSnapRequestBuildsView(BrowserTestCase):
         # Requesting a build creates pending builds.
         browser = self.getViewBrowser(
             self.snap, "+request-builds", user=self.person)
-        browser.getControl("amd64").click()
-        browser.getControl("i386").click()
+        self.assertTrue(browser.getControl("amd64").selected)
+        self.assertTrue(browser.getControl("i386").selected)
         browser.getControl("Request builds").click()
 
         login_person(self.person)
@@ -595,7 +595,8 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             self.snap, "+request-builds", user=self.person)
         browser.getControl("PPA").click()
         browser.getControl(name="field.archive.ppa").value = ppa.reference
-        browser.getControl("amd64").click()
+        self.assertTrue(browser.getControl("amd64").selected)
+        browser.getControl("i386").selected = False
         browser.getControl("Request builds").click()
 
         login_person(self.person)
@@ -606,6 +607,8 @@ class TestSnapRequestBuildsView(BrowserTestCase):
         # Selecting no architectures causes a validation failure.
         browser = self.getViewBrowser(
             self.snap, "+request-builds", user=self.person)
+        browser.getControl("amd64").selected = False
+        browser.getControl("i386").selected = False
         browser.getControl("Request builds").click()
         self.assertIn(
             "You need to select at least one architecture.",
@@ -618,8 +621,8 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             PackagePublishingPocket.RELEASE)
         browser = self.getViewBrowser(
             self.snap, "+request-builds", user=self.person)
-        browser.getControl("amd64").click()
-        browser.getControl("i386").click()
+        self.assertTrue(browser.getControl("amd64").selected)
+        self.assertTrue(browser.getControl("i386").selected)
         browser.getControl("Request builds").click()
         main_text = extract_text(find_main_content(browser.contents))
         self.assertIn("1 new build has been queued.", main_text)

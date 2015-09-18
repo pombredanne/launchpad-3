@@ -23,6 +23,9 @@ class SnapDistroArchSeriesVocabulary(StormVocabularyBase):
     def toTerm(self, das):
         return SimpleTerm(das, das.id, das.architecturetag)
 
-    @property
-    def _entries(self):
-        return self.context.distro_series.buildable_architectures
+    def __iter__(self):
+        for obj in self.context.getAllowedArchitectures():
+            yield self.toTerm(obj)
+
+    def __len__(self):
+        return len(self.context.getAllowedArchitectures())

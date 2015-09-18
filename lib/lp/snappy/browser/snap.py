@@ -220,6 +220,7 @@ class SnapRequestBuildsView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         return {
             'archive': self.context.distro_series.main_archive,
+            'distro_arch_series': self.context.getAllowedArchitectures(),
             'pocket': PackagePublishingPocket.RELEASE,
             }
 
