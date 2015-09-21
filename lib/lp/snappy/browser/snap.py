@@ -6,20 +6,26 @@
 __metaclass__ = type
 __all__ = [
     'SnapAddView',
+    'SnapContextMenu',
     'SnapDeleteView',
     'SnapEditView',
     'SnapNavigation',
     'SnapNavigationMenu',
+    'SnapRequestBuildsView',
     'SnapView',
     ]
 
+from lazr.restful.fields import Reference
 from lazr.restful.interface import (
     copy_field,
     use_template,
     )
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Choice
+from zope.schema import (
+    Choice,
+    List,
+    )
 
 from lp.app.browser.launchpadform import (
     action,
@@ -31,34 +37,44 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidget,
+    )
 from lp.code.browser.widgets.gitref import GitRefWidget
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
+from lp.services.helpers import english_list
 from lp.services.webapp import (
     canonical_url,
+    ContextMenu,
     enabled_with_permission,
     LaunchpadView,
     Link,
     Navigation,
     NavigationMenu,
     stepthrough,
+    structured,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import (
     Breadcrumb,
     NameBreadcrumb,
     )
+from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
 from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapSet,
-    SNAP_FEATURE_FLAG,
-    SnapFeatureDisabled,
     NoSuchSnap,
+    SNAP_FEATURE_FLAG,
+    SnapBuildAlreadyPending,
+    SnapFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.soyuz.browser.build import get_build_by_id_str
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class SnapNavigation(Navigation):
@@ -104,6 +120,20 @@ class SnapNavigationMenu(NavigationMenu):
         return Link('+delete', 'Delete snap package', icon='trash-icon')
 
 
+class SnapContextMenu(ContextMenu):
+    """Context menu for snap packages."""
+
+    usedfor = ISnap
+
+    facet = 'overview'
+
+    links = ('request_builds',)
+
+    @enabled_with_permission('launchpad.Edit')
+    def request_builds(self):
+        return Link('+request-builds', 'Request builds', icon='add')
+
+
 class SnapView(LaunchpadView):
     """Default view of a Snap."""
 
@@ -143,6 +173,97 @@ def builds_for_snap(snap):
         if len(builds) >= 10:
             break
     return builds
+
+
+def new_builds_notification_text(builds, already_pending=None):
+    nr_builds = len(builds)
+    if not nr_builds:
+        builds_text = "All requested builds are already queued."
+    elif nr_builds == 1:
+        builds_text = "1 new build has been queued."
+    else:
+        builds_text = "%d new builds have been queued." % nr_builds
+    if nr_builds and already_pending:
+        return structured("<p>%s</p><p>%s</p>", builds_text, already_pending)
+    else:
+        return builds_text
+
+
+class SnapRequestBuildsView(LaunchpadFormView):
+    """A view for requesting builds of a snap package."""
+
+    @property
+    def label(self):
+        return 'Request builds for %s' % self.context.name
+
+    page_title = 'Request builds'
+
+    class schema(Interface):
+        """Schema for requesting a build."""
+
+        archive = Reference(IArchive, title=u'Source archive', required=True)
+        distro_arch_series = List(
+            Choice(vocabulary='SnapDistroArchSeries'),
+            title=u'Architectures', required=True)
+        pocket = Choice(
+            title=u'Pocket', vocabulary=PackagePublishingPocket, required=True)
+
+    custom_widget('archive', SnapArchiveWidget)
+    custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        return {
+            'archive': self.context.distro_series.main_archive,
+            'distro_arch_series': self.context.getAllowedArchitectures(),
+            'pocket': PackagePublishingPocket.RELEASE,
+            }
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        arches = data.get('distro_arch_series', [])
+        if not arches:
+            self.setFieldError(
+                'distro_arch_series',
+                "You need to select at least one architecture.")
+
+    def requestBuild(self, data):
+        """User action for requesting a number of builds.
+
+        We raise exceptions for most errors, but if there's already a
+        pending build for a particular architecture, we simply record that
+        so that other builds can be queued and a message displayed to the
+        caller.
+        """
+        informational = {}
+        builds = []
+        already_pending = []
+        for arch in data['distro_arch_series']:
+            try:
+                build = self.context.requestBuild(
+                    self.user, data['archive'], arch, data['pocket'])
+                builds.append(build)
+            except SnapBuildAlreadyPending:
+                already_pending.append(arch)
+        if already_pending:
+            informational['already_pending'] = (
+                "An identical build is already pending for %s." %
+                english_list(arch.architecturetag for arch in already_pending))
+        return builds, informational
+
+    @action('Request builds', name='request')
+    def request_action(self, action, data):
+        builds, informational = self.requestBuild(data)
+        self.next_url = self.cancel_url
+        already_pending = informational.get('already_pending')
+        notification_text = new_builds_notification_text(
+            builds, already_pending)
+        self.request.response.addNotification(notification_text)
 
 
 class ISnapEditSchema(Interface):
