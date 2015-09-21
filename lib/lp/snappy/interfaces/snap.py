@@ -187,6 +187,12 @@ class ISnapView(Interface):
     source = Attribute(
         "The source branch for this snap package (VCS-agnostic).")
 
+    def getAllowedArchitectures():
+        """Return all distroarchseries that this package can build for.
+
+        :return: Sequence of `IDistroArchSeries` instances.
+        """
+
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
         archive=Reference(schema=IArchive),

@@ -1,0 +1,18 @@
+<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <securedutility
+        name="SnapDistroArchSeries"
+        component="lp.snappy.vocabularies.SnapDistroArchSeriesVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory" />
+    </securedutility>
+
+    <class class="lp.snappy.vocabularies.SnapDistroArchSeriesVocabulary">
+        <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
+    </class>
+
+</configure>
