@@ -11,12 +11,12 @@ import soupmatchers
 from zope.component import getUtility
 
 from lp.code.interfaces.gitrepository import IGitRepositorySet
-from lp.testing import TestCaseWithFactory
+from lp.testing import BrowserTestCase
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_view
 
 
-class GitRefView(TestCaseWithFactory):
+class TestGitRefView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -56,3 +56,11 @@ class GitRefView(TestCaseWithFactory):
                     soupmatchers.Tag(
                         'git ref breadcrumb', 'li',
                         text=re.compile(r'\smaster\s')))))
+
+    def test_clone_instructions(self):
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
+        text = self.getMainText(ref, "+index", user=ref.owner)
+        self.assertTextMatchesExpressionIgnoreWhitespace(r"""
+            git clone -b branch https://.*
+            git clone -b branch git\+ssh://.*
+            """, text)

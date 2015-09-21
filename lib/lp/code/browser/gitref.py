@@ -84,7 +84,13 @@ class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['create_snap', 'register_merge']
+    links = ['create_snap', 'register_merge', 'source']
+
+    def source(self):
+        """Return a link to the branch's browsing interface."""
+        text = "Browse the code"
+        url = self.context.getCodebrowseUrl()
+        return Link(url, text, icon="info")
 
     def register_merge(self):
         text = 'Propose for merging'
@@ -97,6 +103,11 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @property
     def label(self):
         return self.context.display_name
+
+    @property
+    def user_can_push(self):
+        """Whether the user can push to this branch."""
+        return check_permission("launchpad.Edit", self.context)
 
     @property
     def tip_commit_info(self):
