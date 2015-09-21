@@ -4,8 +4,9 @@
   omit-tag="">
 
 <tal:repository-management
-    define="kind string:repository;
-            repository context">
+    define="kind string:branch;
+            repository context/repository;
+            branch_name context/name">
   <div metal:use-macro="context/@@+macros/management" />
 </tal:repository-management>
 

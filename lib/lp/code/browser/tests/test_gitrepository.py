@@ -78,6 +78,14 @@ class TestGitRepositoryView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
+    def test_clone_instructions(self):
+        repository = self.factory.makeGitRepository()
+        text = self.getMainText(repository, "+index", user=repository.owner)
+        self.assertTextMatchesExpressionIgnoreWhitespace(r"""
+            git clone https://.*
+            git clone git\+ssh://.*
+            """, text)
+
     def test_user_can_push(self):
         # A user can push if they have edit permissions.
         repository = self.factory.makeGitRepository()
