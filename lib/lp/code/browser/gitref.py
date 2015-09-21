@@ -54,6 +54,10 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
+from lp.snappy.browser.hassnaps import (
+    HasSnapsMenuMixin,
+    HasSnapsViewMixin,
+    )
 
 
 # XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
@@ -75,12 +79,18 @@ class GitRefNavigation(Navigation):
             return self.redirectSubTree(canonical_url(proposal))
 
 
-class GitRefContextMenu(ContextMenu):
+class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
     """Context menu for Git references."""
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['register_merge']
+    links = ['create_snap', 'register_merge', 'source']
+
+    def source(self):
+        """Return a link to the branch's browsing interface."""
+        text = "Browse the code"
+        url = self.context.getCodebrowseUrl()
+        return Link(url, text, icon="info")
 
     def register_merge(self):
         text = 'Propose for merging'
@@ -88,11 +98,16 @@ class GitRefContextMenu(ContextMenu):
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
 
-class GitRefView(LaunchpadView):
+class GitRefView(LaunchpadView, HasSnapsViewMixin):
 
     @property
     def label(self):
         return self.context.display_name
+
+    @property
+    def user_can_push(self):
+        """Whether the user can push to this branch."""
+        return check_permission("launchpad.Edit", self.context)
 
     @property
     def tip_commit_info(self):

@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import operator
-from urllib import quote_plus
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
@@ -180,7 +179,6 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
-from lp.snappy.interfaces.snap import ISnapSet
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
@@ -778,6 +776,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
+        from lp.snappy.interfaces.snap import ISnapSet
+
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.

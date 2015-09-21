@@ -31,6 +31,7 @@ from lp.services.database.constants import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
+    BadSnapSearchContext,
     CannotDeleteSnap,
     ISnap,
     ISnapSet,
@@ -382,8 +383,7 @@ class TestSnapSet(TestCaseWithFactory):
         if branch is not None:
             components["branch"] = branch
         else:
-            components["git_repository"] = git_ref.repository
-            components["git_path"] = git_ref.path
+            components["git_ref"] = git_ref
         return components
 
     def test_creation_bzr(self):
@@ -392,7 +392,6 @@ class TestSnapSet(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         components = self.makeSnapComponents(branch=branch)
         snap = getUtility(ISnapSet).new(**components)
-        transaction.commit()
         self.assertEqual(components["registrant"], snap.registrant)
         self.assertEqual(components["owner"], snap.owner)
         self.assertEqual(components["distro_series"], snap.distro_series)
@@ -400,6 +399,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(branch, snap.branch)
         self.assertIsNone(snap.git_repository)
         self.assertIsNone(snap.git_path)
+        self.assertIsNone(snap.git_ref)
         self.assertTrue(snap.require_virtualized)
 
     def test_creation_git(self):
@@ -408,7 +408,6 @@ class TestSnapSet(TestCaseWithFactory):
         [ref] = self.factory.makeGitRefs()
         components = self.makeSnapComponents(git_ref=ref)
         snap = getUtility(ISnapSet).new(**components)
-        transaction.commit()
         self.assertEqual(components["registrant"], snap.registrant)
         self.assertEqual(components["owner"], snap.owner)
         self.assertEqual(components["distro_series"], snap.distro_series)
@@ -416,6 +415,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertIsNone(snap.branch)
         self.assertEqual(ref.repository, snap.git_repository)
         self.assertEqual(ref.path, snap.git_path)
+        self.assertEqual(ref, snap.git_ref)
         self.assertTrue(snap.require_virtualized)
 
     def test_creation_no_source(self):
@@ -435,18 +435,51 @@ class TestSnapSet(TestCaseWithFactory):
             getUtility(ISnapSet).exists(self.factory.makePerson(), snap.name))
         self.assertFalse(getUtility(ISnapSet).exists(snap.owner, u"different"))
 
-    def test_findByPerson(self):
-        # ISnapSet.findByPerson returns all Snaps with the given owner.
+    def test_findByOwner(self):
+        # ISnapSet.findByOwner returns all Snaps with the given owner.
         owners = [self.factory.makePerson() for i in range(2)]
         snaps = []
         for owner in owners:
             for i in range(2):
                 snaps.append(self.factory.makeSnap(
                     registrant=owner, owner=owner))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:2], snap_set.findByOwner(owners[0]))
+        self.assertContentEqual(snaps[2:], snap_set.findByOwner(owners[1]))
+
+    def test_findByPerson(self):
+        # ISnapSet.findByPerson returns all Snaps with the given owner or
+        # based on branches or repositories with the given owner.
+        owners = [self.factory.makePerson() for i in range(2)]
+        snaps = []
+        for owner in owners:
+            snaps.append(self.factory.makeSnap(registrant=owner, owner=owner))
+            snaps.append(self.factory.makeSnap(
+                branch=self.factory.makeAnyBranch(owner=owner)))
+            [ref] = self.factory.makeGitRefs(owner=owner)
+            snaps.append(self.factory.makeSnap(git_ref=ref))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:3], snap_set.findByPerson(owners[0]))
+        self.assertContentEqual(snaps[3:], snap_set.findByPerson(owners[1]))
+
+    def test_findByProject(self):
+        # ISnapSet.findByProject returns all Snaps based on branches or
+        # repositories for the given project.
+        projects = [self.factory.makeProduct() for i in range(2)]
+        snaps = []
+        for project in projects:
+            snaps.append(self.factory.makeSnap(
+                branch=self.factory.makeProductBranch(product=project)))
+            [ref] = self.factory.makeGitRefs(target=project)
+            snaps.append(self.factory.makeSnap(git_ref=ref))
+        snaps.append(self.factory.makeSnap(
+            branch=self.factory.makePersonalBranch()))
+        [ref] = self.factory.makeGitRefs(target=None)
+        snaps.append(self.factory.makeSnap(git_ref=ref))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:2], snap_set.findByProject(projects[0]))
         self.assertContentEqual(
-            snaps[:2], getUtility(ISnapSet).findByPerson(owners[0]))
-        self.assertContentEqual(
-            snaps[2:], getUtility(ISnapSet).findByPerson(owners[1]))
+            snaps[2:4], snap_set.findByProject(projects[1]))
 
     def test_findByBranch(self):
         # ISnapSet.findByBranch returns all Snaps with the given Bazaar branch.
@@ -455,10 +488,9 @@ class TestSnapSet(TestCaseWithFactory):
         for branch in branches:
             for i in range(2):
                 snaps.append(self.factory.makeSnap(branch=branch))
-        self.assertContentEqual(
-            snaps[:2], getUtility(ISnapSet).findByBranch(branches[0]))
-        self.assertContentEqual(
-            snaps[2:], getUtility(ISnapSet).findByBranch(branches[1]))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(snaps[:2], snap_set.findByBranch(branches[0]))
+        self.assertContentEqual(snaps[2:], snap_set.findByBranch(branches[1]))
 
     def test_findByGitRepository(self):
         # ISnapSet.findByGitRepository returns all Snaps with the given Git
@@ -469,12 +501,55 @@ class TestSnapSet(TestCaseWithFactory):
             for i in range(2):
                 [ref] = self.factory.makeGitRefs(repository=repository)
                 snaps.append(self.factory.makeSnap(git_ref=ref))
+        snap_set = getUtility(ISnapSet)
         self.assertContentEqual(
-            snaps[:2],
-            getUtility(ISnapSet).findByGitRepository(repositories[0]))
+            snaps[:2], snap_set.findByGitRepository(repositories[0]))
         self.assertContentEqual(
-            snaps[2:],
-            getUtility(ISnapSet).findByGitRepository(repositories[1]))
+            snaps[2:], snap_set.findByGitRepository(repositories[1]))
+
+    def test_findByGitRef(self):
+        # ISnapSet.findByGitRef returns all Snaps with the given Git
+        # reference.
+        repositories = [self.factory.makeGitRepository() for i in range(2)]
+        refs = []
+        snaps = []
+        for repository in repositories:
+            refs.extend(self.factory.makeGitRefs(
+                paths=[u"refs/heads/master", u"refs/heads/other"]))
+            snaps.append(self.factory.makeSnap(git_ref=refs[-2]))
+            snaps.append(self.factory.makeSnap(git_ref=refs[-1]))
+        snap_set = getUtility(ISnapSet)
+        for ref, snap in zip(refs, snaps):
+            self.assertContentEqual([snap], snap_set.findByGitRef(ref))
+
+    def test_findByContext(self):
+        # ISnapSet.findByContext returns all Snaps with the given context.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(owner=person, product=project)
+        other_branch = self.factory.makeProductBranch()
+        repository = self.factory.makeGitRepository(target=project)
+        refs = self.factory.makeGitRefs(
+            repository=repository,
+            paths=[u"refs/heads/master", u"refs/heads/other"])
+        snaps = []
+        snaps.append(self.factory.makeSnap(branch=branch))
+        snaps.append(self.factory.makeSnap(branch=other_branch))
+        snaps.append(
+            self.factory.makeSnap(
+                registrant=person, owner=person, git_ref=refs[0]))
+        snaps.append(self.factory.makeSnap(git_ref=refs[1]))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(
+            [snaps[0], snaps[2]], snap_set.findByContext(person))
+        self.assertContentEqual(
+            [snaps[0], snaps[2], snaps[3]], snap_set.findByContext(project))
+        self.assertContentEqual([snaps[0]], snap_set.findByContext(branch))
+        self.assertContentEqual(snaps[2:], snap_set.findByContext(repository))
+        self.assertContentEqual([snaps[2]], snap_set.findByContext(refs[0]))
+        self.assertRaises(
+            BadSnapSearchContext, snap_set.findByContext,
+            self.factory.makeDistribution())
 
     def test_detachFromBranch(self):
         # ISnapSet.detachFromBranch clears the given Bazaar branch from all
@@ -499,10 +574,12 @@ class TestSnapSet(TestCaseWithFactory):
         repositories = [self.factory.makeGitRepository() for i in range(2)]
         snaps = []
         paths = []
+        refs = []
         for repository in repositories:
             for i in range(2):
                 [ref] = self.factory.makeGitRefs(repository=repository)
                 paths.append(ref.path)
+                refs.append(ref)
                 snaps.append(self.factory.makeSnap(
                     git_ref=ref, date_created=ONE_DAY_AGO))
         getUtility(ISnapSet).detachFromGitRepository(repositories[0])
@@ -512,6 +589,8 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(
             [None, None, paths[2], paths[3]],
             [snap.git_path for snap in snaps])
+        self.assertEqual(
+            [None, None, refs[2], refs[3]], [snap.git_ref for snap in snaps])
         for snap in snaps[:2]:
             self.assertSqlAttributeEqualsDate(
                 snap, "date_last_modified", UTC_NOW)
@@ -601,8 +680,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         if branch is not None:
             kwargs["branch"] = api_url(branch)
         if git_ref is not None:
-            kwargs["git_repository"] = api_url(git_ref.repository)
-            kwargs["git_path"] = git_ref.path
+            kwargs["git_ref"] = api_url(git_ref)
         if processors is not None:
             kwargs["processors"] = [
                 api_url(processor) for processor in processors]
@@ -635,6 +713,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertEqual(self.getURL(branch), snap["branch_link"])
             self.assertIsNone(snap["git_repository_link"])
             self.assertIsNone(snap["git_path"])
+            self.assertIsNone(snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
 
     def test_new_git(self):
@@ -654,6 +733,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(ref.repository), snap["git_repository_link"])
             self.assertEqual(ref.path, snap["git_path"])
+            self.assertEqual(self.getURL(ref), snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
 
     def test_duplicate(self):

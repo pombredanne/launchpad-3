@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BadSnapSearchContext',
     'CannotDeleteSnap',
     'DuplicateSnapName',
     'ISnap',
@@ -45,7 +46,10 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -65,6 +69,7 @@ from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
@@ -149,17 +154,21 @@ class NoSuchSnap(NameLookupFailed):
 
 @error_status(httplib.BAD_REQUEST)
 class NoSourceForSnap(Exception):
-    """Snap packages must have a source (Bazaar branch or Git repository)."""
+    """Snap packages must have a source (Bazaar or Git branch)."""
 
     def __init__(self):
         super(NoSourceForSnap, self).__init__(
             "New snap packages must have either a Bazaar branch or a Git "
-            "repository.")
+            "branch.")
 
 
 @error_status(httplib.BAD_REQUEST)
 class CannotDeleteSnap(Exception):
     """This snap package cannot be deleted."""
+
+
+class BadSnapSearchContext(Exception):
+    """The context is not valid for a snap package search."""
 
 
 class ISnapView(Interface):
@@ -174,6 +183,15 @@ class ISnapView(Interface):
         title=_("Registrant"), required=True, readonly=True,
         vocabulary="ValidPersonOrTeam",
         description=_("The person who registered this snap package.")))
+
+    source = Attribute(
+        "The source branch for this snap package (VCS-agnostic).")
+
+    def getAllowedArchitectures():
+        """Return all distroarchseries that this package can build for.
+
+        :return: Sequence of `IDistroArchSeries` instances.
+        """
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
@@ -264,16 +282,22 @@ class ISnapEditableAttributes(IHasOwner):
     git_repository = exported(ReferenceChoice(
         title=_("Git repository"),
         schema=IGitRepository, vocabulary="GitRepository",
-        required=False, readonly=False,
+        required=False, readonly=True,
         description=_(
             "A Git repository with a branch containing a snapcraft.yaml "
             "recipe at the top level.")))
 
     git_path = exported(TextLine(
-        title=_("Git branch path"), required=False, readonly=False,
+        title=_("Git branch path"), required=False, readonly=True,
         description=_(
             "The path of the Git branch containing a snapcraft.yaml recipe at "
             "the top level.")))
+
+    git_ref = exported(Reference(
+        IGitRef, title=_("Git branch"), required=False, readonly=False,
+        description=_(
+            "The Git branch containing a snapcraft.yaml recipe at the top "
+            "level.")))
 
 
 class ISnapAdminAttributes(Interface):
@@ -325,11 +349,11 @@ class ISnapSet(Interface):
     @export_factory_operation(
         ISnap, [
             "owner", "distro_series", "name", "description", "branch",
-            "git_repository", "git_path"])
+            "git_ref"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
-            branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, processors=None, date_created=None):
+            branch=None, git_ref=None, require_virtualized=True,
+            processors=None, date_created=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):
@@ -344,14 +368,51 @@ class ISnapSet(Interface):
     def getByName(owner, name):
         """Return the appropriate `ISnap` for the given objects."""
 
-    def findByPerson(owner):
+    def findByOwner(owner):
         """Return all snap packages with the given `owner`."""
+
+    def findByPerson(person, visible_by_user=None):
+        """Return all snap packages relevant to `person`.
+
+        This returns snap packages for Bazaar or Git branches owned by
+        `person`, or where `person` is the owner of the snap package.
+
+        :param person: An `IPerson`.
+        :param visible_by_user: If not None, only return packages visible by
+            this user.
+        """
+
+    def findByProject(project, visible_by_user=None):
+        """Return all snap packages for the given project.
+
+        :param project: An `IProduct`.
+        :param visible_by_user: If not None, only return packages visible by
+            this user.
+        """
 
     def findByBranch(branch):
         """Return all snap packages for the given Bazaar branch."""
 
     def findByGitRepository(repository):
         """Return all snap packages for the given Git repository."""
+
+    def findByGitRef(ref):
+        """Return all snap packages for the given Git reference."""
+
+    def findByContext(context, visible_by_user=None, order_by_date=True):
+        """Return all snap packages for the given context.
+
+        :param context: An `IPerson`, `IProduct, `IBranch`,
+            `IGitRepository`, or `IGitRef`.
+        :param visible_by_user: If not None, only return packages visible by
+            this user.
+        :param order_by_date: If True, order packages by descending
+            modification date.
+        :raises BadSnapSearchContext: if the context is not understood.
+        """
+
+    def preloadDataForSnaps(snaps, user):
+        """Load the data related to a list of snap packages."""
 
     def detachFromBranch(branch):
         """Detach all snap packages from the given Bazaar branch.

@@ -304,8 +304,21 @@ Upload a new "bar" source so we can accept it later.
 
 Swallow any email generated at the upload:
 
+    >>> from lp.services.config import config
+    >>> from lp.services.job.runner import JobRunner
     >>> from lp.services.mail import stub
+    >>> from lp.soyuz.interfaces.archivejob import (
+    ...     IPackageUploadNotificationJobSource,
+    ...     )
     >>> from lp.testing.mail_helpers import pop_notifications
+
+    >>> def run_package_upload_notification_jobs():
+    ...     with permissive_security_policy(
+    ...             config.IPackageUploadNotificationJobSource.dbuser):
+    ...         job_source = getUtility(IPackageUploadNotificationJobSource)
+    ...         JobRunner.fromReady(job_source).runAll()
+
+    >>> run_package_upload_notification_jobs()
     >>> swallow = pop_notifications()
 
 Set up a second browser on the same page to simulate accidentally posting to
@@ -347,6 +360,7 @@ Accepting queue items results in an email to the uploader (and the changer
 if it is someone other than the uploader) and (usually) an email to the
 distroseries' announcement list (see nascentupload-announcements.txt).
 
+    >>> run_package_upload_notification_jobs()
     >>> [changer_notification, signer_notification,
     ...  announcement] = pop_notifications()
     >>> print changer_notification['To']
@@ -368,6 +382,7 @@ a double post.
 
 No emails are sent in this case:
 
+    >>> run_package_upload_notification_jobs()
     >>> len(stub.test_emails)
     0
 
@@ -513,6 +528,7 @@ Rejecting items
 
 Rejecting 'alsa-utils' source:
 
+    >>> run_package_upload_notification_jobs()
     >>> stub.test_emails = []
 
     >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['4']
@@ -531,6 +547,7 @@ Rejecting 'alsa-utils' source:
 
 One rejection email is generated:
 
+    >>> run_package_upload_notification_jobs()
     >>> [rejection] = pop_notifications()
     >>> rejection['Subject']
     '[ubuntu/breezy-autotest] alsa-utils 1.0.9a-4ubuntu1 (Rejected)'

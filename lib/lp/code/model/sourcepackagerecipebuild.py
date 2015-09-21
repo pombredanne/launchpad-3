@@ -177,10 +177,11 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     @property
     def title(self):
         if self.recipe is None:
-            return 'build for deleted recipe'
+            branch_name = 'deleted'
         else:
             branch_name = self.recipe.base_branch.unique_name
-            return '%s recipe build' % branch_name
+        return '%s recipe build in %s %s' % (
+            branch_name, self.distribution.name, self.distroseries.name)
 
     def __init__(self, build_farm_job, distroseries, recipe, requester,
                  archive, pocket, date_created):
@@ -258,11 +259,31 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
                     builds.append(build)
         return builds
 
-    def cancelBuild(self):
-        """See `ISourcePackageRecipeBuild.`"""
-        self.updateStatus(BuildStatus.SUPERSEDED)
-        if self.buildqueue_record is not None:
-            self.buildqueue_record.destroySelf()
+    @property
+    def can_be_rescored(self):
+        """See `IBuild`."""
+        return self.status is BuildStatus.NEEDSBUILD
+
+    @property
+    def can_be_cancelled(self):
+        """See `ISourcePackageRecipeBuild`."""
+        if not self.buildqueue_record:
+            return False
+
+        cancellable_statuses = [
+            BuildStatus.BUILDING,
+            BuildStatus.NEEDSBUILD,
+            ]
+        return self.status in cancellable_statuses
+
+    def cancel(self):
+        """See `ISourcePackageRecipeBuild`."""
+        if not self.can_be_cancelled:
+            return
+        # BuildQueue.cancel() will decide whether to go straight to
+        # CANCELLED, or go through CANCELLING to let buildd-manager
+        # clean up the slave.
+        self.buildqueue_record.cancel()
 
     def destroySelf(self):
         if self.buildqueue_record is not None:
@@ -295,10 +316,14 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     def preloadBuildsData(cls, builds):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
         from lp.services.librarian.model import LibraryFileAlias
         load_related(LibraryFileAlias, builds, ['log_id'])
         archives = load_related(Archive, builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
+        distroseries = load_related(DistroSeries, builds, ['distroseries_id'])
+        load_related(Distribution, distroseries, ['distributionID'])
         sprs = load_related(SourcePackageRecipe, builds, ['recipe_id'])
         SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
 

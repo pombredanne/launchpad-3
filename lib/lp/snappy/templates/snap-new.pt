@@ -1,0 +1,40 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
+<body>
+
+<div metal:fill-slot="main">
+  <div>
+    <p>
+      A snap package is a self-contained application that can be installed
+      on <a href="https://developer.ubuntu.com/en/snappy/">snappy Ubuntu
+      Core</a>.  Launchpad can build snap packages using <a
+      href="https://developer.ubuntu.com/en/snappy/snapcraft/">snapcraft</a>,
+      from any Git or Bazaar branch on Launchpad that has a
+      <tt>snapcraft.yaml</tt> file at its top level.
+    </p>
+  </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <metal:formbody fill-slot="widgets">
+      <table class="form">
+        <tal:widget define="widget nocall:view/widgets/name">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/owner">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/distro_series">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+      </table>
+    </metal:formbody>
+  </div>
+</div>
+
+</body>
+</html>

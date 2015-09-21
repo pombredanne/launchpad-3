@@ -161,6 +161,11 @@ def get_person_or_team(person_name_or_email):
     """
     # Avoid circular import problems.
     from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+
+    # "me" is a special case meaning the sender of the email.
+    if person_name_or_email == "me":
+        return getUtility(ILaunchBag).user
+
     valid_person_vocabulary = ValidPersonOrTeamVocabulary()
     try:
         person_term = valid_person_vocabulary.getTermByToken(

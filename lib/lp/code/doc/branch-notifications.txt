@@ -60,6 +60,8 @@ also sends the email to the list of recipients.
     ~name12/firefox/main
     >>> print branch_notification['X-Launchpad-Message-Rationale']
     Subscriber
+    >>> print branch_notification['X-Launchpad-Message-For']
+    name12
     >>> notification_body = branch_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     The contents.
@@ -95,7 +97,7 @@ previous one.  The size limit is one of the following:
   * Send the entire diff
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
+    >>> from lp.code.interfaces.branch import IBranch
     >>> personset = getUtility(IPersonSet)
 
     >>> def subscribe_user_by_email(branch, email, level, size, level2):
@@ -421,6 +423,17 @@ Resubscribe our test user.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.code.interfaces.branchjob import IBranchModifiedMailJobSource
+    >>> from lp.services.config import config
+    >>> from lp.services.job.runner import JobRunner
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> from lp.testing.dbuser import dbuser
+
+    >>> def run_modified_mail_jobs():
+    ...     job_source = getUtility(IBranchModifiedMailJobSource)
+    ...     logger = DevNullLogger()
+    ...     with dbuser(config.IBranchModifiedMailJobSource.dbuser):
+    ...         JobRunner.fromReady(job_source, logger=logger).runAll()
 
     >>> login('test@canonical.com')
     >>> before_modification = Snapshot(branch, providing=IBranch)
@@ -433,6 +446,7 @@ names just now, we'll pass them through anyway
     >>> notify(ObjectModifiedEvent(branch,
     ...                               before_modification,
     ...                               ['whiteboard']))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -482,6 +496,7 @@ something like this:
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -521,6 +536,7 @@ must also handle the unicode.
     >>> updated_fields = ['whiteboard']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -563,6 +579,7 @@ Login as an admin user so we can alter the branch.
     >>> updated_fields = ['whiteboard']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
+    >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)

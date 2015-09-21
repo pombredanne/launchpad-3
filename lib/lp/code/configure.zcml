@@ -473,6 +473,7 @@
                     branch
                     mail_header
                     recipient
+                    subscriber
                     max_diff_lines
                     review_level"/>
   </class>
@@ -585,6 +586,10 @@
     <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
+  <class class="lp.code.model.branchjob.BranchModifiedMailJob">
+    <allow interface="lp.code.interfaces.branchjob.IBranchModifiedMailJob"/>
+    <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
+  </class>
   <securedutility
       component="lp.code.model.branchjob.RevisionMailJob"
       provides="lp.code.interfaces.branchjob.IRevisionMailJobSource">
@@ -604,6 +609,11 @@
       component="lp.code.model.branchjob.ReclaimBranchSpaceJob"
       provides="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource">
     <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJobSource"/>
+  </securedutility>
+  <securedutility
+      component="lp.code.model.branchjob.BranchModifiedMailJob"
+      provides="lp.code.interfaces.branchjob.IBranchModifiedMailJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IBranchModifiedMailJobSource"/>
   </securedutility>
 
   <!-- CodeImport -->
@@ -961,6 +971,11 @@
       provides="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource">
     <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJobSource" />
   </securedutility>
+  <securedutility
+      component="lp.code.model.gitjob.GitRepositoryModifiedMailJob"
+      provides="lp.code.interfaces.gitjob.IGitRepositoryModifiedMailJobSource">
+    <allow interface="lp.code.interfaces.gitjob.IGitRepositoryModifiedMailJobSource" />
+  </securedutility>
   <class class="lp.code.model.gitjob.GitRefScanJob">
     <allow interface="lp.code.interfaces.gitjob.IGitJob" />
     <allow interface="lp.code.interfaces.gitjob.IGitRefScanJob" />
@@ -968,6 +983,10 @@
   <class class="lp.code.model.gitjob.ReclaimGitRepositorySpaceJob">
     <allow interface="lp.code.interfaces.gitjob.IGitJob" />
     <allow interface="lp.code.interfaces.gitjob.IReclaimGitRepositorySpaceJob" />
+  </class>
+  <class class="lp.code.model.gitjob.GitRepositoryModifiedMailJob">
+    <allow interface="lp.code.interfaces.gitjob.IGitJob" />
+    <allow interface="lp.code.interfaces.gitjob.IGitRepositoryModifiedMailJob" />
   </class>
 
   <lp:help-folder folder="help" name="+help-code" />
@@ -997,7 +1016,12 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
-    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildView"/>
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildEdit"/>
   </class>
 
   <securedutility

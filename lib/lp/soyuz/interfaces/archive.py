@@ -59,6 +59,7 @@ from lazr.restful.declarations import (
     error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_factory_operation,
     export_operation_as,
     export_read_operation,
@@ -181,6 +182,11 @@ class NoSuchPPA(NameLookupFailed):
 @error_status(httplib.BAD_REQUEST)
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class ArchiveAlreadyDeleted(Exception):
+    """Archive already deleted."""
 
 
 @error_status(httplib.FORBIDDEN)
@@ -406,6 +412,11 @@ class IArchiveSubscriberView(Interface):
         description=_("Whether or not to update the apt repository.  If "
             "disabled, nothing will be published.  If the archive is "
             "private then additionally no builds will be dispatched."))
+    can_be_published = Bool(
+        title=_("Can be published"), required=True,
+        description=_(
+            "True if this archive can be published, considering both the "
+            "explicit publish flag and any other constraints."))
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     signing_key = Object(
@@ -1963,6 +1974,9 @@ class IArchiveEdit(Interface):
     def disable():
         """Disable the archive."""
 
+    @export_destructor_operation()
+    @call_with(deleted_by=REQUEST_USER)
+    @operation_for_version('devel')
     def delete(deleted_by):
         """Delete this archive.
 

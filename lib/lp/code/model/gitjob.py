@@ -7,6 +7,7 @@ __all__ = [
     'GitJob',
     'GitJobType',
     'GitRefScanJob',
+    'GitRepositoryModifiedMailJob',
     'ReclaimGitRepositorySpaceJob',
     ]
 
@@ -36,9 +37,13 @@ from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
     IGitRefScanJobSource,
+    IGitRepositoryModifiedMailJob,
+    IGitRepositoryModifiedMailJobSource,
     IReclaimGitRepositorySpaceJob,
     IReclaimGitRepositorySpaceJobSource,
     )
+from lp.code.mail.branch import BranchMailer
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
@@ -59,6 +64,7 @@ from lp.services.job.model.job import (
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.scripts import log
+from lp.services.utils import text_delta
 from lp.services.webhooks.interfaces import IWebhookSet
 
 
@@ -76,6 +82,13 @@ class GitJobType(DBEnumeratedType):
 
         This job removes a repository that has been deleted from the
         database from storage.
+        """)
+
+    REPOSITORY_MODIFIED_MAIL = DBItem(2, """
+        Repository modified mail
+
+        This job runs against a repository to send emails about
+        modifications.
         """)
 
 
@@ -281,3 +294,44 @@ class ReclaimGitRepositorySpaceJob(GitJobDerived):
 
     def run(self):
         getUtility(IGitHostingClient).delete(self.repository_path, logger=log)
+
+
+@implementer(IGitRepositoryModifiedMailJob)
+@provider(IGitRepositoryModifiedMailJobSource)
+class GitRepositoryModifiedMailJob(GitJobDerived):
+    """A Job that sends email about repository modifications."""
+
+    class_job_type = GitJobType.REPOSITORY_MODIFIED_MAIL
+
+    config = config.IGitRepositoryModifiedMailJobSource
+
+    @classmethod
+    def create(cls, repository, user, repository_delta):
+        """See `IGitRepositoryModifiedMailJobSource`."""
+        metadata = {
+            "user": user.id,
+            "repository_delta": text_delta(
+                repository_delta, repository_delta.delta_values,
+                repository_delta.new_values, repository_delta.interface),
+            }
+        git_job = GitJob(repository, cls.class_job_type, metadata)
+        job = cls(git_job)
+        job.celeryRunOnCommit()
+        return job
+
+    @property
+    def user(self):
+        return getUtility(IPersonSet).get(self.metadata["user"])
+
+    @property
+    def repository_delta(self):
+        return self.metadata["repository_delta"]
+
+    def getMailer(self):
+        """Return a `BranchMailer` for this job."""
+        return BranchMailer.forBranchModified(
+            self.repository, self.user, self.repository_delta)
+
+    def run(self):
+        """See `IGitRepositoryModifiedMailJob`."""
+        self.getMailer().sendAll()

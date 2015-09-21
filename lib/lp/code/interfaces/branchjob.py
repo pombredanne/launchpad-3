@@ -9,6 +9,8 @@ __metaclass__ = type
 
 __all__ = [
     'IBranchJob',
+    'IBranchModifiedMailJob',
+    'IBranchModifiedMailJobSource',
     'IBranchScanJob',
     'IBranchScanJobSource',
     'IBranchUpgradeJob',
@@ -183,4 +185,19 @@ class IReclaimBranchSpaceJobSource(IJobSource):
         """Construct a new object that implements IReclaimBranchSpaceJob.
 
         :param branch_id: The id of the branch to remove from disk.
+        """
+
+
+class IBranchModifiedMailJob(IRunnableJob):
+    """A Job to send email about branch modifications."""
+
+
+class IBranchModifiedMailJobSource(IJobSource):
+
+    def create(branch, user, branch_delta):
+        """Send email about branch modifications.
+
+        :param branch: The `IBranch` that was modified.
+        :param user: The `IPerson` who modified the branch.
+        :param branch_delta: An `IBranchDelta` describing the changes.
         """

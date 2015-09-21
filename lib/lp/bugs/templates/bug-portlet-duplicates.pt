@@ -9,7 +9,7 @@
     <li tal:repeat="dupe view/duplicates">
       <a tal:content="string: Bug #${dupe/id}"
          tal:attributes="href dupe/url; title dupe/title;
-                         class context/image:sprite_css" />
+                         class dupe/bug/image:sprite_css" />
     </li>
   </ul>
 </div>

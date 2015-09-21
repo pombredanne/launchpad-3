@@ -808,6 +808,11 @@
         template="../templates/gitrepository-portlet-subscribers-content.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
+        name="+macros"
+        permission="zope.Public"
+        template="../templates/git-macros.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryEditInformationTypeView"
         permission="launchpad.Edit"
         name="+edit-information-type"
@@ -878,12 +883,15 @@
         <browser:page
             name="++ref-pending-merges"
             template="../templates/gitref-pending-merges.pt"/>
+        <browser:page
+            name="++ref-management"
+            template="../templates/gitref-management.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitref.IGitRef"
         name="+macros"
         permission="zope.Public"
-        template="../templates/gitref-macros.pt"/>
+        template="../templates/git-macros.pt"/>
     <browser:page
         for="lp.code.interfaces.gitref.IGitRefBatchNavigator"
         permission="zope.Public"
@@ -904,6 +912,11 @@
     <browser:menus
         classes="GitRefContextMenu"
         module="lp.code.browser.gitref"/>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.gitref.IGitRef"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
+        permission="zope.Public"/>
 
     <browser:defaultView
         for="lp.code.interfaces.gitsubscription.IGitSubscription"
@@ -1171,7 +1184,7 @@
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
             name="+cancel"
             template="../../app/templates/generic-edit.pt"
-            permission="launchpad.Admin"/>
+            permission="launchpad.Edit"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"

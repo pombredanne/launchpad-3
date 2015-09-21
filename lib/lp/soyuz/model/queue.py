@@ -14,7 +14,6 @@ __all__ = [
 from itertools import chain
 import os
 import shutil
-import StringIO
 import tempfile
 
 from sqlobject import (
@@ -91,6 +90,7 @@ from lp.soyuz.interfaces.archive import (
     PriorityNotFound,
     SectionNotFound,
     )
+from lp.soyuz.interfaces.archivejob import IPackageUploadNotificationJobSource
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
@@ -529,7 +529,7 @@ class PackageUpload(SQLBase):
         # should probably give karma but that needs more work to
         # fix here.
 
-    def _acceptNonSyncFromQueue(self, logger=None, dry_run=False):
+    def _acceptNonSyncFromQueue(self):
         """Accept a "regular" upload from the queue.
 
         This is the normal case, for uploads that are not delayed and are not
@@ -546,13 +546,7 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
 
-        changes_file_object = StringIO.StringIO(self.changesfile.read())
-        # We explicitly allow unsigned uploads here since the .changes file
-        # is pulled from the librarian which are stripped of their
-        # signature just before being stored.
-        self.notify(
-            logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+        getUtility(IPackageUploadNotificationJobSource).create(self)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -572,17 +566,17 @@ class PackageUpload(SQLBase):
         # Give some karma!
         self._giveKarma()
 
-    def acceptFromQueue(self, logger=None, dry_run=False, user=None):
+    def acceptFromQueue(self, user=None):
         """See `IPackageUpload`."""
         if self.package_copy_job is None:
-            self._acceptNonSyncFromQueue(logger, dry_run)
+            self._acceptNonSyncFromQueue()
         else:
             self._acceptSyncFromQueue()
         if bool(getFeatureFlag('auditor.enabled')):
             client = AuditorClient()
             client.send(self, 'packageupload-accepted', user)
 
-    def rejectFromQueue(self, user, logger=None, dry_run=False, comment=None):
+    def rejectFromQueue(self, user, comment=None):
         """See `IPackageUpload`."""
         self.setRejected()
         if self.package_copy_job is not None:
@@ -597,19 +591,12 @@ class PackageUpload(SQLBase):
             # don't think we need them for sync rejections.
             return
 
-        if self.changesfile is None:
-            changes_file_object = None
-        else:
-            changes_file_object = StringIO.StringIO(self.changesfile.read())
         if comment:
             summary_text = "Rejected by %s: %s" % (user.displayname, comment)
         else:
             summary_text = "Rejected by %s." % user.displayname
-        # We allow unsigned uploads since they come from the librarian,
-        # which are now stored unsigned.
-        self.notify(
-            logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object, summary_text=summary_text)
+        getUtility(IPackageUploadNotificationJobSource).create(
+            self, summary_text=summary_text)
         self.syncUpdate()
         if bool(getFeatureFlag('auditor.enabled')):
             client = AuditorClient()
@@ -899,9 +886,11 @@ class PackageUpload(SQLBase):
         else:
             return None
 
-    def notify(self, summary_text=None, changes_file_object=None,
-               logger=None, dry_run=False):
+    def notify(self, status=None, summary_text=None, changes_file_object=None,
+               logger=None):
         """See `IPackageUpload`."""
+        if status is None:
+            status = self.status
         status_action = {
             PackageUploadStatus.NEW: 'new',
             PackageUploadStatus.UNAPPROVED: 'unapproved',
@@ -916,12 +905,11 @@ class PackageUpload(SQLBase):
             changesfile_content = 'No changes file content available.'
         blamee = self.findPersonToNotify()
         mailer = PackageUploadMailer.forAction(
-            status_action[self.status], blamee, self.sourcepackagerelease,
+            status_action[status], blamee, self.sourcepackagerelease,
             self.builds, self.customfiles, self.archive, self.distroseries,
             self.pocket, summary_text=summary_text, changes=changes,
             changesfile_content=changesfile_content,
-            changesfile_object=changes_file_object, dry_run=dry_run,
-            logger=logger)
+            changesfile_object=changes_file_object, logger=logger)
         mailer.sendAll()
 
     @property

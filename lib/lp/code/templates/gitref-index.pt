@@ -16,10 +16,19 @@
 
 <div metal:fill-slot="main">
 
+  <div class="yui-g first">
+    <div id="ref-management" class="portlet">
+      <tal:ref-management
+          replace="structure context/@@++ref-management" />
+    </div>
+  </div>
+
   <div class="yui-g">
-    <div id="ref-relations" class="portlet">
+    <div id="ref-relations" class="portlet"
+         tal:condition="python: view.show_merge_links or view.show_snap_information">
       <tal:ref-pending-merges
            replace="structure context/@@++ref-pending-merges" />
+      <div metal:use-macro="context/@@+snap-macros/related-snaps" />
     </div>
   </div>
 

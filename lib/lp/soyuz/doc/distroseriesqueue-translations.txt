@@ -33,9 +33,6 @@ uploaded into the system.
     >>> from lp.soyuz.model.packagetranslationsuploadjob import (
     ...     PackageTranslationsUploadJob)
 
-# Login as an admin.
-    >>> login('foo.bar@canonical.com')
-
     # We need to setup our test environment and create the needed objects.
     >>> distro_series_set = getUtility(IDistroSeriesSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

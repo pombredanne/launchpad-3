@@ -483,14 +483,15 @@ class TestDiffFormatter(TestCase):
         # White space doesn't count as empty, and is formatted.
         self.assertEqual(
             '<table class="diff unidiff"><tr id="diff-line-1">'
-            '<td class="line-no">1</td><td class="text"> </td></tr></table>',
+            '<td class="line-no unselectable">1</td><td class="text"> '
+            '</td></tr></table>',
             FormattersAPI(' ').format_diff())
 
     def test_format_unicode(self):
         # Sometimes the strings contain unicode, those should work too.
         self.assertEqual(
             u'<table class="diff unidiff"><tr id="diff-line-1">'
-            u'<td class="line-no">1</td><td class="text">'
+            u'<td class="line-no unselectable">1</td><td class="text">'
             u'Unicode \u1010</td></tr></table>',
             FormattersAPI(u'Unicode \u1010').format_diff())
 
@@ -576,10 +577,10 @@ class TestSideBySideDiffFormatter(TestCase):
         # White space doesn't count as empty, and is formatted.
         self.assertEqual(
             '<table class="diff ssdiff"><tr id="diff-line-1">'
-            '<td class="line-no" style="display: none">1</td>'
-            '<td class="ss-line-no">0</td>'
+            '<td class="line-no unselectable" style="display: none">1</td>'
+            '<td class="ss-line-no unselectable">0</td>'
             '<td class="text"></td>'
-            '<td class="ss-line-no">0</td>'
+            '<td class="ss-line-no unselectable">0</td>'
             '<td class="text"></td>'
             '</tr></table>',
             FormattersAPI(' ').format_ssdiff())
@@ -588,10 +589,10 @@ class TestSideBySideDiffFormatter(TestCase):
         # Sometimes the strings contain unicode, those should work too.
         self.assertEqual(
             u'<table class="diff ssdiff"><tr id="diff-line-1">'
-            u'<td class="line-no" style="display: none">1</td>'
-            u'<td class="ss-line-no">0</td>'
+            u'<td class="line-no unselectable" style="display: none">1</td>'
+            u'<td class="ss-line-no unselectable">0</td>'
             u'<td class="text">Unicode \u1010</td>'
-            u'<td class="ss-line-no">0</td>'
+            u'<td class="ss-line-no unselectable">0</td>'
             u'<td class="text">Unicode \u1010</td>'
             u'</tr></table>',
             FormattersAPI(u'Unicode \u1010').format_ssdiff())

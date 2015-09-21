@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branch-related mailings"""
-
-from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
@@ -16,17 +14,19 @@ from lp.code.mail.branch import (
     )
 from lp.code.model.branch import Branch
 from lp.code.model.gitref import GitRef
+from lp.services.config import config
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestRecipientReasonMixin:
     """Test the RecipientReason class."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Need to set merge_target.date_last_modified.
@@ -36,6 +36,7 @@ class TestRecipientReasonMixin:
         """Test values when created from a branch subscription."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forBranchSubscriber(
             subscription, merge_proposal.merge_source, subscriber, '',
             merge_proposal)
@@ -57,6 +58,7 @@ class TestRecipientReasonMixin:
         merge_proposal, vote_reference, subscriber = (
             self.makeReviewerAndSubscriber())
         pending_review = vote_reference.comment is None
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forReviewer(
             merge_proposal, pending_review, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
@@ -67,6 +69,7 @@ class TestRecipientReasonMixin:
     def test_forReview_individual_pending(self):
         bmp = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson(name='eric')
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forReviewer(bmp, True, reviewer)
         self.assertEqual('Reviewer', reason.mail_header)
         self.assertEqual(
@@ -77,6 +80,7 @@ class TestRecipientReasonMixin:
     def test_forReview_individual_in_progress(self):
         bmp = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson(name='eric')
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forReviewer(bmp, False, reviewer)
         self.assertEqual('Reviewer', reason.mail_header)
         self.assertEqual(
@@ -87,6 +91,7 @@ class TestRecipientReasonMixin:
     def test_forReview_team_pending(self):
         bmp = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makeTeam(name='vikings')
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forReviewer(bmp, True, reviewer)
         self.assertEqual('Reviewer @vikings', reason.mail_header)
         self.assertEqual(
@@ -98,6 +103,7 @@ class TestRecipientReasonMixin:
     def test_getReasonPerson(self):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forBranchSubscriber(
             subscription, merge_proposal.merge_source, subscription.person, '',
             merge_proposal)
@@ -111,6 +117,7 @@ class TestRecipientReasonMixin:
             displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forBranchSubscriber(
             subscription, bmp.merge_source, team_member, '', bmp)
         self.assertEqual(
@@ -150,6 +157,7 @@ class TestRecipientReasonBzr(TestRecipientReasonMixin, TestCaseWithFactory):
             Branch.identity = patched
         self.addCleanup(cleanup)
         self.assertRaises(AssertionError, getattr, branch, 'identity')
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forBranchSubscriber(
             subscription, branch, subscription.person, '',
             branch_identity_cache=branch_cache)
@@ -192,6 +200,7 @@ class TestRecipientReasonGit(TestRecipientReasonMixin, TestCaseWithFactory):
             GitRef.identity = patched
         self.addCleanup(cleanup)
         self.assertRaises(AssertionError, getattr, ref, 'identity')
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         reason = RecipientReason.forBranchSubscriber(
             subscription, ref, subscription.person, '',
             branch_identity_cache=branch_cache)
@@ -203,7 +212,7 @@ class TestRecipientReasonGit(TestRecipientReasonMixin, TestCaseWithFactory):
 class TestBranchMailerHeadersMixin:
     """Check the headers are correct."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def test_branch_modified(self):
         # Test the email headers for a branch modified email.
@@ -211,12 +220,14 @@ class TestBranchMailerHeadersMixin:
         branch = self.makeBranch(owner=bob)
         branch.getSubscription(bob).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
+        switch_dbuser(config.IBranchModifiedMailJobSource.dbuser)
         mailer = BranchMailer.forBranchModified(branch, branch.owner, None)
         mailer.message_id = '<foobar-example-com>'
         ctrl = mailer.generateEmail('bob@example.com', branch.owner)
         self.assertEqual(
             {'X-Launchpad-Branch': branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Message-For': bob.name,
              'X-Launchpad-Notification-Type': 'branch-updated',
              'X-Launchpad-Project': self.getBranchProjectName(branch),
              'Message-Id': '<foobar-example-com>'},
@@ -228,6 +239,7 @@ class TestBranchMailerHeadersMixin:
         branch = self.makeBranch(owner=bob)
         branch.getSubscription(bob).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
+        switch_dbuser(config.IRevisionsAddedJobSource.dbuser)
         mailer = BranchMailer.forRevision(
             branch, 'from@example.com', contents='', diff=None, subject='',
             revno=1)
@@ -236,6 +248,7 @@ class TestBranchMailerHeadersMixin:
         self.assertEqual(
             {'X-Launchpad-Branch': branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Message-For': bob.name,
              'X-Launchpad-Notification-Type': 'branch-revision',
              'X-Launchpad-Branch-Revision-Number': '1',
              'X-Launchpad-Project': self.getBranchProjectName(branch),
@@ -269,7 +282,7 @@ class TestBranchMailerHeadersGit(
 class TestBranchMailerDiffMixin:
     """Check the diff is an attachment."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def makeBobMailController(self, diff=None,
                               max_lines=BranchSubscriptionDiffSize.WHOLEDIFF):
@@ -279,6 +292,7 @@ class TestBranchMailerDiffMixin:
         subscription.max_diff_lines = max_lines
         subscription.notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
+        switch_dbuser(config.IRevisionsAddedJobSource.dbuser)
         mailer = BranchMailer.forRevision(
             branch, 'from@example.com', contents='', diff=diff, subject='',
             revno=1)
@@ -336,7 +350,7 @@ class TestBranchMailerDiffGit(TestBranchMailerDiffMixin, TestCaseWithFactory):
 class TestBranchMailerSubjectMixin:
     """The subject for a BranchMailer is returned verbatim."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def test_subject(self):
         # No string interpolation should occur on the subject.
@@ -344,13 +358,14 @@ class TestBranchMailerSubjectMixin:
         # Subscribe the owner to get revision email.
         branch.getSubscription(branch.owner).notification_level = (
             BranchSubscriptionNotificationLevel.FULL)
+        switch_dbuser(config.IRevisionsAddedJobSource.dbuser)
         mailer = BranchMailer.forRevision(
             branch, 'test@example.com', 'content', 'diff', 'Testing %j foo',
             revno=1)
-        branch_owner_email = removeSecurityProxy(
-            branch.owner).preferredemail.email
-        self.assertEqual('Testing %j foo', mailer._getSubject(
-                branch_owner_email, branch.owner))
+        owner = branch.owner
+        self.assertEqual(
+            'Testing %j foo',
+            mailer._getSubject(owner.preferredemail.email, owner))
 
 
 class TestBranchMailerSubjectBzr(

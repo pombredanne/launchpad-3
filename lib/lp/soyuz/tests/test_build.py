@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -218,6 +218,16 @@ class TestBuild(TestCaseWithFactory):
         build.updateStatus(BuildStatus.CANCELLED)
         self.assertTrue(build.can_be_retried)
 
+    def test_retry_superseded(self):
+        # A superseded build can be retried
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        build.updateStatus(BuildStatus.SUPERSEDED)
+        self.assertTrue(build.can_be_retried)
+
     def test_uploadlog(self):
         # The upload log can be attached to a build
         spph = self.publisher.getPubSource(
@@ -251,6 +261,23 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(None, build.log)
         self.assertEquals(None, build.upload_log)
         self.assertEquals(0, build.failure_count)
+
+    def test_retry_resets_virtualized(self):
+        # Retrying a build recalculates its virtualization.
+        archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution, virtualized=False)
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=self.das, archive=archive,
+            processor=self.processor)
+        self.assertFalse(build.virtualized)
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        build.gotFailure()
+        self.processor.supports_nonvirtualized = False
+        with person_logged_in(self.admin):
+            build.retry()
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+        self.assertTrue(build.virtualized)
 
     def test_create_bpr(self):
         # Test that we can create a BPR from a given build.

@@ -56,7 +56,10 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.githosting import IGitHostingClient
-from lp.code.interfaces.gitjob import IGitRefScanJobSource
+from lp.code.interfaces.gitjob import (
+    IGitRefScanJobSource,
+    IGitRepositoryModifiedMailJobSource,
+    )
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
@@ -129,6 +132,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.pages import webservice_for_person
@@ -672,7 +676,7 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
 
 class TestGitRepositoryModifications(TestCaseWithFactory):
-    """Tests for Git repository modification notifications."""
+    """Tests for Git repository modifications."""
 
     layer = DatabaseFunctionalLayer
 
@@ -729,6 +733,12 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
+
+class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
+    """Tests for Git repository modification notifications."""
+
+    layer = ZopelessDatabaseLayer
+
     def test_sends_notifications(self):
         # Attribute modifications send mail to subscribers.
         self.assertEqual(0, len(stub.test_emails))
@@ -746,7 +756,9 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
             notify(ObjectModifiedEvent(
                 repository, repository_before_modification, ["name"],
                 user=repository.owner))
-        transaction.commit()
+        with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
+            JobRunner.fromReady(
+                getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
         self.assertEqual(1, len(stub.test_emails))
         message = email.message_from_string(stub.test_emails[0][2])
         body = message.get_payload(decode=True)

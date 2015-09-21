@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for classes that implement IHasRecipes."""
@@ -41,7 +41,7 @@ class TestIHasRecipes(TestCaseWithFactory):
 
     def test_person_implements_hasrecipes(self):
         # Person should implement IHasRecipes.
-        person = self.factory.makeBranch()
+        person = self.factory.makePerson()
         self.assertProvides(person, IHasRecipes)
 
     def test_person_recipes(self):

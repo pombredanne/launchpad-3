@@ -66,6 +66,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
@@ -105,6 +106,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import BulkUpdate
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -132,6 +134,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
+    ArchiveAlreadyDeleted,
     ArchiveDependencyError,
     ArchiveDisabled,
     ArchiveNotPrivate,
@@ -411,6 +414,19 @@ class Archive(SQLBase):
     def is_active(self):
         """See `IArchive`."""
         return self.status == ArchiveStatus.ACTIVE
+
+    @property
+    def can_be_published(self):
+        """See `IArchive`."""
+        # The explicit publish flag must be set.
+        if not self.publish:
+            return False
+        # In production configurations, PPAs can only be published once
+        # their signing key has been generated.
+        return (
+            not config.personalpackagearchive.require_signing_keys or
+            not self.is_ppa or
+            self.signing_key is not None)
 
     @property
     def reference(self):
@@ -2022,12 +2038,48 @@ class Archive(SQLBase):
                 AND BinaryPackageBuild.status = %s;
             """, params=(status.value, self.id, BuildStatus.NEEDSBUILD.value))
 
+    def _recalculateBuildVirtualization(self):
+        """Update virtualized columns for this archive."""
+        store = Store.of(self)
+        bpb_clauses = [
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.NEEDSBUILD,
+            ]
+        bq_clauses = bpb_clauses + [
+            BuildQueue._build_farm_job_id ==
+                BinaryPackageBuild.build_farm_job_id,
+            ]
+        if self.require_virtualized:
+            # We can avoid the Processor join in this case.
+            value = True
+            proc_tables = []
+            proc_clauses = []
+            # BulkUpdate doesn't support an empty list of values.
+            store.find(BinaryPackageBuild, *bpb_clauses).set(virtualized=value)
+        else:
+            value = Not(Processor.supports_nonvirtualized)
+            proc_tables = [Processor]
+            proc_clauses = [BinaryPackageBuild.processor_id == Processor.id]
+            store.execute(BulkUpdate(
+                {BinaryPackageBuild.virtualized: value},
+                table=BinaryPackageBuild, values=proc_tables,
+                where=And(*(bpb_clauses + proc_clauses))))
+        store.execute(BulkUpdate(
+            {BuildQueue.virtualized: value},
+            table=BuildQueue, values=([BinaryPackageBuild] + proc_tables),
+            where=And(*(bq_clauses + proc_clauses))))
+        store.invalidate()
+
     def enable(self):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
         assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
         self._setBuildQueueStatuses(BuildQueueStatus.WAITING)
+        # Suspended builds may have the wrong virtualization setting (due to
+        # changes to either Archive.require_virtualized or
+        # Processor.supports_nonvirtualized) and need to be updated.
+        self._recalculateBuildVirtualization()
 
     def disable(self):
         """See `IArchive`."""
@@ -2037,9 +2089,8 @@ class Archive(SQLBase):
 
     def delete(self, deleted_by):
         """See `IArchive`."""
-        assert self.status not in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED,
-            "This archive is already deleted.")
+        if self.status != ArchiveStatus.ACTIVE:
+            raise ArchiveAlreadyDeleted("Archive already deleted.")
 
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.

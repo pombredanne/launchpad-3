@@ -44,8 +44,6 @@ from storm.expr import (
     SQL,
     )
 from storm.locals import (
-    Int,
-    List,
     Store,
     Unicode,
     )

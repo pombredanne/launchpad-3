@@ -14,8 +14,10 @@ import sys
 
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.security.management import getSecurityPolicy
 
 from lp.services.mail.helpers import get_email_template
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
     append_footer,
@@ -23,6 +25,7 @@ from lp.services.mail.sendmail import (
     MailController,
     )
 from lp.services.utils import text_delta
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 
 
 class BaseMailer:
@@ -39,7 +42,8 @@ class BaseMailer:
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, message_id=None, notification_type=None,
-                 mail_controller_class=None, request=None):
+                 mail_controller_class=None, request=None, wrap=False,
+                 force_wrap=False):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -55,7 +59,23 @@ class BaseMailer:
             use to send the mails.  Defaults to `MailController`.
         :param request: An optional `IErrorReportRequest` to use when
             logging OOPSes.
+        :param wrap: Wrap body text using `MailWrapper`.
+        :param force_wrap: See `MailWrapper.format`.
         """
+        # Running mail notifications with web security is too fragile: it's
+        # easy to end up with subtle bugs due to such things as
+        # subscriptions from private teams that are inaccessible to the user
+        # with the current interaction.  BaseMailer always sends one mail
+        # per recipient and thus never leaks information to other users, so
+        # it's safer to require a permissive security policy.
+        #
+        # When converting other notification code to BaseMailer, it may be
+        # necessary to move notifications into jobs, to move unit tests to a
+        # Zopeless-based layer, or to use the permissive_security_policy
+        # context manager.
+        assert getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy, (
+            "BaseMailer may only be used with a permissive security policy.")
+
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()
@@ -70,6 +90,8 @@ class BaseMailer:
             mail_controller_class = MailController
         self._mail_controller_class = mail_controller_class
         self.request = request
+        self._wrap = wrap
+        self._force_wrap = force_wrap
 
     def _getFromAddress(self, email, recipient):
         return self.from_address
@@ -108,7 +130,7 @@ class BaseMailer:
         return (self._subject_template %
                     self._getTemplateParams(email, recipient))
 
-    def _getReplyToAddress(self):
+    def _getReplyToAddress(self, email, recipient):
         """Return the address to use for the reply-to header."""
         return None
 
@@ -117,9 +139,11 @@ class BaseMailer:
         reason, rationale = self._recipients.getReason(email)
         headers = OrderedDict()
         headers['X-Launchpad-Message-Rationale'] = reason.mail_header
+        if reason.subscriber.name is not None:
+            headers['X-Launchpad-Message-For'] = reason.subscriber.name
         if self.notification_type is not None:
             headers['X-Launchpad-Notification-Type'] = self.notification_type
-        reply_to = self._getReplyToAddress()
+        reply_to = self._getReplyToAddress(email, recipient)
         if reply_to is not None:
             headers['Reply-To'] = reply_to
         if self.message_id is not None:
@@ -158,6 +182,9 @@ class BaseMailer:
             self._getTemplateName(email, recipient), app=self.app)
         params = self._getTemplateParams(email, recipient)
         body = template % params
+        if self._wrap:
+            body = MailWrapper().format(
+                body, force_wrap=self._force_wrap) + "\n"
         footer = self._getFooter(email, recipient, params)
         if footer is not None:
             body = append_footer(body, footer)

@@ -9,6 +9,8 @@ __all__ = [
     'IGitJob',
     'IGitRefScanJob',
     'IGitRefScanJobSource',
+    'IGitRepositoryModifiedMailJob',
+    'IGitRepositoryModifiedMailJobSource',
     'IReclaimGitRepositorySpaceJob',
     'IReclaimGitRepositorySpaceJobSource',
     ]
@@ -74,4 +76,20 @@ class IReclaimGitRepositorySpaceJobSource(IJobSource):
             from storage.
         :param repository_path: The storage path of the repository to remove
             from storage.
+        """
+
+
+class IGitRepositoryModifiedMailJob(IRunnableJob):
+    """A Job to send email about repository modifications."""
+
+
+class IGitRepositoryModifiedMailJobSource(IJobSource):
+
+    def create(repository, user, repository_delta):
+        """Send email about repository modifications.
+
+        :param repository: The `IGitRepository` that was modified.
+        :param user: The `IPerson` who modified the repository.
+        :param repository_delta: An `IGitRepositoryDelta` describing the
+            changes.
         """

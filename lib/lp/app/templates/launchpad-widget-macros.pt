@@ -29,7 +29,7 @@
                  tal:define="error widget/error">
 
               <label tal:attributes="for widget/name"
-                     tal:content="widget/label">Label</label>
+                     tal:content="string:${widget/label}:">Label</label>
 
               <span tal:condition="widget/required"
                     class="fieldRequired"

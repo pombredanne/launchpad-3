@@ -4472,7 +4472,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeLiveFSBuild(self, requester=None, registrant=None, livefs=None,
                         archive=None, distroarchseries=None, pocket=None,
-                        unique_key=None, metadata_override=None,
+                        unique_key=None, metadata_override=None, version=None,
                         date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
                         builder=None, duration=None, **kwargs):
         """Make a new LiveFSBuild."""
@@ -4503,7 +4503,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         livefsbuild = getUtility(ILiveFSBuildSet).new(
             requester, livefs, archive, distroarchseries, pocket,
             unique_key=unique_key, metadata_override=metadata_override,
-            date_created=date_created)
+            version=version, date_created=date_created)
         if duration is not None:
             removeSecurityProxy(livefsbuild).updateStatus(
                 BuildStatus.BUILDING, builder=builder,
@@ -4548,18 +4548,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroSeries()
         if name is None:
             name = self.getUniqueString(u"snap-name")
-        kwargs = {}
         if branch is None and git_ref is None:
             branch = self.makeAnyBranch()
-        if branch is not None:
-            kwargs["branch"] = branch
-        elif git_ref is not None:
-            kwargs["git_repository"] = git_ref.repository
-            kwargs["git_path"] = git_ref.path
         snap = getUtility(ISnapSet).new(
             registrant, owner, distroseries, name,
             require_virtualized=require_virtualized, processors=processors,
-            date_created=date_created, **kwargs)
+            date_created=date_created, branch=branch, git_ref=git_ref)
         IStore(snap).flush()
         return snap
 

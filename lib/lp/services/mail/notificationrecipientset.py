@@ -29,6 +29,7 @@ class StubPerson:
     correspond to a real Person.
     """
 
+    name = None
     displayname = None
     is_team = False
     expanded_notification_footers = False

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -466,6 +466,7 @@ class TestBranchView(BrowserTestCase):
             # These values are extracted here and used below.
             linked_bug_rendered_text = "\n".join(linked_bug_text)
             mp_url = canonical_url(mp, force_local_path=True)
+            branch_url = canonical_url(mp.source_branch, force_local_path=True)
             branch_display_name = mp.source_branch.displayname
 
         browser = self.getUserBrowser(canonical_url(branch))
@@ -493,8 +494,9 @@ class TestBranchView(BrowserTestCase):
 
         links = revision_content.findAll('a')
         self.assertEqual(mp_url, links[2]['href'])
-        self.assertEqual(linked_bug_urls[0], links[3]['href'])
-        self.assertEqual(linked_bug_urls[1], links[4]['href'])
+        self.assertEqual(branch_url, links[3]['href'])
+        self.assertEqual(linked_bug_urls[0], links[4]['href'])
+        self.assertEqual(linked_bug_urls[1], links[5]['href'])
 
     def test_view_for_user_with_artifact_grant(self):
         # Users with an artifact grant for a branch related to a private
@@ -558,7 +560,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(28)))
+        self.assertThat(recorder, HasQueryCount(Equals(29)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):

@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from zope.security.proxy import removeSecurityProxy
+from zope.component import getUtility
 
 from lp.code.adapters.branch import BranchDelta
 from lp.code.adapters.gitrepository import GitRepositoryDelta
@@ -15,35 +15,37 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchjob import IBranchModifiedMailJobSource
+from lp.code.interfaces.gitjob import IGitRepositoryModifiedMailJobSource
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
+from lp.services.config import config
 from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer
-from lp.services.mail.sendmail import format_address
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import canonical_url
 
 
 def send_branch_modified_notifications(branch, event):
-    """Notify the related people that a branch has been modifed."""
+    """Notify the related people that a branch has been modified."""
     user = IPerson(event.user)
     branch_delta = BranchDelta.construct(
         event.object_before_modification, branch, user)
     if branch_delta is None:
         return
-    mailer = BranchMailer.forBranchModified(branch, user, branch_delta)
-    mailer.sendAll()
+    getUtility(IBranchModifiedMailJobSource).create(branch, user, branch_delta)
 
 
 def send_git_repository_modified_notifications(repository, event):
-    """Notify the related people that a Git repository has been modifed."""
+    """Notify the related people that a Git repository has been modified."""
     user = IPerson(event.user)
     repository_delta = GitRepositoryDelta.construct(
         event.object_before_modification, repository, user)
     if repository_delta is None:
         return
-    mailer = BranchMailer.forBranchModified(repository, user, repository_delta)
-    mailer.sendAll()
+    getUtility(IGitRepositoryModifiedMailJobSource).create(
+        repository, user, repository_delta)
 
 
 class RecipientReason(basemailer.RecipientReason):
@@ -164,9 +166,10 @@ class BranchMailer(BaseMailer):
                  delta=None, contents=None, diff=None, message_id=None,
                  revno=None, revision_id=None, notification_type=None,
                  **kwargs):
-        BaseMailer.__init__(self, subject, template_name, recipients,
-                            from_address, delta, message_id,
-                            notification_type)
+        super(BranchMailer, self).__init__(
+            subject, template_name, recipients, from_address,
+            message_id=message_id, notification_type=notification_type)
+        self.delta_text = delta
         self.contents = contents
         self.diff = diff
         if diff is None:
@@ -193,7 +196,7 @@ class BranchMailer(BaseMailer):
         actual_recipients = {}
         # If the person editing the branch isn't in the team of the owner
         # then notify the branch owner of the changes as well.
-        if not user.inTeam(branch.owner):
+        if user is not None and not user.inTeam(branch.owner):
             # Existing rationales are kept.
             recipients.add(branch.owner, None, None)
         for recipient in recipients:
@@ -208,8 +211,10 @@ class BranchMailer(BaseMailer):
                 actual_recipients[recipient] = \
                     RecipientReason.forBranchSubscriber(
                     subscription, branch, recipient, rationale)
-        from_address = format_address(
-            user.displayname, removeSecurityProxy(user).preferredemail.email)
+        if user is not None:
+            from_address = format_address_for_person(user)
+        else:
+            from_address = config.canonical.noreply_from_address
         return cls(
             '[Branch %(unique_name)s]', 'branch-modified.txt',
             actual_recipients, from_address, delta=delta,
@@ -283,7 +288,8 @@ class BranchMailer(BaseMailer):
         params['diff'] = self.contents or ''
         if not self._includeDiff(email):
             params['diff'] += self._explainNotPresentDiff(email)
-        params.setdefault('delta', '')
+        params['delta'] = (
+            self.delta_text if self.delta_text is not None else '')
         params.update(self.extra_template_params)
         return params
 
@@ -331,8 +337,3 @@ class BranchMailer(BaseMailer):
         ctrl.addAttachment(
             self.diff, content_type='text/x-diff', inline=True,
                 filename='revision-diff.txt', charset='utf-8')
-
-    @staticmethod
-    def _format_user_address(user):
-        naked_email = removeSecurityProxy(user).preferredemail.email
-        return format_address(user.displayname, naked_email)

@@ -35,6 +35,12 @@ div#edit-commit_message {
     top: 0;
     }
 
+.unselectable {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
 /* === Fonts and colors === */
 
 .unavailable {
@@ -864,6 +870,13 @@ div.translation-help-links div {
     z-index: 9999;
     }
 
+
+/* === Webhooks === */
+
+table.listing tr.webhook-delivery:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
 
 
 /* ====== Content area styles ====== */

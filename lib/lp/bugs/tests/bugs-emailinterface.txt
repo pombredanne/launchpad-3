@@ -1197,6 +1197,14 @@ Like the web UI, we can assign a bug to nobody.
     >>> debian_task.assignee is None
     True
 
+Also like the web UI, we can assign a bug to "me", the current user.
+
+    >>> submit_commands(
+    ...     bug_four, 'affects debian',
+    ...     'assignee me')
+    >>> debian_task.assignee.name
+    u'name12'
+
 To set which source package the bug affects, we use:
 
     >>> submit_commands(bug_four, 'affects debian/mozilla-firefox')
