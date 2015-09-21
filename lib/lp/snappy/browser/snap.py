@@ -131,7 +131,7 @@ class SnapContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def request_builds(self):
-        return Link('+request-builds', 'Request build(s)', icon='add')
+        return Link('+request-builds', 'Request builds', icon='add')
 
 
 class SnapView(LaunchpadView):
