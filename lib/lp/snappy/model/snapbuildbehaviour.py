@@ -77,6 +77,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         build = self.build
         args = {}
         args["name"] = build.snap.name
+        args["proxy_api_endpoint"] = (
+            config.builddmaster.builder_proxy_auth_api_endpoint)
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.

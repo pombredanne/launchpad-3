@@ -27,6 +27,7 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.snappy.interfaces.snap import (
@@ -158,6 +159,7 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         # job for a Bazaar branch.
         branch = self.factory.makeBranch()
         job = self.makeJob(branch=branch)
+        proxy = config.builddmaster.builder_proxy_auth_api_endpoint
         expected_archives = get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
         self.assertEqual({
@@ -166,6 +168,7 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             "arch_tag": "i386",
             "branch": branch.bzr_identity,
             "name": u"test-snap",
+            "proxy_api_endpoint": proxy,
             }, job._extraBuildArgs())
 
     def test_extraBuildArgs_git(self):
@@ -173,6 +176,7 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         # job for a Git branch.
         [ref] = self.factory.makeGitRefs()
         job = self.makeJob(git_ref=ref)
+        proxy = config.builddmaster.builder_proxy_auth_api_endpoint
         expected_archives = get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
         self.assertEqual({
@@ -182,6 +186,7 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             "git_repository": ref.repository.git_https_url,
             "git_path": ref.path,
             "name": u"test-snap",
+            "proxy_api_endpoint": proxy,
             }, job._extraBuildArgs())
 
     def test_composeBuildRequest(self):
