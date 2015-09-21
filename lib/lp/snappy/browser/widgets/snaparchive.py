@@ -75,6 +75,7 @@ class SnapArchiveWidget(BrowserWidget, InputWidget):
             raise AssertionError("Not a valid value: %r" % value)
         if value.is_primary:
             self.default_option = "primary"
+            self.ppa_widget.setRenderedValue(None)
         elif value.is_ppa:
             self.default_option = "ppa"
             self.ppa_widget.setRenderedValue(value)

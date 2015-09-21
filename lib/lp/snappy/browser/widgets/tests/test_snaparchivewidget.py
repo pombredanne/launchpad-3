@@ -132,6 +132,19 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         self.widget.setUpSubWidgets()
         self.widget.setRenderedValue(self.context.distro_series.main_archive)
         self.assertEqual("primary", self.widget.default_option)
+        self.assertIsNone(self.widget.ppa_widget._getCurrentValue())
+
+    def test_setRenderedValue_primary_not_initial(self):
+        # Passing a primary archive will set the widget's render state to
+        # 'primary', even if it was initially something else.
+        self.widget.setUpSubWidgets()
+        archive = self.factory.makeArchive(
+            distribution=self.context.distro_series.distribution,
+            purpose=ArchivePurpose.PPA)
+        self.widget.setRenderedValue(archive)
+        self.widget.setRenderedValue(self.context.distro_series.main_archive)
+        self.assertEqual("primary", self.widget.default_option)
+        self.assertIsNone(self.widget.ppa_widget._getCurrentValue())
 
     def test_setRenderedValue_personal(self):
         # Passing a person will set the widget's render state to 'personal'.
