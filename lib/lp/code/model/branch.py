@@ -179,6 +179,7 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
@@ -474,10 +475,22 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        # Circular import.
+        from lp.code.model.branchcollection import GenericBranchCollection
+
+        result = Store.of(self).find(
+            BranchMergeProposal, BranchMergeProposal.target_branch == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+        def eager_load(rows):
+            user = getUtility(ILaunchBag).user
+            branches = load_related(
+                Branch, rows, ['source_branchID', 'prerequisite_branchID'])
+            GenericBranchCollection.preloadVisibleStackedOnBranches(
+                branches, user)
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     @property
     def dependent_branches(self):
