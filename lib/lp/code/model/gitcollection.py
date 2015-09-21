@@ -198,13 +198,16 @@ class GenericGitCollection:
         load_related(SourcePackageName, repositories, ['sourcepackagename_id'])
         load_related(Product, repositories, ['project_id'])
 
-    def getRepositories(self, find_expr=GitRepository, eager_load=False):
+    def getRepositories(self, find_expr=GitRepository, eager_load=False,
+                        order_by_date=False):
         """See `IGitCollection`."""
         all_tables = set(
             self._tables.values() + self._asymmetric_tables.values())
         tables = [GitRepository] + list(all_tables)
         expressions = self._getRepositoryExpressions()
         resultset = self.store.using(*tables).find(find_expr, *expressions)
+        if order_by_date:
+            resultset.order_by(Desc(GitRepository.date_last_modified))
 
         def do_eager_load(rows):
             repository_ids = set(repository.id for repository in rows)
