@@ -45,7 +45,9 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
     )
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -175,12 +177,22 @@ class GitRefMixin:
     @property
     def landing_candidates(self):
         """See `IGitRef`."""
-        return Store.of(self).find(
+        # Circular import.
+        from lp.code.model.gitrepository import GitRepository
+
+        result = Store.of(self).find(
             BranchMergeProposal,
             BranchMergeProposal.target_git_repository == self.repository,
             BranchMergeProposal.target_git_path == self.path,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+        def eager_load(rows):
+            load_related(
+                GitRepository, rows,
+                ["source_git_repositoryID", "prerequisite_git_repositoryID"])
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     @property
     def dependent_landings(self):

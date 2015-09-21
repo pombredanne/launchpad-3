@@ -41,8 +41,6 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
-from lp.code.model.gitrepository import GitRepository
-from lp.services.database.bulk import load_related
 from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -132,11 +130,7 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        candidates = list(self.context.landing_candidates)
-        load_related(
-            GitRepository, candidates,
-            ["source_git_repositoryID", "prerequisite_git_repositoryID"])
-        return [proposal for proposal in candidates
+        return [proposal for proposal in self.context.landing_candidates
                 if check_permission("launchpad.View", proposal)]
 
     def _getBranchCountText(self, count):
