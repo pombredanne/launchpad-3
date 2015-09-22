@@ -364,7 +364,7 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname publish status
+            set_attributes="description displayname processors publish status
                             suppress_subscription_notifications"/>
         <!--
            NOTE: The 'private' permission controls who can turn a public
@@ -379,7 +379,7 @@
                             buildd_secret enabled_restricted_processors
                             external_dependencies name
                             permit_obsolete_series_uploads
-                            private processors publish_debug_symbols
+                            private publish_debug_symbols
                             require_virtualized"/>
         <require
             permission="launchpad.Moderate"

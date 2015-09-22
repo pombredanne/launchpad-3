@@ -857,6 +857,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
             u"The architectures on which the distribution's main archive can "
             u"build.")
 
@@ -920,6 +921,7 @@ class DistributionEditView(RegistryEditFormView,
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
             u"The architectures on which the distribution's main archive can "
             u"build.")
 

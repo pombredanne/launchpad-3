@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -304,46 +304,100 @@ class TestProcessors(WebServiceTestCase):
         self.assertEqual('New ARM Title', ws_proc.title)
         self.assertEqual('New ARM Description', ws_proc.description)
 
-    def test_setProcessors(self):
+    def assertProcessors(self, user, archive_url, names):
+        body = webservice_for_person(user).get(
+            archive_url + '/processors', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            names, [entry['name'] for entry in body['entries']])
+
+    def test_setProcessorsAdmin(self):
         """A new processor can be added to the enabled restricted set."""
         commercial = getUtility(ILaunchpadCelebrities).commercial_admin
         commercial_admin = self.factory.makePerson(member_of=[commercial])
         self.factory.makeProcessor(
             'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
         ppa_url = api_url(self.factory.makeArchive(purpose=ArchivePurpose.PPA))
-
-        body = webservice_for_person(commercial_admin).get(
-            ppa_url + '/processors', api_version='devel').jsonBody()
-        self.assertContentEqual(
-            ['386', 'hppa', 'amd64'],
-            [entry['name'] for entry in body['entries']])
+        self.assertProcessors(
+            commercial_admin, ppa_url, ['386', 'hppa', 'amd64'])
 
         response = webservice_for_person(
                 commercial_admin,
                 permission=OAuthPermission.WRITE_PUBLIC).named_post(
-            ppa_url, 'setProcessors',
+            ppa_url, 'setProcessorsAdmin',
             processors=['/+processors/386', '/+processors/arm'],
             api_version='devel')
         self.assertEqual(200, response.status)
+        self.assertProcessors(commercial_admin, ppa_url, ['386', 'arm'])
 
-        body = webservice_for_person(commercial_admin).get(
-            ppa_url + '/processors', api_version='devel').jsonBody()
-        self.assertContentEqual(
-            ['386', 'arm'], [entry['name'] for entry in body['entries']])
-
-    def test_setProcessors_owner_forbidden(self):
-        """Only commercial admins can call setProcessors."""
+    def test_setProcessorsAdmin_owner_forbidden(self):
+        """Only commercial admins can call setProcessorsAdmin."""
         self.factory.makeProcessor(
             'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         ppa_url = api_url(archive)
         owner = archive.owner
 
-        response = webservice_for_person(owner).named_post(
-            ppa_url, 'setProcessors',
+        response = webservice_for_person(
+                owner, permission=OAuthPermission.WRITE_PUBLIC).named_post(
+            ppa_url, 'setProcessorsAdmin',
             processors=['/+processors/386', '/+processors/arm'],
             api_version='devel')
         self.assertEqual(401, response.status)
+
+    def test_setProcessors(self):
+        """The archive owner can enable/disable unrestricted processors."""
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ppa_url = api_url(archive)
+        owner = archive.owner
+        self.assertProcessors(owner, ppa_url, ['386', 'hppa', 'amd64'])
+
+        response = webservice_for_person(
+                owner, permission=OAuthPermission.WRITE_PUBLIC).named_post(
+            ppa_url, 'setProcessors',
+            processors=['/+processors/386'], api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertProcessors(owner, ppa_url, ['386'])
+
+        response = webservice_for_person(
+                owner, permission=OAuthPermission.WRITE_PUBLIC).named_post(
+            ppa_url, 'setProcessors',
+            processors=['/+processors/386', '/+processors/amd64'],
+            api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertProcessors(owner, ppa_url, ['386', 'amd64'])
+
+    def test_setProcessors_restricted_forbidden(self):
+        """The archive owner cannot enable/disable restricted processors."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        self.factory.makeProcessor(
+            'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ppa_url = api_url(archive)
+        owner = archive.owner
+
+        response = webservice_for_person(
+                owner, permission=OAuthPermission.WRITE_PUBLIC).named_post(
+            ppa_url, 'setProcessors',
+            processors=['/+processors/386', '/+processors/arm'],
+            api_version='devel')
+        self.assertEqual(403, response.status)
+
+        # If a commercial admin enables arm, the owner cannot disable it.
+        response = webservice_for_person(
+                commercial_admin,
+                permission=OAuthPermission.WRITE_PUBLIC).named_post(
+            ppa_url, 'setProcessorsAdmin',
+            processors=['/+processors/386', '/+processors/arm'],
+            api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertProcessors(owner, ppa_url, ['386', 'arm'])
+
+        response = webservice_for_person(
+                owner, permission=OAuthPermission.WRITE_PUBLIC).named_post(
+            ppa_url, 'setProcessors',
+            processors=['/+processors/386'], api_version='devel')
+        self.assertEqual(403, response.status)
 
     def test_enableRestrictedProcessor(self):
         """A new processor can be added to the enabled restricted set."""

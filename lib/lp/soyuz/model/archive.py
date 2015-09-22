@@ -139,6 +139,7 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
     ArchiveNotPrivate,
     CannotCopy,
+    CannotModifyArchiveProcessor,
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -2129,29 +2130,63 @@ class Archive(SQLBase):
         """See `IArchive`."""
         self.processors = set(self.processors + [processor])
 
+    @property
+    def available_processors(self):
+        """See `IArchive`."""
+        # Circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        clauses = [
+            Processor.id == DistroArchSeries.processor_id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            ]
+        if not self.permit_obsolete_series_uploads:
+            clauses.append(DistroSeries.status != SeriesStatus.OBSOLETE)
+        return Store.of(self).find(Processor, *clauses).config(
+            distinct=(Processor.id,))
+
     def _getProcessors(self):
         return list(Store.of(self).find(
             Processor,
             Processor.id == ArchiveArch.processor_id,
             ArchiveArch.archive == self))
 
-    def setProcessors(self, processors):
-        """See `IArchive`."""
+    def _setProcessors(self, processors, can_modify):
         enablements = dict(Store.of(self).find(
             (Processor, ArchiveArch),
             Processor.id == ArchiveArch.processor_id,
             ArchiveArch.archive == self))
         for proc in enablements:
             if proc not in processors:
+                if not can_modify(proc):
+                    raise CannotModifyArchiveProcessor(proc)
                 Store.of(self).remove(enablements[proc])
         for proc in processors:
             if proc not in self.processors:
+                if not can_modify(proc):
+                    raise CannotModifyArchiveProcessor(proc)
                 archivearch = ArchiveArch()
                 archivearch.archive = self
                 archivearch.processor = proc
                 Store.of(self).add(archivearch)
 
-    processors = property(_getProcessors, setProcessors)
+    def setProcessors(self, processors):
+        """See `IArchive`."""
+        self._setProcessors(processors, lambda proc: not proc.restricted)
+
+    def setProcessorsAdmin(self, processors):
+        """See `IArchive`."""
+        # Recheck permissions and delegate to setProcessors if the current
+        # user doesn't have launchpad.Admin; this allows this method to be
+        # used more conveniently as a property setter.
+        if check_permission('launchpad.Admin', self):
+            self._setProcessors(processors, lambda proc: True)
+        else:
+            self.setProcessors(processors)
+
+    processors = property(_getProcessors, setProcessorsAdmin)
 
     def getPockets(self):
         """See `IArchive`."""
@@ -2506,7 +2541,7 @@ class ArchiveSet:
             processors = [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default]
-        new_archive.setProcessors(processors)
+        new_archive.setProcessorsAdmin(processors)
 
         return new_archive
 

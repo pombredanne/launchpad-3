@@ -14,6 +14,7 @@ __all__ = [
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
+    'CannotModifyArchiveProcessor',
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
@@ -295,6 +296,19 @@ class InvalidExternalDependencies(Exception):
         error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
         super(Exception, self).__init__(self, error_msg)
         self.errors = errors
+
+
+@error_status(httplib.FORBIDDEN)
+class CannotModifyArchiveProcessor(Exception):
+    """Tried to enable or disable a restricted processor on an archive."""
+
+    _fmt = (
+        '%(processor)s is restricted, and may only be enabled or disabled '
+        'by administrators.')
+
+    def __init__(self, processor):
+        super(CannotModifyArchiveProcessor, self).__init__(
+            self._fmt % {'processor': processor.name})
 
 
 class IArchivePublic(IPrivacy, IHasOwner):
@@ -649,6 +663,10 @@ class IArchiveView(IHasBuildRecords):
             value_type=Reference(schema=IProcessor),
             readonly=True),
         as_of='devel')
+
+    available_processors = Attribute(
+        "The architectures that are available to be enabled or disabled for "
+        "this archive.")
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -1990,6 +2008,15 @@ class IArchiveEdit(Interface):
         processed.
         """
 
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True),
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setProcessors(processors):
+        """Set the architectures on which the archive can build."""
+
     def addArchiveDependency(dependency, pocket, component=None):
         """Record an archive dependency record for the context archive.
 
@@ -2055,8 +2082,13 @@ class IArchiveAdmin(Interface):
     )
     @export_write_operation()
     @operation_for_version('devel')
-    def setProcessors(processors):
-        """Set the architectures on which the archive can build."""
+    def setProcessorsAdmin(processors):
+        """Set the architectures on which the archive can build.
+
+        This operation can enable or disable restricted processors, and so
+        is only available to administrators.  Archive owners may use
+        setProcessors instead.
+        """
 
     @operation_parameters(
         processor=Reference(schema=IProcessor, required=True),
@@ -2066,7 +2098,7 @@ class IArchiveAdmin(Interface):
     def enableRestrictedProcessor(processor):
         """Add the processor to the set of enabled restricted processors.
 
-        DEPRECATED. Use setProcessors instead.
+        DEPRECATED. Use setProcessorsAdmin instead.
 
         :param processor: is an `IProcessor` object.
         """

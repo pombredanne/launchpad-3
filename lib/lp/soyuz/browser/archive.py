@@ -41,6 +41,7 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implementer,
@@ -81,7 +82,6 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -2010,30 +2010,26 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
                 "enabled", "Deleted PPAs can't be enabled.")
 
 
-class ArchiveEditView(BaseArchiveEditView):
-
-    field_names = ['displayname', 'description', 'enabled', 'publish']
-    custom_widget(
-        'description', TextAreaWidget, height=10, width=30)
-    page_title = 'Change details'
-
-    @property
-    def label(self):
-        return 'Edit %s' % self.context.displayname
-
-
 class EnableProcessorsMixin:
     """A mixin that provides processors field support"""
 
-    def createEnabledProcessors(self, description=None):
+    def createEnabledProcessors(self, available_processors, description=None):
         """Creates the 'processors' field."""
         terms = []
-        for processor in sorted(
-                getUtility(IProcessorSet).getAll(), key=attrgetter('name')):
+        disabled = []
+        if check_permission('launchpad.Admin', self.context):
+            can_modify = lambda proc: True
+        else:
+            can_modify = lambda proc: not proc.restricted
+        for processor in sorted(available_processors, key=attrgetter('name')):
             terms.append(SimpleTerm(
                 processor, token=processor.name,
                 title="%s (%s)" % (processor.title, processor.name)))
+            if not can_modify(processor):
+                disabled.append(processor)
         old_field = IArchive['processors']
+        widget = CustomWidgetFactory(
+            LabeledMultiCheckBoxWidget, disabled_items=disabled)
         return form.Fields(
             List(__name__=old_field.__name__,
                  title=old_field.title,
@@ -2041,7 +2037,38 @@ class EnableProcessorsMixin:
                  required=False,
                  description=old_field.description if description is None
                      else description),
-                 render_context=self.render_context)
+             render_context=self.render_context, custom_widget=widget)
+
+
+class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
+
+    field_names = ['displayname', 'description', 'enabled', 'publish']
+    custom_widget(
+        'description', TextAreaWidget, height=10, width=30)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
+    page_title = 'Change details'
+
+    @property
+    def label(self):
+        return 'Edit %s' % self.context.displayname
+
+    @property
+    def initial_values(self):
+        return {
+            'processors': self.context.processors,
+            }
+
+    def setUpFields(self):
+        """Override `LaunchpadEditFormView`.
+
+        See `createEnabledProcessors` method.
+        """
+        super(ArchiveEditView, self).setUpFields()
+        self.form_fields += self.createEnabledProcessors(
+            self.context.available_processors,
+            u"The architectures on which the archive can build. Some "
+            u"architectures are restricted and may only be enabled or "
+            u"disabled by administrators.")
 
 
 class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
@@ -2059,7 +2086,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
         'external_dependencies',
         ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-    custom_widget('processors', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
 
     @property
@@ -2099,20 +2125,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
-
-    @property
-    def initial_values(self):
-        return {
-            'processors': self.context.processors,
-            }
-
-    def setUpFields(self):
-        """Override `LaunchpadEditFormView`.
-
-        See `createEnabledProcessors` method.
-        """
-        super(ArchiveAdminView, self).setUpFields()
-        self.form_fields += self.createEnabledProcessors()
 
 
 class ArchiveDeleteView(LaunchpadFormView):

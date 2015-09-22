@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -309,7 +309,7 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
             [self.distroseries['sparc']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
                 archive, self.distroseries.architectures))
-        archive.setProcessors(archive.processors + [self.avr])
+        archive.setProcessorsAdmin(archive.processors + [self.avr])
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
@@ -459,7 +459,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.avr.build_by_default = False
         self.avr.restricted = True
         self.archive = self.factory.makeArchive(distribution=self.distro)
-        self.archive.setProcessors(self.archive.processors + [self.avr])
+        self.archive.setProcessorsAdmin(self.archive.processors + [self.avr])
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)

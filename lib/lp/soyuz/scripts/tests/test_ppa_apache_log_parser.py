@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import date
@@ -79,7 +79,7 @@ class TestScriptRunning(TestCaseWithFactory):
 
         self.archive = getUtility(IPersonSet).getByName('cprov').archive
         self.archive.require_virtualized = False
-        self.archive.setProcessors(getUtility(IProcessorSet).getAll())
+        self.archive.setProcessorsAdmin(getUtility(IProcessorSet).getAll())
 
         self.foo_i386, self.foo_hppa = self.publisher.getPubBinaries(
                 archive=self.archive, architecturespecific=True)
