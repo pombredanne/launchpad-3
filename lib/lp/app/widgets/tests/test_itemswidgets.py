@@ -92,6 +92,17 @@ class TestPlainMultiCheckBoxWidget(ItemWidgetTestCase):
         expected = '<input ... />&nbsp;&lt;unsafe&gt; &amp;nbsp; title '
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
 
+    def test__renderItem_disabled(self):
+        # Render item in disabled state.
+        self.widget.disabled_items = ['object-1']
+        expected = (
+            '<input ... disabled="disabled" ... />&nbsp;Safe title')
+        self.assertRenderItem(expected, self.SAFE_TERM)
+        expected = (
+            '<input class="checkboxType" id="test_field.1" name="test_field" '
+            'type="checkbox" value="token-2" />&nbsp;&lt;unsafe&gt; ...')
+        self.assertRenderItem(expected, self.UNSAFE_TERM)
+
 
 class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
     """Test the LabeledMultiCheckBoxWidget class."""
@@ -117,6 +128,19 @@ class TestLabeledMultiCheckBoxWidget(ItemWidgetTestCase):
         # Render item escapes unsafe markup.
         expected = '<label .../>&nbsp;&lt;unsafe&gt; &amp;nbsp; title</label>'
         self.assertRenderItem(expected, self.UNSAFE_TERM, checked=False)
+
+    def test__renderItem_disabled(self):
+        # Render item in disabled state.
+        self.widget.disabled_items = ['object-1']
+        expected = (
+            '<label ...><input ... disabled="disabled" ... />&nbsp;'
+            'Safe title</label>')
+        self.assertRenderItem(expected, self.SAFE_TERM)
+        expected = (
+            '<label for="field.test_field.1" style="font-weight: normal">'
+            '<input class="checkboxType" id="test_field.1" name="test_field" '
+            'type="checkbox" value="token-2" />&nbsp;&lt;unsafe&gt; ...')
+        self.assertRenderItem(expected, self.UNSAFE_TERM)
 
 
 class TestLaunchpadRadioWidget(ItemWidgetTestCase):
