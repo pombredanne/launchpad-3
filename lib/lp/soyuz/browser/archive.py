@@ -2070,6 +2070,16 @@ class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
             u"architectures are restricted and may only be enabled or "
             u"disabled by administrators.")
 
+    def validate(self, data):
+        if 'processors' in data:
+            available_processors = set(self.context.available_processors)
+            for processor in self.context.processors:
+                if (processor not in available_processors and
+                        processor not in data['processors']):
+                    # This processor is not currently available for
+                    # selection, but is enabled.  Leave it untouched.
+                    data['processors'].append(processor)
+
 
 class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
 

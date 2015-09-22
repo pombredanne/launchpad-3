@@ -52,7 +52,7 @@ class TestArchiveEditView(TestCaseWithFactory):
     def test_edit_processors(self):
         ppa = self.factory.makeArchive()
         owner = login_person(ppa.owner)
-        self.assertEqual(
+        self.assertContentEqual(
             ["386", "amd64", "hppa"],
             [processor.name for processor in ppa.processors])
         browser = self.getUserBrowser(
@@ -62,8 +62,34 @@ class TestArchiveEditView(TestCaseWithFactory):
         processors.value = ["386", "amd64"]
         browser.getControl("Save").click()
         login_person(ppa.owner)
-        self.assertEqual(
+        self.assertContentEqual(
             ["386", "amd64"],
+            [processor.name for processor in ppa.processors])
+
+    def test_edit_with_invisible_processor(self):
+        # It's possible for existing archives to have an enabled processor
+        # that's no longer usable with any non-obsolete distroseries, which
+        # will mean it's hidden from the UI, but the non-admin
+        # Archive.setProcessors isn't allowed to disable it.  Editing the
+        # processor list of such an archive leaves the invisible processor
+        # intact.
+        proc_386 = getUtility(IProcessorSet).getByName("386")
+        proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
+        proc_armel = self.factory.makeProcessor(
+            name='armel', restricted=True, build_by_default=False)
+        ppa = self.factory.makeArchive()
+        with admin_logged_in():
+            ppa.processors = [proc_386, proc_amd64, proc_armel]
+        owner = login_person(ppa.owner)
+        browser = self.getUserBrowser(
+            canonical_url(ppa) + "/+edit", user=owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(["386", "amd64"], processors.value)
+        processors.value = ["amd64"]
+        browser.getControl("Save").click()
+        login_person(ppa.owner)
+        self.assertContentEqual(
+            ["amd64", "armel"],
             [processor.name for processor in ppa.processors])
 
 
