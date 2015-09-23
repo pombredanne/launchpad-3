@@ -326,7 +326,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         # ArchiveSubscriber.archive is preloaded.
         archives = [subscriber.archive for subscriber, _ in subs_with_tokens]
         for archive in archives:
-            get_property_cache(archive)._known_subscribers = [self.user]
+            get_property_cache(archive)._known_subscribers = [self.context]
 
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL. Note that we need to ensure that only one
