@@ -18,6 +18,7 @@ from lp.archivepublisher.scripts.generate_contents_files import (
     )
 from lp.archivepublisher.scripts.publish_ftpmaster import PublishFTPMaster
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import DevNullLogger
 from lp.services.osutils import write_file
 from lp.services.scripts.base import LaunchpadScriptFailure
@@ -190,21 +191,36 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         # pockets that have packages to publish.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
-        package = self.factory.makeSuiteSourcePackage(distroseries)
+        suite = distroseries.getSuite(PackagePublishingPocket.BACKPORTS)
         script = self.makeScript(distro)
-        os.makedirs(os.path.join(script.config.distsroot, package.suite))
-        self.assertEqual([package.suite], list(script.getSuites()))
+        os.makedirs(os.path.join(script.config.distsroot, suite))
+        self.assertEqual([suite], list(script.getSuites()))
 
     def test_getSuites_includes_release_pocket(self):
         # getSuites also includes the release pocket, which is named
         # after the distroseries without a suffix.
         distro = self.makeDistro()
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
-        package = self.factory.makeSuiteSourcePackage(
-            distroseries, pocket=PackagePublishingPocket.RELEASE)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.DEVELOPMENT)
         script = self.makeScript(distro)
-        os.makedirs(os.path.join(script.config.distsroot, package.suite))
-        self.assertEqual([package.suite], list(script.getSuites()))
+        suite = distroseries.getSuite(PackagePublishingPocket.RELEASE)
+        os.makedirs(os.path.join(script.config.distsroot, suite))
+        self.assertEqual([suite], list(script.getSuites()))
+
+    def test_getSuites_excludes_immutable_suites(self):
+        # getSuites excludes suites that we would refuse to publish.
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        script = self.makeScript(distro)
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            ]
+        suites = [distroseries.getSuite(pocket) for pocket in pockets]
+        for suite in suites:
+            os.makedirs(os.path.join(script.config.distsroot, suite))
+        self.assertEqual([suites[1]], list(script.getSuites()))
 
     def test_writeAptContentsConf_writes_header(self):
         # writeAptContentsConf writes apt-contents.conf.  At a minimum

@@ -927,7 +927,8 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.factory.makeArchive(
             distribution=distro, owner=distro.owner,
             purpose=ArchivePurpose.PARTNER)
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.DEVELOPMENT)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         script = self.makeScript(distro)
         script.setUp()
@@ -937,6 +938,25 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         expected_args = [
             (distro.main_archive, distro, distroseries.getSuite(pocket), das)
             for pocket in PackagePublishingPocket.items]
+        self.assertEqual(
+            expected_args, script.updateContentsFile.extract_args())
+
+    def test_updateContentsFiles_skips_immutable_suites(self):
+        # updateContentsFiles does not generate Contents files for immutable
+        # suites.
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.updateContentsFile = FakeMethod()
+        script.updateContentsFiles(distro)
+        expected_args = [
+            (distro.main_archive, distro, distroseries.getSuite(pocket), das)
+            for pocket in PackagePublishingPocket.items
+            if pocket != PackagePublishingPocket.RELEASE]
         self.assertEqual(
             expected_args, script.updateContentsFile.extract_args())
 
