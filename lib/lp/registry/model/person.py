@@ -2351,6 +2351,7 @@ class Person(
             ('teammembership', 'team'),
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
+            ('usertouseremail', 'recipient'),
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team'),
