@@ -2048,7 +2048,14 @@ class EnableProcessorsMixin:
 
 class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
 
-    field_names = ['displayname', 'description', 'enabled', 'publish']
+    field_names = [
+        'displayname',
+        'description',
+        'enabled',
+        'publish',
+        'build_debug_symbols',
+        'publish_debug_symbols',
+        ]
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
     custom_widget('processors', LabeledMultiCheckBoxWidget)
@@ -2094,8 +2101,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
         'private',
         'suppress_subscription_notifications',
         'require_virtualized',
-        'build_debug_symbols',
-        'publish_debug_symbols',
         'permit_obsolete_series_uploads',
         'authorized_size',
         'relative_build_score',
