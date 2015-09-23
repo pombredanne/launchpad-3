@@ -4,10 +4,10 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE XRef (
-    type1 integer NOT NULL,
+    type1 text NOT NULL,
     id1 text NOT NULL,
     id1_int integer,
-    type2 integer NOT NULL,
+    type2 text NOT NULL,
     id2 text NOT NULL,
     id2_int integer,
     creator integer REFERENCES Person,
