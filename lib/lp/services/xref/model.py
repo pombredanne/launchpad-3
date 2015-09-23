@@ -97,7 +97,7 @@ class XRefSet:
                 for pair in pairs])
             ).remove()
 
-    def findFromMultiple(self, object_ids):
+    def findFromMany(self, object_ids):
         from lp.registry.model.person import Person
 
         store = IStore(XRef)
@@ -116,4 +116,4 @@ class XRefSet:
         return result
 
     def findFrom(self, object_id):
-        return self.findFromMultiple([object_id]).get(object_id, {})
+        return self.findFromMany([object_id]).get(object_id, {})

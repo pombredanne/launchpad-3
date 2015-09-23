@@ -23,7 +23,7 @@ class TestXRefSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_create_set_int_columns(self):
+    def test_create_sets_int_columns(self):
         # The string ID columns have integers equivalents for quick and
         # easy joins to integer PKs. They're set automatically when the
         # string ID looks like an integer.
@@ -74,7 +74,7 @@ class TestXRefSet(TestCaseWithFactory):
             bar_refs)
 
         with StormStatementRecorder() as recorder:
-            bar_baz_refs = getUtility(IXRefSet).findFromMultiple(
+            bar_baz_refs = getUtility(IXRefSet).findFromMany(
                 [('a', 'bar'), ('a', 'baz')])
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(

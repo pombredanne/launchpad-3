@@ -32,7 +32,7 @@ class IXRefSet(Interface):
             The creator and metadata keys are optional.
         """
 
-    def findFromMultiple(object_ids):
+    def findFromMany(object_ids):
         """Find all cross-references from multiple objects.
 
         :param object_ids: A collection of object IDs.
