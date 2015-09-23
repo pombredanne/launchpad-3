@@ -77,7 +77,7 @@ class BuildFarmJobBehaviourBase:
             "Preparing job %s (%s) on %s."
             % (cookie, self.build.title, self._builder.url))
 
-        builder_type, das, files, args = self.composeBuildRequest(logger)
+        builder_type, das, files, args = yield self.composeBuildRequest(logger)
 
         # First cache the chroot and any other files that the job needs.
         chroot = das.getChroot()
