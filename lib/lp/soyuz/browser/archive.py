@@ -2058,7 +2058,6 @@ class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
         ]
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
-    custom_widget('processors', LabeledMultiCheckBoxWidget)
     page_title = 'Change details'
 
     @property
