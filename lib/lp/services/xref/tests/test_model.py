@@ -38,8 +38,8 @@ class TestXRefSet(TestCaseWithFactory):
             foo_refs = getUtility(IXRefSet).findByIDs(['foo'])
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {('bar', 'foo'): {'creator': creator, 'metadata': {'test': 1234}},
-             ('baz', 'foo'): {'creator': creator, 'metadata': {'test': 2468}}},
+            {('foo', 'bar'): {'creator': creator, 'metadata': {'test': 1234}},
+             ('foo', 'baz'): {'creator': creator, 'metadata': {'test': 2468}}},
             foo_refs)
 
         with StormStatementRecorder() as recorder:
@@ -52,7 +52,8 @@ class TestXRefSet(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             bar_baz_refs = getUtility(IXRefSet).findByIDs(['bar', 'baz'])
         self.assertThat(recorder, HasQueryCount(Equals(2)))
-        self.assertEqual(foo_refs, bar_baz_refs)
+        self.assertEqual(
+            {(k[1], k[0]): v for k, v in foo_refs.items()}, bar_baz_refs)
 
     def test_deleteByIDs(self):
         getUtility(IXRefSet).createByIDs(

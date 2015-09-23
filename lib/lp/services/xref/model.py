@@ -29,10 +29,14 @@ from lp.services.xref.interfaces import IXRefSet
 class XRef(StormBase):
 
     __storm_table__ = 'XRef'
-    __storm_primary__ = "object1_id", "object2_id"
+    __storm_primary__ = "to_type", "to_id", "from_type", "from_id"
 
-    object1_id = Unicode(allow_none=False)
-    object2_id = Unicode(allow_none=False)
+    to_type = Unicode(allow_none=False)
+    to_id = Unicode(allow_none=False)
+    to_id_int = Int()
+    from_type = Unicode(allow_none=False)
+    from_id = Unicode(allow_none=False)
+    from_id_int = Int()
     creator_id = Int(name="creator")
     creator = Reference(creator_id, "Person.id")
     metadata = JSON()
@@ -42,18 +46,31 @@ class XRef(StormBase):
 class XRefSet:
 
     def createByIDs(self, xrefs):
+        # All references are currently to local objects, so add
+        # backlinks as well to keep queries in both directions quick.
+        rows = []
+        for ids, props in xrefs.items():
+            ids = list(sorted(ids))
+            rows.append((
+                '', ids[0], '', ids[1], props.get('creator'),
+                props.get('metadata')))
+            rows.append((
+                '', ids[1], '', ids[0], props.get('creator'),
+                props.get('metadata')))
         bulk.create(
-            (XRef.object1_id, XRef.object2_id, XRef.creator, XRef.metadata),
-            [list(sorted(ids)) + [props.get('creator'), props.get('metadata')]
-             for ids, props in xrefs.items()])
+            (XRef.from_type, XRef.from_id, XRef.to_type, XRef.to_id,
+             XRef.creator, XRef.metadata), rows)
 
     def deleteByIDs(self, object_id_pairs):
-        canonical_pairs = [list(sorted(pair)) for pair in object_id_pairs]
+        # Delete both directions.
+        pairs = [tuple(pair) for pair in object_id_pairs]
+        pairs += [(pair[1], pair[0]) for pair in pairs]
+
         IStore(XRef).find(
             XRef,
             Or(*[
-                And(XRef.object1_id == pair[0], XRef.object2_id == pair[1])
-                for pair in canonical_pairs])
+                And(XRef.from_id == pair[0], XRef.to_id == pair[1])
+                for pair in pairs])
             ).remove()
 
     def findByIDs(self, object_ids):
@@ -61,10 +78,8 @@ class XRefSet:
 
         store = IStore(XRef)
         result = list(store.using(XRef).find(
-            (XRef.object1_id, XRef.object2_id, XRef.creator_id, XRef.metadata),
-            Or(
-                XRef.object1_id.is_in(object_ids),
-                XRef.object2_id.is_in(object_ids))))
+            (XRef.from_id, XRef.to_id, XRef.creator_id, XRef.metadata),
+            XRef.from_id.is_in(object_ids)))
         bulk.load(Person, [r[2] for r in result])
         return {
             (r[0], r[1]): {
