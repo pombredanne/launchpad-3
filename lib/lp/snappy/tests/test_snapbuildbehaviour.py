@@ -160,7 +160,8 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         # job for a Bazaar branch.
         branch = self.factory.makeBranch()
         job = self.makeJob(branch=branch)
-        proxy = config.builddmaster.builder_proxy_auth_api_endpoint
+        proxy_host = config.builddmaster.builder_proxy_host
+        proxy_port = config.builddmaster.builder_proxy_port
         expected_archives = get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
         self.assertEqual({
@@ -169,7 +170,8 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             "arch_tag": "i386",
             "branch": branch.bzr_identity,
             "name": u"test-snap",
-            "proxy_api_endpoint": proxy,
+            "proxy_host": proxy_host,
+            "proxy_port": proxy_port,
             }, job._extraBuildArgs())
 
     def test_extraBuildArgs_git(self):
@@ -177,7 +179,8 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         # job for a Git branch.
         [ref] = self.factory.makeGitRefs()
         job = self.makeJob(git_ref=ref)
-        proxy = config.builddmaster.builder_proxy_auth_api_endpoint
+        proxy_host = config.builddmaster.builder_proxy_host
+        proxy_port = config.builddmaster.builder_proxy_port
         expected_archives = get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
         self.assertEqual({
@@ -187,17 +190,18 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             "git_repository": ref.repository.git_https_url,
             "git_path": ref.name,
             "name": u"test-snap",
-            "proxy_api_endpoint": proxy,
+            "proxy_host": proxy_host,
+            "proxy_port": proxy_port,
             }, job._extraBuildArgs())
 
     def test_composeBuildRequest(self):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        build_request = yield job.composeBuildRequest(None)
         self.assertEqual(
             ('snap', job.build.distro_arch_series, {},
-             job._extraBuildArgs()),
-            job.composeBuildRequest(None))
+             job._extraBuildArgs()), build_request)
 
     def test_composeBuildRequest_deleted(self):
         # If the source branch/repository has been deleted,
@@ -208,11 +212,12 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         branch.destroySelf(break_references=True)
         self.assertIsNone(job.build.snap.branch)
         self.assertIsNone(job.build.snap.git_repository)
+        build_request = yield job.composeBuildRequest
         self.assertRaisesWithContent(
             CannotBuild,
             "Source branch/repository for ~snap-owner/test-snap has been "
             "deleted.",
-            job.composeBuildRequest, None)
+            build_request, None)
 
     def test_composeBuildRequest_git_ref_deleted(self):
         # If the source Git reference has been deleted, composeBuildRequest
@@ -223,11 +228,12 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob(registrant=owner, owner=owner, git_ref=ref)
         repository.removeRefs([ref.path])
         self.assertIsNone(job.build.snap.git_ref)
+        build_request = yield job.composeBuildRequest
         self.assertRaisesWithContent(
             CannotBuild,
             "Source branch/repository for ~snap-owner/test-snap has been "
             "deleted.",
-            job.composeBuildRequest, None)
+            build_request, None)
 
 
 class MakeSnapBuildMixin:

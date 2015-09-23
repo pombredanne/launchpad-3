@@ -11,6 +11,11 @@ __all__ = [
     'SnapBuildBehaviour',
     ]
 
+import json
+from urllib import urlencode
+
+from twisted.internet import defer
+from twisted.web.client import getPage
 from zope.component import adapter
 from zope.interface import implementer
 
@@ -77,8 +82,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         build = self.build
         args = {}
         args["name"] = build.snap.name
-        args["proxy_api_endpoint"] = (
-            config.builddmaster.builder_proxy_auth_api_endpoint)
+        args["proxy_host"] = config.builddmaster.builder_proxy_host
+        args["proxy_port"] = config.builddmaster.builder_proxy_port
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
@@ -100,10 +105,22 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 (build.snap.owner.name, build.snap.name))
         return args
 
+    def _requestProxyToken(self):
+        url = config.builddmaster.builder_proxy_auth_api_endpoint
+        d = getPage(
+            url,
+            method='POST',
+            postdata=urlencode({'build_id': self.build.build_farm_job_id}),
+            headers={'Content-Type': 'application/json'}
+            )
+        return d
+
+    @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
-        return (
-            "snap", self.build.distro_arch_series, {},
-            self._extraBuildArgs(logger=logger))
+        args = self._extraBuildArgs(logger=logger)
+        token = yield self._requestProxyToken()
+        args['proxy_token'] = json.loads(token)
+        defer.returnValue("snap", self.build.distro_arch_series, {}, args)
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""
