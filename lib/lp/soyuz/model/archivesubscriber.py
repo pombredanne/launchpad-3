@@ -42,9 +42,7 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.emailaddress import EmailAddress
-from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import precache_permission_for_objects
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
@@ -215,15 +213,12 @@ class ArchiveSubscriberSet:
         result = self._getBySubscriber(subscriber, archive, True, True)
 
         def eager_load(rows):
-            user = getUtility(ILaunchBag).user
             subscriptions = map(itemgetter(0), rows)
             precache_permission_for_objects(
                 None, 'launchpad.View', subscriptions)
             archives = load_related(Archive, subscriptions, ['archive_id'])
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 [archive.ownerID for archive in archives], need_validity=True))
-            for archive in archives:
-                get_property_cache(archive)._known_subscribers = [user]
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 

@@ -41,7 +41,10 @@ from lp.app.widgets.date import DateWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
@@ -319,6 +322,11 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         subscriber_set = getUtility(IArchiveSubscriberSet)
         subs_with_tokens = subscriber_set.getBySubscriberWithActiveToken(
             self.context)
+
+        # ArchiveSubscriber.archive is preloaded.
+        archives = [subscriber.archive for subscriber, _ in subs_with_tokens]
+        for archive in archives:
+            get_property_cache(archive)._known_subscribers = [self.user]
 
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL. Note that we need to ensure that only one

@@ -513,7 +513,8 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        return [proposal for proposal in self.context.landing_candidates
+        candidates = self.context.getPrecachedLandingCandidates(self.user)
+        return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
     @property
