@@ -32,10 +32,11 @@ class IXRefSet(Interface):
             The creator and metadata keys are optional.
         """
 
-    def findFromMany(object_ids):
+    def findFromMany(object_ids, types=None):
         """Find all cross-references from multiple objects.
 
         :param object_ids: A collection of object IDs.
+        :param types: An optional collection of the types to include.
         :return: A dict of
             {from_object_id: {to_object_id:
                 {'creator': `IPerson`, 'metadata': value}}}.
@@ -50,10 +51,11 @@ class IXRefSet(Interface):
         :param xrefs: A dict of {from_object_id: [to_object_id]}.
         """
 
-    def findFrom(object_id):
+    def findFrom(object_id, types=None):
         """Find all cross-references from an object.
 
         :param object_id: An object ID.
+        :param types: An optional collection of the types to include.
         :return: A dict of
             {to_object_id: {'creator': `IPerson`, 'metadata': value}}.
             The creator and metadata keys are optional.

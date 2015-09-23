@@ -84,6 +84,28 @@ class TestXRefSet(TestCaseWithFactory):
                 ('b', 'foo'): {'creator': creator, 'metadata': {'test': 2}}}},
              bar_baz_refs)
 
+    def test_findFrom_types(self):
+        # findFrom can look for only particular types of related
+        # objects.
+        getUtility(IXRefSet).create({
+            ('a', '1'): {('a', '2'): {}, ('b', '3'): {}},
+            ('b', '4'): {('a', '5'): {}, ('c', '6'): {}},
+            })
+        self.assertContentEqual(
+            [('a', '2')],
+            getUtility(IXRefSet).findFrom(('a', '1'), types=['a', 'c']).keys())
+        self.assertContentEqual(
+            [('a', '5'), ('c', '6')],
+            getUtility(IXRefSet).findFrom(('b', '4'), types=['a', 'c']).keys())
+
+        # Asking for no types or types that don't exist finds nothing.
+        self.assertContentEqual(
+            [],
+            getUtility(IXRefSet).findFrom(('b', '4'), types=[]).keys())
+        self.assertContentEqual(
+            [],
+            getUtility(IXRefSet).findFrom(('b', '4'), types=['d']).keys())
+
     def test_delete(self):
         getUtility(IXRefSet).create({
             ('a', 'bar'): {('b', 'foo'): {}},

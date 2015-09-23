@@ -97,7 +97,7 @@ class XRefSet:
                 for pair in pairs])
             ).remove()
 
-    def findFromMany(self, object_ids):
+    def findFromMany(self, object_ids, types=None):
         from lp.registry.model.person import Person
 
         store = IStore(XRef)
@@ -106,7 +106,8 @@ class XRefSet:
              XRef.creator_id, XRef.metadata),
             Or(*[
                 And(XRef.from_type == id[0], XRef.from_id == id[1])
-                for id in object_ids])))
+                for id in object_ids]),
+            XRef.to_type.is_in(types) if types is not None else True))
         bulk.load(Person, [row[4] for row in rows])
         result = {}
         for row in rows:
@@ -115,5 +116,5 @@ class XRefSet:
                 "metadata": row[5]}
         return result
 
-    def findFrom(self, object_id):
-        return self.findFromMany([object_id]).get(object_id, {})
+    def findFrom(self, object_id, types=None):
+        return self.findFromMany([object_id], types=types).get(object_id, {})
