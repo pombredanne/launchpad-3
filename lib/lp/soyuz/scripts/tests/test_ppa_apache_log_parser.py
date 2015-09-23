@@ -79,7 +79,7 @@ class TestScriptRunning(TestCaseWithFactory):
 
         self.archive = getUtility(IPersonSet).getByName('cprov').archive
         self.archive.require_virtualized = False
-        self.archive.setProcessorsAdmin(getUtility(IProcessorSet).getAll())
+        self.archive.setProcessors(getUtility(IProcessorSet).getAll())
 
         self.foo_i386, self.foo_hppa = self.publisher.getPubBinaries(
                 archive=self.archive, architecturespecific=True)

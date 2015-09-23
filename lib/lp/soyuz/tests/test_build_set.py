@@ -309,7 +309,7 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
             [self.distroseries['sparc']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
                 archive, self.distroseries.architectures))
-        archive.setProcessorsAdmin(archive.processors + [self.avr])
+        archive.setProcessors(archive.processors + [self.avr])
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
@@ -459,7 +459,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.avr.build_by_default = False
         self.avr.restricted = True
         self.archive = self.factory.makeArchive(distribution=self.distro)
-        self.archive.setProcessorsAdmin(self.archive.processors + [self.avr])
+        self.archive.setProcessors(self.archive.processors + [self.avr])
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)

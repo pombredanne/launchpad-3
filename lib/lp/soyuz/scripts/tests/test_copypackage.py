@@ -1258,7 +1258,7 @@ class TestDoDirectCopy(BaseDoCopyTests, TestCaseWithFactory):
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False,
             purpose=ArchivePurpose.PRIMARY)
-        target_archive.setProcessorsAdmin(getUtility(IProcessorSet).getAll())
+        target_archive.setProcessors(getUtility(IProcessorSet).getAll())
         target_archive.build_debug_symbols = True
         existing_source = self.test_publisher.getPubSource(
             archive=target_archive, version='1.0-1', distroseries=nobby,
@@ -1287,7 +1287,7 @@ class TestDoDirectCopy(BaseDoCopyTests, TestCaseWithFactory):
 
     def _setup_archive(self, version="1.0-2", use_nobby=False, **kwargs):
         archive = self.test_publisher.ubuntutest.main_archive
-        archive.setProcessorsAdmin(getUtility(IProcessorSet).getAll())
+        archive.setProcessors(getUtility(IProcessorSet).getAll())
         nobby = self.createNobby(('i386', 'hppa'))
         source = self.test_publisher.getPubSource(
             archive=archive, version=version, architecturehintlist='any',
@@ -1770,7 +1770,7 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         # the source distroseries, then the copier propagates
         # architecture-independent binaries to the new architectures.
         new_series, new_das = self.makeSeriesWithExtraArchitecture()
-        self.primary.setProcessorsAdmin(
+        self.primary.setProcessors(
             self.primary.processors + [new_das.processor])
         source = self.test_publisher.getPubSource(
             archive=self.primary, status=PackagePublishingStatus.PUBLISHED,
@@ -1803,7 +1803,7 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         # they were built, the copier creates builds for the new
         # architectures.
         new_series, new_das = self.makeSeriesWithExtraArchitecture()
-        self.primary.setProcessorsAdmin(
+        self.primary.setProcessors(
             self.primary.processors + [new_das.processor])
         source = self.test_publisher.getPubSource(
             archive=self.primary, status=PackagePublishingStatus.PUBLISHED,

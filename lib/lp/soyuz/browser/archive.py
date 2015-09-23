@@ -1992,6 +1992,12 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         # IArchive.enabled is a read-only property that cannot be set
         # directly.
         del(data['enabled'])
+        new_processors = data.get('processors')
+        if new_processors is not None:
+            if set(self.context.processors) != set(new_processors):
+                self.context.setProcessors(
+                    new_processors, check_permissions=True, user=self.user)
+            del data['processors']
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 

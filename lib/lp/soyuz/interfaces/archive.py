@@ -668,6 +668,16 @@ class IArchiveView(IHasBuildRecords):
         "The architectures that are available to be enabled or disabled for "
         "this archive.")
 
+    @call_with(check_permissions=True, user=REQUEST_USER)
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True),
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setProcessors(processors, check_permissions=False, user=None):
+        """Set the architectures on which the archive can build."""
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -2008,15 +2018,6 @@ class IArchiveEdit(Interface):
         processed.
         """
 
-    @operation_parameters(
-        processors=List(
-            value_type=Reference(schema=IProcessor), required=True),
-    )
-    @export_write_operation()
-    @operation_for_version('devel')
-    def setProcessors(processors):
-        """Set the architectures on which the archive can build."""
-
     def addArchiveDependency(dependency, pocket, component=None):
         """Record an archive dependency record for the context archive.
 
@@ -2077,20 +2078,6 @@ class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
-        processors=List(
-            value_type=Reference(schema=IProcessor), required=True),
-    )
-    @export_write_operation()
-    @operation_for_version('devel')
-    def setProcessorsAdmin(processors):
-        """Set the architectures on which the archive can build.
-
-        This operation can enable or disable restricted processors, and so
-        is only available to administrators.  Archive owners may use
-        setProcessors instead.
-        """
-
-    @operation_parameters(
         processor=Reference(schema=IProcessor, required=True),
     )
     @export_write_operation()
@@ -2098,7 +2085,7 @@ class IArchiveAdmin(Interface):
     def enableRestrictedProcessor(processor):
         """Add the processor to the set of enabled restricted processors.
 
-        DEPRECATED. Use setProcessorsAdmin instead.
+        DEPRECATED. Use setProcessors instead.
 
         :param processor: is an `IProcessor` object.
         """

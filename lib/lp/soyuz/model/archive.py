@@ -48,6 +48,7 @@ from zope.interface import (
     alsoProvides,
     implementer,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -2153,7 +2154,24 @@ class Archive(SQLBase):
             Processor.id == ArchiveArch.processor_id,
             ArchiveArch.archive == self))
 
-    def _setProcessors(self, processors, can_modify):
+    def setProcessors(self, processors, check_permissions=False, user=None):
+        """See `IArchive`."""
+        if check_permissions:
+            can_modify = None
+            if user is not None:
+                roles = IPersonRoles(user)
+                authz = lambda perm: getAdapter(self, IAuthorization, perm)
+                if authz('launchpad.Admin').checkAuthenticated(roles):
+                    can_modify = lambda proc: True
+                elif authz('launchpad.Edit').checkAuthenticated(roles):
+                    can_modify = lambda proc: not proc.restricted
+            if can_modify is None:
+                raise Unauthorized(
+                    'Permission launchpad.Admin or launchpad.Edit required '
+                    'on %s.' % self)
+        else:
+            can_modify = lambda proc: True
+
         enablements = dict(Store.of(self).find(
             (Processor, ArchiveArch),
             Processor.id == ArchiveArch.processor_id,
@@ -2172,21 +2190,7 @@ class Archive(SQLBase):
                 archivearch.processor = proc
                 Store.of(self).add(archivearch)
 
-    def setProcessors(self, processors):
-        """See `IArchive`."""
-        self._setProcessors(processors, lambda proc: not proc.restricted)
-
-    def setProcessorsAdmin(self, processors):
-        """See `IArchive`."""
-        # Recheck permissions and delegate to setProcessors if the current
-        # user doesn't have launchpad.Admin; this allows this method to be
-        # used more conveniently as a property setter.
-        if check_permission('launchpad.Admin', self):
-            self._setProcessors(processors, lambda proc: True)
-        else:
-            self.setProcessors(processors)
-
-    processors = property(_getProcessors, setProcessorsAdmin)
+    processors = property(_getProcessors, setProcessors)
 
     def getPockets(self):
         """See `IArchive`."""
@@ -2541,7 +2545,7 @@ class ArchiveSet:
             processors = [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default]
-        new_archive.setProcessorsAdmin(processors)
+        new_archive.setProcessors(processors)
 
         return new_archive
 

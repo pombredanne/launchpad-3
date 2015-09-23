@@ -1125,16 +1125,16 @@ class TestProcessors(TestCaseWithFactory):
             restricted=False, build_by_default=True)
         rproc = self.factory.makeProcessor(
             restricted=True, build_by_default=False)
-        self.archive.setProcessorsAdmin([uproc, rproc])
+        self.archive.setProcessors([uproc, rproc])
         self.assertContentEqual([uproc, rproc], self.archive.processors)
         self.assertContentEqual(
             [rproc], self.archive.enabled_restricted_processors)
 
     def test_set(self):
         """The property remembers its value correctly."""
-        self.archive.setProcessorsAdmin([self.arm])
+        self.archive.setProcessors([self.arm])
         self.assertContentEqual([self.arm], self.archive.processors)
-        self.archive.setProcessorsAdmin(self.unrestricted_procs + [self.arm])
+        self.archive.setProcessors(self.unrestricted_procs + [self.arm])
         self.assertContentEqual(
             self.unrestricted_procs + [self.arm], self.archive.processors)
         self.archive.processors = []
@@ -1142,30 +1142,37 @@ class TestProcessors(TestCaseWithFactory):
 
     def test_set_non_admin(self):
         """Non-admins can only enable or disable unrestricted processors."""
-        self.archive.setProcessorsAdmin(self.default_procs)
+        self.archive.setProcessors(self.default_procs)
         self.assertContentEqual(self.default_procs, self.archive.processors)
-        with person_logged_in(self.archive.owner):
+        with person_logged_in(self.archive.owner) as owner:
             # Adding arm is forbidden ...
             self.assertRaises(
                 CannotModifyArchiveProcessor, self.archive.setProcessors,
-                [self.default_procs[0], self.arm])
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=owner)
             # ... but removing amd64 is OK.
-            self.archive.setProcessors([self.default_procs[0]])
+            self.archive.setProcessors(
+                [self.default_procs[0]], check_permissions=True, user=owner)
             self.assertContentEqual(
                 [self.default_procs[0]], self.archive.processors)
-        with admin_logged_in():
-            self.archive.setProcessorsAdmin([self.default_procs[0], self.arm])
+        with admin_logged_in() as admin:
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=admin)
             self.assertContentEqual(
                 [self.default_procs[0], self.arm], self.archive.processors)
-        with person_logged_in(self.archive.owner):
+        with person_logged_in(self.archive.owner) as owner:
             hppa = getUtility(IProcessorSet).getByName("hppa")
             self.assertFalse(hppa.restricted)
             # Adding hppa while removing arm is forbidden ...
             self.assertRaises(
                 CannotModifyArchiveProcessor, self.archive.setProcessors,
-                [self.default_procs[0], hppa])
+                [self.default_procs[0], hppa],
+                check_permissions=True, user=owner)
             # ... but adding hppa while retaining arm is OK.
-            self.archive.setProcessors([self.default_procs[0], self.arm, hppa])
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm, hppa],
+                check_permissions=True, user=owner)
             self.assertContentEqual(
                 [self.default_procs[0], self.arm, hppa],
                 self.archive.processors)
@@ -1184,32 +1191,6 @@ class TestProcessors(TestCaseWithFactory):
         self.assertContentEqual(
             self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
-
-    def test_property_permissions(self):
-        """Setting the processors property honours permissions.
-
-        An admin can enable/disable restricted processors, but a non-admin
-        cannot.
-        """
-        self.archive.setProcessorsAdmin(self.default_procs)
-        self.assertContentEqual(self.default_procs, self.archive.processors)
-        with person_logged_in(self.archive.owner):
-            self.archive.processors = [self.default_procs[0]]
-            self.assertContentEqual(
-                [self.default_procs[0]], self.archive.processors)
-            self.archive.processors = self.default_procs
-            self.assertContentEqual(
-                self.default_procs, self.archive.processors)
-            self.assertRaises(
-                CannotModifyArchiveProcessor, setattr,
-                self.archive, "processors", self.default_procs + [self.arm])
-        with admin_logged_in():
-            self.archive.processors = self.default_procs + [self.arm]
-            self.assertContentEqual(
-                self.default_procs + [self.arm], self.archive.processors)
-            self.archive.processors = self.default_procs
-            self.assertContentEqual(
-                self.default_procs, self.archive.processors)
 
 
 class TestBuilddSecret(TestCaseWithFactory):
