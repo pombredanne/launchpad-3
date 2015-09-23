@@ -9,11 +9,13 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 from textwrap import dedent
 
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 import pytz
+import soupmatchers
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -58,7 +60,10 @@ from lp.testing.pages import (
     find_tags_by_class,
     )
 from lp.testing.publication import test_traverse
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestSnapNavigation(TestCaseWithFactory):
@@ -403,6 +408,31 @@ class TestSnapView(BrowserTestCase):
             requester=self.person, snap=snap, archive=archive,
             distroarchseries=self.distroarchseries, date_created=date_created,
             **kwargs)
+
+    def test_breadcrumb(self):
+        snap = self.makeSnap()
+        view = create_view(snap, "+index")
+        # To test the breadcrumbs we need a correct traversal stack.
+        view.request.traversed_objects = [self.person, snap, view]
+        view.initialize()
+        breadcrumbs_tag = soupmatchers.Tag(
+            "breadcrumbs", "ol", attrs={"class": "breadcrumbs"})
+        self.assertThat(
+            view(),
+            soupmatchers.HTMLContains(
+                soupmatchers.Within(
+                    breadcrumbs_tag,
+                    soupmatchers.Tag(
+                        "snap collection breadcrumb", "a",
+                        text="Snap packages",
+                        attrs={
+                            "href": re.compile(r"/~test-person/\+snaps$"),
+                            })),
+                soupmatchers.Within(
+                    breadcrumbs_tag,
+                    soupmatchers.Tag(
+                        "snap breadcrumb", "li",
+                        text=re.compile(r"\ssnap-name\s")))))
 
     def test_index_bzr(self):
         branch = self.factory.makePersonalBranch(
