@@ -45,48 +45,56 @@ class XRef(StormBase):
 @implementer(IXRefSet)
 class XRefSet:
 
-    def createByIDs(self, xrefs):
+    def create(self, xrefs):
         # All references are currently to local objects, so add
         # backlinks as well to keep queries in both directions quick.
         rows = []
-        for ids, props in xrefs.items():
-            ids = list(sorted(ids))
-            rows.append((
-                '', ids[0], '', ids[1], props.get('creator'),
-                props.get('metadata')))
-            rows.append((
-                '', ids[1], '', ids[0], props.get('creator'),
-                props.get('metadata')))
+        for from_, tos in xrefs.items():
+            for to, props in tos.items():
+                rows.append((
+                    from_[0], from_[1], to[0], to[1], props.get('creator'),
+                    props.get('metadata')))
+                rows.append((
+                    to[0], to[1], from_[0], from_[1], props.get('creator'),
+                    props.get('metadata')))
         bulk.create(
             (XRef.from_type, XRef.from_id, XRef.to_type, XRef.to_id,
              XRef.creator, XRef.metadata), rows)
 
-    def deleteByIDs(self, object_id_pairs):
+    def delete(self, xrefs):
         # Delete both directions.
-        pairs = [tuple(pair) for pair in object_id_pairs]
-        pairs += [(pair[1], pair[0]) for pair in pairs]
+        pairs = []
+        for from_, tos in xrefs.items():
+            for to in tos:
+                pairs.extend([(from_, to), (to, from_)])
 
         IStore(XRef).find(
             XRef,
             Or(*[
-                And(XRef.from_id == pair[0], XRef.to_id == pair[1])
+                And(XRef.from_type == pair[0][0],
+                    XRef.from_id == pair[0][1],
+                    XRef.to_type == pair[1][0],
+                    XRef.to_id == pair[1][1])
                 for pair in pairs])
             ).remove()
 
-    def findByIDs(self, object_ids):
+    def findFromMultiple(self, object_ids):
         from lp.registry.model.person import Person
 
         store = IStore(XRef)
-        result = list(store.using(XRef).find(
-            (XRef.from_id, XRef.to_id, XRef.creator_id, XRef.metadata),
-            XRef.from_id.is_in(object_ids)))
-        bulk.load(Person, [r[2] for r in result])
-        return {
-            (r[0], r[1]): {
-                "creator": store.get(Person, r[2]), "metadata": r[3]}
-            for r in result}
+        rows = list(store.using(XRef).find(
+            (XRef.from_type, XRef.from_id, XRef.to_type, XRef.to_id,
+             XRef.creator_id, XRef.metadata),
+            Or(*[
+                And(XRef.from_type == id[0], XRef.from_id == id[1])
+                for id in object_ids])))
+        bulk.load(Person, [row[4] for row in rows])
+        result = {}
+        for row in rows:
+            result.setdefault((row[0], row[1]), {})[(row[2], row[3])] = {
+                "creator": store.get(Person, row[4]) if row[4] else None,
+                "metadata": row[5]}
+        return result
 
-    def findIDs(self, object_id):
-        return [
-            [id for id in ids if id != object_id][0]
-            for ids in self.findByIDs([object_id]).keys()]
+    def findFrom(self, object_id):
+        return self.findFromMultiple([object_id]).get(object_id, {})

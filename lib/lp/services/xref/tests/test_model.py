@@ -21,45 +21,59 @@ class TestXRefSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_findByIDs(self):
+    def test_findFrom(self):
         creator = self.factory.makePerson()
-        getUtility(IXRefSet).createByIDs(
-            {('bar', 'foo'): {'creator': creator, 'metadata': {'test': 1234}},
-             ('foo', 'baz'): {'creator': creator, 'metadata': {'test': 2468}}})
+        getUtility(IXRefSet).create({
+            ('a', 'bar'): {
+                ('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},
+            ('b', 'foo'): {
+                ('a', 'baz'): {'creator': creator, 'metadata': {'test': 2}}},
+            })
 
         with StormStatementRecorder() as recorder:
-            bar_refs = getUtility(IXRefSet).findByIDs(['bar'])
+            bar_refs = getUtility(IXRefSet).findFrom(('a', 'bar'))
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {('bar', 'foo'): {'creator': creator, 'metadata': {'test': 1234}}},
+            {('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},
             bar_refs)
 
         with StormStatementRecorder() as recorder:
-            foo_refs = getUtility(IXRefSet).findByIDs(['foo'])
+            foo_refs = getUtility(IXRefSet).findFrom(('b', 'foo'))
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {('foo', 'bar'): {'creator': creator, 'metadata': {'test': 1234}},
-             ('foo', 'baz'): {'creator': creator, 'metadata': {'test': 2468}}},
+            {('a', 'bar'): {'creator': creator, 'metadata': {'test': 1}},
+             ('a', 'baz'): {'creator': creator, 'metadata': {'test': 2}}},
             foo_refs)
 
         with StormStatementRecorder() as recorder:
-            bar_refs = getUtility(IXRefSet).findByIDs(['baz'])
+            bar_refs = getUtility(IXRefSet).findFrom(('a', 'baz'))
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {('baz', 'foo'): {'creator': creator, 'metadata': {'test': 2468}}},
+            {('b', 'foo'): {'creator': creator, 'metadata': {'test': 2}}},
             bar_refs)
 
         with StormStatementRecorder() as recorder:
-            bar_baz_refs = getUtility(IXRefSet).findByIDs(['bar', 'baz'])
+            bar_baz_refs = getUtility(IXRefSet).findFromMultiple(
+                [('a', 'bar'), ('a', 'baz')])
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {(k[1], k[0]): v for k, v in foo_refs.items()}, bar_baz_refs)
+            {('a', 'bar'): {
+                ('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},
+             ('a', 'baz'): {
+                ('b', 'foo'): {'creator': creator, 'metadata': {'test': 2}}}},
+             bar_baz_refs)
 
-    def test_deleteByIDs(self):
-        getUtility(IXRefSet).createByIDs(
-            {('bar', 'foo'): {}, ('foo', 'baz'): {}})
-        self.assertEqual(['bar', 'baz'], getUtility(IXRefSet).findIDs('foo'))
+    def test_delete(self):
+        getUtility(IXRefSet).create({
+            ('a', 'bar'): {('b', 'foo'): {}},
+            ('b', 'foo'): {('a', 'baz'): {}},
+            })
+        self.assertContentEqual(
+            [('a', 'bar'), ('a', 'baz')],
+            getUtility(IXRefSet).findFrom(('b', 'foo')).keys())
         with StormStatementRecorder() as recorder:
-            getUtility(IXRefSet).deleteByIDs([['foo', 'bar']])
+            getUtility(IXRefSet).delete({('b', 'foo'): [('a', 'bar')]})
         self.assertThat(recorder, HasQueryCount(Equals(1)))
-        self.assertEqual(['baz'], getUtility(IXRefSet).findIDs('foo'))
+        self.assertEqual(
+            [('a', 'baz')],
+            getUtility(IXRefSet).findFrom(('b', 'foo')).keys())
