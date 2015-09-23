@@ -8,7 +8,9 @@ __metaclass__ = type
 from testtools.matchers import Equals
 from zope.component import getUtility
 
+from lp.services.database.interfaces import IStore
 from lp.services.xref.interfaces import IXRefSet
+from lp.services.xref.model import XRef
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -20,6 +22,25 @@ from lp.testing.matchers import HasQueryCount
 class TestXRefSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_create_set_int_columns(self):
+        # The string ID columns have integers equivalents for quick and
+        # easy joins to integer PKs. They're set automatically when the
+        # string ID looks like an integer.
+        getUtility(IXRefSet).create({
+            ('a', '1234'): {('b', 'foo'): {}, ('b', '2468'): {}},
+            ('a', '12ab'): {('b', '1234'): {}, ('b', 'foo'): {}}})
+        rows = IStore(XRef).find(
+            (XRef.from_type, XRef.from_id, XRef.from_id_int, XRef.to_type,
+             XRef.to_id, XRef.to_id_int),
+            XRef.from_type == 'a')
+        self.assertContentEqual(
+            [('a', '1234', 1234, 'b', 'foo', None),
+             ('a', '1234', 1234, 'b', '2468', 2468),
+             ('a', '12ab', None, 'b', '1234', 1234),
+             ('a', '12ab', None, 'b', 'foo', None)
+             ],
+            rows)
 
     def test_findFrom(self):
         creator = self.factory.makePerson()

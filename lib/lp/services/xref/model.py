@@ -27,19 +27,34 @@ from lp.services.xref.interfaces import IXRefSet
 
 
 class XRef(StormBase):
+    """Cross-reference between two objects.
+
+    For references to local objects (there is currently no other kind),
+    another reference in the opposite direction exists.
+
+    The to_id_int and from_id_int columns exist for efficient SQL joins.
+    They are set automatically when the ID looks like an integer.
+    """
 
     __storm_table__ = 'XRef'
     __storm_primary__ = "to_type", "to_id", "from_type", "from_id"
 
     to_type = Unicode(allow_none=False)
     to_id = Unicode(allow_none=False)
-    to_id_int = Int()
+    to_id_int = Int()  # For efficient joins.
     from_type = Unicode(allow_none=False)
     from_id = Unicode(allow_none=False)
-    from_id_int = Int()
+    from_id_int = Int()  # For efficient joins.
     creator_id = Int(name="creator")
     creator = Reference(creator_id, "Person.id")
     metadata = JSON()
+
+
+def _int_or_none(s):
+    if s.isdigit():
+        return int(s)
+    else:
+        return None
 
 
 @implementer(IXRefSet)
@@ -48,17 +63,21 @@ class XRefSet:
     def create(self, xrefs):
         # All references are currently to local objects, so add
         # backlinks as well to keep queries in both directions quick.
+        # The *_id_int columns are also set if the ID looks like an int.
         rows = []
         for from_, tos in xrefs.items():
             for to, props in tos.items():
                 rows.append((
-                    from_[0], from_[1], to[0], to[1], props.get('creator'),
-                    props.get('metadata')))
+                    from_[0], from_[1], _int_or_none(from_[1]),
+                    to[0], to[1], _int_or_none(to[1]),
+                    props.get('creator'), props.get('metadata')))
                 rows.append((
-                    to[0], to[1], from_[0], from_[1], props.get('creator'),
-                    props.get('metadata')))
+                    to[0], to[1], _int_or_none(to[1]),
+                    from_[0], from_[1], _int_or_none(from_[1]),
+                    props.get('creator'), props.get('metadata')))
         bulk.create(
-            (XRef.from_type, XRef.from_id, XRef.to_type, XRef.to_id,
+            (XRef.from_type, XRef.from_id, XRef.from_id_int,
+             XRef.to_type, XRef.to_id, XRef.to_id_int,
              XRef.creator, XRef.metadata), rows)
 
     def delete(self, xrefs):
