@@ -2012,7 +2012,14 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description', 'enabled', 'publish']
+    field_names = [
+        'displayname',
+        'description',
+        'enabled',
+        'publish',
+        'build_debug_symbols',
+        'publish_debug_symbols',
+        ]
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
     page_title = 'Change details'
@@ -2051,8 +2058,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
         'private',
         'suppress_subscription_notifications',
         'require_virtualized',
-        'build_debug_symbols',
-        'publish_debug_symbols',
         'permit_obsolete_series_uploads',
         'authorized_size',
         'relative_build_score',

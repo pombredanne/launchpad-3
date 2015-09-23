@@ -1449,26 +1449,29 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
         super(TestBuildDebugSymbols, self).setUp()
         self.archive = self.factory.makeArchive()
 
-    def setBuildDebugSymbols(self, archive, build_debug_symbols):
-        """Helper function."""
-        archive.build_debug_symbols = build_debug_symbols
-
     def test_build_debug_symbols_is_public(self):
         # Anyone can see the attribute.
         login(ANONYMOUS)
         self.assertFalse(self.archive.build_debug_symbols)
 
-    def test_owner_cannot_set_build_debug_symbols(self):
-        # The archive owner cannot set it.
-        login_person(self.archive.owner)
+    def test_non_owner_cannot_set_build_debug_symbols(self):
+        # A non-owner cannot set it.
+        login_person(self.factory.makePerson())
         self.assertRaises(
-            Unauthorized, self.setBuildDebugSymbols, self.archive, True)
+            Unauthorized, setattr, self.archive, "build_debug_symbols", True)
 
-    def test_commercial_admin_can_set_build_debug_symbols(self):
-        # A commercial admin can set it.
+    def test_owner_can_set_build_debug_symbols(self):
+        # The archive owner can set it.
+        login_person(self.archive.owner)
+        self.archive.build_debug_symbols = True
+        self.assertTrue(self.archive.build_debug_symbols)
+
+    def test_commercial_admin_cannot_set_build_debug_symbols(self):
+        # A commercial admin cannot set it.
         with celebrity_logged_in('commercial_admin'):
-            self.setBuildDebugSymbols(self.archive, True)
-            self.assertTrue(self.archive.build_debug_symbols)
+            self.assertRaises(
+                Unauthorized, setattr,
+                self.archive, "build_debug_symbols", True)
 
 
 class TestAddArchiveDependencies(TestCaseWithFactory):
