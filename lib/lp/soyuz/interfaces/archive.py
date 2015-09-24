@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ALLOW_RELEASE_BUILDS',
     'AlreadySubscribed',
+    'ArchiveAlreadyDeleted',
     'ArchiveDependencyError',
     'ArchiveDisabled',
     'ArchiveNotPrivate',

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
@@ -30,17 +30,23 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implementer
 
-from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_person,
+    )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.webapp.authorization import precache_permission_for_objects
 from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 
@@ -204,7 +210,17 @@ class ArchiveSubscriberSet:
 
     def getBySubscriberWithActiveToken(self, subscriber, archive=None):
         """See `IArchiveSubscriberSet`."""
-        return self._getBySubscriber(subscriber, archive, True, True)
+        result = self._getBySubscriber(subscriber, archive, True, True)
+
+        def eager_load(rows):
+            subscriptions = map(itemgetter(0), rows)
+            precache_permission_for_objects(
+                None, 'launchpad.View', subscriptions)
+            archives = load_related(Archive, subscriptions, ['archive_id'])
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                [archive.ownerID for archive in archives], need_validity=True))
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getByArchive(self, archive, current_only=True):
         """See `IArchiveSubscriberSet`."""

@@ -119,14 +119,11 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.feeds.browser import (
     BranchFeedLink,
@@ -516,11 +513,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        candidates = list(self.context.landing_candidates)
-        branches = load_related(
-            Branch, candidates, ['source_branchID', 'prerequisite_branchID'])
-        GenericBranchCollection.preloadVisibleStackedOnBranches(
-            branches, self.user)
+        candidates = self.context.getPrecachedLandingCandidates(self.user)
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 

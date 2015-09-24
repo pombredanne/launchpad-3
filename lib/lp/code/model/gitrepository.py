@@ -24,6 +24,7 @@ from storm.databases.postgres import Returning
 from storm.expr import (
     And,
     Coalesce,
+    Desc,
     Insert,
     Join,
     Not,
@@ -415,6 +416,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             GitRef,
             GitRef.repository_id == self.id,
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
+
+    @property
+    def branches_by_date(self):
+        """See `IGitRepository`."""
+        return self.branches.order_by(Desc(GitRef.committer_date))
 
     @property
     def default_branch(self):

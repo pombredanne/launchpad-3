@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views related to archive subscriptions."""
@@ -14,10 +14,7 @@ __all__ = [
     ]
 
 import datetime
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import attrgetter
 
 import pytz
 from zope.component import getUtility
@@ -43,13 +40,11 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.database.bulk import load_related
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.services.webapp.authorization import precache_permission_for_objects
 from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
@@ -64,7 +59,6 @@ from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet,
     IPersonalArchiveSubscription,
     )
-from lp.soyuz.model.archive import Archive
 
 
 def archive_subscription_ui_adapter(archive_subscription):
@@ -329,13 +323,10 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         subs_with_tokens = subscriber_set.getBySubscriberWithActiveToken(
             self.context)
 
-        subscriptions = map(itemgetter(0), subs_with_tokens)
-        precache_permission_for_objects(None, 'launchpad.View', subscriptions)
-        archives = load_related(Archive, subscriptions, ['archive_id'])
-        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-            [archive.ownerID for archive in archives], need_validity=True))
+        # ArchiveSubscriber.archive is preloaded.
+        archives = [subscriber.archive for subscriber, _ in subs_with_tokens]
         for archive in archives:
-            get_property_cache(archive)._known_subscribers = [self.user]
+            get_property_cache(archive)._known_subscribers = [self.context]
 
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL. Note that we need to ensure that only one

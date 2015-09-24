@@ -474,10 +474,24 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        return Store.of(self).find(
+            BranchMergeProposal, BranchMergeProposal.target_branch == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getPrecachedLandingCandidates(self, user):
+        """See `IBranch`."""
+        # Circular import.
+        from lp.code.model.branchcollection import GenericBranchCollection
+
+        def eager_load(rows):
+            branches = load_related(
+                Branch, rows, ['source_branchID', 'prerequisite_branchID'])
+            GenericBranchCollection.preloadVisibleStackedOnBranches(
+                branches, user)
+
+        return DecoratedResultSet(
+            self.landing_candidates, pre_iter_hook=eager_load)
 
     @property
     def dependent_branches(self):

@@ -236,6 +236,10 @@ class IGitRepositoryView(Interface):
         # Really IGitRef, patched in _schema_circular_imports.py.
         value_type=Reference(Interface)))
 
+    branches_by_date = Attribute(
+        "The branch references present in this repository, ordered by last "
+        "commit date.")
+
     subscriptions = exported(CollectionField(
         title=_("GitSubscriptions associated with this repository."),
         readonly=True,
