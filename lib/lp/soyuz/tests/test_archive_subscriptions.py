@@ -191,7 +191,7 @@ class PersonArchiveSubscriptions(TestCaseWithFactory):
                 view = create_initialized_view(
                     subscriber, '+archivesubscriptions', principal=subscriber)
                 view.render()
-        self.assertThat(recorder, HasQueryCount(Equals(13)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
 
     def test_getArchiveSubscriptions(self):
         # Anyone with 'View' permission on a given person is able to

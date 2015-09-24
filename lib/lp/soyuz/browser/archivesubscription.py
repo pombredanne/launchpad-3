@@ -320,8 +320,8 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         cleaner.
         """
         subscriber_set = getUtility(IArchiveSubscriberSet)
-        subs_with_tokens = subscriber_set.getBySubscriberWithActiveToken(
-            self.context)
+        subs_with_tokens = list(
+            subscriber_set.getBySubscriberWithActiveToken(self.context))
 
         # ArchiveSubscriber.archive is preloaded.
         archives = [subscriber.archive for subscriber, _ in subs_with_tokens]
