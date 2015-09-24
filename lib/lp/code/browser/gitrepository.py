@@ -26,7 +26,6 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from storm.expr import Desc
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
@@ -236,15 +235,10 @@ class GitRefBatchNavigator(TableBatchNavigator):
     def __init__(self, view, context):
         self.context = context
         super(GitRefBatchNavigator, self).__init__(
-            self._branches, view.request,
+            self.context.branches_by_date, view.request,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 3
-
-    @property
-    def _branches(self):
-        from lp.code.model.gitref import GitRef
-        return self.context.branches.order_by(Desc(GitRef.committer_date))
 
     @property
     def table_class(self):

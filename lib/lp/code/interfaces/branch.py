@@ -568,6 +568,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             readonly=True,
             value_type=Reference(Interface)))
 
+    def getPrecachedLandingCandidates(user):
+        """Return precached landing candidates.
+
+        Source and prerequisite branches are preloaded, along with the
+        related chains of stacked-on branches visible to `user`.
+        """
+
     def isBranchMergeable(other_branch):
         """Is the other branch mergeable into this branch (or vice versa)?"""
 
