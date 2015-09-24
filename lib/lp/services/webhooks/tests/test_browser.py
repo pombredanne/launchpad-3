@@ -27,6 +27,7 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_view
 
+
 breadcrumbs_tag = soupmatchers.Tag(
     'breadcrumbs', 'ol', attrs={'class': 'breadcrumbs'})
 webhooks_page_crumb_tag = soupmatchers.Tag(
@@ -47,12 +48,28 @@ batch_nav_tag = soupmatchers.Tag(
     'batch nav links', 'td', attrs={'class': 'batch-navigation-links'})
 
 
+class GitRepositoryTestHelpers:
+
+    event_type = "git:push:0.1"
+
+    def makeTarget(self):
+        return self.factory.makeGitRepository()
+
+
+class BranchTestHelpers:
+
+    event_type = "bzr:push:0.1"
+
+    def makeTarget(self):
+        return self.factory.makeBranch()
+
+
 class WebhookTargetViewTestHelpers:
 
     def setUp(self):
         super(WebhookTargetViewTestHelpers, self).setUp()
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
-        self.target = self.factory.makeGitRepository()
+        self.target = self.makeTarget()
         self.owner = self.target.owner
         login_person(self.owner)
 
@@ -65,7 +82,7 @@ class WebhookTargetViewTestHelpers:
         return view
 
 
-class TestWebhooksView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
+class TestWebhooksViewBase(WebhookTargetViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -125,7 +142,19 @@ class TestWebhooksView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
-class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
+class TestWebhooksViewGitRepository(
+    TestWebhooksViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhooksViewBranch(
+    TestWebhooksViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookAddViewBase(WebhookTargetViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -150,7 +179,7 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
             form={
                 "field.delivery_url": "http://example.com/test",
                 "field.active": "on", "field.event_types-empty-marker": "1",
-                "field.event_types": "git:push:0.1",
+                "field.event_types": self.event_type,
                 "field.actions.new": "Add webhook"})
         self.assertEqual([], view.errors)
         hook = self.target.webhooks.one()
@@ -161,7 +190,7 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
                 registrant=self.owner,
                 delivery_url="http://example.com/test",
                 active=True,
-                event_types=["git:push:0.1"]))
+                event_types=[self.event_type]))
 
     def test_rejects_bad_scheme(self):
         transaction.commit()
@@ -176,12 +205,24 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
         self.assertIs(None, self.target.webhooks.one())
 
 
+class TestWebhookAddViewGitRepository(
+    TestWebhookAddViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookAddViewBranch(
+    TestWebhookAddViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
 class WebhookViewTestHelpers:
 
     def setUp(self):
         super(WebhookViewTestHelpers, self).setUp()
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
-        self.target = self.factory.makeGitRepository()
+        self.target = self.makeTarget()
         self.owner = self.target.owner
         self.webhook = self.factory.makeWebhook(
             target=self.target, delivery_url=u'http://example.com/original')
@@ -196,7 +237,7 @@ class WebhookViewTestHelpers:
         return view
 
 
-class TestWebhookView(WebhookViewTestHelpers, TestCaseWithFactory):
+class TestWebhookViewBase(WebhookViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -249,7 +290,19 @@ class TestWebhookView(WebhookViewTestHelpers, TestCaseWithFactory):
                 event_types=[]))
 
 
-class TestWebhookDeleteView(WebhookViewTestHelpers, TestCaseWithFactory):
+class TestWebhookViewGitRepository(
+    TestWebhookViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookViewBranch(
+    TestWebhookViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookDeleteViewBase(WebhookViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -281,3 +334,15 @@ class TestWebhookDeleteView(WebhookViewTestHelpers, TestCaseWithFactory):
             form={"field.actions.delete": "Delete webhook"})
         self.assertEqual([], view.errors)
         self.assertIs(None, self.target.webhooks.one())
+
+
+class TestWebhookDeleteViewGitRepository(
+    TestWebhookDeleteViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookDeleteViewBranch(
+    TestWebhookDeleteViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass

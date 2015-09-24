@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import datetime
@@ -17,6 +17,11 @@ from bzrlib.uncommit import uncommit
 from fixtures import TempDir
 import pytz
 from storm.locals import Store
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    MatchesStructure,
+    )
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -44,6 +49,7 @@ from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import (
@@ -741,6 +747,32 @@ class TestSetRecipeStale(BzrSyncTestCase):
         switch_dbuser("branchscanner")
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(False, recipe.is_stale)
+
+
+class TestTriggerWebhooks(BzrSyncTestCase):
+    """Test triggering of webhooks."""
+
+    def test_triggers_webhooks(self):
+        # On tip change, any relevant webhooks are triggered.
+        self.useFixture(FeatureFixture({"code.bzr.webhooks.enabled": "on"}))
+        self.syncAndCount()
+        old_revid = self.db_branch.last_scanned_id
+        with dbuser(config.launchpad.dbuser):
+            hook = self.factory.makeWebhook(
+                target=self.db_branch, event_types=["bzr:push:0.1"])
+        self.commitRevision()
+        new_revid = self.bzr_branch.last_revision()
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        delivery = hook.deliveries.one()
+        self.assertThat(
+            delivery,
+            MatchesStructure(
+                event_type=Equals("bzr:push:0.1"),
+                payload=MatchesDict({
+                    "bzr_branch_path": Equals(self.db_branch.unique_name),
+                    "old": Equals({"revision_id": old_revid}),
+                    "new": Equals({"revision_id": new_revid}),
+                    })))
 
 
 class TestRevisionProperty(BzrSyncTestCase):

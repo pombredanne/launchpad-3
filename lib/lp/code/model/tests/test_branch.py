@@ -1442,6 +1442,13 @@ class TestBranchDeletion(TestCaseWithFactory):
         )
         self.branch.destroySelf(break_references=True)
 
+    def test_related_webhooks_deleted(self):
+        webhook = self.factory.makeWebhook(target=self.branch)
+        webhook.ping()
+        self.branch.destroySelf()
+        transaction.commit()
+        self.assertRaises(LostObjectError, getattr, webhook, 'target')
+
 
 class TestBranchDeletionConsequences(TestCase):
     """Test determination and application of branch deletion consequences."""

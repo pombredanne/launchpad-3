@@ -105,6 +105,7 @@ from lp.services.webapp.escaping import (
     structured,
     )
 from lp.services.webapp.interfaces import ITableBatchNavigator
+from lp.services.webhooks.interfaces import IWebhookTarget
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -1125,7 +1126,7 @@ class IBranchEditableAttributes(Interface):
             vocabulary=ControlFormat))
 
 
-class IBranchEdit(Interface):
+class IBranchEdit(IWebhookTarget):
     """IBranch attributes that require launchpad.Edit permission."""
 
     @call_with(user=REQUEST_USER)

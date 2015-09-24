@@ -115,17 +115,17 @@ class TestWebhookPermissions(TestCaseWithFactory):
             expected_set_permissions, checker.set_permissions, 'set')
 
 
-class TestWebhookSet(TestCaseWithFactory):
+class TestWebhookSetBase:
 
     layer = DatabaseFunctionalLayer
 
     def test_new(self):
-        target = self.factory.makeGitRepository()
+        target = self.makeTarget()
         login_person(target.owner)
         person = self.factory.makePerson()
         hook = getUtility(IWebhookSet).new(
-            target, person, u'http://path/to/something', ['git:push'], True,
-            u'sekrit')
+            target, person, u'http://path/to/something', [self.event_type],
+            True, u'sekrit')
         Store.of(hook).flush()
         self.assertEqual(target, hook.target)
         self.assertEqual(person, hook.registrant)
@@ -134,7 +134,7 @@ class TestWebhookSet(TestCaseWithFactory):
         self.assertEqual(u'http://path/to/something', hook.delivery_url)
         self.assertEqual(True, hook.active)
         self.assertEqual(u'sekrit', hook.secret)
-        self.assertEqual(['git:push'], hook.event_types)
+        self.assertEqual([self.event_type], hook.event_types)
 
     def test_getByID(self):
         hook1 = self.factory.makeWebhook()
@@ -148,8 +148,8 @@ class TestWebhookSet(TestCaseWithFactory):
                 None, getUtility(IWebhookSet).getByID(1234))
 
     def test_findByTarget(self):
-        target1 = self.factory.makeGitRepository()
-        target2 = self.factory.makeGitRepository()
+        target1 = self.makeTarget()
+        target2 = self.makeTarget()
         for target, name in ((target1, 'one'), (target2, 'two')):
             for i in range(3):
                 self.factory.makeWebhook(
@@ -168,7 +168,7 @@ class TestWebhookSet(TestCaseWithFactory):
                 getUtility(IWebhookSet).findByTarget(target2)])
 
     def test_delete(self):
-        target = self.factory.makeGitRepository()
+        target = self.makeTarget()
         login_person(target.owner)
         hooks = []
         for i in range(3):
@@ -195,21 +195,21 @@ class TestWebhookSet(TestCaseWithFactory):
 
     def test_trigger(self):
         owner = self.factory.makePerson()
-        target1 = self.factory.makeGitRepository(owner=owner)
-        target2 = self.factory.makeGitRepository(owner=owner)
+        target1 = self.makeTarget(owner=owner)
+        target2 = self.makeTarget(owner=owner)
         hook1a = self.factory.makeWebhook(
             target=target1, event_types=[])
         hook1b = self.factory.makeWebhook(
-            target=target1, event_types=['git:push:0.1'])
+            target=target1, event_types=[self.event_type])
         hook2a = self.factory.makeWebhook(
-            target=target2, event_types=['git:push:0.1'])
+            target=target2, event_types=[self.event_type])
         hook2b = self.factory.makeWebhook(
-            target=target2, event_types=['git:push:0.1'], active=False)
+            target=target2, event_types=[self.event_type], active=False)
 
         # Only webhooks subscribed to the relevant target and event type
         # are triggered.
         getUtility(IWebhookSet).trigger(
-            target1, 'git:push:0.1', {'some': 'payload'})
+            target1, self.event_type, {'some': 'payload'})
         with admin_logged_in():
             self.assertThat(list(hook1a.deliveries), HasLength(0))
             self.assertThat(list(hook1b.deliveries), HasLength(1))
@@ -220,7 +220,7 @@ class TestWebhookSet(TestCaseWithFactory):
 
         # Disabled webhooks aren't triggered.
         getUtility(IWebhookSet).trigger(
-            target2, 'git:push:0.1', {'other': 'payload'})
+            target2, self.event_type, {'other': 'payload'})
         with admin_logged_in():
             self.assertThat(list(hook1a.deliveries), HasLength(0))
             self.assertThat(list(hook1b.deliveries), HasLength(1))
@@ -228,3 +228,19 @@ class TestWebhookSet(TestCaseWithFactory):
             self.assertThat(list(hook2b.deliveries), HasLength(0))
             delivery = hook2a.deliveries.one()
             self.assertEqual(delivery.payload, {'other': 'payload'})
+
+
+class TestWebhookSetGitRepository(TestWebhookSetBase, TestCaseWithFactory):
+
+    event_type = 'git:push:0.1'
+
+    def makeTarget(self, owner=None):
+        return self.factory.makeGitRepository(owner=owner)
+
+
+class TestWebhookSetBranch(TestWebhookSetBase, TestCaseWithFactory):
+
+    event_type = 'bzr:push:0.1'
+
+    def makeTarget(self, owner=None):
+        return self.factory.makeBranch(owner=owner)

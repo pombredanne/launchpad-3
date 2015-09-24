@@ -179,10 +179,12 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
+from lp.services.webhooks.interfaces import IWebhookSet
+from lp.services.webhooks.model import WebhookTargetMixin
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
-class Branch(SQLBase, BzrIdentityMixin):
+class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
     _table = 'Branch'
 
@@ -1331,6 +1333,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         self._deleteBranchSubscriptions()
         self._deleteJobs()
+        getUtility(IWebhookSet).delete(self.webhooks)
 
         # Now destroy the branch.
         branch_id = self.id

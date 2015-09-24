@@ -18,8 +18,8 @@
       <div>
         <div class="beta" style="display: inline">
           <img class="beta" alt="[BETA]" src="/@@/beta" /></div>
-        The only currently supported events are Git pushes. We'll be
-        rolling out webhooks for more soon.
+        The only currently supported events are Git and Bazaar pushes. We'll
+        be rolling out webhooks for more soon.
       </div>
       <ul class="horizontal">
         <li>
