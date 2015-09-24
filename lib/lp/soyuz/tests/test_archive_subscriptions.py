@@ -3,6 +3,7 @@
 
 """Test Archive features."""
 
+from fixtures import FakeLogger
 from storm.store import Store
 from testtools.matchers import Equals
 from zope.security.interfaces import Unauthorized
@@ -161,6 +162,7 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
         self.assertIsNotNone(find_tag_by_id(content, 'ppa-install'))
 
     def test_unauthorized_subscriber_for_plus_packages(self):
+        self.useFixture(FakeLogger())
         with person_logged_in(self.owner):
             self.archive.newSubscription(
                 self.subscriber, registrant=self.archive.owner)
@@ -191,7 +193,7 @@ class PersonArchiveSubscriptions(TestCaseWithFactory):
                 view = create_initialized_view(
                     subscriber, '+archivesubscriptions', principal=subscriber)
                 view.render()
-        self.assertThat(recorder, HasQueryCount(Equals(13)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
 
     def test_getArchiveSubscriptions(self):
         # Anyone with 'View' permission on a given person is able to
