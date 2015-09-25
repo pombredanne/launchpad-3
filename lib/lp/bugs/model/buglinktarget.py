@@ -40,11 +40,10 @@ class BugLinkTargetMixin:
             raise Unauthorized(
                 "cannot link to a private bug you don't have access to")
         if bug in self.bugs:
-            # XXX: No longer returns the buglink.
-            return
+            return False
         buglink = self.createBugLink(bug)
         notify(ObjectCreatedEvent(buglink))
-        return buglink
+        return True
 
     def unlinkBug(self, bug):
         """See IBugLinkTarget."""
@@ -62,4 +61,5 @@ class BugLinkTargetMixin:
         buglink = self.deleteBugLink(bug)
         if buglink is not None:
             notify(ObjectDeletedEvent(buglink))
-        return buglink
+            return True
+        return False

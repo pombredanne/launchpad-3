@@ -358,14 +358,14 @@ bug.
     >>> bug7.isSubscribed(firefox_question.owner)
     False
     >>> firefox_question.linkBug(bug7)
-    <QuestionBug...>
+    True
     >>> bug7.isSubscribed(firefox_question.owner)
     True
 
 When the link is removed, the owner is unsubscribed.
 
     >>> firefox_question.unlinkBug(bug7)
-    <QuestionBug...>
+    True
     >>> bug7.isSubscribed(firefox_question.owner)
     False
 

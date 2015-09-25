@@ -669,11 +669,11 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def unlinkBug(self, bug):
         """See `IBugLinkTarget`."""
-        buglink = BugLinkTargetMixin.unlinkBug(self, bug)
-        if buglink:
-            # Additionnaly, unsubscribe the question's owner to the bug
+        unlinked = BugLinkTargetMixin.unlinkBug(self, bug)
+        if unlinked:
+            # Additionally, unsubscribe the question's owner from the bug
             bug.unsubscribe(self.owner, self.owner)
-        return buglink
+        return unlinked
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
