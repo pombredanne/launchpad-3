@@ -500,10 +500,18 @@ class ActiveReviewSortingTestGit(
     """Test the sorting of the active review groups for Git."""
 
 
-class ActiveReviewsWithPrivateBranchesMixin:
-    """Test reviews of private branches."""
+class ActiveReviewsOfBranchesMixin:
+    """Test reviews of branches."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_no_proposal_message(self):
+        branch = self._makeBranch()
+        view = create_initialized_view(
+            branch, name='+activereviews', rootsite='code')
+        self.assertEqual(
+            "%s has no active code reviews." % branch.display_name,
+            view.no_proposal_message)
 
     def test_private_branch_owner(self):
         # Merge proposals against private branches are visible to
@@ -518,14 +526,14 @@ class ActiveReviewsWithPrivateBranchesMixin:
             self.assertEqual([mp], list(view.getProposals()))
 
 
-class ActiveReviewsWithPrivateBranchesBzr(
-    ActiveReviewsWithPrivateBranchesMixin, BzrMixin, TestCaseWithFactory):
-    """Test reviews of private Bazaar branches."""
+class ActiveReviewsOfBranchesBzr(
+    ActiveReviewsOfBranchesMixin, BzrMixin, TestCaseWithFactory):
+    """Test reviews of Bazaar branches."""
 
 
-class ActiveReviewsWithPrivateBranchesGit(
-    ActiveReviewsWithPrivateBranchesMixin, GitMixin, TestCaseWithFactory):
-    """Test reviews of references in private Git repositories."""
+class ActiveReviewsOfBranchesGit(
+    ActiveReviewsOfBranchesMixin, GitMixin, TestCaseWithFactory):
+    """Test reviews of references in Git repositories."""
 
 
 class PersonActiveReviewsPerformanceMixin:
