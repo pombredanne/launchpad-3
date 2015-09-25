@@ -553,14 +553,6 @@
             interface="lp.bugs.interfaces.bugbranch.IBugBranchSet"/>
     </securedutility>
 
-    <!-- BugCve -->
-
-    <class
-        class="lp.bugs.model.cve.BugCve">
-        <allow
-            interface="lp.bugs.interfaces.bugcve.IBugCve"/>
-    </class>
-
         <!-- CVE -->
 
         <class
