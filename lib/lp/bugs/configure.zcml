@@ -83,10 +83,10 @@
         for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.karma.cve_added"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
@@ -831,10 +831,10 @@
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_linked_to_bug"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_unlinked_from_bug"/>
     <subscriber
         for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"
