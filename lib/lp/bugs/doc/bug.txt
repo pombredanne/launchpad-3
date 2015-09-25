@@ -1,4 +1,4 @@
-ugs in Malone
+Bugs in Malone
 ==============
 
 This document describes what a Bug is in Malone, and provides some (currently
