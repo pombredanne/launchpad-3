@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'cannot_modify_suite',
     'FORMAT_TO_SUBCOMPONENT',
     'GLOBAL_PUBLISHER_LOCK',
     'Publisher',
@@ -189,6 +190,13 @@ def get_packages_path(config, suite_name, component, arch, subcomp=None):
         return os.path.join(component_root, arch_path, "Packages")
     else:
         return os.path.join(component_root, subcomp, arch_path, "Packages")
+
+
+def cannot_modify_suite(archive, distroseries, pocket):
+    """Return True for Release pockets of stable series in primary archives."""
+    return (not distroseries.isUnstable() and
+            not archive.allowUpdatesToReleasePocket() and
+            pocket == PackagePublishingPocket.RELEASE)
 
 
 class I18nIndex(_multivalued):
@@ -482,7 +490,7 @@ class Publisher(object):
         for distroseries, pocket in chain(source_suites, binary_suites):
             if self.isDirty(distroseries, pocket):
                 continue
-            if (self.cannotModifySuite(distroseries, pocket)
+            if (cannot_modify_suite(self.archive, distroseries, pocket)
                 or not self.isAllowed(distroseries, pocket)):
                 # We don't want to mark release pockets dirty in a
                 # stable distroseries, no matter what other bugs
@@ -725,12 +733,6 @@ class Publisher(object):
         if separate_long_descriptions:
             translation_en.close()
 
-    def cannotModifySuite(self, distroseries, pocket):
-        """Return True if the distroseries is stable and pocket is release."""
-        return (not distroseries.isUnstable() and
-                not self.archive.allowUpdatesToReleasePocket() and
-                pocket == PackagePublishingPocket.RELEASE)
-
     def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
         """Last check before publishing a dirty suite.
 
@@ -738,7 +740,7 @@ class Publisher(object):
         in RELEASE pocket (primary archives) we certainly have a problem,
         better stop.
         """
-        if self.cannotModifySuite(distroseries, pocket):
+        if cannot_modify_suite(self.archive, distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
