@@ -86,8 +86,8 @@ class IBugLinkTarget(Interface):
     def linkBug(bug):
         """Link the object with this bug.
 
-        If a new IBugLink is created by this method, an ObjectCreatedEvent
-        and ObjectLinkedEvent are sent.
+        If a new IBugLink is created by this method, an ObjectLinkedEvent is
+        sent for each end.
 
         :return: True if a new link was created, False if it already existed.
         """
@@ -95,8 +95,8 @@ class IBugLinkTarget(Interface):
     def unlinkBug(bug):
         """Remove any link between this object and the bug.
 
-        If an IBugLink is removed by this method, an ObjectDeletedEvent
-        and ObjectUnlinkedEvent sent.
+        If an IBugLink is removed by this method, an ObjectUnlinkedEvent
+        is sent for each end.
 
         :return: True if a link was deleted, False if it didn't exist.
         """

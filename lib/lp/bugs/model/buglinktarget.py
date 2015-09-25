@@ -80,8 +80,8 @@ class BugLinkTargetMixin:
                 "cannot unlink a private bug you don't have access to")
 
         # see if a relevant bug link exists, and if so, delete it
-        buglink = self.deleteBugLink(bug)
-        if buglink is not None:
+        removed = self.deleteBugLink(bug)
+        if removed:
             notify(ObjectUnlinkedEvent(bug, self, user=user))
             notify(ObjectUnlinkedEvent(self, bug, user=user))
             return True
