@@ -20,9 +20,8 @@
   </class>
 
     <subscriber
-        for=".interfaces.IQuestionBug
-             lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler=".karma.question_bug_added"
+        for=".interfaces.IQuestion lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+        handler=".karma.question_bug_linked"
         />
 
   <browser:page
