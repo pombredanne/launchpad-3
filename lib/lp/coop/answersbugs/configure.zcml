@@ -9,20 +9,16 @@
   i18n_domain="launchpad">
 <facet facet="answers">
 
-<subscriber
-   for="lp.bugs.interfaces.bugtask.IBugTask
-        lazr.lifecycle.interfaces.IObjectModifiedEvent"
-   handler=".notification.dispatch_linked_question_notifications"
-   />
+  <subscriber
+    for="lp.bugs.interfaces.bugtask.IBugTask
+         lazr.lifecycle.interfaces.IObjectModifiedEvent"
+    handler=".notification.dispatch_linked_question_notifications"
+    />
 
-  <class class=".model.QuestionBug">
-    <allow interface=".interfaces.IQuestionBug"/>
-  </class>
-
-    <subscriber
-        for=".interfaces.IQuestion lp.bugs.interfaces.buglink.IObjectLinkedEvent"
-        handler=".karma.question_bug_linked"
-        />
+  <subscriber
+    for="lp.answers.interfaces.question.IQuestion lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+    handler=".karma.question_bug_linked"
+    />
 
   <browser:page
     name="+makebug"

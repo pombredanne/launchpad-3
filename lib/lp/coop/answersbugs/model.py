@@ -8,13 +8,10 @@ __metaclass__ = type
 __all__ = ['QuestionBug']
 
 from sqlobject import ForeignKey
-from zope.interface import implementer
 
-from lp.coop.answersbugs.interfaces import IQuestionBug
 from lp.services.database.sqlbase import SQLBase
 
 
-@implementer(IQuestionBug)
 class QuestionBug(SQLBase):
     """A link between a question and a bug."""
 
