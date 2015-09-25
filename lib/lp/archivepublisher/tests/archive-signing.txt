@@ -430,6 +430,9 @@ keyserver.
     ...     content=open(inline_release_path).read())
     >>> inline_signature.fingerprint == expected_fingerprint
     True
+    >>> print inline_signature.plain_data
+    This is a fake release file.
+    <BLANKLINE>
 
 Finally, if we try to sign a repository for which the archive doesn't
 have a 'signing_key' set,  it raises an error.
