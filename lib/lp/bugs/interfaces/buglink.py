@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBugLink',
     'IBugLinkForm',
     'IBugLinkTarget',
     'IObjectLinkedEvent',
@@ -30,7 +29,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Choice,
-    Object,
     Set,
     )
 from zope.schema.interfaces import IContextSourceBinder
@@ -42,7 +40,6 @@ from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import BugField
 
 
@@ -60,17 +57,6 @@ class IObjectUnlinkedEvent(IObjectEvent):
     user = Attribute("The user who unlinked the object.")
 
 
-class IBugLink(IHasBug):
-    """An entity representing a link between a bug and its target."""
-
-    bug = BugField(title=_("The bug that is linked to."),
-                   required=True, readonly=True)
-    bugID = Attribute("Database id of the bug.")
-
-    target = Object(title=_("The object to which the bug is linked."),
-                    required=True, readonly=True, schema=Interface)
-
-
 class IBugLinkTarget(Interface):
     """An entity which can be linked to bugs.
 
@@ -86,7 +72,7 @@ class IBugLinkTarget(Interface):
     def linkBug(bug):
         """Link the object with this bug.
 
-        If a new IBugLink is created by this method, an ObjectLinkedEvent is
+        If a new link is created by this method, an ObjectLinkedEvent is
         sent for each end.
 
         :return: True if a new link was created, False if it already existed.
@@ -95,8 +81,8 @@ class IBugLinkTarget(Interface):
     def unlinkBug(bug):
         """Remove any link between this object and the bug.
 
-        If an IBugLink is removed by this method, an ObjectUnlinkedEvent
-        is sent for each end.
+        If a link is removed by this method, an ObjectUnlinkedEvent is
+        sent for each end.
 
         :return: True if a link was deleted, False if it didn't exist.
         """

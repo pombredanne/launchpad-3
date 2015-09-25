@@ -17,10 +17,7 @@ shouldn't have any bugs linked to it at the start of the test.)
     >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from lp.bugs.interfaces.buglink import (
-    ...     IBugLink,
-    ...     IBugLinkTarget,
-    ...     )
+    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
 
     >>> verifyObject(IBugLinkTarget, target)
     True
@@ -43,7 +40,7 @@ be used.
     >>> target.linkBug(bug1)
     False
 
-When a IBugLink is created, an IObjectLinkedEvent for each end should be
+When a bug link is created, an IObjectLinkedEvent for each end should be
 fired.
 
     >>> from zope.interface import Interface
@@ -67,7 +64,7 @@ fired.
     >>> linked_events[-1].other_object == bug2
     True
 
-Of course, if no new IBugLink is created, no events should be fired:
+Of course, if no new link is created, no events should be fired:
 
     >>> linked_events = []
     >>> target.linkBug(bug2)
@@ -122,7 +119,7 @@ This method is only available to registered users:
     >>> login('no-priv@canonical.com')
 
 The method returns whether the link existed. It should also send an
-IObjectUnlinkedEvent for each of the removed IBugLink:
+IObjectUnlinkedEvent for each of the removed link:
 
     >>> unlinked_events = []
     >>> unlinked_event_listener = TestEventListener(

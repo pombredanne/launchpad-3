@@ -18,8 +18,3 @@ class SpecificationBug(SQLBase):
         foreignKey='Specification', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug',
         notNull=True)
-
-    @property
-    def target(self):
-        """See IBugLink."""
-        return self.specification

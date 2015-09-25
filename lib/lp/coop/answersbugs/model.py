@@ -20,9 +20,3 @@ class QuestionBug(SQLBase):
     question = ForeignKey(
         dbName='question', foreignKey='Question', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-
-    @property
-    def target(self):
-        """See IBugLink."""
-        return self.question
-

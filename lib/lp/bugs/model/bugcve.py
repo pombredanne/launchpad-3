@@ -17,8 +17,3 @@ class BugCve(SQLBase):
     # db field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     cve = ForeignKey(dbName='cve', foreignKey='Cve', notNull=True)
-
-    @property
-    def target(self):
-        """See IBugLink."""
-        return self.cve
