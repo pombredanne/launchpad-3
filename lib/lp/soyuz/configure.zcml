@@ -380,7 +380,7 @@
                             enabled_restricted_processors
                             external_dependencies name
                             permit_obsolete_series_uploads
-                            private processors require_virtualized"/>
+                            private require_virtualized"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>

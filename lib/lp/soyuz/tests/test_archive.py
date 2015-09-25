@@ -63,6 +63,7 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
     CannotCopy,
+    CannotModifyArchiveProcessor,
     CannotUploadToPocket,
     CannotUploadToPPA,
     CannotUploadToSeries,
@@ -1077,11 +1078,11 @@ class TestProcessors(TestCaseWithFactory):
     """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestProcessors, self).setUp()
+        super(TestProcessors, self).setUp(user='foo.bar@canonical.com')
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
@@ -1136,8 +1137,45 @@ class TestProcessors(TestCaseWithFactory):
         self.archive.setProcessors(self.unrestricted_procs + [self.arm])
         self.assertContentEqual(
             self.unrestricted_procs + [self.arm], self.archive.processors)
-        self.archive.processors = []
+        self.archive.setProcessors([])
         self.assertContentEqual([], self.archive.processors)
+
+    def test_set_non_admin(self):
+        """Non-admins can only enable or disable unrestricted processors."""
+        self.archive.setProcessors(self.default_procs)
+        self.assertContentEqual(self.default_procs, self.archive.processors)
+        with person_logged_in(self.archive.owner) as owner:
+            # Adding arm is forbidden ...
+            self.assertRaises(
+                CannotModifyArchiveProcessor, self.archive.setProcessors,
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=owner)
+            # ... but removing amd64 is OK.
+            self.archive.setProcessors(
+                [self.default_procs[0]], check_permissions=True, user=owner)
+            self.assertContentEqual(
+                [self.default_procs[0]], self.archive.processors)
+        with admin_logged_in() as admin:
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=admin)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm], self.archive.processors)
+        with person_logged_in(self.archive.owner) as owner:
+            hppa = getUtility(IProcessorSet).getByName("hppa")
+            self.assertFalse(hppa.restricted)
+            # Adding hppa while removing arm is forbidden ...
+            self.assertRaises(
+                CannotModifyArchiveProcessor, self.archive.setProcessors,
+                [self.default_procs[0], hppa],
+                check_permissions=True, user=owner)
+            # ... but adding hppa while retaining arm is OK.
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm, hppa],
+                check_permissions=True, user=owner)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm, hppa],
+                self.archive.processors)
 
     def test_set_enabled_restricted_processors(self):
         """The deprecated enabled_restricted_processors property still works.

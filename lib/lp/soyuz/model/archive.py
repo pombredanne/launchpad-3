@@ -48,6 +48,7 @@ from zope.interface import (
     alsoProvides,
     implementer,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -139,6 +140,7 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
     ArchiveNotPrivate,
     CannotCopy,
+    CannotModifyArchiveProcessor,
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -2118,7 +2120,7 @@ class Archive(SQLBase):
 
     def _setEnabledRestrictedProcessors(self, value):
         """Set the restricted architectures this archive can build on."""
-        self.processors = (
+        self.setProcessors(
             [proc for proc in self.processors if not proc.restricted]
             + list(value))
 
@@ -2127,7 +2129,25 @@ class Archive(SQLBase):
 
     def enableRestrictedProcessor(self, processor):
         """See `IArchive`."""
-        self.processors = set(self.processors + [processor])
+        # This method can only be called by people with launchpad.Admin, so
+        # we don't need to check permissions again.
+        self.setProcessors(set(self.processors + [processor]))
+
+    @property
+    def available_processors(self):
+        """See `IArchive`."""
+        # Circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        clauses = [
+            Processor.id == DistroArchSeries.processor_id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            ]
+        if not self.permit_obsolete_series_uploads:
+            clauses.append(DistroSeries.status != SeriesStatus.OBSOLETE)
+        return Store.of(self).find(Processor, *clauses).config(distinct=True)
 
     def _getProcessors(self):
         return list(Store.of(self).find(
@@ -2135,17 +2155,37 @@ class Archive(SQLBase):
             Processor.id == ArchiveArch.processor_id,
             ArchiveArch.archive == self))
 
-    def setProcessors(self, processors):
+    def setProcessors(self, processors, check_permissions=False, user=None):
         """See `IArchive`."""
+        if check_permissions:
+            can_modify = None
+            if user is not None:
+                roles = IPersonRoles(user)
+                authz = lambda perm: getAdapter(self, IAuthorization, perm)
+                if authz('launchpad.Admin').checkAuthenticated(roles):
+                    can_modify = lambda proc: True
+                elif authz('launchpad.Edit').checkAuthenticated(roles):
+                    can_modify = lambda proc: not proc.restricted
+            if can_modify is None:
+                raise Unauthorized(
+                    'Permission launchpad.Admin or launchpad.Edit required '
+                    'on %s.' % self)
+        else:
+            can_modify = lambda proc: True
+
         enablements = dict(Store.of(self).find(
             (Processor, ArchiveArch),
             Processor.id == ArchiveArch.processor_id,
             ArchiveArch.archive == self))
         for proc in enablements:
             if proc not in processors:
+                if not can_modify(proc):
+                    raise CannotModifyArchiveProcessor(proc)
                 Store.of(self).remove(enablements[proc])
         for proc in processors:
             if proc not in self.processors:
+                if not can_modify(proc):
+                    raise CannotModifyArchiveProcessor(proc)
                 archivearch = ArchiveArch()
                 archivearch.archive = self
                 archivearch.processor = proc
