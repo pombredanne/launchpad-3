@@ -1137,7 +1137,7 @@ class TestProcessors(TestCaseWithFactory):
         self.archive.setProcessors(self.unrestricted_procs + [self.arm])
         self.assertContentEqual(
             self.unrestricted_procs + [self.arm], self.archive.processors)
-        self.archive.processors = []
+        self.archive.setProcessors([])
         self.assertContentEqual([], self.archive.processors)
 
     def test_set_non_admin(self):

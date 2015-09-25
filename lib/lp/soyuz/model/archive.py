@@ -2120,7 +2120,7 @@ class Archive(SQLBase):
 
     def _setEnabledRestrictedProcessors(self, value):
         """Set the restricted architectures this archive can build on."""
-        self.processors = (
+        self.setProcessors(
             [proc for proc in self.processors if not proc.restricted]
             + list(value))
 
@@ -2129,7 +2129,9 @@ class Archive(SQLBase):
 
     def enableRestrictedProcessor(self, processor):
         """See `IArchive`."""
-        self.processors = set(self.processors + [processor])
+        # This method can only be called by people with launchpad.Admin, so
+        # we don't need to check permissions again.
+        self.setProcessors(set(self.processors + [processor]))
 
     @property
     def available_processors(self):

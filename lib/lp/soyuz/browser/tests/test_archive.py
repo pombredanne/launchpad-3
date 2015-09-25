@@ -85,7 +85,7 @@ class TestArchiveEditView(TestCaseWithFactory):
             name="armel", restricted=True, build_by_default=False)
         ppa = self.factory.makeArchive()
         with admin_logged_in():
-            ppa.processors = [proc_386, proc_amd64, proc_armel]
+            ppa.setProcessors([proc_386, proc_amd64, proc_armel])
         owner = login_person(ppa.owner)
         browser = self.getUserBrowser(
             canonical_url(ppa) + "/+edit", user=owner)

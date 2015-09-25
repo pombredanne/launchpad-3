@@ -365,7 +365,7 @@
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
             set_attributes="build_debug_symbols description displayname
-                            processors publish publish_debug_symbols status
+                            publish publish_debug_symbols status
                             suppress_subscription_notifications"/>
         <!--
            NOTE: The 'private' permission controls who can turn a public

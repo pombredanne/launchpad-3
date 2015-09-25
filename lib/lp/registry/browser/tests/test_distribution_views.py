@@ -207,7 +207,7 @@ class TestDistroEditView(TestCaseWithFactory):
             widget._getCurrentValue())
 
     def test_edit_distro_init_value_processors(self):
-        self.distribution.main_archive.processors = self.all_processors
+        self.distribution.main_archive.setProcessors(self.all_processors)
         view = create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='GET')
@@ -244,7 +244,7 @@ class TestDistroEditView(TestCaseWithFactory):
         edit_form = self.getDefaultEditDict()
         edit_form['field.processors'] = []
 
-        self.distribution.main_archive.processors = self.all_processors
+        self.distribution.main_archive.setProcessors(self.all_processors)
         create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='POST', form=edit_form)
