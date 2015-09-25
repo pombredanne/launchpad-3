@@ -153,7 +153,6 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
@@ -366,7 +365,6 @@ class Bug(SQLBase, InformationTypeMixin):
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
-    cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin(
         'Specification', joinColumn='bug', otherColumn='specification',

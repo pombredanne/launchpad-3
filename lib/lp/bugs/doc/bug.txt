@@ -1,4 +1,4 @@
-Bugs in Malone
+ugs in Malone
 ==============
 
 This document describes what a Bug is in Malone, and provides some (currently
@@ -771,13 +771,13 @@ Linking to a CVE.
 
     >>> from lp.bugs.interfaces.cve import ICveSet
 
-    >>> firefox_bug.cve_links.count()
+    >>> firefox_bug.cves.count()
     0
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
     >>> cveref = getUtility(ICveSet)["1999-8979"]
     >>> firefox_bug.linkCVE(cveref, sample_person)
-    >>> firefox_bug.cve_links.count()
+    >>> firefox_bug.cves.count()
     1
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True

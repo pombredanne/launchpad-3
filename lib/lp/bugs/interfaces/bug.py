@@ -285,7 +285,6 @@ class IBugView(Interface):
             value_type=Reference(schema=ICve),
             readonly=True))
     has_cves = Bool(title=u"True if the bug has cve entries.")
-    cve_links = Attribute('Links between this bug and CVE entries.')
     duplicates = exported(doNotSnapshot(
         CollectionField(
             title=_("MultiJoin of bugs which are dupes of this one."),
