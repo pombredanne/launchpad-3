@@ -14,6 +14,7 @@ import os
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.publishing import cannot_modify_suite
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.command_spawner import (
@@ -133,9 +134,14 @@ class GenerateContentsFiles(LaunchpadCronScript):
 
     def getSuites(self):
         """Return suites that need Contents files."""
+        # XXX cjwatson 2015-09-23: This script currently only supports the
+        # primary archive.
+        archive = self.distribution.main_archive
         for series in self.distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
+                if cannot_modify_suite(archive, series, pocket):
+                    continue
                 if file_exists(os.path.join(self.config.distsroot, suite)):
                     yield suite
 

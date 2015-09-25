@@ -44,12 +44,15 @@ from lp.registry.model.product import Product
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
+    feature_flags,
     login_person,
     normalize_whitespace,
     person_logged_in,
+    set_feature_flag,
     TestCase,
     TestCaseWithFactory,
     time_counter,
@@ -381,6 +384,23 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
             self.assertThat(page, recipes_matcher)
         else:
             self.assertThat(page, Not(recipes_matcher))
+
+    def test_branch_list_snaps_link(self):
+        # The link to the snap packages is displayed if the appropriate
+        # feature flag is set.
+        snaps_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Snap packages link', 'a', text='Snap packages',
+                attrs={'href': self.base_url + '/+snaps'}))
+        page = self.get_branch_list_page()
+        self.assertThat(page, Not(snaps_matcher))
+        with feature_flags():
+            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
+            page = self.get_branch_list_page()
+            if IPerson.providedBy(self.default_target):
+                self.assertThat(page, snaps_matcher)
+            else:
+                self.assertThat(page, Not(snaps_matcher))
 
 
 class TestSimplifiedPersonProductBranchesView(
