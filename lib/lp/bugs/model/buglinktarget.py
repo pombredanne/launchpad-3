@@ -4,14 +4,39 @@
 __metaclass__ = type
 __all__ = [ 'BugLinkTargetMixin' ]
 
+import lazr.lifecycle.event
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
     )
 from zope.event import notify
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 
+from lp.bugs.interfaces.buglink import (
+    IObjectLinkedEvent,
+    IObjectUnlinkedEvent,
+    )
 from lp.services.webapp.authorization import check_permission
+
+
+# XXX wgrant 2015-09-25: lazr.lifecycle.event.LifecyleEventBase is all
+# of mispelled, private, and the sole implementer of user-fetching
+# logic that we require.
+@implementer(IObjectLinkedEvent)
+class ObjectLinkedEvent(lazr.lifecycle.event.LifecyleEventBase):
+
+    def __init__(self, object, other_object, user=None):
+        super(ObjectLinkedEvent, self).__init__(object, user=user)
+        self.other_object = other_object
+
+
+@implementer(IObjectUnlinkedEvent)
+class ObjectUnlinkedEvent(lazr.lifecycle.event.LifecyleEventBase):
+
+    def __init__(self, object, other_object, user=None):
+        super(ObjectUnlinkedEvent, self).__init__(object, user=user)
+        self.other_object = other_object
 
 
 class BugLinkTargetMixin:
@@ -43,6 +68,8 @@ class BugLinkTargetMixin:
             return False
         buglink = self.createBugLink(bug)
         notify(ObjectCreatedEvent(buglink))
+        notify(ObjectLinkedEvent(bug, self))
+        notify(ObjectLinkedEvent(self, bug))
         return True
 
     def unlinkBug(self, bug):
@@ -61,5 +88,7 @@ class BugLinkTargetMixin:
         buglink = self.deleteBugLink(bug)
         if buglink is not None:
             notify(ObjectDeletedEvent(buglink))
+            notify(ObjectUnlinkedEvent(bug, self))
+            notify(ObjectUnlinkedEvent(self, bug))
             return True
         return False

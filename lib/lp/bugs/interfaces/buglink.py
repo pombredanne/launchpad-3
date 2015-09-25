@@ -9,6 +9,8 @@ __all__ = [
     'IBugLink',
     'IBugLinkForm',
     'IBugLinkTarget',
+    'IObjectLinkedEvent',
+    'IObjectUnlinkedEvent',
     'IUnlinkBugsForm',
     ]
 
@@ -20,6 +22,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
     implementer,
@@ -41,6 +44,20 @@ from lp import _
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import BugField
+
+
+class IObjectLinkedEvent(IObjectEvent):
+    """An object that has been linked to another."""
+
+    other_object = Attribute("The object that is now linked.")
+    user = Attribute("The user who linked the object.")
+
+
+class IObjectUnlinkedEvent(IObjectEvent):
+    """An object that has been unlinked from another."""
+
+    other_object = Attribute("The object that is no longer linked.")
+    user = Attribute("The user who unlinked the object.")
 
 
 class IBugLink(IHasBug):
@@ -70,7 +87,7 @@ class IBugLinkTarget(Interface):
         """Link the object with this bug.
 
         If a new IBugLink is created by this method, an ObjectCreatedEvent
-        is sent.
+        and ObjectLinkedEvent are sent.
 
         :return: True if a new link was created, False if it already existed.
         """
@@ -79,7 +96,7 @@ class IBugLinkTarget(Interface):
         """Remove any link between this object and the bug.
 
         If an IBugLink is removed by this method, an ObjectDeletedEvent
-        is sent.
+        and ObjectUnlinkedEvent sent.
 
         :return: True if a link was deleted, False if it didn't exist.
         """
