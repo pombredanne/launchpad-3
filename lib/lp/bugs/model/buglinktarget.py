@@ -53,7 +53,7 @@ class BugLinkTargetMixin:
         raise NotImplementedError("missing deleteBugLink() implementation")
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug):
+    def linkBug(self, bug, user=None):
         """See IBugLinkTarget."""
         # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
@@ -67,12 +67,12 @@ class BugLinkTargetMixin:
         if bug in self.bugs:
             return False
         buglink = self.createBugLink(bug)
-        notify(ObjectCreatedEvent(buglink))
-        notify(ObjectLinkedEvent(bug, self))
-        notify(ObjectLinkedEvent(self, bug))
+        notify(ObjectCreatedEvent(buglink, user=user))
+        notify(ObjectLinkedEvent(bug, self, user=user))
+        notify(ObjectLinkedEvent(self, bug, user=user))
         return True
 
-    def unlinkBug(self, bug):
+    def unlinkBug(self, bug, user=None):
         """See IBugLinkTarget."""
         # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
@@ -87,8 +87,8 @@ class BugLinkTargetMixin:
         # see if a relevant bug link exists, and if so, delete it
         buglink = self.deleteBugLink(bug)
         if buglink is not None:
-            notify(ObjectDeletedEvent(buglink))
-            notify(ObjectUnlinkedEvent(bug, self))
-            notify(ObjectUnlinkedEvent(self, bug))
+            notify(ObjectDeletedEvent(buglink, user=user))
+            notify(ObjectUnlinkedEvent(bug, self, user=user))
+            notify(ObjectUnlinkedEvent(self, bug, user=user))
             return True
         return False

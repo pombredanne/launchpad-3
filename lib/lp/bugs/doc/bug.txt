@@ -775,11 +775,9 @@ Linking to a CVE.
     0
 
     >>> cveref = getUtility(ICveSet)["1999-8979"]
-    >>> bug_cveref = firefox_bug.linkCVE(cveref, sample_person)
+    >>> firefox_bug.linkCVE(cveref, sample_person)
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
-
-    >>> notify(ObjectCreatedEvent(bug_cveref))
 
     >>> firefox_bug.cve_links.count()
     1

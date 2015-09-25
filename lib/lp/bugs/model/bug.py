@@ -1377,21 +1377,13 @@ class Bug(SQLBase, InformationTypeMixin):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user, return_cve=True):
+    def linkCVE(self, cve, user):
         """See `IBug`."""
-        if cve not in self.cves:
-            bugcve = BugCve(bug=self, cve=cve)
-            notify(ObjectCreatedEvent(bugcve, user=user))
-            if return_cve:
-                return bugcve
+        cve.linkBug(self, user=user)
 
     def unlinkCVE(self, cve, user):
         """See `IBug`."""
-        for cve_link in self.cve_links:
-            if cve_link.cve.id == cve.id:
-                notify(ObjectDeletedEvent(cve_link, user=user))
-                BugCve.delete(cve_link.id)
-                break
+        cve.unlinkBug(self, user=user)
 
     def findCvesInText(self, text, user):
         """See `IBug`."""

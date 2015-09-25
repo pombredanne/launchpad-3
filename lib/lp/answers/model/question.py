@@ -661,11 +661,11 @@ class Question(SQLBase, BugLinkTargetMixin):
         return tktmsg
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug):
+    def linkBug(self, bug, user=None):
         """See `IBugLinkTarget`."""
         # Subscribe the question's owner to the bug.
         bug.subscribe(self.owner, self.owner)
-        return BugLinkTargetMixin.linkBug(self, bug)
+        return BugLinkTargetMixin.linkBug(self, bug, user=user)
 
     def unlinkBug(self, bug):
         """See `IBugLinkTarget`."""
