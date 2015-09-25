@@ -5,8 +5,17 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+import json
+from mock import (
+    patch,
+    Mock,
+    )
+
 import fixtures
 import transaction
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 
@@ -43,12 +52,11 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestSnapBuildBehaviour(TestCaseWithFactory):
-
+class TestSnapBuildBehaviourBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestSnapBuildBehaviour, self).setUp()
+        super(TestSnapBuildBehaviourBase, self).setUp()
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.pushConfig("snappy", tools_source=None)
 
@@ -65,6 +73,10 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             distroarchseries=distroarchseries, pocket=pocket,
             name=u"test-snap", **kwargs)
         return IBuildFarmJobBehaviour(build)
+
+
+class TestSnapBuildBehaviour(TestSnapBuildBehaviourBase):
+    layer = LaunchpadZopelessLayer
 
     def test_provides_interface(self):
         # SnapBuildBehaviour provides IBuildFarmJobBehaviour.
@@ -194,15 +206,56 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             "proxy_port": proxy_port,
             }, job._extraBuildArgs())
 
+
+def mockRequestProxyToken(self):
+    print('called mock')
+    token = json.dumps(
+        {"token_id": "03368addc7994647ace69e7ac2eb1ae9",
+         "client_ip": "10.0.0.1",
+         "build_id": "SNAPBUILD-1",
+         "timestamp": str(datetime.utcnow())}
+    )
+    return defer.succeed(token)
+
+
+class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
+    run_tests_with = AsynchronousDeferredRunTest
+
+    def setUp(self):
+        super(TestAsyncSnapBuildBehaviour, self).setUp()
+        self.token = {"token_id": "03368addc7994647ace69e7ac2eb1ae9",
+                      "client_ip": "10.0.0.1",
+                      "build_id": "SNAPBUILD-1",
+                      "timestamp": str(datetime.utcnow())}
+
+    def mockRequestProxyToken(self):
+        return defer.succeed(json.dumps(self.token))
+
+    @defer.inlineCallbacks
     def test_composeBuildRequest(self):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
-        build_request = yield job.composeBuildRequest(None)
+        with patch.object(
+                SnapBuildBehaviour, '_requestProxyToken',
+                Mock(return_value=self.mockRequestProxyToken())):
+            build_request = yield job.composeBuildRequest(None)
+        extraBuildArgs = job._extraBuildArgs()
+        extraBuildArgs['proxy_token'] = self.token
         self.assertEqual(
             ('snap', job.build.distro_arch_series, {},
-             job._extraBuildArgs()), build_request)
+             extraBuildArgs), build_request)
 
+    @defer.inlineCallbacks
+    def test_composeBuildRequest_proxy_token_set(self):
+        job = self.makeJob()
+        with patch.object(
+                SnapBuildBehaviour, '_requestProxyToken',
+                Mock(return_value=self.mockRequestProxyToken())):
+            build_request = yield job.composeBuildRequest(None)
+        self.assertEqual(self.token, build_request[3]['proxy_token'])
+
+    @defer.inlineCallbacks
     def test_composeBuildRequest_deleted(self):
         # If the source branch/repository has been deleted,
         # composeBuildRequest raises CannotBuild.
@@ -212,13 +265,17 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         branch.destroySelf(break_references=True)
         self.assertIsNone(job.build.snap.branch)
         self.assertIsNone(job.build.snap.git_repository)
-        build_request = yield job.composeBuildRequest
+        with patch.object(
+                SnapBuildBehaviour, '_requestProxyToken',
+                Mock(return_value=self.mockRequestProxyToken())):
+            build_request = yield job.composeBuildRequest(None)
         self.assertRaisesWithContent(
             CannotBuild,
             "Source branch/repository for ~snap-owner/test-snap has been "
             "deleted.",
             build_request, None)
 
+    @defer.inlineCallbacks
     def test_composeBuildRequest_git_ref_deleted(self):
         # If the source Git reference has been deleted, composeBuildRequest
         # raises CannotBuild.
@@ -228,12 +285,15 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob(registrant=owner, owner=owner, git_ref=ref)
         repository.removeRefs([ref.path])
         self.assertIsNone(job.build.snap.git_ref)
-        build_request = yield job.composeBuildRequest
-        self.assertRaisesWithContent(
-            CannotBuild,
-            "Source branch/repository for ~snap-owner/test-snap has been "
-            "deleted.",
-            build_request, None)
+        with patch.object(
+                SnapBuildBehaviour, '_requestProxyToken',
+                Mock(return_value=self.mockRequestProxyToken())):
+            build_request = yield job.composeBuildRequest(None)
+            self.assertRaisesWithContent(
+                CannotBuild,
+                "Source branch/repository for ~snap-owner/test-snap has been "
+                "deleted.",
+                build_request, None)
 
 
 class MakeSnapBuildMixin:

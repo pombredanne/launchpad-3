@@ -105,22 +105,23 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 (build.snap.owner.name, build.snap.name))
         return args
 
+    @defer.inlineCallbacks
     def _requestProxyToken(self):
         url = config.builddmaster.builder_proxy_auth_api_endpoint
-        d = getPage(
+        result = yield getPage(
             url,
             method='POST',
-            postdata=urlencode({'build_id': self.build.build_farm_job_id}),
+            postdata=urlencode({'build_id': self.build.build_cookie}),
             headers={'Content-Type': 'application/json'}
             )
-        return d
+        defer.returnValue(result)
 
     @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
         args = self._extraBuildArgs(logger=logger)
         token = yield self._requestProxyToken()
         args['proxy_token'] = json.loads(token)
-        defer.returnValue("snap", self.build.distro_arch_series, {}, args)
+        defer.returnValue(("snap", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""
