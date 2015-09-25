@@ -19,10 +19,15 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface import implementer
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.processor import Processor
@@ -46,7 +51,10 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     )
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
@@ -65,6 +73,7 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotDeleteSnap,
+    CannotModifySnapProcessor,
     DuplicateSnapName,
     ISnap,
     ISnapSet,
@@ -84,6 +93,7 @@ from lp.soyuz.model.archive import (
     Archive,
     get_enabled_archive_filter,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
 def snap_modified(snap, event):
@@ -177,23 +187,52 @@ class Snap(Storm):
         else:
             return None
 
+    @property
+    def available_processors(self):
+        """See `ISnap`."""
+        processors = Store.of(self).find(
+            Processor,
+            Processor.id == DistroArchSeries.processor_id,
+            DistroArchSeries.distroseries == self.distro_series)
+        return processors.config(distinct=True)
+
     def _getProcessors(self):
         return list(Store.of(self).find(
             Processor,
             Processor.id == SnapArch.processor_id,
             SnapArch.snap == self))
 
-    def setProcessors(self, processors):
+    def setProcessors(self, processors, check_permissions=False, user=None):
         """See `ISnap`."""
+        if check_permissions:
+            can_modify = None
+            if user is not None:
+                roles = IPersonRoles(user)
+                authz = lambda perm: getAdapter(self, IAuthorization, perm)
+                if authz('launchpad.Admin').checkAuthenticated(roles):
+                    can_modify = lambda proc: True
+                elif authz('launchpad.Edit').checkAuthenticated(roles):
+                    can_modify = lambda proc: not proc.restricted
+            if can_modify is None:
+                raise Unauthorized(
+                    'Permission launchpad.Admin or launchpad.Edit required '
+                    'on %s.' % self)
+        else:
+            can_modify = lambda proc: True
+
         enablements = dict(Store.of(self).find(
             (Processor, SnapArch),
             Processor.id == SnapArch.processor_id,
             SnapArch.snap == self))
         for proc in enablements:
             if proc not in processors:
+                if not can_modify(proc):
+                    raise CannotModifySnapProcessor(proc)
                 Store.of(self).remove(enablements[proc])
         for proc in processors:
             if proc not in self.processors:
+                if not can_modify(proc):
+                    raise CannotModifySnapProcessor(proc)
                 snaparch = SnapArch()
                 snaparch.snap = self
                 snaparch.processor = proc

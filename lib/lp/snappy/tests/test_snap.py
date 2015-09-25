@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
@@ -33,6 +34,7 @@ from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotDeleteSnap,
+    CannotModifySnapProcessor,
     ISnap,
     ISnapSet,
     ISnapView,
@@ -55,6 +57,7 @@ from lp.testing import (
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import (
@@ -598,10 +601,10 @@ class TestSnapSet(TestCaseWithFactory):
 
 class TestSnapProcessors(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestSnapProcessors, self).setUp()
+        super(TestSnapProcessors, self).setUp(user="foo.bar@canonical.com")
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.default_procs = [
             getUtility(IProcessorSet).getByName("386"),
@@ -643,8 +646,44 @@ class TestSnapProcessors(TestCaseWithFactory):
         snap.setProcessors(self.unrestricted_procs + [self.arm])
         self.assertContentEqual(
             self.unrestricted_procs + [self.arm], snap.processors)
-        snap.processors = []
+        snap.setProcessors([])
         self.assertContentEqual([], snap.processors)
+
+    def test_set_non_admin(self):
+        """Non-admins can only enable or disable unrestricted processors."""
+        snap = self.factory.makeSnap()
+        snap.setProcessors(self.default_procs)
+        self.assertContentEqual(self.default_procs, snap.processors)
+        with person_logged_in(snap.owner) as owner:
+            # Adding arm is forbidden ...
+            self.assertRaises(
+                CannotModifySnapProcessor, snap.setProcessors,
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=owner)
+            # ... but removing amd64 is OK.
+            snap.setProcessors(
+                [self.default_procs[0]], check_permissions=True, user=owner)
+            self.assertContentEqual([self.default_procs[0]], snap.processors)
+        with admin_logged_in() as admin:
+            snap.setProcessors(
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=admin)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm], snap.processors)
+        with person_logged_in(snap.owner) as owner:
+            hppa = getUtility(IProcessorSet).getByName("hppa")
+            self.assertFalse(hppa.restricted)
+            # Adding hppa while removing arm is forbidden ...
+            self.assertRaises(
+                CannotModifySnapProcessor, snap.setProcessors,
+                [self.default_procs[0], hppa],
+                check_permissions=True, user=owner)
+            # ... but adding hppa while retaining arm is OK.
+            snap.setProcessors(
+                [self.default_procs[0], self.arm, hppa],
+                check_permissions=True, user=owner)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm, hppa], snap.processors)
 
 
 class TestSnapWebservice(TestCaseWithFactory):
@@ -802,6 +841,77 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(
             "No such snap package with this owner: 'nonexistent'.",
             response.body)
+
+    def setProcessors(self, user, snap, names):
+        ws = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PUBLIC)
+        return ws.named_post(
+            snap["self_link"], "setProcessors",
+            processors=["/+processors/%s" % name for name in names],
+            api_version="devel")
+
+    def assertProcessors(self, user, snap, names):
+        body = webservice_for_person(user).get(
+            snap["self_link"] + "/processors", api_version="devel").jsonBody()
+        self.assertContentEqual(
+            names, [entry["name"] for entry in body["entries"]])
+
+    def test_setProcessors_admin(self):
+        """An admin can add a new processor to the enabled restricted set."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        self.factory.makeProcessor(
+            "arm", "ARM", "ARM", restricted=True, build_by_default=False)
+        snap = self.makeSnap()
+        self.assertProcessors(commercial_admin, snap, ["386", "hppa", "amd64"])
+
+        response = self.setProcessors(commercial_admin, snap, ["386", "arm"])
+        self.assertEqual(200, response.status)
+        self.assertProcessors(commercial_admin, snap, ["386", "arm"])
+
+    def test_setProcessors_non_owner_forbidden(self):
+        """Only commercial admins and snap owners can call setProcessors."""
+        self.factory.makeProcessor(
+            "unrestricted", "Unrestricted", "Unrestricted", restricted=False,
+            build_by_default=False)
+        non_owner = self.factory.makePerson()
+        snap = self.makeSnap()
+
+        response = self.setProcessors(non_owner, snap, ["386", "unrestricted"])
+        self.assertEqual(401, response.status)
+
+    def test_setProcessors_owner(self):
+        """The snap owner can enable/disable unrestricted processors."""
+        snap = self.makeSnap()
+        self.assertProcessors(self.person, snap, ["386", "hppa", "amd64"])
+
+        response = self.setProcessors(self.person, snap, ["386"])
+        self.assertEqual(200, response.status)
+        self.assertProcessors(self.person, snap, ["386"])
+
+        response = self.setProcessors(self.person, snap, ["386", "amd64"])
+        self.assertEqual(200, response.status)
+        self.assertProcessors(self.person, snap, ["386", "amd64"])
+
+    def test_setProcessors_owner_restricted_forbidden(self):
+        """The snap owner cannot enable/disable restricted processors."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        self.factory.makeProcessor(
+            "arm", "ARM", "ARM", restricted=True, build_by_default=False)
+        snap = self.makeSnap()
+
+        response = self.setProcessors(self.person, snap, ["386", "arm"])
+        self.assertEqual(403, response.status)
+
+        # If a commercial admin enables arm, the owner cannot disable it.
+        response = self.setProcessors(
+            commercial_admin, snap, ["386", "arm"])
+        self.assertEqual(200, response.status)
+        self.assertProcessors(self.person, snap, ["386", "arm"])
+
+        response = self.setProcessors(self.person, snap, ["386"])
+        self.assertEqual(403, response.status)
 
     def makeBuildableDistroArchSeries(self, **kwargs):
         das = self.factory.makeDistroArchSeries(**kwargs)
