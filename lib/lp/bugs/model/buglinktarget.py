@@ -5,10 +5,6 @@ __metaclass__ = type
 __all__ = [ 'BugLinkTargetMixin' ]
 
 import lazr.lifecycle.event
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectDeletedEvent,
-    )
 from zope.event import notify
 from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
@@ -66,8 +62,7 @@ class BugLinkTargetMixin:
                 "cannot link to a private bug you don't have access to")
         if bug in self.bugs:
             return False
-        buglink = self.createBugLink(bug)
-        notify(ObjectCreatedEvent(buglink, user=user))
+        self.createBugLink(bug)
         notify(ObjectLinkedEvent(bug, self, user=user))
         notify(ObjectLinkedEvent(self, bug, user=user))
         return True
@@ -87,7 +82,6 @@ class BugLinkTargetMixin:
         # see if a relevant bug link exists, and if so, delete it
         buglink = self.deleteBugLink(bug)
         if buglink is not None:
-            notify(ObjectDeletedEvent(buglink, user=user))
             notify(ObjectUnlinkedEvent(bug, self, user=user))
             notify(ObjectUnlinkedEvent(self, bug, user=user))
             return True

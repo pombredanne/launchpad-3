@@ -43,19 +43,13 @@ be used.
     >>> target.linkBug(bug1)
     False
 
-When a IBugLink is created, one IObjectCreatedEvent for the created
-IBugLink and an IObjectLinkedEvent for each end should be fired.
+When a IBugLink is created, an IObjectLinkedEvent for each end should be
+fired.
 
-    >>> from lazr.lifecycle.interfaces import (
-    ...     IObjectCreatedEvent, IObjectDeletedEvent)
     >>> from zope.interface import Interface
     >>> from lp.bugs.interfaces.buglink import (
     ...     IObjectLinkedEvent, IObjectUnlinkedEvent)
     >>> from lp.testing.event import TestEventListener
-    >>> created_events = []
-    >>> created_event_listener = TestEventListener(
-    ...     IBugLink, IObjectCreatedEvent,
-    ...     lambda object, event: created_events.append(event))
     >>> linked_events = []
     >>> linked_event_listener = TestEventListener(
     ...     Interface, IObjectLinkedEvent,
@@ -63,8 +57,6 @@ IBugLink and an IObjectLinkedEvent for each end should be fired.
 
     >>> bug2 = bugset.get(2)
     >>> target.linkBug(bugset.get(2))
-    True
-    >>> created_events[-1].object.bug == bug2
     True
     >>> linked_events[-2].object == bug2
     True
@@ -77,12 +69,9 @@ IBugLink and an IObjectLinkedEvent for each end should be fired.
 
 Of course, if no new IBugLink is created, no events should be fired:
 
-    >>> created_events = []
     >>> linked_events = []
     >>> target.linkBug(bug2)
     False
-    >>> created_events
-    []
     >>> linked_events
     []
 
@@ -132,21 +121,15 @@ This method is only available to registered users:
 
     >>> login('no-priv@canonical.com')
 
-The method returns the linked object which was removed. It should also
-send a IObjectDeletedEvent for the removed IBugLink:
+The method returns whether the link existed. It should also send an
+IObjectUnlinkedEvent for each of the removed IBugLink:
 
-    >>> deleted_events = []
-    >>> deleted_event_listener = TestEventListener(
-    ...     IBugLink, IObjectDeletedEvent,
-    ...     lambda object, event: deleted_events.append(event))
     >>> unlinked_events = []
     >>> unlinked_event_listener = TestEventListener(
     ...     Interface, IObjectUnlinkedEvent,
     ...     lambda object, event: unlinked_events.append(event))
 
     >>> target.unlinkBug(bug1)
-    True
-    >>> deleted_events[-1].object.bug == bug1
     True
     >>> unlinked_events[-2].object == bug1
     True
@@ -163,12 +146,9 @@ send a IObjectDeletedEvent for the removed IBugLink:
 When the bug was not linked to the target, that method should return
 False (and not trigger any events):
 
-    >>> deleted_events = []
     >>> unlinked_events = []
     >>> target.unlinkBug(bug1)
     False
-    >>> deleted_events
-    []
     >>> unlinked_events
     []
 
@@ -187,7 +167,5 @@ the bug or if he is an administrator.
 == Cleanup ==
 
     # Unregister event listeners.
-    >>> created_event_listener.unregister()
     >>> linked_event_listener.unregister()
-    >>> deleted_event_listener.unregister()
     >>> unlinked_event_listener.unregister()
