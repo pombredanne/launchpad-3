@@ -2147,8 +2147,7 @@ class Archive(SQLBase):
             ]
         if not self.permit_obsolete_series_uploads:
             clauses.append(DistroSeries.status != SeriesStatus.OBSOLETE)
-        return Store.of(self).find(Processor, *clauses).config(
-            distinct=(Processor.id,))
+        return Store.of(self).find(Processor, *clauses).config(distinct=True)
 
     def _getProcessors(self):
         return list(Store.of(self).find(
