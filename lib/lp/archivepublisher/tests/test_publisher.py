@@ -2235,20 +2235,22 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         # Release file signature is correct and was done by Celso's PPA
         # signing_key.
         with open(self.release_file_path) as release_file:
+            release_content = release_file.read()
             with open(self.release_file_signature_path) as release_file_sig:
                 signature = getUtility(IGPGHandler).getVerifiedSignature(
-                    release_file.read(), release_file_sig.read())
+                    release_content, release_file_sig.read())
         self.assertEqual(
             cprov.archive.signing_key.fingerprint, signature.fingerprint)
 
-        # InRelease file signature is correct and was done by Celso's PPA
-        # signing_key.
+        # InRelease file signature and content are correct, and the
+        # signature was done by Celso's PPA signing_key.
         with open(self.inline_release_file_path) as inline_release_file:
             inline_signature = getUtility(IGPGHandler).getVerifiedSignature(
                 inline_release_file.read())
         self.assertEqual(
             inline_signature.fingerprint,
             cprov.archive.signing_key.fingerprint)
+        self.assertEqual(release_content, inline_signature.plain_data)
 
         # All done, turn test-keyserver off.
         tac.tearDown()
