@@ -14,6 +14,7 @@ from mock import (
 
 import fixtures
 import transaction
+from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -227,6 +228,13 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
                       "client_ip": "10.0.0.1",
                       "build_id": "SNAPBUILD-1",
                       "timestamp": str(datetime.utcnow())}
+        self.patcher = patch.object(
+            SnapBuildBehaviour, '_requestProxyToken',
+            Mock(return_value=self.mockRequestProxyToken())).start()
+
+    def tearDown(self):
+        super(TestAsyncSnapBuildBehaviour, self).tearDown()
+        self.patcher.stop()
 
     def mockRequestProxyToken(self):
         return defer.succeed(json.dumps(self.token))
@@ -236,10 +244,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
-        with patch.object(
-                SnapBuildBehaviour, '_requestProxyToken',
-                Mock(return_value=self.mockRequestProxyToken())):
-            build_request = yield job.composeBuildRequest(None)
+        build_request = yield job.composeBuildRequest(None)
         extraBuildArgs = job._extraBuildArgs()
         extraBuildArgs['proxy_token'] = self.token
         self.assertEqual(
@@ -249,10 +254,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
     @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_token_set(self):
         job = self.makeJob()
-        with patch.object(
-                SnapBuildBehaviour, '_requestProxyToken',
-                Mock(return_value=self.mockRequestProxyToken())):
-            build_request = yield job.composeBuildRequest(None)
+        build_request = yield job.composeBuildRequest(None)
         self.assertEqual(self.token, build_request[3]['proxy_token'])
 
     @defer.inlineCallbacks
@@ -265,15 +267,10 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         branch.destroySelf(break_references=True)
         self.assertIsNone(job.build.snap.branch)
         self.assertIsNone(job.build.snap.git_repository)
-        with patch.object(
-                SnapBuildBehaviour, '_requestProxyToken',
-                Mock(return_value=self.mockRequestProxyToken())):
-            build_request = yield job.composeBuildRequest(None)
-        self.assertRaisesWithContent(
-            CannotBuild,
-            "Source branch/repository for ~snap-owner/test-snap has been "
-            "deleted.",
-            build_request, None)
+        expected_exception_msg = ("Source branch/repository for "
+                                  "~snap-owner/test-snap has been deleted.")
+        with ExpectedException(CannotBuild, expected_exception_msg):
+            yield job.composeBuildRequest(None)
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_git_ref_deleted(self):
@@ -285,15 +282,10 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         job = self.makeJob(registrant=owner, owner=owner, git_ref=ref)
         repository.removeRefs([ref.path])
         self.assertIsNone(job.build.snap.git_ref)
-        with patch.object(
-                SnapBuildBehaviour, '_requestProxyToken',
-                Mock(return_value=self.mockRequestProxyToken())):
-            build_request = yield job.composeBuildRequest(None)
-            self.assertRaisesWithContent(
-                CannotBuild,
-                "Source branch/repository for ~snap-owner/test-snap has been "
-                "deleted.",
-                build_request, None)
+        expected_exception_msg = ("Source branch/repository for "
+                                  "~snap-owner/test-snap has been deleted.")
+        with ExpectedException(CannotBuild, expected_exception_msg):
+            yield job.composeBuildRequest(None)
 
 
 class MakeSnapBuildMixin:
