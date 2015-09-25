@@ -17,12 +17,6 @@ from lp.services.webapp.authorization import check_permission
 class BugLinkTargetMixin:
     """Mixin class for IBugLinkTarget implementation."""
 
-    @property
-    def buglinkClass(self):
-        """Subclass should override this property to return the database
-        class used for IBugLink."""
-        raise NotImplementedError("missing buglinkClass() implementation")
-
     def createBugLink(self, bug):
         """Subclass should override that method to create a BugLink instance.
         """

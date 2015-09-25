@@ -791,9 +791,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
         return bool(self.subscription(person))
 
-    # Template methods for BugLinkTargetMixin
-    buglinkClass = SpecificationBug
-
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
         return SpecificationBug(specification=self, bug=bug)

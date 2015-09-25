@@ -675,9 +675,6 @@ class Question(SQLBase, BugLinkTargetMixin):
             bug.unsubscribe(self.owner, self.owner)
         return buglink
 
-    # Template methods for BugLinkTargetMixin.
-    buglinkClass = QuestionBug
-
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
         return QuestionBug(question=self, bug=bug)
