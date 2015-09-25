@@ -5,15 +5,11 @@ __metaclass__ = type
 
 __all__ = ['SpecificationBug']
 
-from lazr.restful.interfaces import IJSONPublishable
 from sqlobject import ForeignKey
-from zope.interface import implementer
 
-from lp.blueprints.interfaces.specificationbug import ISpecificationBug
 from lp.services.database.sqlbase import SQLBase
 
 
-@implementer(ISpecificationBug, IJSONPublishable)
 class SpecificationBug(SQLBase):
     """A link between a spec and a bug."""
 
@@ -27,10 +23,3 @@ class SpecificationBug(SQLBase):
     def target(self):
         """See IBugLink."""
         return self.specification
-
-    def toDataForJSON(self, media_type):
-        """See IJSONPublishable.
-
-        These objects have no JSON representation.
-        """
-        return None
