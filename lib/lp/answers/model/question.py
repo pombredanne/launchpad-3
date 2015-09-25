@@ -210,8 +210,6 @@ class Question(SQLBase, BugLinkTargetMixin):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='question', otherColumn='person',
         intermediateTable='QuestionSubscription', orderBy='name')
-    bug_links = SQLMultipleJoin('QuestionBug',
-        joinColumn='question', orderBy='id')
     bugs = SQLRelatedJoin('Bug', joinColumn='question', otherColumn='bug',
         intermediateTable='QuestionBug', orderBy='id')
     messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
@@ -683,6 +681,13 @@ class Question(SQLBase, BugLinkTargetMixin):
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
         return QuestionBug(question=self, bug=bug)
+
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        link = Store.of(self).find(QuestionBug, question=self, bug=bug).one()
+        if link is not None:
+            Store.of(link).remove(link)
+        return link
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""

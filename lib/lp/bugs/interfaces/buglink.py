@@ -27,7 +27,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Choice,
-    List,
     Object,
     Set,
     )
@@ -66,8 +65,6 @@ class IBugLinkTarget(Interface):
         CollectionField(title=_("Bugs related to this object."),
                         value_type=Reference(schema=IBug), readonly=True),
         as_of="devel")
-    bug_links = List(title=_("The links between bugs and this object."),
-                     value_type=Object(schema=IBugLink), readonly=True)
 
     def linkBug(bug):
         """Link the object with this bug. If the object is already linked,

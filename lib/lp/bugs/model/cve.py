@@ -92,6 +92,13 @@ class Cve(SQLBase, BugLinkTargetMixin):
         """See BugLinkTargetMixin."""
         return BugCve(cve=self, bug=bug)
 
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        link = Store.of(self).find(BugCve, cve=self, bug=bug).one()
+        if link is not None:
+            Store.of(link).remove(link)
+        return link
+
 
 @implementer(ICveSet)
 class CveSet:

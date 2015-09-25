@@ -104,14 +104,6 @@ attributes:
     >>> [bug.id for bug in target.bugs]
     [1, 2, 6]
 
-== bug_links ==
-
-The IBugLink objects available on the target should be available in the
-bug_links attribute:
-
-    >>> [link.bug.id for link in target.bug_links]
-    [1, 2, 6]
-
 == unlinkBug() ==
 
 The unlinkBug() method is used to remove a link between a bug and

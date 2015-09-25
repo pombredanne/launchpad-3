@@ -1099,11 +1099,11 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     @property
     def original_bug(self):
         """Return the bug that the question was created from or None."""
-        for buglink in self.context.bug_links:
-            if (check_permission('launchpad.View', buglink.bug)
-                and buglink.bug.owner == self.context.owner
-                and buglink.bug.datecreated == self.context.datecreated):
-                return buglink.bug
+        for bug in self.context.bugs:
+            if (check_permission('launchpad.View', bug)
+                and bug.owner == self.context.owner
+                and bug.datecreated == self.context.datecreated):
+                return bug
 
         return None
 
