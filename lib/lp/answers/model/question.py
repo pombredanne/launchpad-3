@@ -661,11 +661,11 @@ class Question(SQLBase, BugLinkTargetMixin):
         return tktmsg
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug):
+    def linkBug(self, bug, user=None):
         """See `IBugLinkTarget`."""
         # Subscribe the question's owner to the bug.
         bug.subscribe(self.owner, self.owner)
-        return BugLinkTargetMixin.linkBug(self, bug)
+        return BugLinkTargetMixin.linkBug(self, bug, user=user)
 
     def unlinkBug(self, bug):
         """See `IBugLinkTarget`."""
@@ -677,14 +677,15 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        return QuestionBug(question=self, bug=bug)
+        QuestionBug(question=self, bug=bug)
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
         link = Store.of(self).find(QuestionBug, question=self, bug=bug).one()
         if link is not None:
             Store.of(link).remove(link)
-        return link
+            return True
+        return False
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""

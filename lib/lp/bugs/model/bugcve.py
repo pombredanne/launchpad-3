@@ -5,13 +5,10 @@ __metaclass__ = type
 __all__ = ['BugCve']
 
 from sqlobject import ForeignKey
-from zope.interface import implementer
 
-from lp.bugs.interfaces.bugcve import IBugCve
 from lp.services.database.sqlbase import SQLBase
 
 
-@implementer(IBugCve)
 class BugCve(SQLBase):
     """A table linking bugs and CVE entries."""
 
@@ -20,8 +17,3 @@ class BugCve(SQLBase):
     # db field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     cve = ForeignKey(dbName='cve', foreignKey='Cve', notNull=True)
-
-    @property
-    def target(self):
-        """See IBugLink."""
-        return self.cve
