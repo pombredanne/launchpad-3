@@ -285,7 +285,6 @@ class IBugView(Interface):
             value_type=Reference(schema=ICve),
             readonly=True))
     has_cves = Bool(title=u"True if the bug has cve entries.")
-    cve_links = Attribute('Links between this bug and CVE entries.')
     duplicates = exported(doNotSnapshot(
         CollectionField(
             title=_("MultiJoin of bugs which are dupes of this one."),
@@ -813,10 +812,10 @@ class IBugEdit(Interface):
         file_alias.restricted.
         """
 
-    @call_with(user=REQUEST_USER, return_cve=False)
+    @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def linkCVE(cve, user, return_cve=True):
+    def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
     @call_with(user=REQUEST_USER)
