@@ -1,13 +1,15 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyTemporarilyNotFoundError,
     IGPGHandler,
     )
+from lp.services.log.logger import BufferLogger
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -168,3 +170,17 @@ class TestImportKeyRing(TestCase):
             self.assertEqual('timeout exceeded.', error_report['value'])
         finally:
             set_default_timeout_function(old_timeout_function)
+
+    def test_uploadPublicKey_suppress_in_config(self):
+        self.useFixture(KeyServerTac())
+        logger = BufferLogger()
+        self.pushConfig("gpghandler", upload_keys=False)
+        self.populateKeyring()
+        fingerprint = list(self.gpg_handler.localKeys())[0].fingerprint
+        self.gpg_handler.uploadPublicKey(fingerprint, logger=logger)
+        self.assertEqual(
+            "INFO Not submitting key to keyserver "
+            "(disabled in configuration).\n", logger.getLogBuffer())
+        self.assertRaises(
+            GPGKeyDoesNotExistOnServer,
+            removeSecurityProxy(self.gpg_handler)._getPubKey, fingerprint)
