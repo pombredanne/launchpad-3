@@ -255,7 +255,7 @@ class TestSnapAdminView(BrowserTestCase):
 
 class TestSnapEditView(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestSnapEditView, self).setUp()
@@ -336,9 +336,10 @@ class TestSnapEditView(BrowserTestCase):
         processor_names = ["386", "amd64", "hppa"]
         for name in processor_names:
             processor = getUtility(IProcessorSet).getByName(name)
-            self.factory.makeDistroArchSeries(
+            das = self.factory.makeDistroArchSeries(
                 distroseries=distroseries, architecturetag=name,
                 processor=processor)
+            das.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
         return distroseries
 
     def test_display_processors(self):
@@ -405,9 +406,10 @@ class TestSnapEditView(BrowserTestCase):
         distroseries = self.setUpDistroSeries()
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
-        self.factory.makeDistroArchSeries(
+        das_armhf = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="armhf",
             processor=proc_armhf)
+        das_armhf.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=distroseries)
