@@ -2183,6 +2183,10 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         return os.path.join(self.suite_path, 'Release.gpg')
 
     @property
+    def inline_release_file_path(self):
+        return os.path.join(self.suite_path, 'InRelease')
+
+    @property
     def public_key_path(self):
         return os.path.join(
             self.archive_publisher._config.distsroot, 'key.gpg')
@@ -2206,7 +2210,8 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         """Check publisher behaviour when signing repositories.
 
         When the 'signing_key' is available every modified suite Release
-        file gets signed with a detached signature name 'Release.gpg'.
+        file gets signed with a detached signature name 'Release.gpg' and
+        a clearsigned file name 'InRelease'.
         """
         cprov = getUtility(IPersonSet).getByName('cprov')
         self.assertTrue(cprov.archive.signing_key is None)
@@ -2222,18 +2227,30 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
         self._publishArchive(cprov.archive)
 
-        # Both, Release and Release.gpg exist.
+        # All of Release, Release.gpg, and InRelease exist.
         self.assertTrue(os.path.exists(self.release_file_path))
         self.assertTrue(os.path.exists(self.release_file_signature_path))
+        self.assertTrue(os.path.exists(self.inline_release_file_path))
 
         # Release file signature is correct and was done by Celso's PPA
         # signing_key.
         with open(self.release_file_path) as release_file:
+            release_content = release_file.read()
             with open(self.release_file_signature_path) as release_file_sig:
                 signature = getUtility(IGPGHandler).getVerifiedSignature(
-                    release_file.read(), release_file_sig.read())
+                    release_content, release_file_sig.read())
         self.assertEqual(
             cprov.archive.signing_key.fingerprint, signature.fingerprint)
+
+        # InRelease file signature and content are correct, and the
+        # signature was done by Celso's PPA signing_key.
+        with open(self.inline_release_file_path) as inline_release_file:
+            inline_signature = getUtility(IGPGHandler).getVerifiedSignature(
+                inline_release_file.read())
+        self.assertEqual(
+            inline_signature.fingerprint,
+            cprov.archive.signing_key.fingerprint)
+        self.assertEqual(release_content, inline_signature.plain_data)
 
         # All done, turn test-keyserver off.
         tac.tearDown()

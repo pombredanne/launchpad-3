@@ -9,10 +9,13 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
+from textwrap import dedent
 
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 import pytz
+import soupmatchers
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -20,6 +23,7 @@ from zope.security.interfaces import Unauthorized
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -30,7 +34,10 @@ from lp.snappy.browser.snap import (
     SnapEditView,
     SnapView,
     )
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
+from lp.snappy.interfaces.snap import (
+    SNAP_FEATURE_FLAG,
+    SnapFeatureDisabled,
+    )
 from lp.testing import (
     BrowserTestCase,
     login,
@@ -53,6 +60,10 @@ from lp.testing.pages import (
     find_tags_by_class,
     )
 from lp.testing.publication import test_traverse
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestSnapNavigation(TestCaseWithFactory):
@@ -75,6 +86,111 @@ class TestSnapNavigation(TestCaseWithFactory):
         obj, _, _ = test_traverse(
             "http://launchpad.dev/~%s/+snap/%s" % (snap.owner.name, snap.name))
         self.assertEqual(snap, obj)
+
+
+class TestSnapViewsFeatureFlag(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_feature_flag_disabled(self):
+        # Without a feature flag, we will not create new Snaps.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(
+            SnapFeatureDisabled, create_initialized_view, branch, "+new-snap")
+
+
+class TestSnapAddView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapAddView, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FakeLogger())
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+    def test_initial_distroseries(self):
+        # The initial distroseries is the newest that is current or in
+        # development.
+        archive = self.factory.makeArchive(owner=self.person)
+        self.factory.makeDistroSeries(
+            distribution=archive.distribution, version="14.04",
+            status=SeriesStatus.DEVELOPMENT)
+        development = self.factory.makeDistroSeries(
+            distribution=archive.distribution, version="14.10",
+            status=SeriesStatus.DEVELOPMENT)
+        self.factory.makeDistroSeries(
+            distribution=archive.distribution, version="15.04",
+            status=SeriesStatus.EXPERIMENTAL)
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.person):
+            view = create_initialized_view(branch, "+new-snap")
+        self.assertEqual(development, view.initial_values["distro_series"])
+
+    def test_create_new_snap_not_logged_in(self):
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(
+            Unauthorized, self.getViewBrowser, branch, view_name="+new-snap",
+            no_login=True)
+
+    def test_create_new_snap_bzr(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution, status=SeriesStatus.DEVELOPMENT)
+        branch = self.factory.makeAnyBranch()
+        source_display = branch.display_name
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl("Name").value = "snap-name"
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("snap-name", extract_text(content.h1))
+        self.assertThat(
+            "Test Person", MatchesPickerText(content, "edit-owner"))
+        self.assertThat(
+            "Distribution series:\n%s\nEdit snap package" %
+            distroseries.fullseriesname,
+            MatchesTagText(content, "distro_series"))
+        self.assertThat(
+            "Source:\n%s\nEdit snap package" % source_display,
+            MatchesTagText(content, "source"))
+
+    def test_create_new_snap_git(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution, status=SeriesStatus.DEVELOPMENT)
+        [git_ref] = self.factory.makeGitRefs()
+        source_display = git_ref.display_name
+        browser = self.getViewBrowser(
+            git_ref, view_name="+new-snap", user=self.person)
+        browser.getControl("Name").value = "snap-name"
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("snap-name", extract_text(content.h1))
+        self.assertThat(
+            "Test Person", MatchesPickerText(content, "edit-owner"))
+        self.assertThat(
+            "Distribution series:\n%s\nEdit snap package" %
+            distroseries.fullseriesname,
+            MatchesTagText(content, "distro_series"))
+        self.assertThat(
+            "Source:\n%s\nEdit snap package" % source_display,
+            MatchesTagText(content, "source"))
+
+    def test_create_new_snap_users_teams_as_owner_options(self):
+        # Teams that the user is in are options for the snap package owner.
+        self.factory.makeTeam(
+            name="test-team", displayname="Test Team", members=[self.person])
+        branch = self.factory.makeAnyBranch()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        options = browser.getControl("Owner").displayOptions
+        self.assertEqual(
+            ["Test Person (test-person)", "Test Team (test-team)"],
+            sorted(str(option) for option in options))
 
 
 class TestSnapAdminView(BrowserTestCase):
@@ -293,6 +409,31 @@ class TestSnapView(BrowserTestCase):
             distroarchseries=self.distroarchseries, date_created=date_created,
             **kwargs)
 
+    def test_breadcrumb(self):
+        snap = self.makeSnap()
+        view = create_view(snap, "+index")
+        # To test the breadcrumbs we need a correct traversal stack.
+        view.request.traversed_objects = [self.person, snap, view]
+        view.initialize()
+        breadcrumbs_tag = soupmatchers.Tag(
+            "breadcrumbs", "ol", attrs={"class": "breadcrumbs"})
+        self.assertThat(
+            view(),
+            soupmatchers.HTMLContains(
+                soupmatchers.Within(
+                    breadcrumbs_tag,
+                    soupmatchers.Tag(
+                        "snap collection breadcrumb", "a",
+                        text="Snap packages",
+                        attrs={
+                            "href": re.compile(r"/~test-person/\+snaps$"),
+                            })),
+                soupmatchers.Within(
+                    breadcrumbs_tag,
+                    soupmatchers.Tag(
+                        "snap breadcrumb", "li",
+                        text=re.compile(r"\ssnap-name\s")))))
+
     def test_index_bzr(self):
         branch = self.factory.makePersonalBranch(
             owner=self.person, name="snap-branch")
@@ -399,3 +540,121 @@ class TestSnapView(BrowserTestCase):
         for build in builds[:9]:
             self.setStatus(build, BuildStatus.FULLYBUILT)
         self.assertEqual(list(reversed(builds[1:])), view.builds)
+
+
+class TestSnapRequestBuildsView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapRequestBuildsView, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FakeLogger())
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=self.ubuntu, name="shiny", displayname="Shiny")
+        self.architectures = []
+        for processor, architecture in ("386", "i386"), ("amd64", "amd64"):
+            das = self.factory.makeDistroArchSeries(
+                distroseries=self.distroseries, architecturetag=architecture,
+                processor=getUtility(IProcessorSet).getByName(processor))
+            das.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
+            self.architectures.append(das)
+        self.person = self.factory.makePerson()
+        self.snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=self.distroseries, name=u"snap-name")
+
+    def test_request_builds_page(self):
+        # The +request-builds page is sane.
+        pattern = dedent("""\
+            Request builds for snap-name
+            Snap packages
+            snap-name
+            Request builds
+            Source archive:
+            Primary Archive for Ubuntu Linux
+            PPA
+            (Find&hellip;)
+            Architectures:
+            amd64
+            i386
+            Pocket:
+            Release
+            Security
+            Updates
+            Proposed
+            Backports
+            or
+            Cancel""")
+        main_text = self.getMainText(
+            self.snap, "+request-builds", user=self.person)
+        self.assertEqual(pattern, main_text)
+
+    def test_request_builds_not_owner(self):
+        # A user without launchpad.Edit cannot request builds.
+        self.assertRaises(
+            Unauthorized, self.getViewBrowser, self.snap, "+request-builds")
+
+    def test_request_builds_action(self):
+        # Requesting a build creates pending builds.
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        self.assertTrue(browser.getControl("amd64").selected)
+        self.assertTrue(browser.getControl("i386").selected)
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        builds = self.snap.pending_builds
+        self.assertContentEqual(
+            [self.ubuntu.main_archive], set(build.archive for build in builds))
+        self.assertContentEqual(
+            ["amd64", "i386"],
+            [build.distro_arch_series.architecturetag for build in builds])
+        self.assertContentEqual(
+            [PackagePublishingPocket.RELEASE],
+            set(build.pocket for build in builds))
+        self.assertContentEqual(
+            [2505], set(build.buildqueue_record.lastscore for build in builds))
+
+    def test_request_builds_ppa(self):
+        # Selecting a different archive creates builds in that archive.
+        ppa = self.factory.makeArchive(
+            distribution=self.ubuntu, owner=self.person, name="snap-ppa")
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        browser.getControl("PPA").click()
+        browser.getControl(name="field.archive.ppa").value = ppa.reference
+        self.assertTrue(browser.getControl("amd64").selected)
+        browser.getControl("i386").selected = False
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        builds = self.snap.pending_builds
+        self.assertEqual([ppa], [build.archive for build in builds])
+
+    def test_request_builds_no_architectures(self):
+        # Selecting no architectures causes a validation failure.
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        browser.getControl("amd64").selected = False
+        browser.getControl("i386").selected = False
+        browser.getControl("Request builds").click()
+        self.assertIn(
+            "You need to select at least one architecture.",
+            extract_text(find_main_content(browser.contents)))
+
+    def test_request_builds_rejects_duplicate(self):
+        # A duplicate build request causes a notification.
+        self.snap.requestBuild(
+            self.person, self.ubuntu.main_archive, self.distroseries["amd64"],
+            PackagePublishingPocket.RELEASE)
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        self.assertTrue(browser.getControl("amd64").selected)
+        self.assertTrue(browser.getControl("i386").selected)
+        browser.getControl("Request builds").click()
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertIn("1 new build has been queued.", main_text)
+        self.assertIn(
+            "An identical build is already pending for amd64.", main_text)

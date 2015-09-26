@@ -97,7 +97,7 @@ class BugLinksListingView(LaunchpadView):
         """
         # Do a regular search to get the bugtasks so that visibility is
         # evaluated and eager loading is performed.
-        bug_ids = map(attrgetter('bugID'), self.context.bug_links)
+        bug_ids = [bug.id for bug in self.context.bugs]
         if not bug_ids:
             return []
         bugtask_set = getUtility(IBugTaskSet)

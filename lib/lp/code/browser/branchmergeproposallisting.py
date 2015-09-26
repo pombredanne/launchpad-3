@@ -408,7 +408,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
     @property
     def no_proposal_message(self):
         """Shown when there is no table to show."""
-        return "%s has no active code reviews." % self.context.displayname
+        return "%s has no active code reviews." % self.context.display_name
 
 
 class BranchActiveReviewsView(ActiveReviewsView):

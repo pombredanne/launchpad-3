@@ -201,11 +201,8 @@ class Snap(Storm):
 
     processors = property(_getProcessors, setProcessors)
 
-    def _getAllowedArchitectures(self):
-        """Return all distroarchseries that this package can build for.
-
-        :return: Sequence of `IDistroArchSeries` instances.
-        """
+    def getAllowedArchitectures(self):
+        """See `ISnap`."""
         return [
             das for das in self.distro_series.buildable_architectures
             if (
@@ -223,7 +220,7 @@ class Snap(Storm):
                 (requester.displayname, self.owner.displayname))
         if not archive.enabled:
             raise ArchiveDisabled(archive.displayname)
-        if distro_arch_series not in self._getAllowedArchitectures():
+        if distro_arch_series not in self.getAllowedArchitectures():
             raise SnapBuildDisallowedArchitecture(distro_arch_series)
         if archive.private and self.owner != archive.owner:
             # See rationale in `SnapBuildArchiveOwnerMismatch` docstring.

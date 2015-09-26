@@ -49,6 +49,7 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
     def setUp(self):
         super(TestSnapBuildBehaviour, self).setUp()
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.pushConfig("snappy", tools_source=None)
 
     def makeJob(self, pocket=PackagePublishingPocket.RELEASE, **kwargs):
         """Create a sample `ISnapBuildBehaviour`."""

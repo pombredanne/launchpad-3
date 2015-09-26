@@ -197,7 +197,7 @@ has been linked to it:
     ...     comment=ubuntu_question.description)
     >>> bug = ubuntu_question.target.createBug(params)
     >>> ubuntu_question.linkBug(bug)
-    <QuestionBug...>
+    True
 
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
@@ -224,7 +224,7 @@ A notification is also sent when a bug is unlinked from the question:
     >>> unmodified_question = Snapshot(ubuntu_question,
     ...     providing=providedBy(ubuntu_question))
     >>> ubuntu_question.unlinkBug(bug)
-    <QuestionBug...>
+    True
 
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))

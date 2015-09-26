@@ -17,5 +17,8 @@
     <tr class="code-links" tal:condition="menu/source_package_recipes/enabled">
       <td tal:content="structure menu/source_package_recipes/render" />
     </tr>
+    <tr class="code-links" tal:condition="menu/snaps/enabled">
+      <td tal:content="structure menu/snaps/render" />
+    </tr>
   </table>
 </div>

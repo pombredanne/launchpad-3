@@ -153,7 +153,6 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
@@ -366,7 +365,6 @@ class Bug(SQLBase, InformationTypeMixin):
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
-    cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin(
         'Specification', joinColumn='bug', otherColumn='specification',
@@ -1377,21 +1375,13 @@ class Bug(SQLBase, InformationTypeMixin):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user, return_cve=True):
+    def linkCVE(self, cve, user):
         """See `IBug`."""
-        if cve not in self.cves:
-            bugcve = BugCve(bug=self, cve=cve)
-            notify(ObjectCreatedEvent(bugcve, user=user))
-            if return_cve:
-                return bugcve
+        cve.linkBug(self, user=user)
 
     def unlinkCVE(self, cve, user):
         """See `IBug`."""
-        for cve_link in self.cve_links:
-            if cve_link.cve.id == cve.id:
-                notify(ObjectDeletedEvent(cve_link, user=user))
-                BugCve.delete(cve_link.id)
-                break
+        cve.unlinkBug(self, user=user)
 
     def findCvesInText(self, text, user):
         """See `IBug`."""

@@ -319,7 +319,7 @@ class TestBugCreation(TestCaseWithFactory):
         target = self.factory.makeProduct()
         person = self.factory.makePerson()
         bug = self.createBug(owner=person, target=target, cve=cve)
-        self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
+        self.assertContentEqual([cve], bug.cves)
 
     def test_createBug_subscribers(self):
         # Bugs normally start with just the reporter subscribed.

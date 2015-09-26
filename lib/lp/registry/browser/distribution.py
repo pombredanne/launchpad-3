@@ -857,6 +857,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
             u"The architectures on which the distribution's main archive can "
             u"build.")
 
@@ -875,7 +876,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
             )
         archive = distribution.main_archive
         self.updateRequireVirtualized(data['require_virtualized'], archive)
-        archive.processors = data['processors']
+        archive.setProcessors(
+            data['processors'], check_permissions=True, user=self.user)
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -920,6 +922,7 @@ class DistributionEditView(RegistryEditFormView,
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
             u"The architectures on which the distribution's main archive can "
             u"build.")
 
@@ -951,7 +954,8 @@ class DistributionEditView(RegistryEditFormView,
         if new_processors is not None:
             if (set(self.context.main_archive.processors) !=
                     set(new_processors)):
-                self.context.main_archive.processors = new_processors
+                self.context.main_archive.setProcessors(
+                    new_processors, check_permissions=True, user=self.user)
             del(data['processors'])
 
     @action("Change", name='change')
