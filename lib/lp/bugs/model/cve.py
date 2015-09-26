@@ -85,12 +85,16 @@ class Cve(SQLBase, BugLinkTargetMixin):
         assert ref.cve == self
         CveReference.delete(ref.id)
 
-    # Template methods for BugLinkTargetMixin
-    buglinkClass = BugCve
-
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
         return BugCve(cve=self, bug=bug)
+
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        link = Store.of(self).find(BugCve, cve=self, bug=bug).one()
+        if link is not None:
+            Store.of(link).remove(link)
+        return link
 
 
 @implementer(ICveSet)

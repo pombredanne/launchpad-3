@@ -189,8 +189,7 @@
         set_attributes="priority direction_approved"/>
     <require
         permission="launchpad.LimitedView"
-        attributes="bugs
-                    bug_links"/>
+        attributes="bugs"/>
     <require
         permission="launchpad.AnyAllowedPerson"
         attributes="linkBug

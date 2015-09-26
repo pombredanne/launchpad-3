@@ -31,23 +31,17 @@ shouldn't have any bugs linked to it at the start of the test.)
     >>> bug1 = bugset.get(1)
 
 The linkBug() method is used to link a bug to the target. It takes as
-parameter the bug which should be linked. The method should return the
-IBugLink that was created.
+parameter the bug which should be linked. The method returns True if a
+new link was created.
 
-    >>> link1 = target.linkBug(bug1)
-
-    >>> verifyObject(IBugLink, link1)
-    True
-    >>> link1.target == target
-    True
-    >>> link1.bug == bug1
+    >>> target.linkBug(bug1)
     True
 
 When the bug was already linked to the target, the existing link should
 be used.
 
-    >>> target.linkBug(bug1) == link1
-    True
+    >>> target.linkBug(bug1)
+    False
 
 When a IBugLink is created, one IObjectCreatedEvent for the created
 should be fired by the method.
@@ -61,15 +55,16 @@ should be fired by the method.
     ...     lambda object, event: created_events.append(event))
 
     >>> bug2 = bugset.get(2)
-    >>> link2 = target.linkBug(bugset.get(2))
-    >>> created_events[-1].object == link2
+    >>> target.linkBug(bugset.get(2))
+    True
+    >>> created_events[-1].object.bug == bug2
     True
 
 Of course, if no new IBugLink is created, no events should be fired:
 
     >>> created_events = []
-    >>> target.linkBug(bug2) == link2
-    True
+    >>> target.linkBug(bug2)
+    False
     >>> created_events
     []
 
@@ -104,14 +99,6 @@ attributes:
     >>> [bug.id for bug in target.bugs]
     [1, 2, 6]
 
-== bug_links ==
-
-The IBugLink objects available on the target should be available in the
-bug_links attribute:
-
-    >>> [link.bug.id for link in target.bug_links]
-    [1, 2, 6]
-
 == unlinkBug() ==
 
 The unlinkBug() method is used to remove a link between a bug and
@@ -135,20 +122,20 @@ send a IObjectDeletedEvent for the removed IBugLink:
     ...     IBugLink, IObjectDeletedEvent,
     ...     lambda object, event: deleted_events.append(event))
 
-    >>> target.unlinkBug(bug1) == link1
+    >>> target.unlinkBug(bug1)
     True
-    >>> deleted_events[-1].object == link1
+    >>> deleted_events[-1].object.bug == bug1
     True
 
     >>> [bug.id for bug in target.bugs]
     [2, 6]
 
 When the bug was not linked to the target, that method should return
-None (and not trigger any events):
+False (and not trigger any events):
 
     >>> deleted_events = []
-    >>> target.unlinkBug(bug1) is None
-    True
+    >>> target.unlinkBug(bug1)
+    False
     >>> deleted_events
     []
 
