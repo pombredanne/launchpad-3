@@ -239,8 +239,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    bug_links = SQLMultipleJoin(
-        'SpecificationBug', joinColumn='specification', orderBy='id')
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
@@ -793,12 +791,17 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
         return bool(self.subscription(person))
 
-    # Template methods for BugLinkTargetMixin
-    buglinkClass = SpecificationBug
-
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
         return SpecificationBug(specification=self, bug=bug)
+
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        link = Store.of(self).find(
+            SpecificationBug, specification=self, bug=bug).one()
+        if link is not None:
+            Store.of(link).remove(link)
+        return link
 
     # sprint linking
     def linkSprint(self, sprint, user):

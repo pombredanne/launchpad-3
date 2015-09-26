@@ -27,7 +27,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Choice,
-    List,
     Object,
     Set,
     )
@@ -66,24 +65,23 @@ class IBugLinkTarget(Interface):
         CollectionField(title=_("Bugs related to this object."),
                         value_type=Reference(schema=IBug), readonly=True),
         as_of="devel")
-    bug_links = List(title=_("The links between bugs and this object."),
-                     value_type=Object(schema=IBugLink), readonly=True)
 
     def linkBug(bug):
-        """Link the object with this bug. If the object is already linked,
-        return the old linker, otherwise return a new IBugLink object.
+        """Link the object with this bug.
 
-        If a new IBugLink is created by this method, a ObjectCreatedEvent
-        should be sent.
+        If a new IBugLink is created by this method, an ObjectCreatedEvent
+        is sent.
+
+        :return: True if a new link was created, False if it already existed.
         """
 
     def unlinkBug(bug):
-        """Remove any link between this object and the bug. If the bug wasn't
-        linked to the target, returns None otherwise returns the IBugLink
-        object which was removed.
+        """Remove any link between this object and the bug.
 
-        If an IBugLink is removed by this method, a ObjectDeletedEvent
-        should be sent.
+        If an IBugLink is removed by this method, an ObjectDeletedEvent
+        is sent.
+
+        :return: True if a link was deleted, False if it didn't exist.
         """
 
 

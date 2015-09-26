@@ -164,7 +164,7 @@ class SpecificationTests(TestCaseWithFactory):
                 'id', 'information_type', 'private', 'userCanView')),
             'launchpad.LimitedView': set((
                 'all_blocked', 'all_deps', 'approver', 'approverID',
-                'assignee', 'assigneeID', 'bug_links', 'bugs', 'completer',
+                'assignee', 'assigneeID', 'bugs', 'completer',
                 'createDependency', 'date_completed', 'date_goal_decided',
                 'date_goal_proposed', 'date_started', 'datecreated',
                 'definition_status', 'dependencies', 'direction_approved',

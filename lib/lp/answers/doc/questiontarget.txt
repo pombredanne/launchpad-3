@@ -559,8 +559,8 @@ copied to the question.
     >>> print question_message.text_contents
     This is really a question.
 
-    >>> for bug_link in target_question.bug_links:
-    ...     print bug_link.bug.title
+    >>> for bug in target_question.bugs:
+    ...     print bug.title
     Print is broken
     >>> print target_question.messages[-1].text_contents
     This is really a question.

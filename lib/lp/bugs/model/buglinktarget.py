@@ -17,16 +17,15 @@ from lp.services.webapp.authorization import check_permission
 class BugLinkTargetMixin:
     """Mixin class for IBugLinkTarget implementation."""
 
-    @property
-    def buglinkClass(self):
-        """Subclass should override this property to return the database
-        class used for IBugLink."""
-        raise NotImplementedError("missing buglinkClass() implementation")
-
     def createBugLink(self, bug):
         """Subclass should override that method to create a BugLink instance.
         """
         raise NotImplementedError("missing createBugLink() implementation")
+
+    def deleteBugLink(self, bug):
+        """Subclass should override that method to delete a BugLink instance.
+        """
+        raise NotImplementedError("missing deleteBugLink() implementation")
 
     # IBugLinkTarget implementation
     def linkBug(self, bug):
@@ -40,12 +39,11 @@ class BugLinkTargetMixin:
         if not check_permission('launchpad.View', bug):
             raise Unauthorized(
                 "cannot link to a private bug you don't have access to")
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                return buglink
+        if bug in self.bugs:
+            return False
         buglink = self.createBugLink(bug)
         notify(ObjectCreatedEvent(buglink))
-        return buglink
+        return True
 
     def unlinkBug(self, bug):
         """See IBugLinkTarget."""
@@ -60,10 +58,8 @@ class BugLinkTargetMixin:
                 "cannot unlink a private bug you don't have access to")
 
         # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                notify(ObjectDeletedEvent(buglink))
-                self.buglinkClass.delete(buglink.id)
-                # XXX: Bjorn Tillenius 2005-11-21: We shouldn't return the
-                #      object that we just deleted from the db.
-                return buglink
+        buglink = self.deleteBugLink(bug)
+        if buglink is not None:
+            notify(ObjectDeletedEvent(buglink))
+            return True
+        return False
