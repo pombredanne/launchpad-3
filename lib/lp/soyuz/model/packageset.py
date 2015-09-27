@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = ['Packageset', 'PackagesetSet']
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.expr import SQL
 from storm.locals import (
     DateTime,
@@ -341,6 +340,12 @@ class PackagesetSet:
         """See `IPackagesetSet`."""
         store = IMasterStore(Packageset)
 
+        try:
+            self.getByName(distroseries, name)
+            raise DuplicatePackagesetName
+        except NoSuchPackageSet:
+            pass
+
         packagesetgroup = None
         if related_set is not None:
             # Use the packagesetgroup of the `related_set`.
@@ -363,12 +368,9 @@ class PackagesetSet:
 
         store.add(packageset)
 
-        # We need to ensure that the cached statements are flushed so that
-        # the duplicate name constraint gets triggered here.
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicatePackagesetName()
+        # Explicit flush since it's common to use Packageset.id immediately
+        # after creation.
+        store.flush()
 
         return packageset
 
