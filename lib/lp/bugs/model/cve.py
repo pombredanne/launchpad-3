@@ -8,16 +8,16 @@ __all__ = [
     'CveSet',
     ]
 
-# SQL imports
+import operator
+
 from sqlobject import (
     SQLMultipleJoin,
     SQLObjectNotFound,
-    SQLRelatedJoin,
     StringCol,
     )
 from storm.expr import In
 from storm.store import Store
-# Zope
+from zope.component import getUtility
 from zope.interface import implementer
 
 from lp.app.validators.cve import (
@@ -34,12 +34,14 @@ from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.bugs.model.cvereference import CveReference
-from lp.services.database.bulk import load_related
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormexpr import fti_search
+from lp.services.xref.interfaces import IXRefSet
 
 
 @implementer(ICve, IBugLinkTarget)
@@ -54,10 +56,6 @@ class Cve(SQLBase, BugLinkTargetMixin):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     datemodified = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    # joins
-    bugs = SQLRelatedJoin('Bug', intermediateTable='BugCve',
-        joinColumn='cve', otherColumn='bug', orderBy='id')
-    bug_links = SQLMultipleJoin('BugCve', joinColumn='cve', orderBy='id')
     references = SQLMultipleJoin(
         'CveReference', joinColumn='cve', orderBy='id')
 
@@ -75,6 +73,18 @@ class Cve(SQLBase, BugLinkTargetMixin):
     def title(self):
         return 'CVE-%s (%s)' % (self.sequence, self.status.title)
 
+    @property
+    def bugs(self):
+        xref_bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'cve', self.sequence), types=[u'bug'])]
+        old_bug_ids = list(IStore(BugCve).find(
+            BugCve,
+            BugCve.cve == self).values(BugCve.bugID))
+        return list(sorted(
+            bulk.load(Bug, xref_bug_ids + old_bug_ids),
+            key=operator.attrgetter('id')))
+
     # CveReference's
     def createReference(self, source, content, url=None):
         """See ICveReference."""
@@ -87,10 +97,19 @@ class Cve(SQLBase, BugLinkTargetMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
+        # XXX: Need to ensure we update both, and return whether both
+        # were touched.
         BugCve(cve=self, bug=bug)
+        # XXX: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'cve', self.sequence): {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
+        # XXX: Need to ensure we update both, and return whether either
+        # was touched.
+        getUtility(IXRefSet).delete(
+            {(u'cve', self.sequence): [(u'bug', unicode(bug.id))]})
         link = Store.of(self).find(BugCve, cve=self, bug=bug).one()
         if link is not None:
             Store.of(link).remove(link)
@@ -181,10 +200,12 @@ class CveSet:
 
     def getBugCvesForBugTasks(self, bugtasks, cve_mapper=None):
         """See ICveSet."""
-        bugs = load_related(Bug, bugtasks, ('bugID', ))
+        bugs = bulk.load_related(Bug, bugtasks, ('bugID', ))
         if len(bugs) == 0:
             return []
         bug_ids = [bug.id for bug in bugs]
+
+        # XXX: Needs porting to XRef.
 
         # Do not use BugCve instances: Storm may need a very long time
         # to look up the bugs and CVEs referenced by a BugCve instance

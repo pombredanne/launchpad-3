@@ -198,6 +198,7 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -234,6 +235,7 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
     )
+from lp.services.xref.interfaces import IXRefSet
 
 
 def snapshot_bug_params(bug_params):
@@ -363,15 +365,10 @@ class Bug(SQLBase, InformationTypeMixin):
         'BugMessage', joinColumn='bug', orderBy='index')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
-        orderBy='sequence', joinColumn='bug', otherColumn='cve')
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin(
         'Specification', joinColumn='bug', otherColumn='specification',
         intermediateTable='SpecificationBug', orderBy='-datecreated')
-    questions = SQLRelatedJoin('Question', joinColumn='bug',
-        otherColumn='question', intermediateTable='QuestionBug',
-        orderBy='-datecreated')
     linked_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
@@ -382,6 +379,38 @@ class Bug(SQLBase, InformationTypeMixin):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def cves(self):
+        from lp.bugs.model.bugcve import BugCve
+        from lp.bugs.model.cve import Cve
+        xref_cve_sequences = [
+            sequence for _, sequence in getUtility(IXRefSet).findFrom(
+                (u'bug', unicode(self.id)), types=[u'cve'])]
+        old_cve_ids = list(IStore(BugCve).find(
+            BugCve,
+            BugCve.bug == self).values(BugCve.cveID))
+        return list(sorted(
+            IStore(Cve).find(
+                Cve,
+                Or(
+                    Cve.id.is_in(old_cve_ids),
+                    Cve.sequence.is_in(xref_cve_sequences))),
+            key=operator.attrgetter('sequence')))
+
+    @property
+    def questions(self):
+        from lp.answers.model.question import Question
+        from lp.coop.answersbugs.model import QuestionBug
+        xref_question_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'bug', unicode(self.id)), types=[u'question'])]
+        old_question_ids = list(IStore(QuestionBug).find(
+            QuestionBug,
+            QuestionBug.bug == self).values(QuestionBug.questionID))
+        return list(sorted(
+            bulk.load(Question, xref_question_ids + old_question_ids),
+            key=operator.attrgetter('id')))
 
     def getSpecifications(self, user):
         """See `IBug`."""

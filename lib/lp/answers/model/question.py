@@ -94,12 +94,14 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     cursor,
@@ -119,6 +121,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.helpers import is_english_variant
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
+from lp.services.xref.interfaces import IXRefSet
 
 
 class notify_question_modified:
@@ -210,8 +213,6 @@ class Question(SQLBase, BugLinkTargetMixin):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='question', otherColumn='person',
         intermediateTable='QuestionSubscription', orderBy='name')
-    bugs = SQLRelatedJoin('Bug', joinColumn='question', otherColumn='bug',
-        intermediateTable='QuestionBug', orderBy='id')
     messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
         prejoins=['message'], orderBy=['QuestionMessage.id'])
     reopenings = SQLMultipleJoin('QuestionReopening', orderBy='datecreated',
@@ -660,6 +661,19 @@ class Question(SQLBase, BugLinkTargetMixin):
         self.status = new_status
         return tktmsg
 
+    @property
+    def bugs(self):
+        from lp.bugs.model.bug import Bug
+        xref_bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'question', unicode(self.id)), types=[u'bug'])]
+        old_bug_ids = list(IStore(QuestionBug).find(
+            QuestionBug,
+            QuestionBug.question == self).values(QuestionBug.bugID))
+        return list(sorted(
+            bulk.load(Bug, xref_bug_ids + old_bug_ids),
+            key=operator.attrgetter('id')))
+
     # IBugLinkTarget implementation
     def linkBug(self, bug, user=None):
         """See `IBugLinkTarget`."""
@@ -677,10 +691,19 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
+        # XXX: Need to ensure we update both, and return whether both
+        # were touched.
         QuestionBug(question=self, bug=bug)
+        # XXX: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'question', unicode(self.id)): {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
+        # XXX: Need to ensure we update both, and return whether either
+        # was touched.
+        getUtility(IXRefSet).delete(
+            {(u'question', unicode(self.id)): [(u'bug', unicode(bug.id))]})
         link = Store.of(self).find(QuestionBug, question=self, bug=bug).one()
         if link is not None:
             Store.of(link).remove(link)
@@ -716,9 +739,14 @@ class QuestionSet:
                 FROM Question
                     LEFT OUTER JOIN QuestionBug
                         ON Question.id = QuestionBug.question
-                    LEFT OUTER JOIN BugTask
-                        ON QuestionBug.bug = BugTask.bug
-                            AND BugTask.status != %s
+                    LEFT OUTER JOIN XRef ON (
+                        XRef.from_type = 'question'
+                        AND XRef.from_id_int = Question.id
+                        AND XRef.to_type = 'bug')
+                    LEFT OUTER JOIN BugTask ON (
+                        (BugTask.bug = XRef.to_id_int
+                         OR BugTask.bug = QuestionBug.bug)
+                        AND BugTask.status != %s)
                 WHERE
                     Question.status IN (%s, %s)
                     AND (Question.datelastresponse IS NULL
