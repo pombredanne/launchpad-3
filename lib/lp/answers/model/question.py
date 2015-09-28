@@ -730,29 +730,38 @@ class QuestionSet:
         # This query joins to bugtasks that are not BugTaskStatus.INVALID
         # because there are many bugtasks to one question. A question is
         # included when BugTask.status IS NULL.
-        return Question.select("""
-            id in (SELECT Question.id
-                FROM Question
-                    LEFT OUTER JOIN QuestionBug
-                        ON Question.id = QuestionBug.question
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            bugtask_join = """
                     LEFT OUTER JOIN XRef ON (
                         XRef.from_type = 'question'
                         AND XRef.from_id_int = Question.id
                         AND XRef.to_type = 'bug')
                     LEFT OUTER JOIN BugTask ON (
-                        (BugTask.bug = XRef.to_id_int
-                         OR BugTask.bug = QuestionBug.bug)
+                        BugTask.bug = XRef.to_id_int
                         AND BugTask.status != %s)
+                """
+        else:
+            bugtask_join = """
+                    LEFT OUTER JOIN QuestionBug
+                        ON Question.id = QuestionBug.question
+                    LEFT OUTER JOIN BugTask ON (
+                        BugTask.bug = QuestionBug.bug
+                        AND BugTask.status != %s)
+                """
+        return Question.select(("""
+            id in (SELECT Question.id
+                FROM Question
+                    %s
                 WHERE
-                    Question.status IN (%s, %s)
+                    Question.status IN (%%s, %%s)
                     AND (Question.datelastresponse IS NULL
                          OR Question.datelastresponse < (CURRENT_TIMESTAMP
-                            AT TIME ZONE 'UTC' - interval '%s days'))
+                            AT TIME ZONE 'UTC' - interval '%%s days'))
                     AND Question.datelastquery < (CURRENT_TIMESTAMP
-                            AT TIME ZONE 'UTC' - interval '%s days')
+                            AT TIME ZONE 'UTC' - interval '%%s days')
                     AND Question.assignee IS NULL
                     AND BugTask.status IS NULL)
-            """ % sqlvalues(
+            """ % bugtask_join) % sqlvalues(
                 BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
