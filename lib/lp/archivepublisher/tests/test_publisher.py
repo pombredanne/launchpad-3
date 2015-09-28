@@ -18,6 +18,7 @@ from textwrap import dedent
 import time
 
 from debian.deb822 import Release
+from testtools.matchers import ContainsAll
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -2152,9 +2153,10 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
     def setupPublisher(self, archive):
         """Setup a `Publisher` instance for the given archive."""
-        allowed_suites = []
-        self.archive_publisher = getPublisher(
-            archive, allowed_suites, self.logger)
+        if self.archive_publisher is None:
+            allowed_suites = []
+            self.archive_publisher = getPublisher(
+                archive, allowed_suites, self.logger)
 
     def _publishArchive(self, archive):
         """Publish a test source in the given archive.
@@ -2225,6 +2227,9 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
         self.assertTrue(cprov.archive.signing_key is not None)
 
+        self.setupPublisher(cprov.archive)
+        self.archive_publisher._syncTimestamps = FakeMethod()
+
         self._publishArchive(cprov.archive)
 
         # All of Release, Release.gpg, and InRelease exist.
@@ -2251,6 +2256,13 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
             inline_signature.fingerprint,
             cprov.archive.signing_key.fingerprint)
         self.assertEqual(release_content, inline_signature.plain_data)
+
+        # The publisher synchronises the various Release file timestamps.
+        self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)
+        sync_args = self.archive_publisher._syncTimestamps.extract_args()[0]
+        self.assertEqual(self.distroseries.name, sync_args[0])
+        self.assertThat(
+            sync_args[1], ContainsAll(['Release', 'Release.gpg', 'InRelease']))
 
         # All done, turn test-keyserver off.
         tac.tearDown()
