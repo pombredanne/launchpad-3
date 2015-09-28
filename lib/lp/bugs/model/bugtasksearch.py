@@ -446,9 +446,18 @@ def _build_query(params):
             BugTaskFlat.productseries == None))
 
     if params.has_cve:
-        extra_clauses.append(
-            BugTaskFlat.bug_id.is_in(
-                Select(BugCve.bugID, tables=[BugCve])))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            where = [
+                XRef.from_type == u'bug',
+                XRef.from_id_int == BugTaskFlat.bug_id,
+                XRef.to_type == u'cve',
+                ]
+            extra_clauses.append(Exists(Select(
+                1, tables=[XRef], where=And(*where))))
+        else:
+            extra_clauses.append(
+                BugTaskFlat.bug_id.is_in(
+                    Select(BugCve.bugID, tables=[BugCve])))
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:

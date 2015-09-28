@@ -503,6 +503,16 @@ class OnceTests:
         params = self.getBugTaskSearchParams(user=None, has_cve=True)
         self.assertSearchFinds(params, self.bugtasks[:1])
 
+    def test_has_cve_with_xref(self):
+        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
+        self.test_has_cve()
+
+    def test_has_cve_with_xref_and_no_old(self):
+        self.useFixture(FeatureFixture({
+            'bugs.xref_buglinks.query': 'true',
+            'bugs.xref_buglinks.write_old.disabled': 'true'}))
+        self.test_has_cve()
+
     def test_sort_by_milestone_name(self):
         expected = self.setUpMilestoneSorting()
         params = self.getBugTaskSearchParams(
