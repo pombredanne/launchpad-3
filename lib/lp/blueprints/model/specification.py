@@ -11,6 +11,8 @@ __all__ = [
     'SpecificationSet',
     ]
 
+import operator
+
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
@@ -86,6 +88,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -105,6 +108,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.xref.interfaces import IXRefSet
 
 
 def recursive_blocked_query(user):
@@ -239,9 +243,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    bugs = SQLRelatedJoin('Bug',
-        joinColumn='specification', otherColumn='bug',
-        intermediateTable='SpecificationBug', orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
@@ -791,12 +792,37 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
         return bool(self.subscription(person))
 
+    @property
+    def bugs(self):
+        from lp.bugs.model.bug import Bug
+        xref_bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'specification', unicode(self.id)), types=[u'bug'])]
+        old_bug_ids = list(IStore(SpecificationBug).find(
+            SpecificationBug,
+            SpecificationBug.specification == self).values(
+                SpecificationBug.bugID))
+        return list(sorted(
+            bulk.load(Bug, xref_bug_ids + old_bug_ids),
+            key=operator.attrgetter('id')))
+
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
+        # XXX: Need to ensure we update both, and return whether both
+        # were touched.
         SpecificationBug(specification=self, bug=bug)
+        # XXX: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'specification', unicode(self.id)):
+                {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
+        # XXX: Need to ensure we update both, and return whether either
+        # was touched.
+        getUtility(IXRefSet).delete(
+            {(u'specification', unicode(self.id)):
+                [(u'bug', unicode(bug.id))]})
         link = Store.of(self).find(
             SpecificationBug, specification=self, bug=bug).one()
         if link is not None:
