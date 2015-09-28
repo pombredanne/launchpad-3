@@ -39,7 +39,6 @@ from zope.security.proxy import (
 
 from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
@@ -165,28 +164,6 @@ orderby_expression = {
                         BugTag.id, tables=[BugTag],
                         where=(BugTag.bugID == BugTaskFlat.bug_id),
                         order_by=BugTag.tag, limit=1))),
-            ]
-        ),
-    "specification": (
-        Specification.name,
-        [
-            (Specification,
-                LeftJoin(
-                    Specification,
-                    # We want at most one specification per bug.
-                    # Select the specification that comes first
-                    # in alphabetic order.
-                    # XXX: Needs porting to XRef.
-                    Specification.id == Select(
-                        Specification.id,
-                        tables=[
-                            SpecificationBug,
-                            Join(
-                                Specification,
-                                Specification.id ==
-                                    SpecificationBug.specificationID)],
-                        where=(SpecificationBug.bugID == BugTaskFlat.bug_id),
-                        order_by=Specification.name, limit=1))),
             ]
         ),
     }
