@@ -5,6 +5,9 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+import datetime
+
+import pytz
 from testtools.matchers import Equals
 from zope.component import getUtility
 
@@ -22,6 +25,22 @@ from lp.testing.matchers import HasQueryCount
 class TestXRefSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_create_sets_date_created(self):
+        # date_created defaults to now, but can be overridden.
+        old = datetime.datetime.strptime('2005-01-01', '%Y-%m-%d').replace(
+            tzinfo=pytz.UTC)
+        now = IStore(XRef).execute(
+            "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
+            ).get_one()[0].replace(tzinfo=pytz.UTC)
+        getUtility(IXRefSet).create({
+            ('a', '1'): {('b', 'foo'): {}},
+            ('a', '2'): {('b', 'bar'): {'date_created': old}}})
+        rows = IStore(XRef).find(
+            (XRef.from_id, XRef.to_id, XRef.date_created),
+            XRef.from_type == 'a')
+        self.assertContentEqual(
+            [('1', 'foo', now), ('2', 'bar', old)], rows)
 
     def test_create_sets_int_columns(self):
         # The string ID columns have integers equivalents for quick and
@@ -44,6 +63,9 @@ class TestXRefSet(TestCaseWithFactory):
 
     def test_findFrom(self):
         creator = self.factory.makePerson()
+        now = IStore(XRef).execute(
+            "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
+            ).get_one()[0].replace(tzinfo=pytz.UTC)
         getUtility(IXRefSet).create({
             ('a', 'bar'): {
                 ('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},
@@ -55,22 +77,30 @@ class TestXRefSet(TestCaseWithFactory):
             bar_refs = getUtility(IXRefSet).findFrom(('a', 'bar'))
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},
+            {('b', 'foo'): {
+                'creator': creator, 'date_created': now,
+                'metadata': {'test': 1}}},
             bar_refs)
 
         with StormStatementRecorder() as recorder:
             foo_refs = getUtility(IXRefSet).findFrom(('b', 'foo'))
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {('a', 'bar'): {'creator': creator, 'metadata': {'test': 1}},
-             ('a', 'baz'): {'creator': creator, 'metadata': {'test': 2}}},
+            {('a', 'bar'): {
+                'creator': creator, 'date_created': now,
+                'metadata': {'test': 1}},
+             ('a', 'baz'): {
+                 'creator': creator, 'date_created': now,
+                 'metadata': {'test': 2}}},
             foo_refs)
 
         with StormStatementRecorder() as recorder:
             bar_refs = getUtility(IXRefSet).findFrom(('a', 'baz'))
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
-            {('b', 'foo'): {'creator': creator, 'metadata': {'test': 2}}},
+            {('b', 'foo'): {
+                'creator': creator, 'date_created': now,
+                'metadata': {'test': 2}}},
             bar_refs)
 
         with StormStatementRecorder() as recorder:
@@ -79,9 +109,13 @@ class TestXRefSet(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertEqual(
             {('a', 'bar'): {
-                ('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},
+                ('b', 'foo'): {
+                    'creator': creator, 'date_created': now,
+                    'metadata': {'test': 1}}},
              ('a', 'baz'): {
-                ('b', 'foo'): {'creator': creator, 'metadata': {'test': 2}}}},
+                ('b', 'foo'): {
+                    'creator': creator, 'date_created': now,
+                    'metadata': {'test': 2}}}},
              bar_baz_refs)
 
     def test_findFrom_types(self):
