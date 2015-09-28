@@ -96,6 +96,7 @@ from lp.services.database.stormexpr import (
     rank_by_fti,
     Unnest,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
     all,
@@ -104,6 +105,7 @@ from lp.services.searchbuilder import (
     not_equals,
     NULL,
     )
+from lp.services.xref.model import XRef
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -174,6 +176,7 @@ orderby_expression = {
                     # We want at most one specification per bug.
                     # Select the specification that comes first
                     # in alphabetic order.
+                    # XXX: Needs porting to XRef.
                     Specification.id == Select(
                         Specification.id,
                         tables=[
@@ -1035,12 +1038,26 @@ def _build_blueprint_related_clause(params):
     linked_blueprints = params.linked_blueprints
 
     def make_clause(blueprints=None):
-        where = [SpecificationBug.bugID == BugTaskFlat.bug_id]
-        if blueprints is not None:
-            where.append(
-                search_value_to_storm_where_condition(
-                    SpecificationBug.specificationID, blueprints))
-        return Exists(Select(1, tables=[SpecificationBug], where=And(*where)))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            where = [
+                XRef.from_type == u'bug',
+                XRef.from_id_int == BugTaskFlat.bug_id,
+                XRef.to_type == u'specification',
+                ]
+            if blueprints is not None:
+                where.append(
+                    search_value_to_storm_where_condition(
+                        XRef.to_id_int, blueprints))
+            return Exists(Select(
+                1, tables=[XRef], where=And(*where)))
+        else:
+            where = [SpecificationBug.bugID == BugTaskFlat.bug_id]
+            if blueprints is not None:
+                where.append(
+                    search_value_to_storm_where_condition(
+                        SpecificationBug.specificationID, blueprints))
+            return Exists(Select(
+                1, tables=[SpecificationBug], where=And(*where)))
 
     if linked_blueprints is None:
         return None
