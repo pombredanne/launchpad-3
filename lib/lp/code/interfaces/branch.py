@@ -777,7 +777,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :return: A list of suite source packages ordered by pocket.
         """
 
-    def branchLinks():
+    def getBranchLinks():
         """Return a sorted list of ICanHasLinkedBranch objects.
 
         There is one result for each related linked object that the branch is
@@ -789,7 +789,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         more important links are sorted first.
         """
 
-    def branchIdentities():
+    def getBranchIdentities():
         """A list of aliases for a branch.
 
         Returns a list of tuples of bzr identity and context object.  There is
@@ -1480,12 +1480,12 @@ class BzrIdentityMixin:
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        identity, context = self.branchIdentities()[0]
+        identity, context = self.getBranchIdentities()[0]
         return identity
 
     identity = bzr_identity
 
-    def branchIdentities(self):
+    def getBranchIdentities(self):
         """See `IBranch`."""
         lp_prefix = config.codehosting.bzr_lp_prefix
         if not self.target.supports_short_identities:
@@ -1493,11 +1493,11 @@ class BzrIdentityMixin:
         else:
             identities = [
                 (lp_prefix + link.bzr_path, link.context)
-                for link in self.branchLinks()]
+                for link in self.getBranchLinks()]
         identities.append((lp_prefix + self.unique_name, self))
         return identities
 
-    def branchLinks(self):
+    def getBranchLinks(self):
         """See `IBranch`."""
         links = []
         for suite_sp in self.associatedSuiteSourcePackages():

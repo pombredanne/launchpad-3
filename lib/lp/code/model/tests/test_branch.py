@@ -910,8 +910,8 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertFalse(branch.upgrade_pending)
 
 
-class TestBranchLinksAndIdentites(TestCaseWithFactory):
-    """Test IBranch.branchLinks and IBranch.branchIdentities."""
+class TestBranchLinksAndIdentities(TestCaseWithFactory):
+    """Test IBranch.getBranchLinks and IBranch.getBranchIdentities."""
 
     layer = DatabaseFunctionalLayer
 
@@ -920,7 +920,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             [('lp://dev/' + branch.unique_name, branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
     def test_linked_to_product(self):
         # If a branch is linked to the product, it is also by definition
@@ -934,12 +934,12 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch, ICanHasLinkedBranch(fooix.development_focus)],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
             [('lp://dev/fooix', fooix),
              ('lp://dev/fooix/devel', fooix.development_focus),
              ('lp://dev/~eric/fooix/trunk', branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
     def test_linked_to_product_series(self):
         # If a branch is linked to a non-development series of a product and
@@ -955,11 +955,11 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
             [('lp://dev/fooix/future', future),
              ('lp://dev/~eric/fooix/trunk', branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
     def test_linked_to_package(self):
         # If a branch is linked to a suite source package where the
@@ -987,12 +987,12 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [distro_link, suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
             [('lp://dev/mint/choc', dsp),
              ('lp://dev/mint/dev/choc', suite_sourcepackage),
              ('lp://dev/~eric/mint/dev/choc/tip', branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
     def test_linked_to_package_not_release_pocket(self):
         # If a branch is linked to a suite source package where the
@@ -1019,11 +1019,11 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
             [('lp://dev/mint/dev-backports/choc', suite_sourcepackage),
              ('lp://dev/~eric/mint/dev/choc/tip', branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
     def test_linked_to_package_not_current_series(self):
         # If the branch is linked to a suite source package where the distro
@@ -1050,11 +1050,11 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
             [('lp://dev/mint/supported/choc', suite_sp),
              ('lp://dev/~eric/mint/supported/choc/tip', branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
     def test_linked_across_project_to_package(self):
         # If a product branch is linked to a suite source package, the links
@@ -1080,17 +1080,17 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [distro_link, suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
             [('lp://dev/mint/choc', dsp),
              ('lp://dev/mint/dev/choc', suite_sourcepackage),
              ('lp://dev/~eric/fooix/trunk', branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
     def test_junk_branch_links(self):
-        # If a junk branch has links, those links are returned in the
-        # branchLinks, but the branchIdentities just has the branch unique
-        # name.
+        # If a junk branch has links, those links are returned by
+        # getBranchLinks, but getBranchIdentities just returns the branch
+        # unique name.
         eric = self.factory.makePerson(name='eric')
         branch = self.factory.makePersonalBranch(owner=eric, name='foo')
         fooix = removeSecurityProxy(self.factory.makeProduct())
@@ -1098,10 +1098,10 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch, ICanHasLinkedBranch(fooix.development_focus)],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
             [('lp://dev/~eric/+junk/foo', branch)],
-            branch.branchIdentities())
+            branch.getBranchIdentities())
 
 
 class TestBzrIdentity(TestCaseWithFactory):
