@@ -1385,20 +1385,14 @@ class BugTaskSet:
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
         # Import locally to avoid circular imports.
-        from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
 
         bug_ids = set(bugtask.bugID for bugtask in bugtasks)
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            bug_ids_with_specifications = set(
-                int(id) for _, id in getUtility(IXRefSet).findFromMany(
-                    [(u'bug', unicode(bug_id)) for bug_id in bug_ids],
-                    types=[u'specification']).keys())
-        else:
-            bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-                SpecificationBug.bugID,
-                SpecificationBug.bugID.is_in(bug_ids)))
+        bug_ids_with_specifications = set(
+            int(id) for _, id in getUtility(IXRefSet).findFromMany(
+                [(u'bug', unicode(bug_id)) for bug_id in bug_ids],
+                types=[u'specification']).keys())
         bug_ids_with_branches = set(IStore(BugBranch).find(
                 BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
         # Badging looks up milestones too : eager load into the storm cache.
