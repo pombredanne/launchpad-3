@@ -78,6 +78,42 @@ class TestCveSet(TestCaseWithFactory):
             u'CVE-2000-0004']
         self.assertEqual(expected, cve_data)
 
+    def test_getBugCveCount(self):
+        login_person(self.factory.makePerson())
+
+        base = getUtility(ICveSet).getBugCveCount()
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        cve1 = self.factory.makeCVE(sequence='2099-1234')
+        cve2 = self.factory.makeCVE(sequence='2099-2468')
+        self.assertEqual(base, getUtility(ICveSet).getBugCveCount())
+        cve1.linkBug(bug1)
+        self.assertEqual(base + 1, getUtility(ICveSet).getBugCveCount())
+        cve1.linkBug(bug2)
+        self.assertEqual(base + 2, getUtility(ICveSet).getBugCveCount())
+        cve2.linkBug(bug1)
+        self.assertEqual(base + 3, getUtility(ICveSet).getBugCveCount())
+        cve1.unlinkBug(bug1)
+        cve1.unlinkBug(bug2)
+        cve2.unlinkBug(bug1)
+        self.assertEqual(base, getUtility(ICveSet).getBugCveCount())
+
+
+class TestCveSetWithXRef(TestCveSet):
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
+        super(TestCveSetWithXRef, self).setUp()
+
+
+class TestCveSetWithXRefAndNoOld(TestCveSet):
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({
+            'bugs.xref_buglinks.query': 'true',
+            'bugs.xref_buglinks.write_old.disabled': 'true'}))
+        super(TestCveSetWithXRefAndNoOld, self).setUp()
+
 
 class TestBugLinks(TestCaseWithFactory):
 

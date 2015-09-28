@@ -43,6 +43,7 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormexpr import fti_search
 from lp.services.features import getFeatureFlag
 from lp.services.xref.interfaces import IXRefSet
+from lp.services.xref.model import XRef
 
 
 @implementer(ICve, IBugLinkTarget)
@@ -199,38 +200,49 @@ class CveSet:
         bugs = bulk.load_related(Bug, bugtasks, ('bugID', ))
         if len(bugs) == 0:
             return []
-        bug_ids = [bug.id for bug in bugs]
-
-        # XXX: Needs porting to XRef.
-
-        # Do not use BugCve instances: Storm may need a very long time
-        # to look up the bugs and CVEs referenced by a BugCve instance
-        # when the +cve view of a distroseries is rendered: There may
-        # be a few thousand (bug, CVE) tuples, while the number of bugs
-        # and CVEs is in the order of hundred. It is much more efficient
-        # to retrieve just (bug_id, cve_id) from the BugCve table and
-        # to map this to (Bug, CVE) here, instead of letting Storm
-        # look up the CVE and bug for a BugCve instance, even if bugs
-        # and CVEs are bulk loaded.
         store = Store.of(bugtasks[0])
-        bugcve_ids = store.find(
-            (BugCve.bugID, BugCve.cveID), In(BugCve.bugID, bug_ids))
-        bugcve_ids.order_by(BugCve.bugID, BugCve.cveID)
-        bugcve_ids = list(bugcve_ids)
 
-        cve_ids = set(cve_id for bug_id, cve_id in bugcve_ids)
-        cves = store.find(Cve, In(Cve.id, list(cve_ids)))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            xrefs = getUtility(IXRefSet).findFromMany(
+                [(u'bug', unicode(bug.id)) for bug in bugs])
+            bugcve_ids = set()
+            for bug_key in xrefs:
+                for cve_key in xrefs[bug_key]:
+                    bugcve_ids.add((int(bug_key[1]), cve_key[1]))
+        else:
+            # Do not use BugCve instances: Storm may need a very long time
+            # to look up the bugs and CVEs referenced by a BugCve instance
+            # when the +cve view of a distroseries is rendered: There may
+            # be a few thousand (bug, CVE) tuples, while the number of bugs
+            # and CVEs is in the order of hundred. It is much more efficient
+            # to retrieve just (Bug.id, Cve.sequence) from the BugCve
+            # table and to map this to (Bug, CVE) here, instead of
+            # letting Storm look up the CVE and bug for a BugCve
+            # instance, even if bugs and CVEs are bulk loaded.
+            bug_ids = [bug.id for bug in bugs]
+            bugcve_ids = store.find(
+                (BugCve.bugID, Cve.sequence),
+                Cve.id == BugCve.cveID, In(BugCve.bugID, bug_ids))
+
+        bugcve_ids = list(sorted(bugcve_ids))
+
+        cves = store.find(
+            Cve, In(Cve.sequence, [seq for _, seq in bugcve_ids]))
 
         if cve_mapper is None:
-            cvemap = dict((cve.id, cve) for cve in cves)
+            cvemap = dict((cve.sequence, cve) for cve in cves)
         else:
-            cvemap = dict((cve.id, cve_mapper(cve)) for cve in cves)
+            cvemap = dict((cve.sequence, cve_mapper(cve)) for cve in cves)
         bugmap = dict((bug.id, bug) for bug in bugs)
         return [
-            (bugmap[bug_id], cvemap[cve_id])
-            for bug_id, cve_id in bugcve_ids
+            (bugmap[bug_id], cvemap[cve_sequence])
+            for bug_id, cve_sequence in bugcve_ids
             ]
 
     def getBugCveCount(self):
         """See ICveSet."""
-        return BugCve.select().count()
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            return IStore(XRef).find(
+                XRef, XRef.from_type == u'bug', XRef.to_type == u'cve').count()
+        else:
+            return BugCve.select().count()
