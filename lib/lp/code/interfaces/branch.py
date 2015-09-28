@@ -1488,7 +1488,7 @@ class BzrIdentityMixin:
     def branchIdentities(self):
         """See `IBranch`."""
         lp_prefix = config.codehosting.bzr_lp_prefix
-        if not self.target.supports_short_identites:
+        if not self.target.supports_short_identities:
             identities = []
         else:
             identities = [
