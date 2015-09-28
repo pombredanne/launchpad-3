@@ -8,11 +8,13 @@ __all__ = [
     "XRefSet",
     ]
 
+import pytz
 from storm.expr import (
     And,
     Or,
     )
 from storm.properties import (
+    DateTime,
     Int,
     JSON,
     Unicode,
@@ -21,6 +23,7 @@ from storm.references import Reference
 from zope.interface import implementer
 
 from lp.services.database import bulk
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.xref.interfaces import IXRefSet
@@ -47,6 +50,7 @@ class XRef(StormBase):
     from_id_int = Int()  # For efficient joins.
     creator_id = Int(name="creator")
     creator = Reference(creator_id, "Person.id")
+    date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
     metadata = JSON()
 
 
@@ -70,15 +74,17 @@ class XRefSet:
                 rows.append((
                     from_[0], from_[1], _int_or_none(from_[1]),
                     to[0], to[1], _int_or_none(to[1]),
-                    props.get('creator'), props.get('metadata')))
+                    props.get('creator'), props.get('date_created', UTC_NOW),
+                    props.get('metadata')))
                 rows.append((
                     to[0], to[1], _int_or_none(to[1]),
                     from_[0], from_[1], _int_or_none(from_[1]),
-                    props.get('creator'), props.get('metadata')))
+                    props.get('creator'), props.get('date_created', UTC_NOW),
+                    props.get('metadata')))
         bulk.create(
             (XRef.from_type, XRef.from_id, XRef.from_id_int,
              XRef.to_type, XRef.to_id, XRef.to_id_int,
-             XRef.creator, XRef.metadata), rows)
+             XRef.creator, XRef.date_created, XRef.metadata), rows)
 
     def delete(self, xrefs):
         # Delete both directions.
@@ -103,7 +109,7 @@ class XRefSet:
         store = IStore(XRef)
         rows = list(store.using(XRef).find(
             (XRef.from_type, XRef.from_id, XRef.to_type, XRef.to_id,
-             XRef.creator_id, XRef.metadata),
+             XRef.creator_id, XRef.date_created, XRef.metadata),
             Or(*[
                 And(XRef.from_type == id[0], XRef.from_id == id[1])
                 for id in object_ids]),
@@ -113,7 +119,8 @@ class XRefSet:
         for row in rows:
             result.setdefault((row[0], row[1]), {})[(row[2], row[3])] = {
                 "creator": store.get(Person, row[4]) if row[4] else None,
-                "metadata": row[5]}
+                "date_created": row[5],
+                "metadata": row[6]}
         return result
 
     def findFrom(self, object_id, types=None):
