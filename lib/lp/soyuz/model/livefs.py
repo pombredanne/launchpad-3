@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Bool,
     DateTime,
@@ -239,16 +238,14 @@ class LiveFSSet:
                     "%s cannot create live filesystems owned by %s." %
                     (registrant.displayname, owner.displayname))
 
+        if self.exists(owner, distro_series, name):
+            raise DuplicateLiveFSName
+
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
             registrant, owner, distro_series, name, metadata,
             require_virtualized, date_created)
         store.add(livefs)
-
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicateLiveFSName
 
         return livefs
 
