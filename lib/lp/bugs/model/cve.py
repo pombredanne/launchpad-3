@@ -204,7 +204,7 @@ class CveSet:
 
         if getFeatureFlag('bugs.xref_buglinks.query'):
             xrefs = getUtility(IXRefSet).findFromMany(
-                [(u'bug', unicode(bug.id)) for bug in bugs])
+                [(u'bug', unicode(bug.id)) for bug in bugs], types=[u'cve'])
             bugcve_ids = set()
             for bug_key in xrefs:
                 for cve_key in xrefs[bug_key]:
