@@ -77,7 +77,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.coop.answersbugs.model import QuestionBug
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -101,7 +100,6 @@ from lp.services.database.constants import (
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     cursor,
@@ -110,7 +108,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import rank_by_fti
-from lp.services.features import getFeatureFlag
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.messages.model.message import (

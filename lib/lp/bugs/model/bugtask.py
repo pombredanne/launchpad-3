@@ -139,7 +139,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -879,7 +878,7 @@ class BugTask(SQLBase):
                 new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
 
         self._setStatusDateProperties(self.status, new_status, when=when)
-        
+
     def _setStatusDateProperties(self, old_status, new_status, when=None):
         if old_status == new_status:
             # No change in the status, so nothing to do.

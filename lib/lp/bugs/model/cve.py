@@ -31,7 +31,6 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.bugs.model.cvereference import CveReference
 from lp.services.database import bulk
@@ -41,7 +40,6 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormexpr import fti_search
-from lp.services.features import getFeatureFlag
 from lp.services.xref.interfaces import IXRefSet
 from lp.services.xref.model import XRef
 

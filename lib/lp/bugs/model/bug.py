@@ -204,7 +204,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet

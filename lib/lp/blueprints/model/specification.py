@@ -64,7 +64,6 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.blueprints.model.specificationbranch import SpecificationBranch
-from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.blueprints.model.specificationdependency import (
     SpecificationDependency,
     )
@@ -102,7 +101,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,

@@ -61,7 +61,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
@@ -96,7 +95,6 @@ from lp.services.database.stormexpr import (
     rank_by_fti,
     Unnest,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
     all,
