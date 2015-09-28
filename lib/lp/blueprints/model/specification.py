@@ -808,8 +808,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        # XXX: Need to ensure we update both, and return whether both
-        # were touched.
         SpecificationBug(specification=self, bug=bug)
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
@@ -818,17 +816,11 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        # XXX: Need to ensure we update both, and return whether either
-        # was touched.
+        Store.of(self).find(
+            SpecificationBug, specification=self, bug=bug).remove()
         getUtility(IXRefSet).delete(
             {(u'specification', unicode(self.id)):
                 [(u'bug', unicode(bug.id))]})
-        link = Store.of(self).find(
-            SpecificationBug, specification=self, bug=bug).one()
-        if link is not None:
-            Store.of(link).remove(link)
-            return True
-        return False
 
     # sprint linking
     def linkSprint(self, sprint, user):

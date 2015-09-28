@@ -691,8 +691,6 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        # XXX: Need to ensure we update both, and return whether both
-        # were touched.
         QuestionBug(question=self, bug=bug)
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
@@ -700,15 +698,9 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        # XXX: Need to ensure we update both, and return whether either
-        # was touched.
+        Store.of(self).find(QuestionBug, question=self, bug=bug).remove()
         getUtility(IXRefSet).delete(
             {(u'question', unicode(self.id)): [(u'bug', unicode(bug.id))]})
-        link = Store.of(self).find(QuestionBug, question=self, bug=bug).one()
-        if link is not None:
-            Store.of(link).remove(link)
-            return True
-        return False
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""
