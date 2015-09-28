@@ -106,6 +106,10 @@ class XRefSet:
     def findFromMany(self, object_ids, types=None):
         from lp.registry.model.person import Person
 
+        object_ids = list(object_ids)
+        if not object_ids:
+            return {}
+
         store = IStore(XRef)
         rows = list(store.using(XRef).find(
             (XRef.from_type, XRef.from_id, XRef.to_type, XRef.to_id,
