@@ -9,6 +9,8 @@ __all__ = ['QuestionBug']
 
 from sqlobject import ForeignKey
 
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 
 
@@ -20,3 +22,4 @@ class QuestionBug(SQLBase):
     question = ForeignKey(
         dbName='question', foreignKey='Question', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)

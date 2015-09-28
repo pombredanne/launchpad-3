@@ -81,6 +81,7 @@ from lp.services.database import postgresql
 from lp.services.database.bulk import (
     create,
     dbify_value,
+    load_related,
     )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IMasterStore
@@ -1678,6 +1679,66 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                 transaction.abort()
 
 
+class BugXRefMigrator(TunableLoop):
+    """Creates an XRef record for each former IBugLink."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BugXRefMigrator, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Bug)
+
+    def findBugs(self):
+        if not getFeatureFlag('bugs.xref_buglinks.garbo.enabled'):
+            return EmptyResultSet()
+        return self.store.find(
+            Bug, Bug.id >= self.start_at).order_by(Bug.id)
+
+    def isDone(self):
+        return self.findBugs().is_empty()
+
+    def __call__(self, chunk_size):
+        # Grab a chunk of Bug IDs.
+        # Find all QuestionBugs, SpecificationBugs and BugCves for each
+        # of those bugs.
+        # Compose a list of link IDs that should exist.
+        # Perform a bulk XRef find for all of those.
+        # Delete any extras, create any missing.
+        from lp.blueprints.model.specificationbug import SpecificationBug
+        from lp.bugs.model.bugcve import BugCve
+        from lp.bugs.model.cve import Cve
+        from lp.coop.answersbugs.model import QuestionBug
+        from lp.services.xref.interfaces import IXRefSet
+        bug_ids = list(self.findBugs()[:chunk_size].values(Bug.id))
+        qbs = list(self.store.find(
+            QuestionBug, QuestionBug.bugID.is_in(bug_ids)))
+        sbs = list(self.store.find(
+            SpecificationBug, SpecificationBug.bugID.is_in(bug_ids)))
+        bcs = list(self.store.find(BugCve, BugCve.bugID.is_in(bug_ids)))
+        wanted = {(u'bug', unicode(bug_id)): {} for bug_id in bug_ids}
+        for qb in qbs:
+            wanted[(u'bug', unicode(qb.bugID))][
+                (u'question', unicode(qb.questionID))] = {
+                    'date_created': qb.date_created}
+        for sb in sbs:
+            wanted[(u'bug', unicode(sb.bugID))][
+                (u'specification', unicode(sb.specificationID))] = {}
+        load_related(Cve, bcs, ['cveID'])
+        for bc in bcs:
+            wanted[(u'bug', unicode(bc.bugID))][
+                (u'cve', unicode(bc.cve.sequence))] = {}
+        existing = getUtility(IXRefSet).findFromMany(wanted.keys())
+        needed = {
+            bug: {
+                other: meta for other, meta in others.iteritems()
+                if other not in existing.get(bug, {})}
+            for bug, others in wanted.iteritems() if others}
+        getUtility(IXRefSet).create(needed)
+        self.start_at = bug_ids[-1] + 1
+        transaction.commit()
+
+
 class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """Run every 5 minutes.
 
@@ -1714,6 +1775,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         RevisionCachePruner,
         UnusedSessionPruner,
+        BugXRefMigrator,
         ]
     experimental_tunable_loops = []
 
