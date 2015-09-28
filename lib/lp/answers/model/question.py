@@ -681,11 +681,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        link = Store.of(self).find(QuestionBug, question=self, bug=bug).one()
-        if link is not None:
-            Store.of(link).remove(link)
-            return True
-        return False
+        Store.of(self).find(QuestionBug, question=self, bug=bug).remove()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""
