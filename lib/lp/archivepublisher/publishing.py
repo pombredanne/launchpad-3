@@ -885,6 +885,7 @@ class Publisher(object):
         archive_signer = IArchiveSigningKey(self.archive)
         archive_signer.signRepository(suite)
         all_files.add("Release.gpg")
+        all_files.add("InRelease")
 
         # Make sure all the timestamps match, to make it easier to insert
         # caching headers on mirrors.
