@@ -140,6 +140,9 @@ class TestXRefSet(TestCaseWithFactory):
             [],
             getUtility(IXRefSet).findFrom(('b', '4'), types=['d']).keys())
 
+    def test_findFromMany_none(self):
+        self.assertEqual({}, getUtility(IXRefSet).findFromMany([]))
+
     def test_delete(self):
         getUtility(IXRefSet).create({
             ('a', 'bar'): {('b', 'foo'): {}},
