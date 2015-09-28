@@ -139,10 +139,12 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.xref.interfaces import IXRefSet
 
 
 def bugtask_sort_key(bugtask):
@@ -1388,9 +1390,15 @@ class BugTaskSet:
         from lp.bugs.model.bugbranch import BugBranch
 
         bug_ids = set(bugtask.bugID for bugtask in bugtasks)
-        bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-            SpecificationBug.bugID,
-            SpecificationBug.bugID.is_in(bug_ids)))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            bug_ids_with_specifications = set(
+                int(id) for _, id in getUtility(IXRefSet).findFromMany(
+                    [(u'bug', unicode(bug_id)) for bug_id in bug_ids],
+                    types=[u'specification']).keys())
+        else:
+            bug_ids_with_specifications = set(IStore(SpecificationBug).find(
+                SpecificationBug.bugID,
+                SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
                 BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
         # Badging looks up milestones too : eager load into the storm cache.
