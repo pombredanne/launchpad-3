@@ -7,6 +7,7 @@ from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.cve import ICveSet
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -113,3 +114,19 @@ class TestBugLinks(TestCaseWithFactory):
         self.assertContentEqual([bug1], cve2.bugs)
         self.assertContentEqual([cve2], bug1.cves)
         self.assertContentEqual([], bug2.cves)
+
+
+class TestBugLinksWithXRef(TestBugLinks):
+
+    def setUp(self):
+        super(TestBugLinksWithXRef, self).setUp()
+        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
+
+
+class TestBugLinksWithXRefAndNoOld(TestBugLinks):
+
+    def setUp(self):
+        super(TestBugLinksWithXRefAndNoOld, self).setUp()
+        self.useFixture(FeatureFixture({
+            'bugs.xref_buglinks.query': 'true',
+            'bugs.xref_buglinks.write_old.disabled': 'true'}))

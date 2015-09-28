@@ -110,6 +110,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import rank_by_fti
+from lp.services.features import getFeatureFlag
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.messages.model.message import (
@@ -664,15 +665,16 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def bugs(self):
         from lp.bugs.model.bug import Bug
-        xref_bug_ids = [
-            int(id) for _, id in getUtility(IXRefSet).findFrom(
-                (u'question', unicode(self.id)), types=[u'bug'])]
-        old_bug_ids = list(IStore(QuestionBug).find(
-            QuestionBug,
-            QuestionBug.question == self).values(QuestionBug.bugID))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            bug_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'question', unicode(self.id)), types=[u'bug'])]
+        else:
+            bug_ids = list(IStore(QuestionBug).find(
+                QuestionBug,
+                QuestionBug.question == self).values(QuestionBug.bugID))
         return list(sorted(
-            bulk.load(Bug, xref_bug_ids + old_bug_ids),
-            key=operator.attrgetter('id')))
+            bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
     # IBugLinkTarget implementation
     def linkBug(self, bug, user=None):
@@ -691,14 +693,16 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        QuestionBug(question=self, bug=bug)
+        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
+            QuestionBug(question=self, bug=bug)
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
             {(u'question', unicode(self.id)): {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        Store.of(self).find(QuestionBug, question=self, bug=bug).remove()
+        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
+            Store.of(self).find(QuestionBug, question=self, bug=bug).remove()
         getUtility(IXRefSet).delete(
             {(u'question', unicode(self.id)): [(u'bug', unicode(bug.id))]})
 

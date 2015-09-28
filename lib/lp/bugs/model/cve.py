@@ -41,6 +41,7 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormexpr import fti_search
+from lp.services.features import getFeatureFlag
 from lp.services.xref.interfaces import IXRefSet
 
 
@@ -75,15 +76,16 @@ class Cve(SQLBase, BugLinkTargetMixin):
 
     @property
     def bugs(self):
-        xref_bug_ids = [
-            int(id) for _, id in getUtility(IXRefSet).findFrom(
-                (u'cve', self.sequence), types=[u'bug'])]
-        old_bug_ids = list(IStore(BugCve).find(
-            BugCve,
-            BugCve.cve == self).values(BugCve.bugID))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            bug_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'cve', self.sequence), types=[u'bug'])]
+        else:
+            bug_ids = list(IStore(BugCve).find(
+                BugCve,
+                BugCve.cve == self).values(BugCve.bugID))
         return list(sorted(
-            bulk.load(Bug, xref_bug_ids + old_bug_ids),
-            key=operator.attrgetter('id')))
+            bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
     # CveReference's
     def createReference(self, source, content, url=None):
@@ -97,14 +99,16 @@ class Cve(SQLBase, BugLinkTargetMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        BugCve(cve=self, bug=bug)
+        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
+            BugCve(cve=self, bug=bug)
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
             {(u'cve', self.sequence): {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        Store.of(self).find(BugCve, cve=self, bug=bug).remove()
+        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
+            Store.of(self).find(BugCve, cve=self, bug=bug).remove()
         getUtility(IXRefSet).delete(
             {(u'cve', self.sequence): [(u'bug', unicode(bug.id))]})
 

@@ -204,6 +204,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -376,48 +377,49 @@ class Bug(SQLBase, InformationTypeMixin):
     def cves(self):
         from lp.bugs.model.bugcve import BugCve
         from lp.bugs.model.cve import Cve
-        xref_cve_sequences = [
-            sequence for _, sequence in getUtility(IXRefSet).findFrom(
-                (u'bug', unicode(self.id)), types=[u'cve'])]
-        old_cve_ids = list(IStore(BugCve).find(
-            BugCve,
-            BugCve.bug == self).values(BugCve.cveID))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            xref_cve_sequences = [
+                sequence for _, sequence in getUtility(IXRefSet).findFrom(
+                    (u'bug', unicode(self.id)), types=[u'cve'])]
+            expr = Cve.sequence.is_in(xref_cve_sequences)
+        else:
+            old_cve_ids = list(IStore(BugCve).find(
+                BugCve,
+                BugCve.bug == self).values(BugCve.cveID))
+            expr = Cve.id.is_in(old_cve_ids)
         return list(sorted(
-            IStore(Cve).find(
-                Cve,
-                Or(
-                    Cve.id.is_in(old_cve_ids),
-                    Cve.sequence.is_in(xref_cve_sequences))),
-            key=operator.attrgetter('sequence')))
+            IStore(Cve).find(Cve, expr), key=operator.attrgetter('sequence')))
 
     @property
     def questions(self):
         from lp.answers.model.question import Question
         from lp.coop.answersbugs.model import QuestionBug
-        xref_question_ids = [
-            int(id) for _, id in getUtility(IXRefSet).findFrom(
-                (u'bug', unicode(self.id)), types=[u'question'])]
-        old_question_ids = list(IStore(QuestionBug).find(
-            QuestionBug,
-            QuestionBug.bug == self).values(QuestionBug.questionID))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            question_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'bug', unicode(self.id)), types=[u'question'])]
+        else:
+            question_ids = list(IStore(QuestionBug).find(
+                QuestionBug,
+                QuestionBug.bug == self).values(QuestionBug.questionID))
         return list(sorted(
-            bulk.load(Question, xref_question_ids + old_question_ids),
-            key=operator.attrgetter('id')))
+            bulk.load(Question, question_ids), key=operator.attrgetter('id')))
 
     @property
     def specifications(self):
         from lp.blueprints.model.specification import Specification
         from lp.blueprints.model.specificationbug import SpecificationBug
-        xref_spec_ids = [
-            int(id) for _, id in getUtility(IXRefSet).findFrom(
-                (u'bug', unicode(self.id)), types=[u'specification'])]
-        old_spec_ids = list(IStore(SpecificationBug).find(
-            SpecificationBug,
-            SpecificationBug.bug == self).values(
-                SpecificationBug.specificationID))
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            spec_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'bug', unicode(self.id)), types=[u'specification'])]
+        else:
+            spec_ids = list(IStore(SpecificationBug).find(
+                SpecificationBug,
+                SpecificationBug.bug == self).values(
+                    SpecificationBug.specificationID))
         return list(sorted(
-            bulk.load(Specification, xref_spec_ids + old_spec_ids),
-            key=operator.attrgetter('id')))
+            bulk.load(Specification, spec_ids), key=operator.attrgetter('id')))
 
     def getSpecifications(self, user):
         """See `IBug`."""

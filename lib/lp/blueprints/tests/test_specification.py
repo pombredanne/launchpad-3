@@ -59,6 +59,7 @@ from lp.security import (
     EditSpecificationByRelatedPeople,
     ViewSpecification,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interaction import ANONYMOUS
@@ -876,3 +877,19 @@ class TestBugLinks(TestCaseWithFactory):
         self.assertContentEqual([bug1], spec2.bugs)
         self.assertContentEqual([spec2], bug1.specifications)
         self.assertContentEqual([], bug2.specifications)
+
+
+class TestBugLinksWithXRef(TestBugLinks):
+
+    def setUp(self):
+        super(TestBugLinksWithXRef, self).setUp()
+        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
+
+
+class TestBugLinksWithXRefAndNoOld(TestBugLinks):
+
+    def setUp(self):
+        super(TestBugLinksWithXRefAndNoOld, self).setUp()
+        self.useFixture(FeatureFixture({
+            'bugs.xref_buglinks.query': 'true',
+            'bugs.xref_buglinks.write_old.disabled': 'true'}))
