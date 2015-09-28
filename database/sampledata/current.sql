@@ -11336,3 +11336,16 @@ ALTER TABLE wikiname ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE xref DISABLE TRIGGER ALL;
+
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('bug', '1', 1, 'cve', '1999-8979', NULL, NULL, '2015-09-28 04:55:28.528879', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('bug', '1', 1, 'specification', '3', 3, NULL, '2015-09-28 04:55:28.528879', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('bug', '2', 2, 'cve', '1999-2345', NULL, NULL, '2015-09-28 04:55:28.540059', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('cve', '1999-2345', NULL, 'bug', '2', 2, NULL, '2015-09-28 04:55:28.540059', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('cve', '1999-8979', NULL, 'bug', '1', 1, NULL, '2015-09-28 04:55:28.528879', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('specification', '3', 3, 'bug', '1', 1, NULL, '2015-09-28 04:55:28.528879', NULL);
+
+
+ALTER TABLE xref ENABLE TRIGGER ALL;
+
+
