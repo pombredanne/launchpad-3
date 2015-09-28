@@ -741,10 +741,6 @@ class LaunchpadBrowserPublication(
                 store.reset()
 
 
-class InvalidThreadsConfiguration(Exception):
-    """Exception thrown when the number of threads isn't set correctly."""
-
-
 _browser_re = re.compile(r"""(?x)^(
     Mozilla |
     Opera |

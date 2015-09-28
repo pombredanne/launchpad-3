@@ -399,21 +399,6 @@ class TestFastDowntimeRollout(TestCase):
     def store_is_master(self, store):
         return not self.store_is_slave(store)
 
-    def wait_until_connectable(self, dbname):
-        timeout = 80
-        start = time.time()
-        while time.time() < start + timeout:
-            try:
-                con = psycopg2.connect(
-                    'dbname=%s host=localhost user=launchpad_main' % dbname)
-                con.cursor().execute('SELECT TRUE')
-                con.close()
-                return
-            except psycopg2.Error:
-                pass
-            time.sleep(0.2)
-        self.fail("Unable to resume database %s" % dbname)
-
     def test_slave_only_fast_downtime_rollout(self):
         '''You can always access a working slave store during fast downtime.
         '''

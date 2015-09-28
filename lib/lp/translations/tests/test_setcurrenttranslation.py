@@ -11,7 +11,6 @@ from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
-from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.tests.helpers import (
     make_translationmessage_for_context,
     summarize_current_translations,
@@ -101,19 +100,6 @@ class SetCurrentTranslationTestMixin:
             self.assertEquals(new_other, other_shared)
 
         self.assertContentEqual(new_divergences, divergences_elsewhere)
-
-    def assertTranslationMessageDeleted(self, translationmessage_id):
-        """Assert that a translation message doesn't exist.
-
-        Until deletion of TMs is implemented, it just checks that
-        translation message is not current in any context.
-        """
-        # XXX DaniloSegan 20100528: we should assert that tm_other
-        # doesn't exist in the DB anymore instead.
-        tm = TranslationMessage.get(translationmessage_id)
-        self.assertFalse(tm.is_current_ubuntu)
-        self.assertFalse(tm.is_current_upstream)
-        self.assertIs(None, tm.potemplate)
 
     # These tests follow a naming pattern to reflect exhaustive
     # coverage.  We had to abbreviate them.  In the names,

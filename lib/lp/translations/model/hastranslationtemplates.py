@@ -8,10 +8,7 @@ __all__ = [
     'HasTranslationTemplatesMixin',
     ]
 
-from storm.expr import (
-    Count,
-    Desc,
-    )
+from storm.expr import Desc
 from zope.interface import implementer
 
 from lp.services import helpers
@@ -118,9 +115,3 @@ class HasTranslationTemplatesMixin:
             'source_file_format').config(distinct=True)
         return helpers.shortlist(
             formats_query.values(POTemplate.source_file_format), 10)
-
-    def getTemplatesAndLanguageCounts(self):
-        """See `IHasTranslationTemplates`."""
-        join = self.getTemplatesCollection().joinOuterPOFile()
-        result = join.select(POTemplate, Count(POFile.id))
-        return result.group_by(POTemplate)

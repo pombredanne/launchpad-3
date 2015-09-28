@@ -6,7 +6,6 @@ __all__ = [
     'InvalidBatchSizeView',
     'NotFoundView',
     'ProtocolErrorView',
-    'ReadOnlyErrorView',
     'RequestExpiredView',
     'SystemErrorView',
     'TranslationUnavailableView',
@@ -257,21 +256,6 @@ class TranslationUnavailableView(SystemErrorView):
     page_title = 'Error: Translation page is not available'
 
     response_code = httplib.SERVICE_UNAVAILABLE
-
-    def __call__(self):
-        return self.index()
-
-
-class ReadOnlyErrorView(SystemErrorView):
-    """View rendered when an InvalidBatchSizeError is raised."""
-
-    page_title = "Error: you can't do this right now"
-
-    response_code = httplib.SERVICE_UNAVAILABLE
-
-    def isSystemError(self):
-        """We don't need to log these errors in the SiteLog."""
-        return False
 
     def __call__(self):
         return self.index()

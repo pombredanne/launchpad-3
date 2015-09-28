@@ -70,12 +70,6 @@ def projectSetUp(test):
     test.globs['newFAQ'] = newFAQ
 
 
-def sourcepackageSetUp(test):
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['target'] = ubuntu.currentseries.getSourcePackage('evolution')
-
-
 def distributionsourcepackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

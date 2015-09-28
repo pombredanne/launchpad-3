@@ -75,13 +75,6 @@ def validate_cvs_module(cvsmodule):
     return True
 
 
-def validate_cvs_branch(branch):
-    if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
-        return True
-    else:
-        raise LaunchpadValidationError('Your CVS branch name is invalid.')
-
-
 class ICodeImport(Interface):
     """A code import to a Bazaar Branch."""
 

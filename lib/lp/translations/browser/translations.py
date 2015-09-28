@@ -17,7 +17,6 @@ from zope.component import getUtility
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.services.config import config
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -89,9 +88,6 @@ class RosettaApplicationView(LaunchpadView, TranslationsMixin):
         products = getUtility(IProductSet)
         return BatchNavigator(products.getTranslatables(),
                               self.request)
-
-    def rosettaAdminEmail(self):
-        return config.rosettaadmin.email
 
     @property
     def launchpad_users_team(self):

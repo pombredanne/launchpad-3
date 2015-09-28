@@ -105,8 +105,6 @@ class _GitSubscriptionView(LaunchpadFormView):
 
 class GitSubscriptionAddView(_GitSubscriptionView):
 
-    subscribing_self = True
-
     page_title = label = "Subscribe to repository"
 
     @action("Subscribe")
@@ -194,7 +192,6 @@ class GitSubscriptionAddOtherView(_GitSubscriptionView):
     # Since we are subscribing other people, the current user
     # is never considered subscribed.
     user_is_subscribed = False
-    subscribing_self = False
 
     page_title = label = "Subscribe to repository"
 

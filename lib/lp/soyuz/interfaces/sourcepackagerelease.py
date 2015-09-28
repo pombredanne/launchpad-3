@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackageRelease',
-    'PackageDiffAlreadyRequestedError',
     ]
 
 
@@ -220,7 +219,3 @@ class ISourcePackageRelease(Interface):
             versions, with a blank line between each.  If there is no
             changelog, or there is an error parsing it, None is returned.
         """
-
-
-class PackageDiffAlreadyRequestedError(Exception):
-    """Raised when an `IPackageDiff` request already exists."""
