@@ -884,7 +884,6 @@ SORT_KEYS = [
     ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
     ('message_count', 'Number of comments', 'desc'),
     ('milestone', 'Milestone ID', 'desc'),
-    ('specification', 'Linked blueprint', 'asc'),
     ('task', 'Bug task ID', 'desc'),
     ('users_affected_count', 'Number of affected users', 'desc'),
     ]

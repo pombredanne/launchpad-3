@@ -78,11 +78,9 @@ class BugLinkTargetMixin:
         if not check_permission('launchpad.View', bug):
             raise Unauthorized(
                 "cannot unlink a private bug you don't have access to")
-
-        # see if a relevant bug link exists, and if so, delete it
-        removed = self.deleteBugLink(bug)
-        if removed:
-            notify(ObjectUnlinkedEvent(bug, self, user=user))
-            notify(ObjectUnlinkedEvent(self, bug, user=user))
-            return True
-        return False
+        if bug not in self.bugs:
+            return False
+        self.deleteBugLink(bug)
+        notify(ObjectUnlinkedEvent(bug, self, user=user))
+        notify(ObjectUnlinkedEvent(self, bug, user=user))
+        return True
