@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-
 import bz2
 import crypt
+from functools import partial
 import gzip
 import hashlib
 import os
@@ -1848,6 +1848,30 @@ class TestPublisher(TestPublisherBase):
             self.assertReleaseContentsMatch(
                 release, 'Contents-i386.gz', contents_file.read())
 
+    def testReleaseFileTimestamps(self):
+        # The timestamps of Release and all its entries match.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Hello world')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        sources = suite_path('main', 'source', 'Sources')
+        sources_timestamp = os.stat(sources).st_mtime - 60
+        os.utime(sources, (sources_timestamp, sources_timestamp))
+
+        publisher.D_writeReleaseFiles(False)
+
+        release = self.parseRelease(suite_path('Release'))
+        paths = ['Release'] + [entry['name'] for entry in release['md5sum']]
+        timestamps = set(os.stat(suite_path(path)).st_mtime for path in paths)
+        self.assertEqual(1, len(timestamps))
+
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
         publisher = Publisher(
@@ -2202,11 +2226,24 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         self.assertTrue(cprov.archive.signing_key is None)
 
+        self.setupPublisher(cprov.archive)
+        self.archive_publisher._syncTimestamps = FakeMethod()
+
         self._publishArchive(cprov.archive)
 
         # Release file exist but it doesn't have any signature.
         self.assertTrue(os.path.exists(self.release_file_path))
         self.assertFalse(os.path.exists(self.release_file_signature_path))
+
+        # The publisher synchronises the timestamp of the Release file with
+        # any other files, but does not do anything to Release.gpg or
+        # InRelease.
+        self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)
+        sync_args = self.archive_publisher._syncTimestamps.extract_args()[0]
+        self.assertEqual(self.distroseries.name, sync_args[0])
+        self.assertIn('Release', sync_args[1])
+        self.assertNotIn('Release.gpg', sync_args[1])
+        self.assertNotIn('InRelease', sync_args[1])
 
     def testRepositorySignatureWithSigningKey(self):
         """Check publisher behaviour when signing repositories.
