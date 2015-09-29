@@ -210,8 +210,6 @@ class Question(SQLBase, BugLinkTargetMixin):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='question', otherColumn='person',
         intermediateTable='QuestionSubscription', orderBy='name')
-    bug_links = SQLMultipleJoin('QuestionBug',
-        joinColumn='question', orderBy='id')
     bugs = SQLRelatedJoin('Bug', joinColumn='question', otherColumn='bug',
         intermediateTable='QuestionBug', orderBy='id')
     messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
@@ -663,26 +661,27 @@ class Question(SQLBase, BugLinkTargetMixin):
         return tktmsg
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug):
+    def linkBug(self, bug, user=None):
         """See `IBugLinkTarget`."""
         # Subscribe the question's owner to the bug.
         bug.subscribe(self.owner, self.owner)
-        return BugLinkTargetMixin.linkBug(self, bug)
+        return BugLinkTargetMixin.linkBug(self, bug, user=user)
 
     def unlinkBug(self, bug):
         """See `IBugLinkTarget`."""
-        buglink = BugLinkTargetMixin.unlinkBug(self, bug)
-        if buglink:
-            # Additionnaly, unsubscribe the question's owner to the bug
+        unlinked = BugLinkTargetMixin.unlinkBug(self, bug)
+        if unlinked:
+            # Additionally, unsubscribe the question's owner from the bug
             bug.unsubscribe(self.owner, self.owner)
-        return buglink
-
-    # Template methods for BugLinkTargetMixin.
-    buglinkClass = QuestionBug
+        return unlinked
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        return QuestionBug(question=self, bug=bug)
+        QuestionBug(question=self, bug=bug)
+
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        Store.of(self).find(QuestionBug, question=self, bug=bug).remove()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""

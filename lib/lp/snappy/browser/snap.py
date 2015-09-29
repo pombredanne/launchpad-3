@@ -94,7 +94,7 @@ class SnapBreadcrumb(NameBreadcrumb):
     def inside(self):
         return Breadcrumb(
             self.context.owner,
-            url=canonical_url(self.context.owner, view_name="+snap"),
+            url=canonical_url(self.context.owner, view_name="+snaps"),
             text="Snap packages", inside=self.context.owner)
 
 

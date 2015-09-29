@@ -51,7 +51,6 @@ supplied user is the person linking the CVEs.
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.linkCVE(cve, user=no_priv)
-    <BugCve at ...>
 
     >>> cveset.getBugCveCount()
     3
@@ -79,7 +78,6 @@ Let's add the new CVE:
     >>> b.cves.count()
     1
     >>> b.linkCVE(cve, no_priv)
-    <BugCve at ...>
     >>> b.cves.count()
     2
 

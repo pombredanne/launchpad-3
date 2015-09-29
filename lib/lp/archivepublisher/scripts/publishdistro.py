@@ -13,6 +13,7 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.publishing import (
+    cannot_modify_suite,
     getPublisher,
     GLOBAL_PUBLISHER_LOCK,
     )
@@ -295,8 +296,8 @@ class PublishDistro(PublisherScript):
                     for suite in self.options.dirty_suites:
                         distroseries, pocket = self.findSuite(
                             distribution, suite)
-                        if not publisher.cannotModifySuite(
-                                distroseries, pocket):
+                        if not cannot_modify_suite(
+                                archive, distroseries, pocket):
                             publisher.markPocketDirty(distroseries, pocket)
                     self.publishArchive(archive, publisher)
                     work_done = True

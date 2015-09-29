@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`PPAKeyGenerator` script class tests."""
@@ -30,7 +30,7 @@ class TestPPAKeyGenerator(TestCase):
         ubuntutest = getUtility(IDistributionSet).getByName('ubuntutest')
         archive.distribution = ubuntutest
 
-    def _getKeyGenerator(self, ppa_owner_name=None, txn=None):
+    def _getKeyGenerator(self, archive_reference=None, txn=None):
         """Return a `PPAKeyGenerator` instance.
 
         Monkey-patch the script object with a fake transaction manager
@@ -39,8 +39,8 @@ class TestPPAKeyGenerator(TestCase):
         """
         test_args = []
 
-        if ppa_owner_name is not None:
-            test_args.extend(['-p', ppa_owner_name])
+        if archive_reference is not None:
+            test_args.extend(['-A', archive_reference])
 
         key_generator = PPAKeyGenerator(
             name='ppa-generate-keys', test_args=test_args)
@@ -57,20 +57,12 @@ class TestPPAKeyGenerator(TestCase):
 
         return key_generator
 
-    def testPersonNotFound(self):
-        """Raises an error if the specified person does not exist."""
-        key_generator = self._getKeyGenerator(ppa_owner_name='biscuit')
+    def testArchiveNotFound(self):
+        """Raises an error if the specified archive does not exist."""
+        key_generator = self._getKeyGenerator(archive_reference='~biscuit')
         self.assertRaisesWithContent(
             LaunchpadScriptFailure,
-            "No person named 'biscuit' could be found.",
-            key_generator.main)
-
-    def testPersonHasNoPPA(self):
-        """Raises an error if the specified person does not have a PPA. """
-        key_generator = self._getKeyGenerator(ppa_owner_name='name16')
-        self.assertRaisesWithContent(
-            LaunchpadScriptFailure,
-            "Person named 'name16' has no PPA.",
+            "No archive named '~biscuit' could be found.",
             key_generator.main)
 
     def testPPAAlreadyHasSigningKey(self):
@@ -79,7 +71,8 @@ class TestPPAKeyGenerator(TestCase):
         a_key = getUtility(IGPGKeySet).get(1)
         cprov.archive.signing_key = a_key
 
-        key_generator = self._getKeyGenerator(ppa_owner_name='cprov')
+        key_generator = self._getKeyGenerator(
+            archive_reference='~cprov/ubuntu/ppa')
         self.assertRaisesWithContent(
             LaunchpadScriptFailure,
             ("PPA for Celso Providelo already has a signing_key (%s)" %
@@ -98,7 +91,8 @@ class TestPPAKeyGenerator(TestCase):
         self.assertTrue(cprov.archive.signing_key is None)
 
         txn = FakeTransaction()
-        key_generator = self._getKeyGenerator(ppa_owner_name='cprov', txn=txn)
+        key_generator = self._getKeyGenerator(
+            archive_reference='~cprov/ubuntutest/ppa', txn=txn)
         key_generator.main()
 
         self.assertTrue(cprov.archive.signing_key is not None)

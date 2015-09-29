@@ -164,7 +164,7 @@ just the question created from the bug.
     >>> bug.title
     u'Print is broken'
 
-    >>> [bug_link.question.title for bug_link in question.bug_links]
+    >>> [bug.title for bug in question.bugs]
     [u'Print is broken']
 
     >>> [question.title for question in bug.questions]

@@ -618,7 +618,7 @@ class CVEEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         exec_bug, event = command.execute(bug, dummy_event)
         self.assertEqual(bug, exec_bug)
-        self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
+        self.assertContentEqual([cve], bug.cves)
         self.assertEqual(dummy_event, event)
 
     def test_execute_bug_params(self):

@@ -4,32 +4,52 @@
 __metaclass__ = type
 __all__ = [ 'BugLinkTargetMixin' ]
 
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectDeletedEvent,
-    )
+import lazr.lifecycle.event
 from zope.event import notify
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 
+from lp.bugs.interfaces.buglink import (
+    IObjectLinkedEvent,
+    IObjectUnlinkedEvent,
+    )
 from lp.services.webapp.authorization import check_permission
+
+
+# XXX wgrant 2015-09-25: lazr.lifecycle.event.LifecyleEventBase is all
+# of mispelled, private, and the sole implementer of user-fetching
+# logic that we require.
+@implementer(IObjectLinkedEvent)
+class ObjectLinkedEvent(lazr.lifecycle.event.LifecyleEventBase):
+
+    def __init__(self, object, other_object, user=None):
+        super(ObjectLinkedEvent, self).__init__(object, user=user)
+        self.other_object = other_object
+
+
+@implementer(IObjectUnlinkedEvent)
+class ObjectUnlinkedEvent(lazr.lifecycle.event.LifecyleEventBase):
+
+    def __init__(self, object, other_object, user=None):
+        super(ObjectUnlinkedEvent, self).__init__(object, user=user)
+        self.other_object = other_object
 
 
 class BugLinkTargetMixin:
     """Mixin class for IBugLinkTarget implementation."""
-
-    @property
-    def buglinkClass(self):
-        """Subclass should override this property to return the database
-        class used for IBugLink."""
-        raise NotImplementedError("missing buglinkClass() implementation")
 
     def createBugLink(self, bug):
         """Subclass should override that method to create a BugLink instance.
         """
         raise NotImplementedError("missing createBugLink() implementation")
 
+    def deleteBugLink(self, bug):
+        """Subclass should override that method to delete a BugLink instance.
+        """
+        raise NotImplementedError("missing deleteBugLink() implementation")
+
     # IBugLinkTarget implementation
-    def linkBug(self, bug):
+    def linkBug(self, bug, user=None):
         """See IBugLinkTarget."""
         # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
@@ -40,14 +60,14 @@ class BugLinkTargetMixin:
         if not check_permission('launchpad.View', bug):
             raise Unauthorized(
                 "cannot link to a private bug you don't have access to")
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                return buglink
-        buglink = self.createBugLink(bug)
-        notify(ObjectCreatedEvent(buglink))
-        return buglink
+        if bug in self.bugs:
+            return False
+        self.createBugLink(bug)
+        notify(ObjectLinkedEvent(bug, self, user=user))
+        notify(ObjectLinkedEvent(self, bug, user=user))
+        return True
 
-    def unlinkBug(self, bug):
+    def unlinkBug(self, bug, user=None):
         """See IBugLinkTarget."""
         # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
@@ -58,12 +78,9 @@ class BugLinkTargetMixin:
         if not check_permission('launchpad.View', bug):
             raise Unauthorized(
                 "cannot unlink a private bug you don't have access to")
-
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                notify(ObjectDeletedEvent(buglink))
-                self.buglinkClass.delete(buglink.id)
-                # XXX: Bjorn Tillenius 2005-11-21: We shouldn't return the
-                #      object that we just deleted from the db.
-                return buglink
+        if bug not in self.bugs:
+            return False
+        self.deleteBugLink(bug)
+        notify(ObjectUnlinkedEvent(bug, self, user=user))
+        notify(ObjectUnlinkedEvent(self, bug, user=user))
+        return True

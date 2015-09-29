@@ -6,9 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBugLink',
     'IBugLinkForm',
     'IBugLinkTarget',
+    'IObjectLinkedEvent',
+    'IObjectUnlinkedEvent',
     'IUnlinkBugsForm',
     ]
 
@@ -20,6 +21,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
     implementer,
@@ -27,8 +29,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Choice,
-    List,
-    Object,
     Set,
     )
 from zope.schema.interfaces import IContextSourceBinder
@@ -40,19 +40,21 @@ from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import BugField
 
 
-class IBugLink(IHasBug):
-    """An entity representing a link between a bug and its target."""
+class IObjectLinkedEvent(IObjectEvent):
+    """An object that has been linked to another."""
 
-    bug = BugField(title=_("The bug that is linked to."),
-                   required=True, readonly=True)
-    bugID = Attribute("Database id of the bug.")
+    other_object = Attribute("The object that is now linked.")
+    user = Attribute("The user who linked the object.")
 
-    target = Object(title=_("The object to which the bug is linked."),
-                    required=True, readonly=True, schema=Interface)
+
+class IObjectUnlinkedEvent(IObjectEvent):
+    """An object that has been unlinked from another."""
+
+    other_object = Attribute("The object that is no longer linked.")
+    user = Attribute("The user who unlinked the object.")
 
 
 class IBugLinkTarget(Interface):
@@ -66,24 +68,23 @@ class IBugLinkTarget(Interface):
         CollectionField(title=_("Bugs related to this object."),
                         value_type=Reference(schema=IBug), readonly=True),
         as_of="devel")
-    bug_links = List(title=_("The links between bugs and this object."),
-                     value_type=Object(schema=IBugLink), readonly=True)
 
     def linkBug(bug):
-        """Link the object with this bug. If the object is already linked,
-        return the old linker, otherwise return a new IBugLink object.
+        """Link the object with this bug.
 
-        If a new IBugLink is created by this method, a ObjectCreatedEvent
-        should be sent.
+        If a new link is created by this method, an ObjectLinkedEvent is
+        sent for each end.
+
+        :return: True if a new link was created, False if it already existed.
         """
 
     def unlinkBug(bug):
-        """Remove any link between this object and the bug. If the bug wasn't
-        linked to the target, returns None otherwise returns the IBugLink
-        object which was removed.
+        """Remove any link between this object and the bug.
 
-        If an IBugLink is removed by this method, a ObjectDeletedEvent
-        should be sent.
+        If a link is removed by this method, an ObjectUnlinkedEvent is
+        sent for each end.
+
+        :return: True if a link was deleted, False if it didn't exist.
         """
 
 

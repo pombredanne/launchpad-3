@@ -179,6 +179,7 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 
@@ -494,6 +495,10 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
         return DecoratedResultSet(
             self.landing_candidates, pre_iter_hook=eager_load)
+
+    @property
+    def _api_landing_candidates(self):
+        return self.getPrecachedLandingCandidates(getUtility(ILaunchBag).user)
 
     @property
     def dependent_branches(self):

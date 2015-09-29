@@ -7,14 +7,14 @@ __metaclass__ = type
 __all__ = []
 
 from lp.answers.karma import assignKarmaUsingQuestionContext
+from lp.bugs.interfaces.bug import IBug
 from lp.registry.interfaces.person import IPerson
 from lp.services.database.sqlbase import block_implicit_flushes
 
 
 @block_implicit_flushes
-def question_bug_added(questionbug, event):
+def question_bug_linked(questionbug, event):
     """Assign karma to the user which added <questionbug>."""
-    question = questionbug.question
-    assignKarmaUsingQuestionContext(
-        IPerson(event.user), question, 'questionlinkedtobug')
-
+    if IBug.providedBy(event.other_object):
+        assignKarmaUsingQuestionContext(
+            IPerson(event.user), event.object, 'questionlinkedtobug')

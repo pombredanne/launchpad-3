@@ -3,17 +3,14 @@
 
 __metaclass__ = type
 
-from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.archive import ArchiveAdminView
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
-    login_celebrity,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
-from lp.testing.pages import extract_text
 
 
 class TestArchivePrivacySwitchingView(TestCaseWithFactory):
@@ -91,36 +88,3 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
             'This archive already has published sources. '
             'It is not possible to switch the privacy.',
             view.errors[0])
-
-
-class TestArchiveAdminView(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_display_processors(self):
-        ppa = self.factory.makeArchive()
-        admin = login_celebrity("admin")
-        browser = self.getUserBrowser(
-            canonical_url(ppa) + "/+admin", user=admin)
-        processors = browser.getControl(name="field.processors")
-        self.assertContentEqual(
-            ["Intel 386 (386)", "AMD 64bit (amd64)", "HPPA Processor (hppa)"],
-            [extract_text(option) for option in processors.displayOptions])
-        self.assertContentEqual(["386", "amd64", "hppa"], processors.options)
-
-    def test_edit_processors(self):
-        ppa = self.factory.makeArchive()
-        admin = login_celebrity("admin")
-        self.assertEqual(
-            ["386", "amd64", "hppa"],
-            [processor.name for processor in ppa.processors])
-        browser = self.getUserBrowser(
-            canonical_url(ppa) + "/+admin", user=admin)
-        processors = browser.getControl(name="field.processors")
-        self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
-        processors.value = ["386", "amd64"]
-        browser.getControl("Save").click()
-        login_celebrity("admin")
-        self.assertEqual(
-            ["386", "amd64"],
-            [processor.name for processor in ppa.processors])

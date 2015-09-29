@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Bool,
     DateTime,
@@ -340,6 +339,8 @@ class SnapSet:
 
         if branch is None and git_ref is None:
             raise NoSourceForSnap
+        if self.exists(owner, name):
+            raise DuplicateSnapName
 
         store = IMasterStore(Snap)
         snap = Snap(
@@ -347,11 +348,6 @@ class SnapSet:
             branch=branch, git_ref=git_ref,
             require_virtualized=require_virtualized, date_created=date_created)
         store.add(snap)
-
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicateSnapName
 
         if processors is None:
             processors = [
