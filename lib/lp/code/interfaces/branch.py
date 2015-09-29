@@ -802,10 +802,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
         For example, a branch linked to the development focus of the 'fooix'
         project is accessible using:
-          lp:fooix - the linked object is the product fooix
-          lp:fooix/trunk - the linked object is the trunk series of fooix
-          lp:~owner/fooix/name - the unique name of the branch where the
-              linked object is the branch itself.
+          fooix - the linked object is the product fooix
+          fooix/trunk - the linked object is the trunk series of fooix
+          ~owner/fooix/name - the unique name of the branch where the linked
+              object is the branch itself.
         """
 
     # subscription-related methods
@@ -1480,21 +1480,20 @@ class BzrIdentityMixin:
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        identity, context = self.getBranchIdentities()[0]
-        return identity
+        identity, _ = self.getBranchIdentities()[0]
+        return config.codehosting.bzr_lp_prefix + identity
 
     identity = bzr_identity
 
     def getBranchIdentities(self):
         """See `IBranch`."""
-        lp_prefix = config.codehosting.bzr_lp_prefix
         if not self.target.supports_short_identities:
             identities = []
         else:
             identities = [
-                (lp_prefix + link.bzr_path, link.context)
+                (link.bzr_path, link.context)
                 for link in self.getBranchLinks()]
-        identities.append((lp_prefix + self.unique_name, self))
+        identities.append((self.unique_name, self))
         return identities
 
     def getBranchLinks(self):

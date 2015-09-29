@@ -919,8 +919,7 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
         # If there are no links, the only branch identity is the unique name.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            [('lp://dev/' + branch.unique_name, branch)],
-            branch.getBranchIdentities())
+            [(branch.unique_name, branch)], branch.getBranchIdentities())
 
     def test_linked_to_product(self):
         # If a branch is linked to the product, it is also by definition
@@ -936,9 +935,9 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             [linked_branch, ICanHasLinkedBranch(fooix.development_focus)],
             branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/fooix', fooix),
-             ('lp://dev/fooix/devel', fooix.development_focus),
-             ('lp://dev/~eric/fooix/trunk', branch)],
+            [('fooix', fooix),
+             ('fooix/devel', fooix.development_focus),
+             ('~eric/fooix/trunk', branch)],
             branch.getBranchIdentities())
 
     def test_linked_to_product_series(self):
@@ -957,8 +956,8 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             [linked_branch],
             branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/fooix/future', future),
-             ('lp://dev/~eric/fooix/trunk', branch)],
+            [('fooix/future', future),
+             ('~eric/fooix/trunk', branch)],
             branch.getBranchIdentities())
 
     def test_linked_to_package(self):
@@ -989,9 +988,9 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             [distro_link, suite_sp_link],
             branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/choc', dsp),
-             ('lp://dev/mint/dev/choc', suite_sourcepackage),
-             ('lp://dev/~eric/mint/dev/choc/tip', branch)],
+            [('mint/choc', dsp),
+             ('mint/dev/choc', suite_sourcepackage),
+             ('~eric/mint/dev/choc/tip', branch)],
             branch.getBranchIdentities())
 
     def test_linked_to_package_not_release_pocket(self):
@@ -1021,8 +1020,8 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             [suite_sp_link],
             branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/dev-backports/choc', suite_sourcepackage),
-             ('lp://dev/~eric/mint/dev/choc/tip', branch)],
+            [('mint/dev-backports/choc', suite_sourcepackage),
+             ('~eric/mint/dev/choc/tip', branch)],
             branch.getBranchIdentities())
 
     def test_linked_to_package_not_current_series(self):
@@ -1052,8 +1051,8 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             [suite_sp_link],
             branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/supported/choc', suite_sp),
-             ('lp://dev/~eric/mint/supported/choc/tip', branch)],
+            [('mint/supported/choc', suite_sp),
+             ('~eric/mint/supported/choc/tip', branch)],
             branch.getBranchIdentities())
 
     def test_linked_across_project_to_package(self):
@@ -1082,9 +1081,9 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             [distro_link, suite_sp_link],
             branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/choc', dsp),
-             ('lp://dev/mint/dev/choc', suite_sourcepackage),
-             ('lp://dev/~eric/fooix/trunk', branch)],
+            [('mint/choc', dsp),
+             ('mint/dev/choc', suite_sourcepackage),
+             ('~eric/fooix/trunk', branch)],
             branch.getBranchIdentities())
 
     def test_junk_branch_links(self):
@@ -1100,8 +1099,7 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             [linked_branch, ICanHasLinkedBranch(fooix.development_focus)],
             branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/~eric/+junk/foo', branch)],
-            branch.getBranchIdentities())
+            [('~eric/+junk/foo', branch)], branch.getBranchIdentities())
 
 
 class TestBzrIdentity(TestCaseWithFactory):
