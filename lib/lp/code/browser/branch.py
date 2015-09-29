@@ -125,6 +125,7 @@ from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
@@ -152,6 +153,7 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
     HasSnapsViewMixin,
@@ -183,7 +185,7 @@ class BranchBreadcrumb(NameBreadcrumb):
         return self.context.target.components[-1]
 
 
-class BranchNavigation(Navigation):
+class BranchNavigation(WebhookTargetNavigationMixin, Navigation):
 
     usedfor = IBranch
 
@@ -240,7 +242,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'webhooks', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -266,6 +268,13 @@ class BranchEditMenu(NavigationMenu):
     def reviewer(self):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def webhooks(self):
+        text = 'Manage webhooks'
+        return Link(
+            '+webhooks', text, icon='edit',
+            enabled=bool(getFeatureFlag('webhooks.new.enabled')))
 
 
 class BranchContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):

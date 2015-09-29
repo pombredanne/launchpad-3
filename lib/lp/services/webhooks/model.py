@@ -93,6 +93,9 @@ class Webhook(StormBase):
     git_repository_id = Int(name='git_repository')
     git_repository = Reference(git_repository_id, 'GitRepository.id')
 
+    branch_id = Int(name='branch')
+    branch = Reference(branch_id, 'Branch.id')
+
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
     date_created = DateTime(tzinfo=utc, allow_none=False)
@@ -108,6 +111,8 @@ class Webhook(StormBase):
     def target(self):
         if self.git_repository is not None:
             return self.git_repository
+        elif self.branch is not None:
+            return self.branch
         else:
             raise AssertionError("No target.")
 
@@ -159,10 +164,13 @@ class WebhookSet:
 
     def new(self, target, registrant, delivery_url, event_types, active,
             secret):
+        from lp.code.interfaces.branch import IBranch
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
         if IGitRepository.providedBy(target):
             hook.git_repository = target
+        elif IBranch.providedBy(target):
+            hook.branch = target
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         hook.registrant = registrant
@@ -184,9 +192,12 @@ class WebhookSet:
         return IStore(Webhook).get(Webhook, id)
 
     def findByTarget(self, target):
+        from lp.code.interfaces.branch import IBranch
         from lp.code.interfaces.gitrepository import IGitRepository
         if IGitRepository.providedBy(target):
             target_filter = Webhook.git_repository == target
+        elif IBranch.providedBy(target):
+            target_filter = Webhook.branch == target
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         return IStore(Webhook).find(Webhook, target_filter).order_by(

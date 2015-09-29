@@ -248,14 +248,7 @@ class BranchLookup:
         if uri.scheme == 'lp':
             if not self._uriHostAllowed(uri):
                 return None
-            try:
-                return self.getByLPPath(uri.path.lstrip('/'))[0]
-            except (
-                CannotHaveLinkedBranch, InvalidNamespace, InvalidProductName,
-                NoSuchBranch, NoSuchPerson, NoSuchProduct,
-                NoSuchProductSeries, NoSuchDistroSeries,
-                NoSuchSourcePackageName, NoLinkedBranch):
-                return None
+            return self.getByPath(uri.path.lstrip('/'))
 
         return Branch.selectOneBy(url=url)
 
@@ -385,6 +378,16 @@ class BranchLookup:
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]
         return branch, suffix
+
+    def getByPath(self, path):
+        """See `IBranchLookup`."""
+        try:
+            return self.getByLPPath(path)[0]
+        except (
+            CannotHaveLinkedBranch, InvalidNamespace, InvalidProductName,
+            NoSuchBranch, NoSuchPerson, NoSuchProduct, NoSuchProductSeries,
+            NoSuchDistroSeries, NoSuchSourcePackageName, NoLinkedBranch):
+            return None
 
     def _getLinkedBranchAndPath(self, provided):
         """Get the linked branch for 'provided', and the bzr_path.

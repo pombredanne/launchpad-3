@@ -105,6 +105,7 @@ from lp.services.webapp.escaping import (
     structured,
     )
 from lp.services.webapp.interfaces import ITableBatchNavigator
+from lp.services.webhooks.interfaces import IWebhookTarget
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -711,6 +712,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         Reference(
             title=_("The associated CodeImport, if any."), schema=Interface))
 
+    shortened_path = Attribute(
+        "The shortest reasonable version of the path to this branch; as "
+        "bzr_identity but without the 'lp:' prefix.")
+
     bzr_identity = exported(
         Text(
             title=_('Bazaar Identity'),
@@ -780,7 +785,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :return: A list of suite source packages ordered by pocket.
         """
 
-    def branchLinks():
+    def getBranchLinks():
         """Return a sorted list of ICanHasLinkedBranch objects.
 
         There is one result for each related linked object that the branch is
@@ -792,7 +797,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         more important links are sorted first.
         """
 
-    def branchIdentities():
+    def getBranchIdentities():
         """A list of aliases for a branch.
 
         Returns a list of tuples of bzr identity and context object.  There is
@@ -805,10 +810,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
         For example, a branch linked to the development focus of the 'fooix'
         project is accessible using:
-          lp:fooix - the linked object is the product fooix
-          lp:fooix/trunk - the linked object is the trunk series of fooix
-          lp:~owner/fooix/name - the unique name of the branch where the
-              linked object is the branch itself.
+          fooix - the linked object is the product fooix
+          fooix/trunk - the linked object is the trunk series of fooix
+          ~owner/fooix/name - the unique name of the branch where the linked
+              object is the branch itself.
         """
 
     # subscription-related methods
@@ -1129,7 +1134,7 @@ class IBranchEditableAttributes(Interface):
             vocabulary=ControlFormat))
 
 
-class IBranchEdit(Interface):
+class IBranchEdit(IWebhookTarget):
     """IBranch attributes that require launchpad.Edit permission."""
 
     @call_with(user=REQUEST_USER)
@@ -1313,8 +1318,7 @@ class IBranchSet(Interface):
         Return None if no match was found.
         """
 
-    @operation_parameters(
-        url=TextLine(title=_('Branch URL'), required=True))
+    @operation_parameters(url=TextLine(title=_('Branch URL'), required=True))
     @operation_returns_entry(IBranch)
     @export_read_operation()
     @operation_for_version('beta')
@@ -1355,6 +1359,29 @@ class IBranchSet(Interface):
         :param urls: An iterable of URLs expressed as strings.
         :return: A dictionary mapping URLs to branches. If the URL has no
             associated branch, the URL will map to `None`.
+        """
+
+    @operation_parameters(path=TextLine(title=_('Branch path'), required=True))
+    @operation_returns_entry(IBranch)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getByPath(path):
+        """Find a branch by its path.
+
+        The path is the same as its lp: URL, but without the leading lp:, so
+        it may be in any of these forms::
+
+            Unique names:
+                ~OWNER/PROJECT/NAME
+                ~OWNER/DISTRO/SERIES/SOURCE/NAME
+                ~OWNER/+junk/NAME
+            Aliases linked to other objects:
+                PROJECT
+                PROJECT/SERIES
+                DISTRO/SOURCE
+                DISTRO/SUITE/SOURCE
+
+        Return None if no match was found.
         """
 
     @collection_default_content()
@@ -1481,26 +1508,29 @@ class BzrIdentityMixin:
     """
 
     @property
+    def shortened_path(self):
+        """See `IBranch`."""
+        return self.getBranchIdentities()[0][0]
+
+    @property
     def bzr_identity(self):
         """See `IBranch`."""
-        identity, context = self.branchIdentities()[0]
-        return identity
+        return config.codehosting.bzr_lp_prefix + self.shortened_path
 
     identity = bzr_identity
 
-    def branchIdentities(self):
+    def getBranchIdentities(self):
         """See `IBranch`."""
-        lp_prefix = config.codehosting.bzr_lp_prefix
-        if not self.target.supports_short_identites:
+        if not self.target.supports_short_identities:
             identities = []
         else:
             identities = [
-                (lp_prefix + link.bzr_path, link.context)
-                for link in self.branchLinks()]
-        identities.append((lp_prefix + self.unique_name, self))
+                (link.bzr_path, link.context)
+                for link in self.getBranchLinks()]
+        identities.append((self.unique_name, self))
         return identities
 
-    def branchLinks(self):
+    def getBranchLinks(self):
         """See `IBranch`."""
         links = []
         for suite_sp in self.associatedSuiteSourcePackages():
