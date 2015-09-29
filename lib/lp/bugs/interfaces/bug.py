@@ -1160,13 +1160,6 @@ class IBugSet(Interface):
         If it can't be found, NotFoundError will be raised.
         """
 
-    def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs for the BugWatch and bug tracker.
-
-        Find one or None bugs in Launchpad that have a BugWatch matching
-        the given bug tracker and remote bug id.
-        """
-
     def createBug(bug_params, notify_event=True):
         """Create a bug and return it.
 

@@ -30,25 +30,10 @@ class Bug:
             self.tags = tags
         if report:
             self.report = report
-        description = None
 
     def is_open(self):
         #return not self.done and 'fixed' not in self.tags
         return self.status != 'done' and 'fixed' not in self.tags
-
-    def affects_unstable(self):
-        return 'sid' in self.tags or ('woody' not in self.tags and
-                                 'sarge' not in self.tags and
-                                 'experimental' not in self.tags)
-
-    def affects_package(self, packageset):
-        for package in self.packagelist():
-            if package in packageset:
-                return True
-        return False
-
-    def is_release_critical(self):
-        return self.severity in ('critical', 'grave', 'serious')
 
     def __str__(self):
         return 'Bug#%d' % self.id
@@ -64,13 +49,6 @@ class Bug:
 
         return getattr(self, name)
 
-    def packagelist(self):
-        if self.package is None:
-            return []
-        if ',' in self.package:
-            return self.package.split(',')
-        return [self.package]
-
     def emails(self):
         if self._emails:
             return self._emails
@@ -80,13 +58,10 @@ class Bug:
         return self._emails
 
 class IndexParseError(Exception): pass
-class StatusParseError(Exception): pass
-class StatusMissing(Exception): pass
 class SummaryMissing(Exception): pass
 class SummaryParseError(Exception): pass
 class SummaryVersionError(Exception): pass
 class ReportMissing(Exception): pass
-class ReportParseError(Exception): pass
 class LogMissing(Exception): pass
 class LogParseFailed(Exception): pass
 class InternalError(Exception): pass

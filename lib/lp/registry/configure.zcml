@@ -1999,7 +1999,6 @@
                 arch_series
                 last_probe_record
                 all_probe_records
-                has_ftp_or_rsync_base_url
                 base_url
                 date_created
                 country_dns_mirror

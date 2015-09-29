@@ -104,9 +104,6 @@ PCI_SUBCLASS_BRIDGE_CARDBUS = 7
 PCI_CLASS_SERIALBUS_CONTROLLER = 12
 PCI_SUBCLASS_SERIALBUS_USB = 3
 
-WARNING_NO_HAL_KERNEL_VERSION = 1
-WARNING_NO_KERNEL_PACKAGE_DATA = 2
-
 DB_FORMAT_FOR_VENDOR_ID = {
     'pci': '0x%04x',
     'usb_device': '0x%04x',
@@ -233,7 +230,6 @@ class SubmissionParser(object):
                 'invalid submission format version: %s' % repr(version),
                 submission_key)
             return None
-        self.submission_format_version = version
 
         validator = self.validator[version]
         if not validator.validate(submission):

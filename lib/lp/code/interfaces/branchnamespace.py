@@ -95,12 +95,6 @@ class IBranchNamespace(Interface):
 class IBranchNamespacePolicy(Interface):
     """Methods relating to branch creation and validation."""
 
-    def getPrivacySubscriber():
-        """Get the implicit privacy subscriber for a new branch.
-
-        :return: An `IPerson` or None.
-        """
-
     def canCreateBranches(user):
         """Is the user allowed to create branches for this namespace?
 

@@ -47,7 +47,6 @@ from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
-from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
@@ -63,11 +62,7 @@ from lp.services.webapp import (
     LaunchpadView,
     )
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import (
-    IAlwaysSubmittedWidget,
-    IPlacelessLoginSource,
-    )
-from lp.services.webapp.login import logInPrincipal
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 from lp.services.webapp.vhosts import allvhosts
 
 
@@ -163,12 +158,6 @@ class BaseTokenView:
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
 
-    def logInPrincipalByEmail(self, email):
-        """Login the principal with the given email address."""
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email)
-        logInPrincipal(self.request, principal, email)
-
     def _cancel(self):
         """Consume the LoginToken and set self._next_url_for_cancel.
 
@@ -177,27 +166,6 @@ class BaseTokenView:
         """
         self._next_url_for_cancel = canonical_url(self.context.requester)
         self.context.consume()
-
-    def accountWasSuspended(self, account, reason):
-        """Return True if the person's account was SUSPENDED, otherwise False.
-
-        When the account was SUSPENDED, the Warning Notification with the
-        reason is added to the request's response. The LoginToken is consumed.
-
-        :param account: The IAccount.
-        :param reason: A sentence that explains why the SUSPENDED account
-            cannot be used.
-        """
-        if account.status != AccountStatus.SUSPENDED:
-            return False
-        suspended_account_mailto = (
-            'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
-        message = structured(
-              '%s Contact a <a href="%s">Launchpad admin</a> '
-              'about this issue.' % (reason, suspended_account_mailto))
-        self.request.response.addWarningNotification(message)
-        self.context.consume()
-        return True
 
 
 class ClaimTeamView(

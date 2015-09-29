@@ -29,10 +29,6 @@ __all__ = [
 
 from datetime import datetime
 
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.fields import Reference
@@ -1179,27 +1175,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class RegisterProposalStatus(EnumeratedType):
-    """A restricted status enum for the register proposal form."""
-
-    # The text in this enum is different from the general proposal status
-    # enum as we want the help text that is shown in the form to be more
-    # relevant to the registration of the proposal.
-
-    NEEDS_REVIEW = Item("""
-        Needs review
-
-        The changes are ready for review.
-        """)
-
-    WORK_IN_PROGRESS = Item("""
-        Work in progress
-
-        The changes are still being actively worked on, and are not
-        yet ready for review.
-        """)
 
 
 class RegisterProposalSchema(Interface):

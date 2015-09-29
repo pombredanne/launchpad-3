@@ -310,13 +310,6 @@ class BugCommentView(LaunchpadView):
     def page_description(self):
         return self.comment.text_contents
 
-    @property
-    def privacy_notice_classes(self):
-        if not self.context.bug.private:
-            return 'hidden'
-        else:
-            return ''
-
 
 class BugCommentBoxViewMixin:
     """A class which provides proxied Librarian URLs for bug attachments."""

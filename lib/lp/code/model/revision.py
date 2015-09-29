@@ -410,13 +410,6 @@ class RevisionSet:
         present = store.find(Revision.revision_id, clause)
         return set(present)
 
-    def checkNewVerifiedEmail(self, email):
-        """See `IRevisionSet`."""
-        # Bypass zope's security because IEmailAddress.email is not public.
-        naked_email = removeSecurityProxy(email)
-        for author in RevisionAuthor.selectBy(email=naked_email.email):
-            author.personID = email.personID
-
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""
         # If there are no branch_ids, then return None.

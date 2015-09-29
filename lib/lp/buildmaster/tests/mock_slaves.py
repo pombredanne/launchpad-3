@@ -276,7 +276,6 @@ class SlaveTestHelpers(fixtures.Fixture):
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
     BASE_URL = 'http://localhost:8221'
-    TEST_URL = '%s/rpc/' % (BASE_URL,)
 
     def getServerSlave(self):
         """Set up a test build slave server.

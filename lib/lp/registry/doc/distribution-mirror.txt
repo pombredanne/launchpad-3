@@ -172,16 +172,12 @@ The getBy*Url methods return the corresponding mirrors:
     None
 
     >>> ftp_mirror = mirrorset.getByFtpUrl('ftp://localhost/example-ftp')
-    >>> ftp_mirror.has_ftp_or_rsync_base_url
-    True
 
     >>> print mirrorset.getByFtpUrl('ftp://non-existent-url')
     None
 
     >>> rsync_mirror = mirrorset.getByRsyncUrl(
     ...     'rsync://localhost/example-rsync')
-    >>> rsync_mirror.has_ftp_or_rsync_base_url
-    True
 
     >>> print mirrorset.getByRsyncUrl('rsync://non-existent-url')
     None
