@@ -28,10 +28,10 @@ from lp.testing import (
     login_team,
     logout,
     person_logged_in,
+    RequestTimelineCollector,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
@@ -443,7 +443,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # Seed the cookie cache and any other cross-request state we may gain
         # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(milestone_url)
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         browser.open(milestone_url)

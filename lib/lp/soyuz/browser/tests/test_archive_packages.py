@@ -35,9 +35,9 @@ from lp.testing import (
     login_person,
     person_logged_in,
     record_two_runs,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -183,7 +183,7 @@ class TestPPAPackages(TestCaseWithFactory):
     def test_source_query_counts(self):
         query_baseline = 43
         # Assess the baseline.
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
@@ -224,7 +224,7 @@ class TestPPAPackages(TestCaseWithFactory):
     def test_binary_query_counts(self):
         query_baseline = 40
         # Assess the baseline.
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
