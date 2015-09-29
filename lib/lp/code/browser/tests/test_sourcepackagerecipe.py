@@ -195,12 +195,6 @@ class TestCaseForRecipe(BrowserTestCase):
             self.assertEqual(expected_branch_info, series_branches_info)
 
 
-def get_message_text(browser, index):
-    """Return the text of a message, specified by index."""
-    tags = find_tags_by_class(browser.contents, 'message')[index]
-    return extract_text(tags)
-
-
 class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

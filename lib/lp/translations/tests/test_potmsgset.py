@@ -638,9 +638,6 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
             naked_tm.reviewer = self.factory.makePerson()
         naked_tm.date_reviewed = self.now()
 
-    def _setDateUpdated(self, tm):
-        removeSecurityProxy(tm).date_updated = self.now()
-
     def gen_now(self):
         now = datetime.now(pytz.UTC)
         while True:

@@ -17,14 +17,8 @@ import unittest
 from zope.component import getUtility
 
 from lp.bugs.interfaces.bug import CreateBugParams
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    IBugTaskSet,
-    )
-from lp.registry.interfaces.distribution import (
-    IDistribution,
-    IDistributionSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.services.webapp.interfaces import ILaunchBag
@@ -145,27 +139,6 @@ def sourcepackage_filebug(source_package, summary, status=None):
         source_package.distroseries, summary,
         sourcepackagename=source_package.sourcepackagename, status=status)
     return bug
-
-
-def sourcepackage_filebug_for_question(source_package, summary, status=None):
-    """Setup a bug with only one BugTask that can provide a QuestionTarget."""
-    bug = sourcepackage_filebug(source_package, summary, status=status)
-    # The distribution bugtask interferes with bugtarget-questiontarget.txt.
-    for bugtask in bug.bugtasks:
-        if IDistribution.providedBy(bugtask.target):
-            bugtask.transitionToStatus(
-                BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-    return bug
-
-
-def sourcePackageSetUp(test):
-    """Setup the `ISourcePackage` test."""
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    warty = ubuntu.getSeries('warty')
-    test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
-    test.globs['filebug'] = sourcepackage_filebug
-    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
 class BugTargetQuestionTargetTestCase(TestCaseWithFactory):

@@ -9,7 +9,6 @@ __all__ = [
     'HWBus',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
-    'HWSubmissionMissingFields',
     'HWSubmissionProcessingStatus',
     'IHWDBApplication',
     'IHWDevice',
@@ -124,10 +123,6 @@ def validate_email_address(emailaddress):
 
 class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
-
-
-class HWSubmissionMissingFields(Exception):
-    """Indicate that the HWDB client sent incomplete data."""
 
 
 class HWSubmissionProcessingStatus(DBEnumeratedType):

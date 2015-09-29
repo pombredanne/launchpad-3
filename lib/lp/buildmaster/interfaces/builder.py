@@ -14,7 +14,6 @@ __all__ = [
     'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
-    'ProtocolVersionMismatch',
     ]
 
 from lazr.restful.declarations import (
@@ -83,10 +82,6 @@ class CannotFetchFile(BuildDaemonError):
         super(CannotFetchFile, self).__init__()
         self.file_url = file_url
         self.error_information = error_information
-
-
-class ProtocolVersionMismatch(BuildDaemonError):
-    """The build slave had a protocol version. This is a serious error."""
 
 
 class CannotResumeHost(BuildDaemonError):

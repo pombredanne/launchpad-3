@@ -17,19 +17,16 @@ __all__ = [
     'IBaseImageUpload',
     'IBugField',
     'IDescription',
-    'ILocationField',
     'INoneableTextLine',
     'IPersonChoice',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
-    'ITimeInterval',
     'ITitle',
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
     'KEEP_SAME_IMAGE',
-    'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
     'NoneableDescription',
@@ -37,7 +34,6 @@ __all__ = [
     'PersonChoice',
     'PillarAliases',
     'PillarNameField',
-    'PrivateMembershipTeamNotAllowed',
     'PrivateTeamNotAllowed',
     'ProductBugTracker',
     'ProductNameField',
@@ -46,7 +42,6 @@ __all__ = [
     'StrippedTextLine',
     'Summary',
     'Tag',
-    'TimeInterval',
     'Title',
     'URIField',
     'UniqueField',
@@ -75,8 +70,6 @@ from zope.schema import (
     Choice,
     Date,
     Datetime,
-    Field,
-    Float,
     Int,
     Text,
     TextLine,
@@ -87,7 +80,6 @@ from zope.schema.interfaces import (
     IBytes,
     IDate,
     IDatetime,
-    IField,
     Interface,
     IObject,
     IText,
@@ -149,10 +141,6 @@ class IWhiteboard(IText):
     """A Field that implements a Whiteboard"""
 
 
-class ITimeInterval(ITextLine):
-    """A field that captures a time interval in days, hours, minutes."""
-
-
 class IBugField(IObject):
     """A field that allows entry of a Bug number or nickname"""
 
@@ -165,14 +153,6 @@ class IAnnouncementDate(IDatetime):
     publication in advance. Essentially this amounts to a Datetime that can
     be None.
     """
-
-
-class ILocationField(IField):
-    """A location, consisting of geographic coordinates and a time zone."""
-
-    latitude = Float(title=_('Latitude'))
-    longitude = Float(title=_('Longitude'))
-    time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
 
 
 class ITag(ITextLine):
@@ -336,19 +316,6 @@ class FormattableDate(Date):
 @implementer(IDatetime)
 class AnnouncementDate(Datetime):
     pass
-
-
-# TimeInterval
-# A field to capture an interval in time, such as X days, Y hours, Z
-# minutes.
-
-@implementer(ITimeInterval)
-class TimeInterval(TextLine):
-
-    def _validate(self, value):
-        if 'mon' in value:
-            return 0
-        return 1
 
 
 @implementer(IBugField)
@@ -781,23 +748,6 @@ class MugshotImageUpload(BaseImageUpload):
     max_size = 100 * 1024
 
 
-@implementer(ILocationField)
-class LocationField(Field):
-    """A Location field."""
-
-    @property
-    def latitude(self):
-        return self.value.latitude
-
-    @property
-    def longitude(self):
-        return self.value.longitude
-
-    @property
-    def time_zone(self):
-        return self.value.time_zone
-
-
 class PillarNameField(BlacklistableContentNameField):
     """Base field used for names of distros/project groups/products."""
 
@@ -837,10 +787,6 @@ def is_public_person_or_closed_team(person):
 
 class PrivateTeamNotAllowed(ConstraintNotSatisfied):
     __doc__ = _("A private team is not allowed.")
-
-
-class PrivateMembershipTeamNotAllowed(ConstraintNotSatisfied):
-    __doc__ = _("A private-membership team is not allowed.")
 
 
 class IPersonChoice(IReferenceChoice):

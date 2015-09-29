@@ -26,7 +26,6 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     api_url,
@@ -44,7 +43,6 @@ class TestBugChanges(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugChanges, self).setUp('foo.bar@canonical.com')
-        self.admin_user = getUtility(ILaunchBag).user
         self.user = self.factory.makePerson(
             displayname='Arthur Dent', selfgenerated_bugnotifications=True)
         self.product = self.factory.makeProduct(

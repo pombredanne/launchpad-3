@@ -248,16 +248,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self._attemptTransition(proposal, to_state)
         self.assertProposalState(proposal, to_state)
 
-    def assertBadTransition(self, from_state, to_state):
-        """Assert that trying to go from `from_state` to `to_state` fails."""
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=from_state)
-        self.assertProposalState(proposal, from_state)
-        self.assertRaises(BadStateTransition,
-                          self._attemptTransition,
-                          proposal, to_state)
-
     def prepareDupeTransition(self, from_state):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,

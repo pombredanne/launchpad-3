@@ -379,23 +379,6 @@ class GettextPOExporterBase:
         storage.addFile(
             file_path, file_extension, encoded_file_content, mime_type)
 
-    def acceptSingularClash(self, previous_message, current_message):
-        """Handle clash of (singular) msgid and context with other message.
-
-        Define in derived class how it should behave when this happens.
-
-        Obsolete messages are guaranteed to be processed after
-        non-obsolete ones.
-
-        :param previous_message: already processed message in this
-            export.
-        :param current_message: another message with the same (singular)
-            msgid and context as `previous_message`.
-        :return: boolean: True to accept `current_message`, or False to
-            leave it out of the export.
-        """
-        raise NotImplementedError()
-
 
 class GettextPOExporter(GettextPOExporterBase):
     """Support class to export Gettext .po files."""
@@ -450,7 +433,3 @@ class GettextPOChangedExporter(GettextPOExporterBase):
         :return: The header as a unicode string.
         """
         return self.exported_header
-
-    def acceptSingularClash(self, previous_message, current_message):
-        """See `GettextPOExporterBase`."""
-        return True

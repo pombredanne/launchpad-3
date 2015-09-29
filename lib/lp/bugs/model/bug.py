@@ -2571,18 +2571,6 @@ class BugSet:
                     "Unable to locate bug with nickname %s." % bugid)
         return bug
 
-    def queryByRemoteBug(self, bugtracker, remotebug):
-        """See `IBugSet`."""
-        bug = Bug.selectFirst("""
-                bugwatch.bugtracker = %s AND
-                bugwatch.remotebug = %s AND
-                bugwatch.bug = bug.id
-                """ % sqlvalues(bugtracker.id, str(remotebug)),
-                distinct=True,
-                clauseTables=['BugWatch'],
-                orderBy=['datecreated'])
-        return bug
-
     def createBug(self, bug_params, notify_event=True):
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some

@@ -1158,10 +1158,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     owner = property(_getOwner, _setOwner)
 
-    def _getBugTaskContextWhereClause(self):
-        """See BugTargetBase."""
-        return "BugTask.product = %d" % self.id
-
     def getExternalBugTracker(self):
         """See `IHasExternalBugTracker`."""
         if self.official_malone:
