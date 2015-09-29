@@ -1369,7 +1369,8 @@ class IBranchSet(Interface):
         """Find a branch by its path.
 
         The path is the same as its lp: URL, but without the leading lp:, so
-        it may be in any of these forms:
+        it may be in any of these forms::
+
             Unique names:
                 ~OWNER/PROJECT/NAME
                 ~OWNER/DISTRO/SERIES/SOURCE/NAME
