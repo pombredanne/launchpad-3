@@ -180,10 +180,12 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webhooks.interfaces import IWebhookSet
+from lp.services.webhooks.model import WebhookTargetMixin
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
-class Branch(SQLBase, BzrIdentityMixin):
+class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
     _table = 'Branch'
 
@@ -1336,6 +1338,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         self._deleteBranchSubscriptions()
         self._deleteJobs()
+        getUtility(IWebhookSet).delete(self.webhooks)
 
         # Now destroy the branch.
         branch_id = self.id
@@ -1609,6 +1612,10 @@ class BranchSet:
     def getByUrls(self, urls):
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrls(urls)
+
+    def getByPath(self, path):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByPath(path)
 
     def getBranches(self, limit=50, eager_load=True):
         """See `IBranchSet`."""
