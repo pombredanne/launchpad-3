@@ -769,7 +769,7 @@ class TestTriggerWebhooks(BzrSyncTestCase):
             MatchesStructure(
                 event_type=Equals("bzr:push:0.1"),
                 payload=MatchesDict({
-                    "bzr_branch_path": Equals(self.db_branch.unique_name),
+                    "bzr_branch_path": Equals(self.db_branch.shortened_path),
                     "old": Equals({"revision_id": old_revid}),
                     "new": Equals({"revision_id": new_revid}),
                     })))

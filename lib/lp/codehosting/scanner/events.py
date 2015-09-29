@@ -85,7 +85,7 @@ class TipChanged(ScannerEvent):
     @staticmethod
     def composeWebhookPayload(branch, old_revid, new_revid):
         return {
-            "bzr_branch_path": branch.unique_name,
+            "bzr_branch_path": branch.shortened_path,
             "old": {"revision_id": old_revid},
             "new": {"revision_id": new_revid},
             }
