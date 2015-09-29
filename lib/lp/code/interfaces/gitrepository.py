@@ -688,7 +688,7 @@ class IGitRepositorySet(Interface):
     def getByPath(user, path):
         """Find a repository by its path.
 
-        Any of these forms may be used, with or without a leading slash:
+        Any of these forms may be used:
             Unique names:
                 ~OWNER/PROJECT/+git/NAME
                 ~OWNER/DISTRO/+source/SOURCE/+git/NAME
