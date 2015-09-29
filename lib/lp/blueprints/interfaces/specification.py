@@ -702,21 +702,23 @@ class ISpecification(ISpecificationPublic, ISpecificationView,
         :param new_work_items: Work items to set.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('devel')
-    def linkBug(bug):
+    def linkBug(bug, user=None):
         """Link a bug to this specification.
 
         :param bug: IBug to link.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('devel')
-    def unlinkBug(bug):
+    def unlinkBug(bug, user=None):
         """Unlink a bug to this specification.
 
         :param bug: IBug to unlink.
