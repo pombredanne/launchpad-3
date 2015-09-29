@@ -8,10 +8,22 @@ __all__ = []
 
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 
+from lp.answers.karma import assignKarmaUsingQuestionContext
 from lp.answers.notification import QuestionNotification
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.person import IPerson
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_email_template
 from lp.services.webapp.publisher import canonical_url
+
+
+@block_implicit_flushes
+def assign_question_bug_link_karma(questionbug, event):
+    """Assign karma to the user which added <questionbug>."""
+    if IBug.providedBy(event.other_object):
+        assignKarmaUsingQuestionContext(
+            IPerson(event.user), event.object, 'questionlinkedtobug')
 
 
 def dispatch_linked_question_notifications(bugtask, event):
