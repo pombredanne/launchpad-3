@@ -551,14 +551,18 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
                 'the source branch.'),
             readonly=True,
             value_type=Reference(Interface)))
-    landing_candidates = exported(
+    landing_candidates = Attribute(
+        'A collection of the merge proposals where this branch is '
+        'the target branch.')
+    _api_landing_candidates = exported(
         CollectionField(
             title=_('Landing Candidates'),
             description=_(
                 'A collection of the merge proposals where this branch is '
                 'the target branch.'),
             readonly=True,
-            value_type=Reference(Interface)))
+            value_type=Reference(Interface)),
+        exported_as='landing_candidates')
     dependent_branches = exported(
         CollectionField(
             title=_('Dependent Branches'),
