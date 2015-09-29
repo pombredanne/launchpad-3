@@ -43,3 +43,60 @@ class TestQuestionBugLinks(TestCaseWithFactory):
         self.assertContentEqual([bug1], question2.bugs)
         self.assertContentEqual([question2], bug1.questions)
         self.assertContentEqual([], bug2.questions)
+
+    def test_link_subscribes_creator_to_bug(self):
+        login_person(self.factory.makePerson())
+        bug = self.factory.makeBug()
+        question = self.factory.makeQuestion()
+        self.assertFalse(bug.isSubscribed(question.owner))
+
+        # Linking a bug to a question subscribes the question's creator
+        # to the bug.
+        question.linkBug(bug)
+        self.assertTrue(bug.isSubscribed(question.owner))
+
+        # If the creator manually unsubscribes, recreating the existing
+        # link does nothing.
+        bug.unsubscribe(question.owner, question.owner)
+        self.assertFalse(bug.isSubscribed(question.owner))
+        question.linkBug(bug)
+        self.assertFalse(bug.isSubscribed(question.owner))
+
+    def test_link_copes_with_existing_subscription(self):
+        # Linking a bug to a question doesn't complain if the creator is
+        # already subscriber.
+        login_person(self.factory.makePerson())
+        bug = self.factory.makeBug()
+        question = self.factory.makeQuestion()
+        bug.subscribe(question.owner, question.owner)
+        self.assertTrue(bug.isSubscribed(question.owner))
+        question.linkBug(bug)
+        self.assertTrue(bug.isSubscribed(question.owner))
+
+    def test_unlink_unsubscribes_creator_from_bug(self):
+        login_person(self.factory.makePerson())
+        bug = self.factory.makeBug()
+        question = self.factory.makeQuestion()
+        question.linkBug(bug)
+        self.assertTrue(bug.isSubscribed(question.owner))
+
+        # Unlinking the bug unsubscribes the question's creator.
+        question.unlinkBug(bug)
+        self.assertFalse(bug.isSubscribed(question.owner))
+
+        # Reunlinking an unlinked bug doesn't unsubscribe.
+        bug.subscribe(question.owner, question.owner)
+        question.unlinkBug(bug)
+        self.assertTrue(bug.isSubscribed(question.owner))
+
+    def test_unlink_copes_with_no_subscription(self):
+        # Unlinking a bug from a question doesn't complain if the
+        # creator isn't subscribed.
+        login_person(self.factory.makePerson())
+        bug = self.factory.makeBug()
+        question = self.factory.makeQuestion()
+        question.linkBug(bug)
+        bug.unsubscribe(question.owner, question.owner)
+        self.assertFalse(bug.isSubscribed(question.owner))
+        question.unlinkBug(bug)
+        self.assertFalse(bug.isSubscribed(question.owner))
