@@ -1314,8 +1314,7 @@ class IBranchSet(Interface):
         Return None if no match was found.
         """
 
-    @operation_parameters(
-        url=TextLine(title=_('Branch URL'), required=True))
+    @operation_parameters(url=TextLine(title=_('Branch URL'), required=True))
     @operation_returns_entry(IBranch)
     @export_read_operation()
     @operation_for_version('beta')
@@ -1356,6 +1355,28 @@ class IBranchSet(Interface):
         :param urls: An iterable of URLs expressed as strings.
         :return: A dictionary mapping URLs to branches. If the URL has no
             associated branch, the URL will map to `None`.
+        """
+
+    @operation_parameters(path=TextLine(title=_('Branch path'), required=True))
+    @operation_returns_entry(IBranch)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getByPath(path):
+        """Find a branch by its path.
+
+        The path is the same as its lp: URL, but without the leading lp:, so
+        it may be in any of these forms:
+            Unique names:
+                ~OWNER/PROJECT/NAME
+                ~OWNER/DISTRO/SERIES/SOURCE/NAME
+                ~OWNER/+junk/NAME
+            Aliases linked to other objects:
+                PROJECT
+                PROJECT/SERIES
+                DISTRO/SOURCE
+                DISTRO/SUITE/SOURCE
+
+        Return None if no match was found.
         """
 
     @collection_default_content()

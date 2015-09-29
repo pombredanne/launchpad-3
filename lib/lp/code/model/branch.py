@@ -1608,6 +1608,10 @@ class BranchSet:
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrls(urls)
 
+    def getByPath(self, path):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByPath(path)
+
     def getBranches(self, limit=50, eager_load=True):
         """See `IBranchSet`."""
         anon_branches = getUtility(IAllBranches).visibleByUser(None)
