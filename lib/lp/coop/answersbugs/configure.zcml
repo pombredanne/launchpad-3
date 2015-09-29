@@ -20,6 +20,16 @@
     handler=".subscribers.assign_question_bug_link_karma"
     />
 
+  <subscriber
+    for="lp.answers.interfaces.question.IQuestion lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+    handler=".subscribers.subscribe_owner_to_bug"
+    />
+
+  <subscriber
+    for="lp.answers.interfaces.question.IQuestion lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
+    handler=".subscribers.unsubscribe_owner_from_bug"
+    />
+
   <browser:page
     name="+makebug"
     for="lp.answers.interfaces.question.IQuestion"
