@@ -910,12 +910,109 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertFalse(branch.upgrade_pending)
 
 
-class TestBranchLinksAndIdentities(TestCaseWithFactory):
-    """Test IBranch.getBranchLinks and IBranch.getBranchIdentities."""
+class TestBzrIdentityMixin(TestCaseWithFactory):
+    """Test the defaults and identities provided by BzrIdentityMixin."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_default_identities(self):
+    def assertBzrIdentity(self, branch, identity_path):
+        """Assert that the bzr identity of 'branch' is 'identity_path'.
+
+        Actually, it'll be lp://dev/<identity_path>.
+        """
+        self.assertEqual(
+            identity_path, branch.shortened_path, "shortened path")
+        self.assertEqual(
+            'lp://dev/%s' % identity_path, branch.bzr_identity, "bzr identity")
+
+    def test_bzr_identity_default(self):
+        # By default, the bzr identity is an lp URL with the branch's unique
+        # name.
+        branch = self.factory.makeAnyBranch()
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def test_bzr_identity_linked_to_product(self):
+        # If a branch is the development focus branch for a product, then it's
+        # bzr identity is lp:product.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        linked_branch = ICanHasLinkedBranch(product)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_bzr_identity_linked_to_product_series(self):
+        # If a branch is the development focus branch for a product series,
+        # then it's bzr identity is lp:product/series.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        series = self.factory.makeProductSeries(product=product)
+        linked_branch = ICanHasLinkedBranch(series)
+        login_person(series.owner)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_bzr_identity_private_linked_to_product(self):
+        # Private branches also have a short lp:url.
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
+        with celebrity_logged_in('admin'):
+            product = branch.product
+            ICanHasLinkedBranch(product).setBranch(branch)
+            self.assertBzrIdentity(branch, product.name)
+
+    def test_bzr_identity_linked_to_series_and_dev_focus(self):
+        # If a branch is the development focus branch for a product and the
+        # branch for a series, the bzr identity will be the storter of the two
+        # URLs.
+        branch = self.factory.makeProductBranch()
+        series = self.factory.makeProductSeries(product=branch.product)
+        product_link = ICanHasLinkedBranch(
+            removeSecurityProxy(branch.product))
+        series_link = ICanHasLinkedBranch(series)
+        product_link.setBranch(branch)
+        login_person(series.owner)
+        series_link.setBranch(branch)
+        self.assertBzrIdentity(branch, product_link.bzr_path)
+
+    def test_bzr_identity_junk_branch_always_unique_name(self):
+        # For junk branches, the bzr identity is always based on the unique
+        # name of the branch, even if it's linked to a product, product series
+        # or whatever.
+        branch = self.factory.makePersonalBranch()
+        product = removeSecurityProxy(self.factory.makeProduct())
+        ICanHasLinkedBranch(product).setBranch(branch)
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def test_bzr_identity_linked_to_package(self):
+        # If a branch is linked to a pocket of a package, then the
+        # bzr identity is the path to that package.
+        branch = self.factory.makePackageBranch()
+        # Have to pick something that's not RELEASE in order to guarantee that
+        # it's not the dev focus source package.
+        pocket = PackagePublishingPocket.BACKPORTS
+        linked_branch = ICanHasLinkedBranch(
+            branch.sourcepackage.getSuiteSourcePackage(pocket))
+        registrant = branch.sourcepackage.distribution.owner
+        login_person(registrant)
+        linked_branch.setBranch(branch, registrant)
+        login(ANONYMOUS)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_bzr_identity_linked_to_dev_package(self):
+        # If a branch is linked to the development focus version of a package
+        # then the bzr identity is distro/package.
+        sourcepackage = self.factory.makeSourcePackage()
+        distro_package = sourcepackage.distribution_sourcepackage
+        branch = self.factory.makePackageBranch(
+            sourcepackage=distro_package.development_version)
+        linked_branch = ICanHasLinkedBranch(distro_package)
+        registrant = sourcepackage.distribution.owner
+        run_with_login(
+            registrant,
+            linked_branch.setBranch, branch, registrant)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_identities_no_links(self):
         # If there are no links, the only branch identity is the unique name.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
@@ -1100,108 +1197,6 @@ class TestBranchLinksAndIdentities(TestCaseWithFactory):
             branch.getBranchLinks())
         self.assertEqual(
             [('~eric/+junk/foo', branch)], branch.getBranchIdentities())
-
-
-class TestBzrIdentity(TestCaseWithFactory):
-    """Test IBranch.bzr_identity."""
-
-    layer = DatabaseFunctionalLayer
-
-    def assertBzrIdentity(self, branch, identity_path):
-        """Assert that the bzr identity of 'branch' is 'identity_path'.
-
-        Actually, it'll be lp://dev/<identity_path>.
-        """
-        self.assertEqual(
-            'lp://dev/%s' % identity_path, branch.bzr_identity,
-            "bzr identity")
-
-    def test_default_identity(self):
-        # By default, the bzr identity is an lp URL with the branch's unique
-        # name.
-        branch = self.factory.makeAnyBranch()
-        self.assertBzrIdentity(branch, branch.unique_name)
-
-    def test_linked_to_product(self):
-        # If a branch is the development focus branch for a product, then it's
-        # bzr identity is lp:product.
-        branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        linked_branch = ICanHasLinkedBranch(product)
-        linked_branch.setBranch(branch)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
-
-    def test_linked_to_product_series(self):
-        # If a branch is the development focus branch for a product series,
-        # then it's bzr identity is lp:product/series.
-        branch = self.factory.makeProductBranch()
-        product = branch.product
-        series = self.factory.makeProductSeries(product=product)
-        linked_branch = ICanHasLinkedBranch(series)
-        login_person(series.owner)
-        linked_branch.setBranch(branch)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
-
-    def test_private_linked_to_product(self):
-        # Private branches also have a short lp:url.
-        branch = self.factory.makeProductBranch(
-            information_type=InformationType.USERDATA)
-        with celebrity_logged_in('admin'):
-            product = branch.product
-            ICanHasLinkedBranch(product).setBranch(branch)
-            self.assertBzrIdentity(branch, product.name)
-
-    def test_linked_to_series_and_dev_focus(self):
-        # If a branch is the development focus branch for a product and the
-        # branch for a series, the bzr identity will be the storter of the two
-        # URLs.
-        branch = self.factory.makeProductBranch()
-        series = self.factory.makeProductSeries(product=branch.product)
-        product_link = ICanHasLinkedBranch(
-            removeSecurityProxy(branch.product))
-        series_link = ICanHasLinkedBranch(series)
-        product_link.setBranch(branch)
-        login_person(series.owner)
-        series_link.setBranch(branch)
-        self.assertBzrIdentity(branch, product_link.bzr_path)
-
-    def test_junk_branch_always_unique_name(self):
-        # For junk branches, the bzr identity is always based on the unique
-        # name of the branch, even if it's linked to a product, product series
-        # or whatever.
-        branch = self.factory.makePersonalBranch()
-        product = removeSecurityProxy(self.factory.makeProduct())
-        ICanHasLinkedBranch(product).setBranch(branch)
-        self.assertBzrIdentity(branch, branch.unique_name)
-
-    def test_linked_to_package(self):
-        # If a branch is linked to a pocket of a package, then the
-        # bzr identity is the path to that package.
-        branch = self.factory.makePackageBranch()
-        # Have to pick something that's not RELEASE in order to guarantee that
-        # it's not the dev focus source package.
-        pocket = PackagePublishingPocket.BACKPORTS
-        linked_branch = ICanHasLinkedBranch(
-            branch.sourcepackage.getSuiteSourcePackage(pocket))
-        registrant = branch.sourcepackage.distribution.owner
-        login_person(registrant)
-        linked_branch.setBranch(branch, registrant)
-        login(ANONYMOUS)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
-
-    def test_linked_to_dev_package(self):
-        # If a branch is linked to the development focus version of a package
-        # then the bzr identity is distro/package.
-        sourcepackage = self.factory.makeSourcePackage()
-        distro_package = sourcepackage.distribution_sourcepackage
-        branch = self.factory.makePackageBranch(
-            sourcepackage=distro_package.development_version)
-        linked_branch = ICanHasLinkedBranch(distro_package)
-        registrant = sourcepackage.distribution.owner
-        run_with_login(
-            registrant,
-            linked_branch.setBranch, branch, registrant)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
 
 class TestBranchDeletion(TestCaseWithFactory):

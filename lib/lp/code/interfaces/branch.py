@@ -708,6 +708,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         Reference(
             title=_("The associated CodeImport, if any."), schema=Interface))
 
+    shortened_path = Attribute(
+        "The shortest reasonable version of the path to this branch; as "
+        "bzr_identity but without the 'lp:' prefix.")
+
     bzr_identity = exported(
         Text(
             title=_('Bazaar Identity'),
@@ -1478,10 +1482,14 @@ class BzrIdentityMixin:
     """
 
     @property
+    def shortened_path(self):
+        """See `IBranch`."""
+        return self.getBranchIdentities()[0][0]
+
+    @property
     def bzr_identity(self):
         """See `IBranch`."""
-        identity, _ = self.getBranchIdentities()[0]
-        return config.codehosting.bzr_lp_prefix + identity
+        return config.codehosting.bzr_lp_prefix + self.shortened_path
 
     identity = bzr_identity
 
