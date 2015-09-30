@@ -536,8 +536,8 @@ class ActiveReviewsOfBranchesGit(
     """Test reviews of references in Git repositories."""
 
 
-class PersonActiveReviewsPerformanceMixin:
-    """Test the performance of the person's active reviews page."""
+class ActiveReviewsPerformanceMixin:
+    """Test the performance of the active reviews page."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -627,11 +627,11 @@ class PersonActiveReviewsPerformanceMixin:
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
-class PersonActiveReviewsPerformanceBzr(
-    PersonActiveReviewsPerformanceMixin, BzrMixin, TestCaseWithFactory):
-    """Test the performance of the person's active reviews page for Bazaar."""
+class ActiveReviewsPerformanceBzr(
+    ActiveReviewsPerformanceMixin, BzrMixin, TestCaseWithFactory):
+    """Test the performance of the active reviews page for Bazaar."""
 
 
-class PersonActiveReviewsPerformanceGit(
-    PersonActiveReviewsPerformanceMixin, GitMixin, TestCaseWithFactory):
-    """Test the performance of the person's active reviews page for Git."""
+class ActiveReviewsPerformanceGit(
+    ActiveReviewsPerformanceMixin, GitMixin, TestCaseWithFactory):
+    """Test the performance of the active reviews page for Git."""
