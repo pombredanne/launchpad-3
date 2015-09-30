@@ -267,7 +267,7 @@ class TestMergesOnce(BrowserTestCase):
         self.assertIn(identity, view.contents)
 
 
-class MergesTestMixin:
+class BranchMergeProposalListingTestMixin:
 
     layer = DatabaseFunctionalLayer
 
@@ -289,7 +289,8 @@ class MergesTestMixin:
             target=self.bzr_target, owner=self.owner,
             information_type=information_type)
         return self.factory.makeBranchMergeProposal(
-            source_branch=source, target_branch=target)
+            source_branch=source, target_branch=target,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def makeGitMergeProposal(self):
         information_type = (
@@ -302,13 +303,8 @@ class MergesTestMixin:
             target=self.git_target, owner=self.owner,
             information_type=information_type)
         return self.factory.makeBranchMergeProposalForGit(
-            source_ref=source, target_ref=target)
-
-    def test_none(self):
-        """The merges view should be enabled for the target."""
-        browser = self.getViewBrowser(
-            self.context, '+merges', rootsite='code', user=self.user)
-        self.assertIn("has no merge proposals", browser.contents)
+            source_ref=source, target_ref=target,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def test_bzr(self):
         """The merges view should be enabled for the target."""
@@ -318,7 +314,7 @@ class MergesTestMixin:
             bmp = self.makeBzrMergeProposal()
             url = canonical_url(bmp, force_local_path=True)
         browser = self.getViewBrowser(
-            self.context, '+merges', rootsite='code', user=self.user)
+            self.context, self.view_name, rootsite='code', user=self.user)
         self.assertIn(url, browser.contents)
 
     def test_git(self):
@@ -329,7 +325,7 @@ class MergesTestMixin:
             bmp = self.makeGitMergeProposal()
             url = canonical_url(bmp, force_local_path=True)
         browser = self.getViewBrowser(
-            self.context, '+merges', rootsite='code', user=self.user)
+            self.context, self.view_name, rootsite='code', user=self.user)
         self.assertIn(url, browser.contents)
 
     def test_query_count_bzr(self):
@@ -341,8 +337,8 @@ class MergesTestMixin:
         flush_database_caches()
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
-                self.context, '+merges', rootsite='code', user=self.user)
-        self.assertThat(recorder, HasQueryCount(LessThan(45)))
+                self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertThat(recorder, HasQueryCount(LessThan(51)))
 
     def test_query_count_git(self):
         if not self.supports_git:
@@ -353,8 +349,30 @@ class MergesTestMixin:
         flush_database_caches()
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
-                self.context, '+merges', rootsite='code', user=self.user)
-        self.assertThat(recorder, HasQueryCount(LessThan(41)))
+                self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertThat(recorder, HasQueryCount(LessThan(47)))
+
+
+class MergesTestMixin(BranchMergeProposalListingTestMixin):
+
+    view_name = '+merges'
+
+    def test_none(self):
+        """The merges view should be enabled for the target."""
+        browser = self.getViewBrowser(
+            self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn("has no merge proposals", browser.contents)
+
+
+class ActiveReviewsTestMixin(BranchMergeProposalListingTestMixin):
+
+    view_name = '+activereviews'
+
+    def test_none(self):
+        """The active reviews view should be enabled for the target."""
+        browser = self.getViewBrowser(
+            self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn("has no active code reviews", browser.contents)
 
 
 class ProductContextMixin:
@@ -503,6 +521,55 @@ class TestBranchMerges(BranchContextMixin, MergesTestMixin, BrowserTestCase):
 
 
 class TestGitRefMerges(GitRefContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestProductActiveReviews(
+        ProductContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestProjectGroupActiveReviews(
+        ProjectGroupContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestDistributionSourcePackageActiveReviews(
+        DistributionSourcePackageContextMixin, ActiveReviewsTestMixin,
+        BrowserTestCase):
+
+    pass
+
+
+class TestSourcePackageActiveReviews(
+        SourcePackageContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonActiveReviews(
+        PersonContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonProductActiveReviews(
+        PersonProductContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestBranchActiveReviews(
+        BranchContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestGitRefActiveReviews(
+        GitRefContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
 
     pass
 
