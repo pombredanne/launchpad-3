@@ -2037,8 +2037,11 @@ class Archive(SQLBase):
                 AND BuildQueue.build_farm_job =
                     BinaryPackageBuild.build_farm_job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
-                AND BinaryPackageBuild.status = %s;
-            """, params=(status.value, self.id, BuildStatus.NEEDSBUILD.value))
+                AND BinaryPackageBuild.status = %s
+                AND BuildQueue.status != %s;
+            """, params=(
+                status.value, self.id, BuildStatus.NEEDSBUILD.value,
+                status.value))
 
     def _recalculateBuildVirtualization(self):
         """Update virtualized columns for this archive."""
@@ -2054,22 +2057,31 @@ class Archive(SQLBase):
         if self.require_virtualized:
             # We can avoid the Processor join in this case.
             value = True
+            match = False
             proc_tables = []
             proc_clauses = []
             # BulkUpdate doesn't support an empty list of values.
-            store.find(BinaryPackageBuild, *bpb_clauses).set(virtualized=value)
+            bpb_rows = store.find(
+                BinaryPackageBuild,
+                BinaryPackageBuild.virtualized == match, *bpb_clauses)
+            bpb_rows.set(virtualized=value)
         else:
             value = Not(Processor.supports_nonvirtualized)
+            match = Processor.supports_nonvirtualized
             proc_tables = [Processor]
             proc_clauses = [BinaryPackageBuild.processor_id == Processor.id]
             store.execute(BulkUpdate(
                 {BinaryPackageBuild.virtualized: value},
                 table=BinaryPackageBuild, values=proc_tables,
-                where=And(*(bpb_clauses + proc_clauses))))
+                where=And(
+                    BinaryPackageBuild.virtualized == match,
+                    *(bpb_clauses + proc_clauses))))
         store.execute(BulkUpdate(
             {BuildQueue.virtualized: value},
             table=BuildQueue, values=([BinaryPackageBuild] + proc_tables),
-            where=And(*(bq_clauses + proc_clauses))))
+            where=And(
+                BuildQueue.virtualized == match,
+                *(bq_clauses + proc_clauses))))
         store.invalidate()
 
     def enable(self):
