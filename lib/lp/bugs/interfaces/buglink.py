@@ -69,7 +69,7 @@ class IBugLinkTarget(Interface):
                         value_type=Reference(schema=IBug), readonly=True),
         as_of="devel")
 
-    def linkBug(bug, user=None):
+    def linkBug(bug, user=None, check_permissions=True):
         """Link the object with this bug.
 
         If a new link is created by this method, an ObjectLinkedEvent is
@@ -78,7 +78,7 @@ class IBugLinkTarget(Interface):
         :return: True if a new link was created, False if it already existed.
         """
 
-    def unlinkBug(bug, user=None):
+    def unlinkBug(bug, user=None, check_permissions=True):
         """Remove any link between this object and the bug.
 
         If a link is removed by this method, an ObjectUnlinkedEvent is

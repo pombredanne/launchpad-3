@@ -815,13 +815,13 @@ class IBugEdit(Interface):
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def linkCVE(cve, user):
+    def linkCVE(cve, user, check_permissions=True):
         """Ensure that this CVE is linked to this bug."""
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def unlinkCVE(cve, user):
+    def unlinkCVE(cve, user, check_permissions=True):
         """Ensure that any links between this bug and the given CVE are
         removed.
         """

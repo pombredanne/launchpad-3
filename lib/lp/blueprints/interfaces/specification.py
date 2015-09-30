@@ -707,7 +707,7 @@ class ISpecification(ISpecificationPublic, ISpecificationView,
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('devel')
-    def linkBug(bug, user=None):
+    def linkBug(bug, user=None, check_permissions=True):
         """Link a bug to this specification.
 
         :param bug: IBug to link.
@@ -718,7 +718,7 @@ class ISpecification(ISpecificationPublic, ISpecificationView,
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('devel')
-    def unlinkBug(bug, user=None):
+    def unlinkBug(bug, user=None, check_permissions=True):
         """Unlink a bug to this specification.
 
         :param bug: IBug to unlink.
