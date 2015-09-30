@@ -43,7 +43,6 @@ from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
-    login,
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
@@ -288,13 +287,9 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         bug_with_question = getUtility(IBugSet).get(10)
         question = getUtility(IQuestionSet).get(1)
 
-        # XXX gmb 2007-12-11 bug 175545:
-        #     We shouldn't have to login() here, but since
-        #     database.buglinktarget.BugLinkTargetMixin.linkBug()
-        #     doesn't accept a user parameter, instead depending on the
-        #     currently logged in user, we get an exception if we don't.
-        login('test@canonical.com')
-        question.linkBug(bug_with_question)
+        sample_person = getUtility(IPersonSet).getByEmail(
+            'test@canonical.com')
+        question.linkBug(bug_with_question, sample_person)
 
         # We subscribe launchpad_developers to the question since this
         # indirectly subscribes foo.bar@canonical.com to it, too. We can
@@ -309,8 +304,6 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
 
         # For test_can_update_bug_with_questions we also need a bug
         # watch and by extension a bug tracker.
-        sample_person = getUtility(IPersonSet).getByEmail(
-            'test@canonical.com')
         bugtracker = new_bugtracker(BugTrackerType.ROUNDUP)
         self.bugtask_with_question = getUtility(IBugTaskSet).createTask(
             bug_with_question, sample_person,

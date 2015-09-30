@@ -337,39 +337,6 @@ The complete question workflow is documented in
 `answer-tracker-workflow.txt`.
 
 
-Bug linking
-===========
-
-Question implements the IBugLinkTarget interface which makes it possible
-to link bug report to question.
-
-    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
-    >>> verifyObject(IBugLinkTarget, firefox_question)
-    True
-
-See ../../bugs/tests/buglinktarget.txt for the documentation and test of the
-IBugLinkTarget interface.
-
-When a bug is linked to a question, the question's owner is subscribed to the
-bug.
-
-    >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> bug7 = getUtility(IBugSet).get(7)
-    >>> bug7.isSubscribed(firefox_question.owner)
-    False
-    >>> firefox_question.linkBug(bug7)
-    True
-    >>> bug7.isSubscribed(firefox_question.owner)
-    True
-
-When the link is removed, the owner is unsubscribed.
-
-    >>> firefox_question.unlinkBug(bug7)
-    True
-    >>> bug7.isSubscribed(firefox_question.owner)
-    False
-
-
 Unsupported questions
 =====================
 

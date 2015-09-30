@@ -70,7 +70,7 @@ class BugLinkView(LaunchpadFormView):
             self.context, providing=providedBy(self.context))
         bug = data['bug']
         try:
-            self.context.linkBug(bug)
+            self.context.linkBug(bug, user=self.user)
         except Unauthorized:
             # XXX flacoste 2006-08-23 bug=57470: This should use proper _().
             self.setFieldError(
@@ -147,7 +147,7 @@ class BugsUnlinkView(LaunchpadFormView):
         for bug in data['bugs']:
             replacements = {'bugid': bug.id}
             try:
-                self.context.unlinkBug(bug)
+                self.context.unlinkBug(bug, user=self.user)
                 response.addNotification(
                     _('Removed link to bug #$bugid.', mapping=replacements))
             except Unauthorized:

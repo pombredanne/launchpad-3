@@ -2366,7 +2366,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
             return
 
         owner_is_subscribed = question.isSubscribed(self.context.bug.owner)
-        question.unlinkBug(self.context.bug)
+        question.unlinkBug(self.context.bug, user=self.user)
         # The question.owner was implicitly unsubscribed when the bug
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:

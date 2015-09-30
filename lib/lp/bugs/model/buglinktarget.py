@@ -13,7 +13,6 @@ from lp.bugs.interfaces.buglink import (
     IObjectLinkedEvent,
     IObjectUnlinkedEvent,
     )
-from lp.services.webapp.authorization import check_permission
 
 
 # XXX wgrant 2015-09-25: lazr.lifecycle.event.LifecyleEventBase is all
@@ -51,15 +50,9 @@ class BugLinkTargetMixin:
     # IBugLinkTarget implementation
     def linkBug(self, bug, user=None):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug=175545:
-        #     We shouldn't be calling check_permission here. The user's
-        #     permissions should have been checked before this method
-        #     was called. Also, we shouldn't be relying on the logged-in
-        #     user in this method; the method should accept a user
-        #     parameter.
-        if not check_permission('launchpad.View', bug):
+        if not bug.userCanView(user):
             raise Unauthorized(
-                "cannot link to a private bug you don't have access to")
+                "Cannot link a private bug you don't have access to")
         if bug in self.bugs:
             return False
         self.createBugLink(bug)
@@ -69,15 +62,9 @@ class BugLinkTargetMixin:
 
     def unlinkBug(self, bug, user=None):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug=175545:
-        #     We shouldn't be calling check_permission here. The user's
-        #     permissions should have been checked before this method
-        #     was called. Also, we shouldn't be relying on the logged-in
-        #     user in this method; the method should accept a user
-        #     parameter.
-        if not check_permission('launchpad.View', bug):
+        if not bug.userCanView(user):
             raise Unauthorized(
-                "cannot unlink a private bug you don't have access to")
+                "Cannot unlink a private bug you don't have access to")
         if bug not in self.bugs:
             return False
         self.deleteBugLink(bug)
