@@ -10,12 +10,16 @@ from datetime import datetime
 import pytz
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     BranchMergeProposalListingItem,
@@ -26,9 +30,12 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.registry.enums import SharingPermission
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.sqlbase import flush_database_caches
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     BrowserTestCase,
     login,
@@ -236,51 +243,9 @@ class TestProposalVoteSummaryGit(
     """Test the vote summary for Git."""
 
 
-class TestMerges(BrowserTestCase):
+class TestMergesOnce(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
-
-    def test_person_product(self):
-        """The merges view should be enabled for PersonProduct."""
-        personproduct = PersonProduct(
-            self.factory.makePerson(), self.factory.makeProduct())
-        self.getViewBrowser(personproduct, '+merges', rootsite='code')
-
-    def test_DistributionSourcePackage(self):
-        """The merges view should be enabled for DistributionSourcePackage."""
-        package = self.factory.makeDistributionSourcePackage()
-        self.getViewBrowser(package, '+merges', rootsite='code')
-
-    def test_query_count_bzr(self):
-        product = self.factory.makeProduct()
-        target = self.factory.makeBranch(
-            product=product, information_type=InformationType.USERDATA)
-        for i in range(7):
-            source = self.factory.makeBranch(
-                product=product, information_type=InformationType.USERDATA)
-            self.factory.makeBranchMergeProposal(
-                source_branch=removeSecurityProxy(source),
-                target_branch=target)
-        flush_database_caches()
-        with StormStatementRecorder() as recorder:
-            self.getViewBrowser(
-                product, '+merges', rootsite='code', user=product.owner)
-        self.assertThat(recorder, HasQueryCount(Equals(41)))
-
-    def test_query_count_git(self):
-        product = self.factory.makeProduct()
-        [target] = self.factory.makeGitRefs(
-            target=product, information_type=InformationType.USERDATA)
-        for i in range(7):
-            [source] = self.factory.makeGitRefs(
-                target=product, information_type=InformationType.USERDATA)
-            self.factory.makeBranchMergeProposalForGit(
-                source_ref=source, target_ref=target)
-        flush_database_caches()
-        with StormStatementRecorder() as recorder:
-            self.getViewBrowser(
-                product, '+merges', rootsite='code', user=product.owner)
-        self.assertThat(recorder, HasQueryCount(Equals(38)))
 
     def test_productseries_bzr(self):
         target = self.factory.makeBranch()
@@ -300,6 +265,312 @@ class TestMerges(BrowserTestCase):
         self.factory.makeBranchMergeProposalForGit(target_ref=target)
         view = self.getViewBrowser(target, '+merges', rootsite='code')
         self.assertIn(identity, view.contents)
+
+
+class BranchMergeProposalListingTestMixin:
+
+    layer = DatabaseFunctionalLayer
+
+    supports_privacy = True
+    supports_git = True
+    supports_bzr = True
+
+    bzr_branch = None
+    git_ref = None
+
+    def makeBzrMergeProposal(self):
+        information_type = (
+            InformationType.USERDATA if self.supports_privacy else None)
+        target = self.bzr_branch
+        if target is None:
+            target = self.factory.makeBranch(
+                target=self.bzr_target, information_type=information_type)
+        source = self.factory.makeBranch(
+            target=self.bzr_target, owner=self.owner,
+            information_type=information_type)
+        return self.factory.makeBranchMergeProposal(
+            source_branch=source, target_branch=target,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def makeGitMergeProposal(self):
+        information_type = (
+            InformationType.USERDATA if self.supports_privacy else None)
+        target = self.git_ref
+        if target is None:
+            [target] = self.factory.makeGitRefs(
+                target=self.git_target, information_type=information_type)
+        [source] = self.factory.makeGitRefs(
+            target=self.git_target, owner=self.owner,
+            information_type=information_type)
+        return self.factory.makeBranchMergeProposalForGit(
+            source_ref=source, target_ref=target,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def test_bzr(self):
+        """The merges view should be enabled for the target."""
+        if not self.supports_bzr:
+            self.skipTest("Context doesn't support Bazaar branches.")
+        with admin_logged_in():
+            bmp = self.makeBzrMergeProposal()
+            url = canonical_url(bmp, force_local_path=True)
+        browser = self.getViewBrowser(
+            self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn(url, browser.contents)
+
+    def test_git(self):
+        """The merges view should be enabled for the target."""
+        if not self.supports_git:
+            self.skipTest("Context doesn't support Git repositories.")
+        with admin_logged_in():
+            bmp = self.makeGitMergeProposal()
+            url = canonical_url(bmp, force_local_path=True)
+        browser = self.getViewBrowser(
+            self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn(url, browser.contents)
+
+    def test_query_count_bzr(self):
+        if not self.supports_bzr:
+            self.skipTest("Context doesn't support Bazaar branches.")
+        with admin_logged_in():
+            for i in range(7):
+                self.makeBzrMergeProposal()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            self.getViewBrowser(
+                self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertThat(recorder, HasQueryCount(LessThan(51)))
+
+    def test_query_count_git(self):
+        if not self.supports_git:
+            self.skipTest("Context doesn't support Git repositories.")
+        with admin_logged_in():
+            for i in range(7):
+                self.makeGitMergeProposal()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            self.getViewBrowser(
+                self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertThat(recorder, HasQueryCount(LessThan(47)))
+
+
+class MergesTestMixin(BranchMergeProposalListingTestMixin):
+
+    view_name = '+merges'
+
+    def test_none(self):
+        """The merges view should be enabled for the target."""
+        browser = self.getViewBrowser(
+            self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn("has no merge proposals", browser.contents)
+
+
+class ActiveReviewsTestMixin(BranchMergeProposalListingTestMixin):
+
+    view_name = '+activereviews'
+
+    def test_none(self):
+        """The active reviews view should be enabled for the target."""
+        browser = self.getViewBrowser(
+            self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn("has no active code reviews", browser.contents)
+
+
+class ProductContextMixin:
+
+    def setUp(self):
+        super(ProductContextMixin, self).setUp()
+        self.git_target = self.bzr_target = self.context = (
+            self.factory.makeProduct())
+        self.user = self.git_target.owner
+        self.owner = None
+
+
+class ProjectGroupContextMixin:
+
+    def setUp(self):
+        super(ProjectGroupContextMixin, self).setUp()
+        self.context = self.factory.makeProject()
+        self.git_target = self.bzr_target = self.factory.makeProduct(
+            projectgroup=self.context)
+        self.user = self.git_target.owner
+        self.owner = None
+
+
+class DistributionSourcePackageContextMixin:
+
+    # Distribution branches don't have access_policy set.
+    supports_privacy = False
+
+    def setUp(self):
+        super(DistributionSourcePackageContextMixin, self).setUp()
+        self.git_target = self.context = (
+            self.factory.makeDistributionSourcePackage())
+        with admin_logged_in():
+            getUtility(IService, "sharing").sharePillarInformation(
+                self.context.distribution, self.context.distribution.owner,
+                self.context.distribution.owner,
+                {InformationType.USERDATA: SharingPermission.ALL})
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.context.distribution)
+        self.bzr_target = distroseries.getSourcePackage(
+            self.context.sourcepackagename)
+        self.user = self.context.distribution.owner
+        self.owner = None
+
+
+class SourcePackageContextMixin:
+
+    # Distribution branches don't have access_policy set.
+    supports_privacy = False
+    supports_git = False
+
+    def setUp(self):
+        super(SourcePackageContextMixin, self).setUp()
+        self.bzr_target = self.context = self.factory.makeSourcePackage()
+        self.user = self.context.distribution.owner
+        self.owner = None
+
+
+class PersonContextMixin:
+
+    def setUp(self):
+        super(PersonContextMixin, self).setUp()
+        self.context = self.factory.makePerson()
+        self.bzr_target = self.git_target = self.factory.makeProduct()
+        self.user = self.bzr_target.owner
+        self.owner = self.context
+
+
+class PersonProductContextMixin:
+
+    def setUp(self):
+        super(PersonProductContextMixin, self).setUp()
+        self.context = PersonProduct(
+            self.factory.makePerson(), self.factory.makeProduct())
+        self.bzr_target = self.git_target = self.context.product
+        self.user = self.context.product.owner
+        self.owner = self.context.person
+
+
+class BranchContextMixin:
+
+    supports_git = False
+
+    def setUp(self):
+        super(BranchContextMixin, self).setUp()
+        self.bzr_target = self.factory.makeProduct()
+        self.context = self.bzr_branch = self.factory.makeBranch(
+            target=self.bzr_target)
+        self.user = self.bzr_target.owner
+        self.owner = None
+
+
+class GitRefContextMixin:
+
+    supports_bzr = False
+
+    def setUp(self):
+        super(GitRefContextMixin, self).setUp()
+        self.git_target = self.factory.makeProduct()
+        self.context = self.git_ref = self.factory.makeGitRefs(
+            target=self.git_target)[0]
+        self.user = self.git_target.owner
+        self.owner = None
+
+
+class TestProductMerges(
+        ProductContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestProjectGroupMerges(
+        ProjectGroupContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestDistributionSourcePackageMerges(
+        DistributionSourcePackageContextMixin, MergesTestMixin,
+        BrowserTestCase):
+
+    pass
+
+
+class TestSourcePackageMerges(
+        SourcePackageContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonMerges(PersonContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonProductMerges(
+        PersonProductContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestBranchMerges(BranchContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestGitRefMerges(GitRefContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestProductActiveReviews(
+        ProductContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestProjectGroupActiveReviews(
+        ProjectGroupContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestDistributionSourcePackageActiveReviews(
+        DistributionSourcePackageContextMixin, ActiveReviewsTestMixin,
+        BrowserTestCase):
+
+    pass
+
+
+class TestSourcePackageActiveReviews(
+        SourcePackageContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonActiveReviews(
+        PersonContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonProductActiveReviews(
+        PersonProductContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestBranchActiveReviews(
+        BranchContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestGitRefActiveReviews(
+        GitRefContextMixin, ActiveReviewsTestMixin, BrowserTestCase):
+
+    pass
 
 
 class ActiveReviewGroupsTestMixin:
@@ -536,8 +807,8 @@ class ActiveReviewsOfBranchesGit(
     """Test reviews of references in Git repositories."""
 
 
-class PersonActiveReviewsPerformanceMixin:
-    """Test the performance of the person's active reviews page."""
+class ActiveReviewsPerformanceMixin:
+    """Test the performance of the active reviews page."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -627,11 +898,11 @@ class PersonActiveReviewsPerformanceMixin:
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
-class PersonActiveReviewsPerformanceBzr(
-    PersonActiveReviewsPerformanceMixin, BzrMixin, TestCaseWithFactory):
-    """Test the performance of the person's active reviews page for Bazaar."""
+class ActiveReviewsPerformanceBzr(
+    ActiveReviewsPerformanceMixin, BzrMixin, TestCaseWithFactory):
+    """Test the performance of the active reviews page for Bazaar."""
 
 
-class PersonActiveReviewsPerformanceGit(
-    PersonActiveReviewsPerformanceMixin, GitMixin, TestCaseWithFactory):
-    """Test the performance of the person's active reviews page for Git."""
+class ActiveReviewsPerformanceGit(
+    ActiveReviewsPerformanceMixin, GitMixin, TestCaseWithFactory):
+    """Test the performance of the active reviews page for Git."""
