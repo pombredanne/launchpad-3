@@ -351,7 +351,7 @@ class MergesTestMixin:
             self.getViewBrowser(
                 self.context, '+merges', rootsite='code',
                 user=self.target_owner)
-        self.assertThat(recorder, HasQueryCount(LessThan(43)))
+        self.assertThat(recorder, HasQueryCount(LessThan(45)))
 
     def test_query_count_git(self):
         if not self.supports_git:
@@ -403,6 +403,20 @@ class TestDistributionSourcePackageMerges(MergesTestMixin, BrowserTestCase):
         distroseries = self.factory.makeDistroSeries(
             distribution=self.context.distribution)
         return distroseries.getSourcePackage(self.context.sourcepackagename)
+
+    @property
+    def target_owner(self):
+        return self.context.distribution.owner
+
+
+class TestSourcePackageMerges(MergesTestMixin, BrowserTestCase):
+
+    # Distribution branches don't have access_policy set.
+    supports_privacy = False
+    supports_git = False
+
+    def makeContext(self):
+        return self.factory.makeSourcePackage()
 
     @property
     def target_owner(self):
