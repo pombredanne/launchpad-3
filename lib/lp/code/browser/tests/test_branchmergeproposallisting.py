@@ -274,35 +274,14 @@ class MergesTestMixin:
     supports_privacy = True
     supports_git = True
 
-    def setUp(self):
-        super(MergesTestMixin, self).setUp()
-        self.context = self.makeContext()
-        self.bzr_target = self.makeBzrTarget()
-        self.git_target = self.makeGitTarget()
-
-    def makeContext(self):
-        raise NotImplementedError()
-
-    def makeTarget(self):
-        return self.context
-
-    def makeBzrTarget(self):
-        return self.makeTarget()
-
-    def makeGitTarget(self):
-        return self.makeTarget()
-
-    @property
-    def target_owner(self):
-        return self.bzr_target.owner
-
     def makeBzrMergeProposal(self):
         information_type = (
             InformationType.USERDATA if self.supports_privacy else None)
         target = self.factory.makeBranch(
             target=self.bzr_target, information_type=information_type)
         source = self.factory.makeBranch(
-            target=self.bzr_target, information_type=information_type)
+            target=self.bzr_target, owner=self.owner,
+            information_type=information_type)
         return self.factory.makeBranchMergeProposal(
             source_branch=source, target_branch=target)
 
@@ -312,14 +291,15 @@ class MergesTestMixin:
         [target] = self.factory.makeGitRefs(
             target=self.git_target, information_type=information_type)
         [source] = self.factory.makeGitRefs(
-            target=self.git_target, information_type=information_type)
+            target=self.git_target, owner=self.owner,
+            information_type=information_type)
         return self.factory.makeBranchMergeProposalForGit(
             source_ref=source, target_ref=target)
 
     def test_none(self):
         """The merges view should be enabled for the target."""
         browser = self.getViewBrowser(
-            self.context, '+merges', rootsite='code', user=self.target_owner)
+            self.context, '+merges', rootsite='code', user=self.user)
         self.assertIn("has no merge proposals", browser.contents)
 
     def test_bzr(self):
@@ -328,7 +308,7 @@ class MergesTestMixin:
             bmp = self.makeBzrMergeProposal()
             url = canonical_url(bmp, force_local_path=True)
         browser = self.getViewBrowser(
-            self.context, '+merges', rootsite='code', user=self.target_owner)
+            self.context, '+merges', rootsite='code', user=self.user)
         self.assertIn(url, browser.contents)
 
     def test_git(self):
@@ -339,7 +319,7 @@ class MergesTestMixin:
             bmp = self.makeGitMergeProposal()
             url = canonical_url(bmp, force_local_path=True)
         browser = self.getViewBrowser(
-            self.context, '+merges', rootsite='code', user=self.target_owner)
+            self.context, '+merges', rootsite='code', user=self.user)
         self.assertIn(url, browser.contents)
 
     def test_query_count_bzr(self):
@@ -349,8 +329,7 @@ class MergesTestMixin:
         flush_database_caches()
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
-                self.context, '+merges', rootsite='code',
-                user=self.target_owner)
+                self.context, '+merges', rootsite='code', user=self.user)
         self.assertThat(recorder, HasQueryCount(LessThan(45)))
 
     def test_query_count_git(self):
@@ -362,15 +341,19 @@ class MergesTestMixin:
         flush_database_caches()
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
-                self.context, '+merges', rootsite='code',
-                user=self.target_owner)
+                self.context, '+merges', rootsite='code', user=self.user)
         self.assertThat(recorder, HasQueryCount(LessThan(40)))
 
 
 class TestProductMerges(MergesTestMixin, BrowserTestCase):
 
-    def makeContext(self):
-        return self.factory.makeProduct()
+    def setUp(self):
+        super(TestProductMerges, self).setUp()
+        self.context = self.factory.makeProduct()
+        self.git_target = self.bzr_target = self.context = (
+            self.factory.makeProduct())
+        self.user = self.git_target.owner
+        self.owner = None
 
 
 class TestProjectGroupMerges(MergesTestMixin, BrowserTestCase):
@@ -378,11 +361,13 @@ class TestProjectGroupMerges(MergesTestMixin, BrowserTestCase):
     # XXX: This should be a lie.
     supports_git = False
 
-    def makeContext(self):
-        return self.factory.makeProject()
-
-    def makeTarget(self):
-        return self.factory.makeProduct(projectgroup=self.context)
+    def setUp(self):
+        super(TestProjectGroupMerges, self).setUp()
+        self.context = self.factory.makeProject()
+        self.git_target = self.bzr_target = self.factory.makeProduct(
+            projectgroup=self.context)
+        self.user = self.git_target.owner
+        self.owner = None
 
 
 class TestDistributionSourcePackageMerges(MergesTestMixin, BrowserTestCase):
@@ -390,23 +375,21 @@ class TestDistributionSourcePackageMerges(MergesTestMixin, BrowserTestCase):
     # Distribution branches don't have access_policy set.
     supports_privacy = False
 
-    def makeContext(self):
-        dsp = self.factory.makeDistributionSourcePackage()
+    def setUp(self):
+        super(TestDistributionSourcePackageMerges, self).setUp()
+        self.git_target = self.context = (
+            self.factory.makeDistributionSourcePackage())
         with admin_logged_in():
             getUtility(IService, "sharing").sharePillarInformation(
-                dsp.distribution, dsp.distribution.owner,
-                dsp.distribution.owner,
+                self.context.distribution, self.context.distribution.owner,
+                self.context.distribution.owner,
                 {InformationType.USERDATA: SharingPermission.ALL})
-        return dsp
-
-    def makeBzrTarget(self):
         distroseries = self.factory.makeDistroSeries(
             distribution=self.context.distribution)
-        return distroseries.getSourcePackage(self.context.sourcepackagename)
-
-    @property
-    def target_owner(self):
-        return self.context.distribution.owner
+        self.bzr_target = distroseries.getSourcePackage(
+            self.context.sourcepackagename)
+        self.user = self.context.distribution.owner
+        self.owner = None
 
 
 class TestSourcePackageMerges(MergesTestMixin, BrowserTestCase):
@@ -415,12 +398,32 @@ class TestSourcePackageMerges(MergesTestMixin, BrowserTestCase):
     supports_privacy = False
     supports_git = False
 
-    def makeContext(self):
-        return self.factory.makeSourcePackage()
+    def setUp(self):
+        super(TestSourcePackageMerges, self).setUp()
+        self.bzr_target = self.context = self.factory.makeSourcePackage()
+        self.user = self.context.distribution.owner
+        self.owner = None
 
-    @property
-    def target_owner(self):
-        return self.context.distribution.owner
+
+class TestPersonMerges(MergesTestMixin, BrowserTestCase):
+
+    def setUp(self):
+        super(TestPersonMerges, self).setUp()
+        self.context = self.factory.makePerson()
+        self.bzr_target = self.git_target = self.factory.makeProduct()
+        self.user = self.bzr_target.owner
+        self.owner = self.context
+
+
+class TestPersonProductMerges(MergesTestMixin, BrowserTestCase):
+
+    def setUp(self):
+        super(TestPersonProductMerges, self).setUp()
+        self.context = PersonProduct(
+            self.factory.makePerson(), self.factory.makeProduct())
+        self.bzr_target = self.git_target = self.context.product
+        self.user = self.context.product.owner
+        self.owner = self.context.person
 
 
 class ActiveReviewGroupsTestMixin:
