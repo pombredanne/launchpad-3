@@ -370,9 +370,6 @@ class TestProductMerges(MergesTestMixin, BrowserTestCase):
 
 class TestProjectGroupMerges(MergesTestMixin, BrowserTestCase):
 
-    # XXX: This should be a lie.
-    supports_git = False
-
     def setUp(self):
         super(TestProjectGroupMerges, self).setUp()
         self.context = self.factory.makeProject()
