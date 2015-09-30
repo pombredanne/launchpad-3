@@ -67,7 +67,7 @@ class HasMergeProposalsMixin:
             collection = collection.visibleByUser(visible_by_user)
             return collection.getMergeProposals(status, eager_load=False)
 
-        # SourcePackage Bazaar branches are an abberation which was not
+        # SourcePackage Bazaar branches are an aberration which was not
         # replicated for Git, so SourcePackage does not support Git.
         if ISourcePackage.providedBy(self):
             proposals = _getProposals(IBranchCollection)
