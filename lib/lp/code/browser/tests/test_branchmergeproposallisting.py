@@ -357,10 +357,10 @@ class MergesTestMixin:
         self.assertThat(recorder, HasQueryCount(LessThan(41)))
 
 
-class TestProductMerges(MergesTestMixin, BrowserTestCase):
+class ProductContextMixin:
 
     def setUp(self):
-        super(TestProductMerges, self).setUp()
+        super(ProductContextMixin, self).setUp()
         self.context = self.factory.makeProduct()
         self.git_target = self.bzr_target = self.context = (
             self.factory.makeProduct())
@@ -368,10 +368,10 @@ class TestProductMerges(MergesTestMixin, BrowserTestCase):
         self.owner = None
 
 
-class TestProjectGroupMerges(MergesTestMixin, BrowserTestCase):
+class ProjectGroupContextMixin:
 
     def setUp(self):
-        super(TestProjectGroupMerges, self).setUp()
+        super(ProjectGroupContextMixin, self).setUp()
         self.context = self.factory.makeProject()
         self.git_target = self.bzr_target = self.factory.makeProduct(
             projectgroup=self.context)
@@ -379,13 +379,13 @@ class TestProjectGroupMerges(MergesTestMixin, BrowserTestCase):
         self.owner = None
 
 
-class TestDistributionSourcePackageMerges(MergesTestMixin, BrowserTestCase):
+class DistributionSourcePackageContextMixin:
 
     # Distribution branches don't have access_policy set.
     supports_privacy = False
 
     def setUp(self):
-        super(TestDistributionSourcePackageMerges, self).setUp()
+        super(DistributionSourcePackageContextMixin, self).setUp()
         self.git_target = self.context = (
             self.factory.makeDistributionSourcePackage())
         with admin_logged_in():
@@ -401,33 +401,33 @@ class TestDistributionSourcePackageMerges(MergesTestMixin, BrowserTestCase):
         self.owner = None
 
 
-class TestSourcePackageMerges(MergesTestMixin, BrowserTestCase):
+class SourcePackageContextMixin:
 
     # Distribution branches don't have access_policy set.
     supports_privacy = False
     supports_git = False
 
     def setUp(self):
-        super(TestSourcePackageMerges, self).setUp()
+        super(SourcePackageContextMixin, self).setUp()
         self.bzr_target = self.context = self.factory.makeSourcePackage()
         self.user = self.context.distribution.owner
         self.owner = None
 
 
-class TestPersonMerges(MergesTestMixin, BrowserTestCase):
+class PersonContextMixin:
 
     def setUp(self):
-        super(TestPersonMerges, self).setUp()
+        super(PersonContextMixin, self).setUp()
         self.context = self.factory.makePerson()
         self.bzr_target = self.git_target = self.factory.makeProduct()
         self.user = self.bzr_target.owner
         self.owner = self.context
 
 
-class TestPersonProductMerges(MergesTestMixin, BrowserTestCase):
+class PersonProductContextMixin:
 
     def setUp(self):
-        super(TestPersonProductMerges, self).setUp()
+        super(PersonProductContextMixin, self).setUp()
         self.context = PersonProduct(
             self.factory.makePerson(), self.factory.makeProduct())
         self.bzr_target = self.git_target = self.context.product
@@ -435,12 +435,12 @@ class TestPersonProductMerges(MergesTestMixin, BrowserTestCase):
         self.owner = self.context.person
 
 
-class TestBranchMerges(MergesTestMixin, BrowserTestCase):
+class BranchContextMixin:
 
     supports_git = False
 
     def setUp(self):
-        super(TestBranchMerges, self).setUp()
+        super(BranchContextMixin, self).setUp()
         self.bzr_target = self.factory.makeProduct()
         self.context = self.bzr_branch = self.factory.makeBranch(
             target=self.bzr_target)
@@ -448,17 +448,63 @@ class TestBranchMerges(MergesTestMixin, BrowserTestCase):
         self.owner = None
 
 
-class TestGitRefMerges(MergesTestMixin, BrowserTestCase):
+class GitRefContextMixin:
 
     supports_bzr = False
 
     def setUp(self):
-        super(TestGitRefMerges, self).setUp()
+        super(GitRefContextMixin, self).setUp()
         self.git_target = self.factory.makeProduct()
         self.context = self.git_ref = self.factory.makeGitRefs(
             target=self.git_target)[0]
         self.user = self.git_target.owner
         self.owner = None
+
+
+class TestProductMerges(
+        ProductContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestProjectGroupMerges(
+        ProjectGroupContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestDistributionSourcePackageMerges(
+        DistributionSourcePackageContextMixin, MergesTestMixin,
+        BrowserTestCase):
+
+    pass
+
+
+class TestSourcePackageMerges(
+        SourcePackageContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonMerges(PersonContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestPersonProductMerges(
+        PersonProductContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestBranchMerges(BranchContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestGitRefMerges(GitRefContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
 
 
 class ActiveReviewGroupsTestMixin:
