@@ -10,15 +10,8 @@ import os
 import shutil
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import (
-    Branch,
-    BzrBranchFormat7,
-    )
-from bzrlib.bzrdir import (
-    BzrDir,
-    BzrDirMetaFormat1,
-    )
-from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack6
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
 import pytz
@@ -216,18 +209,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     """Tests for `BranchUpgradeJob`."""
 
     layer = LaunchpadZopelessLayer
-
-    def make_format(self, branch_format=None, repo_format=None):
-        # Return a Bzr MetaDir format with the provided branch and repository
-        # formats.
-        if branch_format is None:
-            branch_format = BzrBranchFormat7
-        if repo_format is None:
-            repo_format = RepositoryFormatKnitPack6
-        format = BzrDirMetaFormat1()
-        format.set_branch_format(branch_format())
-        format._set_repository_format(repo_format())
-        return format
 
     def test_providesInterface(self):
         """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""

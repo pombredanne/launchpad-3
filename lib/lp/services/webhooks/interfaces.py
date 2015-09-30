@@ -71,13 +71,14 @@ from lp.services.webservice.apihelpers import (
 
 
 WEBHOOK_EVENT_TYPES = {
+    "bzr:push:0.1": "Bazaar push",
     "git:push:0.1": "Git push",
     }
 
 
 @error_status(httplib.UNAUTHORIZED)
 class WebhookFeatureDisabled(Exception):
-    """Only certain users can create new Git repositories."""
+    """Only certain users can create new webhooks."""
 
     def __init__(self):
         Exception.__init__(

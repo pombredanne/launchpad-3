@@ -12,7 +12,6 @@ __all__ = [
     'ISourcePackageFactory',
     'SourcePackageFileType',
     'SourcePackageType',
-    'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
 
@@ -436,51 +435,6 @@ class SourcePackageType(DBEnumeratedType):
 
         This is the source package format used by Gentoo.
         """)
-
-
-class SourcePackageRelationships(DBEnumeratedType):
-    """Source Package Relationships
-
-    Launchpad tracks many source packages. Some of these are related to one
-    another. For example, a source package in Ubuntu called "apache2" might
-    be related to a source package in Mandrake called "httpd". This schema
-    defines the relationships that Launchpad understands.
-    """
-
-    REPLACES = DBItem(1, """
-        Replaces
-
-        The subject source package was designed to replace the object source
-        package.  """)
-
-    REIMPLEMENTS = DBItem(2, """
-        Reimplements
-
-        The subject source package is a completely new packaging of the same
-        underlying products as the object package.  """)
-
-    SIMILARTO = DBItem(3, """
-        Similar To
-
-        The subject source package is similar, in that it packages software
-        that has similar functionality to the object package.  For example,
-        postfix and exim4 would be "similarto" one another.  """)
-
-    DERIVESFROM = DBItem(4, """
-        Derives From
-
-        The subject source package derives from and tracks the object source
-        package. This means that new uploads of the object package should
-        trigger a notification to the maintainer of the subject source
-        package.  """)
-
-    CORRESPONDSTO = DBItem(5, """
-        Corresponds To
-
-        The subject source package includes the same products as the object
-        source package, but for a different distribution. For example, the
-        "apache2" Ubuntu package "correspondsto" the "httpd2" package in Red
-        Hat.  """)
 
 
 class SourcePackageUrgency(DBEnumeratedType):

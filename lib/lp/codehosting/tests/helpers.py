@@ -58,16 +58,6 @@ class AvatarTestCase(TestCase):
             'initialBranches': [(1, [])]
         }
 
-        # An slightly more complex user dict for a user, 'bob', who is also a
-        # member of a team.
-        self.bobUserDict = {
-            'id': 2,
-            'name': 'bob',
-            'teams': [{'id': 2, 'name': 'bob'},
-                      {'id': 3, 'name': 'test-team'}],
-            'initialBranches': [(2, []), (3, [])]
-        }
-
 
 class LoomTestMixin:
     """Mixin to provide Bazaar test classes with limited loom support."""

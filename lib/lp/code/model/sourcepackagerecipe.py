@@ -132,10 +132,6 @@ class SourcePackageRecipe(Storm):
 
     is_stale = Bool()
 
-    @property
-    def _sourcepackagename_text(self):
-        return self.sourcepackagename.name
-
     name = Unicode(allow_none=True)
     description = Unicode(allow_none=True)
 

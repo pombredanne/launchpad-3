@@ -87,13 +87,16 @@ if he is an administrator:
     >>> private_bug = bugset.get(6)
     >>> private_bug.setPrivate(True, factory.makePerson())
     True
-    >>> target.linkBug(private_bug)
+    >>> target.linkBug(private_bug, factory.makePerson())
     Traceback (most recent call last):
       ...
     Unauthorized...
 
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> admin = getUtility(IPersonSet).getByEmail('admin@canonical.com')
     >>> login('foo.bar@canonical.com')
-    >>> private_link = target.linkBug(private_bug)
+    >>> target.linkBug(private_bug, admin)
+    True
 
 == bugs ==
 
@@ -111,7 +114,7 @@ the target.
 This method is only available to registered users:
 
     >>> login(ANONYMOUS)
-    >>> target.unlinkBug(bug2)
+    >>> target.unlinkBug(bug2, None)
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -126,7 +129,7 @@ IObjectUnlinkedEvent for each of the removed link:
     ...     Interface, IObjectUnlinkedEvent,
     ...     lambda object, event: unlinked_events.append(event))
 
-    >>> target.unlinkBug(bug1)
+    >>> target.unlinkBug(bug1, factory.makePerson())
     True
     >>> unlinked_events[-2].object == bug1
     True
@@ -158,7 +161,7 @@ the bug or if he is an administrator.
     Unauthorized...
 
     >>> login('foo.bar@canonical.com')
-    >>> target.unlinkBug(private_bug) == private_link
+    >>> target.unlinkBug(private_bug, admin)
     True
 
 == Cleanup ==

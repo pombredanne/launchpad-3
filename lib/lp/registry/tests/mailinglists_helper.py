@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'fault_catcher',
-    'get_alternative_email',
     'mailman',
     'new_list_for_team',
     'new_team',
@@ -86,18 +85,6 @@ def new_list_for_team(team):
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
     flush_database_updates()
     return team_list
-
-
-def get_alternative_email(person):
-    """Return a non-preferred IEmailAddress for a person.
-
-    This assumes and asserts that there is exactly one non-preferred email
-    address for the person.
-    """
-    alternatives = list(person.validatedemails)
-    assert len(alternatives) == 1, (
-        'Unexpected email count: %d' % len(alternatives))
-    return alternatives[0]
 
 
 class MailmanStub:

@@ -12,7 +12,6 @@ __all__ = [
 from lazr.restful.utils import smartquote
 
 from lp.services.webapp import (
-    ApplicationMenu,
     LaunchpadView,
     Navigation,
     )
@@ -28,13 +27,6 @@ class DistroArchSeriesBinaryPackageReleaseBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return self.context.version
-
-
-class DistroArchSeriesBinaryPackageReleaseOverviewMenu(ApplicationMenu):
-
-    usedfor = IDistroArchSeriesBinaryPackageRelease
-    facet = 'overview'
-    links = []
 
 
 class DistroArchSeriesBinaryPackageReleaseNavigation(Navigation):

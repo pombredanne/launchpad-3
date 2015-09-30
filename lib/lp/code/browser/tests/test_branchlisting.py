@@ -88,12 +88,6 @@ class TestListingToSortOrder(TestCase):
         Asc(Branch.name),
         ]
 
-    def assertColumnNotReferenced(self, column, order_by_list):
-        """Ensure that column is not referenced in any way in order_by_list.
-        """
-        self.failIf(column in order_by_list or
-                    ('-' + column) in order_by_list)
-
     def assertSortsEqual(self, sort_one, sort_two):
         """Assert that one list of sort specs is equal to another."""
 

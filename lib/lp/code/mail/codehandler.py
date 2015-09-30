@@ -55,10 +55,6 @@ class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
     """The BranchMergeProposal specified by the address does not exist."""
 
 
-class InvalidVoteString(Exception):
-    """The user-supplied vote is not an acceptable value."""
-
-
 class CodeReviewEmailCommandExecutionContext:
     """Passed as the only parameter to each code review email command.
 

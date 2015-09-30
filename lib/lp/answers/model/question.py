@@ -661,31 +661,13 @@ class Question(SQLBase, BugLinkTargetMixin):
         return tktmsg
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug, user=None):
-        """See `IBugLinkTarget`."""
-        # Subscribe the question's owner to the bug.
-        bug.subscribe(self.owner, self.owner)
-        return BugLinkTargetMixin.linkBug(self, bug, user=user)
-
-    def unlinkBug(self, bug):
-        """See `IBugLinkTarget`."""
-        unlinked = BugLinkTargetMixin.unlinkBug(self, bug)
-        if unlinked:
-            # Additionally, unsubscribe the question's owner from the bug
-            bug.unsubscribe(self.owner, self.owner)
-        return unlinked
-
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
         QuestionBug(question=self, bug=bug)
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        link = Store.of(self).find(QuestionBug, question=self, bug=bug).one()
-        if link is not None:
-            Store.of(link).remove(link)
-            return True
-        return False
+        Store.of(self).find(QuestionBug, question=self, bug=bug).remove()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""

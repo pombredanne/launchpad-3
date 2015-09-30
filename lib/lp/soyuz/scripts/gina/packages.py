@@ -39,7 +39,6 @@ from lp.archiveuploader.utils import (
     )
 from lp.services import encoding
 from lp.services.database.constants import UTC_NOW
-from lp.services.gpg.interfaces import GPGKeyAlgorithm
 from lp.services.scripts import log
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import (
@@ -62,8 +61,6 @@ prioritymap = {
     # because of a bug in dak.
     "source": PackagePublishingPriority.EXTRA,
 }
-
-GPGALGOS = dict((item.value, item.name) for item in GPGKeyAlgorithm.items)
 
 
 #

@@ -380,8 +380,6 @@ class IDistributionMirror(Interface):
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
-    has_ftp_or_rsync_base_url = Bool(
-        title=_('Does this mirror have a FTP or Rsync base URL?'))
     arch_mirror_freshness = Attribute(
         'The freshness of this mirror\'s archive mirrors')
     source_mirror_freshness = Attribute(

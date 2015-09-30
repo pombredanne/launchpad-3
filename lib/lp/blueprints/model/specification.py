@@ -797,12 +797,8 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        link = Store.of(self).find(
-            SpecificationBug, specification=self, bug=bug).one()
-        if link is not None:
-            Store.of(link).remove(link)
-            return True
-        return False
+        Store.of(self).find(
+            SpecificationBug, specification=self, bug=bug).remove()
 
     # sprint linking
     def linkSprint(self, sprint, user):

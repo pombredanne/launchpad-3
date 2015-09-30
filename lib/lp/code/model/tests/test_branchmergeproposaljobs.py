@@ -152,10 +152,6 @@ class TestMergeProposalNeedsReviewEmailJobMixin:
             job.getOperationDescription().startswith(
                 'notifying people about the proposal to merge'))
 
-    def checkDiff(self, diff):
-        self.assertNotIn('+bar', diff.diff.text)
-        self.assertIn('+qux', diff.diff.text)
-
     def test_run_sends_email(self):
         """MergeProposalCreationJob.run sends an email."""
         bmp = self.createProposalWithEmptyBranches()

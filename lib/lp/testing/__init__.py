@@ -114,10 +114,7 @@ from zope.component import (
     )
 import zope.event
 from zope.interface import Interface
-from zope.interface.verify import (
-    verifyClass,
-    verifyObject as zope_verifyObject,
-    )
+from zope.interface.verify import verifyObject as zope_verifyObject
 from zope.publisher.interfaces import IEndRequestEvent
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.management import queryInteraction
@@ -532,12 +529,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """Assert 'obj' correctly provides 'interface'."""
         from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
-
-    def assertClassImplements(self, cls, interface):
-        """Assert 'cls' may correctly implement 'interface'."""
-        self.assertTrue(
-            verifyClass(interface, cls),
-            "%r does not correctly implement %r." % (cls, interface))
 
     def assertNotifies(self, event_types, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.

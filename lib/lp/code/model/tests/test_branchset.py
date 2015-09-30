@@ -10,7 +10,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.model.branch import BranchSet
+from lp.services.propertycache import clear_property_cache
 from lp.testing import (
     login_person,
     logout,
@@ -45,6 +47,16 @@ class TestBranchSet(TestCaseWithFactory):
         url = 'http://example.com/doesntexist'
         branches = BranchSet().getByUrls([url])
         self.assertEqual({url: None}, branches)
+
+    def test_getByPath(self):
+        branch = self.factory.makeProductBranch()
+        self.assertEqual(branch, BranchSet().getByPath(branch.shortened_path))
+        product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(product).setBranch(branch)
+        clear_property_cache(branch)
+        self.assertEqual(product.name, branch.shortened_path)
+        self.assertEqual(branch, BranchSet().getByPath(branch.shortened_path))
+        self.assertIsNone(BranchSet().getByPath('nonexistent'))
 
     def test_api_branches_query_count(self):
         webservice = LaunchpadWebServiceCaller()
