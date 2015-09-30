@@ -2,7 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = [ 'BugLinkTargetMixin' ]
+__all__ = [
+    'BugLinkTargetMixin',
+    ]
 
 import lazr.lifecycle.event
 from zope.event import notify
@@ -13,6 +15,7 @@ from lp.bugs.interfaces.buglink import (
     IObjectLinkedEvent,
     IObjectUnlinkedEvent,
     )
+
 
 # XXX wgrant 2015-09-25: lazr.lifecycle.event.LifecyleEventBase is all
 # of mispelled, private, and the sole implementer of user-fetching
@@ -47,9 +50,9 @@ class BugLinkTargetMixin:
         raise NotImplementedError("missing deleteBugLink() implementation")
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug, user=None):
+    def linkBug(self, bug, user=None, check_permissions=True):
         """See IBugLinkTarget."""
-        if not bug.userCanView(user):
+        if check_permissions and not bug.userCanView(user):
             raise Unauthorized(
                 "Cannot link a private bug you don't have access to")
         if bug in self.bugs:
@@ -59,9 +62,9 @@ class BugLinkTargetMixin:
         notify(ObjectLinkedEvent(self, bug, user=user))
         return True
 
-    def unlinkBug(self, bug, user=None):
+    def unlinkBug(self, bug, user=None, check_permissions=True):
         """See IBugLinkTarget."""
-        if not bug.userCanView(user):
+        if check_permissions and not bug.userCanView(user):
             raise Unauthorized(
                 "Cannot unlink a private bug you don't have access to")
         if bug not in self.bugs:

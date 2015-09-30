@@ -1375,13 +1375,13 @@ class Bug(SQLBase, InformationTypeMixin):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user):
+    def linkCVE(self, cve, user, check_permissions=True):
         """See `IBug`."""
-        cve.linkBug(self, user=user)
+        cve.linkBug(self, user=user, check_permissions=check_permissions)
 
-    def unlinkCVE(self, cve, user):
+    def unlinkCVE(self, cve, user, check_permissions=True):
         """See `IBug`."""
-        cve.unlinkBug(self, user=user)
+        cve.unlinkBug(self, user=user, check_permissions=check_permissions)
 
     def findCvesInText(self, text, user):
         """See `IBug`."""
