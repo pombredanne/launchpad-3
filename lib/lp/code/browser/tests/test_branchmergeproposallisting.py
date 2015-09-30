@@ -379,7 +379,6 @@ class ProductContextMixin:
 
     def setUp(self):
         super(ProductContextMixin, self).setUp()
-        self.context = self.factory.makeProduct()
         self.git_target = self.bzr_target = self.context = (
             self.factory.makeProduct())
         self.user = self.git_target.owner
