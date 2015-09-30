@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Layers used by Launchpad tests.
@@ -70,6 +70,7 @@ from unittest import (
     TestResult,
     )
 from urllib import urlopen
+import uuid
 
 from fixtures import (
     Fixture,
@@ -329,7 +330,7 @@ class BaseLayer:
         # We can only do unique test allocation and parallelisation if
         # LP_PERSISTENT_TEST_SERVICES is off.
         if not BaseLayer.persist_test_services:
-            test_instance = str(os.getpid())
+            test_instance = str(uuid.uuid1()).replace('-', '_')
             os.environ['LP_TEST_INSTANCE'] = test_instance
             cls.fixture.addCleanup(os.environ.pop, 'LP_TEST_INSTANCE', '')
             # Kill any Memcached or Librarian left running from a previous
