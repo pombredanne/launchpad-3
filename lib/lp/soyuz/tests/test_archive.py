@@ -102,9 +102,9 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -2377,7 +2377,7 @@ class TestGetPublishedSourcesWebService(TestCaseWithFactory):
         webservice = webservice_for_person(
             ppa.owner, permission=OAuthPermission.READ_PRIVATE)
 
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
 

@@ -75,10 +75,10 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    RequestTimelineCollector,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
@@ -1254,7 +1254,7 @@ class TestAPIPartipication(TestCaseWithFactory):
             team.addMember(self.factory.makePerson(), team.teamowner)
             team.addMember(self.factory.makePerson(), team.teamowner)
         webservice = LaunchpadWebServiceCaller()
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         url = "/~%s/participants" % team.name

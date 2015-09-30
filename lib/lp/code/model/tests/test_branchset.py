@@ -16,9 +16,9 @@ from lp.services.propertycache import clear_property_cache
 from lp.testing import (
     login_person,
     logout,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
@@ -60,7 +60,7 @@ class TestBranchSet(TestCaseWithFactory):
 
     def test_api_branches_query_count(self):
         webservice = LaunchpadWebServiceCaller()
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         # Get 'all' of the 50 branches this collection is limited to - rather

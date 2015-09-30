@@ -14,7 +14,6 @@ from lp.bugs.interfaces.buglink import (
     IObjectUnlinkedEvent,
     )
 
-
 # XXX wgrant 2015-09-25: lazr.lifecycle.event.LifecyleEventBase is all
 # of mispelled, private, and the sole implementer of user-fetching
 # logic that we require.

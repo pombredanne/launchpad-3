@@ -28,8 +28,8 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.pages import webservice_for_person
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import webservice_for_person
 
 
 class TestBranch(TestCaseWithFactory):
