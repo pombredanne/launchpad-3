@@ -107,6 +107,9 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
         title=_("Display name"), required=True, readonly=True,
         description=_("Display name of the reference."))
 
+    displayname = Attribute(
+        "Copy of display_name for IHasMergeProposals views.")
+
     commit_message_first_line = TextLine(
         title=_("The first line of the commit message."),
         required=True, readonly=True)
