@@ -273,12 +273,18 @@ class MergesTestMixin:
 
     supports_privacy = True
     supports_git = True
+    supports_bzr = True
+
+    bzr_branch = None
+    git_ref = None
 
     def makeBzrMergeProposal(self):
         information_type = (
             InformationType.USERDATA if self.supports_privacy else None)
-        target = self.factory.makeBranch(
-            target=self.bzr_target, information_type=information_type)
+        target = self.bzr_branch
+        if target is None:
+            target = self.factory.makeBranch(
+                target=self.bzr_target, information_type=information_type)
         source = self.factory.makeBranch(
             target=self.bzr_target, owner=self.owner,
             information_type=information_type)
@@ -288,8 +294,10 @@ class MergesTestMixin:
     def makeGitMergeProposal(self):
         information_type = (
             InformationType.USERDATA if self.supports_privacy else None)
-        [target] = self.factory.makeGitRefs(
-            target=self.git_target, information_type=information_type)
+        target = self.git_ref
+        if target is None:
+            [target] = self.factory.makeGitRefs(
+                target=self.git_target, information_type=information_type)
         [source] = self.factory.makeGitRefs(
             target=self.git_target, owner=self.owner,
             information_type=information_type)
@@ -304,6 +312,8 @@ class MergesTestMixin:
 
     def test_bzr(self):
         """The merges view should be enabled for the target."""
+        if not self.supports_bzr:
+            self.skipTest("Context doesn't support Bazaar branches.")
         with admin_logged_in():
             bmp = self.makeBzrMergeProposal()
             url = canonical_url(bmp, force_local_path=True)
@@ -323,6 +333,8 @@ class MergesTestMixin:
         self.assertIn(url, browser.contents)
 
     def test_query_count_bzr(self):
+        if not self.supports_bzr:
+            self.skipTest("Context doesn't support Bazaar branches.")
         with admin_logged_in():
             for i in range(7):
                 self.makeBzrMergeProposal()
@@ -342,7 +354,7 @@ class MergesTestMixin:
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
                 self.context, '+merges', rootsite='code', user=self.user)
-        self.assertThat(recorder, HasQueryCount(LessThan(40)))
+        self.assertThat(recorder, HasQueryCount(LessThan(41)))
 
 
 class TestProductMerges(MergesTestMixin, BrowserTestCase):
@@ -424,6 +436,32 @@ class TestPersonProductMerges(MergesTestMixin, BrowserTestCase):
         self.bzr_target = self.git_target = self.context.product
         self.user = self.context.product.owner
         self.owner = self.context.person
+
+
+class TestBranchMerges(MergesTestMixin, BrowserTestCase):
+
+    supports_git = False
+
+    def setUp(self):
+        super(TestBranchMerges, self).setUp()
+        self.bzr_target = self.factory.makeProduct()
+        self.context = self.bzr_branch = self.factory.makeBranch(
+            target=self.bzr_target)
+        self.user = self.bzr_target.owner
+        self.owner = None
+
+
+class TestGitRefMerges(MergesTestMixin, BrowserTestCase):
+
+    supports_bzr = False
+
+    def setUp(self):
+        super(TestGitRefMerges, self).setUp()
+        self.git_target = self.factory.makeProduct()
+        self.context = self.git_ref = self.factory.makeGitRefs(
+            target=self.git_target)[0]
+        self.user = self.git_target.owner
+        self.owner = None
 
 
 class ActiveReviewGroupsTestMixin:
