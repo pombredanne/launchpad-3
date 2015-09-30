@@ -136,6 +136,46 @@ class TestArchiveEditView(TestCaseWithFactory):
         self.assertRaises(
             CannotModifyArchiveProcessor, browser.getControl("Save").click)
 
+    def test_edit_processors_restricted_already_enabled(self):
+        # A restricted processor that is already enabled is shown disabled
+        # in the UI.  This causes form submission to omit it, but the
+        # validation code fixes that up behind the scenes so that we don't
+        # get CannotModifyArchiveProcessor.
+        proc_386 = getUtility(IProcessorSet).getByName("386")
+        proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
+        proc_armhf = self.factory.makeProcessor(
+            name="armhf", restricted=True, build_by_default=False)
+        self.factory.makeDistroArchSeries(
+            distroseries=self.ubuntu.getSeries("breezy-autotest"),
+            architecturetag="armhf", processor=proc_armhf)
+        ppa = self.factory.makeArchive()
+        with admin_logged_in():
+            ppa.setProcessors([proc_386, proc_amd64, proc_armhf])
+        owner = login_person(ppa.owner)
+        self.assertContentEqual(
+            ["386", "amd64", "armhf"],
+            [processor.name for processor in ppa.processors])
+        browser = self.getUserBrowser(
+            canonical_url(ppa) + "/+edit", user=owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(["386", "amd64"], processors.value)
+        self.assertThat(
+            processors.controls, MatchesSetwise(
+                MatchesStructure.byEquality(
+                    optionValue="386", disabled=False),
+                MatchesStructure.byEquality(
+                    optionValue="amd64", disabled=False),
+                MatchesStructure.byEquality(
+                    optionValue="armhf", disabled=True),
+                MatchesStructure.byEquality(
+                    optionValue="hppa", disabled=False),
+                ))
+        processors.value = ["386"]
+        browser.getControl("Save").click()
+        login_person(ppa.owner)
+        self.assertContentEqual(
+            ["386", "armhf"], [processor.name for processor in ppa.processors])
+
 
 class TestArchiveCopyPackagesView(TestCaseWithFactory):
 
