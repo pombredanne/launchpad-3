@@ -20,14 +20,11 @@ from launchpadlib.credentials import (
     )
 from launchpadlib.launchpad import Launchpad
 import transaction
-from zope.app.testing import ztapi
 from zope.component import getUtility
-from zope.publisher.interfaces import IEndRequestEvent
 import zope.testing.cleanup
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.oauth.interfaces import IOAuthConsumerSet
-from lp.services.webapp.adapter import get_request_statements
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
@@ -145,47 +142,3 @@ def launchpadlib_for(
     zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
     return Launchpad(credentials, None, None, service_root=service_root,
                      version=version, cache=cache)
-
-
-class QueryCollector:
-    """Collect database calls made in web requests.
-
-    These are only retrievable at the end of a request, and for tests it is
-    useful to be able to make assertions about the calls made during a
-    request: this class provides a tool to gather them in a simple fashion.
-
-    :ivar count: The count of db queries the last web request made.
-    :ivar queries: The list of queries made. See
-        lp.services.webapp.adapter.get_request_statements for more
-        information.
-    """
-
-    def __init__(self):
-        self._active = False
-        self.count = None
-        self.queries = None
-
-    def register(self):
-        """Start counting queries.
-
-        Be sure to call unregister when finished with the collector.
-
-        After each web request the count and queries attributes are updated.
-        """
-        ztapi.subscribe((IEndRequestEvent, ), None, self)
-        self._active = True
-
-    def __enter__(self):
-        self.register()
-        return self
-
-    def __call__(self, event):
-        if self._active:
-            self.queries = get_request_statements()
-            self.count = len(self.queries)
-
-    def unregister(self):
-        self._active = False
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.unregister()

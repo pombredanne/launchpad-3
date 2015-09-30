@@ -103,8 +103,8 @@ from lp.app.browser.tales import (
     )
 from lp.app.enums import (
     InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
     PILLAR_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import (

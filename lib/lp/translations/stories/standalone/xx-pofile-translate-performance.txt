@@ -5,8 +5,8 @@ heavy database activity including complex caching and prefetching of
 translation suggestions.  It's hard to keep database performance for this page
 under control.
 
-  >>> from lp.testing._webservice import QueryCollector
-  >>> query_counter = QueryCollector()
+  >>> from lp.testing import RequestTimelineCollector
+  >>> query_counter = RequestTimelineCollector()
   >>> query_counter.register()
 
 === Anonymous access ===

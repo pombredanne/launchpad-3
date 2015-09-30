@@ -67,14 +67,14 @@ from lp.snappy.interfaces.snap import (
     DuplicateSnapName,
     ISnap,
     ISnapSet,
+    NoSourceForSnap,
+    NoSuchSnap,
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
-    NoSourceForSnap,
-    NoSuchSnap,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.model.snapbuild import SnapBuild
