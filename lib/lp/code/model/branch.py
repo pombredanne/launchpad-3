@@ -205,6 +205,10 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         enum=InformationType, default=InformationType.PUBLIC)
 
     @property
+    def valid_event_types(self):
+        return ["bzr:push:0.1"]
+
+    @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 

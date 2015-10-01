@@ -127,7 +127,10 @@ class WebhookAddView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        return {'active': True}
+        return {
+            'active': True,
+            'event_types': self.context.default_event_types,
+            }
 
     @property
     def cancel_url(self):

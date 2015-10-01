@@ -234,6 +234,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self.owner_default = False
         self.target_default = False
 
+    @property
+    def valid_event_types(self):
+        return ["git:push:0.1"]
+
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     @property
     def unique_name(self):
