@@ -465,7 +465,7 @@ Person's displayname will be escaped; averting a XSS vulnerability.
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> sample_person.displayname = (
+    >>> sample_person.display_name = (
     ...     "Sample Person<br/><script>alert('XSS')</script>")
     >>> test_tales("person/fmt:link", person=sample_person)
     u'<a href=".../~name12"...>Sample

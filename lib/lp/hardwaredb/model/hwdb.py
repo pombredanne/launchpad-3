@@ -492,7 +492,7 @@ class HWSubmissionSet:
         else:
             user_ids = [row[0] for row in user_ids]
             result = store.find(Person, Person.id.is_in(user_ids))
-        result.order_by(Person.displayname)
+        result.order_by(Person.display_name)
         return result
 
     def hwInfoByBugRelatedUsers(

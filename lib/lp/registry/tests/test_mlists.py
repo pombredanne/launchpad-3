@@ -364,7 +364,7 @@ class TestMailingListImports(BaseMailingListImportTest):
     def test_import_existing_with_nonascii_name(self):
         # Make sure that a person with a non-ascii name, who's already a
         # member of the list, gets a proper log message.
-        self.anne.displayname = u'\u1ea2nn\u1ebf P\u1ec5rs\u1ed1n'
+        self.anne.display_name = u'\u1ea2nn\u1ebf P\u1ec5rs\u1ed1n'
         importer = Importer('aardvarks', self.logger)
         self.anne.join(self.team)
         self.mailing_list.subscribe(self.anne)

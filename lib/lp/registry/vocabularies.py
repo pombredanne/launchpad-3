@@ -367,7 +367,7 @@ def project_products_vocabulary_factory(context):
 class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
     """Describes the public teams in which the current user participates."""
     _table = Person
-    _orderBy = 'displayname'
+    _orderBy = 'display_name'
 
     INCLUDE_PRIVATE_TEAM = False
 
@@ -412,7 +412,7 @@ class NonMergedPeopleAndTeamsVocabulary(
     a preferred email address, that is, unvalidated person profiles.
     """
 
-    _orderBy = ['displayname']
+    _orderBy = ['display_name']
     displayname = 'Select a Person or Team'
     step_title = 'Search'
 
@@ -443,7 +443,7 @@ class PersonAccountToMergeVocabulary(
     accounts to merge. You *don't* want to use it.
     """
 
-    _orderBy = ['displayname']
+    _orderBy = ['display_name']
     displayname = 'Select a Person to Merge'
     step_title = 'Search'
     must_have_email = True
@@ -579,7 +579,7 @@ class ValidPersonOrTeamVocabulary(
                 get_person_visibility_terms(getUtility(ILaunchBag).user),
                 Person.merged == None,
                 *extra_clauses)
-            result.order_by(Person.displayname, Person.name)
+            result.order_by(Person.display_name, Person.name)
         else:
             # Do a full search based on the text given.
 
@@ -668,7 +668,7 @@ class ValidPersonOrTeamVocabulary(
                         1) DESC""" % self._karma_context_constraint)
             else:
                 rank_order = SQL("rank DESC")
-            result.order_by(rank_order, Person.displayname, Person.name)
+            result.order_by(rank_order, Person.display_name, Person.name)
         result.config(limit=self.LIMIT)
 
         # We will be displaying the person's irc nick(s) and emails in the

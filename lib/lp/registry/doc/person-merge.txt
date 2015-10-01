@@ -283,10 +283,12 @@ create, and then delete, the needed two people.
     ...     lead += 1
     ...     name = str(lead)
     ...     lp = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
-    ...     winner = Person(name=name+'.winner', displayname='Merge Winner',
-    ...                     creation_rationale=lp)
-    ...     loser = Person(name=name+'.loser', displayname='Merge Loser',
-    ...                     creation_rationale=lp)
+    ...     winner = Person(
+    ...         name=name+'.winner', display_name='Merge Winner',
+    ...         creation_rationale=lp)
+    ...     loser = Person(
+    ...         name=name+'.loser', display_name='Merge Loser',
+    ...         creation_rationale=lp)
     ...     yield winner, loser
     >>> endless_supply_of_players = new_players()
 

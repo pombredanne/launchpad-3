@@ -234,7 +234,7 @@ class TeamFormMixin:
     * The user has a current commercial subscription.
     """
     field_names = [
-        "name", "visibility", "displayname",
+        "name", "visibility", "display_name",
         "description", "membership_policy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
@@ -377,7 +377,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 class TeamAdministerView(PersonAdministerView):
     """A view to administer teams on behalf of users."""
     label = "Review team"
-    default_field_names = ['name', 'displayname']
+    default_field_names = ['name', 'display_name']
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -1022,13 +1022,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         failure=LaunchpadFormView.ajax_failure_handler)
     def create_action(self, action, data):
         name = data.get('name')
-        displayname = data.get('displayname')
+        display_name = data.get('display_name')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, None, membership_policy,
+            teamowner, name, display_name, None, membership_policy,
             defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
@@ -1068,7 +1068,7 @@ class SimpleTeamAddView(TeamAddView):
     next_url = None
 
     field_names = [
-        "name", "displayname", "visibility", "membership_policy",
+        "name", "display_name", "visibility", "membership_policy",
         "teamowner"]
 
     # Use a dropdown - Javascript will be used to change this to a choice
@@ -2068,9 +2068,10 @@ class TeamReassignmentView(ObjectReassignmentView):
             else:
                 relationship = 'an indirect member'
                 full_path = [self.context] + path
-		path_template = '&rArr;'.join(['%s'] * len(full_path))
+                path_template = '&rArr;'.join(['%s'] * len(full_path))
                 path_string = structured(
-                    '(%s)' % path_template, *[team.displayname for team in full_path])
+                    '(%s)' % path_template,
+                    *[team.displayname for team in full_path])
             error = structured(
                 'Circular team memberships are not allowed. '
                 '%(new)s cannot be the new team owner, since %(context)s '

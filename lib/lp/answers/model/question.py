@@ -561,7 +561,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             (Person, QuestionSubscription),
             QuestionSubscription.person_id == Person.id,
             QuestionSubscription.question_id == self.id,
-            ).order_by(Person.displayname)
+            ).order_by(Person.display_name)
         return results
 
     def getIndirectSubscribers(self):
@@ -1347,7 +1347,7 @@ class QuestionTargetMixin:
                   LeftJoin(Person, AnswerContact.person == Person.id)]
         conditions = self._getConditionsToQueryAnswerContacts()
         results = self._store.using(*origin).find(Person, conditions)
-        return list(results.order_by(Person.displayname))
+        return list(results.order_by(Person.display_name))
 
     @property
     def direct_answer_contacts_with_languages(self):
@@ -1417,7 +1417,7 @@ class QuestionTargetMixin:
         from lp.registry.model.person import Person
         return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
-            orderBy=['displayname'], distinct=True)
+            orderBy=['display_name'], distinct=True)
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""

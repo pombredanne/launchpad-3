@@ -638,13 +638,13 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
                 "A short unique name, beginning with a lower-case "
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
+    display_name = exported(
         StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_(
                 "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
+                "Launchpad. Most people use their full name here.")))
+    displayname = Attribute('Display name (deprecated)')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     # NB at this stage we do not allow individual people to have their own
@@ -2023,7 +2023,7 @@ class ITeam(IPerson, ITeamPublic):
     """
     export_as_webservice_entry('team')
 
-    # Logo, Mugshot and displayname are here so that they can have a
+    # Logo, Mugshot and display_name are here so that they can have a
     # description on a Team which is different to the description they have on
     # a Person.
     logo = copy_field(
@@ -2041,8 +2041,8 @@ class ITeam(IPerson, ITeamPublic):
             "on the team page in Launchpad. It "
             "should be no bigger than 100kb in size. "))
 
-    displayname = copy_field(
-        IPerson['displayname'],
+    display_name = copy_field(
+        IPerson['display_name'],
         description=_(
             "This team's name as you would like it displayed throughout "
             "Launchpad."))
@@ -2203,7 +2203,7 @@ class IPersonSet(Interface):
 
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
-        displayname='display_name', teamdescription='team_description',
+        teamdescription='team_description',
         defaultmembershipperiod='default_membership_period',
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(
@@ -2211,11 +2211,11 @@ class IPersonSet(Interface):
             title=_('Membership policy'), vocabulary=TeamMembershipPolicy,
             required=False, default=TeamMembershipPolicy.MODERATED))
     @export_factory_operation(
-        ITeam, ['name', 'displayname', 'teamdescription',
+        ITeam, ['name', 'display_name', 'teamdescription',
                 'defaultmembershipperiod', 'defaultrenewalperiod',
                 'subscription_policy'])
     @operation_for_version("beta")
-    def newTeam(teamowner, name, displayname, teamdescription=None,
+    def newTeam(teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None,
                 subscription_policy=None):
