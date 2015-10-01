@@ -73,14 +73,6 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         dest_branch = Branch.open(self.worker.dest)
         self.assertMirrored(src_branch, dest_branch)
 
-    def _makeStackedBranch(self, relpath, base_branch):
-        """Make and return a stacked branch."""
-        revision_id = base_branch.last_revision()
-        stacked_branch_url = self.get_transport(relpath).base
-        stacked_bzrdir = base_branch.bzrdir.sprout(
-            stacked_branch_url, revision_id, stacked=True)
-        return stacked_bzrdir.open_branch()
-
     def test_loomBranch(self):
         # When we mirror a loom branch for the first time, the mirrored loom
         # branch matches the original.

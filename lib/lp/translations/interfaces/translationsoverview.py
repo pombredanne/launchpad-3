@@ -19,6 +19,7 @@ from lp import _
 class MalformedKarmaCacheData(Exception):
     """KarmaCache values are missing product or distribution identifier."""
 
+
 class ITranslationsOverview(Interface):
     """Overview of Launchpad Translations component."""
 
@@ -39,7 +40,3 @@ class ITranslationsOverview(Interface):
         either a product or a distribution, and size is the relative
         amount of contribution a pillar has received.
         """
-
-
-class IProjectGroupTranslationsOverview(Interface):
-    """Overview of translations for a project."""

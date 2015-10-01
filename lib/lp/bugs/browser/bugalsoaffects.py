@@ -342,15 +342,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
         self.next_url = canonical_url(task_added)
 
 
-class IAddDistroBugTaskForm(IAddBugTaskForm):
-
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
-        description=_("The source package in which the bug occurs. "
-                      "Leave blank if you are not sure."),
-        vocabulary='DistributionSourcePackage')
-
-
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """

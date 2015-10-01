@@ -92,7 +92,7 @@ class IBranchTarget(Interface):
     supports_merge_proposals = Attribute(
         "Does this target support merge proposals at all?")
 
-    supports_short_identites = Attribute(
+    supports_short_identities = Attribute(
         "Does this target support shortened bazaar identities?")
 
     supports_code_imports = Attribute(

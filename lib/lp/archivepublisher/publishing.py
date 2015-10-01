@@ -876,15 +876,14 @@ class Publisher(object):
         self._writeReleaseFile(suite, release_file)
         all_files.add("Release")
 
-        # Skip signature if the archive signing key is undefined.
-        if self.archive.signing_key is None:
+        if self.archive.signing_key is not None:
+            # Sign the repository.
+            IArchiveSigningKey(self.archive).signRepository(suite)
+            all_files.add("Release.gpg")
+            all_files.add("InRelease")
+        else:
+            # Skip signature if the archive signing key is undefined.
             self.log.debug("No signing key available, skipping signature.")
-            return
-
-        # Sign the repository.
-        archive_signer = IArchiveSigningKey(self.archive)
-        archive_signer.signRepository(suite)
-        all_files.add("Release.gpg")
 
         # Make sure all the timestamps match, to make it easier to insert
         # caching headers on mirrors.

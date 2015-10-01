@@ -18,10 +18,10 @@ from zope.security.checker import NamesChecker
 from zope.security.proxy import ProxyFactory
 
 from lp.testing import (
+    RequestTimelineCollector,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
@@ -206,7 +206,7 @@ class TestQueryMatching(TestCase):
 
     def test_match(self):
         matcher = HasQueryCount(Is(3))
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.count = 3
         # not inspected
         del collector.queries
@@ -214,7 +214,7 @@ class TestQueryMatching(TestCase):
 
     def test_mismatch(self):
         matcher = HasQueryCount(LessThan(2))
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.count = 2
         collector.queries = [("foo", "bar"), ("baaz", "quux")]
         mismatch = matcher.match(collector)

@@ -17,9 +17,9 @@ from lp.testing import (
     admin_logged_in,
     api_url,
     logout,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
@@ -43,7 +43,7 @@ class TestBuildersCollection(TestCaseWithFactory):
                 builder)
             names.append(builder.name)
         logout()
-        with QueryCollector() as recorder:
+        with RequestTimelineCollector() as recorder:
             builders = self.webservice.get(
                 '/builders', api_version='devel').jsonBody()
         self.assertContentEqual(

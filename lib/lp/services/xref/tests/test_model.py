@@ -8,10 +8,15 @@ __metaclass__ = type
 import datetime
 
 import pytz
-from testtools.matchers import Equals
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    MatchesDict,
+    )
 from zope.component import getUtility
 
 from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.xref.interfaces import IXRefSet
 from lp.services.xref.model import XRef
 from lp.testing import (
@@ -117,6 +122,28 @@ class TestXRefSet(TestCaseWithFactory):
                     'creator': creator, 'date_created': now,
                     'metadata': {'test': 2}}}},
              bar_baz_refs)
+
+    def test_findFrom_creator(self):
+        # findFrom issues a single query to get all of the people.
+        people = [self.factory.makePerson() for i in range(3)]
+        getUtility(IXRefSet).create({
+            ('a', '0'): {
+                ('b', '0'): {'creator': people[2]},
+                ('b', '1'): {'creator': people[0]},
+                ('b', '2'): {'creator': people[1]},
+                },
+            })
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            xrefs = getUtility(IXRefSet).findFrom(('a', '0'))
+        self.assertThat(
+            xrefs,
+            MatchesDict({
+                ('b', '0'): ContainsDict({'creator': Equals(people[2])}),
+                ('b', '1'): ContainsDict({'creator': Equals(people[0])}),
+                ('b', '2'): ContainsDict({'creator': Equals(people[1])}),
+                }))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_findFrom_types(self):
         # findFrom can look for only particular types of related

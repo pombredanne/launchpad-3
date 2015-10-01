@@ -181,20 +181,6 @@ class LoginToken(SQLBase):
         subject = 'Launchpad: Confirm your OpenPGP Key'
         self._send_email(from_name, subject, text)
 
-    def sendProfileCreatedEmail(self, profile, comment):
-        """See ILoginToken."""
-        template = get_email_template('profile-created.txt', app=MAIL_APP)
-        replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.displayname,
-                        'comment': comment,
-                        'profile_url': canonical_url(profile)}
-        message = template % replacements
-
-        headers = {'Reply-To': self.requester.preferredemail.email}
-        from_name = "Launchpad"
-        subject = "Launchpad profile"
-        self._send_email(from_name, subject, message, headers=headers)
-
     def sendMergeRequestEmail(self):
         """See ILoginToken."""
         template = get_email_template('request-merge.txt', app=MAIL_APP)
@@ -225,20 +211,6 @@ class LoginToken(SQLBase):
                         'admin_email': config.canonical.admin_address,
                         'token_url': canonical_url(self)}
         message = template % replacements
-        self._send_email(from_name, subject, message)
-
-    def sendClaimProfileEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('claim-profile.txt', app=MAIL_APP)
-        from_name = "Launchpad"
-        profile = getUtility(IPersonSet).getByEmail(self.email)
-        replacements = {'profile_name': (
-                            "%s (%s)" % (profile.displayname, profile.name)),
-                        'email': self.email,
-                        'token_url': canonical_url(self)}
-        message = template % replacements
-
-        subject = "Launchpad: Claim Profile"
         self._send_email(from_name, subject, message)
 
     def sendClaimTeamEmail(self):

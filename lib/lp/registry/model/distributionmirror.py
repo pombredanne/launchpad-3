@@ -180,12 +180,6 @@ class DistributionMirror(SQLBase):
         else:
             return self.name.capitalize()
 
-    @property
-    def has_ftp_or_rsync_base_url(self):
-        """See IDistributionMirror"""
-        return (self.ftp_base_url is not None
-                or self.rsync_base_url is not None)
-
     @cachedproperty
     def arch_mirror_freshness(self):
         """See IDistributionMirror"""

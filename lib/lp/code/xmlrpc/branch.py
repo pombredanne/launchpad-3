@@ -188,14 +188,6 @@ class IPublicCodehostingAPI(Interface):
         """
 
 
-class _NonexistentBranch:
-    """Used to represent a branch that was requested but doesn't exist."""
-
-    def __init__(self, unique_name):
-        self.unique_name = unique_name
-        self.branch_type = None
-
-
 @implementer(IPublicCodehostingAPI)
 class PublicCodehostingAPI(LaunchpadXMLRPCView):
     """See `IPublicCodehostingAPI`."""

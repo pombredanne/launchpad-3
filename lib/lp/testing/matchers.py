@@ -46,9 +46,11 @@ from zope.security.proxy import (
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp import canonical_url
 from lp.services.webapp.batching import BatchNavigator
-from lp.testing import normalize_whitespace
+from lp.testing import (
+    normalize_whitespace,
+    RequestTimelineCollector,
+    )
 from lp.testing._login import person_logged_in
-from lp.testing._webservice import QueryCollector
 
 
 class BrowsesWithQueryLimit(Matcher):
@@ -80,18 +82,12 @@ class BrowsesWithQueryLimit(Matcher):
                 context, view_name=self.view_name, **self.options)
         browser = setupBrowserForUser(self.user)
         flush_database_caches()
-        collector = QueryCollector()
-        collector.register()
-        try:
+        with RequestTimelineCollector() as collector:
             browser.open(context_url)
-            counter = HasQueryCount(LessThan(self.query_limit))
-            # When bug 724691 is fixed, this can become an AnnotateMismatch to
-            # describe the object being rendered.
-            return counter.match(collector)
-        finally:
-            # Unregister now in case this method is called multiple
-            # times in a single test.
-            collector.unregister()
+        counter = HasQueryCount(LessThan(self.query_limit))
+        # When bug 724691 is fixed, this can become an AnnotateMismatch to
+        # describe the object being rendered.
+        return counter.match(collector)
 
     def __str__(self):
         return "BrowsesWithQueryLimit(%s, %s)" % (self.query_limit, self.user)
@@ -168,10 +164,13 @@ class Provides(Matcher):
 
 
 class HasQueryCount(Matcher):
-    """Adapt a Binary Matcher to the query count on a QueryCollector.
+    """Adapt a Binary Matcher to a query count.
 
-    If there is a mismatch, the queries from the collector are provided as a
-    test attachment.
+    May match against a StormStatementRecorder or a
+    RequestTimelineCollector.
+
+    If there is a mismatch, the queries from the collector are provided
+    as a test attachment.
     """
 
     def __init__(self, count_matcher):

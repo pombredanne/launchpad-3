@@ -83,13 +83,6 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
             merge_people(from_person, to_person, reviewer=reviewer)
         return from_person, to_person
 
-    def _get_testable_account(self, person, date_created, openid_identifier):
-        # Return a naked account with predictable attributes.
-        account = removeSecurityProxy(person.account)
-        account.date_created = date_created
-        account.openid_identifier = openid_identifier
-        return account
-
     def test_delete_no_notifications(self):
         team = self.factory.makeTeam()
         owner = team.teamowner

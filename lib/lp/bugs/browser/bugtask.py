@@ -909,13 +909,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             '<span><a href="/+help-bugs/bug-heat.html" target="help" '
             'class="sprite flame">%d</a></span>' % self.context.bug.heat)
 
-    @property
-    def privacy_notice_classes(self):
-        if not self.context.bug.private:
-            return 'hidden'
-        else:
-            return ''
-
 
 class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     """A view for displaying batches of bug comments and activity."""
@@ -2373,7 +2366,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
             return
 
         owner_is_subscribed = question.isSubscribed(self.context.bug.owner)
-        question.unlinkBug(self.context.bug)
+        question.unlinkBug(self.context.bug, user=self.user)
         # The question.owner was implicitly unsubscribed when the bug
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:

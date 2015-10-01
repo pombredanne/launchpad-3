@@ -2,7 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = [ 'BugLinkTargetMixin' ]
+__all__ = [
+    'BugLinkTargetMixin',
+    ]
 
 import lazr.lifecycle.event
 from zope.event import notify
@@ -13,7 +15,6 @@ from lp.bugs.interfaces.buglink import (
     IObjectLinkedEvent,
     IObjectUnlinkedEvent,
     )
-from lp.services.webapp.authorization import check_permission
 
 
 # XXX wgrant 2015-09-25: lazr.lifecycle.event.LifecyleEventBase is all
@@ -49,17 +50,11 @@ class BugLinkTargetMixin:
         raise NotImplementedError("missing deleteBugLink() implementation")
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug, user=None):
+    def linkBug(self, bug, user=None, check_permissions=True):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug=175545:
-        #     We shouldn't be calling check_permission here. The user's
-        #     permissions should have been checked before this method
-        #     was called. Also, we shouldn't be relying on the logged-in
-        #     user in this method; the method should accept a user
-        #     parameter.
-        if not check_permission('launchpad.View', bug):
+        if check_permissions and not bug.userCanView(user):
             raise Unauthorized(
-                "cannot link to a private bug you don't have access to")
+                "Cannot link a private bug you don't have access to")
         if bug in self.bugs:
             return False
         self.createBugLink(bug)
@@ -67,17 +62,11 @@ class BugLinkTargetMixin:
         notify(ObjectLinkedEvent(self, bug, user=user))
         return True
 
-    def unlinkBug(self, bug, user=None):
+    def unlinkBug(self, bug, user=None, check_permissions=True):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug=175545:
-        #     We shouldn't be calling check_permission here. The user's
-        #     permissions should have been checked before this method
-        #     was called. Also, we shouldn't be relying on the logged-in
-        #     user in this method; the method should accept a user
-        #     parameter.
-        if not check_permission('launchpad.View', bug):
+        if check_permissions and not bug.userCanView(user):
             raise Unauthorized(
-                "cannot unlink a private bug you don't have access to")
+                "Cannot unlink a private bug you don't have access to")
         if bug not in self.bugs:
             return False
         self.deleteBugLink(bug)

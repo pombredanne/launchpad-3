@@ -68,10 +68,7 @@ from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
     )
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
 from lp.services.propertycache import (
     cachedproperty,
@@ -102,7 +99,6 @@ class Builder(SQLBase):
     _builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
     virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
-    speedindex = IntCol(dbName='speedindex')
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
@@ -242,14 +238,6 @@ class Builder(SQLBase):
 
         :return: A candidate job.
         """
-        def qualify_subquery(job_type, sub_query):
-            """Put the sub-query into a job type context."""
-            qualified_query = """
-                ((BuildFarmJob.job_type != %s) OR EXISTS(%%s))
-            """ % sqlvalues(job_type)
-            qualified_query %= sub_query
-            return qualified_query
-
         job_type_conditions = []
         job_sources = specific_build_farm_job_sources()
         for job_type, job_source in job_sources.iteritems():

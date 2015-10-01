@@ -44,7 +44,7 @@ class XRef(StormBase):
     """
 
     __storm_table__ = 'XRef'
-    __storm_primary__ = "to_type", "to_id", "from_type", "from_id"
+    __storm_primary__ = "from_type", "from_id", "to_type", "to_id"
 
     to_type = Unicode(allow_none=False)
     to_id = Unicode(allow_none=False)

@@ -113,7 +113,7 @@ class PackageBranchTarget(_BaseBranchTarget):
         return True
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return True
 
@@ -229,7 +229,7 @@ class PersonBranchTarget(_BaseBranchTarget):
         return False
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return False
 
@@ -314,7 +314,7 @@ class ProductBranchTarget(_BaseBranchTarget):
         return True
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return True
 

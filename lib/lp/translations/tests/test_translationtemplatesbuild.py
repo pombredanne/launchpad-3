@@ -184,7 +184,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         commit = DirectBranchCommit(branch)
         commit.writeFile('POTFILES.in', 'foo')
         commit.commit('message')
-        notify(events.TipChanged(branch, None, False))
+        notify(events.TipChanged(branch, commit.bzrbranch, False))
         self.assertEqual(
             1, TranslationTemplatesBuild.findByBranch(branch).count())
 

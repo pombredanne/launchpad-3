@@ -418,6 +418,9 @@
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.bzrsync.update_recipes"/>
   <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.trigger_webhooks"/>
+  <subscriber
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
   <subscriber
