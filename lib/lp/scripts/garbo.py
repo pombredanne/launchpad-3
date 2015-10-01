@@ -12,6 +12,7 @@ __all__ = [
     'save_garbo_job_state',
     ]
 
+from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
@@ -1704,7 +1705,7 @@ class BugXRefMigrator(TunableLoop):
         # of those bugs.
         # Compose a list of link IDs that should exist.
         # Perform a bulk XRef find for all of those.
-        # Delete any extras, create any missing.
+        # Create any missing.
         from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bugcve import BugCve
         from lp.bugs.model.cve import Cve
@@ -1716,7 +1717,7 @@ class BugXRefMigrator(TunableLoop):
         sbs = list(self.store.find(
             SpecificationBug, SpecificationBug.bugID.is_in(bug_ids)))
         bcs = list(self.store.find(BugCve, BugCve.bugID.is_in(bug_ids)))
-        wanted = {(u'bug', unicode(bug_id)): {} for bug_id in bug_ids}
+        wanted = defaultdict(dict)
         for qb in qbs:
             wanted[(u'bug', unicode(qb.bugID))][
                 (u'question', unicode(qb.questionID))] = {
@@ -1772,10 +1773,10 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         BugHeatUpdater,
         BugWatchScheduler,
+        BugXRefMigrator,
         DuplicateSessionPruner,
         RevisionCachePruner,
         UnusedSessionPruner,
-        BugXRefMigrator,
         ]
     experimental_tunable_loops = []
 
