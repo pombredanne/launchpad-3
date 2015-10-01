@@ -45,7 +45,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             }
 
     def test_view_attributes(self):
-        self.product.displayname = 'Boing'
+        self.product.display_name = 'Boing'
         view = create_initialized_view(
             self.product, name='+bugsupervisor')
         label = 'Edit bug supervisor for Boing'

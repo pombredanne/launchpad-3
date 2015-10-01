@@ -1095,7 +1095,7 @@ class Person(
             clauses.append(
                 Or(
                     Product.name.contains_string(match_name),
-                    Product.displayname.contains_string(match_name),
+                    Product.display_name.contains_string(match_name),
                     fti_search(Product, match_name)))
 
         if user is not None:
@@ -1103,7 +1103,7 @@ class Person(
 
         return IStore(Product).find(
             Product, *clauses
-            ).config(distinct=True).order_by(Product.displayname)
+            ).config(distinct=True).order_by(Product.display_name)
 
     def isAnyPillarOwner(self):
         """See IPerson."""

@@ -3135,7 +3135,7 @@ class TestTargetNameCache(TestCase):
                          u'Mozilla Thunderbird')
 
         thunderbird.name = 'thunderbird-ng'
-        thunderbird.displayname = 'Mozilla Thunderbird NG'
+        thunderbird.display_name = 'Mozilla Thunderbird NG'
 
         # XXX Guilherme Salgado 2005-11-07 bug=3989:
         # This flush_database_updates() shouldn't be needed because we
@@ -3213,7 +3213,7 @@ class TestTargetNameCache(TestCase):
         # The updating of targetnamecaches is usually done by the cronjob,
         # however it can also be invoked directly.
         thunderbird.name = 'thunderbird'
-        thunderbird.displayname = 'Mozilla Thunderbird'
+        thunderbird.display_name = 'Mozilla Thunderbird'
         transaction.commit()
 
         self.assertEqual(upstream_task.bugtargetdisplayname,

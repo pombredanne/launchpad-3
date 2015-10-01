@@ -464,7 +464,7 @@ present these already-registered products as options to the user.
     ...     'field.actions.continue': '1',
     ...     'field.bug_url': 'http://bugs.foo.org/bugs/show_bug.cgi?id=8',
     ...     'field.name': 'foo-product',
-    ...     'field.displayname': 'The Foo Product',
+    ...     'field.display_name': 'The Foo Product',
     ...     'field.summary': 'The Foo Product'}
     >>> add_task_view = create_view(
     ...     firefox_task, '+affects-new-product', form=form, method='POST')
@@ -497,7 +497,7 @@ bugs.foo.org, we'll present 'The Foo Product' as a candidate.
 
     >>> flush_database_updates()
     >>> form['field.name'] = 'bar-product'
-    >>> form['field.displayname'] = 'The Bar'
+    >>> form['field.display_name'] = 'The Bar'
     >>> form['field.summary'] = 'The Bar'
     >>> add_task_view = create_view(
     ...     firefox_task, '+affects-new-product', form=form, method='POST')
@@ -519,7 +519,7 @@ we'll present only the ones whose name is similar to what the user entered.
     >>> flush_database_updates()
     >>> dummy = form.pop('create_new')
     >>> form['field.name'] = u'foo'
-    >>> form['field.displayname'] = 'Foo, the return'
+    >>> form['field.display_name'] = 'Foo, the return'
     >>> form['field.summary'] = 'Foo'
     >>> add_task_view = create_view(
     ...     firefox_task, '+affects-new-product', form=form, method='POST')
