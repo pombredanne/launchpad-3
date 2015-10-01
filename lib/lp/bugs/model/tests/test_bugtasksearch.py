@@ -67,6 +67,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import convert_storm_clause_to_string
+from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -419,6 +420,16 @@ class OnceTests:
                 BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS))
         self.assertSearchFinds(params, self.bugtasks[1:])
 
+    def test_blueprints_linked_with_xref(self):
+        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
+        self.test_blueprints_linked()
+
+    def test_blueprints_linked_with_xref_and_no_old(self):
+        self.useFixture(FeatureFixture({
+            'bugs.xref_buglinks.query': 'true',
+            'bugs.xref_buglinks.write_old.disabled': 'true'}))
+        self.test_blueprints_linked()
+
     def test_limit_search_to_one_bug(self):
         # Search results can be limited to a given bug.
         params = self.getBugTaskSearchParams(
@@ -491,6 +502,16 @@ class OnceTests:
             self.bugtasks[0].bug.linkCVE(cve, self.owner)
         params = self.getBugTaskSearchParams(user=None, has_cve=True)
         self.assertSearchFinds(params, self.bugtasks[:1])
+
+    def test_has_cve_with_xref(self):
+        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
+        self.test_has_cve()
+
+    def test_has_cve_with_xref_and_no_old(self):
+        self.useFixture(FeatureFixture({
+            'bugs.xref_buglinks.query': 'true',
+            'bugs.xref_buglinks.write_old.disabled': 'true'}))
+        self.test_has_cve()
 
     def test_sort_by_milestone_name(self):
         expected = self.setUpMilestoneSorting()
