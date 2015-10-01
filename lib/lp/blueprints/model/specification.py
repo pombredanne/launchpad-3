@@ -11,6 +11,8 @@ __all__ = [
     'SpecificationSet',
     ]
 
+import operator
+
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
@@ -86,6 +88,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -99,12 +102,14 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.xref.interfaces import IXRefSet
 
 
 def recursive_blocked_query(user):
@@ -239,9 +244,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    bugs = SQLRelatedJoin('Bug',
-        joinColumn='specification', otherColumn='bug',
-        intermediateTable='SpecificationBug', orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
@@ -791,14 +793,38 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
         return bool(self.subscription(person))
 
+    @property
+    def bugs(self):
+        from lp.bugs.model.bug import Bug
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            bug_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'specification', unicode(self.id)), types=[u'bug'])]
+        else:
+            bug_ids = list(IStore(SpecificationBug).find(
+                SpecificationBug,
+                SpecificationBug.specification == self).values(
+                    SpecificationBug.bugID))
+        return list(sorted(
+            bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
+
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        SpecificationBug(specification=self, bug=bug)
+        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
+            SpecificationBug(specification=self, bug=bug)
+        # XXX: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'specification', unicode(self.id)):
+                {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        Store.of(self).find(
-            SpecificationBug, specification=self, bug=bug).remove()
+        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
+            Store.of(self).find(
+                SpecificationBug, specification=self, bug=bug).remove()
+        getUtility(IXRefSet).delete(
+            {(u'specification', unicode(self.id)):
+                [(u'bug', unicode(bug.id))]})
 
     # sprint linking
     def linkSprint(self, sprint, user):

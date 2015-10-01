@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    "XRef",
     "XRefSet",
     ]
 
@@ -37,6 +38,9 @@ class XRef(StormBase):
 
     The to_id_int and from_id_int columns exist for efficient SQL joins.
     They are set automatically when the ID looks like an integer.
+
+    NOTE: This should rarely be used directly. Prefer IXRefSet unless
+    porting an old query.
     """
 
     __storm_table__ = 'XRef'

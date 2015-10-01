@@ -125,7 +125,7 @@ class TestBugTaskView(TestCaseWithFactory):
             0, 10, login_method=lambda: login(ADMIN_EMAIL))
         # This may seem large: it is; there is easily another 25% fat in
         # there.
-        self.assertThat(recorder1, HasQueryCount(LessThan(81)))
+        self.assertThat(recorder1, HasQueryCount(LessThan(83)))
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_rendered_query_counts_constant_with_attachments(self):
@@ -136,7 +136,7 @@ class TestBugTaskView(TestCaseWithFactory):
             lambda: self.getUserBrowser(url, person),
             lambda: self.factory.makeBugAttachment(bug=task.bug),
             1, 9, login_method=lambda: login(ADMIN_EMAIL))
-        self.assertThat(recorder1, HasQueryCount(LessThan(82)))
+        self.assertThat(recorder1, HasQueryCount(LessThan(84)))
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def makeLinkedBranchMergeProposal(self, sourcepackage, bug, owner):
@@ -171,7 +171,7 @@ class TestBugTaskView(TestCaseWithFactory):
         recorder1, recorder2 = record_two_runs(
             lambda: self.getUserBrowser(url, owner),
             make_merge_proposals, 0, 1)
-        self.assertThat(recorder1, HasQueryCount(LessThan(87)))
+        self.assertThat(recorder1, HasQueryCount(LessThan(89)))
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(
@@ -217,7 +217,7 @@ class TestBugTaskView(TestCaseWithFactory):
             lambda: self.getUserBrowser(url, person),
             lambda: add_activity("description", self.factory.makePerson()),
             1, 20, login_method=lambda: login(ADMIN_EMAIL))
-        self.assertThat(recorder1, HasQueryCount(LessThan(82)))
+        self.assertThat(recorder1, HasQueryCount(LessThan(84)))
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_rendered_query_counts_constant_with_milestones(self):
@@ -227,7 +227,7 @@ class TestBugTaskView(TestCaseWithFactory):
 
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                82, self.factory.makePerson())
+                84, self.factory.makePerson())
 
         self.assertThat(bug, browses_under_limit)
 

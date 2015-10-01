@@ -99,11 +99,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.app.validators import LaunchpadValidationError
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.specificationbug import SpecificationBug
-from lp.blueprints.model.specificationsearch import (
-    get_specification_privacy_filter,
-    )
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
@@ -198,6 +193,7 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -208,6 +204,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -234,6 +231,7 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
     )
+from lp.services.xref.interfaces import IXRefSet
 
 
 def snapshot_bug_params(bug_params):
@@ -363,15 +361,7 @@ class Bug(SQLBase, InformationTypeMixin):
         'BugMessage', joinColumn='bug', orderBy='index')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
-        orderBy='sequence', joinColumn='bug', otherColumn='cve')
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    specifications = SQLRelatedJoin(
-        'Specification', joinColumn='bug', otherColumn='specification',
-        intermediateTable='SpecificationBug', orderBy='-datecreated')
-    questions = SQLRelatedJoin('Question', joinColumn='bug',
-        otherColumn='question', intermediateTable='QuestionBug',
-        orderBy='-datecreated')
     linked_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
@@ -383,12 +373,63 @@ class Bug(SQLBase, InformationTypeMixin):
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
+    @property
+    def cves(self):
+        from lp.bugs.model.bugcve import BugCve
+        from lp.bugs.model.cve import Cve
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            xref_cve_sequences = [
+                sequence for _, sequence in getUtility(IXRefSet).findFrom(
+                    (u'bug', unicode(self.id)), types=[u'cve'])]
+            expr = Cve.sequence.is_in(xref_cve_sequences)
+        else:
+            old_cve_ids = list(IStore(BugCve).find(
+                BugCve,
+                BugCve.bug == self).values(BugCve.cveID))
+            expr = Cve.id.is_in(old_cve_ids)
+        return list(sorted(
+            IStore(Cve).find(Cve, expr), key=operator.attrgetter('sequence')))
+
+    @property
+    def questions(self):
+        from lp.answers.model.question import Question
+        from lp.coop.answersbugs.model import QuestionBug
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            question_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'bug', unicode(self.id)), types=[u'question'])]
+        else:
+            question_ids = list(IStore(QuestionBug).find(
+                QuestionBug,
+                QuestionBug.bug == self).values(QuestionBug.questionID))
+        return list(sorted(
+            bulk.load(Question, question_ids), key=operator.attrgetter('id')))
+
+    @property
+    def specifications(self):
+        from lp.blueprints.model.specification import Specification
+        from lp.blueprints.model.specificationbug import SpecificationBug
+        if getFeatureFlag('bugs.xref_buglinks.query'):
+            spec_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'bug', unicode(self.id)), types=[u'specification'])]
+        else:
+            spec_ids = list(IStore(SpecificationBug).find(
+                SpecificationBug,
+                SpecificationBug.bug == self).values(
+                    SpecificationBug.specificationID))
+        return list(sorted(
+            bulk.load(Specification, spec_ids), key=operator.attrgetter('id')))
+
     def getSpecifications(self, user):
         """See `IBug`."""
-        return IStore(SpecificationBug).find(
+        from lp.blueprints.model.specification import Specification
+        from lp.blueprints.model.specificationsearch import (
+            get_specification_privacy_filter,
+            )
+        return IStore(Specification).find(
             Specification,
-            SpecificationBug.bugID == self.id,
-            SpecificationBug.specificationID == Specification.id,
+            Specification.id.is_in(spec.id for spec in self.specifications),
             *get_specification_privacy_filter(user))
 
     @property

@@ -6,6 +6,8 @@ __all__ = ['BugCve']
 
 from sqlobject import ForeignKey
 
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 
 
@@ -17,3 +19,4 @@ class BugCve(SQLBase):
     # db field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     cve = ForeignKey(dbName='cve', foreignKey='Cve', notNull=True)
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)

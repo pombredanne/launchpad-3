@@ -771,13 +771,13 @@ Linking to a CVE.
 
     >>> from lp.bugs.interfaces.cve import ICveSet
 
-    >>> firefox_bug.cves.count()
+    >>> len(firefox_bug.cves)
     0
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
     >>> cveref = getUtility(ICveSet)["1999-8979"]
     >>> firefox_bug.linkCVE(cveref, firefox_bug.owner)
-    >>> firefox_bug.cves.count()
+    >>> len(firefox_bug.cves)
     1
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
