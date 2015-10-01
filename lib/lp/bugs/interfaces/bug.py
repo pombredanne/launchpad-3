@@ -815,13 +815,13 @@ class IBugEdit(Interface):
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def linkCVE(cve, user):
+    def linkCVE(cve, user, check_permissions=True):
         """Ensure that this CVE is linked to this bug."""
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def unlinkCVE(cve, user):
+    def unlinkCVE(cve, user, check_permissions=True):
         """Ensure that any links between this bug and the given CVE are
         removed.
         """
@@ -1158,13 +1158,6 @@ class IBugSet(Interface):
         """Get a specific bug by its ID or nickname
 
         If it can't be found, NotFoundError will be raised.
-        """
-
-    def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs for the BugWatch and bug tracker.
-
-        Find one or None bugs in Launchpad that have a BugWatch matching
-        the given bug tracker and remote bug id.
         """
 
     def createBug(bug_params, notify_event=True):

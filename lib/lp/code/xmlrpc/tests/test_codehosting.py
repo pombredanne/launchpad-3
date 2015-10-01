@@ -190,15 +190,6 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(num_failures, branch.mirror_failures)
         self.assertEqual(failure_message, branch.mirror_status_message)
 
-    def assertMirrorSucceeded(self, branch, revision_id):
-        """Assert that `branch` mirrored to `revision_id`."""
-        self.assertSqlAttributeEqualsDate(
-            branch, 'last_mirror_attempt', UTC_NOW)
-        self.assertSqlAttributeEqualsDate(
-            branch, 'last_mirrored', UTC_NOW)
-        self.assertEqual(0, branch.mirror_failures)
-        self.assertEqual(revision_id, branch.last_mirrored_id)
-
     def assertUnmirrored(self, branch):
         """Assert that `branch` has not yet been mirrored.
 

@@ -2085,12 +2085,17 @@ class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
     def validate(self, data):
         if 'processors' in data:
             available_processors = set(self.context.available_processors)
+            widget = self.widgets['processors']
             for processor in self.context.processors:
-                if (processor not in available_processors and
-                        processor not in data['processors']):
-                    # This processor is not currently available for
-                    # selection, but is enabled.  Leave it untouched.
-                    data['processors'].append(processor)
+                if processor not in data['processors']:
+                    if processor not in available_processors:
+                        # This processor is not currently available for
+                        # selection, but is enabled.  Leave it untouched.
+                        data['processors'].append(processor)
+                    elif processor.name in widget.disabled_items:
+                        # This processor is restricted and currently
+                        # enabled.  Leave it untouched.
+                        data['processors'].append(processor)
 
 
 class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):

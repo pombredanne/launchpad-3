@@ -105,6 +105,7 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
+from zope.app.testing import ztapi
 from zope.component import (
     ComponentLookupError,
     getMultiAdapter,
@@ -113,10 +114,8 @@ from zope.component import (
     )
 import zope.event
 from zope.interface import Interface
-from zope.interface.verify import (
-    verifyClass,
-    verifyObject as zope_verifyObject,
-    )
+from zope.interface.verify import verifyObject as zope_verifyObject
+from zope.publisher.interfaces import IEndRequestEvent
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.management import queryInteraction
 from zope.security.proxy import (
@@ -144,6 +143,7 @@ from lp.services.features.webapp import ScopesFromRequest
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
 from lp.services.webapp.adapter import (
+    get_request_statements,
     print_queries,
     start_sql_logging,
     stop_sql_logging,
@@ -313,11 +313,13 @@ class FakeTime:
 
 
 class StormStatementRecorder:
-    """A storm tracer to count queries.
+    """A Storm tracer to record all database queries.
 
-    This exposes the count and queries as
-    lp.testing._webservice.QueryCollector does permitting its use with the
-    HasQueryCount matcher.
+    Use the HasQueryCount matcher to check that code makes efficient use
+    of the database.
+
+    Similar to `RequestTimelineCollector`, but can operate outside a web
+    request context and only collects Storm queries.
 
     It also meets the context manager protocol, so you can gather queries
     easily:
@@ -362,6 +364,53 @@ class StormStatementRecorder:
         out = StringIO()
         print_queries(self.query_data, file=out)
         return out.getvalue()
+
+
+class RequestTimelineCollector:
+    """Collect timeline events logged in web requests.
+
+    These are only retrievable at the end of a request, and for tests it is
+    useful to be able to make assertions about the calls made during a
+    request: this class provides a tool to gather them in a simple fashion.
+
+    See `StormStatementRecorder` for a Storm-specific collector that
+    works outside a request.
+
+    :ivar count: The count of db queries the last web request made.
+    :ivar queries: The list of queries made. See
+        lp.services.webapp.adapter.get_request_statements for more
+        information.
+    """
+
+    def __init__(self):
+        self._active = False
+        self.count = None
+        self.queries = None
+
+    def register(self):
+        """Start counting queries.
+
+        Be sure to call unregister when finished with the collector.
+
+        After each web request the count and queries attributes are updated.
+        """
+        ztapi.subscribe((IEndRequestEvent, ), None, self)
+        self._active = True
+
+    def __enter__(self):
+        self.register()
+        return self
+
+    def __call__(self, event):
+        if self._active:
+            self.queries = get_request_statements()
+            self.count = len(self.queries)
+
+    def unregister(self):
+        self._active = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.unregister()
 
 
 def record_statements(function, *args, **kwargs):
@@ -480,12 +529,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """Assert 'obj' correctly provides 'interface'."""
         from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
-
-    def assertClassImplements(self, cls, interface):
-        """Assert 'cls' may correctly implement 'interface'."""
-        self.assertTrue(
-            verifyClass(interface, cls),
-            "%r does not correctly implement %r." % (cls, interface))
 
     def assertNotifies(self, event_types, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.

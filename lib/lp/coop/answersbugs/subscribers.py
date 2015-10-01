@@ -8,10 +8,36 @@ __all__ = []
 
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 
+from lp.answers.karma import assignKarmaUsingQuestionContext
 from lp.answers.notification import QuestionNotification
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.person import IPerson
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.mail.helpers import get_email_template
 from lp.services.webapp.publisher import canonical_url
+
+
+@block_implicit_flushes
+def assign_question_bug_link_karma(question, event):
+    """Assign karma to the user which added <questionbug>."""
+    if IBug.providedBy(event.other_object):
+        assignKarmaUsingQuestionContext(
+            IPerson(event.user), event.object, 'questionlinkedtobug')
+
+
+def subscribe_owner_to_bug(question, event):
+    """Subscribe a question's owner when it's linked to a bug."""
+    if IBug.providedBy(event.other_object):
+        if not event.other_object.isSubscribed(question.owner):
+            event.other_object.subscribe(question.owner, question.owner)
+
+
+def unsubscribe_owner_from_bug(question, event):
+    """Unsubscribe a question's owner when it's unlinked from a bug."""
+    if IBug.providedBy(event.other_object):
+        if event.other_object.isSubscribed(question.owner):
+            event.other_object.unsubscribe(question.owner, question.owner)
 
 
 def dispatch_linked_question_notifications(bugtask, event):

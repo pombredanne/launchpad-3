@@ -13,7 +13,6 @@ __all__ = [
 
 import bz2
 import gzip
-from operator import itemgetter
 import os
 import stat
 import tempfile
@@ -35,18 +34,6 @@ def get_ppa_reference(ppa):
         return '%s-%s' % (ppa.owner.name, ppa.name)
 
     return ppa.owner.name
-
-
-def count_alive(store, logger):
-    """Print counts of how many alive objects the store knows about."""
-    counts = {}
-    for obj_info in store._iter_alive():
-        name = obj_info.cls_info.cls.__name__
-        counts[name] = counts.get(name, 0) + 1
-
-    sorted_items = sorted(counts.items(), key=itemgetter(0), reverse=True)
-    for (name, count) in sorted_items:
-        logger.debug('%-20s %d' % (name, count))
 
 
 class PlainTempFile:

@@ -12,12 +12,22 @@
   <subscriber
     for="lp.bugs.interfaces.bugtask.IBugTask
          lazr.lifecycle.interfaces.IObjectModifiedEvent"
-    handler=".notification.dispatch_linked_question_notifications"
+    handler=".subscribers.dispatch_linked_question_notifications"
     />
 
   <subscriber
     for="lp.answers.interfaces.question.IQuestion lp.bugs.interfaces.buglink.IObjectLinkedEvent"
-    handler=".karma.question_bug_linked"
+    handler=".subscribers.assign_question_bug_link_karma"
+    />
+
+  <subscriber
+    for="lp.answers.interfaces.question.IQuestion lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+    handler=".subscribers.subscribe_owner_to_bug"
+    />
+
+  <subscriber
+    for="lp.answers.interfaces.question.IQuestion lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
+    handler=".subscribers.unsubscribe_owner_from_bug"
     />
 
   <browser:page

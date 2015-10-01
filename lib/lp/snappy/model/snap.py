@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Bool,
     DateTime,
@@ -68,14 +67,14 @@ from lp.snappy.interfaces.snap import (
     DuplicateSnapName,
     ISnap,
     ISnapSet,
+    NoSourceForSnap,
+    NoSuchSnap,
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
-    NoSourceForSnap,
-    NoSuchSnap,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.model.snapbuild import SnapBuild
@@ -340,6 +339,8 @@ class SnapSet:
 
         if branch is None and git_ref is None:
             raise NoSourceForSnap
+        if self.exists(owner, name):
+            raise DuplicateSnapName
 
         store = IMasterStore(Snap)
         snap = Snap(
@@ -347,11 +348,6 @@ class SnapSet:
             branch=branch, git_ref=git_ref,
             require_virtualized=require_virtualized, date_created=date_created)
         store.add(snap)
-
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicateSnapName
 
         if processors is None:
             processors = [

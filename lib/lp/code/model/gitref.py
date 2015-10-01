@@ -65,6 +65,9 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.identity
 
+    # For IHasMergeProposals views.
+    displayname = display_name
+
     @property
     def name(self):
         """See `IGitRef`."""

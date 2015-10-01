@@ -23,7 +23,6 @@ __all__ = [
     'GitObjectType',
     'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
-    'UICreatableBranchType',
     ]
 
 from lazr.enum import (
@@ -109,11 +108,6 @@ class BranchType(DBEnumeratedType):
         Registered in Launchpad with an external location,
         but is not to be mirrored, nor available through Launchpad.
         """)
-
-
-class UICreatableBranchType(EnumeratedType):
-    """The types of branches that can be created through the web UI."""
-    use_template(BranchType, exclude='IMPORTED')
 
 
 class GitObjectType(DBEnumeratedType):

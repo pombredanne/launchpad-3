@@ -1028,8 +1028,8 @@ user.
     >>> bug = new_firefox_bug()
     >>> transaction.commit()
     >>> submit_commands(bug, 'cve no-such-cve')
-    >>> bug.cves.count()
-    0
+    >>> bug.cves
+    []
 
     >>> print_latest_email()
     Subject: Submit Request Failure

@@ -502,22 +502,6 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build.notify()
         self.assertEquals(0, len(pop_notifications()))
 
-    def assertBuildMessageValid(self, build, message):
-        # Not currently used; can be used if we do want to check about any
-        # notifications sent in other cases.
-        requester = build.requester
-        requester_address = format_address(
-            requester.displayname, requester.preferredemail.email)
-        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        expected = mailer.generateEmail(
-            requester.preferredemail.email, requester)
-        self.assertEqual(
-            requester_address, re.sub(r'\n\t+', ' ', message['To']))
-        self.assertEqual(expected.subject, message['Subject'].replace(
-            '\n\t', ' '))
-        self.assertEqual(
-            expected.body, message.get_payload(decode=True))
-
     def test_notify_when_recipe_deleted(self):
         """Notify does nothing if recipe has been deleted."""
         person = self.factory.makePerson(name='person')

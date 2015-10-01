@@ -9,8 +9,10 @@ from testtools.matchers import Equals
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.testing import BrowserTestCase
-from lp.testing._webservice import QueryCollector
+from lp.testing import (
+    BrowserTestCase,
+    RequestTimelineCollector,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
@@ -37,7 +39,7 @@ class TestSprintIndex(BrowserTestCase):
             blueprint = self.factory.makeSpecification()
             link = blueprint.linkSprint(sprint, blueprint.owner)
             link.acceptBy(sprint.owner)
-        with QueryCollector() as recorder:
+        with RequestTimelineCollector() as recorder:
             self.getViewBrowser(sprint)
         self.assertThat(recorder, HasQueryCount(Equals(28)))
 
@@ -50,6 +52,6 @@ class TestSprintIndex(BrowserTestCase):
             owner = removeSecurityProxy(blueprint).owner
             link = removeSecurityProxy(blueprint).linkSprint(sprint, owner)
             link.acceptBy(sprint.owner)
-        with QueryCollector() as recorder:
+        with RequestTimelineCollector() as recorder:
             self.getViewBrowser(sprint)
         self.assertThat(recorder, HasQueryCount(Equals(20)))

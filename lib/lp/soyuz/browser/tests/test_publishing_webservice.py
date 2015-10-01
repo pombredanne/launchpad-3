@@ -10,9 +10,9 @@ from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     api_url,
     person_logged_in,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.pages import webservice_for_person
 
@@ -52,7 +52,7 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
         query_counts = []
         for i in range(3):
             flush_database_caches()
-            with QueryCollector() as collector:
+            with RequestTimelineCollector() as collector:
                 response = webservice.named_get(
                     url, 'binaryFileUrls', include_meta=True,
                     api_version='devel')

@@ -62,10 +62,8 @@ class TestBuildSet(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das_one
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder_one = self.factory.makeBuilder(
-                processors=[self.processor_one])
-            self.builder_two = self.factory.makeBuilder(
-                processors=[self.processor_two])
+            self.factory.makeBuilder(processors=[self.processor_one])
+            self.factory.makeBuilder(processors=[self.processor_two])
         self.builds = []
         self.spphs = []
 

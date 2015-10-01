@@ -245,12 +245,6 @@ class ExistingPOFileInDatabase:
         """Marks a message as seen in the import, to avoid expiring it."""
         self.seen.add(self._getMessageKey(message))
 
-    def getUnseenMessages(self):
-        """Return a set of messages present in the database but not seen
-        in the file being imported.
-        """
-        return self.current_messages - self.seen
-
     def _getMessageKey(self, message):
         """Return tuple identifying `message`.
 
