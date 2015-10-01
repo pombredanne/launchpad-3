@@ -501,7 +501,7 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         job.start()
         job.fail()
         with person_logged_in(series.distribution.owner):
-            series.distribution.owner.displayname = u"Bob Individual"
+            series.distribution.owner.display_name = u"Bob Individual"
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()

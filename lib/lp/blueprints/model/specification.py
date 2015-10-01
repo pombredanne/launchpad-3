@@ -233,7 +233,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription',
-        orderBy=['displayname', 'name'])
+        orderBy=['display_name', 'name'])
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
     sprints = SQLRelatedJoin('Sprint', orderBy='name',

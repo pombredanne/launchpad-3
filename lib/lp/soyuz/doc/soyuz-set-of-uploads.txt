@@ -316,7 +316,7 @@ bar_1.0-4, which caused bug # 41102.
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).getByName('name16')
-    >>> name16.displayname = "Foo B. Bar"
+    >>> name16.display_name = "Foo B. Bar"
 
 Check the email recipient for displayname containing special chars,
 '.', must be rfc2047 compliant:
@@ -362,7 +362,7 @@ Check the email recipient for displayname containing special chars,
 
 Revert changes:
 
-    >>> name16.displayname = "Foo Bar"
+    >>> name16.display_name = "Foo Bar"
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the

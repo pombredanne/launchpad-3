@@ -51,7 +51,7 @@ When creating a private team, the team membership policy must be
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> form = {
     ...     'field.name': 'super-secret',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '',
     ...     'field.membership_policy': 'OPEN',
@@ -74,7 +74,7 @@ When the inputs are correct the admin can successfully create the team.
 
     >>> form = {
     ...     'field.name': 'super-secret2',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '',
     ...     'field.membership_policy': 'RESTRICTED',
@@ -96,7 +96,7 @@ Commercial admins can create a team too.
     >>> login('commercial-member@canonical.com')
     >>> form = {
     ...     'field.name': 'secret-team',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.membership_policy': 'RESTRICTED',
@@ -126,7 +126,7 @@ team get the normal error message.
     >>> login('foo.bar@canonical.com')
     >>> form = {
     ...     'field.name': 'secret-team',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '',
     ...     'field.membership_policy': 'RESTRICTED',
@@ -151,7 +151,7 @@ taken by a private team get the blacklist message.
     >>> login('no-priv@canonical.com')
     >>> form = {
     ...     'field.name': 'secret-team',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '',
     ...     'field.membership_policy': 'RESTRICTED',
@@ -200,7 +200,7 @@ And a private team must have restricted membership.
 
     >>> form = {
     ...     'field.name': 'super-secret3',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '',
     ...     'field.membership_policy': 'OPEN',
@@ -326,14 +326,14 @@ change to Private.
     bugtracker.
 
 All changes are aborted when a data validation error occurs.  The
-displayname for the team is the old value.
+display_name for the team is the old value.
 
     >>> transaction.commit()
     >>> super_secret2 = personset.getByName('super-secret2')
     >>> print super_secret2.name
     super-secret2
 
-    >>> print super_secret2.displayname
+    >>> print super_secret2.display_name
     Shhhh
 
 
@@ -346,7 +346,7 @@ Commercial admins can create private projects with the 'private-' prefix.
     >>> login('foo.bar@canonical.com')
     >>> form = {
     ...     'field.name': 'private-super-secret',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '',
     ...     'field.membership_policy': 'RESTRICTED',
@@ -369,7 +369,7 @@ users will get a blacklist message.
     >>> login('no-priv@canonical.com')
     >>> form = {
     ...     'field.name': 'private-top-secret',
-    ...     'field.displayname': 'Shhhh',
+    ...     'field.display_name': 'Shhhh',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '',
     ...     'field.membership_policy': 'RESTRICTED',

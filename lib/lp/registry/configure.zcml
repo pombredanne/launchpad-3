@@ -1033,7 +1033,7 @@
                 set_schema="lp.registry.interfaces.person.IPersonViewRestricted
                             lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname icon logo visibility"/>
+                set_attributes="display_name icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
                 interface="lp.registry.interfaces.person.IPersonModerateRestricted"

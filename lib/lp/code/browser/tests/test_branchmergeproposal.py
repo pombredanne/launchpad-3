@@ -11,7 +11,6 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-from urllib import quote_plus
 
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
@@ -168,6 +167,7 @@ class TestBranchMergeProposalMergedViewMixin:
         browser.getControl('Mark as Merged').click()
         browser = self.getViewBrowser(bmp.merge_source, '+index')
         self.assertThat(browser.contents, HTMLContains(revision_number))
+
 
 class TestBranchMergeProposalMergedViewBzr(
     TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
@@ -1508,7 +1508,7 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         owner = bmp.target_branch.owner
         login_person(bmp.target_branch.owner)
-        owner.displayname = 'Eric'
+        owner.display_name = 'Eric'
         bmp.approveBranch(owner, 'some-rev', datetime(
                 year=2008, month=9, day=10, tzinfo=pytz.UTC))
         view = create_initialized_view(bmp, '+link-summary')
@@ -1520,7 +1520,7 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         owner = bmp.target_branch.owner
         login_person(bmp.target_branch.owner)
-        owner.displayname = 'Eric'
+        owner.display_name = 'Eric'
         bmp.rejectBranch(owner, 'some-rev', datetime(
                 year=2008, month=9, day=10, tzinfo=pytz.UTC))
         view = create_initialized_view(bmp, '+link-summary')

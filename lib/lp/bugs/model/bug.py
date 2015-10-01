@@ -998,7 +998,7 @@ class Bug(SQLBase, InformationTypeMixin):
             BugSubscription.subscribed_by_id == SubscribedBy.id,
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.id)))
-            ).order_by(Person.displayname)
+            ).order_by(Person.display_name)
         return results
 
     def getIndirectSubscribers(self, recipients=None, level=None):

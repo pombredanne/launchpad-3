@@ -386,7 +386,7 @@ class MailingList(SQLBase):
                              TeamParticipation.team == self.team,
                              MailingListSubscription.person == Person.id,
                              MailingListSubscription.mailing_list == self)
-        return results.order_by(Person.displayname, Person.name)
+        return results.order_by(Person.display_name, Person.name)
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
@@ -600,7 +600,7 @@ class MailingListSet:
             )
         team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         preferred = store.using(*tables).find(
-            (EmailAddress.email, Person.displayname, Team.name),
+            (EmailAddress.email, Person.display_name, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
@@ -643,7 +643,7 @@ class MailingListSet:
             )
         team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         team_members = store.using(*tables).find(
-            (Team.name, Person.displayname, EmailAddress.email),
+            (Team.name, Person.display_name, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
@@ -665,7 +665,7 @@ class MailingListSet:
             Join(Team, Team.id == MailingList.teamID),
             )
         approved_posters = store.using(*tables).find(
-            (Team.name, Person.displayname, EmailAddress.email),
+            (Team.name, Person.display_name, EmailAddress.email),
             And(MessageApproval.mailing_listID.is_in(list_ids),
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),

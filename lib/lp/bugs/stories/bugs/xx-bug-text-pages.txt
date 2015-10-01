@@ -14,7 +14,7 @@ We'll start by adding some attachments to the bug:
     >>> from lp.registry.model.person import Person
     >>> login("foo.bar@canonical.com")
     >>> mark = Person.selectOneBy(name="mark")
-    >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
+    >>> mark.display_name = u"M\xe1rk Sh\xfattlew\xf2rth"
     >>> bug = Bug.get(1)
     >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
     >>> a1 = bug.addAttachment(mark, content, "comment for file a",

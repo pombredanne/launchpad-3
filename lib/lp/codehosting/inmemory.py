@@ -280,7 +280,11 @@ class FakePerson(FakeDatabaseObject):
     is_team = False
 
     def __init__(self, name):
-        self.name = self.displayname = name
+        self.name = self.display_name = name
+
+    @property
+    def displayname(self):
+        return self.display_name
 
     def inTeam(self, person_or_team):
         if self is person_or_team:

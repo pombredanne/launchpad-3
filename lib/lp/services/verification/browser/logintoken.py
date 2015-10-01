@@ -173,7 +173,7 @@ class ClaimTeamView(
 
     schema = ITeam
     field_names = [
-        'teamowner', 'displayname', 'description', 'membership_policy',
+        'teamowner', 'display_name', 'description', 'membership_policy',
         'defaultmembershipperiod', 'renewal_policy', 'defaultrenewalperiod']
     label = 'Claim Launchpad team'
     custom_widget('description', TextAreaWidget, height=10, width=30)
