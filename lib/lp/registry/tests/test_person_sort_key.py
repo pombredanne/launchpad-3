@@ -50,7 +50,7 @@ class TestPersonSortKeyBase:
         # Case conversion is handled correctly using Unicode.
         self.assertSortKeysEqual(
             u"Bj\N{LATIN CAPITAL LETTER O WITH DIAERESIS}rn", "bjorn",
-            u"bj\xf6rn, bjorn") # Lower case o with diaeresis
+            u"bj\xf6rn, bjorn")  # Lower case o with diaeresis
 
 
 class TestPersonSortKeyInDatabase(TestPersonSortKeyBase, TestCase):
@@ -66,7 +66,7 @@ class TestPersonSortKeyInDatabase(TestPersonSortKeyBase, TestCase):
         super(TestPersonSortKeyInDatabase, self).tearDown()
         self.con.close()
 
-    def get_person_sort_key(self, displayname, name):
+    def get_person_sort_key(self, display_name, name):
         '''Calls the `person_sort_key` stored procedure.
 
         Note that although the stored procedure returns a UTF-8 encoded
@@ -76,28 +76,26 @@ class TestPersonSortKeyInDatabase(TestPersonSortKeyBase, TestCase):
         # pass it UTF-8 encoded strings to match our database encoding.
         self.cur.execute(
             "SELECT person_sort_key(%s, %s)", (
-                displayname.encode("UTF-8"), name.encode("UTF-8")))
+                display_name.encode("UTF-8"), name.encode("UTF-8")))
         return self.cur.fetchone()[0]
 
-    def assertSortKeysEqual(self, displayname, name, expected):
+    def assertSortKeysEqual(self, display_name, name, expected):
         # The sort key from the database matches the expected sort key.
         self.assertEqual(
-            expected, self.get_person_sort_key(
-                displayname, name))
+            expected, self.get_person_sort_key(display_name, name))
 
 
 class PersonNames:
     """A fake with enough information for `person_sort_key`."""
 
-    def __init__(self, displayname, name):
-        self.displayname = displayname
+    def __init__(self, display_name, name):
+        self.display_name = display_name
         self.name = name
 
 
 class TestPersonSortKeyInProcess(TestPersonSortKeyBase, TestCase):
 
-    def assertSortKeysEqual(self, displayname, name, expected):
+    def assertSortKeysEqual(self, display_name, name, expected):
         # The sort key calculated in-process matches the expected sort key.
         self.assertEqual(
-            expected, person_sort_key(
-                PersonNames(displayname, name)))
+            expected, person_sort_key(PersonNames(display_name, name)))

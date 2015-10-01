@@ -404,10 +404,10 @@ _person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
 
 def person_sort_key(person):
     """Identical to `person_sort_key` in the database."""
-    # Strip noise out of displayname. We do not have to bother with
+    # Strip noise out of display_name. We do not have to bother with
     # name, as we know it is just plain ascii.
-    displayname = _person_sort_re.sub(u'', person.displayname.lower())
-    return "%s, %s" % (displayname.strip(), person.name)
+    display_name = _person_sort_re.sub(u'', person.display_name.lower())
+    return "%s, %s" % (display_name.strip(), person.name)
 
 
 @implementer(IPersonSettings)
@@ -545,7 +545,11 @@ class Person(
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return '<Person at 0x%x %s (%s)>' % (id(self), self.name, displayname)
 
-    displayname = StringCol(dbName='displayname', notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
+
+    @property
+    def displayname(self):
+        return self.display_name
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -1708,7 +1712,7 @@ class Person(
             Person.merged == None)
         return IStore(Person).find(
             Person, query).order_by(
-                Upper(Person.displayname), Upper(Person.name))
+                Upper(Person.display_name), Upper(Person.name))
 
     @cachedproperty
     def administrated_teams(self):
@@ -2136,7 +2140,7 @@ class Person(
                     TeamMembershipStatus.APPROVED,
                     TeamMembershipStatus.ADMIN,
                     ]))).order_by(
-                        Upper(Team.displayname),
+                        Upper(Team.display_name),
                         Upper(Team.name))
 
     def anyone_can_join(self):
@@ -3414,7 +3418,7 @@ class PersonSet:
                 trust_email=False)
         return person
 
-    def newTeam(self, teamowner, name, displayname, teamdescription=None,
+    def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None,
                 subscription_policy=None):
@@ -3426,11 +3430,12 @@ class PersonSet:
         if subscription_policy is not None:
             # Support 1.0 API.
             membership_policy = subscription_policy
-        team = Person(teamowner=teamowner, name=name, displayname=displayname,
-                description=teamdescription,
-                defaultmembershipperiod=defaultmembershipperiod,
-                defaultrenewalperiod=defaultrenewalperiod,
-                membership_policy=membership_policy)
+        team = Person(
+            teamowner=teamowner, name=name, display_name=display_name,
+            description=teamdescription,
+            defaultmembershipperiod=defaultmembershipperiod,
+            defaultrenewalperiod=defaultrenewalperiod,
+            membership_policy=membership_policy)
         notify(ObjectCreatedEvent(team))
         # Here we add the owner as a team admin manually because we know what
         # we're doing (so we don't need to do any sanity checks) and we don't
@@ -3501,7 +3506,7 @@ class PersonSet:
         else:
             account_id = account.id
         person = Person(
-            name=name, displayname=displayname, accountID=account_id,
+            name=name, display_name=displayname, accountID=account_id,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
         return person

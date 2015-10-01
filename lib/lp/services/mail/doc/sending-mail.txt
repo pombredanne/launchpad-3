@@ -138,11 +138,11 @@ Now let's look at the sent email again.
     u'Inneh\xe5ll'
 
 
-If we use simple_sendmail_from_person, the person's displayname can
+If we use simple_sendmail_from_person, the person's display_name can
 contain non-ASCII characters:
 
     >>> login('foo.bar@canonical.com')
-    >>> foo_bar.displayname = u'F\xf6\xf6 B\u0105r'
+    >>> foo_bar.display_name = u'F\xf6\xf6 B\u0105r'
     >>> msgid = simple_sendmail_from_person(
     ...     person=foo_bar,
     ...     to_addrs='Sample Person <test@canonical.com>',
@@ -172,7 +172,7 @@ simple_sendmail_from_person also makes sure that the name gets
 surrounded by quotes and quoted if necessary:
 
     >>> login('foo.bar@canonical.com')
-    >>> foo_bar.displayname = u'Foo [Baz] " Bar'
+    >>> foo_bar.display_name = u'Foo [Baz] " Bar'
     >>> msgid = simple_sendmail_from_person(
     ...     person=foo_bar,
     ...     to_addrs='Sample Person <test@canonical.com>',

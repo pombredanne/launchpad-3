@@ -94,7 +94,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
     def test_getOrderValuesFor__two_sort_columns(self):
         # Sorting by more than one column is supported.
         resultset = self.makeStormResultSet()
-        resultset.order_by(Person.displayname, Person.name)
+        resultset.order_by(Person.display_name, Person.name)
         range_factory = StormRangeFactory(resultset)
         order_values = range_factory.getOrderValuesFor(resultset[0])
         self.assertEqual(
@@ -394,18 +394,18 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         order_by = [
-            Person.id, Person.datecreated, Person.name, Person.displayname]
+            Person.id, Person.datecreated, Person.name, Person.display_name]
         limits = [1, datetime(2011, 07, 25, 0, 0, 0), 'foo', 'bar']
         result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         self.assertEqual([(order_by, limits)], result)
         order_by = [
             Desc(Person.id), Desc(Person.datecreated), Desc(Person.name),
-            Desc(Person.displayname)]
+            Desc(Person.display_name)]
         result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         self.assertEqual([(order_by, limits)], result)
         order_by = [
             Person.id, Person.datecreated, Desc(Person.name),
-            Desc(Person.displayname)]
+            Desc(Person.display_name)]
         result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         self.assertEqual(
             [(order_by[:2], limits[:2]), (order_by[2:], limits[2:])], result)
@@ -441,7 +441,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         order_by = [
             Person.id, Person.datecreated, Desc(Person.name),
-            Desc(Person.displayname)]
+            Desc(Person.display_name)]
         limits = [
             1, datetime(2011, 07, 25, 0, 0, 0, tzinfo=pytz.UTC), 'foo', 'bar']
         limits = range_factory.limitsGroupedByOrderDirection(order_by, limits)

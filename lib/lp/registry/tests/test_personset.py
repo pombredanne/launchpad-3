@@ -265,7 +265,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
     def makePerson(self, account):
         return self.store.add(Person(
             name='acc%d' % account.id, account=account,
-            displayname='Displayname',
+            display_name='Displayname',
             creation_rationale=PersonCreationRationale.UNKNOWN))
 
     def makeEmailAddress(self, email, person):

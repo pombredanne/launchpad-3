@@ -340,7 +340,7 @@ When the signing key for the named-ppa is requested, it is generated
 in the default PPA context then propagated to the named-ppa. The key is
 named after the user, even if the default PPA name is something different.
 
-    >>> cprov.displayname = "Not Celso Providelo"
+    >>> cprov.display_name = "Not Celso Providelo"
     >>> named_ppa_signing_key = IArchiveSigningKey(named_ppa)
     >>> named_ppa_signing_key.generateSigningKey()
     Generating: Launchpad PPA for Not Celso Providelo

@@ -582,10 +582,10 @@ class SharingService:
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         # XXX 2012-03-22 wallyworld bug 961836
-        # We want to use person_sort_key(Person.displayname, Person.name) but
+        # We want to use person_sort_key(Person.display_name, Person.name) but
         # StormRangeFactory doesn't support that yet.
         grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
-            policies).order_by(Person.displayname, Person.name)
+            policies).order_by(Person.display_name, Person.name)
         return grant_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')

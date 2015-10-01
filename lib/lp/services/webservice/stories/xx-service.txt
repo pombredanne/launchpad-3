@@ -100,7 +100,7 @@ Anonymous requests can't change the dataset.
     >>> print response.getheader('status')
     401 Unauthorized
     >>> print response.body
-    (<Person at...>, 'displayname', 'launchpad.Edit')
+    (<Person at...>, 'display_name', 'launchpad.Edit')
 
 A completely unsigned web service request is treated as an anonymous
 request, with the OAuth consumer name being equal to the User-Agent.

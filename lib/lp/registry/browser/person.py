@@ -1244,7 +1244,7 @@ class PersonAdministerView(PersonRenameFormMixin):
     schema = IPerson
     label = "Review person"
     field_names = [
-        'name', 'displayname',
+        'name', 'display_name',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
@@ -2718,7 +2718,7 @@ class BasePersonEditView(LaunchpadEditFormView):
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot', 'description',
+    field_names = ['display_name', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'selfgenerated_bugnotifications',
                    'expanded_notification_footers']
