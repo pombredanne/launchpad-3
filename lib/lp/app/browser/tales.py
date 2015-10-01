@@ -957,7 +957,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def _hasSpecification(self):
         """Return whether the bug is linked to a specification."""
-        return not self._context.bug.specifications.is_empty()
+        return len(self._context.bug.specifications) != 0
 
     def _hasPatch(self):
         """Return whether the bug has a patch."""
