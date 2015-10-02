@@ -88,10 +88,10 @@ class AbstractUploadPolicy:
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
-        # future_time_grace is in seconds. 28800 is 8 hours
-        self.future_time_grace = 8 * HOURS
+        # future_time_grace is in seconds
+        self.future_time_grace = 24 * HOURS
         # The earliest year we accept in a deb's file's mtime
-        self.earliest_year = 1984
+        self.earliest_year = 1975
 
     def validateUploadType(self, upload):
         """Check that the type of the given upload is accepted by this policy.
