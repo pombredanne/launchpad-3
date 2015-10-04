@@ -107,7 +107,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Creating a CodeReviewComment should trigger a notification."""
         message = self.factory.makeMessage()
         self.assertNotifies(
-            NewCodeReviewCommentEvent, self.bmp.createCommentFromMessage,
+            NewCodeReviewCommentEvent, False,
+            self.bmp.createCommentFromMessage,
             message, None, None, original_email=None, _validate=False)
 
 

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from textwrap import dedent
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.store import Store
 import transaction
 from zope.security.management import setSecurityPolicy
@@ -17,6 +18,7 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     CodeReviewVote,
     )
+from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.mail.codehandler import (
     AddReviewerEmailCommand,
     CodeEmailCommands,
@@ -424,6 +426,24 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(notification['to'],
             mail['from'])
         self.assertEqual(0, bmp.all_comments.count())
+
+    def test_notifies_modification(self):
+        """Changes to the merge proposal itself trigger events."""
+        mail = self.factory.makeSignedMessage(body=' merge approved')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        switch_dbuser(config.processmail.dbuser)
+        login_person(bmp.merge_target.owner)
+        _, events = self.assertNotifies(
+            [ObjectModifiedEvent, NewCodeReviewCommentEvent], False,
+            self.code_handler.process, mail, email_addr, None)
+        self.assertEqual(bmp, events[0].object)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            events[0].object_before_modification.queue_status)
+        self.assertEqual(
+            BranchMergeProposalStatus.CODE_APPROVED,
+            events[0].object.queue_status)
 
 
 class TestVoteEmailCommand(TestCase):

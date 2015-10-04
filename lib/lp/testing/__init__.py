@@ -530,11 +530,14 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
 
-    def assertNotifies(self, event_types, callable_obj, *args, **kwargs):
+    def assertNotifies(self, event_types, propagate, callable_obj,
+                       *args, **kwargs):
         """Assert that a callable performs a given notification.
 
         :param event_type: One or more event types that notification is
             expected for.
+        :param propagate: If True, propagate events to their normal
+            subscribers.
         :param callable_obj: The callable to call.
         :param *args: The arguments to pass to the callable.
         :param **kwargs: The keyword arguments to pass to the callable.
@@ -543,7 +546,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """
         if not isinstance(event_types, (list, tuple)):
             event_types = [event_types]
-        with EventRecorder() as recorder:
+        with EventRecorder(propagate=propagate) as recorder:
             result = callable_obj(*args, **kwargs)
         if len(recorder.events) == 0:
             raise AssertionError('No notification was performed.')
@@ -1241,21 +1244,27 @@ class ZopeTestInSubProcess:
 class EventRecorder:
     """Intercept and record Zope events.
 
-    This prevents the events from propagating to their normal subscribers.
-    The recorded events can be accessed via the 'events' list.
+    This prevents the events from propagating to their normal subscribers,
+    unless `propagate=True` is passed to the constructor.  The recorded
+    events can be accessed via the 'events' list.
     """
 
-    def __init__(self):
+    def __init__(self, propagate=False):
+        self.propagate = propagate
         self.events = []
         self.old_subscribers = None
+        self.new_subscribers = None
 
     def __enter__(self):
         self.old_subscribers = zope.event.subscribers[:]
-        zope.event.subscribers[:] = [self.events.append]
+        if not self.propagate:
+            zope.event.subscribers[:] = []
+        zope.event.subscribers.append(self.events.append)
+        self.new_subscribers = zope.event.subscribers[:]
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        assert zope.event.subscribers == [self.events.append], (
+        assert zope.event.subscribers == self.new_subscribers, (
             'Subscriber list has been changed while running!')
         zope.event.subscribers[:] = self.old_subscribers
 

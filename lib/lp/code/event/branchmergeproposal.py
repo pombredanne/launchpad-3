@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeProposalNeedsReviewEvent',
-    'BranchMergeProposalStatusChangeEvent',
     'NewBranchMergeProposalEvent',
     'NewCodeReviewCommentEvent',
     'ReviewerNominatedEvent',
@@ -17,22 +16,10 @@ from zope.interface import implementer
 
 from lp.code.interfaces.event import (
     IBranchMergeProposalNeedsReviewEvent,
-    IBranchMergeProposalStatusChangeEvent,
     INewBranchMergeProposalEvent,
     INewCodeReviewCommentEvent,
     IReviewerNominatedEvent,
     )
-
-
-@implementer(IBranchMergeProposalStatusChangeEvent)
-class BranchMergeProposalStatusChangeEvent(ObjectEvent):
-    """See `IBranchMergeProposalStatusChangeEvent`."""
-
-    def __init__(self, proposal, user, from_state, to_state):
-        ObjectEvent.__init__(self, proposal)
-        self.user = user
-        self.from_state = from_state
-        self.to_state = to_state
 
 
 @implementer(INewBranchMergeProposalEvent)

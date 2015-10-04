@@ -12,6 +12,7 @@ from datetime import (
     )
 from difflib import unified_diff
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 import simplejson
@@ -20,7 +21,9 @@ from soupmatchers import (
     Tag,
     )
 from testtools.matchers import (
+    MatchesListwise,
     MatchesRegex,
+    MatchesStructure,
     Not,
     )
 import transaction
@@ -47,6 +50,7 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
@@ -66,6 +70,7 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
+    EventRecorder,
     feature_flags,
     login_person,
     monkey_patch,
@@ -167,6 +172,27 @@ class TestBranchMergeProposalMergedViewMixin:
         browser.getControl('Mark as Merged').click()
         browser = self.getViewBrowser(bmp.merge_source, '+index')
         self.assertThat(browser.contents, HTMLContains(revision_number))
+
+    def test_notifies_modification(self):
+        bmp = self.makeBranchMergeProposal()
+        registrant = bmp.registrant
+        login_person(registrant)
+        browser = self.getViewBrowser(bmp, '+merged', user=bmp.registrant)
+        browser.getControl(self.merged_revision_text).value = str(
+            self.arbitrary_revisions[2])
+        with EventRecorder(propagate=True) as recorder:
+            browser.getControl('Mark as Merged').click()
+        login_person(registrant)
+        events = [
+            event for event in recorder.events
+            if isinstance(event, ObjectModifiedEvent) and
+               IBranchMergeProposal.providedBy(event.object)]
+        self.assertThat(events, MatchesListwise([
+            MatchesStructure(
+                object_before_modification=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.WORK_IN_PROGRESS),
+                object=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.MERGED))]))
 
 
 class TestBranchMergeProposalMergedViewBzr(
@@ -918,6 +944,50 @@ class TestRegisterBranchMergeProposalViewGit(
             simplejson.loads(view.form_result))
 
 
+class TestBranchMergeProposalRequestReviewViewMixin:
+    """Test `BranchMergeProposalRequestReviewView`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_notifies_modification(self):
+        bmp = self.makeBranchMergeProposal()
+        registrant = bmp.registrant
+        self.factory.makePerson(name='test-reviewer')
+        login_person(registrant)
+        browser = self.getViewBrowser(
+            bmp, '+request-review', user=bmp.registrant)
+        browser.getControl('Reviewer').value = 'test-reviewer'
+        with EventRecorder(propagate=True) as recorder:
+            browser.getControl('Request Review').click()
+        login_person(registrant)
+        events = [
+            event for event in recorder.events
+            if isinstance(event, ObjectModifiedEvent) and
+               IBranchMergeProposal.providedBy(event.object)]
+        self.assertThat(events, MatchesListwise([
+            MatchesStructure(
+                object_before_modification=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.WORK_IN_PROGRESS),
+                object=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.NEEDS_REVIEW))]))
+
+
+class TestBranchMergeProposalRequestReviewViewBzr(
+    TestBranchMergeProposalRequestReviewViewMixin, BrowserTestCase):
+    """Test `BranchMergeProposalRequestReviewView` for Bazaar."""
+
+    def makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+
+class TestBranchMergeProposalRequestReviewViewGit(
+    TestBranchMergeProposalRequestReviewViewMixin, BrowserTestCase):
+    """Test `BranchMergeProposalRequestReviewView` for Git."""
+
+    def makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
+
+
 class TestBranchMergeProposalResubmitViewMixin:
     """Test BranchMergeProposalResubmitView."""
 
@@ -997,6 +1067,21 @@ class TestBranchMergeProposalResubmitViewMixin:
             notification.message, MatchesRegex('Cannot resubmit because'
             ' <a href=.*>a similar merge proposal</a> is already active.'))
         self.assertEqual(BrowserNotificationLevel.ERROR, notification.level)
+
+    def test_notifies_modification(self):
+        view = self.createView()
+        with EventRecorder(propagate=True) as recorder:
+            self.resubmitDefault(view)
+        events = [
+            event for event in recorder.events
+            if isinstance(event, ObjectModifiedEvent) and
+               IBranchMergeProposal.providedBy(event.object)]
+        self.assertThat(events, MatchesListwise([
+            MatchesStructure(
+                object_before_modification=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.WORK_IN_PROGRESS),
+                object=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.SUPERSEDED))]))
 
 
 class TestBranchMergeProposalResubmitViewBzr(
@@ -1366,8 +1451,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertThat(browser.contents, HTMLContains(expected_meta))
 
 
-class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
-    """Test the status vocabulary generated for then +edit-status view."""
+class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
+    """Test the +edit-status view."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1378,10 +1463,10 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.proposal = self.factory.makeBranchMergeProposal(
             registrant=self.user)
 
-    def _createView(self):
+    def _createView(self, form=None):
         # Construct the view and initialize it.
         view = BranchMergeProposalChangeStatusView(
-            self.proposal, LaunchpadTestRequest())
+            self.proposal, LaunchpadTestRequest(form=form))
         view.initialize()
         return view
 
@@ -1453,6 +1538,22 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
             except_for=['CODE_APPROVED'])
         self.assertAllStatusesAvailable(
             user=self.proposal.target_branch.owner)
+
+    def test_notifies_modification(self):
+        view = self._createView(form={'revno': '1'})
+        with EventRecorder(propagate=True) as recorder:
+            view.update_action.success(
+                {'queue_status': BranchMergeProposalStatus.NEEDS_REVIEW})
+        events = [
+            event for event in recorder.events
+            if isinstance(event, ObjectModifiedEvent) and
+               IBranchMergeProposal.providedBy(event.object)]
+        self.assertThat(events, MatchesListwise([
+            MatchesStructure(
+                object_before_modification=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.WORK_IN_PROGRESS),
+                object=MatchesStructure.byEquality(
+                    queue_status=BranchMergeProposalStatus.NEEDS_REVIEW))]))
 
 
 class TestCommentAttachmentRendering(TestCaseWithFactory):
