@@ -81,6 +81,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         build = self.build
         args = {}
+        args["build_cookie"] = build.build_cookie
         args["name"] = build.snap.name
         args["proxy_host"] = config.builddmaster.builder_proxy_host
         args["proxy_port"] = config.builddmaster.builder_proxy_port
