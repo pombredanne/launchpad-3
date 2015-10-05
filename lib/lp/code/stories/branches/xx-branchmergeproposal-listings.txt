@@ -129,7 +129,7 @@ Since Albert is in the A-Team, he can do the pending review.
     >>> browser.open('http://code.launchpad.dev/~a-team')
     >>> browser.getLink('Active reviews').click()
     >>> print_tag_with_id(browser.contents, 'proposals')
-    Requested reviews I can do
+    Requested reviews you can do
     Branch Merge Proposal             Requested By    Lines Activity
     lp://dev/~albert/fooix/review ... Albert ...            None
 
@@ -165,7 +165,7 @@ When a merge is initially proposed, it has no line count:
     >>> browser = setupBrowser(auth='Basic albert@example.com:test')
     >>> browser.open(url)
     >>> print_tag_with_id(browser.contents, 'proposals')
-    Other reviews I am not actively reviewing
+    Other reviews you are not actively reviewing
     Branch Merge Proposal             Requested By    Lines Activity
     lp://dev/...                      ...                   None
 
@@ -176,6 +176,6 @@ After a preview diff is added, it has a line count.
     >>> logout()
     >>> browser.open(url)
     >>> print_tag_with_id(browser.contents, 'proposals')
-    Other reviews I am not actively reviewing
+    Other reviews you are not actively reviewing
     Branch Merge Proposal             Requested By    Lines Activity
     lp://dev/...                      ...             14    None
