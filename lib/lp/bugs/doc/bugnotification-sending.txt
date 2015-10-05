@@ -370,8 +370,8 @@ No duplicate information is included.
     ...         print_notification(
     ...             message, extra_headers=['X-Launchpad-Bug-Duplicate'])
     To: test@canonical.com
-    From: Sample Person <16@bugs.launchpad.net>
-    Subject: [Bug 16] [NEW] new bug
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug ...] [NEW] new bug
     X-Launchpad-Message-Rationale: Subscriber
     X-Launchpad-Message-For: name12
     <BLANKLINE>
@@ -401,8 +401,8 @@ top of the email:
     ...         print_notification(
     ...             message, extra_headers=['X-Launchpad-Bug-Duplicate'])
     To: test@canonical.com
-    From: Sample Person <16@bugs.launchpad.net>
-    Subject: [Bug 16] subject
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
     X-Launchpad-Message-For: name12
     X-Launchpad-Bug-Duplicate: 1

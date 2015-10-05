@@ -75,14 +75,16 @@ Distribution or a DistributionSourcePackage.
     >>> project_collection = webservice.get(
     ...   "/projects?ws.op=search&text=firefox").jsonBody()
     >>> firefox = project_collection['entries'][0]
-    >>> print webservice.named_post(
+    >>> response = webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=firefox['self_link'])
+    >>> print response
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
     ...
+    >>> new_bug_id = int(response.getHeader("Location").rsplit('/', 1)[-1])
 
     >>> print webservice.named_post(
     ...     '/bugs', 'createBug',
@@ -195,25 +197,24 @@ Marking a bug as duplicate follows the same validation rules as available in
 the web UI. It is impossible, for example, to create circular relationships.
 Due to bug #1088358 the error is escaped as if it was HTML.
 
-
+    >>> dupe_url = webservice.getAbsoluteUrl('/bugs/%d' % new_bug_id)
     >>> print webservice.patch(
-    ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
+    ...       dupe_url, 'application/json',
     ...       dumps(dict(
     ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/5'))))
     HTTP/1.1 209 Content Returned...
 
     >>> print webservice.patch(
     ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
-    ...       dumps(dict(
-    ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/16'))))
+    ...       dumps(dict(duplicate_of_link=dupe_url)))
     HTTP/1.1 400 Bad Request
     ...
-    Bug 16 is already a duplicate of bug 5. You
+    Bug ... is already a duplicate of bug 5. You
     can only mark a bug report as duplicate of one that
     isn&#x27;t a duplicate itself...
 
     >>> print webservice.patch(
-    ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
+    ...       dupe_url, 'application/json',
     ...       dumps(dict(duplicate_of_link=None)))
     HTTP/1.1 209 Content Returned...
 
@@ -549,7 +550,7 @@ distribution.
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
     HTTP/1.1 301 Moved Permanently
     ...
-    Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/19
+    Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/...
     ...
 
 It's possible to get a list of similar bugs for a bug task by calling
@@ -1107,7 +1108,7 @@ associated with a bug.
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
-    Location: http://.../bugs/1/+watch/13
+    Location: http://.../bugs/1/+watch/...
     ...
 
 Following the redirect, we can see the new bug watch:
@@ -1116,7 +1117,7 @@ Following the redirect, we can see the new bug watch:
     >>> new_bug_watch = webservice.get(new_bug_watch_path).jsonBody()
     >>> pprint_entry(new_bug_watch)
     bug_link: u'http://.../bugs/1'
-    bug_tasks_collection_link: u'http://.../bugs/1/+watch/13/bug_tasks'
+    bug_tasks_collection_link: u'http://.../bugs/1/+watch/.../bug_tasks'
     bug_tracker_link: u'http://.../bugs/bugtrackers/mozilla.org'
     date_created: u'...'
     date_last_changed: None
@@ -1128,10 +1129,10 @@ Following the redirect, we can see the new bug watch:
     remote_importance: None
     remote_status: None
     resource_type_link: u'http://.../#bug_watch'
-    self_link: u'http://.../bugs/1/+watch/13'
+    self_link: u'http://.../bugs/1/+watch/...'
     title: u'The Mozilla.org Bug Tracker #9876'
     url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
-    web_link: u'http://bugs.../bugs/1/+watch/13'
+    web_link: u'http://bugs.../bugs/1/+watch/...'
 
 Bug Trackers
 ------------
@@ -1390,13 +1391,15 @@ bug tasks for the target.
     total_size: 5
     ---
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/4'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/1'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/16'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
+    ...
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
 
 Some parameters accept lists of values, just like when searching from
@@ -1548,13 +1551,9 @@ the advanced search interface.
     >>> ordered_bugtasks = webservice.named_get(
     ...     '/ubuntu', 'searchTasks',
     ...     order_by='-datecreated').jsonBody()['entries']
-    >>> for ordered_bugtask in ordered_bugtasks:
-    ...     print ordered_bugtask['self_link']
-    http://.../ubuntu/+source/alsa-utils/+bug/19
-    http://.../ubuntu/+source/evolution/+bug/18
-    http://.../ubuntu/+bug/17
-    http://.../ubuntu/+bug/2
-    http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
+    >>> dates = [task['date_created'] for task in ordered_bugtasks]
+    >>> dates == sorted(dates, reverse=True)
+    True
 
 
 Hardware related bug tasks
@@ -1772,22 +1771,16 @@ We can search for bugs that are linked to branches...
     >>> bugtasks = webservice.named_get(
     ...     '/firefox', 'searchTasks',
     ...     linked_branches='Show only Bugs with linked Branches')
-    >>> for bugtask in bugtasks.jsonBody()['entries']:
-    ...     print bugtask['self_link']
-    http://api.launchpad.dev/beta/firefox/+bug/5
-    http://api.launchpad.dev/beta/firefox/+bug/4
+    >>> bugtasks.jsonBody()['total_size']
+    2
 
 ...and we can search for bugs that are not linked to branches.
 
     >>> bugtasks = webservice.named_get(
     ...     '/firefox', 'searchTasks',
     ...     linked_branches='Show only Bugs without linked Branches')
-    >>> for bugtask in bugtasks.jsonBody()['entries']:
-    ...     print bugtask['self_link']
-    http://api.launchpad.dev/beta/firefox/+bug/1
-    http://api.launchpad.dev/beta/firefox/+bug/16
-    http://api.launchpad.dev/beta/firefox/+bug/20
-    http://api.launchpad.dev/beta/firefox/+bug/24
+    >>> bugtasks.jsonBody()['total_size']
+    4
 
 
 Affected users

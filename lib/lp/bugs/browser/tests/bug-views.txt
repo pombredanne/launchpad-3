@@ -822,11 +822,11 @@ The view offers a list of bugs similar to the one whose title we just
 searched for.
 
     >>> for bug in view.similar_bugs:
-    ...     print "Bug %s: %s" % (bug.id, bug.title)
-    Bug 1:  New title
-    Bug 4:  Reflow problems with complex page layouts
-    Bug 5:  Firefox install instructions should be complete
-    Bug 17: a firefox bug
+    ...     print bug.title
+    New title
+    Reflow problems with complex page layouts
+    Firefox install instructions should be complete
+    a firefox bug
 
 If we refine the search critera, we'll get different results.
 
@@ -837,5 +837,5 @@ If we refine the search critera, we'll get different results.
     ...     (firefox, request), name="+filebug-show-similar")
     >>> view.initialize()
     >>> for bug in view.similar_bugs:
-    ...     print "Bug %s: %s" % (bug.id, bug.title)
-    Bug 4:  Reflow problems with complex page layouts
+    ...     print bug.title
+    Reflow problems with complex page layouts

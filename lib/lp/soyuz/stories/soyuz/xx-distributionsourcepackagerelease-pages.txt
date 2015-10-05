@@ -227,7 +227,7 @@ are available.
     View changes file
 
     >>> print anon_browser.getLink('0.9 to 1.0').url
-    http://.../101/testing-dspr_0.9_1.0.diff.gz
+    http://.../.../testing-dspr_0.9_1.0.diff.gz
 
 Finally, the 'Binary packages' section lists all binary packages
 produced by this source. Each binary links to its specific

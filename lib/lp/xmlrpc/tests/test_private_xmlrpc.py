@@ -69,7 +69,7 @@ class TestPrivateXMLRPC(TestCase):
             bug_dict = dict(
                 product='firefox', summary='the summary', comment='the comment')
             result = external_api.filebug(bug_dict)
-            self.assertEqual('http://bugs.launchpad.dev/bugs/16', result)
+            self.assertStartsWith(result, 'http://bugs.launchpad.dev/bugs/')
 
     def test_internal_bugs_api(self):
         """There is an interal bugs api, too, but that doesn't share the same
