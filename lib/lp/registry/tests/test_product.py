@@ -832,7 +832,7 @@ class TestProduct(TestCaseWithFactory):
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanLimitedView', 'userCanView',)),
         'launchpad.LimitedView': set((
-            'bugtargetdisplayname', 'displayname', 'drivers',
+            'bugtargetdisplayname', 'display_name', 'displayname', 'drivers',
             'enable_bug_expiration', 'getBugTaskWeightFunction',
             'getSpecification',
             'icon', 'logo', 'name', 'official_answers', 'official_anything',
@@ -934,7 +934,7 @@ class TestProduct(TestCaseWithFactory):
                 'answers_usage', 'blueprints_usage', 'bug_supervisor',
                 'bug_tracking_usage', 'codehosting_usage',
                 'commercial_subscription', 'description', 'development_focus',
-                'displayname', 'downloadurl', 'driver', 'freshmeatproject',
+                'display_name', 'downloadurl', 'driver', 'freshmeatproject',
                 'homepage_content', 'homepageurl', 'icon', 'information_type',
                 'license_info', 'licenses', 'logo', 'mugshot',
                 'official_answers', 'official_blueprints',

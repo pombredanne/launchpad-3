@@ -151,15 +151,16 @@ class IProjectGroupPublic(
             description=_("Project group registrant. Must be a valid "
                           "Launchpad Person.")))
 
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_('Display Name'),
             description=_(
                 "Appropriately capitalised, "
                 'and typically ending in "Project". '
                 "Examples: the Apache Project, the Mozilla Project, "
-                "the Gimp Project.")),
-        exported_as="display_name")
+                "the Gimp Project.")))
+
+    displayname = Attribute('Display name (deprecated)')
 
     title = exported(
         Title(

@@ -231,7 +231,7 @@ We cannot allow proprietary bugs to affect more than one pillar.
     >>> browser.getControl(name='field.product').value = other_product_name
     >>> browser.getControl('Continue').click()
     >>> print browser.url
-    http://bugs.launchpad.dev/proprietary-product/+bug/16/+choose-affected-product
+    http://bugs.launchpad.dev/proprietary-product/+bug/.../+choose-affected-product
 
     >>> print_feedback_messages(browser.contents)
     There is 1 error.

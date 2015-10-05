@@ -96,7 +96,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 def get_register_upstream_url(source_package):
-    displayname = string.capwords(source_package.name.replace('-', ' '))
+    display_name = string.capwords(source_package.name.replace('-', ' '))
     distroseries_string = "%s/%s" % (
         source_package.distroseries.distribution.name,
         source_package.distroseries.name)
@@ -110,8 +110,8 @@ def get_register_upstream_url(source_package):
         'field.source_package_name': source_package.sourcepackagename.name,
         'field.distroseries': distroseries_string,
         'field.name': source_package.name,
-        'field.displayname': displayname,
-        'field.title': displayname,
+        'field.display_name': display_name,
+        'field.title': display_name,
         'field.homepageurl': homepage,
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',

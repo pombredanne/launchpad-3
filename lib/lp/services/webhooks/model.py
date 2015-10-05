@@ -66,6 +66,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookJob,
     IWebhookJobSource,
     IWebhookSet,
+    WEBHOOK_EVENT_TYPES,
     WebhookDeliveryFailure,
     WebhookDeliveryRetry,
     WebhookFeatureDisabled,
@@ -222,6 +223,14 @@ class WebhookTargetMixin:
         return DecoratedResultSet(
             getUtility(IWebhookSet).findByTarget(self),
             pre_iter_hook=preload_registrants)
+
+    @property
+    def valid_webhook_event_types(self):
+        return sorted(WEBHOOK_EVENT_TYPES)
+
+    @property
+    def default_webhook_event_types(self):
+        return self.valid_webhook_event_types
 
     def newWebhook(self, registrant, delivery_url, event_types, active=True,
                    secret=None):

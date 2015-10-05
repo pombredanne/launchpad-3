@@ -34,7 +34,7 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> test_project = projectset.new(
-    ...     name='project-test', displayname='Test Project',
+    ...     name='project-test', display_name='Test Project',
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
     ...     owner=no_priv)

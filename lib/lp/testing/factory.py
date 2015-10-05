@@ -1049,7 +1049,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         project = getUtility(IProjectGroupSet).new(
             name=name,
-            displayname=displayname,
+            display_name=displayname,
             title=title,
             homepageurl=homepageurl,
             summary=summary,
