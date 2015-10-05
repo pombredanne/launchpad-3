@@ -15,7 +15,7 @@ Now we'll fill in the product details and add it.  This is a two-step
 process.  Fill in the first page and then 'Continue' which will keep
 us on the same page.
 
-    >>> browser.getControl(name='field.displayname').value = 'Eye of GNOME'
+    >>> browser.getControl(name='field.display_name').value = 'Eye of GNOME'
     >>> browser.getControl(name='field.name', index=0).value = 'eog'
     >>> browser.getControl(name='field.summary').value = 'An image viewer for GNOME'
     >>> browser.getControl('Continue').click()

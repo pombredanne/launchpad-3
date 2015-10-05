@@ -553,9 +553,9 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertFalse(person.canWrite(product, 'displayname'))
+            self.assertFalse(person.canWrite(product, 'display_name'))
         with person_logged_in(product.owner):
-            self.assertTrue(product.owner.canWrite(product, 'displayname'))
+            self.assertTrue(product.owner.canWrite(product, 'display_name'))
 
     def test_canWrite__checking_permissions_of_others(self):
         # Logged in users cannot call Person.canWrite() on Person

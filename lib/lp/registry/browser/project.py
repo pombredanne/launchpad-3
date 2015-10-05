@@ -386,7 +386,7 @@ class ProjectEditView(LaunchpadEditFormView):
     page_title = label
     schema = IProjectGroup
     field_names = [
-        'displayname', 'summary', 'description',
+        'display_name', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'wikiurl']
@@ -492,9 +492,9 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
         return getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
-            title=data['displayname'],
+            title=data['display_name'],
             summary=data['summary'],
-            displayname=data['displayname'],
+            display_name=data['display_name'],
             licenses=data['licenses'],
             license_info=data['license_info'],
             information_type=data.get('information_type'),
@@ -505,7 +505,7 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad as a part of %s' % (
-            self.request.form['displayname'], self.request.form['name'],
+            self.request.form['display_name'], self.request.form['name'],
             self.context.displayname)
 
 
@@ -579,7 +579,7 @@ class ProjectAddView(LaunchpadFormView):
     schema = IProjectGroup
     field_names = [
         'name',
-        'displayname',
+        'display_name',
         'summary',
         'description',
         'owner',
@@ -595,8 +595,8 @@ class ProjectAddView(LaunchpadFormView):
         """Create the new Project from the form details."""
         self.projectgroup = getUtility(IProjectGroupSet).new(
             name=data['name'].lower().strip(),
-            displayname=data['displayname'],
-            title=data['displayname'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],

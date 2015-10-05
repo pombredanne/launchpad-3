@@ -1367,7 +1367,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     label = "Edit details"
     schema = IProduct
     field_names = [
-        "displayname",
+        "display_name",
         "title",
         "summary",
         "description",
@@ -2151,14 +2151,14 @@ def create_source_package_fields():
 class ProjectAddStepOne(StepView):
     """product/+new view class for creating a new project."""
 
-    _field_names = ['displayname', 'name', 'summary']
+    _field_names = ['display_name', 'name', 'summary']
     label = "Register a project in Launchpad"
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
     page_title = "Register a project in Launchpad"
 
-    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('display_name', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
 
     step_description = 'Project basics'
@@ -2207,7 +2207,7 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'summary', 'description',
+    _field_names = ['display_name', 'name', 'summary', 'description',
                     'homepageurl', 'information_type', 'licenses',
                     'license_info', 'driver', 'bug_supervisor', 'owner']
     schema = IProduct
@@ -2217,7 +2217,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     product = None
 
-    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('display_name', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
@@ -2328,7 +2328,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # phrasing is different.
         self.widgets['name'].hint = (
             "When published, this will be the project's URL.")
-        self.widgets['displayname'].visible = False
+        self.widgets['display_name'].visible = False
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
 
@@ -2364,7 +2364,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def _search_string(self):
         """Return the ORed terms to match."""
         search_text = SPACE.join((self.request.form['field.name'],
-                                  self.request.form['field.displayname'],
+                                  self.request.form['field.display_name'],
                                   self.request.form['field.summary']))
         # OR all the terms together.
         return OR.join(search_text.split())
@@ -2413,7 +2413,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
-                self.request.form['field.displayname'],
+                self.request.form['field.display_name'],
                 self.request.form['field.name'])
 
     def create_product(self, data):
@@ -2433,8 +2433,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             driver=data.get('driver', None),
             owner=owner,
             name=data['name'],
-            displayname=data['displayname'],
-            title=data['displayname'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             summary=data['summary'],
             description=description,
             homepageurl=data.get('homepageurl'),
