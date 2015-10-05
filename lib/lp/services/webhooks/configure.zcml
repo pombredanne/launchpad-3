@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -22,12 +22,21 @@
         <allow interface="lp.services.webhooks.interfaces.IWebhookSet"/>
     </securedutility>
     <securedutility
-        name="WebhookEventType"
-        component="lp.services.webhooks.interfaces.WebhookEventTypeVocabulary"
+        name="AnyWebhookEventType"
+        component="lp.services.webhooks.interfaces.AnyWebhookEventTypeVocabulary"
         provides="zope.schema.interfaces.IVocabularyFactory">
         <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
     </securedutility>
-    <class class="lp.services.webhooks.interfaces.WebhookEventTypeVocabulary">
+    <class class="lp.services.webhooks.interfaces.AnyWebhookEventTypeVocabulary">
+        <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+    </class>
+    <securedutility
+        name="ValidWebhookEventType"
+        component="lp.services.webhooks.interfaces.ValidWebhookEventTypeVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+    <class class="lp.services.webhooks.interfaces.ValidWebhookEventTypeVocabulary">
         <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
     </class>
 
