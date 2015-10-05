@@ -611,7 +611,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             close_bugs_since_version=old_version, creator=creator,
             sponsor=sponsor, packageupload=packageupload,
             phased_update_percentage=phased_update_percentage, logger=logger)
-        if send_email:
+        if send_email and sub_copies:
             mailer = PackageUploadMailer.forAction(
                 'accepted', person, source.sourcepackagerelease, [], [],
                 archive, destination_series, pocket,

@@ -1590,6 +1590,23 @@ class TestDoDirectCopy(BaseDoCopyTests, TestCaseWithFactory):
             send_email=False)
         self.assertEqual([], pop_notifications())
 
+    def test_duplicate_copy_does_not_generate_notification(self):
+        # If there is nothing to copy because the packages in question are
+        # already in the destination, then no notification is generated.
+        nobby, archive, source = self._setup_archive()
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        self.assertNotEqual([], do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=True))
+        self.assertNotEqual([], pop_notifications())
+        self.assertEqual([], do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=True))
+        self.assertEqual([], pop_notifications())
+
     def test_copying_unsupported_arch_with_override(self):
         # When the copier is passed an unsupported arch with an override
         # on the destination series, no binary is copied. But an
