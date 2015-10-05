@@ -14,13 +14,7 @@
 
   <div id="snap-links" class="actions">
     <div id="snap-summary">
-      <tal:no-snaps condition="not: view/snap_count">
-      No snap packages
-      </tal:no-snaps>
-      <tal:snaps condition="view/snap_count">
-        <a href="+snaps" tal:content="view/snap_count_text">1 snap package</a>
-      </tal:snaps>
-      using this <metal:slot define-slot="context_type">branch</metal:slot>.
+      <tal:snaps replace="structure view/snaps_link" />
     </div>
   </div>
 

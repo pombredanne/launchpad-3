@@ -12,9 +12,13 @@ __all__ = [
 from zope.component import getUtility
 
 from lp.code.browser.decorations import DecoratedBranch
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.features import getFeatureFlag
-from lp.services.propertycache import cachedproperty
-from lp.services.webapp import Link
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    )
+from lp.services.webapp.escaping import structured
 from lp.snappy.interfaces.snap import (
     ISnapSet,
     SNAP_FEATURE_FLAG,
@@ -45,24 +49,38 @@ class HasSnapsMenuMixin:
 class HasSnapsViewMixin:
     """A view mixin for objects that implement IHasSnaps."""
 
-    @cachedproperty
-    def snap_count(self):
+    @property
+    def snaps(self):
         context = self.context
         if isinstance(context, DecoratedBranch):
             context = context.branch
         return getUtility(ISnapSet).findByContext(
-            context, visible_by_user=self.user).count()
+            context, visible_by_user=self.user)
 
     @property
     def show_snap_information(self):
-        return bool(getFeatureFlag(SNAP_FEATURE_FLAG)) or self.snap_count != 0
+        return (
+            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) or
+            not self.snaps.is_empty())
 
     @property
-    def snap_count_text(self):
-        count = self.snap_count
-        if count == 0:
-            return 'No snap packages'
-        elif count == 1:
-            return '1 snap package'
+    def snaps_link(self):
+        """A link to snap packages for this object."""
+        count = self.snaps.count()
+        if IGitRepository.providedBy(self.context):
+            context_type = 'repository'
         else:
-            return '%s snap packages' % count
+            context_type = 'branch'
+        if count == 0:
+            # Nothing to link to.
+            return 'No snap packages using this %s.' % context_type
+        elif count == 1:
+            # Link to the single snap package.
+            return structured(
+                '<a href="%s">1 snap package</a> using this %s.',
+                canonical_url(self.snaps.one()), context_type).escapedtext
+        else:
+            # Link to a snap package listing.
+            return structured(
+                '<a href="+snaps">%s snap packages</a> using this %s.',
+                count, context_type).escapedtext
