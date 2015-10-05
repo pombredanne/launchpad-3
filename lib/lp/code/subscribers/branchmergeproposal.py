@@ -49,14 +49,14 @@ def merge_proposal_modified(merge_proposal, event):
         from_person = None
     else:
         from_person = IPerson(event.user)
-    # If the merge proposal was work in progress, then we don't want to send
-    # out an email as the needs review email will cover that.
+    # If the merge proposal was work in progress and is now needs review,
+    # then we don't want to send out an email as the needs review email will
+    # cover that.
     old_status = event.object_before_modification.queue_status
-    if old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
-        # Unless the new status is merged.  If this occurs we really should
-        # send out an email.
-        if merge_proposal.queue_status != BranchMergeProposalStatus.MERGED:
-            return
+    new_status = merge_proposal.queue_status
+    if (old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS and
+            new_status == BranchMergeProposalStatus.NEEDS_REVIEW):
+        return
     # Create a delta of the changes.  If there are no changes to report, then
     # we're done.
     delta = BranchMergeProposalNoPreviewDiffDelta.construct(

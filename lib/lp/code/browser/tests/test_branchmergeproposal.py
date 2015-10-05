@@ -27,7 +27,10 @@ from testtools.matchers import (
     Not,
     )
 import transaction
-from zope.component import getMultiAdapter
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -50,7 +53,11 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchmergeproposal import (
+    IBranchMergeProposal,
+    IMergeProposalNeedsReviewEmailJobSource,
+    IMergeProposalUpdatedEmailJobSource,
+    )
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
@@ -1083,13 +1090,39 @@ class TestBranchMergeProposalResubmitViewMixin:
                 object=MatchesStructure.byEquality(
                     queue_status=BranchMergeProposalStatus.SUPERSEDED))]))
 
+    def test_mail_jobs(self):
+        """Resubmitting sends mail about the changed old MP and the new MP."""
+        view = self.createView()
+        new_proposal = self.resubmitDefault(view)
+        updated_job_source = getUtility(IMergeProposalUpdatedEmailJobSource)
+        [updated_job] = list(
+            removeSecurityProxy(updated_job_source).iterReady())
+        self.assertThat(updated_job, MatchesStructure.byEquality(
+            branch_merge_proposal=view.context,
+            metadata={
+                'delta_text': '    Status: Work in progress => Superseded',
+                'editor': view.context.registrant.name,
+                }))
+        needs_review_job_source = getUtility(
+            IMergeProposalNeedsReviewEmailJobSource)
+        [needs_review_job] = list(
+            removeSecurityProxy(needs_review_job_source).iterReady())
+        self.assertThat(needs_review_job, MatchesStructure.byEquality(
+            branch_merge_proposal=new_proposal,
+            metadata={}))
+
 
 class TestBranchMergeProposalResubmitViewBzr(
     TestBranchMergeProposalResubmitViewMixin, TestCaseWithFactory):
     """Test BranchMergeProposalResubmitView for Bazaar."""
 
     def _makeBranchMergeProposal(self):
-        return self.factory.makeBranchMergeProposal()
+        bmp = self.factory.makeBranchMergeProposal()
+        # Pretend to have a revision so that
+        # BranchMergeProposalJobDerived.iterReady will consider this
+        # proposal.
+        removeSecurityProxy(bmp.source_branch).revision_count = 1
+        return bmp
 
     @staticmethod
     def _getFormValues(source_branch, target_branch, prerequisite_branch,
