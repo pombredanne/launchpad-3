@@ -313,7 +313,8 @@ verifies this:
 
 On a mad whim he decides to de-activate the key he just imported.
 
-    >>> browser.getControl(name="DEACTIVATE_GPGKEY").value = ['3']
+    >>> browser.getControl(name="DEACTIVATE_GPGKEY").displayValue = [
+    ...     '1024D/17B05A8F (sign only)']
     >>> browser.getControl('Deactivate Key').click()
 
     >>> print_feedback_messages(browser.contents)

@@ -1140,4 +1140,4 @@ through the API.
     Mega Money Maker
 
     >>> print mmm['commercial_subscription_link']
-    http://.../mega-money-maker/+commercialsubscription/3
+    http://.../mega-money-maker/+commercialsubscription/...
