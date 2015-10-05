@@ -719,20 +719,15 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         cls._is_setup = True
-        # Read the sequences we'll need from the test template database.
-        reset_sequences_sql = LaunchpadTestSetup(
-            dbname='launchpad_ftest_template').generateResetSequencesSQL()
         # Allocate a template for this test instance
         if os.environ.get('LP_TEST_INSTANCE'):
             template_name = '_'.join([LaunchpadTestSetup.template,
                 os.environ.get('LP_TEST_INSTANCE')])
-            cls._db_template_fixture = LaunchpadTestSetup(
-                dbname=template_name, reset_sequences_sql=reset_sequences_sql)
+            cls._db_template_fixture = LaunchpadTestSetup(dbname=template_name)
             cls._db_template_fixture.setUp()
         else:
             template_name = LaunchpadTestSetup.template
-        cls._db_fixture = LaunchpadTestSetup(template=template_name,
-            reset_sequences_sql=reset_sequences_sql)
+        cls._db_fixture = LaunchpadTestSetup(template=template_name)
         cls.force_dirty_database()
         # Nuke any existing DB (for persistent-test-services) [though they
         # prevent this !?]
