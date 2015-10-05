@@ -121,7 +121,6 @@ from lp.testing import (
     ANONYMOUS,
     api_url,
     celebrity_logged_in,
-    EventRecorder,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
