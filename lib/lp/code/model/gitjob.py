@@ -65,6 +65,7 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.scripts import log
 from lp.services.utils import text_delta
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webhooks.interfaces import IWebhookSet
 
 
@@ -227,6 +228,7 @@ class GitRefScanJob(GitJobDerived):
             if old != new:
                 ref_changes[ref] = {"old": old, "new": new}
         return {
+            "git_repository": canonical_url(repository, force_local_path=True),
             "git_repository_path": repository.shortened_path,
             "ref_changes": ref_changes,
             }
