@@ -719,20 +719,15 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         cls._is_setup = True
-        # Read the sequences we'll need from the test template database.
-        reset_sequences_sql = LaunchpadTestSetup(
-            dbname='launchpad_ftest_template').generateResetSequencesSQL()
         # Allocate a template for this test instance
         if os.environ.get('LP_TEST_INSTANCE'):
             template_name = '_'.join([LaunchpadTestSetup.template,
                 os.environ.get('LP_TEST_INSTANCE')])
-            cls._db_template_fixture = LaunchpadTestSetup(
-                dbname=template_name, reset_sequences_sql=reset_sequences_sql)
+            cls._db_template_fixture = LaunchpadTestSetup(dbname=template_name)
             cls._db_template_fixture.setUp()
         else:
             template_name = LaunchpadTestSetup.template
-        cls._db_fixture = LaunchpadTestSetup(template=template_name,
-            reset_sequences_sql=reset_sequences_sql)
+        cls._db_fixture = LaunchpadTestSetup(template=template_name)
         cls.force_dirty_database()
         # Nuke any existing DB (for persistent-test-services) [though they
         # prevent this !?]
@@ -747,7 +742,7 @@ class DatabaseLayer(BaseLayer):
         # point for addressing that mismatch.
         cls._db_fixture.tearDown()
         # Bring up the db, so that it is available for other layers.
-        cls._ensure_db()
+        cls._db_fixture.setUp()
 
     @classmethod
     @profiled
@@ -771,28 +766,8 @@ class DatabaseLayer(BaseLayer):
         pass
 
     @classmethod
-    def _ensure_db(cls):
-        cls._db_fixture.setUp()
-        # Ensure that the database is connectable. Because we might have
-        # just created it, keep trying for a few seconds incase PostgreSQL
-        # is taking its time getting its house in order.
-        attempts = 60
-        for count in range(0, attempts):
-            try:
-                cls.connect().close()
-            except psycopg2.Error:
-                if count == attempts - 1:
-                    raise
-                time.sleep(0.5)
-            else:
-                break
-
-    @classmethod
     @profiled
     def testTearDown(cls):
-        # Ensure that the database is connectable
-        cls.connect().close()
-
         cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
@@ -804,7 +779,7 @@ class DatabaseLayer(BaseLayer):
         # Reset/bring up the db - makes it available for either the next test,
         # or a subordinate layer which builds on the db. This wastes one setup
         # per db layer teardown per run, but thats tolerable.
-        cls._ensure_db()
+        cls._db_fixture.setUp()
 
     @classmethod
     @profiled
