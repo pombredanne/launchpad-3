@@ -42,12 +42,12 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     DeletionError,
+    IBinaryPackagePublishingHistory,
     IPublishingSet,
     OverrideError,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -876,7 +876,8 @@ class PublishingSetTests(TestCaseWithFactory):
         self.makeBinaryPublishing()
         record = self.publishing_set.getByIdAndArchive(
             self.publishing.id, self.archive, source=False)
-        self.assertEqual(None, record)
+        if record is not None:
+            self.assertTrue(IBinaryPackagePublishingHistory.providedBy(record))
 
     def test_getByIdAndArchive_finds_binary(self):
         binary_publishing = self.makeBinaryPublishing()
