@@ -225,12 +225,12 @@ class WebhookTargetMixin:
             pre_iter_hook=preload_registrants)
 
     @property
-    def valid_event_types(self):
+    def valid_webhook_event_types(self):
         return sorted(WEBHOOK_EVENT_TYPES)
 
     @property
-    def default_event_types(self):
-        return self.valid_event_types
+    def default_webhook_event_types(self):
+        return self.valid_webhook_event_types
 
     def newWebhook(self, registrant, delivery_url, event_types, active=True,
                    secret=None):

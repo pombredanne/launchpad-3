@@ -117,7 +117,7 @@ class ValidWebhookEventTypeVocabulary(SimpleVocabulary):
             target = context
         terms = [
             self.createTerm(key, key, WEBHOOK_EVENT_TYPES[key])
-            for key in target.valid_event_types]
+            for key in target.valid_webhook_event_types]
         super(ValidWebhookEventTypeVocabulary, self).__init__(terms)
 
 
@@ -212,12 +212,12 @@ class IWebhookTarget(Interface):
         value_type=Reference(schema=IWebhook),
         readonly=True)))
 
-    valid_event_types = List(
+    valid_webhook_event_types = List(
         Choice(vocabulary='AnyWebhookEventType'), title=_("Valid event types"),
         description=_("Valid event types for this object type."),
         required=True, readonly=True)
 
-    default_event_types = List(
+    default_webhook_event_types = List(
         Choice(vocabulary='ValidWebhookEventType'),
         title=_("Default event types"),
         description=_(

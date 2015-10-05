@@ -129,7 +129,7 @@ class WebhookAddView(LaunchpadFormView):
     def initial_values(self):
         return {
             'active': True,
-            'event_types': self.context.default_event_types,
+            'event_types': self.context.default_webhook_event_types,
             }
 
     @property
