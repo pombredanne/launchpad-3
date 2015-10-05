@@ -1036,8 +1036,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         contents = [
             "Subject: [ubuntu/partner] foocomm_1.0-1_i386.changes (Rejected)",
-            "Attempt to upload binaries specifying build 31, "
-            "where they don't fit."]
+            "Attempt to upload binaries specifying build %d, "
+            "where they don't fit." % foocomm_build.id]
         self.assertEmails([{"contents": contents}])
 
         # Reset upload queue directory for a new upload.

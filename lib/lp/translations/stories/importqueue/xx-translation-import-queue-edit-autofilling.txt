@@ -27,7 +27,15 @@ First, we need to feed the import queue.
 Let's check the values we get by default from the .pot file. The name field
 and the translation domain field are pre-filled from the name of the file.
 
-  >>> browser.open('http://translations.launchpad.dev/+imports/4')
+  >>> login(ANONYMOUS)
+  >>> from zope.component import getUtility
+  >>> from lp.registry.interfaces.product import IProductSet
+  >>> series = getUtility(IProductSet).getByName('alsa-utils').getSeries('trunk')
+  >>> pot_qid = series.getTranslationImportQueueEntries(file_extension='pot')[0].id
+  >>> po_qid = series.getTranslationImportQueueEntries(file_extension='po')[0].id
+  >>> logout()
+
+  >>> browser.open('http://translations.launchpad.dev/+imports/%d' % pot_qid)
   >>> browser.getControl(name='field.name').value
   'test'
   >>> browser.getControl(name='field.translation_domain').value
@@ -52,14 +60,14 @@ Let's fill in the information.
 Now, as we already know the name, a new form load should
 give us that field with information.
 
-  >>> browser.open('http://translations.launchpad.dev/+imports/4')
+  >>> browser.open('http://translations.launchpad.dev/+imports/%d' % pot_qid)
   >>> browser.getControl(name='field.name').value
   'alsa-utils'
 
 Let's move to the .po file. The language is guessed from the file name
 and the user sees a warning so he checks that it's ok.
 
-  >>> browser.open('http://translations.launchpad.dev/+imports/3')
+  >>> browser.open('http://translations.launchpad.dev/+imports/%d' % po_qid)
   >>> browser.getControl(name='field.file_type').value
   ['PO']
   >>> browser.getControl(name='field.path').value
@@ -81,7 +89,7 @@ the same entry, previous_url holds current value.
 
 Reloading the form shows all the submitted information applied.
 
-  >>> browser.open('http://translations.launchpad.dev/+imports/3')
+  >>> browser.open('http://translations.launchpad.dev/+imports/%d' % po_qid)
   >>> browser.getControl(name='field.path').value
   'po/es.po'
   >>> browser.getControl(name='field.potemplate').value

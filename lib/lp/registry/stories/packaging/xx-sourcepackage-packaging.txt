@@ -82,7 +82,7 @@ step of the multistep form.
     >>> user_browser.getControl("Link to Upstream Project").click()
     >>> print user_browser.getControl(name='field.name').value
     bonkers
-    >>> print user_browser.getControl(name='field.displayname').value
+    >>> print user_browser.getControl(name='field.display_name').value
     Bonkers
     >>> print user_browser.getControl(name='field.summary').value
     summary for flubber-bin
@@ -106,7 +106,7 @@ then finds out that the project doesn't exist, he uses the
     >>> user_browser.getLink("Register the upstream project").click()
     >>> print user_browser.getControl(name='field.name').value
     bonkers
-    >>> print user_browser.getControl(name='field.displayname').value
+    >>> print user_browser.getControl(name='field.display_name').value
     Bonkers
     >>> print user_browser.getControl(name='field.summary').value
     summary for flubber-bin

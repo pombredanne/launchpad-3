@@ -37,9 +37,10 @@ Lets check the import queue to edit this entry and set the name.
   >>> browser.getLink('Translation Import Queue').click()
   >>> print browser.getLink(url='en-US.xpi').url
   http://.../en-US.xpi
-  >>> browser.getLink(url='imports/3').click()
+  >>> browser.getLink(url='/+imports/').click()
   >>> print browser.url
-  http://translations.launchpad.dev/+imports/3
+  http://translations.launchpad.dev/+imports/...
+  >>> qid = int(browser.url.rsplit('/', 1)[-1])
 
 All new entries need to get a template name to identify them in the context
 where will be imported. In this case, it's 'firefox'.
@@ -50,5 +51,5 @@ where will be imported. In this case, it's 'firefox'.
   >>> browser.getControl('Approve').click()
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+imports
-  >>> browser.getControl(name='field.status_3').value
+  >>> browser.getControl(name='field.status_%d' % qid).value
   ['APPROVED']

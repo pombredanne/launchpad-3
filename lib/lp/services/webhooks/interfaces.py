@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AnyWebhookEventTypeVocabulary',
     'IWebhook',
     'IWebhookClient',
     'IWebhookDeliveryJob',
@@ -14,10 +15,11 @@ __all__ = [
     'IWebhookJobSource',
     'IWebhookSet',
     'IWebhookTarget',
+    'WEBHOOK_EVENT_TYPES',
     'WebhookDeliveryFailure',
     'WebhookDeliveryRetry',
     'WebhookFeatureDisabled',
-    'WebhookEventTypeVocabulary',
+    'ValidWebhookEventTypeVocabulary',
     ]
 
 import httplib
@@ -95,13 +97,28 @@ class WebhookDeliveryRetry(Exception):
     pass
 
 
-class WebhookEventTypeVocabulary(SimpleVocabulary):
+class AnyWebhookEventTypeVocabulary(SimpleVocabulary):
 
     def __init__(self, context):
         terms = [
             self.createTerm(key, key, value)
             for key, value in WEBHOOK_EVENT_TYPES.iteritems()]
-        super(WebhookEventTypeVocabulary, self).__init__(terms)
+        super(AnyWebhookEventTypeVocabulary, self).__init__(terms)
+
+
+class ValidWebhookEventTypeVocabulary(SimpleVocabulary):
+
+    def __init__(self, context):
+        # When creating a webhook, the context is the target; when editing
+        # an existing webhook, the context is the webhook itself.
+        if IWebhook.providedBy(context):
+            target = context.target
+        else:
+            target = context
+        terms = [
+            self.createTerm(key, key, WEBHOOK_EVENT_TYPES[key])
+            for key in target.valid_webhook_event_types]
+        super(ValidWebhookEventTypeVocabulary, self).__init__(terms)
 
 
 class IWebhook(Interface):
@@ -115,7 +132,7 @@ class IWebhook(Interface):
         required=True, readonly=True,
         description=_("The object for which this webhook receives events.")))
     event_types = exported(List(
-        Choice(vocabulary='WebhookEventType'), title=_("Event types"),
+        Choice(vocabulary='ValidWebhookEventType'), title=_("Event types"),
         required=True, readonly=False))
     registrant = exported(Reference(
         title=_("Registrant"), schema=IPerson, required=True, readonly=True,
@@ -194,6 +211,19 @@ class IWebhookTarget(Interface):
         title=_("Webhooks for this target."),
         value_type=Reference(schema=IWebhook),
         readonly=True)))
+
+    valid_webhook_event_types = List(
+        Choice(vocabulary='AnyWebhookEventType'), title=_("Valid event types"),
+        description=_("Valid event types for this object type."),
+        required=True, readonly=True)
+
+    default_webhook_event_types = List(
+        Choice(vocabulary='ValidWebhookEventType'),
+        title=_("Default event types"),
+        description=_(
+            "Default event types for new webhooks attached to this object "
+            "type."),
+        required=True, readonly=True)
 
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(

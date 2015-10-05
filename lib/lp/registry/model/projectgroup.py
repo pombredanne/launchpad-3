@@ -126,7 +126,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     name = StringCol(dbName='name', notNull=True)
-    displayname = StringCol(dbName='displayname', notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
     _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(dbName='description', notNull=True)
@@ -162,8 +162,12 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bug_reported_acknowledgement = StringCol(default=None)
 
     @property
+    def displayname(self):
+        return self.display_name
+
+    @property
     def title(self):
-        return self.displayname
+        return self.display_name
 
     @property
     def pillar_category(self):
@@ -174,7 +178,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         results = Store.of(self).find(
             Product, Product.projectgroup == self, Product.active == True,
             ProductSet.getProductPrivacyFilter(user))
-        return results.order_by(Product.displayname)
+        return results.order_by(Product.display_name)
 
     @cachedproperty
     def products(self):
@@ -549,7 +553,7 @@ class ProjectGroupSet:
             return None
         return pillar
 
-    def new(self, name, displayname, title, homepageurl, summary,
+    def new(self, name, display_name, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,
             registrant=None, bug_supervisor=None, driver=None):
         """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
@@ -557,7 +561,7 @@ class ProjectGroupSet:
             registrant = owner
         return ProjectGroup(
             name=name,
-            displayname=displayname,
+            display_name=display_name,
             _title=title,
             summary=summary,
             description=description,

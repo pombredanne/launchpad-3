@@ -10,12 +10,13 @@ __all__ = [
     'TipChanged',
     ]
 
-
 from zope.component.interfaces import (
     IObjectEvent,
     ObjectEvent,
     )
 from zope.interface import implementer
+
+from lp.services.webapp.publisher import canonical_url
 
 
 class ScannerEvent(ObjectEvent):
@@ -85,6 +86,7 @@ class TipChanged(ScannerEvent):
     @staticmethod
     def composeWebhookPayload(branch, old_revid, new_revid):
         return {
+            "bzr_branch": canonical_url(branch, force_local_path=True),
             "bzr_branch_path": branch.shortened_path,
             "old": {"revision_id": old_revid},
             "new": {"revision_id": new_revid},

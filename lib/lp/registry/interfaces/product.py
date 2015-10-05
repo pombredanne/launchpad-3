@@ -409,12 +409,14 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     on bugs, branches or specifications for the product.
     """
 
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_('Display Name'),
             description=_("""The name of the project as it would appear in a
                 paragraph.""")),
         exported_as='display_name')
+
+    displayname = Attribute('Display name (deprecated)')
 
     icon = exported(
         IconImageUpload(
@@ -986,21 +988,21 @@ class IProductSet(Interface):
 
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
-        displayname='display_name', projectgroup='project_group',
+        projectgroup='project_group',
         homepageurl='home_page_url', screenshotsurl='screenshots_url',
         freshmeatproject='freshmeat_project', wikiurl='wiki_url',
         downloadurl='download_url',
         sourceforgeproject='sourceforge_project',
         programminglang='programming_lang')
     @export_factory_operation(
-        IProduct, ['name', 'displayname', 'title', 'summary', 'description',
+        IProduct, ['name', 'display_name', 'title', 'summary', 'description',
                    'projectgroup', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
                    'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
-    def createProduct(owner, name, displayname, title, summary,
+    def createProduct(owner, name, display_name, title, summary,
                       description=None, projectgroup=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,

@@ -25,6 +25,7 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import extract_text
 from lp.testing.views import create_view
 
 
@@ -51,6 +52,7 @@ batch_nav_tag = soupmatchers.Tag(
 class GitRepositoryTestHelpers:
 
     event_type = "git:push:0.1"
+    expected_event_types = [("git:push:0.1", "Git push")]
 
     def makeTarget(self):
         return self.factory.makeGitRepository()
@@ -59,6 +61,7 @@ class GitRepositoryTestHelpers:
 class BranchTestHelpers:
 
     event_type = "bzr:push:0.1"
+    expected_event_types = [("bzr:push:0.1", "Bazaar push")]
 
     def makeTarget(self):
         return self.factory.makeBranch()
@@ -204,6 +207,18 @@ class TestWebhookAddViewBase(WebhookTargetViewTestHelpers):
             ['delivery_url'], [error.field_name for error in view.errors])
         self.assertIs(None, self.target.webhooks.one())
 
+    def test_event_types(self):
+        # Only event types that are valid for the target are offered.
+        browser = self.getUserBrowser(
+            canonical_url(self.target, view_name="+new-webhook"),
+            user=self.owner)
+        event_types = browser.getControl(name="field.event_types")
+        display_options = [
+            extract_text(option) for option in event_types.displayOptions]
+        self.assertContentEqual(
+            self.expected_event_types,
+            zip(event_types.options, display_options))
+
 
 class TestWebhookAddViewGitRepository(
     TestWebhookAddViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
@@ -288,6 +303,17 @@ class TestWebhookViewBase(WebhookViewTestHelpers):
                 delivery_url="http://example.com/original",
                 active=True,
                 event_types=[]))
+
+    def test_event_types(self):
+        # Only event types that are valid for the target are offered.
+        browser = self.getUserBrowser(
+            canonical_url(self.webhook, view_name="+index"), user=self.owner)
+        event_types = browser.getControl(name="field.event_types")
+        display_options = [
+            extract_text(option) for option in event_types.displayOptions]
+        self.assertContentEqual(
+            self.expected_event_types,
+            zip(event_types.options, display_options))
 
 
 class TestWebhookViewGitRepository(

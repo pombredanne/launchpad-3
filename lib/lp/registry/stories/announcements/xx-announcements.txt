@@ -674,7 +674,7 @@ Retracted items do not show up either.
     >>> for id_ in parse_ids(nopriv_browser.contents):
     ...     print extract_text(id_)
     tag:launchpad.net,2006-10-16:/guadalinex/+announcements
-    tag:launchpad.net,...:/+announcement/28
+    tag:launchpad.net,...:/+announcement/...
 
     >>> priv_browser.open('http://launchpad.dev/guadalinex/+announcements')
     >>> "Kubuntu announcement headline" in (
@@ -708,9 +708,9 @@ products.
     >>> for id_ in parse_ids(nopriv_browser.contents):
     ...     print extract_text(id_)
     tag:launchpad.net,2004-09-24:/apache/+announcements
-    tag:launchpad.net,...:/+announcement/26
-    tag:launchpad.net,...:/+announcement/24
-    tag:launchpad.net,...:/+announcement/25
+    tag:launchpad.net,...:/+announcement/...
+    tag:launchpad.net,...:/+announcement/...
+    tag:launchpad.net,...:/+announcement/...
 
     >>> strainer = SoupStrainer('link', rel='self')
     >>> links = parse_links(nopriv_browser.contents, rel='self')
