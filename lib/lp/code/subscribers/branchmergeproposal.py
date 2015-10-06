@@ -54,8 +54,13 @@ def merge_proposal_modified(merge_proposal, event):
     # cover that.
     old_status = event.object_before_modification.queue_status
     new_status = merge_proposal.queue_status
+
+    in_progress_states = (
+        BranchMergeProposalStatus.WORK_IN_PROGRESS,
+        BranchMergeProposalStatus.NEEDS_REVIEW)
+
     if (old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS and
-            new_status == BranchMergeProposalStatus.NEEDS_REVIEW):
+            new_status in in_progress_states):
         return
     # Create a delta of the changes.  If there are no changes to report, then
     # we're done.
