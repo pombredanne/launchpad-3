@@ -402,7 +402,7 @@ You can add an attachment...
 
     >>> print attachment_change.getBugNotification()['text']
     ** Attachment added: "sample-attachment"
-    http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/...
+    http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/...
 
 Or remove one.
 
@@ -419,7 +419,7 @@ Or remove one.
 
     >>> print attachment_change.getBugNotification()['text']
     ** Attachment removed: "sample-attachment"
-    http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/...
+    http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/...
 
 
 == BugTaskAttributeChange ==
