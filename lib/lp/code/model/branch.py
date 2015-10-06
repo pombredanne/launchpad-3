@@ -13,6 +13,7 @@ import operator
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
+from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -96,7 +97,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewBranchMergeProposalEvent,
     )
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
@@ -603,7 +603,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             bmp.nominateReviewer(
                 reviewer, registrant, review_type, _notify_listeners=False)
 
-        notify(NewBranchMergeProposalEvent(bmp))
+        notify(ObjectCreatedEvent(bmp, user=registrant))
         if needs_review:
             notify(BranchMergeProposalNeedsReviewEvent(bmp))
 

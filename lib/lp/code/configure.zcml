@@ -279,7 +279,7 @@
 
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           lp.code.interfaces.event.INewBranchMergeProposalEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_created"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
@@ -291,7 +291,7 @@
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_modified"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           lp.code.interfaces.event.INewBranchMergeProposalEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.subscribers.karma.branch_merge_proposed"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal

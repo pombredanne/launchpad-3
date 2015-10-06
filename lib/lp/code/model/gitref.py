@@ -9,6 +9,7 @@ __all__ = [
 
 from urllib import quote_plus
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
 from storm.locals import (
     DateTime,
@@ -33,7 +34,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewBranchMergeProposalEvent,
     )
 from lp.code.interfaces.branch import WrongNumberOfReviewTypeArguments
 from lp.code.interfaces.branchmergeproposal import (
@@ -337,7 +337,7 @@ class GitRef(StormBase, GitRefMixin):
             bmp.nominateReviewer(
                 reviewer, registrant, review_type, _notify_listeners=False)
 
-        notify(NewBranchMergeProposalEvent(bmp))
+        notify(ObjectCreatedEvent(bmp, user=registrant))
         if needs_review:
             notify(BranchMergeProposalNeedsReviewEvent(bmp))
 

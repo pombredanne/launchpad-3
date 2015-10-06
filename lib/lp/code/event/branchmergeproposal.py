@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeProposalNeedsReviewEvent',
-    'NewBranchMergeProposalEvent',
     'NewCodeReviewCommentEvent',
     'ReviewerNominatedEvent',
     ]
@@ -16,15 +15,9 @@ from zope.interface import implementer
 
 from lp.code.interfaces.event import (
     IBranchMergeProposalNeedsReviewEvent,
-    INewBranchMergeProposalEvent,
     INewCodeReviewCommentEvent,
     IReviewerNominatedEvent,
     )
-
-
-@implementer(INewBranchMergeProposalEvent)
-class NewBranchMergeProposalEvent(ObjectEvent):
-    """A new merge has been proposed."""
 
 
 @implementer(IBranchMergeProposalNeedsReviewEvent)
