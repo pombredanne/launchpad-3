@@ -204,8 +204,10 @@ The comments on a branch merge proposal are exposed through the API.
     vote_tag: u'code'
     web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
+    >>> comment_2_id = all_comments['entries'][1]['id']
     >>> comment_2 = webservice.named_get(
-    ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
+    ...     merge_proposal['self_link'], 'getComment',
+    ...     id=comment_2_id).jsonBody()
     >>> pprint_entry(comment_2)
     as_quoted_email: u'> This is mediocre work.'
     author_link: u'http://api.launchpad.dev/devel/~...'
@@ -476,5 +478,5 @@ return this review.
     ...     ).jsonBody()
     >>> for proposal in proposals['entries']:
     ...     print_proposal(proposal)
-    http://.../~source/blob/foo/+merge/4 - Needs review
+    http://.../~source/blob/foo/+merge/... - Needs review
 

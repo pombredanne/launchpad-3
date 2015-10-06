@@ -544,7 +544,7 @@ If the source package was created from a recipe build, link to it.
     ...
 
     >>> print anon_browser.getLink('~cprov/product/mybranch recipe build').url
-    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+recipebuild/1
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+recipebuild/...
 
 Finally, the 'Build files' section is identical for PPA builds.
 

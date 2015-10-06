@@ -40,21 +40,13 @@ source packages.
 Let's make sure the newly created package set is present.
 
     >>> login('foo.bar@canonical.com')
-    >>> import operator
-    >>> def sort_by_id(iterable):
-    ...     return sorted(iterable, key=operator.attrgetter('id'))
-    >>> def print_data(iterable):
-    ...     for datum in sort_by_id(iterable):
-    ...          print('%3d -> %s' % (datum.id, datum.name))
-
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.interfaces.packageset import (
     ...     IPackagesetSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ps_factory = getUtility(IPackagesetSet)
-    >>> print_data(
-    ...     (ps_factory.getByName(ubuntu.currentseries, u'umbrella'), ))
-    1 -> umbrella
+    >>> print ps_factory.getByName(ubuntu.currentseries, u'umbrella').name
+    umbrella
 
 Can we access it via the webservice API as well?
 
