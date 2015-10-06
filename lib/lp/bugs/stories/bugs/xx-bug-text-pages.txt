@@ -215,7 +215,7 @@ The only differences are the download URLs of bug attachments:
     ...             if bug_lines[line_no] != bug_task_lines[line_no]:
     ...                 print bug_lines[line_no]
     ...                 print bug_task_lines[line_no]
-    http://bugs.launchpad.dev/bugs/1/+attachment/1/+files/file_a.txt text/html
+    http://bugs.launchpad.dev/bugs/1/+attachment/.../+files/file_a.txt text/html
     http://bugs.launchpad.dev/firefox/+bug/.../+files/file_a.txt text/html
     http://bugs.launchpad.dev/bugs/1/.../+files/file%20with%20space.txt...
     http://bugs.launchpad.dev/firefox/+bug/.../+files/file%20with%20space.txt...

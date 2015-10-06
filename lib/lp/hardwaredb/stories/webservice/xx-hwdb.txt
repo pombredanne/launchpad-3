@@ -179,7 +179,7 @@ call returns a reference to a HWDeviceClass record.
     >>> pprint_entry(class_info)
     main_class: 12
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/...'
     sub_class: 3
 
 A second call of this method returns the same record.
@@ -188,7 +188,7 @@ A second call of this method returns the same record.
     ...     '/+hwdb/+device/2', 'getOrCreateDeviceClass', {}, main_class=12,
     ...     sub_class=3).jsonBody()
     >>> print class_info['self_link']
-    http://api.launchpad.dev/beta/+hwdb/+deviceclass/1
+    http://api.launchpad.dev/beta/+hwdb/+deviceclass/...
 
 The property device.classes returns the collection of all classes
 assigned to the device.
@@ -198,7 +198,7 @@ assigned to the device.
     ...     pprint_entry(entry)
     main_class: 12
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/...'
     sub_class: 3
 
 We can delete existing class data by calling deviceclass.delete().

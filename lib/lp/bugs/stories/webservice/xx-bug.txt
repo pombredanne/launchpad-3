@@ -1250,7 +1250,7 @@ An attachment can be added to the bug:
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
-    Location: http://.../bugs/1/+attachment/1
+    Location: http://.../bugs/1/+attachment/...
     ...
 
 Now, bug 1 has one attachment:
@@ -1263,13 +1263,13 @@ Now, bug 1 has one attachment:
     total_size: 1
     ---
     bug_link: u'http://.../bugs/1'
-    data_link: u'http://.../bugs/1/+attachment/1/data'
+    data_link: u'http://.../bugs/1/+attachment/.../data'
     message_link: u'http://.../firefox/+bug/1/comments/2'
     resource_type_link: u'http://.../#bug_attachment'
-    self_link: u'http://.../bugs/1/+attachment/1'
+    self_link: u'http://.../bugs/1/+attachment/...'
     title: u'numbers.txt'
     type: u'Unspecified'
-    web_link: u'http://bugs.../bugs/1/+attachment/1'
+    web_link: u'http://bugs.../bugs/1/+attachment/...'
     ---
 
 The attachment can be fetched directly:
@@ -1277,13 +1277,13 @@ The attachment can be fetched directly:
     >>> [attachment] = attachments['entries']
     >>> pprint_entry(webservice.get(attachment['self_link']).jsonBody())
     bug_link: u'http://.../bugs/1'
-    data_link: u'http://.../bugs/1/+attachment/1/data'
+    data_link: u'http://.../bugs/1/+attachment/.../data'
     message_link: u'http://.../firefox/+bug/1/comments/2'
     resource_type_link: u'http://.../#bug_attachment'
-    self_link: u'http://.../bugs/1/+attachment/1'
+    self_link: u'http://.../bugs/1/+attachment/...'
     title: u'numbers.txt'
     type: u'Unspecified'
-    web_link: u'http://bugs.../bugs/1/+attachment/1'
+    web_link: u'http://bugs.../bugs/1/+attachment/...'
 
 Fetching the data actually yields a redirect to the Librarian, which
 we must follow to download the data.

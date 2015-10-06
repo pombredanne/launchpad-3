@@ -41,7 +41,7 @@ We can check that the attachment is there
 
   >>> link = user_browser.getLink('Some information')
   >>> link.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1/+files/foo.txt'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/.../+files/foo.txt'
 
   >>> 'Added some information' in user_browser.contents
   True
@@ -113,7 +113,7 @@ the flag "this attachment is a patch"...
 ...we are redirected to a page...
 
   >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/4/+confirm-is-patch'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/.../+confirm-is-patch'
 
 ...where we see a message that we should double-check if this file
 is indeed not a patch.
@@ -169,7 +169,7 @@ if we set the "patch" flag for this attachment...
 is indeed a patch.
 
   >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/5/+confirm-is-patch'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/.../+confirm-is-patch'
 
 ...where we see a message asking us if we really ant to declare this file
 as a patch.
@@ -260,9 +260,9 @@ We can also edit the attachment details, let's navigate to that page.
 
     >>> import re
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> user_browser.getLink(url=re.compile(r'[+]attachment/1$')).click()
+    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d+$')).click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1'
+    'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/...'
 
     >>> 'Edit attachment' in user_browser.contents
     True
@@ -290,7 +290,7 @@ whitespace to test that's correctly stripped)...
 
 We can edit the attachment to be a patch.
 
-    >>> user_browser.getLink(url=re.compile(r'[+]attachment/1$')).click()
+    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d+$')).click()
     >>> patch_control = user_browser.getControl(
     ...     'This attachment contains a solution (patch) for this bug')
     >>> patch_control.selected = True
@@ -301,7 +301,7 @@ is doesn't, and we get the edit page again, with a message asking us if
 the attachment should indeed be labeled as a patch
 
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1/+confirm-is-patch'
+    'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/.../+confirm-is-patch'
 
     >>> print extract_text(find_tags_by_class(
     ...     user_browser.contents, 'documentDescription')[0])
