@@ -523,14 +523,22 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
                 if check_permission('launchpad.View', proposal)]
 
     @property
-    def recipe_count_text(self):
+    def recipes_link(self):
+        """A link to recipes for this branch."""
         count = self.context.recipes.count()
         if count == 0:
-            return 'No recipes'
+            # Nothing to link to.
+            return 'No recipes using this branch.'
         elif count == 1:
-            return '1 recipe'
+            # Link to the single recipe.
+            return structured(
+                '<a href="%s">1 recipe</a> using this branch.',
+                canonical_url(self.context.recipes.one())).escapedtext
         else:
-            return '%s recipes' % count
+            # Link to a recipe listing.
+            return structured(
+                '<a href="+recipes">%s recipes</a> using this branch.',
+                count).escapedtext
 
     @property
     def is_import_branch_with_no_landing_candidates(self):

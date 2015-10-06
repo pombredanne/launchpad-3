@@ -10,15 +10,7 @@
   <div id="recipe-links" class="actions">
     <div id="recipe-summary">
       <img src="/@@/source-package-recipe" />
-      <tal:no-recipes condition="not: view/context/recipes/count">
-      No recipes
-      </tal:no-recipes>
-      <tal:recipes condition="view/context/recipes/count">
-        <a href="+recipes" tal:content="structure view/recipe_count_text">
-          1 branch
-        </a>
-      </tal:recipes>
-      using this branch.
+      <tal:recipes replace="structure view/recipes_link" />
 
       <a href="/+help-code/related-recipes.html" target="help"
          class="sprite maybe action-icon">(?)</a>
