@@ -544,11 +544,11 @@
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           lp.code.interfaces.event.INewCodeReviewCommentEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.mail.codereviewcomment.send"/>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           lp.code.interfaces.event.INewCodeReviewCommentEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.subscribers.karma.code_review_comment_added"/>
 
   <!-- CodeReviewInlineComment -->

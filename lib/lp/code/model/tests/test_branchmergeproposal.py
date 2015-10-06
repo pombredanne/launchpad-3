@@ -41,7 +41,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
 from lp.code.interfaces.branchmergeproposal import (
@@ -516,7 +515,7 @@ class TestCreateCommentNotifications(TestCaseWithFactory):
         commenter = self.factory.makePerson()
         login_person(commenter)
         result, events = self.assertNotifies(
-            NewCodeReviewCommentEvent, False,
+            ObjectCreatedEvent, False,
             merge_proposal.createComment,
             owner=commenter,
             subject='A review.')
