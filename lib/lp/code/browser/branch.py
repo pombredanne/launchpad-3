@@ -200,7 +200,7 @@ class BranchNavigation(WebhookTargetNavigationMixin, Navigation):
 
     @stepthrough("+subscription")
     def traverse_subscription(self, name):
-        """Traverses to an `IBranchSubcription`."""
+        """Traverses to an `IBranchSubscription`."""
         person = getUtility(IPersonSet).getByName(name)
 
         if person is not None:

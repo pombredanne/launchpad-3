@@ -155,7 +155,7 @@ class GitRepositoryNavigation(WebhookTargetNavigationMixin, Navigation):
 
     @stepthrough("+subscription")
     def traverse_subscription(self, name):
-        """Traverses to an `IGitSubcription`."""
+        """Traverses to an `IGitSubscription`."""
         person = getUtility(IPersonSet).getByName(name)
 
         if person is not None:
