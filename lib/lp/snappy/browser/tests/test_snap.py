@@ -44,7 +44,6 @@ from lp.snappy.interfaces.snap import (
     SnapFeatureDisabled,
     )
 from lp.testing import (
-    admin_logged_in,
     BrowserTestCase,
     login,
     login_person,
@@ -342,6 +341,19 @@ class TestSnapEditView(BrowserTestCase):
             das.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
         return distroseries
 
+    def assertSnapProcessors(self, snap, names):
+        self.assertContentEqual(
+            names, [processor.name for processor in snap.processors])
+
+    def assertProcessorControls(self, processors_control, enabled, disabled):
+        matchers = [
+            MatchesStructure.byEquality(optionValue=name, disabled=False)
+            for name in enabled]
+        matchers.extend([
+            MatchesStructure.byEquality(optionValue=name, disabled=True)
+            for name in disabled])
+        self.assertThat(processors_control.controls, MatchesSetwise(*matchers))
+
     def test_display_processors(self):
         distroseries = self.setUpDistroSeries()
         snap = self.factory.makeSnap(
@@ -359,18 +371,14 @@ class TestSnapEditView(BrowserTestCase):
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=distroseries)
-        self.assertContentEqual(
-            ["386", "amd64", "hppa"],
-            [processor.name for processor in snap.processors])
+        self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
         self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
         processors.value = ["386", "amd64"]
         browser.getControl("Update snap package").click()
         login_person(self.person)
-        self.assertContentEqual(
-            ["386", "amd64"],
-            [processor.name for processor in snap.processors])
+        self.assertSnapProcessors(snap, ["386", "amd64"])
 
     def test_edit_with_invisible_processor(self):
         # It's possible for existing snap packages to have an enabled
@@ -387,17 +395,14 @@ class TestSnapEditView(BrowserTestCase):
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=distroseries)
-        with admin_logged_in():
-            snap.setProcessors([proc_386, proc_amd64, proc_armel])
+        snap.setProcessors([proc_386, proc_amd64, proc_armel])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
         self.assertContentEqual(["386", "amd64"], processors.value)
         processors.value = ["amd64"]
         browser.getControl("Update snap package").click()
         login_person(self.person)
-        self.assertContentEqual(
-            ["amd64", "armel"],
-            [processor.name for processor in snap.processors])
+        self.assertSnapProcessors(snap, ["amd64", "armel"])
 
     def test_edit_processors_restricted(self):
         # A restricted processor is shown disabled in the UI and cannot be
@@ -413,23 +418,12 @@ class TestSnapEditView(BrowserTestCase):
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=distroseries)
-        self.assertContentEqual(
-            ["386", "amd64", "hppa"],
-            [processor.name for processor in snap.processors])
+        self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
         self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
-        self.assertThat(
-            processors.controls, MatchesSetwise(
-                MatchesStructure.byEquality(
-                    optionValue="386", disabled=False),
-                MatchesStructure.byEquality(
-                    optionValue="amd64", disabled=False),
-                MatchesStructure.byEquality(
-                    optionValue="armhf", disabled=True),
-                MatchesStructure.byEquality(
-                    optionValue="hppa", disabled=False),
-                ))
+        self.assertProcessorControls(
+            processors, ["386", "amd64", "hppa"], ["armhf"])
         # Even if the user works around the disabled checkbox and forcibly
         # enables it, they can't enable the restricted processor.
         for control in processors.controls:
@@ -439,6 +433,36 @@ class TestSnapEditView(BrowserTestCase):
         self.assertRaises(
             CannotModifySnapProcessor,
             browser.getControl("Update snap package").click)
+
+    def test_edit_processors_restricted_already_enabled(self):
+        # A restricted processor that is already enabled is shown disabled
+        # in the UI.  This causes form submission to omit it, but the
+        # validation code fixes that up behind the scenes so that we don't
+        # get CannotModifySnapProcessor.
+        proc_386 = getUtility(IProcessorSet).getByName("386")
+        proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
+        proc_armhf = self.factory.makeProcessor(
+            name="armhf", restricted=True, build_by_default=False)
+        distroseries = self.setUpDistroSeries()
+        das_armhf = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="armhf",
+            processor=proc_armhf)
+        das_armhf.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=distroseries)
+        snap.setProcessors([proc_386, proc_amd64, proc_armhf])
+        self.assertSnapProcessors(snap, ["386", "amd64", "armhf"])
+        browser = self.getUserBrowser(
+            canonical_url(snap) + "/+edit", user=snap.owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(["386", "amd64"], processors.value)
+        self.assertProcessorControls(
+            processors, ["386", "amd64", "hppa"], ["armhf"])
+        processors.value = ["386"]
+        browser.getControl("Update snap package").click()
+        login_person(self.person)
+        self.assertSnapProcessors(snap, ["386", "armhf"])
 
 
 class TestSnapDeleteView(BrowserTestCase):
