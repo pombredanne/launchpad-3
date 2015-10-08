@@ -31,7 +31,6 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.bugs.model.cvereference import CveReference
 from lp.services.database import bulk
@@ -41,7 +40,6 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormexpr import fti_search
-from lp.services.features import getFeatureFlag
 from lp.services.xref.interfaces import IXRefSet
 from lp.services.xref.model import XRef
 
@@ -77,14 +75,9 @@ class Cve(SQLBase, BugLinkTargetMixin):
 
     @property
     def bugs(self):
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            bug_ids = [
-                int(id) for _, id in getUtility(IXRefSet).findFrom(
-                    (u'cve', self.sequence), types=[u'bug'])]
-        else:
-            bug_ids = list(IStore(BugCve).find(
-                BugCve,
-                BugCve.cve == self).values(BugCve.bugID))
+        bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'cve', self.sequence), types=[u'bug'])]
         return list(sorted(
             bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
@@ -100,16 +93,12 @@ class Cve(SQLBase, BugLinkTargetMixin):
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
-            BugCve(cve=self, bug=bug)
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
             {(u'cve', self.sequence): {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
-            Store.of(self).find(BugCve, cve=self, bug=bug).remove()
         getUtility(IXRefSet).delete(
             {(u'cve', self.sequence): [(u'bug', unicode(bug.id))]})
 
@@ -202,27 +191,12 @@ class CveSet:
             return []
         store = Store.of(bugtasks[0])
 
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            xrefs = getUtility(IXRefSet).findFromMany(
-                [(u'bug', unicode(bug.id)) for bug in bugs], types=[u'cve'])
-            bugcve_ids = set()
-            for bug_key in xrefs:
-                for cve_key in xrefs[bug_key]:
-                    bugcve_ids.add((int(bug_key[1]), cve_key[1]))
-        else:
-            # Do not use BugCve instances: Storm may need a very long time
-            # to look up the bugs and CVEs referenced by a BugCve instance
-            # when the +cve view of a distroseries is rendered: There may
-            # be a few thousand (bug, CVE) tuples, while the number of bugs
-            # and CVEs is in the order of hundred. It is much more efficient
-            # to retrieve just (Bug.id, Cve.sequence) from the BugCve
-            # table and to map this to (Bug, CVE) here, instead of
-            # letting Storm look up the CVE and bug for a BugCve
-            # instance, even if bugs and CVEs are bulk loaded.
-            bug_ids = [bug.id for bug in bugs]
-            bugcve_ids = store.find(
-                (BugCve.bugID, Cve.sequence),
-                Cve.id == BugCve.cveID, In(BugCve.bugID, bug_ids))
+        xrefs = getUtility(IXRefSet).findFromMany(
+            [(u'bug', unicode(bug.id)) for bug in bugs], types=[u'cve'])
+        bugcve_ids = set()
+        for bug_key in xrefs:
+            for cve_key in xrefs[bug_key]:
+                bugcve_ids.add((int(bug_key[1]), cve_key[1]))
 
         bugcve_ids = list(sorted(bugcve_ids))
 
@@ -241,8 +215,5 @@ class CveSet:
 
     def getBugCveCount(self):
         """See ICveSet."""
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            return IStore(XRef).find(
-                XRef, XRef.from_type == u'bug', XRef.to_type == u'cve').count()
-        else:
-            return BugCve.select().count()
+        return IStore(XRef).find(
+            XRef, XRef.from_type == u'bug', XRef.to_type == u'cve').count()

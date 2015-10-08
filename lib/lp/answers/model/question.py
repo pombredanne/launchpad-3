@@ -77,7 +77,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.coop.answersbugs.model import QuestionBug
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -101,7 +100,6 @@ from lp.services.database.constants import (
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     cursor,
@@ -110,7 +108,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import rank_by_fti
-from lp.services.features import getFeatureFlag
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.messages.model.message import (
@@ -665,30 +662,21 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def bugs(self):
         from lp.bugs.model.bug import Bug
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            bug_ids = [
-                int(id) for _, id in getUtility(IXRefSet).findFrom(
-                    (u'question', unicode(self.id)), types=[u'bug'])]
-        else:
-            bug_ids = list(IStore(QuestionBug).find(
-                QuestionBug,
-                QuestionBug.question == self).values(QuestionBug.bugID))
+        bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'question', unicode(self.id)), types=[u'bug'])]
         return list(sorted(
             bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
     # IBugLinkTarget implementation
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
-            QuestionBug(question=self, bug=bug)
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
             {(u'question', unicode(self.id)): {(u'bug', unicode(bug.id)): {}}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
-            Store.of(self).find(QuestionBug, question=self, bug=bug).remove()
         getUtility(IXRefSet).delete(
             {(u'question', unicode(self.id)): [(u'bug', unicode(bug.id))]})
 
@@ -716,38 +704,26 @@ class QuestionSet:
         # This query joins to bugtasks that are not BugTaskStatus.INVALID
         # because there are many bugtasks to one question. A question is
         # included when BugTask.status IS NULL.
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            bugtask_join = """
-                    LEFT OUTER JOIN XRef ON (
-                        XRef.from_type = 'question'
-                        AND XRef.from_id_int = Question.id
-                        AND XRef.to_type = 'bug')
-                    LEFT OUTER JOIN BugTask ON (
-                        BugTask.bug = XRef.to_id_int
-                        AND BugTask.status != %s)
-                """
-        else:
-            bugtask_join = """
-                    LEFT OUTER JOIN QuestionBug
-                        ON Question.id = QuestionBug.question
-                    LEFT OUTER JOIN BugTask ON (
-                        BugTask.bug = QuestionBug.bug
-                        AND BugTask.status != %s)
-                """
-        return Question.select(("""
+        return Question.select("""
             id in (SELECT Question.id
                 FROM Question
-                    %s
+                LEFT OUTER JOIN XRef ON (
+                    XRef.from_type = 'question'
+                    AND XRef.from_id_int = Question.id
+                    AND XRef.to_type = 'bug')
+                LEFT OUTER JOIN BugTask ON (
+                    BugTask.bug = XRef.to_id_int
+                    AND BugTask.status != %s)
                 WHERE
-                    Question.status IN (%%s, %%s)
+                    Question.status IN (%s, %s)
                     AND (Question.datelastresponse IS NULL
                          OR Question.datelastresponse < (CURRENT_TIMESTAMP
-                            AT TIME ZONE 'UTC' - interval '%%s days'))
+                            AT TIME ZONE 'UTC' - interval '%s days'))
                     AND Question.datelastquery < (CURRENT_TIMESTAMP
-                            AT TIME ZONE 'UTC' - interval '%%s days')
+                            AT TIME ZONE 'UTC' - interval '%s days')
                     AND Question.assignee IS NULL
                     AND BugTask.status IS NULL)
-            """ % bugtask_join) % sqlvalues(
+            """ % sqlvalues(
                 BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))

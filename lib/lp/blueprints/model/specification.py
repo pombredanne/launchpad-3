@@ -64,7 +64,6 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.blueprints.model.specificationbranch import SpecificationBranch
-from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.blueprints.model.specificationdependency import (
     SpecificationDependency,
     )
@@ -102,7 +101,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -796,22 +794,14 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     @property
     def bugs(self):
         from lp.bugs.model.bug import Bug
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            bug_ids = [
-                int(id) for _, id in getUtility(IXRefSet).findFrom(
-                    (u'specification', unicode(self.id)), types=[u'bug'])]
-        else:
-            bug_ids = list(IStore(SpecificationBug).find(
-                SpecificationBug,
-                SpecificationBug.specification == self).values(
-                    SpecificationBug.bugID))
+        bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'specification', unicode(self.id)), types=[u'bug'])]
         return list(sorted(
             bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
-            SpecificationBug(specification=self, bug=bug)
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
             {(u'specification', unicode(self.id)):
@@ -819,9 +809,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        if not getFeatureFlag('bugs.xref_buglinks.write_old.disabled'):
-            Store.of(self).find(
-                SpecificationBug, specification=self, bug=bug).remove()
         getUtility(IXRefSet).delete(
             {(u'specification', unicode(self.id)):
                 [(u'bug', unicode(bug.id))]})
