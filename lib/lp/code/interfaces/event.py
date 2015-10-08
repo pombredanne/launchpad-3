@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'IBranchMergeProposalStatusChangeEvent',
     'IBranchMergeProposalNeedsReviewEvent',
     'IGitRefsUpdatedEvent',
     'INewBranchMergeProposalEvent',
@@ -15,15 +14,6 @@ __all__ = [
 
 
 from zope.component.interfaces import IObjectEvent
-from zope.interface import Attribute
-
-
-class IBranchMergeProposalStatusChangeEvent(IObjectEvent):
-    """A merge proposal has changed state."""
-
-    user = Attribute("The user who updated the proposal.")
-    from_state = Attribute("The previous queue_status.")
-    to_state = Attribute("The updated queue_status.")
 
 
 class INewBranchMergeProposalEvent(IObjectEvent):

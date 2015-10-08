@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -514,7 +514,7 @@ class TestCreateCommentNotifications(TestCaseWithFactory):
         commenter = self.factory.makePerson()
         login_person(commenter)
         result, events = self.assertNotifies(
-            NewCodeReviewCommentEvent,
+            NewCodeReviewCommentEvent, False,
             merge_proposal.createComment,
             owner=commenter,
             subject='A review.')
@@ -661,7 +661,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
             [NewBranchMergeProposalEvent,
-             BranchMergeProposalNeedsReviewEvent],
+             BranchMergeProposalNeedsReviewEvent], False,
             source_branch.addLandingTarget, registrant, target_branch,
             needs_review=True)
         self.assertEqual(result, events[0].object)
@@ -674,7 +674,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             product=source_branch.product)
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
-            [NewBranchMergeProposalEvent],
+            [NewBranchMergeProposalEvent], False,
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, events[0].object)
 
@@ -685,7 +685,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         with person_logged_in(bmp.registrant):
             self.assertNotifies(
-                [BranchMergeProposalNeedsReviewEvent],
+                [BranchMergeProposalNeedsReviewEvent], False,
                 bmp.setStatus, BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def test_needs_review_no_op(self):
@@ -1285,7 +1285,7 @@ class TestNotifyModified(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         login_person(bmp.target_branch.owner)
         self.assertNotifies(
-            ObjectModifiedEvent, notify_modified, bmp, bmp.markAsMerged,
+            ObjectModifiedEvent, False, notify_modified, bmp, bmp.markAsMerged,
             merge_reporter=bmp.target_branch.owner)
         self.assertEqual(BranchMergeProposalStatus.MERGED, bmp.queue_status)
         self.assertEqual(bmp.target_branch.owner, bmp.merge_reporter)
@@ -1305,7 +1305,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         result, events = self.assertNotifies(
-            ReviewerNominatedEvent,
+            ReviewerNominatedEvent, False,
             merge_proposal.nominateReviewer,
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner)
