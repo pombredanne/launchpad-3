@@ -51,6 +51,7 @@ from lp.code.errors import (
     GitRepositoryExists,
     GitTargetError,
     )
+from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
@@ -1864,7 +1865,7 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
         hosting_client.detectMerges = FakeMethod(
             result={source_1.commit_sha1: u"0" * 40})
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
-        repository.createOrUpdateRefs({
+        refs_info = {
             u"refs/heads/target-1": {
                 u"sha1": u"0" * 40,
                 u"type": GitObjectType.COMMIT,
@@ -1872,8 +1873,12 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             u"refs/heads/target-2": {
                 u"sha1": u"1" * 40,
                 u"type": GitObjectType.COMMIT,
-                }
-            })
+                },
+            }
+        expected_events = [
+            ObjectModifiedEvent, ObjectModifiedEvent, GitRefsUpdatedEvent]
+        _, events = self.assertNotifies(
+            expected_events, True, repository.createOrUpdateRefs, refs_info)
         expected_args = [
             (repository.getInternalPath(), target_1.commit_sha1,
              set([source_1.commit_sha1, source_2.commit_sha1])),
@@ -1888,6 +1893,15 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             BranchMergeProposalStatus.WORK_IN_PROGRESS, bmp2.queue_status)
         self.assertEqual(BranchMergeProposalStatus.MERGED, bmp3.queue_status)
         self.assertEqual(u"0" * 40, bmp3.merged_revision_id)
+        # The two ObjectModifiedEvents indicate the queue_status changes.
+        self.assertContentEqual(
+            [bmp1, bmp3], [event.object for event in events[:2]])
+        self.assertContentEqual(
+            [(BranchMergeProposalStatus.WORK_IN_PROGRESS,
+              BranchMergeProposalStatus.MERGED)],
+            set((event.object_before_modification.queue_status,
+                 event.object.queue_status)
+                for event in events[:2]))
 
 
 class TestGitRepositorySet(TestCaseWithFactory):

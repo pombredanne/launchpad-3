@@ -58,7 +58,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    BranchMergeProposalStatusChangeEvent,
     NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
@@ -577,7 +576,6 @@ class BranchMergeProposal(SQLBase):
                         _date_reviewed=None):
         """Set the proposal to next_state."""
         # Check the reviewer can review the code for the target branch.
-        old_state = self.queue_status
         if not self.merge_target.isPersonTrustedReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
@@ -589,8 +587,6 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = _date_reviewed
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
-        notify(BranchMergeProposalStatusChangeEvent(
-                self, reviewer, old_state, next_state))
 
     def approveBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""

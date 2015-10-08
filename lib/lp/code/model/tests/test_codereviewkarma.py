@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for karma allocated for code reviews."""
 
 __metaclass__ = type
 
+from lp.code.interfaces.branchmergeproposal import notify_modified
 from lp.registry.interfaces.karma import IKarmaAssignedEvent
 from lp.registry.interfaces.person import IPerson
 from lp.testing import (
@@ -113,7 +114,9 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal()
         reviewer = proposal.target_branch.owner
         self.karma_events = []
-        proposal.approveBranch(reviewer, "A rev id.")
+        login_person(reviewer)
+        notify_modified(
+            proposal, proposal.approveBranch, reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergeapproved')
 
     def test_approvingOwnCodeReview(self):
@@ -123,7 +126,9 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch, registrant=reviewer)
         self.karma_events = []
-        proposal.approveBranch(reviewer, "A rev id.")
+        login_person(reviewer)
+        notify_modified(
+            proposal, proposal.approveBranch, reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergeapprovedown')
 
     def test_rejectedCodeReview(self):
@@ -132,7 +137,8 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal()
         reviewer = proposal.target_branch.owner
         self.karma_events = []
-        proposal.rejectBranch(reviewer, "A rev id.")
+        login_person(reviewer)
+        notify_modified(proposal, proposal.rejectBranch, reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergerejected')
 
     def test_rejectedOwnCodeReview(self):
@@ -144,5 +150,6 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch, registrant=reviewer)
         self.karma_events = []
-        proposal.rejectBranch(reviewer, "A rev id.")
+        login_person(reviewer)
+        notify_modified(proposal, proposal.rejectBranch, reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergerejectedown')

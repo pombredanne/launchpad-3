@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Event subscribers for branch merge proposals."""
@@ -49,14 +49,19 @@ def merge_proposal_modified(merge_proposal, event):
         from_person = None
     else:
         from_person = IPerson(event.user)
-    # If the merge proposal was work in progress, then we don't want to send
-    # out an email as the needs review email will cover that.
+    # If the merge proposal was work in progress and is now needs review,
+    # then we don't want to send out an email as the needs review email will
+    # cover that.
     old_status = event.object_before_modification.queue_status
-    if old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
-        # Unless the new status is merged.  If this occurs we really should
-        # send out an email.
-        if merge_proposal.queue_status != BranchMergeProposalStatus.MERGED:
-            return
+    new_status = merge_proposal.queue_status
+
+    in_progress_states = (
+        BranchMergeProposalStatus.WORK_IN_PROGRESS,
+        BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    if (old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS and
+            new_status in in_progress_states):
+        return
     # Create a delta of the changes.  If there are no changes to report, then
     # we're done.
     delta = BranchMergeProposalNoPreviewDiffDelta.construct(

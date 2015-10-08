@@ -295,8 +295,8 @@
       handler="lp.code.subscribers.karma.branch_merge_proposed"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           lp.code.interfaces.event.IBranchMergeProposalStatusChangeEvent"
-      handler="lp.code.subscribers.karma.branch_merge_status_changed"/>
+           lazr.lifecycle.interfaces.IObjectModifiedEvent"
+      handler="lp.code.subscribers.karma.branch_merge_modified"/>
 
   <!-- hierarchy -->
 
