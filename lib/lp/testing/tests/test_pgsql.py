@@ -1,7 +1,8 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
+import uuid
 
 from fixtures import (
     EnvironmentVariableFixture,
@@ -36,7 +37,13 @@ class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
         BaseLayer.setUp()
         self.addCleanup(BaseLayer.tearDown)
         fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
-        expected_name = "%s_%d" % (PgTestSetup.dbname, os.getpid())
+        raw_uuid = os.environ['LP_TEST_INSTANCE'].split('_', 1)[1]
+        instance_uuid = uuid.UUID(raw_uuid.replace('_', '-'))
+        self.assertEqual(uuid.RFC_4122, instance_uuid.variant)
+        self.assertEqual(1, instance_uuid.version)
+        expected_name = "%s_%d_%s" % (
+            PgTestSetup.dbname, os.getpid(),
+            str(instance_uuid).replace('-', '_'))
         self.assertDBName(expected_name, fixture)
 
     def test_db_naming_without_LP_TEST_INSTANCE_is_static(self):

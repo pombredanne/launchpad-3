@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import with_statement
@@ -17,6 +17,7 @@ import os
 import signal
 import smtplib
 from urllib import urlopen
+import uuid
 
 from amqplib import client_0_8 as amqp
 from fixtures import (
@@ -113,9 +114,11 @@ class TestBaseLayer(testtools.TestCase, TestWithFixtures):
     def test_allocates_LP_TEST_INSTANCE(self):
         self.useFixture(BaseLayerIsolator())
         with LayerFixture(BaseLayer):
-            self.assertEqual(
-                str(os.getpid()),
-                os.environ.get('LP_TEST_INSTANCE'))
+            pid, raw_uuid = os.environ['LP_TEST_INSTANCE'].split('_', 1)
+            self.assertEqual(str(os.getpid()), pid)
+            instance_uuid = uuid.UUID(raw_uuid.replace('_', '-'))
+            self.assertEqual(uuid.RFC_4122, instance_uuid.variant)
+            self.assertEqual(1, instance_uuid.version)
         self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
 
     def test_persist_test_services_disables_LP_TEST_INSTANCE(self):
