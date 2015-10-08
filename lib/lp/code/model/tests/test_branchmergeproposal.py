@@ -12,7 +12,10 @@ from datetime import (
 from difflib import unified_diff
 from unittest import TestCase
 
-from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
 from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
@@ -38,8 +41,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewBranchMergeProposalEvent,
-    NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
 from lp.code.interfaces.branchmergeproposal import (
@@ -514,7 +515,7 @@ class TestCreateCommentNotifications(TestCaseWithFactory):
         commenter = self.factory.makePerson()
         login_person(commenter)
         result, events = self.assertNotifies(
-            NewCodeReviewCommentEvent, False,
+            ObjectCreatedEvent, False,
             merge_proposal.createComment,
             owner=commenter,
             subject='A review.')
@@ -654,14 +655,13 @@ class TestMergeProposalNotification(TestCaseWithFactory):
     def test_notifyOnCreate_needs_review(self):
         # When a merge proposal is created needing review, the
         # BranchMergeProposalNeedsReviewEvent is raised as well as the usual
-        # NewBranchMergeProposalEvent.
+        # ObjectCreatedEvent.
         source_branch = self.factory.makeProductBranch()
         target_branch = self.factory.makeProductBranch(
             product=source_branch.product)
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
-            [NewBranchMergeProposalEvent,
-             BranchMergeProposalNeedsReviewEvent], False,
+            [ObjectCreatedEvent, BranchMergeProposalNeedsReviewEvent], False,
             source_branch.addLandingTarget, registrant, target_branch,
             needs_review=True)
         self.assertEqual(result, events[0].object)
@@ -674,7 +674,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             product=source_branch.product)
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
-            [NewBranchMergeProposalEvent], False,
+            [ObjectCreatedEvent], False,
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, events[0].object)
 

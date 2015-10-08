@@ -12,6 +12,7 @@ __all__ = [
 
 from email.utils import make_msgid
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -58,7 +59,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -935,8 +935,7 @@ class BranchMergeProposal(SQLBase):
             vote_reference.review_type = review_type
             vote_reference.comment = code_review_message
         if _notify_listeners:
-            notify(NewCodeReviewCommentEvent(
-                    code_review_message, original_email))
+            notify(ObjectCreatedEvent(code_review_message))
         return code_review_message
 
     def getInlineComments(self, previewdiff_id):

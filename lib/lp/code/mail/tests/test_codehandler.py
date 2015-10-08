@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
 from storm.store import Store
 import transaction
 from zope.security.management import setSecurityPolicy
@@ -18,7 +21,6 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     CodeReviewVote,
     )
-from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.mail.codehandler import (
     AddReviewerEmailCommand,
     CodeEmailCommands,
@@ -435,7 +437,7 @@ class TestCodeHandler(TestCaseWithFactory):
         switch_dbuser(config.processmail.dbuser)
         login_person(bmp.merge_target.owner)
         _, events = self.assertNotifies(
-            [ObjectModifiedEvent, NewCodeReviewCommentEvent], False,
+            [ObjectModifiedEvent, ObjectCreatedEvent], False,
             self.code_handler.process, mail, email_addr, None)
         self.assertEqual(bmp, events[0].object)
         self.assertEqual(

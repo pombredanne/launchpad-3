@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IBranchMergeProposalNeedsReviewEvent',
     'IGitRefsUpdatedEvent',
-    'INewBranchMergeProposalEvent',
-    'INewCodeReviewCommentEvent',
     'IReviewerNominatedEvent',
     ]
 
@@ -16,16 +14,8 @@ __all__ = [
 from zope.component.interfaces import IObjectEvent
 
 
-class INewBranchMergeProposalEvent(IObjectEvent):
-    """A new merge has been proposed."""
-
-
 class IReviewerNominatedEvent(IObjectEvent):
     """A reviewer has been nominated."""
-
-
-class INewCodeReviewCommentEvent(IObjectEvent):
-    """A new comment has been added to the merge proposal."""
 
 
 class IBranchMergeProposalNeedsReviewEvent(IObjectEvent):
