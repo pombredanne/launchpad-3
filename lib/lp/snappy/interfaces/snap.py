@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BadSnapSearchContext',
     'CannotDeleteSnap',
+    'CannotModifySnapProcessor',
     'DuplicateSnapName',
     'ISnap',
     'ISnapSet',
@@ -171,6 +172,19 @@ class BadSnapSearchContext(Exception):
     """The context is not valid for a snap package search."""
 
 
+@error_status(httplib.FORBIDDEN)
+class CannotModifySnapProcessor(Exception):
+    """Tried to enable or disable a restricted processor on an snap package."""
+
+    _fmt = (
+        '%(processor)s is restricted, and may only be enabled or disabled '
+        'by administrators.')
+
+    def __init__(self, processor):
+        super(CannotModifySnapProcessor, self).__init__(
+            self._fmt % {'processor': processor.name})
+
+
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""
 
@@ -186,6 +200,19 @@ class ISnapView(Interface):
 
     source = Attribute(
         "The source branch for this snap package (VCS-agnostic).")
+
+    available_processors = Attribute(
+        "The architectures that are available to be enabled or disabled for "
+        "this snap package.")
+
+    @call_with(check_permissions=True, user=REQUEST_USER)
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setProcessors(processors, check_permissions=False, user=None):
+        """Set the architectures for which the snap package should be built."""
 
     def getAllowedArchitectures():
         """Return all distroarchseries that this package can build for.
@@ -317,21 +344,8 @@ class ISnapAdminAttributes(Interface):
         readonly=False))
 
 
-class ISnapAdmin(Interface):
-    """`ISnap` methods that require launchpad.Admin permission."""
-
-    @operation_parameters(
-        processors=List(
-            value_type=Reference(schema=IProcessor), required=True))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setProcessors(processors):
-        """Set the architectures for which the snap package should be built."""
-
-
 class ISnap(
-    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
-    ISnapAdmin):
+    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes):
     """A buildable snap package."""
 
     # XXX cjwatson 2015-07-17 bug=760849: "beta" is a lie to get WADL

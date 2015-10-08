@@ -166,6 +166,16 @@ class TestGitRefWidget(TestCaseWithFactory):
             "The repository at %s does not contain a branch named "
             "'non-existent'." % ref.repository.display_name)
 
+    def test_getInputValue_empty_not_required(self):
+        # If the field is not required, empty input fields are allowed.
+        self.widget.context.required = False
+        form = {
+            "field.git_ref.repository": "",
+            "field.git_ref.path": "",
+            }
+        self.widget.request = LaunchpadTestRequest(form=form)
+        self.assertIsNone(self.widget.getInputValue())
+
     def test_getInputValue_valid(self):
         # When both the repository and the path are valid, the field value
         # is the reference they identify.
