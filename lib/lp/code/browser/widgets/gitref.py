@@ -85,9 +85,13 @@ class GitRefWidget(BrowserWidget, InputWidget):
         try:
             repository = self.repository_widget.getInputValue()
         except MissingInputError:
-            raise WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError("Please choose a Git repository."))
+            if self.context.required:
+                raise WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "Please choose a Git repository."))
+            else:
+                return None
         except ConversionError:
             entered_name = self.request.form_ng.getOne(
                 "%s.repository" % self.name)
@@ -101,9 +105,13 @@ class GitRefWidget(BrowserWidget, InputWidget):
         else:
             path = None
         if not path:
-            raise WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError("Please enter a Git branch path."))
+            if self.context.required:
+                raise WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "Please enter a Git branch path."))
+            else:
+                return
         ref = repository.getRefByPath(path)
         if ref is None:
             raise WidgetInputError(

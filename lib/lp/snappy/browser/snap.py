@@ -73,6 +73,7 @@ from lp.snappy.interfaces.snap import (
     SnapFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.soyuz.browser.archive import EnableProcessorsMixin
 from lp.soyuz.browser.build import get_build_by_id_str
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -357,7 +358,7 @@ class BaseSnapEditView(LaunchpadEditFormView):
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
-        if 'vcs' in self.widgets:
+        if self.widgets.get('vcs') is not None:
             # Set widgets as required or optional depending on the vcs
             # field.
             super(BaseSnapEditView, self).validate_widgets(data, ['vcs'])
@@ -379,6 +380,12 @@ class BaseSnapEditView(LaunchpadEditFormView):
             data['git_ref'] = None
         elif vcs == VCSType.GIT:
             data['branch'] = None
+        new_processors = data.get('processors')
+        if new_processors is not None:
+            if set(self.context.processors) != set(new_processors):
+                self.context.setProcessors(
+                    new_processors, check_permissions=True, user=self.user)
+            del data['processors']
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
@@ -400,7 +407,7 @@ class SnapAdminView(BaseSnapEditView):
     field_names = ['require_virtualized']
 
 
-class SnapEditView(BaseSnapEditView):
+class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     """View for editing snap packages."""
 
     @property
@@ -414,6 +421,15 @@ class SnapEditView(BaseSnapEditView):
     custom_widget('distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(SnapEditView, self).setUpFields()
+        self.form_fields += self.createEnabledProcessors(
+            self.context.available_processors,
+            u"The architectures that this snap package builds for. Some "
+            u"architectures are restricted and may only be enabled or "
+            u"disabled by administrators.")
 
     @property
     def initial_values(self):
@@ -437,6 +453,19 @@ class SnapEditView(BaseSnapEditView):
                         'this name.' % owner.displayname)
             except NoSuchSnap:
                 pass
+        if 'processors' in data:
+            available_processors = set(self.context.available_processors)
+            widget = self.widgets['processors']
+            for processor in self.context.processors:
+                if processor not in data['processors']:
+                    if processor not in available_processors:
+                        # This processor is not currently available for
+                        # selection, but is enabled.  Leave it untouched.
+                        data['processors'].append(processor)
+                    elif processor.name in widget.disabled_items:
+                        # This processor is restricted and currently
+                        # enabled.  Leave it untouched.
+                        data['processors'].append(processor)
 
 
 class SnapDeleteView(BaseSnapEditView):
