@@ -27,6 +27,7 @@ from lp.app.interfaces.services import IService
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.enums import BranchSharingPolicy
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp.publisher import canonical_url
@@ -133,6 +134,7 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
 
     A repository may be associated with a private team as follows:
     - the owner is a private team
+    - a subscriber is a private team
 
     A logged in user who is not authorised to see the private team(s) still
     needs to be able to view the repository.  The private team will be
@@ -175,6 +177,85 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
         url = canonical_url(repository, rootsite="code")
         browser = self._getBrowser()
         self.assertRaises(NotFound, browser.open, url)
+
+    def test_view_repository_with_private_subscriber(self):
+        # A repository with a private subscriber is rendered.
+        private_subscriber = self.factory.makeTeam(
+            name="privateteam", visibility=PersonVisibility.PRIVATE)
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(repository.owner):
+            self.factory.makeGitSubscription(
+                repository, private_subscriber, repository.owner)
+        # Ensure the repository subscriber is rendered.
+        url = canonical_url(repository, rootsite='code')
+        user = self.factory.makePerson()
+        browser = self._getBrowser(user)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        self.assertIsNotNone(
+            soup.find('div', attrs={'id': 'subscriber-privateteam'}))
+
+    def test_anonymous_view_repository_with_private_subscriber(self):
+        # Private repository subscribers are not rendered for anon users.
+        private_subscriber = self.factory.makeTeam(
+            name="privateteam", visibility=PersonVisibility.PRIVATE)
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(private_subscriber):
+            self.factory.makeGitSubscription(
+                repository, private_subscriber, repository.owner)
+        # Viewing the repository doesn't show the private subscriber.
+        url = canonical_url(repository, rootsite='code')
+        browser = self._getBrowser()
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        self.assertIsNone(
+            soup.find('div', attrs={'id': 'subscriber-privateteam'}))
+
+    def test_unsubscribe_private_repository(self):
+        # Unsubscribing from a repository with a policy grant still allows
+        # the repository to be seen.
+        project = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        [ap] = getUtility(IAccessPolicySource).find(
+            [(project, InformationType.USERDATA)])
+        self.factory.makeAccessPolicyGrant(
+            policy=ap, grantee=subscriber, grantor=project.owner)
+        repository = self.factory.makeGitRepository(
+            target=project, owner=owner, name=u"repo",
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.factory.makeGitSubscription(repository, subscriber, owner)
+            base_url = canonical_url(repository, rootsite='code')
+            expected_title = '%s : Git : Code : %s' % (
+                repository.identity, project.displayname)
+        url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        browser = self._getBrowser(user=subscriber)
+        browser.open(url)
+        browser.getControl('Unsubscribe').click()
+        self.assertEqual(base_url, browser.url)
+        self.assertEqual(expected_title, browser.title)
+
+    def test_unsubscribe_private_repository_no_access(self):
+        # Unsubscribing from a repository with no access will redirect to
+        # the context of the repository.
+        project = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            target=project, owner=owner,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.factory.makeGitSubscription(repository, subscriber, owner)
+            base_url = canonical_url(repository, rootsite='code')
+            project_url = canonical_url(project, rootsite='code')
+        url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        expected_title = "Code : %s" % project.displayname
+        browser = self._getBrowser(user=subscriber)
+        browser.open(url)
+        browser.getControl('Unsubscribe').click()
+        self.assertEqual(project_url, browser.url)
+        self.assertEqual(expected_title, browser.title)
 
 
 class TestGitRepositoryBranches(BrowserTestCase):
