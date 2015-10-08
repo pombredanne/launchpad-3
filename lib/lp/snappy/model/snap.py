@@ -194,9 +194,8 @@ class Snap(Storm):
             Processor,
             Processor.id == DistroArchSeries.processor_id,
             DistroArchSeries.id.is_in(
-                self.distro_series.buildable_architectures.get_select_expr(
-                    DistroArchSeries.id)),
-            DistroArchSeries.enabled)
+                self.distro_series.enabled_architectures.get_select_expr(
+                    DistroArchSeries.id)))
         return processors.config(distinct=True)
 
     def _getProcessors(self):

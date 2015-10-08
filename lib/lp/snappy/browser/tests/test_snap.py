@@ -335,10 +335,9 @@ class TestSnapEditView(BrowserTestCase):
         processor_names = ["386", "amd64", "hppa"]
         for name in processor_names:
             processor = getUtility(IProcessorSet).getByName(name)
-            das = self.factory.makeDistroArchSeries(
+            self.factory.makeDistroArchSeries(
                 distroseries=distroseries, architecturetag=name,
                 processor=processor)
-            das.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
         return distroseries
 
     def assertSnapProcessors(self, snap, names):
@@ -411,10 +410,9 @@ class TestSnapEditView(BrowserTestCase):
         distroseries = self.setUpDistroSeries()
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
-        das_armhf = self.factory.makeDistroArchSeries(
+        self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="armhf",
             processor=proc_armhf)
-        das_armhf.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=distroseries)
@@ -444,10 +442,9 @@ class TestSnapEditView(BrowserTestCase):
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
         distroseries = self.setUpDistroSeries()
-        das_armhf = self.factory.makeDistroArchSeries(
+        self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="armhf",
             processor=proc_armhf)
-        das_armhf.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=distroseries)
