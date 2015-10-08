@@ -53,7 +53,6 @@ Change the description of a bug:
 Add a CVE reference to a bug:
 
     >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
-    >>> from lp.bugs.model.cve import BugCve
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
     >>> cve.linkBug(bug)
