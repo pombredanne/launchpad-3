@@ -114,8 +114,9 @@ class TestBaseLayer(testtools.TestCase, TestWithFixtures):
     def test_allocates_LP_TEST_INSTANCE(self):
         self.useFixture(BaseLayerIsolator())
         with LayerFixture(BaseLayer):
-            instance_uuid = uuid.UUID(
-                os.environ['LP_TEST_INSTANCE'].replace('_', '-'))
+            pid, raw_uuid = os.environ['LP_TEST_INSTANCE'].split('_', 1)
+            self.assertEqual(str(os.getpid()), pid)
+            instance_uuid = uuid.UUID(raw_uuid.replace('_', '-'))
             self.assertEqual(uuid.RFC_4122, instance_uuid.variant)
             self.assertEqual(1, instance_uuid.version)
         self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
