@@ -1,7 +1,6 @@
 # Copyright 2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -101,19 +100,3 @@ class TestQuestionBugLinks(TestCaseWithFactory):
         self.assertFalse(bug.isSubscribed(question.owner))
         question.unlinkBug(bug)
         self.assertFalse(bug.isSubscribed(question.owner))
-
-
-class TestQuestionBugLinksWithXRef(TestQuestionBugLinks):
-
-    def setUp(self):
-        super(TestQuestionBugLinksWithXRef, self).setUp()
-        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
-
-
-class TestQuestionBugLinksWithXRefAndNoOld(TestQuestionBugLinks):
-
-    def setUp(self):
-        super(TestQuestionBugLinksWithXRefAndNoOld, self).setUp()
-        self.useFixture(FeatureFixture({
-            'bugs.xref_buglinks.query': 'true',
-            'bugs.xref_buglinks.write_old.disabled': 'true'}))

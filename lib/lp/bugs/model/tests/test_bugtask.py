@@ -523,22 +523,6 @@ class TestBugTaskBadges(TestCaseWithFactory):
         ])
 
 
-class TestBugTaskBadgesWithXRef(TestBugTaskBadges):
-
-    def setUp(self):
-        super(TestBugTaskBadges, self).setUp()
-        self.useFixture(FeatureFixture({'bugs.xref_buglinks.query': 'true'}))
-
-
-class TestBugTaskBadgesWithXRefAndNoOld(TestBugTaskBadges):
-
-    def setUp(self):
-        super(TestBugTaskBadges, self).setUp()
-        self.useFixture(FeatureFixture({
-            'bugs.xref_buglinks.query': 'true',
-            'bugs.xref_buglinks.write_old.disabled': 'true'}))
-
-
 class TestBugTaskPrivacy(TestCaseWithFactory):
     """Verify that the bug is either private or public.
 

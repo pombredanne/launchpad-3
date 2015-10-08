@@ -39,7 +39,6 @@ from zope.security.proxy import (
 
 from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -60,7 +59,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
@@ -95,7 +93,6 @@ from lp.services.database.stormexpr import (
     rank_by_fti,
     Unnest,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
     all,
@@ -423,18 +420,13 @@ def _build_query(params):
             BugTaskFlat.productseries == None))
 
     if params.has_cve:
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            where = [
-                XRef.from_type == u'bug',
-                XRef.from_id_int == BugTaskFlat.bug_id,
-                XRef.to_type == u'cve',
-                ]
-            extra_clauses.append(Exists(Select(
-                1, tables=[XRef], where=And(*where))))
-        else:
-            extra_clauses.append(
-                BugTaskFlat.bug_id.is_in(
-                    Select(BugCve.bugID, tables=[BugCve])))
+        where = [
+            XRef.from_type == u'bug',
+            XRef.from_id_int == BugTaskFlat.bug_id,
+            XRef.to_type == u'cve',
+            ]
+        extra_clauses.append(Exists(Select(
+            1, tables=[XRef], where=And(*where))))
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
@@ -1024,26 +1016,17 @@ def _build_blueprint_related_clause(params):
     linked_blueprints = params.linked_blueprints
 
     def make_clause(blueprints=None):
-        if getFeatureFlag('bugs.xref_buglinks.query'):
-            where = [
-                XRef.from_type == u'bug',
-                XRef.from_id_int == BugTaskFlat.bug_id,
-                XRef.to_type == u'specification',
-                ]
-            if blueprints is not None:
-                where.append(
-                    search_value_to_storm_where_condition(
-                        XRef.to_id_int, blueprints))
-            return Exists(Select(
-                1, tables=[XRef], where=And(*where)))
-        else:
-            where = [SpecificationBug.bugID == BugTaskFlat.bug_id]
-            if blueprints is not None:
-                where.append(
-                    search_value_to_storm_where_condition(
-                        SpecificationBug.specificationID, blueprints))
-            return Exists(Select(
-                1, tables=[SpecificationBug], where=And(*where)))
+        where = [
+            XRef.from_type == u'bug',
+            XRef.from_id_int == BugTaskFlat.bug_id,
+            XRef.to_type == u'specification',
+            ]
+        if blueprints is not None:
+            where.append(
+                search_value_to_storm_where_condition(
+                    XRef.to_id_int, blueprints))
+        return Exists(Select(
+            1, tables=[XRef], where=And(*where)))
 
     if linked_blueprints is None:
         return None
