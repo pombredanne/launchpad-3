@@ -427,9 +427,9 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         super(SnapEditView, self).setUpFields()
         self.form_fields += self.createEnabledProcessors(
             self.context.available_processors,
-            u"The architectures that are available to be enabled or disabled "
-            u"for this snap package. Some architectures are restricted and "
-            u"may only be enabled or disabled by administrators.")
+            u"The architectures that this snap package builds for. Some "
+            u"architectures are restricted and may only be enabled or "
+            u"disabled by administrators.")
 
     @property
     def initial_values(self):
