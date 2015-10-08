@@ -5,8 +5,9 @@
 
 from textwrap import dedent
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from lp.code.enums import CodeReviewVote
-from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.model.codereviewcomment import quote_text_as_email
 from lp.services.messages.model.message import MessageSet
 from lp.testing import (
@@ -107,7 +108,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Creating a CodeReviewComment should trigger a notification."""
         message = self.factory.makeMessage()
         self.assertNotifies(
-            NewCodeReviewCommentEvent, False,
+            ObjectCreatedEvent, False,
             self.bmp.createCommentFromMessage,
             message, None, None, original_email=None, _validate=False)
 
