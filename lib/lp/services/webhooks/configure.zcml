@@ -61,6 +61,13 @@
         factory="lp.services.webhooks.client.WebhookClient"
         permission="zope.Public"/>
 
+    <adapter
+        for="zope.interface.Interface
+             lp.services.webhooks.interfaces.IWebhookPayloadRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="lp.services.webhooks.payload.WebhookAbsoluteURL"
+        />
+
     <browser:url
        for="lp.services.webhooks.interfaces.IWebhook"
        path_expression="string:+webhook/${id}"
