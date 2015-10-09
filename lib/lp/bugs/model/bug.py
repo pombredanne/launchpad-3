@@ -2608,7 +2608,8 @@ class BugSet:
 
         bug, event = self._makeBug(params)
 
-        # Create the initial task on the specified target.
+        # Create the initial task on the specified target.  This also
+        # reconciles access policies for this bug based on that target.
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
 
@@ -2625,8 +2626,6 @@ class BugSet:
             bug_task.transitionToImportance(params.importance, params.owner)
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
-
-        bug._reconcileAccess()
 
         # Tell everyone.
         if notify_event:
