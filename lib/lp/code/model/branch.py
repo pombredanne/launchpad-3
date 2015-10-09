@@ -206,6 +206,10 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     @property
     def valid_webhook_event_types(self):
+        return ["bzr:push:0.1", "merge-proposal:0.1"]
+
+    @property
+    def default_webhook_event_types(self):
         return ["bzr:push:0.1"]
 
     @property

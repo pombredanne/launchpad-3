@@ -13,13 +13,18 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.checker import getChecker
 
+from lp.app.enums import InformationType
+from lp.registry.enums import BranchSharingPolicy
 from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.services.webhooks.interfaces import (
     IWebhook,
     IWebhookSet,
     )
-from lp.services.webhooks.model import WebhookJob
+from lp.services.webhooks.model import (
+    WebhookJob,
+    WebhookSet,
+    )
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
@@ -193,6 +198,50 @@ class TestWebhookSetBase:
         self.assertEqual(1, IStore(WebhookJob).find(WebhookJob).count())
         self.assertEqual(1, hooks[2].deliveries.count())
 
+    def test__checkVisibility_public_artifact(self):
+        target = self.makeTarget()
+        login_person(target.owner)
+        self.assertTrue(WebhookSet._checkVisibility(target))
+
+    def test__checkVisibility_private_artifact(self):
+        owner = self.factory.makePerson()
+        target = self.makeTarget(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        login_person(owner)
+        self.assertTrue(WebhookSet._checkVisibility(target))
+
+    def test__checkVisibility_lost_access_to_private_artifact(self):
+        # A user may lose access to a private artifact even if they own it,
+        # for example if they leave the team that has a policy grant for
+        # branches on that project; in such cases they should stop receiving
+        # webhooks.
+        project = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        grantee_team = self.factory.makeTeam()
+        policy = self.factory.makeAccessPolicy(
+            pillar=project, check_existing=True)
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=grantee_team)
+        grantee_member = self.factory.makePerson(member_of=[grantee_team])
+        target = self.makeTarget(owner=grantee_member, project=project)
+        login_person(grantee_member)
+        self.assertTrue(WebhookSet._checkVisibility(target))
+        grantee_member.leave(grantee_team)
+        self.assertFalse(WebhookSet._checkVisibility(target))
+
+    def test__checkVisibility_with_source(self):
+        project = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        owner = self.factory.makePerson()
+        source = self.makeTarget(
+            owner=owner, project=project,
+            information_type=InformationType.PROPRIETARY)
+        target1 = self.makeTarget(owner=owner, project=project)
+        target2 = self.makeTarget(project=project)
+        login_person(owner)
+        self.assertTrue(WebhookSet._checkVisibility(target1, source=source))
+        self.assertFalse(WebhookSet._checkVisibility(target2, source=source))
+
     def test_trigger(self):
         owner = self.factory.makePerson()
         target1 = self.makeTarget(owner=owner)
@@ -229,18 +278,71 @@ class TestWebhookSetBase:
             delivery = hook2a.deliveries.one()
             self.assertEqual(delivery.payload, {'other': 'payload'})
 
+    def test_trigger_skips_invisible(self):
+        # No webhooks are dispatched if the visibility check fails.
+        project = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        owner = self.factory.makePerson()
+        source = self.makeTarget(
+            owner=owner, project=project,
+            information_type=InformationType.PROPRIETARY)
+        target1 = self.makeTarget(project=project)
+        target2 = self.makeTarget(owner=owner, project=project)
+        event_type = 'merge-proposal:0.1'
+        hook1 = self.factory.makeWebhook(
+            target=target1, event_types=[event_type])
+        hook2 = self.factory.makeWebhook(
+            target=target2, event_types=[event_type])
+
+        # The owner of target1 cannot see source, so their webhook is kept
+        # in the dark too.
+        getUtility(IWebhookSet).trigger(
+            target1, event_type, {'some': 'payload'}, source=source)
+        with admin_logged_in():
+            self.assertThat(list(hook1.deliveries), HasLength(0))
+            self.assertThat(list(hook2.deliveries), HasLength(0))
+
+        # The owner of target2 can see source, so it's OK to tell their
+        # webhook about the existence of source.
+        getUtility(IWebhookSet).trigger(
+            target2, event_type, {'some': 'payload'}, source=source)
+        with admin_logged_in():
+            self.assertThat(list(hook1.deliveries), HasLength(0))
+            self.assertThat(list(hook2.deliveries), HasLength(1))
+            delivery = hook2.deliveries.one()
+            self.assertEqual(delivery.payload, {'some': 'payload'})
+
+    def test_trigger_different_source_and_target_owners(self):
+        # Only people who can edit the webhook target can view the webhook,
+        # so, for a merge proposal between two branches with different
+        # owners, the owner of the merge source will in general not be able
+        # to see a webhook attached to the target.  trigger copes with this.
+        project = self.factory.makeProduct()
+        source = self.makeTarget(project=project)
+        target = self.makeTarget(project=project)
+        event_type = 'merge-proposal:0.1'
+        hook = self.factory.makeWebhook(
+            target=target, event_types=[event_type])
+        login_person(source.owner)
+        getUtility(IWebhookSet).trigger(
+            target, event_type, {'some': 'payload'}, source=source)
+        with admin_logged_in():
+            self.assertThat(list(hook.deliveries), HasLength(1))
+            delivery = hook.deliveries.one()
+            self.assertEqual(delivery.payload, {'some': 'payload'})
+
 
 class TestWebhookSetGitRepository(TestWebhookSetBase, TestCaseWithFactory):
 
     event_type = 'git:push:0.1'
 
-    def makeTarget(self, owner=None):
-        return self.factory.makeGitRepository(owner=owner)
+    def makeTarget(self, project=None, **kwargs):
+        return self.factory.makeGitRepository(target=project, **kwargs)
 
 
 class TestWebhookSetBranch(TestWebhookSetBase, TestCaseWithFactory):
 
     event_type = 'bzr:push:0.1'
 
-    def makeTarget(self, owner=None):
-        return self.factory.makeBranch(owner=owner)
+    def makeTarget(self, project=None, **kwargs):
+        return self.factory.makeBranch(product=project, **kwargs)

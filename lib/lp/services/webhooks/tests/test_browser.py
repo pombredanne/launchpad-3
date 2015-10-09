@@ -52,7 +52,10 @@ batch_nav_tag = soupmatchers.Tag(
 class GitRepositoryTestHelpers:
 
     event_type = "git:push:0.1"
-    expected_event_types = [("git:push:0.1", "Git push")]
+    expected_event_types = [
+        ("git:push:0.1", "Git push"),
+        ("merge-proposal:0.1", "Merge proposal"),
+        ]
 
     def makeTarget(self):
         return self.factory.makeGitRepository()
@@ -61,7 +64,10 @@ class GitRepositoryTestHelpers:
 class BranchTestHelpers:
 
     event_type = "bzr:push:0.1"
-    expected_event_types = [("bzr:push:0.1", "Bazaar push")]
+    expected_event_types = [
+        ("bzr:push:0.1", "Bazaar push"),
+        ("merge-proposal:0.1", "Merge proposal"),
+        ]
 
     def makeTarget(self):
         return self.factory.makeBranch()

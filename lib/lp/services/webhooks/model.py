@@ -204,10 +204,47 @@ class WebhookSet:
         return IStore(Webhook).find(Webhook, target_filter).order_by(
             Webhook.id)
 
-    def trigger(self, target, event_type, payload):
-        # XXX wgrant 2015-08-10: Two INSERTs and one celery submission
-        # for each webhook, but the set should be small and we'd have to
-        # defer the triggering itself to a job to fix it.
+    @classmethod
+    def _checkVisibility(cls, target, source=None):
+        """Check visibility of webhook context objects.
+
+        In order to be able to dispatch a webhook without disclosing
+        unauthorised information, the webhook owner (currently always equal
+        to the webhook target owner) must be able to see the webhook target.
+        If deliveries are being triggered due to a change to some different
+        source object, then the webhook owner must also be able to see that
+        source.
+
+        :return: True if all objects are visible to the webhook owner,
+            otherwise False.
+        """
+        from lp.code.interfaces.branch import IBranch
+        from lp.code.interfaces.gitrepository import IGitRepository
+        owner = removeSecurityProxy(target).owner
+        if IGitRepository.providedBy(target):
+            if not removeSecurityProxy(target).visibleByUser(owner):
+                return False
+            if source is not None:
+                assert IGitRepository.providedBy(source)
+                if not removeSecurityProxy(source).visibleByUser(owner):
+                    return False
+        elif IBranch.providedBy(target):
+            if not removeSecurityProxy(target).visibleByUser(owner):
+                return False
+            if source is not None:
+                assert IBranch.providedBy(source)
+                if not removeSecurityProxy(source).visibleByUser(owner):
+                    return False
+        else:
+            raise AssertionError("Unsupported target: %r" % (target,))
+        return True
+
+    def trigger(self, target, event_type, payload, source=None):
+        if not self._checkVisibility(target, source=source):
+            return
+        # XXX wgrant 2015-08-10: Two INSERTs and one celery submission for
+        # each webhook, but the set should be small and we'd have to defer
+        # the triggering itself to a job to fix it.
         for webhook in self.findByTarget(target):
             if webhook.active and event_type in webhook.event_types:
                 WebhookDeliveryJob.create(webhook, event_type, payload)

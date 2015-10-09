@@ -5,20 +5,42 @@
 
 __metaclass__ = type
 
-
 from zope.component import getUtility
 from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 
-from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
+from lp.code.adapters.branch import (
+    BranchMergeProposalDelta,
+    BranchMergeProposalNoPreviewDiffDelta,
+    )
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
+    IBranchMergeProposal,
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     IReviewRequestedEmailJobSource,
     IUpdatePreviewDiffJobSource,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.features import getFeatureFlag
 from lp.services.utils import text_delta
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webhooks.interfaces import IWebhookSet
+from lp.services.webhooks.payload import compose_webhook_payload
+
+
+def _trigger_webhook(merge_proposal, payload):
+    payload = dict(payload)
+    payload["merge_proposal"] = canonical_url(
+        merge_proposal, force_local_path=True)
+    if merge_proposal.target_branch is not None:
+        source = merge_proposal.source_branch
+        target = merge_proposal.target_branch
+    else:
+        source = merge_proposal.source_git_repository
+        target = merge_proposal.target_git_repository
+    getUtility(IWebhookSet).trigger(
+        target, "merge-proposal:0.1", payload, source=source)
 
 
 def merge_proposal_created(merge_proposal, event):
@@ -28,6 +50,13 @@ def merge_proposal_created(merge_proposal, event):
     Also create a job to email the subscribers about the new proposal.
     """
     getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
+    if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
+        payload = {"action": "created"}
+        payload.update(compose_webhook_payload(
+            IBranchMergeProposal, merge_proposal,
+            BranchMergeProposalDelta.delta_values +
+                BranchMergeProposalDelta.new_values))
+        _trigger_webhook(merge_proposal, payload)
 
 
 def merge_proposal_needs_review(merge_proposal, event):
@@ -49,9 +78,6 @@ def merge_proposal_modified(merge_proposal, event):
         from_person = None
     else:
         from_person = IPerson(event.user)
-    # If the merge proposal was work in progress and is now needs review,
-    # then we don't want to send out an email as the needs review email will
-    # cover that.
     old_status = event.object_before_modification.queue_status
     new_status = merge_proposal.queue_status
 
@@ -59,20 +85,26 @@ def merge_proposal_modified(merge_proposal, event):
         BranchMergeProposalStatus.WORK_IN_PROGRESS,
         BranchMergeProposalStatus.NEEDS_REVIEW)
 
-    if (old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS and
-            new_status in in_progress_states):
-        return
-    # Create a delta of the changes.  If there are no changes to report, then
-    # we're done.
-    delta = BranchMergeProposalNoPreviewDiffDelta.construct(
-        event.object_before_modification, merge_proposal)
-    if delta is None:
-        return
-    changes = text_delta(
-        delta, delta.delta_values, delta.new_values, delta.interface)
-    # Now create the job to send the email.
-    getUtility(IMergeProposalUpdatedEmailJobSource).create(
-        merge_proposal, changes, from_person)
+    # If the merge proposal was work in progress and is now needs review,
+    # then we don't want to send out an email as the needs review email will
+    # cover that.
+    if (old_status != BranchMergeProposalStatus.WORK_IN_PROGRESS or
+            new_status not in in_progress_states):
+        # Create a delta of the changes.  If there are no changes to report,
+        # then we're done.
+        delta = BranchMergeProposalNoPreviewDiffDelta.construct(
+            event.object_before_modification, merge_proposal)
+        if delta is not None:
+            changes = text_delta(
+                delta, delta.delta_values, delta.new_values, delta.interface)
+            # Now create the job to send the email.
+            getUtility(IMergeProposalUpdatedEmailJobSource).create(
+                merge_proposal, changes, from_person)
+    if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
+        payload = {"action": "modified"}
+        payload.update(BranchMergeProposalDelta.composeWebhookPayload(
+            event.object_before_modification, merge_proposal))
+        _trigger_webhook(merge_proposal, payload)
 
 
 def review_requested(vote_reference, event):
@@ -81,3 +113,12 @@ def review_requested(vote_reference, event):
     bmp_status = vote_reference.branch_merge_proposal.queue_status
     if bmp_status != BranchMergeProposalStatus.WORK_IN_PROGRESS:
         getUtility(IReviewRequestedEmailJobSource).create(vote_reference)
+
+
+def merge_proposal_deleted(merge_proposal, event):
+    """A merge proposal has been deleted."""
+    if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
+        # The merge proposal link will be invalid by the time the webhook is
+        # delivered, but this may still be useful for endpoints that might
+        # e.g. want to cancel CI jobs in flight.
+        _trigger_webhook(merge_proposal, {"action": "deleted"})

@@ -12,7 +12,10 @@ __all__ = [
 
 from email.utils import make_msgid
 
-from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -777,6 +780,7 @@ class BranchMergeProposal(SQLBase):
             branch_merge_proposal=self.id):
             job.destroySelf()
         self._preview_diffs.remove()
+        notify(ObjectDeletedEvent(self))
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):

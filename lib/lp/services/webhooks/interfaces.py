@@ -77,6 +77,7 @@ from lp.services.webservice.apihelpers import (
 WEBHOOK_EVENT_TYPES = {
     "bzr:push:0.1": "Bazaar push",
     "git:push:0.1": "Git push",
+    "merge-proposal:0.1": "Merge proposal",
     }
 
 
@@ -201,7 +202,7 @@ class IWebhookSet(Interface):
     def findByTarget(target):
         """Find all webhooks for the given target."""
 
-    def trigger(target, event_type, payload):
+    def trigger(target, event_type, payload, source=None):
         """Trigger subscribed webhooks to deliver a payload."""
 
 

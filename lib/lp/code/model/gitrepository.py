@@ -236,6 +236,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     @property
     def valid_webhook_event_types(self):
+        return ["git:push:0.1", "merge-proposal:0.1"]
+
+    @property
+    def default_webhook_event_types(self):
         return ["git:push:0.1"]
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##

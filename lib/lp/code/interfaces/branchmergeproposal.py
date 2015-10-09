@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The interface for branch merge proposals."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES',
+    'BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
@@ -102,6 +103,10 @@ BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES = (
     BranchMergeProposalStatus.MERGE_FAILED,
     BranchMergeProposalStatus.QUEUED,
     )
+
+
+BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG = (
+    "merge_proposals.webhooks.enabled")
 
 
 class IBranchMergeProposalPublic(IPrivacy):
