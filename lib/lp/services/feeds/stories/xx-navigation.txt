@@ -132,3 +132,12 @@ These html feeds should only exist on feeds.launchpad.dev:
 Revert configuration change after tests are finished.
 
     >>> config_data = config.pop('bug_search_feed_data')
+
+
+== Favicon ==
+
+feeds.launchpad.dev has a favicon.
+
+    >>> browser.open('http://feeds.launchpad.dev/favicon.ico')
+    >>> print browser.headers['Content-Type']
+    image/png

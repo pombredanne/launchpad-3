@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -57,6 +57,7 @@ from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IContextMenu,
     IFacetMenu,
+    IFavicon,
     INavigationMenu,
     )
 from lp.services.webapp.publisher import RenamedView
@@ -407,8 +408,6 @@ def url(_context, for_, path_expression=None, urldata=None,
 
 
 class FaviconRendererBase:
-    # subclasses must provide a 'fileobj' member that has 'contentType'
-    # and 'data' attributes.
 
     def __call__(self):
         self.request.response.setHeader(
@@ -417,6 +416,7 @@ class FaviconRendererBase:
 
 
 def favicon(_context, for_, file):
+    @implementer(IFavicon)
     class Favicon(FaviconRendererBase):
         path = file
         data = open(file, 'rb').read()
