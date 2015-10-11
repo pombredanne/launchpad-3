@@ -86,6 +86,7 @@ class _BaseGitNamespace:
         repository = GitRepository(
             registrant, self.owner, self.target, name, information_type,
             date_created, reviewer=reviewer, description=description)
+        repository._reconcileAccess()
 
         # The owner of the repository should also be automatically subscribed
         # in order for them to get code review notifications.  The default
@@ -97,8 +98,6 @@ class _BaseGitNamespace:
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL,
             registrant)
-
-        repository._reconcileAccess()
 
         notify(ObjectCreatedEvent(repository))
 

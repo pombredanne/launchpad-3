@@ -37,6 +37,10 @@ from lp.registry.enums import (
     PersonVisibility,
     SharingPermission,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantFlatSource,
+    IAccessPolicySource,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -435,6 +439,30 @@ class TestProjectGitNamespacePrivacyWithInformationType(TestCaseWithFactory):
         self.assertEqual(
             InformationType.EMBARGOED,
             namespace.getDefaultInformationType(grantee))
+
+    def test_grantee_has_no_artifact_grant(self):
+        # The owner of a new repository in a project whose default
+        # information type is non-public does not have an artifact grant
+        # specifically for the new repository, because their existing policy
+        # grant is sufficient.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        namespace = self.makeProjectGitNamespace(
+            BranchSharingPolicy.PROPRIETARY, person=person)
+        with person_logged_in(namespace.target.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.target, team, namespace.target.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        repository = namespace.createRepository(
+            person, self.factory.getUniqueUnicode())
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(namespace.target, InformationType.PROPRIETARY)])
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        self.assertContentEqual(
+            [(namespace.target.owner, {policy: SharingPermission.ALL}, []),
+             (team, {policy: SharingPermission.ALL}, [])],
+            apgfs.findGranteePermissionsByPolicy([policy]))
+        self.assertTrue(removeSecurityProxy(repository).visibleByUser(person))
 
 
 class TestPackageGitNamespace(TestCaseWithFactory, NamespaceMixin):
