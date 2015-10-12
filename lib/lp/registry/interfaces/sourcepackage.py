@@ -79,10 +79,13 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
             title=_("Name"), required=True, readonly=True,
             description=_("The text name of this source package.")))
 
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_("Display name"), required=True, readonly=True,
-            description=_("A displayname, constructed, for this package")))
+            description=_("A displayname, constructed, for this package")),
+        exported_as="displayname")
+
+    displayname = Attribute("Display name (deprecated)")
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
 
