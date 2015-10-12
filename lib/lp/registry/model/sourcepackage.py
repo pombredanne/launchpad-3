@@ -286,10 +286,12 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             self.sourcepackagename.name])
 
     @property
-    def displayname(self):
+    def display_name(self):
         return "%s in %s %s" % (
             self.sourcepackagename.name, self.distribution.displayname,
             self.distroseries.displayname)
+
+    displayname = display_name
 
     @property
     def bugtargetdisplayname(self):

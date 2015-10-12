@@ -59,9 +59,9 @@ class IDistributionSourcePackage(IHeadingContext, IBugTarget, IHasBranches,
 
     name = exported(
         TextLine(title=_("The source package name as text"), readonly=True))
-    displayname = exported(
-        TextLine(title=_("Display name for this package."), readonly=True),
-        exported_as="display_name")
+    display_name = exported(
+        TextLine(title=_("Display name for this package."), readonly=True))
+    displayname = Attribute('Display name (deprecated)')
     title = exported(
         TextLine(title=_("Title for this package."), readonly=True))
 
