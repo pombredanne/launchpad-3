@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBranchNamespace` implementations."""
@@ -48,6 +48,10 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
+    )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantFlatSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import NoSuchPerson
@@ -522,6 +526,29 @@ class TestProjectBranchNamespacePrivacyWithInformationType(
         self.assertEqual(
             InformationType.EMBARGOED,
             namespace.getDefaultInformationType(grantee))
+
+    def test_grantee_has_no_artifact_grant(self):
+        # The owner of a new branch in a project whose default information type
+        # is non-public does not have an artifact grant specifically for the
+        # new branch, because their existing policy grant is sufficient.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        namespace = self.makeProjectBranchNamespace(
+            BranchSharingPolicy.PROPRIETARY, person=person)
+        with person_logged_in(namespace.product.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, team, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        branch = namespace.createBranch(
+            BranchType.HOSTED, self.factory.getUniqueString(), person)
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(namespace.product, InformationType.PROPRIETARY)])
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        self.assertContentEqual(
+            [(namespace.product.owner, {policy: SharingPermission.ALL}, []),
+             (team, {policy: SharingPermission.ALL}, [])],
+            apgfs.findGranteePermissionsByPolicy([policy]))
+        self.assertTrue(removeSecurityProxy(branch).visibleByUser(person))
 
 
 class TestPackageBranchNamespace(TestCaseWithFactory, NamespaceMixin):
