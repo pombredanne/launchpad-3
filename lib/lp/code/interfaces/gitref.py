@@ -305,6 +305,10 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
                           merged_revision_ids=None, eager_load=False):
         """Return matching BranchMergeProposals."""
 
+    def getDependentMergeProposals(status=None, visible_by_user=None,
+                                   eager_load=False):
+        """Return BranchMergeProposals dependent on merging this reference."""
+
     def getMergeProposalByID(id):
         """Return this reference's merge proposal with this id, or None."""
 

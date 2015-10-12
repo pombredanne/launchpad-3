@@ -222,6 +222,21 @@ class GitRefMixin:
             status, target_repository=self.repository, target_path=self.path,
             merged_revision_ids=merged_revision_ids, eager_load=eager_load)
 
+    def getDependentMergeProposals(self, status=None, visible_by_user=None,
+                                   eager_load=False):
+        """See `IGitRef`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllGitRepositories).visibleByUser(
+            visible_by_user)
+        return collection.getMergeProposals(
+            status, prerequisite_repository=self.repository,
+            prerequisite_path=self.path, eager_load=eager_load)
+
     def getMergeProposalByID(self, id):
         """See `IGitRef`."""
         return self.landing_targets.find(BranchMergeProposal.id == id).one()

@@ -503,6 +503,12 @@
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
     <browser:page
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branchmergeproposallisting.BranchDependentMergesView"
+        permission="zope.Public"
+        name="+dependent-merges"
+        template="../templates/branchmergeproposal-generic-listing.pt"/>
+    <browser:page
         for="lp.code.interfaces.branch.IBranchBatchNavigator"
         name="+branch-listing"
         template="../templates/branch-listing.pt"
@@ -909,6 +915,12 @@
         permission="zope.Public"
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.branchmergeproposallisting.BranchDependentMergesView"
+        permission="zope.Public"
+        name="+dependent-merges"
+        template="../templates/branchmergeproposal-generic-listing.pt"/>
     <browser:menus
         classes="GitRefContextMenu"
         module="lp.code.browser.gitref"/>
