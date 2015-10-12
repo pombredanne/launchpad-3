@@ -1,11 +1,11 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
     'block_on_job',
-    'celeryd',
+    'celery_worker',
     'monitor_celery',
     'pop_remote_notifications',
     ]
@@ -19,11 +19,11 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.testing.fixture import CaptureOops
 
 
-def celeryd(queue, cwd=None):
-    """Return a ContextManager for a celeryd instance.
+def celery_worker(queue, cwd=None):
+    """Return a ContextManager for a "celery worker" instance.
 
-    The celeryd instance will be configured to use the currently-configured
-    BROKER_URL, and able to run CeleryRunJob tasks.
+    The "celery worker" instance will be configured to use the
+    currently-configured BROKER_URL, and able to run CeleryRunJob tasks.
     """
     from lp.services.job.celeryjob import CeleryRunJob
     from lazr.jobrunner.tests.test_celerytask import running
@@ -31,6 +31,7 @@ def celeryd(queue, cwd=None):
     with CeleryRunJob.app.broker_connection() as connection:
         broker_uri = connection.as_uri(include_password=True)
     cmd_args = (
+        'worker',
         '--config', 'lp.services.job.celeryconfig',
         '--broker', broker_uri,
         '--concurrency', '1',
@@ -38,7 +39,7 @@ def celeryd(queue, cwd=None):
         '--queues', queue,
         '--include', 'lp.services.job.tests.celery_helpers',
     )
-    return running('bin/celeryd', cmd_args, cwd=cwd)
+    return running('bin/celery', cmd_args, cwd=cwd)
 
 
 @contextmanager
@@ -80,6 +81,6 @@ def drain_celery_queues():
 
 
 def pop_remote_notifications():
-    """Pop the notifications from a celeryd worker."""
+    """Pop the notifications from a celery worker."""
     from lp.services.job.tests.celery_helpers import pop_notifications
     return pop_notifications.delay().get(30)

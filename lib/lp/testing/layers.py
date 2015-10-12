@@ -116,7 +116,7 @@ from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
-from lp.services.job.tests import celeryd
+from lp.services.job.tests import celery_worker
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
 from lp.services.mail.mailbox import (
@@ -1873,55 +1873,55 @@ class AppServerLayer(LaunchpadFunctionalLayer):
 class CeleryJobLayer(AppServerLayer):
     """Layer for tests that run jobs via Celery."""
 
-    celeryd = None
+    celery_worker = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('launchpad_job')
-        cls.celeryd.__enter__()
+        cls.celery_worker = celery_worker('launchpad_job')
+        cls.celery_worker.__enter__()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.celeryd.__exit__(None, None, None)
-        cls.celeryd = None
+        cls.celery_worker.__exit__(None, None, None)
+        cls.celery_worker = None
 
 
 class CeleryBzrsyncdJobLayer(AppServerLayer):
     """Layer for tests that run jobs that read from branches via Celery."""
 
-    celeryd = None
+    celery_worker = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('bzrsyncd_job')
-        cls.celeryd.__enter__()
+        cls.celery_worker = celery_worker('bzrsyncd_job')
+        cls.celery_worker.__enter__()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.celeryd.__exit__(None, None, None)
-        cls.celeryd = None
+        cls.celery_worker.__exit__(None, None, None)
+        cls.celery_worker = None
 
 
 class CeleryBranchWriteJobLayer(AppServerLayer):
     """Layer for tests that run jobs which write to branches via Celery."""
 
-    celeryd = None
+    celery_worker = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('branch_write_job')
-        cls.celeryd.__enter__()
+        cls.celery_worker = celery_worker('branch_write_job')
+        cls.celery_worker.__enter__()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.celeryd.__exit__(None, None, None)
-        cls.celeryd = None
+        cls.celery_worker.__exit__(None, None, None)
+        cls.celery_worker = None
 
 
 class ZopelessAppServerLayer(LaunchpadZopelessLayer):
