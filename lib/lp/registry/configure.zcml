@@ -550,6 +550,7 @@
                 currentrelease
                 delete
                 development_version
+                display_name
                 displayname
                 distribution
                 distro
