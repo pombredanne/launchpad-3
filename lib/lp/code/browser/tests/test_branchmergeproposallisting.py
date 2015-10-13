@@ -859,7 +859,7 @@ class ActiveReviewsPerformanceMixin:
         recorder2, view2 = self.createUserBMPsAndRecordQueries(
             base_bmps + added_bmps)
         self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def createProductBMP(self, product):
         merge_target = self._makeStackedOnBranchChain(target=product)
@@ -895,7 +895,7 @@ class ActiveReviewsPerformanceMixin:
         recorder2, view2 = self.createProductBMPsAndRecordQueries(
             base_bmps + added_bmps)
         self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class ActiveReviewsPerformanceBzr(

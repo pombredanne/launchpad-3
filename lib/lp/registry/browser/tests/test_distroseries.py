@@ -1006,8 +1006,7 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
             text_content(u"%.2f" % statement_count_per_row))
         # Query count is ~O(1) (i.e. not dependent of the number of
         # differences displayed).
-        self.assertThat(
-            recorder3, HasQueryCount(Equals(recorder2.count)))
+        self.assertThat(recorder3, HasQueryCount.byEquality(recorder2))
 
     def test_queries_single_parent(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -1516,9 +1515,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         flush_database_caches()
         with StormStatementRecorder() as recorder2:
             self.makeView(derived_series).requestUpgrades()
-        self.assertThat(
-            recorder2,
-            HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def makeDSDJob(self, dsd):
         """Create a `DistroSeriesDifferenceJob` to update `dsd`."""

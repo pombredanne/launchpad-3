@@ -154,7 +154,7 @@ class TestWebhook(TestCaseWithFactory):
         get_deliveries()
         recorder1, recorder2 = record_two_runs(
             get_deliveries, create_delivery, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_delete(self):
         with person_logged_in(self.owner):
@@ -302,7 +302,7 @@ class TestWebhookTargetBase:
         get_webhooks()
         recorder1, recorder2 = record_two_runs(
             get_webhooks, create_webhook, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_newWebhook(self):
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))

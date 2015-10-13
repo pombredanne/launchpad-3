@@ -179,7 +179,7 @@ class PersonWebServiceTests(TestCaseWithFactory):
         get_members()
         recorder1, recorder2 = record_two_runs(
             get_members, create_member, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_many_ppas(self):
         # POSTing to a person with many PPAs doesn't OOPS.
@@ -258,7 +258,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         find_teams()
         recorder1, recorder2 = record_two_runs(
             find_teams, create_match, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_findPerson(self):
         # The search can be restricted to people.

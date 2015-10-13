@@ -528,7 +528,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
         self.assertThat(recorder1, HasQueryCount(Equals(11)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getBinaryPackagePublishing_query_count(self):
         # Check that the number of queries required to publish binary
@@ -550,7 +550,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
         self.assertThat(recorder1, HasQueryCount(Equals(15)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestDistroSeriesWebservice(TestCaseWithFactory):

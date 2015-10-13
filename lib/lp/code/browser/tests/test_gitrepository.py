@@ -287,7 +287,7 @@ class TestGitRepositoryBranches(BrowserTestCase):
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(repository, "+index"), create_ref, 10)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestGitRepositoryEditReviewerView(TestCaseWithFactory):
