@@ -106,7 +106,7 @@ BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES = (
 
 
 BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG = (
-    "merge_proposals.webhooks.enabled")
+    "code.merge_proposals.webhooks.enabled")
 
 
 class IBranchMergeProposalPublic(IPrivacy):
