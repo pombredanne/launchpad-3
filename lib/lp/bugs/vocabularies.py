@@ -19,8 +19,6 @@ __all__ = [
     'WebBugTrackerVocabulary',
     ]
 
-from operator import attrgetter
-
 from sqlobject import (
     CONTAINSSTRING,
     OR,
@@ -214,7 +212,7 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
 class DistributionUsingMaloneVocabulary:
     """All the distributions that uses Malone officially."""
 
-    _orderBy = 'displayname'
+    _orderBy = 'display_name'
 
     def __init__(self, context=None):
         self.context = context

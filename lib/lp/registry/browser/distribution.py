@@ -822,7 +822,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
     label = "Register a new distribution"
     field_names = [
         "name",
-        "displayname",
+        "display_name",
         "summary",
         "description",
         "domainname",
@@ -865,8 +865,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
     def save_action(self, action, data):
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
-            displayname=data['displayname'],
-            title=data['displayname'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             summary=data['summary'],
             description=data['description'],
             domainname=data['domainname'],
@@ -889,7 +889,7 @@ class DistributionEditView(RegistryEditFormView,
 
     schema = IDistribution
     field_names = [
-        'displayname',
+        'display_name',
         'summary',
         'description',
         'bug_reporting_guidelines',

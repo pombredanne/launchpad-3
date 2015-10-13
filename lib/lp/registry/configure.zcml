@@ -310,7 +310,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="
-                displayname
+                display_name
                 title
                 summary
                 description
@@ -1760,7 +1760,7 @@
                 bug_reporting_guidelines
                 description
                 development_series_alias
-                displayname
+                display_name
                 driver
                 enable_bug_expiration
                 homepage_content
@@ -1982,6 +1982,7 @@
             attributes="
                 id
                 name
+                display_name
                 displayname
                 description
                 distribution
@@ -2023,7 +2024,7 @@
                 canTransitionToCountryMirror" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name displayname description whiteboard
+            set_attributes="name display_name description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
                             speed country content official_candidate owner"
             attributes="official_candidate whiteboard" />

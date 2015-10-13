@@ -352,7 +352,7 @@ class TestDistributionCurrentSourceReleases(
 
         # Cache cleared.
         distribution.newSeries(
-            name='bar', displayname='Bar', title='Bar', summary='',
+            name='bar', display_name='Bar', title='Bar', summary='',
             description='', version='1', previous_series=None,
             registrant=self.factory.makePerson())
         self.assertNotIn("series", cache)

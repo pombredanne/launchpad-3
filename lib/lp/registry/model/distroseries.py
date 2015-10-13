@@ -217,7 +217,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol()
-    displayname = StringCol(notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
@@ -262,6 +262,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         intermediateTable='SectionSelection')
 
     @property
+    def displayname(self):
+        return self.display_name
+
+    @property
     def pillar(self):
         """See `IBugTarget`."""
         return self.distribution
@@ -273,7 +277,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def named_version(self):
-        return '%s (%s)' % (self.displayname, self.version)
+        return '%s (%s)' % (self.display_name, self.version)
 
     @property
     def upload_components(self):

@@ -1643,7 +1643,7 @@ class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
             DistroSeries.distribution == Distribution.id,
             *where)
         query = query.order_by(
-            Distribution.displayname,
+            Distribution.display_name,
             Desc(DistroSeries.date_created)).config(distinct=True)
         return [series for (series, distribution) in query]
 
