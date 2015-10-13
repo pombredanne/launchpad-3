@@ -946,7 +946,7 @@ class TestMergeProposalWebhooksMixin:
             return None
 
     @classmethod
-    def getExpectedPayload(cls, proposal, include_new_values=True):
+    def getExpectedPayload(cls, proposal):
         payload = {
             "registrant": "/~%s" % proposal.registrant.name,
             "source_branch": cls.getURL(proposal.source_branch),
@@ -956,14 +956,11 @@ class TestMergeProposalWebhooksMixin:
             "prerequisite_branch": cls.getURL(proposal.prerequisite_branch),
             "prerequisite_git_ref": cls.getURL(proposal.prerequisite_git_ref),
             "queue_status": proposal.queue_status.title,
+            "commit_message": proposal.commit_message,
+            "whiteboard": proposal.whiteboard,
+            "description": proposal.description,
+            "preview_diff": cls.getURL(proposal.preview_diff),
             }
-        if include_new_values:
-            payload.update({
-                "commit_message": proposal.commit_message,
-                "whiteboard": proposal.whiteboard,
-                "description": proposal.description,
-                "preview_diff": cls.getURL(proposal.preview_diff),
-                })
         return {k: Equals(v) for k, v in payload.items()}
 
     def assertCorrectDelivery(self, expected_payload, delivery):
@@ -988,8 +985,8 @@ class TestMergeProposalWebhooksMixin:
         expected_payload = {
             "merge_proposal": Equals(self.getURL(proposal)),
             "action": Equals("created"),
+            "new": MatchesDict(self.getExpectedPayload(proposal)),
             }
-        expected_payload.update(self.getExpectedPayload(proposal))
         self.assertCorrectDelivery(expected_payload, delivery)
 
     def test_modify_triggers_webhooks(self):
@@ -1007,9 +1004,8 @@ class TestMergeProposalWebhooksMixin:
         expected_payload = {
             "merge_proposal": Equals(self.getURL(proposal)),
             "action": Equals("modified"),
+            "old": MatchesDict(self.getExpectedPayload(proposal)),
             }
-        expected_payload["old"] = MatchesDict(
-            self.getExpectedPayload(proposal, include_new_values=False))
         with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
             proposal.setStatus(
                 BranchMergeProposalStatus.CODE_APPROVED, user=target.owner)
@@ -1034,6 +1030,7 @@ class TestMergeProposalWebhooksMixin:
         expected_payload = {
             "merge_proposal": Equals(self.getURL(proposal)),
             "action": Equals("deleted"),
+            "old": MatchesDict(self.getExpectedPayload(proposal)),
             }
         proposal.deleteProposal()
         delivery = hook.deliveries.one()

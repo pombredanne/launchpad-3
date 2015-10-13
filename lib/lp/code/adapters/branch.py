@@ -119,7 +119,8 @@ class BranchMergeProposalDelta:
         """Return part of a webhook payload representing the differences."""
         return {
             "old": compose_webhook_payload(
-                IBranchMergeProposal, old_merge_proposal, klass.delta_values),
+                IBranchMergeProposal, old_merge_proposal,
+                klass.delta_values + klass.new_values),
             "new": compose_webhook_payload(
                 IBranchMergeProposal, new_merge_proposal,
                 klass.delta_values + klass.new_values),

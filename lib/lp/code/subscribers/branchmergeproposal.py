@@ -52,10 +52,10 @@ def merge_proposal_created(merge_proposal, event):
     getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
     if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
         payload = {"action": "created"}
-        payload.update(compose_webhook_payload(
+        payload["new"] = compose_webhook_payload(
             IBranchMergeProposal, merge_proposal,
             BranchMergeProposalDelta.delta_values +
-                BranchMergeProposalDelta.new_values))
+                BranchMergeProposalDelta.new_values)
         _trigger_webhook(merge_proposal, payload)
 
 
@@ -121,4 +121,9 @@ def merge_proposal_deleted(merge_proposal, event):
         # The merge proposal link will be invalid by the time the webhook is
         # delivered, but this may still be useful for endpoints that might
         # e.g. want to cancel CI jobs in flight.
-        _trigger_webhook(merge_proposal, {"action": "deleted"})
+        payload = {"action": "deleted"}
+        payload["old"] = compose_webhook_payload(
+            IBranchMergeProposal, merge_proposal,
+            BranchMergeProposalDelta.delta_values +
+                BranchMergeProposalDelta.new_values)
+        _trigger_webhook(merge_proposal, payload)
