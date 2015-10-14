@@ -18,4 +18,3 @@ def test_suite():
             optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
             )
     return suite
-

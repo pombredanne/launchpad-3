@@ -130,9 +130,11 @@ class TestRabbitSession(RabbitTestCase):
         session = self.session_factory()
         session.connect()
         old_close = session._connection.close
+
         def new_close(*args, **kwargs):
             old_close(*args, **kwargs)
             raise socket.error
+
         with monkey_patch(session._connection, close=new_close):
             session.disconnect()
             self.assertFalse(session.is_connected)

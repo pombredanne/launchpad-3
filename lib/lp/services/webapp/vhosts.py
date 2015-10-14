@@ -78,7 +78,6 @@ class AllVirtualHostsConfiguration:
         """
         self._has_vhost_data = False
 
-
     def _getVHostData(self):
         """Parse the vhosts on demand."""
         # Avoid the circular imports inherent with the use of canonical.lazr.
@@ -126,4 +125,3 @@ class AllVirtualHostsConfiguration:
 
 # The only public API to this module, the global virtual host configuration.
 allvhosts = AllVirtualHostsConfiguration()
-

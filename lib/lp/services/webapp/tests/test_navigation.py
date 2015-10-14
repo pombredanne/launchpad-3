@@ -27,7 +27,7 @@ class TestNavigationDirective(TestCase):
     def test_default_layer(self):
         # By default all navigation classes are registered for
         # IDefaultBrowserLayer.
-        directive = """ 
+        directive = """
             <browser:navigation
                 module="%(this)s" classes="ThingNavigation"/>
             """ % dict(this=this)
@@ -57,7 +57,7 @@ class TestNavigationDirective(TestCase):
     def test_multiple_navigations_for_single_context(self):
         # It is possible to have multiple navigation classes for a given
         # context class as long as they are registered for different layers.
-        directive = """ 
+        directive = """
             <browser:navigation
                 module="%(this)s" classes="ThingNavigation"/>
             <browser:navigation

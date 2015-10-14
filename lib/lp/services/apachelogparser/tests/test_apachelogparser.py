@@ -441,7 +441,6 @@ class TestParsedFilesDetection(TestCase):
         # ones.  The first time we see one, we'll parse from the beginning.
         gz_name = 'launchpadlibrarian.net.access-log.1.gz'
         gz_path = os.path.join(self.root, gz_name)
-        first_line = gzip.open(gz_path).readline()
         files_to_parse = get_files_to_parse([gz_path])
         positions = map(itemgetter(1), files_to_parse)
         self.assertEqual(positions, [0])

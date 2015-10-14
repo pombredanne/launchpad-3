@@ -279,7 +279,7 @@ class UniversalJobSource:
         # This method can be called with two distinct types of Jobs:
         # - Jobs that are backed by a DB table with a foreign key onto Job.
         # - Jobs that have no backing, and are only represented by a row in
-        #   the Job table, but the class name we are given is the abstract 
+        #   the Job table, but the class name we are given is the abstract
         #   job class.
         # If there is no __storm_table__, it is the second type, and we have
         # to look it up via the Job table.

@@ -54,6 +54,8 @@ class StubMailer:
 
 
 test_emails = []
+
+
 @implementer(IMailer)
 class TestMailer:
     """
