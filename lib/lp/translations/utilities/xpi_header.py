@@ -45,7 +45,7 @@ class XpiHeader:
             try:
                 self._text = header_content.decode(self.charset)
             except UnicodeDecodeError:
-                raise TranslationFormatInvalidInputError, (
+                raise TranslationFormatInvalidInputError(
                     "XPI header is not encoded in %s." % self.charset)
         else:
             assert isinstance(header_content, unicode), (
@@ -92,4 +92,3 @@ class XpiHeader:
         """
         # Nothing to do for this format.
         return
-

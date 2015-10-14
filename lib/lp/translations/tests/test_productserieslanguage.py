@@ -69,11 +69,11 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 
         # Add a Serbian translation.
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        sr_pofile = self.factory.makePOFile(serbian.code, potemplate)
+        self.factory.makePOFile(serbian.code, potemplate)
         # Add another translation (eg. "Albanian", so it sorts
         # it before Serbian).
         albanian = getUtility(ILanguageSet).getLanguageByCode('sq')
-        sq_pofile = self.factory.makePOFile(albanian.code, potemplate)
+        self.factory.makePOFile(albanian.code, potemplate)
 
         languages = [psl.language for psl in
                      self.productseries.productserieslanguages]
@@ -90,7 +90,7 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 
         # Add Serbian translation for one POTemplate.
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        pofile1 = self.factory.makePOFile(serbian.code, potemplate1)
+        self.factory.makePOFile(serbian.code, potemplate1)
         psls = list(self.productseries.productserieslanguages)
 
         # `pofile` is not set when there's more than one template.
@@ -107,7 +107,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
         for sequence in range(number_of_potmsgsets):
-            self.factory.makePOTMsgSet(potemplate, sequence=sequence+1)
+            self.factory.makePOTMsgSet(potemplate, sequence=sequence + 1)
         removeSecurityProxy(potemplate).messagecount = number_of_potmsgsets
         return potemplate
 
@@ -153,7 +153,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
 
         # Adding a single template with 10 messages makes the total
         # count of messages go up to 10.
-        potemplate = self.createPOTemplateWithPOTMsgSets(10)
+        self.createPOTemplateWithPOTMsgSets(10)
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
         psl.recalculateCounts()
@@ -247,8 +247,8 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
     def test_recalculateCounts_no_pofiles(self):
         # Test that recalculateCounts works correctly even when there
         # are no POFiles returned.
-        potemplate1 = self.createPOTemplateWithPOTMsgSets(1)
-        potemplate2 = self.createPOTemplateWithPOTMsgSets(2)
+        self.createPOTemplateWithPOTMsgSets(1)
+        self.createPOTemplateWithPOTMsgSets(2)
         psl = self.psl_set.getProductSeriesLanguage(self.productseries,
                                                     self.language)
         psl.recalculateCounts()

@@ -177,7 +177,7 @@ def wrap_text(text, prefix, wrap_width):
                         escaped_line_len = escaped_new_block_len
                         while escaped_line_len > wrap_width:
                             escaped_line_len -= (
-                                escaped_length.get(line[line_len-1], 1))
+                                escaped_length.get(line[line_len - 1], 1))
                             line_len -= 1
                         line = line[:line_len]
                         new_block = new_block[line_len:]

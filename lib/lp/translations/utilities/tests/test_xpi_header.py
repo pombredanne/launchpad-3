@@ -104,7 +104,7 @@ class XpiHeaderTestCase(unittest.TestCase):
         self.assertEqual(header.getLastTranslator(), (None, None))
 
     def test_WeirdContributor(self):
-        # Contributor entries without well-formed email addresses are 
+        # Contributor entries without well-formed email addresses are
         # also ignored.
         header = self._produceHeader(['Hello Mom!'])
         self.assertEqual(header.getLastTranslator(), (None, None))

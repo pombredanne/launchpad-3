@@ -62,4 +62,3 @@ class POTranslation(SQLBase):
             return cls(translation=key)
 
     getOrCreateTranslation = classmethod(getOrCreateTranslation)
-

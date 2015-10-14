@@ -14,6 +14,7 @@ __metaclass__ = type
 
 __all__ = ('IPOMsgID', )
 
+
 class IPOMsgID(Interface):
     """A PO message ID."""
 
