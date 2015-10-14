@@ -294,4 +294,4 @@ class TestQuestionSetWebService(TestCaseWithFactory):
         search_questions()
         recorder1, recorder2 = record_two_runs(
             search_questions, create_question, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

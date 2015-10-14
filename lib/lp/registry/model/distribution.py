@@ -86,8 +86,8 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    VCSType,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -201,7 +201,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     _defaultOrder = 'name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
-    displayname = StringCol(notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
     _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
@@ -251,13 +251,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     vcs = EnumCol(enum=VCSType, notNull=False)
 
     def __repr__(self):
-        displayname = self.displayname.encode('ASCII', 'backslashreplace')
+        display_name = self.display_name.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
-            self.__class__.__name__, displayname, self.name)
+            self.__class__.__name__, display_name, self.name)
+
+    @property
+    def displayname(self):
+        return self.display_name
 
     @property
     def title(self):
-        return self.displayname
+        return self.display_name
 
     @property
     def pillar(self):
@@ -614,7 +618,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def bugtargetdisplayname(self):
         """See IBugTarget."""
-        return self.displayname
+        return self.display_name
 
     @property
     def bugtargetname(self):
@@ -703,7 +707,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             content=mirror_type,
             country_dns_mirror=True).one()
 
-    def newMirror(self, owner, speed, country, content, displayname=None,
+    def newMirror(self, owner, speed, country, content, display_name=None,
                   description=None, http_base_url=None,
                   ftp_base_url=None, rsync_base_url=None,
                   official_candidate=False, enabled=False,
@@ -737,7 +741,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
-            country=country, content=content, displayname=displayname,
+            country=country, content=content, display_name=display_name,
             description=description, http_base_url=urls['http_base_url'],
             ftp_base_url=urls['ftp_base_url'],
             rsync_base_url=urls['rsync_base_url'],
@@ -1321,13 +1325,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.owner) or user.inTeam(admins)
 
-    def newSeries(self, name, displayname, title, summary,
+    def newSeries(self, name, display_name, title, summary,
                   description, version, previous_series, registrant):
         """See `IDistribution`."""
         series = DistroSeries(
             distribution=self,
             name=name,
-            displayname=displayname,
+            display_name=display_name,
             title=title,
             summary=summary,
             description=description,
@@ -1449,13 +1453,13 @@ class DistributionSet:
             return None
         return pillar
 
-    def new(self, name, displayname, title, description, summary, domainname,
+    def new(self, name, display_name, title, description, summary, domainname,
             members, owner, registrant, mugshot=None, logo=None, icon=None,
             vcs=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
-            displayname=displayname,
+            display_name=display_name,
             _title=title,
             description=description,
             summary=summary,

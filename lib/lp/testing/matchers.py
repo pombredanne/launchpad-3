@@ -173,9 +173,14 @@ class HasQueryCount(Matcher):
     as a test attachment.
     """
 
-    def __init__(self, count_matcher):
+    def __init__(self, count_matcher, other_query_collector=None):
         """Create a HasQueryCount that will match using count_matcher."""
         self.count_matcher = count_matcher
+        self.other_query_collector = other_query_collector
+
+    @classmethod
+    def byEquality(cls, other_query_collector):
+        return cls(Equals(other_query_collector.count), other_query_collector)
 
     def __str__(self):
         return "HasQueryCount(%s)" % self.count_matcher
@@ -184,24 +189,34 @@ class HasQueryCount(Matcher):
         mismatch = self.count_matcher.match(something.count)
         if mismatch is None:
             return None
-        return _MismatchedQueryCount(mismatch, something)
+        return _MismatchedQueryCount(
+            mismatch, something,
+            other_query_collector=self.other_query_collector)
 
 
 class _MismatchedQueryCount(Mismatch):
     """The Mismatch for a HasQueryCount matcher."""
 
-    def __init__(self, mismatch, query_collector):
+    def __init__(self, mismatch, query_collector, other_query_collector=None):
         self.count_mismatch = mismatch
         self.query_collector = query_collector
+        self.other_query_collector = other_query_collector
 
     def describe(self):
         return "queries do not match: %s" % (self.count_mismatch.describe(),)
 
+    @staticmethod
+    def _getQueryDetails(collector):
+        result = [unicode(query).encode('utf8') for query in collector.queries]
+        return Content(UTF8_TEXT, lambda: ['\n'.join(result)])
+
     def get_details(self):
-        result = []
-        for query in self.query_collector.queries:
-            result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(UTF8_TEXT, lambda: ['\n'.join(result)])}
+        details = {}
+        details['queries'] = self._getQueryDetails(self.query_collector)
+        if self.other_query_collector is not None:
+            details['other_queries'] = self._getQueryDetails(
+                self.other_query_collector)
+        return details
 
 
 class IsNotProxied(Mismatch):

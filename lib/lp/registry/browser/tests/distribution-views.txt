@@ -66,14 +66,14 @@ The view provides a cancel link.
 The view accepts the basic fields to register a distribution.
 
     >>> view.field_names
-    ['name', 'displayname', 'summary', 'description', 'domainname',
+    ['name', 'display_name', 'summary', 'description', 'domainname',
      'members', 'official_malone', 'blueprints_usage', 'translations_usage',
      'answers_usage']
 
     >>> login("admin@canonical.com")
     >>> form = {
     ...     'field.name': 'youbuntu',
-    ...     'field.displayname': 'YoUbuntu',
+    ...     'field.display_name': 'YoUbuntu',
     ...     'field.summary': 'summary',
     ...     'field.description': 'description',
     ...     'field.domainname': 'youbuntu.me',
@@ -127,7 +127,7 @@ The view accepts most of the distribution fields.
     <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
 
     >>> view.field_names
-    ['displayname', 'summary', 'description',
+    ['display_name', 'summary', 'description',
      'bug_reporting_guidelines', 'bug_reported_acknowledgement',
      'package_derivatives_email', 'icon',
      'logo', 'mugshot', 'official_malone', 'enable_bug_expiration',

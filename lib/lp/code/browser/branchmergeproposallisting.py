@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ActiveReviewsView',
     'BranchActiveReviewsView',
+    'BranchDependentMergesView',
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
@@ -262,6 +263,15 @@ class BranchMergeProposalListingView(LaunchpadFormView):
         else:
             return "%s has no merge proposals with status: %s" % (
                 self.context.displayname, self.status_value.title)
+
+
+class BranchDependentMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals that list this branch as a prerequisite."""
+
+    def getVisibleProposalsForUser(self):
+        """See `BranchMergeProposalListingView`."""
+        return self.context.getDependentMergeProposals(
+            self.status_filter, self.user, eager_load=True)
 
 
 class ActiveReviewsView(BranchMergeProposalListingView):

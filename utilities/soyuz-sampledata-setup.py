@@ -194,9 +194,9 @@ def create_series(parent, full_name, version, status):
     registrant = parent.owner
     name = full_name.split()[0].lower()
     title = "The " + full_name
-    displayname = full_name.split()[0]
+    display_name = full_name.split()[0]
     new_series = distribution.newSeries(name=name, title=title,
-        displayname=displayname, summary='Ubuntu %s is good.' % version,
+        display_name=display_name, summary='Ubuntu %s is good.' % version,
         description='%s is awesome.' % version, version=version,
         previous_series=None, registrant=registrant)
     new_series.status = status

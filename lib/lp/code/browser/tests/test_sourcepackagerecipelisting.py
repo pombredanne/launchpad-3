@@ -53,7 +53,7 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(branch, "+recipes"), create_recipe, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_project_query_count(self):
         # The number of queries required to render the list of all recipes
@@ -69,7 +69,7 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(project, "+recipes"), create_recipe, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_person_query_count(self):
         # The number of queries required to render the list of all recipes
@@ -85,4 +85,4 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(person, "+recipes"), create_recipe, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

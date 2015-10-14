@@ -45,8 +45,8 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.gitrepository import (
-    GitRepository,
     get_git_repository_privacy_filter,
+    GitRepository,
     )
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
@@ -237,7 +237,8 @@ class GenericGitCollection:
             find_expr=GitRepository.id).get_plain_result_set()
 
     def getMergeProposals(self, statuses=None, target_repository=None,
-                          target_path=None, merged_revision_ids=None,
+                          target_path=None, prerequisite_repository=None,
+                          prerequisite_path=None, merged_revision_ids=None,
                           eager_load=False):
         """See `IGitCollection`."""
         if merged_revision_ids is not None and not merged_revision_ids:
@@ -246,10 +247,13 @@ class GenericGitCollection:
         elif (self._asymmetric_filter_expressions or
             target_repository is not None or
             target_path is not None or
+            prerequisite_repository is not None or
+            prerequisite_path is not None or
             merged_revision_ids is not None):
             return self._naiveGetMergeProposals(
-                statuses, target_repository, target_path, merged_revision_ids,
-                eager_load=eager_load)
+                statuses, target_repository, target_path,
+                prerequisite_repository, prerequisite_path,
+                merged_revision_ids, eager_load=eager_load)
         else:
             # When examining merge proposals in a scope, this is a moderately
             # effective set of constrained queries.  It is not effective when
@@ -258,8 +262,9 @@ class GenericGitCollection:
                 statuses, eager_load=eager_load)
 
     def _naiveGetMergeProposals(self, statuses=None, target_repository=None,
-                                target_path=None, merged_revision_ids=None,
-                                eager_load=False):
+                                target_path=None, prerequisite_repository=None,
+                                prerequisite_path=None,
+                                merged_revision_ids=None, eager_load=False):
         Target = ClassAlias(GitRepository, "target")
         extra_tables = list(set(
             self._tables.values() + self._asymmetric_tables.values()))
@@ -280,6 +285,13 @@ class GenericGitCollection:
         if target_path is not None:
             expressions.append(
                 BranchMergeProposal.target_git_path == target_path)
+        if prerequisite_repository is not None:
+            expressions.append(
+                BranchMergeProposal.prerequisite_git_repository ==
+                    prerequisite_repository)
+        if prerequisite_path is not None:
+            expressions.append(
+                BranchMergeProposal.prerequisite_git_path == prerequisite_path)
         if merged_revision_ids is not None:
             expressions.append(
                 BranchMergeProposal.merged_revision_id.is_in(

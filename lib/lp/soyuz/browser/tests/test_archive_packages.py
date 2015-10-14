@@ -447,4 +447,4 @@ class TestP3APackagesQueryCount(TestCaseWithFactory):
                 view.render()
         recorder1, recorder2 = record_two_runs(
             ppa_index_render, self.createPackage, 2, 3)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

@@ -52,7 +52,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, nb_objects)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_builders_recipe_build_query_count(self):
         def create_build():
@@ -65,7 +65,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, nb_objects)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_builders_translation_template_build_query_count(self):
         def create_build():
@@ -75,7 +75,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, nb_objects)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_builders_variety_query_count(self):
         def create_builds():
@@ -90,4 +90,4 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_builds, nb_objects)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

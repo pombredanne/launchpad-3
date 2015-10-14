@@ -12,11 +12,11 @@ from datetime import (
 from operator import attrgetter
 
 import pytz
-from testtools.matchers import Equals
 from storm.store import (
     EmptyResultSet,
     Store,
     )
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -596,6 +596,32 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         proposals = self.all_repositories.getMergeProposals(
             target_repository=mp1.target_git_repository,
             target_path=mp1.target_git_path)
+        self.assertEqual([mp1], list(proposals))
+
+    def test_specifying_prerequisite_repository(self):
+        # If the prerequisite_repository is specified but not the
+        # prerequisite_path, only merge proposals where that repository is
+        # the prerequisite are returned.
+        [ref1, ref2] = self.factory.makeGitRefs(
+            paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
+        mp1 = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref1)
+        mp2 = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref2)
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals(
+            prerequisite_repository=ref1.repository)
+        self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
+
+    def test_specifying_prerequisite_ref(self):
+        # If the prerequisite_repository and prerequisite_path are
+        # specified, only merge proposals where that ref is the prerequisite
+        # are returned.
+        [prerequisite] = self.factory.makeGitRefs()
+        mp1 = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=prerequisite)
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals(
+            prerequisite_repository=prerequisite.repository,
+            prerequisite_path=prerequisite.path)
         self.assertEqual([mp1], list(proposals))
 
 

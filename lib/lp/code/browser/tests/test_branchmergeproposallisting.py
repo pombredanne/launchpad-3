@@ -364,6 +364,51 @@ class MergesTestMixin(BranchMergeProposalListingTestMixin):
         self.assertIn("has no merge proposals", browser.contents)
 
 
+class DependentMergesTestMixin(BranchMergeProposalListingTestMixin):
+
+    view_name = '+dependent-merges'
+
+    def makeBzrMergeProposal(self):
+        information_type = (
+            InformationType.USERDATA if self.supports_privacy else None)
+        prerequisite = self.bzr_branch
+        if prerequisite is None:
+            prerequisite = self.factory.makeBranch(
+                target=self.bzr_target, information_type=information_type)
+        target = self.factory.makeBranch(
+            target=self.bzr_target, information_type=information_type)
+        source = self.factory.makeBranch(
+            target=self.bzr_target, owner=self.owner,
+            information_type=information_type)
+        return self.factory.makeBranchMergeProposal(
+            source_branch=source, target_branch=target,
+            prerequisite_branch=prerequisite,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def makeGitMergeProposal(self):
+        information_type = (
+            InformationType.USERDATA if self.supports_privacy else None)
+        prerequisite = self.git_ref
+        if prerequisite is None:
+            [prerequisite] = self.factory.makeGitRefs(
+                target=self.git_target, information_type=information_type)
+        [target] = self.factory.makeGitRefs(
+            target=self.git_target, information_type=information_type)
+        [source] = self.factory.makeGitRefs(
+            target=self.git_target, owner=self.owner,
+            information_type=information_type)
+        return self.factory.makeBranchMergeProposalForGit(
+            source_ref=source, target_ref=target,
+            prerequisite_ref=prerequisite,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def test_none(self):
+        """The dependent merges view should be enabled for the target."""
+        browser = self.getViewBrowser(
+            self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn("has no merge proposals", browser.contents)
+
+
 class ActiveReviewsTestMixin(BranchMergeProposalListingTestMixin):
 
     view_name = '+activereviews'
@@ -520,6 +565,18 @@ class TestBranchMerges(BranchContextMixin, MergesTestMixin, BrowserTestCase):
 
 
 class TestGitRefMerges(GitRefContextMixin, MergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestBranchDependentMerges(
+        BranchContextMixin, DependentMergesTestMixin, BrowserTestCase):
+
+    pass
+
+
+class TestGitRefDependentMerges(
+        GitRefContextMixin, DependentMergesTestMixin, BrowserTestCase):
 
     pass
 
@@ -859,7 +916,7 @@ class ActiveReviewsPerformanceMixin:
         recorder2, view2 = self.createUserBMPsAndRecordQueries(
             base_bmps + added_bmps)
         self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def createProductBMP(self, product):
         merge_target = self._makeStackedOnBranchChain(target=product)
@@ -895,7 +952,7 @@ class ActiveReviewsPerformanceMixin:
         recorder2, view2 = self.createProductBMPsAndRecordQueries(
             base_bmps + added_bmps)
         self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class ActiveReviewsPerformanceBzr(

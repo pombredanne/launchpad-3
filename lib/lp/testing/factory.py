@@ -2620,7 +2620,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         series = naked_distribution.newSeries(
             version=version,
             name=name,
-            displayname=displayname,
+            display_name=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             previous_series=previous_series, registrant=registrant)
@@ -3408,7 +3408,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             speed=MirrorSpeed.S256K,
             country=country,
             content=MirrorContent.ARCHIVE,
-            displayname=displayname,
+            display_name=displayname,
             description=None,
             http_base_url=http_url,
             ftp_base_url=ftp_url,

@@ -80,7 +80,7 @@ class TestQueryCount(TestCaseWithFactory):
             lambda: create_initialized_view(
                 pofile, '+translate', principal=person)(),
             create_suggestions, nb_objects)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestPOFileTranslateViewInvalidFiltering(TestCaseWithFactory):

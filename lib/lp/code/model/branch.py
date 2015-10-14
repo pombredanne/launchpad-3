@@ -526,6 +526,19 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             status, target_branch=self, merged_revnos=merged_revnos,
             eager_load=eager_load)
 
+    def getDependentMergeProposals(self, status=None, visible_by_user=None,
+                                   eager_load=False):
+        """See `IBranch`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        return collection.getMergeProposals(
+            status, prerequisite_branch=self, eager_load=eager_load)
+
     def getMergeProposalByID(self, id):
         """See `IBranch`."""
         return Store.of(self).find(

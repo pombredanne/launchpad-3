@@ -254,7 +254,7 @@ class TranslationGroup(SQLBase):
             )
         distro_data = ISlaveStore(Distribution).using(*using).find(
             tables, Distribution.translationgroupID == self.id).order_by(
-            Distribution.displayname)
+            Distribution.display_name)
 
         return DecoratedResultSet(distro_data, operator.itemgetter(0))
 
