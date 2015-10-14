@@ -13,7 +13,6 @@ __all__ = [
     'IWebhookDeliveryJobSource',
     'IWebhookJob',
     'IWebhookJobSource',
-    'IWebhookPayloadRequest',
     'IWebhookSet',
     'IWebhookTarget',
     'WEBHOOK_EVENT_TYPES',
@@ -66,7 +65,6 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
-from lp.services.webapp.interfaces import ILaunchpadBrowserApplicationRequest
 from lp.services.webservice.apihelpers import (
     patch_collection_property,
     patch_entry_return_type,
@@ -361,10 +359,6 @@ class IWebhookClient(Interface):
         If secret is not None, a PubSubHubbub-compatible X-Hub-Signature
         header will be sent using HMAC-SHA1.
         """
-
-
-class IWebhookPayloadRequest(ILaunchpadBrowserApplicationRequest):
-    """An internal fake request used while composing webhook payloads."""
 
 
 patch_collection_property(IWebhook, 'deliveries', IWebhookDeliveryJob)

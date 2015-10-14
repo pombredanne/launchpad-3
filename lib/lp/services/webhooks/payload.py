@@ -16,9 +16,13 @@ from zope.component import getMultiAdapter
 from zope.interface import implementer
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lp.services.webapp.interfaces import ILaunchpadBrowserApplicationRequest
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadBrowserRequest
-from lp.services.webhooks.interfaces import IWebhookPayloadRequest
+
+
+class IWebhookPayloadRequest(ILaunchpadBrowserApplicationRequest):
+    """An internal fake request used while composing webhook payloads."""
 
 
 @implementer(IWebhookPayloadRequest)

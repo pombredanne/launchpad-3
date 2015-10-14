@@ -63,7 +63,7 @@
 
     <adapter
         for="zope.interface.Interface
-             lp.services.webhooks.interfaces.IWebhookPayloadRequest"
+             lp.services.webhooks.payload.IWebhookPayloadRequest"
         provides="zope.traversing.browser.interfaces.IAbsoluteURL"
         factory="lp.services.webhooks.payload.WebhookAbsoluteURL"
         />
