@@ -661,6 +661,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
                           merged_revnos=None, eager_load=False):
         """Return matching BranchMergeProposals."""
 
+    def getDependentMergeProposals(status=None, visible_by_user=None,
+                                   eager_load=False):
+        """Return BranchMergeProposals dependent on merging this branch."""
+
     def getMergeProposalByID(id):
         """Return this branch's merge proposal with this id, or None."""
 

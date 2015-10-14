@@ -698,6 +698,20 @@ class TestBranch(TestCaseWithFactory):
             [product.development_focus],
             list(branch.associatedProductSeries()))
 
+    def test_getMergeProposals(self):
+        target_branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(target_branch=target_branch)
+        self.factory.makeBranchMergeProposal()
+        self.assertEqual([bmp], list(target_branch.getMergeProposals()))
+
+    def test_getDependentMergeProposals(self):
+        prerequisite_branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            prerequisite_branch=prerequisite_branch)
+        self.factory.makeBranchMergeProposal()
+        self.assertEqual(
+            [bmp], list(prerequisite_branch.getDependentMergeProposals()))
+
 
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""
