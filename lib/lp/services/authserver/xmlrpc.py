@@ -44,5 +44,3 @@ class AuthServerApplication:
     """AuthServer End-Point."""
 
     title = "Auth Server"
-
-

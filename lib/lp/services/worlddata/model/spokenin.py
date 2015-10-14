@@ -23,4 +23,3 @@ class SpokenIn(SQLBase):
     country = ForeignKey(dbName='country', notNull=True, foreignKey='Country')
     language = ForeignKey(dbName='language', notNull=True,
                           foreignKey='Language')
-

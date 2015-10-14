@@ -134,7 +134,6 @@ class SalesforceXMLRPCTestTransport(Transport):
                     'rPwGRk4'),
             ]
 
-
     def _createVoucher(self, owner_oid, term_months):
         """Create a new voucher with the given term and owner."""
         self.voucher_index += 1

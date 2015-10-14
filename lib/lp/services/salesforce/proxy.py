@@ -99,6 +99,7 @@ class SalesforceVoucherProxy:
         """Get the proxy URL with port."""
         return "%s:%d" % (config.commercial.voucher_proxy_url,
                           config.commercial.voucher_proxy_port)
+
     @property
     def server(self):
         """See `ISalesforceVoucherProxy`."""

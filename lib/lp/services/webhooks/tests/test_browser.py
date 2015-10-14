@@ -9,7 +9,6 @@ import re
 
 import soupmatchers
 from testtools.matchers import (
-    Equals,
     MatchesAll,
     MatchesStructure,
     Not,

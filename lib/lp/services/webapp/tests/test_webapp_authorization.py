@@ -18,7 +18,6 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
     )
-from lp.testing.layers import ZopelessLayer
 
 
 class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(

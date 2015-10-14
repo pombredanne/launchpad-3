@@ -72,6 +72,7 @@ class CountrySet:
         """See `ICountrySet`."""
         return IStore(Country).find(Country).order_by(Country.iso3166code2)
 
+
 @implementer(IContinent)
 class Continent(SQLBase):
     """See IContinent."""

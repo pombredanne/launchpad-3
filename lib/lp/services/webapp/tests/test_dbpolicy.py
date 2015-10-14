@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = []
 
 from textwrap import dedent
-import time
 
 from lazr.restful.interfaces import IWebServiceConfiguration
 import psycopg2

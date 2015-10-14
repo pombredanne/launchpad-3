@@ -193,4 +193,3 @@ def print_lines_sorted(file, lines):
 
     if block:
         print_block(block)
-

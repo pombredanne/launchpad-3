@@ -108,6 +108,7 @@ def test_simple_sendmail():
 
     """
 
+
 def test_suite():
     suite = DocTestSuite(checker=RENormalizing([
         (re.compile(r'Revision="\d+"'), 'Revision="1999"')]))
