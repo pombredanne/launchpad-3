@@ -33,14 +33,19 @@ from storm.properties import (
 from storm.references import Reference
 from storm.store import Store
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface import (
     implementer,
     provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.security import IAuthorization
 import lp.app.versioninfo
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -205,42 +210,27 @@ class WebhookSet:
             Webhook.id)
 
     @classmethod
-    def _checkVisibility(cls, target, source=None):
-        """Check visibility of webhook context objects.
+    def _checkVisibility(cls, context, user):
+        """Check visibility of the webhook context object.
 
         In order to be able to dispatch a webhook without disclosing
         unauthorised information, the webhook owner (currently always equal
-        to the webhook target owner) must be able to see the webhook target.
-        If deliveries are being triggered due to a change to some different
-        source object, then the webhook owner must also be able to see that
-        source.
+        to the webhook target owner) must be able to see the context for the
+        action that caused the webhook to be triggered.
 
-        :return: True if all objects are visible to the webhook owner,
+        :return: True if the context is visible to the webhook owner,
             otherwise False.
         """
-        from lp.code.interfaces.branch import IBranch
-        from lp.code.interfaces.gitrepository import IGitRepository
-        owner = removeSecurityProxy(target).owner
-        if IGitRepository.providedBy(target):
-            if not removeSecurityProxy(target).visibleByUser(owner):
-                return False
-            if source is not None:
-                assert IGitRepository.providedBy(source)
-                if not removeSecurityProxy(source).visibleByUser(owner):
-                    return False
-        elif IBranch.providedBy(target):
-            if not removeSecurityProxy(target).visibleByUser(owner):
-                return False
-            if source is not None:
-                assert IBranch.providedBy(source)
-                if not removeSecurityProxy(source).visibleByUser(owner):
-                    return False
-        else:
-            raise AssertionError("Unsupported target: %r" % (target,))
-        return True
+        roles = IPersonRoles(user)
+        authz = getAdapter(
+            removeSecurityProxy(context), IAuthorization, "launchpad.View")
+        return authz.checkAuthenticated(roles)
 
-    def trigger(self, target, event_type, payload, source=None):
-        if not self._checkVisibility(target, source=source):
+    def trigger(self, target, event_type, payload, context=None):
+        if context is None:
+            context = target
+        user = removeSecurityProxy(target).owner
+        if not self._checkVisibility(context, user):
             return
         # XXX wgrant 2015-08-10: Two INSERTs and one celery submission for
         # each webhook, but the set should be small and we'd have to defer

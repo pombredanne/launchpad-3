@@ -34,13 +34,11 @@ def _trigger_webhook(merge_proposal, payload):
     payload["merge_proposal"] = canonical_url(
         merge_proposal, force_local_path=True)
     if merge_proposal.target_branch is not None:
-        source = merge_proposal.source_branch
         target = merge_proposal.target_branch
     else:
-        source = merge_proposal.source_git_repository
         target = merge_proposal.target_git_repository
     getUtility(IWebhookSet).trigger(
-        target, "merge-proposal:0.1", payload, source=source)
+        target, "merge-proposal:0.1", payload, context=merge_proposal)
 
 
 def merge_proposal_created(merge_proposal, event):

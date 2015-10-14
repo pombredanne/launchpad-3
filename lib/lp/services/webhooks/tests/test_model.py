@@ -12,6 +12,7 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.checker import getChecker
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.registry.enums import BranchSharingPolicy
@@ -201,14 +202,14 @@ class TestWebhookSetBase:
     def test__checkVisibility_public_artifact(self):
         target = self.makeTarget()
         login_person(target.owner)
-        self.assertTrue(WebhookSet._checkVisibility(target))
+        self.assertTrue(WebhookSet._checkVisibility(target, target.owner))
 
     def test__checkVisibility_private_artifact(self):
         owner = self.factory.makePerson()
         target = self.makeTarget(
             owner=owner, information_type=InformationType.PROPRIETARY)
         login_person(owner)
-        self.assertTrue(WebhookSet._checkVisibility(target))
+        self.assertTrue(WebhookSet._checkVisibility(target, owner))
 
     def test__checkVisibility_lost_access_to_private_artifact(self):
         # A user may lose access to a private artifact even if they own it,
@@ -225,22 +226,27 @@ class TestWebhookSetBase:
         grantee_member = self.factory.makePerson(member_of=[grantee_team])
         target = self.makeTarget(owner=grantee_member, project=project)
         login_person(grantee_member)
-        self.assertTrue(WebhookSet._checkVisibility(target))
+        self.assertTrue(WebhookSet._checkVisibility(target, grantee_member))
         grantee_member.leave(grantee_team)
-        self.assertFalse(WebhookSet._checkVisibility(target))
+        self.assertFalse(WebhookSet._checkVisibility(target, grantee_member))
 
-    def test__checkVisibility_with_source(self):
+    def test__checkVisibility_with_different_context(self):
         project = self.factory.makeProduct(
             branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
         owner = self.factory.makePerson()
         source = self.makeTarget(
             owner=owner, project=project,
             information_type=InformationType.PROPRIETARY)
-        target1 = self.makeTarget(owner=owner, project=project)
-        target2 = self.makeTarget(project=project)
+        reviewer = self.factory.makePerson()
+        mp1 = self.makeMergeProposal(
+            owner=owner, project=project, source=source, reviewer=reviewer)
+        mp2 = self.makeMergeProposal(
+            project=project, source=source, reviewer=reviewer)
         login_person(owner)
-        self.assertTrue(WebhookSet._checkVisibility(target1, source=source))
-        self.assertFalse(WebhookSet._checkVisibility(target2, source=source))
+        self.assertTrue(
+            WebhookSet._checkVisibility(mp1, mp1.merge_target.owner))
+        self.assertFalse(
+            WebhookSet._checkVisibility(mp2, mp2.merge_target.owner))
 
     def test_trigger(self):
         owner = self.factory.makePerson()
@@ -288,24 +294,29 @@ class TestWebhookSetBase:
             information_type=InformationType.PROPRIETARY)
         target1 = self.makeTarget(project=project)
         target2 = self.makeTarget(owner=owner, project=project)
+        reviewer = self.factory.makePerson()
+        mp1 = self.makeMergeProposal(
+            owner=owner, target=target1, source=source, reviewer=reviewer)
+        mp2 = self.makeMergeProposal(
+            owner=owner, target=target2, source=source, reviewer=reviewer)
         event_type = 'merge-proposal:0.1'
         hook1 = self.factory.makeWebhook(
             target=target1, event_types=[event_type])
         hook2 = self.factory.makeWebhook(
             target=target2, event_types=[event_type])
 
-        # The owner of target1 cannot see source, so their webhook is kept
-        # in the dark too.
+        # The owner of target1 cannot see source and hence cannot see mp1,
+        # so their webhook is kept in the dark too.
         getUtility(IWebhookSet).trigger(
-            target1, event_type, {'some': 'payload'}, source=source)
+            target1, event_type, {'some': 'payload'}, context=mp1)
         with admin_logged_in():
             self.assertThat(list(hook1.deliveries), HasLength(0))
             self.assertThat(list(hook2.deliveries), HasLength(0))
 
-        # The owner of target2 can see source, so it's OK to tell their
-        # webhook about the existence of source.
+        # The owner of target2 can see source and mp2, so it's OK to tell
+        # their webhook about the existence of source.
         getUtility(IWebhookSet).trigger(
-            target2, event_type, {'some': 'payload'}, source=source)
+            target2, event_type, {'some': 'payload'}, context=mp2)
         with admin_logged_in():
             self.assertThat(list(hook1.deliveries), HasLength(0))
             self.assertThat(list(hook2.deliveries), HasLength(1))
@@ -320,12 +331,13 @@ class TestWebhookSetBase:
         project = self.factory.makeProduct()
         source = self.makeTarget(project=project)
         target = self.makeTarget(project=project)
+        mp = self.makeMergeProposal(target=target, source=source)
         event_type = 'merge-proposal:0.1'
         hook = self.factory.makeWebhook(
             target=target, event_types=[event_type])
         login_person(source.owner)
         getUtility(IWebhookSet).trigger(
-            target, event_type, {'some': 'payload'}, source=source)
+            target, event_type, {'some': 'payload'}, context=mp)
         with admin_logged_in():
             self.assertThat(list(hook.deliveries), HasLength(1))
             delivery = hook.deliveries.one()
@@ -339,6 +351,20 @@ class TestWebhookSetGitRepository(TestWebhookSetBase, TestCaseWithFactory):
     def makeTarget(self, project=None, **kwargs):
         return self.factory.makeGitRepository(target=project, **kwargs)
 
+    def makeMergeProposal(self, target=None, source=None, reviewer=None,
+                          **kwargs):
+        if target is None:
+            target = self.makeTarget(**kwargs)
+        [target_ref] = self.factory.makeGitRefs(repository=target)
+        if source is None:
+            source = self.makeTarget(**kwargs)
+        [source_ref] = self.factory.makeGitRefs(repository=source)
+        owner = removeSecurityProxy(source).owner
+        with person_logged_in(owner):
+            return self.factory.makeBranchMergeProposalForGit(
+                registrant=owner, target_ref=target_ref, source_ref=source_ref,
+                reviewer=reviewer)
+
 
 class TestWebhookSetBranch(TestWebhookSetBase, TestCaseWithFactory):
 
@@ -346,3 +372,15 @@ class TestWebhookSetBranch(TestWebhookSetBase, TestCaseWithFactory):
 
     def makeTarget(self, project=None, **kwargs):
         return self.factory.makeBranch(product=project, **kwargs)
+
+    def makeMergeProposal(self, target=None, source=None, reviewer=None,
+                          **kwargs):
+        if target is None:
+            target = self.makeTarget(**kwargs)
+        if source is None:
+            source = self.makeTarget(**kwargs)
+        owner = removeSecurityProxy(source).owner
+        with person_logged_in(owner):
+            return self.factory.makeBranchMergeProposal(
+                registrant=owner, target_branch=target, source_branch=source,
+                reviewer=reviewer)
