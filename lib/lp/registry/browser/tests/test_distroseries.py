@@ -622,7 +622,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
         form = {
             "field.name": u"polished",
             "field.version": u"12.04",
-            "field.displayname": u"Polished Polecat",
+            "field.display_name": u"Polished Polecat",
             "field.summary": u"Even The Register likes it.",
             "field.actions.create": u"Add Series",
             }
@@ -635,7 +635,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
     def assertCreated(self, distroseries):
         self.assertEqual(u"polished", distroseries.name)
         self.assertEqual(u"12.04", distroseries.version)
-        self.assertEqual(u"Polished Polecat", distroseries.displayname)
+        self.assertEqual(u"Polished Polecat", distroseries.display_name)
         self.assertEqual(u"Polished Polecat", distroseries.title)
         self.assertEqual(u"Even The Register likes it.", distroseries.summary)
         self.assertEqual(u"", distroseries.description)
@@ -643,7 +643,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
 
     def test_plain_submit(self):
         # When creating a new DistroSeries via DistroSeriesAddView, the title
-        # is set to the same as the displayname (title is, in any case,
+        # is set to the same as the display_name (title is, in any case,
         # deprecated), the description is left empty, and previous_series is
         # None (DistroSeriesInitializeView takes care of setting that).
         distroseries = self.createNewDistroseries()

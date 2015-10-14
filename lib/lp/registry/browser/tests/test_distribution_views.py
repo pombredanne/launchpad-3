@@ -122,7 +122,7 @@ class TestDistroAddView(TestCaseWithFactory):
     def getDefaultAddDict(self):
         return {
             'field.name': 'newbuntu',
-            'field.displayname': 'newbuntu',
+            'field.display_name': 'newbuntu',
             'field.title': 'newbuntu',
             'field.summary': 'newbuntu',
             'field.description': 'newbuntu',
@@ -219,7 +219,7 @@ class TestDistroEditView(TestCaseWithFactory):
 
     def getDefaultEditDict(self):
         return {
-            'field.displayname': 'newbuntu',
+            'field.display_name': 'newbuntu',
             'field.title': 'newbuntu',
             'field.summary': 'newbuntu',
             'field.description': 'newbuntu',

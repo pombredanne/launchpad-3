@@ -47,12 +47,12 @@ The view provides a label, page_title, and cancel_url
 A HTTP or FTP URL is required to register a mirror.
 
     >>> view.field_names
-    ['displayname', 'description', 'whiteboard', 'http_base_url',
+    ['display_name', 'description', 'whiteboard', 'http_base_url',
      'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
      'official_candidate']
 
     >>> form = {
-    ...     'field.displayname': 'Illuminati',
+    ...     'field.display_name': 'Illuminati',
     ...     'field.description': 'description',
     ...     'field.whiteboard': 'whiteboard',
     ...     'field.http_base_url': 'http://secret.me/',
@@ -239,7 +239,7 @@ The +edit view provides a label, page_title, and cancel_url.
 The user can edit the mirror fields.
 
     >>> view.field_names
-    ['name', 'displayname', 'description', 'whiteboard', 'http_base_url',
+    ['name', 'display_name', 'description', 'whiteboard', 'http_base_url',
      'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
      'official_candidate']
 
