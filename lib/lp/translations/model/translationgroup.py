@@ -131,11 +131,11 @@ class TranslationGroup(SQLBase):
         found = len(projects)
         if found < goal:
             projects.extend(
-                list(self.projects[:goal-found]))
+                list(self.projects[:goal - found]))
             found = len(projects)
         if found < goal:
             projects.extend(
-                list(self.products[:goal-found]))
+                list(self.products[:goal - found]))
         return projects
 
     @property

@@ -270,7 +270,7 @@ class TranslationsPerson:
                 tables=[
                     DistroSeries,
                     Join(
-                        Distribution, 
+                        Distribution,
                         And(
                             Distribution.id == DistroSeries.distributionID,
                             Distribution.translations_usage ==

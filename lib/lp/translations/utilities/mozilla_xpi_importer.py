@@ -159,8 +159,6 @@ class MozillaZipImportParser(MozillaZipTraversal):
             self.messages.append(message)
 
 
-
-
 def valid_property_msgid(msgid):
     """Whether the given msgid follows the restrictions to be valid.
 
@@ -208,7 +206,7 @@ class PropertyFile:
         try:
             content = content.decode('utf-8')
         except UnicodeDecodeError:
-            raise TranslationFormatInvalidInputError, (
+            raise TranslationFormatInvalidInputError(
                 'Content is not valid unicode-escaped text')
 
         line_num = 0
@@ -423,4 +421,3 @@ class MozillaXpiImporter:
     def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
         return XpiHeader(header_string)
-

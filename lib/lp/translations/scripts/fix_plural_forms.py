@@ -87,4 +87,3 @@ def fix_plurals_in_all_pofiles(ztm, logger):
             fix_pofile_plurals(pofile, logger, ztm)
         except SQLObjectNotFound:
             pass
-

@@ -5,7 +5,9 @@
 
 __metaclass__ = type
 
-__all__ = [ 'VPOTExport' ]
+__all__ = [
+    'VPOTExport',
+    ]
 
 from zope.interface import implementer
 

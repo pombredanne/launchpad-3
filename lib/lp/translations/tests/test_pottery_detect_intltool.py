@@ -478,7 +478,7 @@ class TestConfigFile(TestCase):
             """)
         self.assertEqual(
             ['param1', 'param2'], configfile.getFunctionParams('ML_FUNC_2'))
-    
+
     def test_getFunctionParams_strips_quotes(self):
         # Quotes get stripped off function parameters.
         configfile = self._makeConfigFile('FUNC("param")')
