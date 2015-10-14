@@ -538,8 +538,7 @@ class TestBug(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_subscriber, 3)
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getSubscribersFromDuplicates_with_recipients_query_count(self):
         # getSubscribersFromDuplicates() uses a constant number of queries
@@ -562,8 +561,7 @@ class TestBug(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_subscriber, 3)
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getAlsoNotifiedSubscribers_with_recipients_query_count(self):
         # getAlsoNotifiedSubscribers() uses a constant number of queries when
@@ -590,8 +588,7 @@ class TestBug(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_stuff, 3)
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_newMessage_default(self):
         # Adding a bug message notifies that is was created.

@@ -102,7 +102,7 @@ class TestgetSpecificJobs(TestCaseWithFactory):
         flush_database_updates()
         with StormStatementRecorder() as recorder2:
             getSpecificJobs(build_farm_jobs)
-        self.assertThat(recorder, HasQueryCount(Equals(recorder2.count)))
+        self.assertThat(recorder, HasQueryCount.byEquality(recorder2))
 
     def test_getSpecificJobs_no_specific_job(self):
         build_farm_job_source = getUtility(IBuildFarmJobSource)
@@ -180,7 +180,7 @@ class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
             partial(self.createRecipeBuildWithBuilder, builder=self.builder),
             self.nb_objects)
 
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_build_history_queries_count_binary_package_builds(self):
         # Rendering to builder's history issues a constant number of queries
@@ -192,7 +192,7 @@ class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
             partial(self.createBinaryPackageBuild, builder=self.builder),
             self.nb_objects)
 
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_build_history_queries_count_binary_package_builds_in_ppa(self):
         # Rendering to builder's history issues a constant number of queries
@@ -205,7 +205,7 @@ class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
             builder_history_render, createBinaryPackageBuildInPPA,
             self.nb_objects)
 
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_build_history_queries_count_translation_template_builds(self):
         # Rendering to builder's history issues a constant number of queries
@@ -219,7 +219,7 @@ class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
                 builder=self.builder),
             self.nb_objects)
 
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_build_history_private_build_view(self):
         self.createRecipeBuildWithBuilder(builder=self.builder)

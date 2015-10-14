@@ -126,7 +126,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # This may seem large: it is; there is easily another 25% fat in
         # there.
         self.assertThat(recorder1, HasQueryCount(LessThan(83)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_rendered_query_counts_constant_with_attachments(self):
         task = self.factory.makeBugTask()
@@ -137,7 +137,7 @@ class TestBugTaskView(TestCaseWithFactory):
             lambda: self.factory.makeBugAttachment(bug=task.bug),
             1, 9, login_method=lambda: login(ADMIN_EMAIL))
         self.assertThat(recorder1, HasQueryCount(LessThan(84)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def makeLinkedBranchMergeProposal(self, sourcepackage, bug, owner):
         with person_logged_in(owner):
@@ -218,7 +218,7 @@ class TestBugTaskView(TestCaseWithFactory):
             lambda: add_activity("description", self.factory.makePerson()),
             1, 20, login_method=lambda: login(ADMIN_EMAIL))
         self.assertThat(recorder1, HasQueryCount(LessThan(84)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_rendered_query_counts_constant_with_milestones(self):
         # More queries are not used for extra milestones.
@@ -2007,7 +2007,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             lambda: self.factory.makeBug(target=product),
             1, 10, login_method=lambda: login(ANONYMOUS))
         self.assertThat(recorder1, HasQueryCount(LessThan(46)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.

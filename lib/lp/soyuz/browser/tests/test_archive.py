@@ -174,4 +174,4 @@ class TestArchiveCopyPackagesView(TestCaseWithFactory):
             lambda: create_initialized_view(
                 source, '+copy-packages', user=person),
             create_targets, nb_objects)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

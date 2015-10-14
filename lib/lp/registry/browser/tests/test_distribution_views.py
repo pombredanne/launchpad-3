@@ -365,7 +365,7 @@ class TestDistributionMirrorsViewMixin:
 
         recorder1, recorder2 = record_two_runs(
             render_mirrors, create_mirror, 10)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestDistributionArchiveMirrorsView(

@@ -148,7 +148,7 @@ class TestSnapListing(BrowserTestCase):
     def assertSnapsQueryCount(self, context, item_creator):
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(context, "+snaps"), item_creator, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_branch_query_count(self):
         # The number of queries required to render the list of all snap

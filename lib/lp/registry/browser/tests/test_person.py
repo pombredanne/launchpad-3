@@ -932,7 +932,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_participations, create_subscriptions, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestPersonRelatedPackagesView(TestCaseWithFactory):
