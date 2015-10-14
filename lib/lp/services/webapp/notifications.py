@@ -328,7 +328,7 @@ class NotificationTestView1(LaunchpadView):
             response.addInfoNotification(
                 structured('Info notification <b>%d</b>' % count))
             response.addWarningNotification(
-                structured('Warning notification <b>%d</b>' %count))
+                structured('Warning notification <b>%d</b>' % count))
             response.addErrorNotification(
                 structured('Error notification <b>%d</b>' % count))
 

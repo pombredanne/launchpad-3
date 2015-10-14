@@ -18,7 +18,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.features.testing import FeatureFixture
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,

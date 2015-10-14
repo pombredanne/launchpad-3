@@ -36,6 +36,7 @@ def _enable_sftp_in_urlparse():
 # Extend urlparse to support sftp at module load time.
 _enable_sftp_in_urlparse()
 
+
 def _enable_bzr_ssh_in_urlparse():
     """Teach the urlparse module about the bzr+ssh scheme.
 
@@ -58,6 +59,7 @@ def _enable_bzr_ssh_in_urlparse():
 # version, so be sure to teach trusted.sql about any new URL
 # schemes which are added here.
 _enable_bzr_ssh_in_urlparse()
+
 
 def urlappend(baseurl, path):
     """Append the given path to baseurl.

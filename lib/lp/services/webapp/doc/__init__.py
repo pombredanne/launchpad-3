@@ -2,4 +2,3 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Make this directory into a Python package.
-

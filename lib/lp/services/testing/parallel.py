@@ -48,7 +48,7 @@ def find_load_list(args):
         if arg.startswith('--load-list='):
             load_list = arg[len('--load-list='):]
         if arg == '--load-list':
-            load_list = args[pos+1]
+            load_list = args[pos + 1]
     return load_list
 
 
@@ -86,7 +86,7 @@ def find_tests(argv):
     test.run(result)
     process.wait()
     if process.returncode:
-        raise Exception('error listing tests: %s' % err)
+        raise Exception('error listing tests: %s' % process.returncode)
     return result.ids
 
 
@@ -107,7 +107,8 @@ class ListTestCase(ProtocolTestCase):
             for test_id in self._test_ids:
                 test_list_file.write(test_id + '\n')
             test_list_file.flush()
-            argv = self._args + ['--subunit', '--load-list', test_list_file.name]
+            argv = self._args + [
+                '--subunit', '--load-list', test_list_file.name]
             process = subprocess.Popen(argv, stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, bufsize=1)
             try:
@@ -121,7 +122,7 @@ class ListTestCase(ProtocolTestCase):
 
 def concurrency():
     """Return the number of current tests we should run on this machine.
-    
+
     Each test is run in its own process, and we assume that the optimal number
     is one per core.
     """
@@ -138,7 +139,8 @@ def partition_tests(test_ids, count):
     # just one partition.  So the slowest partition shouldn't be much slower
     # than the fastest.
     partitions = [list() for i in range(count)]
-    for partition, test_id in itertools.izip(itertools.cycle(partitions), test_ids):
+    for partition, test_id in itertools.izip(
+            itertools.cycle(partitions), test_ids):
         partition.append(test_id)
     return partitions
 
@@ -147,13 +149,17 @@ def main(argv, prepare_args=prepare_argv, find_tests=find_tests):
     """CLI entry point to adapt a test run to parallel testing."""
     child_args = prepare_argv(argv)
     test_ids = find_tests(argv)
+
     # We could create a proxy object per test id if desired in future)
     def parallelise_tests(suite):
         test_ids = list(suite)[0]._test_ids
         count = concurrency()
         partitions = partition_tests(test_ids, count)
-        return [ListTestCase(partition, child_args) for partition in partitions]
-    suite = ConcurrentTestSuite(ListTestCase(test_ids, None), parallelise_tests)
+        return [
+            ListTestCase(partition, child_args) for partition in partitions]
+
+    suite = ConcurrentTestSuite(
+        ListTestCase(test_ids, None), parallelise_tests)
     if '--subunit' in argv:
         runner = SubunitTestRunner(sys.stdout)
         result = runner.run(suite)
@@ -168,4 +174,3 @@ def main(argv, prepare_args=prepare_argv, find_tests=find_tests):
     if result.wasSuccessful():
         return 0
     return -1
-

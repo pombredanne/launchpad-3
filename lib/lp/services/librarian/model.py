@@ -24,7 +24,6 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Date,
     Desc,

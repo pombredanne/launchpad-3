@@ -25,4 +25,3 @@ class ISpokenIn(Interface):
     country = Int(title=_('Country'), required=True, readonly=True)
 
     language = Int(title=_('Language'), required=True, readonly=True)
-

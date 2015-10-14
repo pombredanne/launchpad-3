@@ -183,12 +183,14 @@ def escape_nonascii_uniquely(bogus_string):
     hello \\xa9
     """
     nonascii_regex = re.compile(r'[\200-\377]')
+
     # By encoding the invalid ascii with a backslash, x, and then the
     # hex value, it makes it easy to decode it by pasting into a python
     # interpreter. quopri() is not used, since that could caused the
     # decoding of an email to fail.
     def quote(match):
         return '\\x%x' % ord(match.group(0))
+
     return nonascii_regex.sub(quote, bogus_string)
 
 

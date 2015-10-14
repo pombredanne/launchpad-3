@@ -61,7 +61,7 @@ class TestLaunchpadMemberTestCase(MailmanTestCase):
     def test_messages_from_launchpad_users_are_accepted(self):
         # A message from a launchpad user is accepted.
         lp_user_email = 'chinchila@eg.dom'
-        lp_user = self.factory.makePerson(email=lp_user_email)
+        self.factory.makePerson(email=lp_user_email)
         message = self.makeMailmanMessage(
             self.mm_list, lp_user_email, 'subject', 'any content.')
         msg_data = {}
@@ -86,7 +86,7 @@ class TestLaunchpadMemberTestCase(MailmanTestCase):
         # When the Launchpad xmlrpc proxy raises an error, the message
         # is re-enqueed.
         lp_user_email = 'groundhog@eg.dom'
-        lp_user = self.factory.makePerson(email=lp_user_email)
+        self.factory.makePerson(email=lp_user_email)
         message = self.makeMailmanMessage(
             self.mm_list, lp_user_email, 'subject', 'any content.')
         msg_data = {}

@@ -547,9 +547,9 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
             context, request, new_name=new_name, rootsite=rootsite)
 
     _context.action(
-        discriminator = ('view', for_, name, IBrowserRequest, layer),
-        callable = handler,
-        args = (
+        discriminator=('view', for_, name, IBrowserRequest, layer),
+        callable=handler,
+        args=(
             'registerAdapter',
             renamed_factory, (for_, layer), Interface, name, _context.info))
 
