@@ -330,8 +330,7 @@ class BaseLayer:
         # We can only do unique test allocation and parallelisation if
         # LP_PERSISTENT_TEST_SERVICES is off.
         if not BaseLayer.persist_test_services:
-            test_instance = '%d_%s' % (
-                os.getpid(), str(uuid.uuid1()).replace('-', '_'))
+            test_instance = '%d_%s' % (os.getpid(), uuid.uuid1().hex)
             os.environ['LP_TEST_INSTANCE'] = test_instance
             cls.fixture.addCleanup(os.environ.pop, 'LP_TEST_INSTANCE', '')
             # Kill any Memcached or Librarian left running from a previous
