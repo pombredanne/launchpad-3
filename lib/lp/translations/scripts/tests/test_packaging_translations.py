@@ -15,7 +15,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import ZopelessAppServerLayer
-from lp.translations.model.translationpackagingjob import TranslationSplitJob
 from lp.translations.tests.test_translationpackagingjob import (
     make_translation_merge_job,
     )

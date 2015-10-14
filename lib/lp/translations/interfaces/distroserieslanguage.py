@@ -16,6 +16,7 @@ __all__ = [
     'IDistroSeriesLanguageSet',
     ]
 
+
 class IDistroSeriesLanguage(IRosettaStats):
     """A placeholder for the statistics in the translation of a
     distroseries into a language, for example, Ubuntu Hoary into French.
@@ -58,4 +59,3 @@ class IDistroSeriesLanguageSet(Interface):
         """Return a new DummyDistroSeriesLanguage for the given
         distroseries and language.
         """
-

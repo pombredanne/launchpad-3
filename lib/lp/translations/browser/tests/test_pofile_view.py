@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.app.errors import UnexpectedFormData
