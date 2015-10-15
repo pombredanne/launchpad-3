@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from collections import defaultdict
-from operator import attrgetter
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot

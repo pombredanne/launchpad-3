@@ -27,6 +27,5 @@ class ICveReference(Interface):
     id = Int(title=_("Reference ID"), required=True, readonly=True)
     cve = Int(title=_('Bug ID'), required=True, readonly=True)
     source = TextLine(title=_("Source"), required=True, readonly=True)
-    content=Text(title=_("Content"), required=True)
+    content = Text(title=_("Content"), required=True)
     url = TextLine(title=_("URL"), required=False)
-

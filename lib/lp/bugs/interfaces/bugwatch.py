@@ -266,7 +266,7 @@ class IBugWatch(IHasBug):
 
     def getBugMessages(clauses):
         """Return all the `IBugMessage`s that reference this BugWatch.
-        
+
         :param clauses: A iterable of Storm clauses to limit the messages.
         """
 
