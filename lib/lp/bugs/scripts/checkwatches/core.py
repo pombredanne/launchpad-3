@@ -131,6 +131,7 @@ def record_errors(transaction, bug_watch_ids):
                 bug_watch_ids, get_bugwatcherrortype_for_error(e))
         raise
 
+
 class CheckwatchesMaster(WorkingBase):
     """Takes responsibility for updating remote bug watches."""
 
@@ -531,7 +532,7 @@ class CheckwatchesMaster(WorkingBase):
                 for index in xrange(0, len(remote_old_ids), batch_size):
                     remote_old_ids_to_check.extend(
                         remotesystem.getModifiedRemoteBugs(
-                            remote_old_ids[index : index + batch_size],
+                            remote_old_ids[index:index + batch_size],
                             oldest_lastchecked))
                     if len(remote_old_ids_to_check) >= batch_size:
                         break

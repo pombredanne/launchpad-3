@@ -26,7 +26,7 @@ class TestBugTrackerView(TestCaseWithFactory):
     def test_related_projects(self):
         # Related products and projectgroups are shown by the view.
         tracker = self.factory.makeBugTracker()
-        project_group = self.factory.makeProject() 
+        project_group = self.factory.makeProject()
         product = self.factory.makeProduct()
         with admin_logged_in():
             project_group.bugtracker = tracker
@@ -45,7 +45,7 @@ class TestBugTrackerView(TestCaseWithFactory):
             inactive_product.active = False
         view = create_initialized_view(tracker, name='+index')
         self.assertEqual([active_product], view.related_projects)
-            
+
     def test_bugtracker_with_private_project(self):
         tracker = self.factory.makeBugTracker()
         product = self.factory.makeProduct(
@@ -80,8 +80,9 @@ class TestBugTrackerSetView(TestCaseWithFactory):
             "/+index?active_batch=1&inactive_batch=1")
         browser = self.getUserBrowser(url)
         content = browser.contents
-        # XXX RobertCollns 20100919 bug=642504. The support for multiple batches
-        # isn't complete and the id for the nav links gets duplicated.
+        # XXX RobertCollins 20100919 bug=642504. The support for multiple
+        # batches isn't complete and the id for the nav links gets
+        # duplicated.
         #self.assertEqual('next',
         #    find_tag_by_id(content, 'upper-batch-nav-batchnav-next')['class'])
         #self.assertEqual('next',

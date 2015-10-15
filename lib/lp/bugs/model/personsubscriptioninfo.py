@@ -183,7 +183,7 @@ class PersonSubscriptions(object):
         # Preload bug owners, then all pillars.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             [bug.ownerID for bug in bugs]))
-        all_tasks = [task for task in bug.bugtasks for bug in bugs] 
+        all_tasks = [task for task in bug.bugtasks for bug in bugs]
         load_related(Product, all_tasks, ['productID'])
         load_related(Distribution, all_tasks, ['distributionID'])
         for bug in bugs:

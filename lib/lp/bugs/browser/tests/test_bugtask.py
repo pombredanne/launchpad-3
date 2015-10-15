@@ -18,7 +18,6 @@ from pytz import UTC
 import simplejson
 import soupmatchers
 from testtools.matchers import (
-    Equals,
     LessThan,
     Not,
     )
