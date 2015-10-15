@@ -23,7 +23,6 @@ from lp.code.interfaces.branch import (
     IBranchDelta,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.services.webhooks.payload import compose_webhook_payload
 
 # XXX: thumper 2006-12-20: This needs to be extended
 # to cover bugs and specs linked and unlinked, as
@@ -81,11 +80,14 @@ class BranchMergeProposalDelta:
     delta_values = (
         'registrant',
         'source_branch',
-        'source_git_ref',
+        'source_git_repository',
+        'source_git_path',
         'target_branch',
-        'target_git_ref',
+        'target_git_repository',
+        'target_git_path',
         'prerequisite_branch',
-        'prerequisite_git_ref',
+        'prerequisite_git_repository',
+        'prerequisite_git_path',
         'queue_status',
         )
     new_values = (
@@ -113,18 +115,6 @@ class BranchMergeProposalDelta:
         if not delta.changes:
             return None
         return BranchMergeProposalDelta(**delta.changes)
-
-    @classmethod
-    def composeWebhookPayload(klass, old_merge_proposal, new_merge_proposal):
-        """Return part of a webhook payload representing the differences."""
-        return {
-            "old": compose_webhook_payload(
-                IBranchMergeProposal, old_merge_proposal,
-                klass.delta_values + klass.new_values),
-            "new": compose_webhook_payload(
-                IBranchMergeProposal, new_merge_proposal,
-                klass.delta_values + klass.new_values),
-            }
 
     @classmethod
     def snapshot(klass, merge_proposal):

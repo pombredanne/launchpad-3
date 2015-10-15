@@ -950,11 +950,17 @@ class TestMergeProposalWebhooksMixin:
         payload = {
             "registrant": "/~%s" % proposal.registrant.name,
             "source_branch": cls.getURL(proposal.source_branch),
-            "source_git_ref": cls.getURL(proposal.source_git_ref),
+            "source_git_repository": cls.getURL(
+                proposal.source_git_repository),
+            "source_git_path": proposal.source_git_path,
             "target_branch": cls.getURL(proposal.target_branch),
-            "target_git_ref": cls.getURL(proposal.target_git_ref),
+            "target_git_repository": cls.getURL(
+                proposal.target_git_repository),
+            "target_git_path": proposal.target_git_path,
             "prerequisite_branch": cls.getURL(proposal.prerequisite_branch),
-            "prerequisite_git_ref": cls.getURL(proposal.prerequisite_git_ref),
+            "prerequisite_git_repository": cls.getURL(
+                proposal.prerequisite_git_repository),
+            "prerequisite_git_path": proposal.prerequisite_git_path,
             "queue_status": proposal.queue_status.title,
             "commit_message": proposal.commit_message,
             "whiteboard": proposal.whiteboard,

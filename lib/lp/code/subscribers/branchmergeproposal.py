@@ -29,6 +29,15 @@ from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.payload import compose_webhook_payload
 
 
+def _compose_merge_proposal_webhook_payload(merge_proposal):
+    # All fields used here must be part of the snapshot created using
+    # BranchMergeProposalDelta and given to us in ObjectModifiedEvents.
+    return compose_webhook_payload(
+        IBranchMergeProposal, merge_proposal,
+        BranchMergeProposalDelta.delta_values +
+            BranchMergeProposalDelta.new_values)
+
+
 def _trigger_webhook(merge_proposal, payload):
     payload = dict(payload)
     payload["merge_proposal"] = canonical_url(
@@ -49,11 +58,10 @@ def merge_proposal_created(merge_proposal, event):
     """
     getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
     if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
-        payload = {"action": "created"}
-        payload["new"] = compose_webhook_payload(
-            IBranchMergeProposal, merge_proposal,
-            BranchMergeProposalDelta.delta_values +
-                BranchMergeProposalDelta.new_values)
+        payload = {
+            "action": "created",
+            "new": _compose_merge_proposal_webhook_payload(merge_proposal),
+            }
         _trigger_webhook(merge_proposal, payload)
 
 
@@ -99,9 +107,12 @@ def merge_proposal_modified(merge_proposal, event):
             getUtility(IMergeProposalUpdatedEmailJobSource).create(
                 merge_proposal, changes, from_person)
     if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
-        payload = {"action": "modified"}
-        payload.update(BranchMergeProposalDelta.composeWebhookPayload(
-            event.object_before_modification, merge_proposal))
+        payload = {
+            "action": "modified",
+            "old": _compose_merge_proposal_webhook_payload(
+                event.object_before_modification),
+            "new": _compose_merge_proposal_webhook_payload(merge_proposal),
+            }
         _trigger_webhook(merge_proposal, payload)
 
 
@@ -119,9 +130,8 @@ def merge_proposal_deleted(merge_proposal, event):
         # The merge proposal link will be invalid by the time the webhook is
         # delivered, but this may still be useful for endpoints that might
         # e.g. want to cancel CI jobs in flight.
-        payload = {"action": "deleted"}
-        payload["old"] = compose_webhook_payload(
-            IBranchMergeProposal, merge_proposal,
-            BranchMergeProposalDelta.delta_values +
-                BranchMergeProposalDelta.new_values)
+        payload = {
+            "action": "deleted",
+            "old": _compose_merge_proposal_webhook_payload(merge_proposal),
+            }
         _trigger_webhook(merge_proposal, payload)
