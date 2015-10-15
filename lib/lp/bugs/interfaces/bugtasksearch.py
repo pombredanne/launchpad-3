@@ -554,7 +554,7 @@ class IBugTaskSearchBase(Interface):
         description=_('Show only bug tasks targeted to this milestone.'),
         value_type=ReferenceChoice(
         title=_('Milestone'), vocabulary='Milestone',
-            schema=Interface), #IMilestone
+            schema=Interface),  # IMilestone
         required=False)
     component = List(
         title=_('Component'),

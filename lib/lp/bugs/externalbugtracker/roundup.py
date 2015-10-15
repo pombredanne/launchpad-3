@@ -54,14 +54,14 @@ class Roundup(ExternalBugTracker):
     # are integer-only and highly configurable.  Therefore we map the
     # statuses available by default.
     _status_lookup_standard = LookupTree(
-        (1, BugTaskStatus.NEW),          # Roundup status 'unread'
-        (2, BugTaskStatus.CONFIRMED),    # Roundup status 'deferred'
-        (3, BugTaskStatus.INCOMPLETE),   # Roundup status 'chatting'
-        (4, BugTaskStatus.INCOMPLETE),   # Roundup status 'need-eg'
-        (5, BugTaskStatus.INPROGRESS),   # Roundup status 'in-progress'
-        (6, BugTaskStatus.INPROGRESS),   # Roundup status 'testing'
-        (7, BugTaskStatus.FIXCOMMITTED), # Roundup status 'done-cbb'
-        (8, BugTaskStatus.FIXRELEASED),  # Roundup status 'resolved'
+        (1, BugTaskStatus.NEW),           # Roundup status 'unread'
+        (2, BugTaskStatus.CONFIRMED),     # Roundup status 'deferred'
+        (3, BugTaskStatus.INCOMPLETE),    # Roundup status 'chatting'
+        (4, BugTaskStatus.INCOMPLETE),    # Roundup status 'need-eg'
+        (5, BugTaskStatus.INPROGRESS),    # Roundup status 'in-progress'
+        (6, BugTaskStatus.INPROGRESS),    # Roundup status 'testing'
+        (7, BugTaskStatus.FIXCOMMITTED),  # Roundup status 'done-cbb'
+        (8, BugTaskStatus.FIXRELEASED),   # Roundup status 'resolved'
         )
 
     # Python bugtracker statuses come in two parts: status and
@@ -70,31 +70,31 @@ class Roundup(ExternalBugTracker):
         # Open issues (status=1). We also use this as a fallback for
         # statuses 2 and 3, for which the mappings are different only
         # in a few instances.
-        (None, BugTaskStatus.NEW),       # No resolution
-        (1, BugTaskStatus.CONFIRMED),    # Resolution: accepted
-        (2, BugTaskStatus.CONFIRMED),    # Resolution: duplicate
-        (3, BugTaskStatus.FIXCOMMITTED), # Resolution: fixed
-        (4, BugTaskStatus.INVALID),      # Resolution: invalid
-        (5, BugTaskStatus.CONFIRMED),    # Resolution: later
-        (6, BugTaskStatus.INVALID),      # Resolution: out-of-date
-        (7, BugTaskStatus.CONFIRMED),    # Resolution: postponed
-        (8, BugTaskStatus.WONTFIX),      # Resolution: rejected
-        (9, BugTaskStatus.CONFIRMED),    # Resolution: remind
-        (10, BugTaskStatus.WONTFIX),     # Resolution: wontfix
-        (11, BugTaskStatus.INVALID),     # Resolution: works for me
+        (None, BugTaskStatus.NEW),        # No resolution
+        (1, BugTaskStatus.CONFIRMED),     # Resolution: accepted
+        (2, BugTaskStatus.CONFIRMED),     # Resolution: duplicate
+        (3, BugTaskStatus.FIXCOMMITTED),  # Resolution: fixed
+        (4, BugTaskStatus.INVALID),       # Resolution: invalid
+        (5, BugTaskStatus.CONFIRMED),     # Resolution: later
+        (6, BugTaskStatus.INVALID),       # Resolution: out-of-date
+        (7, BugTaskStatus.CONFIRMED),     # Resolution: postponed
+        (8, BugTaskStatus.WONTFIX),       # Resolution: rejected
+        (9, BugTaskStatus.CONFIRMED),     # Resolution: remind
+        (10, BugTaskStatus.WONTFIX),      # Resolution: wontfix
+        (11, BugTaskStatus.INVALID),      # Resolution: works for me
         )
     _status_lookup_python = LookupTree(
         (1, _status_lookup_python_1),
         (2, LookupTree(
-            (None, BugTaskStatus.WONTFIX),   # No resolution
-            (1, BugTaskStatus.FIXCOMMITTED), # Resolution: accepted
-            (3, BugTaskStatus.FIXRELEASED),  # Resolution: fixed
-            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-            _status_lookup_python_1)),       # Failback
+            (None, BugTaskStatus.WONTFIX),     # No resolution
+            (1, BugTaskStatus.FIXCOMMITTED),   # Resolution: accepted
+            (3, BugTaskStatus.FIXRELEASED),    # Resolution: fixed
+            (7, BugTaskStatus.WONTFIX),        # Resolution: postponed
+            _status_lookup_python_1)),         # Failback
         (3, LookupTree(
-            (None, BugTaskStatus.INCOMPLETE),# No resolution
-            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-            _status_lookup_python_1)),       # Failback
+            (None, BugTaskStatus.INCOMPLETE),  # No resolution
+            (7, BugTaskStatus.WONTFIX),        # Resolution: postponed
+            _status_lookup_python_1)),         # Failback
         )
 
     # Status tree for roundup.mplayerhq.hu Roundup instances. This is
@@ -150,7 +150,7 @@ class Roundup(ExternalBugTracker):
     _status_lookup = LookupTree(
         (PYTHON_BUGS_HOSTNAME, _status_lookup_python),
         (MPLAYERHQ_BUGS_HOSTNAME, _status_lookup_mplayerhq),
-        (_status_lookup_standard,), # Default
+        (_status_lookup_standard,),  # Default
         )
 
     def __init__(self, baseurl):

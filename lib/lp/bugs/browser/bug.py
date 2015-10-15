@@ -59,7 +59,6 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _

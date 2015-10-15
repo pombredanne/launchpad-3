@@ -429,6 +429,6 @@ def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
     doctest_suite = DocTestSuite(
         'lp.bugs.model.bugtracker',
-        optionflags=NORMALIZE_WHITESPACE|ELLIPSIS)
+        optionflags=NORMALIZE_WHITESPACE | ELLIPSIS)
     suite.addTest(doctest_suite)
     return suite
