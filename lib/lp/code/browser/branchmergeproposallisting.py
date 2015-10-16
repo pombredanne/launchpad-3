@@ -268,6 +268,12 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 class BranchDependentMergesView(BranchMergeProposalListingView):
     """Branch merge proposals that list this branch as a prerequisite."""
 
+    page_title = 'Dependent merge proposals'
+
+    @property
+    def label(self):
+        return "Merge proposals dependent on %s" % self.context.displayname
+
     def getVisibleProposalsForUser(self):
         """See `BranchMergeProposalListingView`."""
         return self.context.getDependentMergeProposals(
