@@ -10,10 +10,7 @@ from datetime import datetime
 import pytz
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    )
+from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -274,6 +271,7 @@ class BranchMergeProposalListingTestMixin:
     supports_privacy = True
     supports_git = True
     supports_bzr = True
+    label_describes_context = True
 
     bzr_branch = None
     git_ref = None
@@ -306,6 +304,12 @@ class BranchMergeProposalListingTestMixin:
             source_ref=source, target_ref=target,
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
 
+    def getExpectedLabel(self):
+        if self.label_describes_context:
+            return "%s for %s" % (self.page_title, self.context.displayname)
+        else:
+            return self.page_title
+
     def test_bzr(self):
         """The merges view should be enabled for the target."""
         if not self.supports_bzr:
@@ -313,8 +317,10 @@ class BranchMergeProposalListingTestMixin:
         with admin_logged_in():
             bmp = self.makeBzrMergeProposal()
             url = canonical_url(bmp, force_local_path=True)
+            label = self.getExpectedLabel()
         browser = self.getViewBrowser(
             self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn(label, browser.contents)
         self.assertIn(url, browser.contents)
 
     def test_git(self):
@@ -324,8 +330,10 @@ class BranchMergeProposalListingTestMixin:
         with admin_logged_in():
             bmp = self.makeGitMergeProposal()
             url = canonical_url(bmp, force_local_path=True)
+            label = self.getExpectedLabel()
         browser = self.getViewBrowser(
             self.context, self.view_name, rootsite='code', user=self.user)
+        self.assertIn(label, browser.contents)
         self.assertIn(url, browser.contents)
 
     def test_query_count_bzr(self):
@@ -356,6 +364,7 @@ class BranchMergeProposalListingTestMixin:
 class MergesTestMixin(BranchMergeProposalListingTestMixin):
 
     view_name = '+merges'
+    page_title = 'Merge proposals'
 
     def test_none(self):
         """The merges view should be enabled for the target."""
@@ -367,6 +376,7 @@ class MergesTestMixin(BranchMergeProposalListingTestMixin):
 class DependentMergesTestMixin(BranchMergeProposalListingTestMixin):
 
     view_name = '+dependent-merges'
+    page_title = 'Dependent merge proposals'
 
     def makeBzrMergeProposal(self):
         information_type = (
@@ -402,6 +412,9 @@ class DependentMergesTestMixin(BranchMergeProposalListingTestMixin):
             prerequisite_ref=prerequisite,
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
 
+    def getExpectedLabel(self):
+        return "Merge proposals dependent on %s" % self.context.displayname
+
     def test_none(self):
         """The dependent merges view should be enabled for the target."""
         browser = self.getViewBrowser(
@@ -412,6 +425,7 @@ class DependentMergesTestMixin(BranchMergeProposalListingTestMixin):
 class ActiveReviewsTestMixin(BranchMergeProposalListingTestMixin):
 
     view_name = '+activereviews'
+    page_title = 'Active reviews'
 
     def test_none(self):
         """The active reviews view should be enabled for the target."""
@@ -422,6 +436,8 @@ class ActiveReviewsTestMixin(BranchMergeProposalListingTestMixin):
 
 class ProductContextMixin:
 
+    label_describes_context = False
+
     def setUp(self):
         super(ProductContextMixin, self).setUp()
         self.git_target = self.bzr_target = self.context = (
@@ -431,6 +447,8 @@ class ProductContextMixin:
 
 
 class ProjectGroupContextMixin:
+
+    label_describes_context = False
 
     def setUp(self):
         super(ProjectGroupContextMixin, self).setUp()
@@ -445,6 +463,7 @@ class DistributionSourcePackageContextMixin:
 
     # Distribution branches don't have access_policy set.
     supports_privacy = False
+    label_describes_context = False
 
     def setUp(self):
         super(DistributionSourcePackageContextMixin, self).setUp()
@@ -478,6 +497,8 @@ class SourcePackageContextMixin:
 
 class PersonContextMixin:
 
+    label_describes_context = False
+
     def setUp(self):
         super(PersonContextMixin, self).setUp()
         self.context = self.factory.makePerson()
@@ -487,6 +508,8 @@ class PersonContextMixin:
 
 
 class PersonProductContextMixin:
+
+    label_describes_context = False
 
     def setUp(self):
         super(PersonProductContextMixin, self).setUp()
