@@ -29,13 +29,27 @@ from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.payload import compose_webhook_payload
 
 
-def _compose_merge_proposal_webhook_payload(merge_proposal):
-    # All fields used here must be part of the snapshot created using
-    # BranchMergeProposalDelta and given to us in ObjectModifiedEvents.
+def _compose_merge_proposal_webhook_payload(merge_proposal,
+                                            new_merge_proposal=None):
+    fields = [
+        "registrant",
+        "source_branch",
+        "source_git_repository",
+        "source_git_path",
+        "target_branch",
+        "target_git_repository",
+        "target_git_path",
+        "prerequisite_branch",
+        "prerequisite_git_repository",
+        "prerequisite_git_path",
+        "queue_status",
+        "commit_message",
+        "whiteboard",
+        "description",
+        "preview_diff",
+        ]
     return compose_webhook_payload(
-        IBranchMergeProposal, merge_proposal,
-        BranchMergeProposalDelta.delta_values +
-            BranchMergeProposalDelta.new_values)
+        IBranchMergeProposal, merge_proposal, fields)
 
 
 def _trigger_webhook(merge_proposal, payload):
@@ -113,6 +127,11 @@ def merge_proposal_modified(merge_proposal, event):
                 event.object_before_modification),
             "new": _compose_merge_proposal_webhook_payload(merge_proposal),
             }
+        # Some fields may not be in the before-modification snapshot; take
+        # values for these from the new object instead.
+        for field in payload["old"]:
+            if not hasattr(event.object_before_modification, field):
+                payload["old"][field] = payload["new"][field]
         _trigger_webhook(merge_proposal, payload)
 
 

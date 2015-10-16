@@ -79,15 +79,6 @@ class BranchMergeProposalDelta:
 
     delta_values = (
         'registrant',
-        'source_branch',
-        'source_git_repository',
-        'source_git_path',
-        'target_branch',
-        'target_git_repository',
-        'target_git_path',
-        'prerequisite_branch',
-        'prerequisite_git_repository',
-        'prerequisite_git_path',
         'queue_status',
         )
     new_values = (
