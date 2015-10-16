@@ -8,10 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 
-from lp.code.adapters.branch import (
-    BranchMergeProposalDelta,
-    BranchMergeProposalNoPreviewDiffDelta,
-    )
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
