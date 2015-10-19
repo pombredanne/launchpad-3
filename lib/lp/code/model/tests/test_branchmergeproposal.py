@@ -20,12 +20,18 @@ from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import IPrivacy
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -46,6 +52,7 @@ from lp.code.event.branchmergeproposal import (
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES as OBSOLETE_STATES,
+    BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     notify_modified,
@@ -67,6 +74,7 @@ from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ExpectedException,
@@ -919,6 +927,146 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         self.assertNotIn(bob, recipients)
         self.assertNotIn(eric, recipients)
         self.assertIn(charlie, recipients)
+
+
+class TestMergeProposalWebhooksMixin:
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMergeProposalWebhooksMixin, self).setUp()
+        self.useFixture(FeatureFixture(
+            {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: "on"}))
+
+    @staticmethod
+    def getURL(obj):
+        if obj is not None:
+            return canonical_url(obj, force_local_path=True)
+        else:
+            return None
+
+    @classmethod
+    def getExpectedPayload(cls, proposal):
+        payload = {
+            "registrant": "/~%s" % proposal.registrant.name,
+            "source_branch": cls.getURL(proposal.source_branch),
+            "source_git_repository": cls.getURL(
+                proposal.source_git_repository),
+            "source_git_path": proposal.source_git_path,
+            "target_branch": cls.getURL(proposal.target_branch),
+            "target_git_repository": cls.getURL(
+                proposal.target_git_repository),
+            "target_git_path": proposal.target_git_path,
+            "prerequisite_branch": cls.getURL(proposal.prerequisite_branch),
+            "prerequisite_git_repository": cls.getURL(
+                proposal.prerequisite_git_repository),
+            "prerequisite_git_path": proposal.prerequisite_git_path,
+            "queue_status": proposal.queue_status.title,
+            "commit_message": proposal.commit_message,
+            "whiteboard": proposal.whiteboard,
+            "description": proposal.description,
+            "preview_diff": cls.getURL(proposal.preview_diff),
+            }
+        return {k: Equals(v) for k, v in payload.items()}
+
+    def assertCorrectDelivery(self, expected_payload, delivery):
+        self.assertThat(
+            delivery, MatchesStructure(
+                event_type=Equals("merge-proposal:0.1"),
+                payload=MatchesDict(expected_payload)))
+
+    def test_create_triggers_webhooks(self):
+        # When a merge proposal is created, any relevant webhooks are
+        # triggered.
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
+        registrant = self.factory.makePerson()
+        hook = self.factory.makeWebhook(
+            target=self.getWebhookTarget(target),
+            event_types=["merge-proposal:0.1"])
+        proposal = source.addLandingTarget(
+            registrant, target, needs_review=True)
+        login_person(target.owner)
+        delivery = hook.deliveries.one()
+        expected_payload = {
+            "merge_proposal": Equals(self.getURL(proposal)),
+            "action": Equals("created"),
+            "new": MatchesDict(self.getExpectedPayload(proposal)),
+            }
+        self.assertCorrectDelivery(expected_payload, delivery)
+
+    def test_modify_triggers_webhooks(self):
+        # When an existing merge proposal is modified, any relevant webhooks
+        # are triggered.
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
+        registrant = self.factory.makePerson()
+        proposal = source.addLandingTarget(
+            registrant, target, needs_review=True)
+        hook = self.factory.makeWebhook(
+            target=self.getWebhookTarget(target),
+            event_types=["merge-proposal:0.1"])
+        login_person(target.owner)
+        expected_payload = {
+            "merge_proposal": Equals(self.getURL(proposal)),
+            "action": Equals("modified"),
+            "old": MatchesDict(self.getExpectedPayload(proposal)),
+            }
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.setStatus(
+                BranchMergeProposalStatus.CODE_APPROVED, user=target.owner)
+            proposal.description = "An excellent proposal."
+        expected_payload["new"] = MatchesDict(
+            self.getExpectedPayload(proposal))
+        delivery = hook.deliveries.one()
+        self.assertCorrectDelivery(expected_payload, delivery)
+
+    def test_delete_triggers_webhooks(self):
+        # When an existing merge proposal is deleted, any relevant webhooks
+        # are triggered.
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
+        registrant = self.factory.makePerson()
+        proposal = source.addLandingTarget(
+            registrant, target, needs_review=True)
+        hook = self.factory.makeWebhook(
+            target=self.getWebhookTarget(target),
+            event_types=["merge-proposal:0.1"])
+        login_person(target.owner)
+        expected_payload = {
+            "merge_proposal": Equals(self.getURL(proposal)),
+            "action": Equals("deleted"),
+            "old": MatchesDict(self.getExpectedPayload(proposal)),
+            }
+        proposal.deleteProposal()
+        delivery = hook.deliveries.one()
+        self.assertCorrectDelivery(expected_payload, delivery)
+
+
+class TestMergeProposalWebhooksBzr(
+    TestMergeProposalWebhooksMixin, TestCaseWithFactory):
+
+    def makeBranch(self, same_target_as=None):
+        kwargs = {}
+        if same_target_as is not None:
+            kwargs["product"] = same_target_as.product
+        return self.factory.makeProductBranch(**kwargs)
+
+    def getWebhookTarget(self, branch):
+        return branch
+
+
+class TestMergeProposalWebhooksGit(
+    TestMergeProposalWebhooksMixin, TestCaseWithFactory):
+
+    def makeBranch(self, same_target_as=None):
+        kwargs = {}
+        if same_target_as is not None:
+            kwargs["target"] = same_target_as.target
+        return self.factory.makeGitRefs(**kwargs)[0]
+
+    def getWebhookTarget(self, branch):
+        return branch.repository
 
 
 class TestGetAddress(TestCaseWithFactory):

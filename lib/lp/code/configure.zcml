@@ -291,6 +291,10 @@
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_modified"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
+           lazr.lifecycle.interfaces.IObjectDeletedEvent"
+      handler="lp.code.subscribers.branchmergeproposal.merge_proposal_deleted"/>
+  <subscriber
+      for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.subscribers.karma.branch_merge_proposed"/>
   <subscriber
