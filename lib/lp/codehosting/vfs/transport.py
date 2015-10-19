@@ -100,7 +100,7 @@ class AsyncVirtualTransport(Transport):
         """Return the absolute, escaped path to `relpath` without the schema.
         """
         return urlutils.joinpath(
-            self.base[len(self.server.get_url())-1:], relpath)
+            self.base[len(self.server.get_url()) - 1:], relpath)
 
     def _getUnderylingTransportAndPath(self, relpath):
         """Return the underlying transport and path for `relpath`."""
@@ -176,17 +176,21 @@ class AsyncVirtualTransport(Transport):
 
     def iter_files_recursive(self):
         deferred = self._getUnderylingTransportAndPath('.')
+
         @no_traceback_failures
         def iter_files((transport, path)):
             return transport.clone(path).iter_files_recursive()
+
         deferred.addCallback(iter_files)
         return deferred
 
     def listable(self):
         deferred = self._getUnderylingTransportAndPath('.')
+
         @no_traceback_failures
         def listable((transport, path)):
             return transport.listable()
+
         deferred.addCallback(listable)
         return deferred
 

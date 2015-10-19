@@ -56,6 +56,7 @@ class ICodeImportEvent(Interface):
         strings or None.
         """
 
+
 class ICodeImportEventSet(Interface):
     """The set of all CodeImportEvent objects."""
 

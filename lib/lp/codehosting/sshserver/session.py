@@ -140,7 +140,7 @@ class ForkedProcessTransport(process.BaseProcess):
 
         :return: The pid, communication directory, and request socket.
         """
-        assert executable == 'bzr', executable # Maybe .endswith()
+        assert executable == 'bzr', executable  # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
         message = ['fork-env %s\n' % (' '.join(args[1:]),)]
         for key, value in environment.iteritems():

@@ -189,8 +189,10 @@ class TransportSFTPFile:
         """See `ISFTPFile`."""
         deferred = self.transport.readv(
             self._escaped_path, [(offset, length)])
+
         def get_first_chunk(read_things):
             return read_things.next()[1]
+
         def handle_short_read(failure):
             """Handle short reads by reading what was available.
 
@@ -202,6 +204,7 @@ class TransportSFTPFile:
             """
             failure.trap(bzr_errors.ShortReadvError)
             return self.readChunk(failure.value.offset, failure.value.actual)
+
         deferred.addCallback(get_first_chunk)
         return deferred.addErrback(handle_short_read)
 
@@ -228,9 +231,11 @@ class TransportSFTPFile:
             return self._truncateFile()
 
         deferred = self.transport.has(self._escaped_path)
+
         def maybe_create_file(already_exists):
             if not already_exists:
                 return self._truncateFile()
+
         return deferred.addCallback(maybe_create_file)
 
 
@@ -307,11 +312,13 @@ class TransportSFTPServer:
         """See `ISFTPServer`."""
         escaped_path = urlutils.escape(path)
         deferred = self.transport.list_dir(escaped_path)
+
         def produce_entries_from_file_list(file_list):
             stats_deferred = self._stat_files_in_list(file_list, escaped_path)
             stats_deferred.addCallback(
                 self._format_directory_entries, file_list)
             return stats_deferred
+
         return deferred.addCallback(
             produce_entries_from_file_list).addCallback(DirectoryListing)
 
@@ -320,12 +327,14 @@ class TransportSFTPServer:
         """See `ISFTPServer`."""
         directory = os.path.dirname(path)
         deferred = self.transport.stat(directory)
+
         def open_file(stat_result):
             if stat.S_ISDIR(stat_result.st_mode):
                 return TransportSFTPFile(self.transport, path, flags, self)
             else:
                 raise filetransfer.SFTPError(
                     filetransfer.FX_NO_SUCH_FILE, directory)
+
         return deferred.addCallback(open_file)
 
     def readLink(self, path):
@@ -335,9 +344,11 @@ class TransportSFTPServer:
     def realPath(self, relpath):
         """See `ISFTPServer`."""
         deferred = self.transport.local_realPath(urlutils.escape(relpath))
+
         def unescape_path(path):
             unescaped_path = urlutils.unescape(path)
             return unescaped_path.encode('utf-8')
+
         return deferred.addCallback(unescape_path)
 
     def setAttrs(self, path, attrs):

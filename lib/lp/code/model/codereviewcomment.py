@@ -124,4 +124,3 @@ class CodeReviewComment(SQLBase):
         if self.message.raw is None:
             return None
         return signed_message_from_string(self.message.raw.read())
-

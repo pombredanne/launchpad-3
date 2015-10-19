@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import re
 
 from pytz import utc
 from storm.locals import Store
@@ -27,15 +26,11 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource,
     )
-from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer,
-    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
-from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     admin_logged_in,
