@@ -26,8 +26,7 @@ from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.payload import compose_webhook_payload
 
 
-def _compose_merge_proposal_webhook_payload(merge_proposal,
-                                            new_merge_proposal=None):
+def _compose_merge_proposal_webhook_payload(merge_proposal):
     fields = [
         "registrant",
         "source_branch",
