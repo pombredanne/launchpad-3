@@ -67,6 +67,9 @@ def compose_webhook_payload(interface, obj, names):
     :param obj: The object to serialise.
     :param names: A list of fields from `obj` to serialise.
     """
+    # XXX cjwatson 2015-10-19: Fields are serialised with the privileges of
+    # the actor, not the webhook owner.  Until this is fixed, callers must
+    # make sure that this makes no difference to the fields in question.
     payload = {}
     request = WebhookPayloadRequest()
     for name in names:
