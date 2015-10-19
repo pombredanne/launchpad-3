@@ -37,6 +37,11 @@
                       function(e) {
                           deliveries_widget.set('deliveries', e.details[0]);
                       });
+                  deliveries_widget.subscribe(
+                      ns.WebhookDeliveries.RETRY_DELIVERY,
+                      function(e) {
+                          ns.retry_delivery(deliveries_widget, e.details[0]);
+                      });
 
                   deliveries_widget.set('deliveries', LP.cache.deliveries);
                   deliveries_widget.render();
