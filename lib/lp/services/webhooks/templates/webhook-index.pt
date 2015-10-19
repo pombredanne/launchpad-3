@@ -42,8 +42,13 @@
                       function(e) {
                           ns.retry_delivery(deliveries_widget, e.details[0]);
                       });
-
-                  deliveries_widget.set('deliveries', LP.cache.deliveries);
+                  // Objects in LP.cache.deliveries are not wrapped on page
+                  // load, but the objects we get from batch navigation are.
+                  // Ensure we're always dealing with wrapped ones.
+                  var lp_client = new Y.lp.client.Launchpad();
+                  deliveries_widget.set(
+                      'deliveries',
+                      lp_client.wrap_resource(null, LP.cache.deliveries));
                   deliveries_widget.render();
               });
           });
