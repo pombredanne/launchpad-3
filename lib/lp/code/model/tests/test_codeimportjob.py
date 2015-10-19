@@ -245,7 +245,7 @@ class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTests):
 
     def test_upToDateJob(self):
         # A job that was updated recently is not considered reclaimable.
-        self.makeJobWithHeartbeatInPast(self.LIMIT/2)
+        self.makeJobWithHeartbeatInPast(self.LIMIT / 2)
         self.assertReclaimableJobs([])
 
     def test_staleJob(self):
@@ -266,8 +266,8 @@ class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTests):
     def test_staleAndFreshJobs(self):
         # If there are both fresh and stake jobs in the DB, only the
         # stale ones are returned by getReclaimableJobs().
-        self.makeJobWithHeartbeatInPast(self.LIMIT/2)
-        stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT*2)
+        self.makeJobWithHeartbeatInPast(self.LIMIT / 2)
+        stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT * 2)
         self.assertReclaimableJobs([stale_job])
 
 
@@ -279,7 +279,7 @@ class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTests):
     def test_getJobForMachineGardens(self):
         # getJobForMachine reclaims all reclaimable jobs each time it is
         # called.
-        stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT*2)
+        stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT * 2)
         # We assume that this is the only reclaimable job.
         self.assertReclaimableJobs([stale_job])
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -422,8 +422,9 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # recent than the effective_update_interval, then the new
         # CodeImportJob has date_due set in the future.
         code_import = self.getCodeImportForDateDueTest()
-        # A code import job is automatically started when a reviewed code import
-        # is created. Remove it, so a "clean" one can be created later.
+        # A code import job is automatically started when a reviewed code
+        # import is created. Remove it, so a "clean" one can be created
+        # later.
         removeSecurityProxy(code_import).import_job.destroySelf()
         # Create a CodeImportResult that started a long time ago. This one
         # must be superseded by the more recent one created below.

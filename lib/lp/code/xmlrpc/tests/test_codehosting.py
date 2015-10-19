@@ -309,7 +309,6 @@ class CodehostingTest(TestCaseWithFactory):
         # Creating a branch with an invalid product name fails.
         owner = self.factory.makePerson()
         name = self.factory.getUniqueString()
-        from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
         branch_name = "/%s/fiz:buzz/%s" % (BRANCH_ALIAS_PREFIX, name)
         fault = self.codehosting_api.createBranch(
             owner.id, branch_name)

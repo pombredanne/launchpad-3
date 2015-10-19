@@ -11,10 +11,7 @@ import doctest
 from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 import pytz
-from testtools.matchers import (
-    DocTestMatches,
-    Equals,
-    )
+from testtools.matchers import DocTestMatches
 import transaction
 from zope.component import getUtility
 from zope.formlib.itemswidgets import ItemDisplayWidget

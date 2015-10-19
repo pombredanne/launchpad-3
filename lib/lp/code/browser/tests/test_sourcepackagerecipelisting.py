@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 
-from testtools.matchers import Equals
-
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
