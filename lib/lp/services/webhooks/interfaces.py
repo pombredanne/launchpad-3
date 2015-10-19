@@ -75,6 +75,7 @@ from lp.services.webservice.apihelpers import (
 WEBHOOK_EVENT_TYPES = {
     "bzr:push:0.1": "Bazaar push",
     "git:push:0.1": "Git push",
+    "merge-proposal:0.1": "Merge proposal",
     }
 
 
@@ -199,7 +200,7 @@ class IWebhookSet(Interface):
     def findByTarget(target):
         """Find all webhooks for the given target."""
 
-    def trigger(target, event_type, payload):
+    def trigger(target, event_type, payload, context=None):
         """Trigger subscribed webhooks to deliver a payload."""
 
 
@@ -358,6 +359,7 @@ class IWebhookClient(Interface):
         If secret is not None, a PubSubHubbub-compatible X-Hub-Signature
         header will be sent using HMAC-SHA1.
         """
+
 
 patch_collection_property(IWebhook, 'deliveries', IWebhookDeliveryJob)
 patch_entry_return_type(IWebhook, 'ping', IWebhookDeliveryJob)

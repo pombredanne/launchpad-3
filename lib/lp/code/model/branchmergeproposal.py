@@ -12,7 +12,10 @@ __all__ = [
 
 from email.utils import make_msgid
 
-from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -758,6 +761,7 @@ class BranchMergeProposal(SQLBase):
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
+        notify(ObjectDeletedEvent(self))
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
