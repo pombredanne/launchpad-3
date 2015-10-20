@@ -6,6 +6,8 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
+      <!-- Separate from test_deliveries.html because loading the test
+            module before the runner starts somehow breaks test-console. -->
       <title>Webhook deliveries widget tests</title>
 
       <!-- YUI and test setup -->
@@ -13,14 +15,9 @@ GNU Affero General Public License version 3 (see the file LICENSE).
               src="../../../../../../build/js/yui/yui/yui.js">
       </script>
       <link rel="stylesheet"
-      href="../../../../../../build/js/yui/console/assets/console-core.css" />
+      href="../../../../../../lib/canonical/launchpad/icing/build/inline-sprites-1.css" />
       <link rel="stylesheet"
-      href="../../../../../../build/js/yui/test-console/assets/skins/sam/test-console.css" />
-      <link rel="stylesheet"
-      href="../../../../../../build/js/yui/test/assets/skins/sam/test.css" />
-
-      <script type="text/javascript"
-              src="../../../../../../build/js/lp/app/testing/testrunner.js"></script>
+      href="../../../../../../lib/canonical/launchpad/icing/build/inline-sprites-2.css" />
 
       <link rel="stylesheet" href="../../../../app/javascript/testing/test.css" />
 
@@ -63,11 +60,36 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           </table>
         </div>
       </script>
+
+      <!-- Set up a demo widget for manual testing. -->
+      <script type="text/javascript">
+        YUI().use('base', 'node', 'event', 'lp.services.webhooks.deliveries',
+                  'lp.services.webhooks.deliveries.test',
+            function(Y) {
+                Y.on('domready', function() {
+                    var ns = Y.lp.services.webhooks.deliveries;
+                    var tests = Y.lp.services.webhooks.deliveries.test;
+                    var node = Y.Node.create(
+                        Y.one("#fixture-template").getContent());
+                    node.set("id", "demo-widget");
+                    Y.one("#demo-container").replace(node);
+                    var deliveries_widget = new ns.WebhookDeliveries({
+                      srcNode: '#demo-widget'});
+                    deliveries_widget.set('deliveries', [
+                        tests.deliveries.pending,
+                        tests.deliveries.successful,
+                        tests.deliveries.successful_retry_now,
+                        tests.deliveries.failed,
+                        tests.deliveries.failed_retry_scheduled
+                        ]);
+                    deliveries_widget.render();
+                });
+            });
+      </script>
     </head>
     <body class="yui3-skin-sam">
-      <ul id="suites">
-        <li>lp.services.webhooks.deliveries.test</li>
-      </ul>
-      <div id="fixture"></div>
+      <h1>Webhook deliveries widget</h1>
+      <h2>Demo</h2>
+      <div id="demo-container">Loading...</div>
     </body>
 </html>
