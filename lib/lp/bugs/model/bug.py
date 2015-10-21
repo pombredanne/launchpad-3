@@ -1407,7 +1407,7 @@ class Bug(SQLBase, InformationTypeMixin):
         """See `IBug`."""
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:
-            self.linkCVE(cve, user)
+            self.linkCVE(cve, user, check_permissions=False)
 
     # Several other classes need to generate lists of bugs, and
     # one thing they often have to filter for is completeness. We maintain
