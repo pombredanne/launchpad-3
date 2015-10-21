@@ -12,10 +12,7 @@ import pytz
 import transaction
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
-from zope.security.proxy import (
-    Proxy,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import Proxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild

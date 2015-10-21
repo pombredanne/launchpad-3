@@ -37,5 +37,3 @@ class IDistroSeriesPackageCache(Interface):
     descriptions = Attribute("A concatenation of the descriptions "
         "of the binary packages from this binary package name in the "
         "distro series.")
-
-

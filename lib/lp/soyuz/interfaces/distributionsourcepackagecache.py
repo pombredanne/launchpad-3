@@ -35,4 +35,3 @@ class IDistributionSourcePackageCache(Interface):
 
     distributionsourcepackage = Attribute("The DistributionSourcePackage "
         "for which this is a cache.")
-

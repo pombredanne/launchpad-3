@@ -14,10 +14,12 @@ from lp.services.scripts import log
 class ExecutionError(Exception):
     """The command executed in a cal() returned a non-zero status"""
 
+
 def subprocess_setup():
     # Python installs a SIGPIPE handler by default. This is usually not what
     # non-Python subprocesses expect.
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
 
 def call(cmd):
     """Run a command, raising a RuntimeError if the command failed"""
@@ -30,4 +32,3 @@ def call(cmd):
     if p.returncode != 0:
         raise ExecutionError("Error %d running %s" % (p.returncode, cmd))
     return p.returncode
-
