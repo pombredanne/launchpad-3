@@ -73,4 +73,3 @@ class SectionSet:
     def new(self, name):
         """See ISectionSet."""
         return Section(name=name)
-

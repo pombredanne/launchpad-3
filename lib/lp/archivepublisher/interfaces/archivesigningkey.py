@@ -85,5 +85,3 @@ class IArchiveSigningKey(Interface):
         :raises AssertionError: if the context archive has no `signing_key`
             or there is no Release file in the given suite.
         """
-
-

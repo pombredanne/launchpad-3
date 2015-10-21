@@ -3,10 +3,7 @@
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.adapters.copypolicy import (
-    InsecureCopyPolicy,
-    MassSyncCopyPolicy,
-    )
+from lp.soyuz.adapters.copypolicy import InsecureCopyPolicy
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageCopyPolicy,
