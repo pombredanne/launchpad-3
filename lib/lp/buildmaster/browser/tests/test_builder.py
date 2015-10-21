@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.buildmaster.browser.tests.test_builder_views import BuildCreationMixin

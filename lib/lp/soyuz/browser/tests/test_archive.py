@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from fixtures import FakeLogger
 from testtools.matchers import (
-    Equals,
     MatchesSetwise,
     MatchesStructure,
     )

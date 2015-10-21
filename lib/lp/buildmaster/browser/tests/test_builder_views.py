@@ -7,10 +7,7 @@ from functools import partial
 
 import soupmatchers
 from storm.locals import Store
-from testtools.matchers import (
-    Equals,
-    MatchesAll,
-    )
+from testtools.matchers import MatchesAll
 import transaction
 from zope.component import getUtility
 
