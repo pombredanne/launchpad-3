@@ -97,6 +97,26 @@ string of text. The supplied user is the person linking the CVEs.
     True
     >>> b.unlinkCVE(cve, user=no_priv)
 
+Since users can comment on bugs that they can't see (eg. when Soyuz uses
+~janitor to close bugs from changelogs), the normal privilege checks on
+linkCVE are bypassed.
+
+    >>> login('admin@canonical.com')
+    >>> from lp.app.enums import InformationType
+    >>> private_bug = factory.makeBug(
+    ...     information_type=InformationType.USERDATA)
+    >>> private_bug.linkCVE(cve, user=no_priv)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+    >>> private_bug.findCvesInText('''
+    ...     This bug is related to CVE-2004-0276
+    ... ''', user=no_priv)
+    >>> cve in private_bug.cves
+    True
+    >>> private_bug.unlinkCVE(cve, user=private_bug.owner)
+    >>> login("test@canonical.com")
+
 == 2014 CVE identification format changes =  
 
 Since 2014, CVEs can have an identifier (sequence) longer than 4-digits.
