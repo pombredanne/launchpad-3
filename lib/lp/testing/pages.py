@@ -866,8 +866,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # Add tests to the suite individually.
     if filenames:
         checker = doctest.OutputChecker()
-        paths=[os.path.join(storydir, filename)
-               for filename in filenames]
+        paths = [os.path.join(storydir, filename) for filename in filenames]
         suite.addTest(LayeredDocFileSuite(
             paths=paths,
             package=package, checker=checker, stdout_logging=False,

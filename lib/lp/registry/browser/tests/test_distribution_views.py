@@ -4,10 +4,7 @@
 __metaclass__ = type
 
 import soupmatchers
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet

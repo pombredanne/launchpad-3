@@ -120,6 +120,4 @@ class AnnouncementDateWidget(SimpleInputWidget):
         elif action == "specific":
             return announcement_date
         else:
-            raise AssertionError, 'Unknown action in AnnouncementDateWidget'
-
-
+            raise AssertionError('Unknown action in AnnouncementDateWidget')

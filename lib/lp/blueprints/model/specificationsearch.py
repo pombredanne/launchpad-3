@@ -108,13 +108,14 @@ def search_specifications(context, base_clauses, user, sort=None,
             order.extend([Desc(Specification.datecreated), Specification.id])
     else:
         order = [sort]
+
     # Set the _known_viewers property for each specification, as well as
     # preloading the objects involved, if asked.
     def preload_hook(rows):
         person_ids = set()
         work_items_by_spec = defaultdict(list)
         for spec in rows:
-            if need_people: 
+            if need_people:
                 person_ids |= set(
                     [spec._assigneeID, spec._approverID, spec._drafterID])
             if need_branches:
@@ -257,7 +258,6 @@ def _make_cache_user_can_view_spec(user):
         get_property_cache(spec)._known_viewers = set([userid])
         return spec
     return cache_user_can_view_spec
-
 
 
 def get_specification_started_clause():

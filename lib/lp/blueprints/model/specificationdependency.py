@@ -23,5 +23,3 @@ class SpecificationDependency(SQLBase):
         foreignKey='Specification', notNull=True)
     dependency = ForeignKey(dbName='dependency',
         foreignKey='Specification', notNull=True)
-
-

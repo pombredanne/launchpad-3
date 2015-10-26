@@ -14,7 +14,6 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
 import pytz
 from simplejson import dumps
-from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
 

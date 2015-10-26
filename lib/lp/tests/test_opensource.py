@@ -34,7 +34,7 @@ def add_testable_opensource_package(suite, package):
     packages = []
     for dirpath, dirnames, filenames in os.walk(topdir):
         if 'docs' in dirnames:
-            docsdir = os.path.join(dirpath, 'docs')[len(topdir)+1:]
+            docsdir = os.path.join(dirpath, 'docs')[len(topdir) + 1:]
             packages.append(docsdir)
     doctest_files = {}
     for docsdir in packages:

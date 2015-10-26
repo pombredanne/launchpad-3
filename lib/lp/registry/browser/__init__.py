@@ -30,7 +30,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.interfaces.specificationworkitem import ISpecificationWorkItemSet
+from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItemSet,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries

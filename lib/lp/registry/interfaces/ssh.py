@@ -92,4 +92,3 @@ class SSHKeyAdditionError(Exception):
 
 class SSHKeyCompromisedError(Exception):
     """Raised when the SSH public key is known to be easily compromisable."""
-

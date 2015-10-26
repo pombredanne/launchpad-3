@@ -663,10 +663,12 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
     def test_workitemspecificationset_can_unlink_milestones(self):
         milestone_a = self.factory.makeMilestone()
         milestone_b = self.factory.makeMilestone()
-        work_item_1 = self.factory.makeSpecificationWorkItem(milestone=milestone_a)
-        work_item_2 = self.factory.makeSpecificationWorkItem(milestone=milestone_a)
-        work_item_3 = self.factory.makeSpecificationWorkItem(milestone=milestone_b)
-
+        work_item_1 = self.factory.makeSpecificationWorkItem(
+            milestone=milestone_a)
+        work_item_2 = self.factory.makeSpecificationWorkItem(
+            milestone=milestone_a)
+        work_item_3 = self.factory.makeSpecificationWorkItem(
+            milestone=milestone_b)
 
         self.assertEqual(milestone_a, work_item_1.milestone)
         self.assertEqual(milestone_a, work_item_2.milestone)

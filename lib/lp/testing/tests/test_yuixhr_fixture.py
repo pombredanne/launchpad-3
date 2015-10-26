@@ -37,6 +37,8 @@ def baseline(request, data):
 @setup
 def second(request, data):
     data['second'] = 'here'
+
+
 @second.add_cleanup
 def second(request, data):
     global _received
@@ -50,6 +52,8 @@ def faux_database_thing(request, data):
     global test_value
     data['previous_value'] = test_value
     test_value = None
+
+
 @faux_database_thing.add_cleanup
 def faux_database_thing(request, data):
     global test_value
@@ -59,6 +63,8 @@ def faux_database_thing(request, data):
 @setup
 def show_teardown_value(request, data):
     data['setup_data'] = 'Hello world'
+
+
 @show_teardown_value.add_cleanup
 def show_teardown_value(request, data):
     global test_value
@@ -87,6 +93,8 @@ def naughty_make_product(request, data):
 @setup
 def teardown_will_fail(request, data):
     pass
+
+
 @teardown_will_fail.add_cleanup
 def teardown_will_fail(request, data):
     raise RuntimeError('rutebegas')
