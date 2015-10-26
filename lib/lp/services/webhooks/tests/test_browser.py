@@ -188,6 +188,7 @@ class TestWebhookAddViewBase(WebhookTargetViewTestHelpers):
                 "field.delivery_url": "http://example.com/test",
                 "field.active": "on", "field.event_types-empty-marker": "1",
                 "field.event_types": self.event_type,
+                "field.secret": "secret code",
                 "field.actions.new": "Add webhook"})
         self.assertEqual([], view.errors)
         hook = self.target.webhooks.one()
@@ -198,7 +199,8 @@ class TestWebhookAddViewBase(WebhookTargetViewTestHelpers):
                 registrant=self.owner,
                 delivery_url="http://example.com/test",
                 active=True,
-                event_types=[self.event_type]))
+                event_types=[self.event_type],
+                secret="secret code"))
 
     def test_rejects_bad_scheme(self):
         transaction.commit()
@@ -211,6 +213,21 @@ class TestWebhookAddViewBase(WebhookTargetViewTestHelpers):
         self.assertEqual(
             ['delivery_url'], [error.field_name for error in view.errors])
         self.assertIs(None, self.target.webhooks.one())
+
+    def test_no_secret(self):
+        # If the secret field is left empty, the secret is set to None
+        # rather than to the empty string.
+        view = self.makeView(
+            "+new-webhook", method="POST",
+            form={
+                "field.delivery_url": "http://example.com/test",
+                "field.active": "on", "field.event_types-empty-marker": "1",
+                "field.event_types": self.event_type,
+                "field.secret": "",
+                "field.actions.new": "Add webhook"})
+        self.assertEqual([], view.errors)
+        hook = self.target.webhooks.one()
+        self.assertIsNone(hook.secret)
 
     def test_event_types(self):
         # Only event types that are valid for the target are offered.
