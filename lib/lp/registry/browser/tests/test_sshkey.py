@@ -55,9 +55,12 @@ class TestSSHKeyView(TestCaseWithFactory):
             browser = setupBrowserFreshLogin(person)
             browser.open(url)
             browser.getControl('Remove').click()
-            msg = 'Key "x&lt;script&gt;alert()&lt;/script&gt;example.com" removed'
+            msg = (
+                'Key "x&lt;script&gt;alert()&lt;/script&gt;example.com" '
+                'removed')
             self.assertEqual(
-                extract_text(find_tags_by_class(browser.contents, 'message')[0]),
+                extract_text(
+                    find_tags_by_class(browser.contents, 'message')[0]),
                 msg)
 
     def test_edit_ssh_keys_login_redirect(self):

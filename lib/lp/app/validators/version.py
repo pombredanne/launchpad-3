@@ -109,4 +109,3 @@ def sane_version(version):
         $""", version):
         return True
     return False
-

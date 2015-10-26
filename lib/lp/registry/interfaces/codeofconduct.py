@@ -85,7 +85,6 @@ class ISignedCodeOfConduct(Interface):
                                 "is considered active.")
                   )
 
-
     displayname = Attribute("Fancy Title for CoC.")
 
     def sendAdvertisementEmail(subject, content):
@@ -146,6 +145,7 @@ class ISignedCodeOfConductSet(Interface):
         """Return a datetime object corresponding to the last accepted date
         of Code of Conduct Signature.
         """
+
 
 class ICodeOfConductConf(Interface):
     """Component to store the CoC Configuration."""

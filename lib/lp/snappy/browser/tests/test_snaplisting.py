@@ -6,10 +6,7 @@
 __metaclass__ = type
 
 import soupmatchers
-from testtools.matchers import (
-    Equals,
-    Not,
-    )
+from testtools.matchers import Not
 
 from lp.services.database.constants import (
     ONE_DAY_AGO,

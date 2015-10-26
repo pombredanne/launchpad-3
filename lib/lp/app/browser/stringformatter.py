@@ -1023,10 +1023,12 @@ class FormattersAPI:
                     if line.startswith(' '):
                         line = line[1:]
                     cells = [
-                        '<td class="ss-line-no unselectable">%s</td>' % orig_row,
+                        '<td class="ss-line-no unselectable">%s</td>' %
+                            orig_row,
                         structured(
                             '<td class="text">%s</td>', line).escapedtext,
-                        '<td class="ss-line-no unselectable">%s</td>' % mod_row,
+                        '<td class="ss-line-no unselectable">%s</td>' %
+                            mod_row,
                         structured(
                             '<td class="text">%s</td>', line).escapedtext,
                         ]

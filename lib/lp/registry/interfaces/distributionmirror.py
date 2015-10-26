@@ -277,7 +277,7 @@ class DistroMirrorURIField(URIField):
         if IDistributionMirror.providedBy(self.context):
             orig_value = self.get(self.context)
             if orig_value is not None and URI(orig_value) == uri:
-                return # url was not changed
+                return  # url was not changed
 
         mirror = self.getMirrorByURI(str(uri))
         if mirror is not None:

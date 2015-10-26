@@ -25,7 +25,6 @@ from testtools.content import (
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
-    Equals,
     LessThan,
     Not,
     )

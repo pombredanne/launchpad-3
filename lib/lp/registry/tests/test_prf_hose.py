@@ -63,11 +63,14 @@ class Hose_Urls(unittest.TestCase):
         """Hose constructor calls reduceWork function."""
         from lp.registry.scripts.productreleasefinder.hose import Hose
         h = Hose.__new__(Hose)
+
         class Observer(InstrumentedMethodObserver):
             def __init__(self):
                 self.called_it = False
+
             def called(self, name, args, kw):
                 self.called_it = True
+
         obs = Observer()
         instrument_method(obs, h, "reduceWork")
         h.__init__()
@@ -80,11 +83,14 @@ class Hose_Urls(unittest.TestCase):
             FilterPattern)
         pattern = FilterPattern("foo", "http://archive.ubuntu.com/e*")
         h = Hose.__new__(Hose)
+
         class Observer(InstrumentedMethodObserver):
             def __init__(self):
                 self.args = []
+
             def called(self, name, args, kw):
                 self.args.append(args)
+
         obs = Observer()
         instrument_method(obs, h, "reduceWork")
         h.__init__([pattern])
@@ -94,6 +100,7 @@ class Hose_Urls(unittest.TestCase):
     def testSetsUrlProperty(self):
         """Hose constructor sets urls property to reduceWork return value."""
         from lp.registry.scripts.productreleasefinder.hose import Hose
+
         class TestHose(Hose):
             def reduceWork(self, url_list):
                 return "wibble"

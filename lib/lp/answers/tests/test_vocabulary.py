@@ -28,7 +28,7 @@ class UsesAnswersDistributionVocabularyTestCase(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         vocabulary = UsesAnswersDistributionVocabulary(distribution)
         self.assertEqual(distribution, vocabulary.context)
-        self.assertEqual(distribution, vocabulary.distribution) 
+        self.assertEqual(distribution, vocabulary.distribution)
 
     def test_init_without_distribution(self):
         # When the context is not adaptable to IDistribution, the
@@ -76,7 +76,7 @@ class UsesAnswersDistributionVocabularyTestCase(TestCaseWithFactory):
 
 class UsesAnswersProductVocabularyTestCase(TestCaseWithFactory):
     """Test that the product vocabulary behaves as expected."""
-    
+
     layer = DatabaseFunctionalLayer
 
     def test_products_not_using_answers_not_found(self):

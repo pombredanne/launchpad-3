@@ -101,6 +101,8 @@ def example(request, data):
     # have been mutating the "data" dict that was passed in.  (This
     # will become slightly more important if you ever want to use
     # .extend.)
+
+
 @example.add_cleanup
 def example(request, data):
     # This is an example of a cleanup function, which will be called

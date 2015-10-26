@@ -17,7 +17,6 @@ from zope.schema.vocabulary import SimpleTerm
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.model.product import Product
 from lp.registry.vocabularies import (
@@ -97,6 +96,7 @@ class UsesAnswersProductVocabulary(ProductVocabulary):
             And(Product.official_answers == True))
         return super(UsesAnswersProductVocabulary, self).search(
             query, vocab_filter)
+
 
 class UsesAnswersDistributionVocabulary(DistributionVocabulary):
     """Distributions that use Launchpad to track questions.

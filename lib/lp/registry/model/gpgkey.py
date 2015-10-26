@@ -128,4 +128,3 @@ class GPGKeySet:
             query += ' AND owner=%s' % sqlvalues(ownerid)
 
         return GPGKey.select(query, orderBy='id')
-

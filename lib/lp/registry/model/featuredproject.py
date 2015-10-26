@@ -27,4 +27,3 @@ class FeaturedProject(SQLBase):
     _defaultOrder = ['id']
 
     pillar_name = IntCol(notNull=True)
-
