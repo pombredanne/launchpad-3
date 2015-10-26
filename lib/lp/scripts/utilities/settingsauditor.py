@@ -19,9 +19,9 @@ class SettingsAuditor:
     We can't just use ConfigParser for this case, as we're doing our own
     specialized parsing--not interpreting the settings, but verifying."""
 
-    header_regex = re.compile(r'.*?(?=\[)', re.MULTILINE|re.DOTALL)
+    header_regex = re.compile(r'.*?(?=\[)', re.MULTILINE | re.DOTALL)
     section_regex = re.compile(
-        r'\[.*?\].*?(?=(\[)|($\Z))', re.MULTILINE|re.DOTALL)
+        r'\[.*?\].*?(?=(\[)|($\Z))', re.MULTILINE | re.DOTALL)
     section_label_regex = re.compile(r'\[.*\]')
 
     def __init__(self, data):
