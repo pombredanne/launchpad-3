@@ -68,6 +68,7 @@ def combo_app(root, resource_prefix="", minify_css=True, rewrite_urls=True):
     C{Content-Type} header.
     """
     root = os.path.abspath(root)
+
     def app(environ, start_response, root=root):
         fnames = parse_qs(environ["QUERY_STRING"])
         content_type = "text/plain"
@@ -82,4 +83,5 @@ def combo_app(root, resource_prefix="", minify_css=True, rewrite_urls=True):
         start_response("200 OK", [("Content-Type", content_type)])
         return combine_files(fnames, root, resource_prefix,
                              minify_css, rewrite_urls)
+
     return app

@@ -100,23 +100,23 @@ class TestCombo(ComboTestBase):
              "3.0.0/build/event-custom/event-custom-min.js"))
 
     def test_combine_files_includes_filename(self):
-        """Combining files should include their relative filename at the top."""
+        """
+        Combining files should include their relative filename at the top.
+        """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("yui", "yui-min.js"),
-                "** yui-min **"),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("oop", "oop-min.js"),
-                "** oop-min **"),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("event-custom", "event-custom-min.js"),
-                "** event-custom-min **"),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("yui", "yui-min.js"),
+            "** yui-min **")
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("oop", "oop-min.js"),
+            "** oop-min **")
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("event-custom", "event-custom-min.js"),
+            "** event-custom-min **")
 
         expected = "\n".join(("// yui/yui-min.js",
                               "** yui-min **",
@@ -138,26 +138,24 @@ class TestCombo(ComboTestBase):
         """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("widget", "assets", "skins", "sam", "widget.css"),
-                """\
-                /* widget skin */
-                .yui-widget {
-                   background: url("img/bg.png");
-                }
-                """),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("editor", "assets", "skins", "sam", "editor.css"),
-                """\
-                /* editor skin */
-                .yui-editor {
-                   background: url("img/bg.png");
-                }
-                """),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("widget", "assets", "skins", "sam", "widget.css"),
+            """\
+            /* widget skin */
+            .yui-widget {
+               background: url("img/bg.png");
+            }
+            """)
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("editor", "assets", "skins", "sam", "editor.css"),
+            """\
+            /* editor skin */
+            .yui-editor {
+               background: url("img/bg.png");
+            }
+            """)
 
         expected = "\n".join(
             ("/* widget/assets/skins/sam/widget.css */",
@@ -178,26 +176,24 @@ class TestCombo(ComboTestBase):
         """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("widget", "assets", "skins", "sam", "widget.css"),
-                """\
-                /* widget skin */
-                .yui-widget {
-                   background: url("/static/img/bg.png");
-                }
-                """),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("editor", "assets", "skins", "sam", "editor.css"),
-                """\
-                /* editor skin */
-                .yui-editor {
-                   background: url("http://foo/static/img/bg.png");
-                }
-                """),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("widget", "assets", "skins", "sam", "widget.css"),
+            """\
+            /* widget skin */
+            .yui-widget {
+               background: url("/static/img/bg.png");
+            }
+            """)
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("editor", "assets", "skins", "sam", "editor.css"),
+            """\
+            /* editor skin */
+            .yui-editor {
+               background: url("http://foo/static/img/bg.png");
+            }
+            """)
 
         expected = "\n".join(
             ("/* widget/assets/skins/sam/widget.css */",
@@ -218,26 +214,24 @@ class TestCombo(ComboTestBase):
         """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("widget", "assets", "skins", "sam", "widget.css"),
-                """\
-                /* widget skin */
-                .yui-widget {
-                background: url("data:image/gif;base64,base64-data");
-                }
-                """),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("editor", "assets", "skins", "sam", "editor.css"),
-                """\
-                /* editor skin */
-                .yui-editor {
-                   background: url(data:image/gif;base64,base64-data);
-                }
-                """),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("widget", "assets", "skins", "sam", "widget.css"),
+            """\
+            /* widget skin */
+            .yui-widget {
+            background: url("data:image/gif;base64,base64-data");
+            }
+            """)
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("editor", "assets", "skins", "sam", "editor.css"),
+            """\
+            /* editor skin */
+            .yui-editor {
+               background: url(data:image/gif;base64,base64-data);
+            }
+            """)
 
         expected = "\n".join(
             ('/* widget/assets/skins/sam/widget.css */',
@@ -258,25 +252,23 @@ class TestCombo(ComboTestBase):
         """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("widget", "assets", "skins", "sam", "widget.css"),
-                "\n".join(
-                    ('/* widget skin */',
-                     '.yui-widget {',
-                     '   background: url("img/bg.png");',
-                     '}'))
-                ),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("editor", "assets", "skins", "sam", "editor.css"),
-                "\n".join(('/* editor skin */',
-                           '.yui-editor {',
-                           '   background: url("img/bg.png");',
-                           '}'))
-                ),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("widget", "assets", "skins", "sam", "widget.css"),
+            "\n".join(
+                ('/* widget skin */',
+                 '.yui-widget {',
+                 '   background: url("img/bg.png");',
+                 '}'))
+            )
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("editor", "assets", "skins", "sam", "editor.css"),
+            "\n".join(('/* editor skin */',
+                       '.yui-editor {',
+                       '   background: url("img/bg.png");',
+                       '}'))
+            )
 
         expected = "\n".join(
             ("/* widget/assets/skins/sam/widget.css */",
@@ -303,26 +295,24 @@ class TestCombo(ComboTestBase):
         """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("widget", "assets", "skins", "sam", "widget.css"),
-                """\
-                /* widget skin */
-                .yui-widget {
-                   background: url("img/bg.png");
-                }
-                """),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("editor", "assets", "skins", "sam", "editor.css"),
-                """\
-                /* editor skin */
-                .yui-editor {
-                   background: url("img/bg.png");
-                }
-                """),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("widget", "assets", "skins", "sam", "widget.css"),
+            """\
+            /* widget skin */
+            .yui-widget {
+               background: url("img/bg.png");
+            }
+            """)
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("editor", "assets", "skins", "sam", "editor.css"),
+            """\
+            /* editor skin */
+            .yui-editor {
+               background: url("img/bg.png");
+            }
+            """)
 
         expected = "\n".join(
             ("/* widget/assets/skins/sam/widget.css */",
@@ -344,25 +334,23 @@ class TestCombo(ComboTestBase):
         """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("widget", "assets", "skins", "sam", "widget.css"),
-                "\n".join(
-                    ('/* widget skin */',
-                     '.yui-widget {',
-                     '   background: url("img/bg.png");',
-                     '}'))
-                ),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("editor", "assets", "skins", "sam", "editor.css"),
-                "\n".join(('/* editor skin */',
-                           '.yui-editor {',
-                           '   background: url("img/bg.png");',
-                           '}'))
-                ),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("widget", "assets", "skins", "sam", "widget.css"),
+            "\n".join(
+                ('/* widget skin */',
+                 '.yui-widget {',
+                 '   background: url("img/bg.png");',
+                 '}'))
+            )
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("editor", "assets", "skins", "sam", "editor.css"),
+            "\n".join(('/* editor skin */',
+                       '.yui-editor {',
+                       '   background: url("img/bg.png");',
+                       '}'))
+            )
 
         expected = "\n".join(
             ('/* widget/assets/skins/sam/widget.css */',
@@ -392,26 +380,24 @@ class TestCombo(ComboTestBase):
         """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("widget", "assets", "skins", "sam", "widget.css"),
-                """\
-                /* widget skin */
-                .yui-widget {
-                   background: url("img/bg.png");
-                }
-                """),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("editor", "assets", "skins", "sam", "editor.css"),
-                """\
-                /* editor skin */
-                .yui-editor {
-                   background: url("img/bg.png");
-                }
-                """),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("widget", "assets", "skins", "sam", "widget.css"),
+            """\
+            /* widget skin */
+            .yui-widget {
+               background: url("img/bg.png");
+            }
+            """)
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("editor", "assets", "skins", "sam", "editor.css"),
+            """\
+            /* editor skin */
+            .yui-editor {
+               background: url("img/bg.png");
+            }
+            """)
 
         expected = "\n".join(
             ("/* widget/assets/skins/sam/widget.css */",
@@ -429,19 +415,19 @@ class TestCombo(ComboTestBase):
             expected)
 
     def test_missing_file_is_ignored(self):
-        """If a missing file is requested we should still combine the others."""
+        """
+        If a missing file is requested we should still combine the others.
+        """
         test_dir = self.makeDir()
 
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("yui", "yui-min.js"),
-                "** yui-min **"),
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("event-custom", "event-custom-min.js"),
-                "** event-custom-min **"),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("yui", "yui-min.js"),
+            "** yui-min **")
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("event-custom", "event-custom-min.js"),
+            "** event-custom-min **")
 
         expected = "\n".join(("// yui/yui-min.js",
                               "** yui-min **",
@@ -459,12 +445,10 @@ class TestCombo(ComboTestBase):
     def test_no_parent_hack(self):
         """If someone tries to hack going up the root, he'll get a miss."""
         test_dir = self.makeDir()
-        files = [
-            self.makeSampleFile(
-                test_dir,
-                os.path.join("oop", "oop-min.js"),
-                "** oop-min **"),
-            ]
+        self.makeSampleFile(
+            test_dir,
+            os.path.join("oop", "oop-min.js"),
+            "** oop-min **")
 
         root = os.path.join(test_dir, "root", "lazr")
         os.makedirs(root)
@@ -494,7 +478,6 @@ class TestCombo(ComboTestBase):
             "".join(combine_files(files, root=test_dir)).strip(),
             expected)
 
-
     def test_no_absolute_path_hack(self):
         """If someone tries to fetch an absolute file, he'll get nothing."""
         test_dir = self.makeDir()
@@ -517,20 +500,18 @@ class TestWSGICombo(ComboTestBase):
 
     def test_combo_app_sets_content_type_for_js(self):
         """The WSGI App should set a proper Content-Type for Javascript."""
-        files = [
-            self.makeSampleFile(
-                self.root,
-                os.path.join("yui", "yui-min.js"),
-                "** yui-min **"),
-            self.makeSampleFile(
-                self.root,
-                os.path.join("oop", "oop-min.js"),
-                "** oop-min **"),
-            self.makeSampleFile(
-                self.root,
-                os.path.join("event-custom", "event-custom-min.js"),
-                "** event-custom-min **"),
-            ]
+        self.makeSampleFile(
+            self.root,
+            os.path.join("yui", "yui-min.js"),
+            "** yui-min **")
+        self.makeSampleFile(
+            self.root,
+            os.path.join("oop", "oop-min.js"),
+            "** oop-min **")
+        self.makeSampleFile(
+            self.root,
+            os.path.join("event-custom", "event-custom-min.js"),
+            "** event-custom-min **")
 
         expected = "\n".join(("// yui/yui-min.js",
                               "** yui-min **",
@@ -548,12 +529,10 @@ class TestWSGICombo(ComboTestBase):
 
     def test_combo_app_sets_content_type_for_css(self):
         """The WSGI App should set a proper Content-Type for CSS."""
-        files = [
-            self.makeSampleFile(
-                self.root,
-                os.path.join("widget", "skin", "sam", "widget.css"),
-                "/* widget-skin-sam */"),
-            ]
+        self.makeSampleFile(
+            self.root,
+            os.path.join("widget", "skin", "sam", "widget.css"),
+            "/* widget-skin-sam */")
 
         expected = "/* widget/skin/sam/widget.css */"
 
@@ -567,4 +546,3 @@ class TestWSGICombo(ComboTestBase):
         res = self.app.get("/", status=404)
         self.assertEquals(res.headers, [("Content-Type", "text/plain")])
         self.assertEquals(res.body, "Not Found")
-
