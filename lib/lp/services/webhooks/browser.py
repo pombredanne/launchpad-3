@@ -110,8 +110,8 @@ class WebhookBreadcrumb(Breadcrumb):
 
 
 class WebhookEditSchema(Interface):
-    # XXX wgrant 2015-08-04: Need custom widget for secret.
-    use_template(IWebhook, include=['delivery_url', 'event_types', 'active'])
+    use_template(
+        IWebhook, include=['delivery_url', 'event_types', 'active', 'secret'])
 
 
 class WebhookAddView(LaunchpadFormView):
@@ -140,7 +140,8 @@ class WebhookAddView(LaunchpadFormView):
     def new_action(self, action, data):
         webhook = self.context.newWebhook(
             registrant=self.user, delivery_url=data['delivery_url'],
-            event_types=data['event_types'], active=data['active'])
+            event_types=data['event_types'], active=data['active'],
+            secret=data['secret'])
         self.next_url = canonical_url(webhook)
 
 
@@ -149,6 +150,8 @@ class WebhookView(LaunchpadEditFormView):
     label = "Manage webhook"
 
     schema = WebhookEditSchema
+    # XXX wgrant 2015-08-04: Need custom widget for secret.
+    field_names = ['delivery_url', 'event_types', 'active']
     custom_widget('event_types', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
