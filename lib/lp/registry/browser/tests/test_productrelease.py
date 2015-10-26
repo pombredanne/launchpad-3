@@ -83,8 +83,7 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
         maintainer = release.milestone.product.owner
         form = self.makeForm('foo', file_release_type)
         with person_logged_in(maintainer):
-            view = create_initialized_view(
-                release, '+adddownloadfile', form=form)
+            create_initialized_view(release, '+adddownloadfile', form=form)
         self.assertEqual(1, release.files.count())
         self.assertEqual(
             expected_mimetype,
@@ -99,4 +98,3 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
         self.assertFileHasMimeType('README', "text/plain")
         self.assertFileHasMimeType('CHANGELOG', "text/plain")
         self.assertFileHasMimeType('RELEASENOTES', "text/plain")
-

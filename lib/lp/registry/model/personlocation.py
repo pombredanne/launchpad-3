@@ -32,7 +32,7 @@ from lp.services.database.sqlbase import SQLBase
 @implementer(IPersonLocation)
 class PersonLocation(SQLBase):
     """A person's location."""
- 
+
     _defaultOrder = ['id']
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)

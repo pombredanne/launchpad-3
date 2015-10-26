@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 
-from lp.blueprints.enums import SpecificationGoalStatus
 from lp.registry.interfaces.person import IPerson
 from lp.services.database.sqlbase import block_implicit_flushes
 

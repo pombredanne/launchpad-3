@@ -11,7 +11,6 @@ from zope.component import getUtility
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.testing import (
     anonymous_logged_in,
-    person_logged_in,
     TestCase,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
@@ -67,7 +66,8 @@ class TestPrivateXMLRPC(TestCase):
         with anonymous_logged_in():
             external_api = self.get_public_proxy('bugs/')
             bug_dict = dict(
-                product='firefox', summary='the summary', comment='the comment')
+                product='firefox', summary='the summary',
+                comment='the comment')
             result = external_api.filebug(bug_dict)
             self.assertStartsWith(result, 'http://bugs.launchpad.dev/bugs/')
 

@@ -76,6 +76,3 @@ class QuestionMakeBugView(LaunchpadFormView):
         self.request.response.addNotification(
             _('Thank you! Bug #$bugid created.', mapping={'bugid': bug.id}))
         self.next_url = canonical_url(bug)
-
-
-

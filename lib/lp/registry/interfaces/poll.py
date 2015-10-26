@@ -495,4 +495,3 @@ class IVoteSet(Interface):
         Raises a TypeError if the given option doesn't belong to a
         simple-style poll.
         """
-

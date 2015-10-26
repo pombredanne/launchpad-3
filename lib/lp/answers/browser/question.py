@@ -75,10 +75,7 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
-from lp.answers.vocabulary import (
-    UsesAnswersDistributionVocabulary,
-    UsesAnswersProductVocabulary,
-    )
+from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -650,7 +647,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     def context_uses_answers(self):
         """Return True if the context uses launchpad as an answer forum."""
         usage = IServiceUsage(self.context)
-        if usage is not None:             
+        if usage is not None:
             return usage.answers_usage == ServiceUsage.LAUNCHPAD
         else:
             return False
