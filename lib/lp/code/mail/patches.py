@@ -380,7 +380,9 @@ def iter_file_patch(iter_lines, allow_dirty=False, keep_dirty=False):
             dirty_head.append(line)
             continue
         if in_git_patch and line and line[0].islower():
-            # Extended header line in a git diff.
+            # Extended header line in a git diff.  All extended header lines
+            # currently start with a lower-case character, and nothing else
+            # in the patch before the next "diff" header line can do so.
             dirty_head.append(line)
             continue
         if line.startswith('*** '):
