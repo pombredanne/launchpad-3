@@ -56,10 +56,7 @@ from lp.code.model.branchmergeproposaljob import (
     ReviewRequestedEmailJob,
     UpdatePreviewDiffJob,
     )
-from lp.code.model.tests.test_diff import (
-    create_example_merge,
-    DiffTestCase,
-    )
+from lp.code.model.tests.test_diff import DiffTestCase
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -249,14 +246,13 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
             job.getOperationDescription())
 
     def test_run(self):
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
+        bmp = self.createExampleBzrMerge()[0]
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
         with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
-        self.checkExampleMerge(bmp.preview_diff.text)
+        self.checkExampleBzrMerge(bmp.preview_diff.text)
 
     def test_run_git(self):
         bmp, _, _, patch = self.createExampleGitMerge()
@@ -268,8 +264,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
     def test_run_object_events(self):
         # While the job runs a single IObjectModifiedEvent is issued when the
         # preview diff has been calculated.
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
+        bmp = self.createExampleBzrMerge()[0]
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
@@ -332,8 +327,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.assertThat(job.max_retries, Equals(20))
 
     def test_10_minute_lease(self):
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
+        bmp = self.createExampleBzrMerge()[0]
         job = UpdatePreviewDiffJob.create(bmp)
         job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
@@ -355,8 +349,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
     def test_triggers_webhooks_bzr(self):
         self.useFixture(FeatureFixture(
             {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: "on"}))
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
+        bmp = self.createExampleBzrMerge()[0]
         hook = self.factory.makeWebhook(
             target=bmp.target_branch, event_types=["merge-proposal:0.1"])
         job = UpdatePreviewDiffJob.create(bmp)
@@ -380,8 +373,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
 
 def make_runnable_incremental_diff_job(test_case):
-    test_case.useBzrBranches(direct_database=True)
-    bmp, source_rev_id, target_rev_id = create_example_merge(test_case)
+    bmp, source_rev_id, target_rev_id = test_case.createExampleBzrMerge()
     repository = bmp.source_branch.getBzrBranch().repository
     parent_id = repository.get_revision(source_rev_id).parent_ids[0]
     test_case.factory.makeRevision(rev_id=source_rev_id)
@@ -429,8 +421,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
 
     def test_10_minute_lease(self):
         """Newly-created jobs have a ten-minute lease."""
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
+        bmp = self.createExampleBzrMerge()[0]
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
         with dbuser("merge-proposal-jobs"):
             job.acquireLease()
@@ -737,14 +728,13 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertEqual(2, len(pop_remote_notifications()))
 
 
-class TestViaBzrsyncdCelery(TestCaseWithFactory):
+class TestViaBzrsyncdCelery(DiffTestCase):
 
     layer = CeleryBzrsyncdJobLayer
 
     def test_UpdatePreviewDiffJob(self):
         """UpdatePreviewDiffJob runs under Celery."""
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
+        bmp = self.createExampleBzrMerge()[0]
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
