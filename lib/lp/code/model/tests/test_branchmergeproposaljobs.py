@@ -16,7 +16,13 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
 from storm.store import Store
-from testtools.matchers import Equals
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    Is,
+    MatchesDict,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -24,6 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
     IBranchMergeProposalJob,
     IBranchMergeProposalJobSource,
     ICodeReviewCommentEmailJob,
@@ -64,6 +71,7 @@ from lp.services.job.tests import (
     pop_remote_notifications,
     )
 from lp.services.osutils import override_environ
+from lp.services.webapp import canonical_url
 from lp.testing import (
     EventRecorder,
     TestCaseWithFactory,
@@ -330,6 +338,45 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
+
+    def assertCorrectPreviewDiffDelivery(self, bmp, delivery):
+        bmp_url = canonical_url(bmp, force_local_path=True)
+        diff_url = canonical_url(bmp.preview_diff, force_local_path=True)
+        self.assertThat(
+            delivery, MatchesStructure(
+                event_type=Equals("merge-proposal:0.1"),
+                payload=MatchesDict({
+                    "merge_proposal": Equals(bmp_url),
+                    "action": Equals("modified"),
+                    "old": ContainsDict({"preview_diff": Is(None)}),
+                    "new": ContainsDict({"preview_diff": Equals(diff_url)}),
+                    })))
+
+    def test_triggers_webhooks_bzr(self):
+        self.useFixture(FeatureFixture(
+            {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: "on"}))
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        hook = self.factory.makeWebhook(
+            target=bmp.target_branch, event_types=["merge-proposal:0.1"])
+        job = UpdatePreviewDiffJob.create(bmp)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        bmp.source_branch.next_mirror_time = None
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertCorrectPreviewDiffDelivery(bmp, hook.deliveries.one())
+
+    def test_triggers_webhooks_git(self):
+        self.useFixture(FeatureFixture(
+            {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: "on"}))
+        bmp = self.createExampleGitMerge()[0]
+        hook = self.factory.makeWebhook(
+            target=bmp.target_git_repository,
+            event_types=["merge-proposal:0.1"])
+        job = UpdatePreviewDiffJob.create(bmp)
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertCorrectPreviewDiffDelivery(bmp, hook.deliveries.one())
 
 
 def make_runnable_incremental_diff_job(test_case):
