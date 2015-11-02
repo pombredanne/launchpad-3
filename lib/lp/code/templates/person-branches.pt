@@ -10,11 +10,6 @@
 
 <metal:side fill-slot="side">
 
-  <div tal:define="menu context/menu:branches"
-       tal:condition="view/show_action_menu"
-       class="first portlet">
-  </div>
-
   <tal:summary replace="structure context/@@+codesummary"/>
 
 </metal:side>
