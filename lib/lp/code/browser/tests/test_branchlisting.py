@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -617,6 +617,16 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         self.assertThat(
             series_branches_last_row.text_content(),
             DocTestMatches("%s ... ago" % branch.displayname))
+
+    def test_git_link(self):
+        page = create_initialized_view(
+            self.distro_source_package, name='+branches', rootsite='code')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(target=self.distro_source_package)
+        page = create_initialized_view(
+            self.distro_source_package, name='+branches', rootsite='code')()
+        self.assertIn('View Git repositories', page)
 
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
