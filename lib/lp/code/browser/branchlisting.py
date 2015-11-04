@@ -918,12 +918,6 @@ class PersonBaseBranchListingView(BranchListingView):
         return self.context
 
     @property
-    def show_action_menu(self):
-        if self.user is not None:
-            return self.user.inTeam(self.context)
-        return False
-
-    @property
     def show_junk_directions(self):
         return self.user == self.context
 
@@ -976,7 +970,6 @@ class PersonProductBranchesView(PersonBranchesView):
     no_sort_by = (
         BranchListingSort.DEFAULT, BranchListingSort.OWNER,
         BranchListingSort.PRODUCT)
-    show_action_menu = False
 
     @property
     def person(self):
