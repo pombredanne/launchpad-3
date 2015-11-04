@@ -69,6 +69,7 @@ from lp.code.interfaces.gitnamespace import (
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     IGitRepositorySet,
+    IGitRepositoryView,
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchmergeproposal import BranchMergeProposal
@@ -136,6 +137,7 @@ from lp.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import DoesNotSnapshot
 from lp.testing.pages import webservice_for_person
 
 
@@ -147,6 +149,12 @@ class TestGitRepository(TestCaseWithFactory):
     def test_implements_IGitRepository(self):
         repository = self.factory.makeGitRepository()
         verifyObject(IGitRepository, repository)
+
+    def test_avoids_large_snapshots(self):
+        large_properties = ['refs', 'branches']
+        self.assertThat(
+            self.factory.makeGitRepository(),
+            DoesNotSnapshot(large_properties, IGitRepositoryView))
 
     def test_unique_name_project(self):
         project = self.factory.makeProduct()

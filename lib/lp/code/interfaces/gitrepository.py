@@ -17,6 +17,7 @@ __all__ = [
 
 import re
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
@@ -224,17 +225,17 @@ class IGitRepositoryView(Interface):
         title=_("SSH URL"), readonly=True,
         description=_("A git+ssh:// URL for this repository.")))
 
-    refs = exported(CollectionField(
+    refs = exported(doNotSnapshot(CollectionField(
         title=_("The references present in this repository."),
         readonly=True,
         # Really IGitRef, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+        value_type=Reference(Interface))))
 
-    branches = exported(CollectionField(
+    branches = exported(doNotSnapshot(CollectionField(
         title=_("The branch references present in this repository."),
         readonly=True,
         # Really IGitRef, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+        value_type=Reference(Interface))))
 
     branches_by_date = Attribute(
         "The branch references present in this repository, ordered by last "
