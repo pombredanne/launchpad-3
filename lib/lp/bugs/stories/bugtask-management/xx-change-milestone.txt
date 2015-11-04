@@ -1,4 +1,5 @@
-= Changing Milestones of Bugtasks =
+Changing Milestones of Bugtasks
+===============================
 
 Bugtasks associated with products, productseries, distributions and
 distroseries can be targeted to milestones.
@@ -62,7 +63,7 @@ are listed too.
     >>> milestone_control.displayValue
     ['(nothing selected)']
     >>> milestone_control.displayOptions
-    ['(nothing selected)', 'Mozilla Firefox 1.0', 'Mozilla Firefox 1.0.1']
+    ['(nothing selected)', 'Mozilla Firefox 1.0.1', 'Mozilla Firefox 1.0']
     >>> milestone_control.displayValue = ['Mozilla Firefox 1.0.1']
     >>> owner_browser.getControl('Save Changes', index=1).click()
     >>> milestone_control = owner_browser.getControl(
