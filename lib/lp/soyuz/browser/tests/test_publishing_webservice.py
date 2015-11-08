@@ -139,5 +139,6 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
                     bpf.libraryfile, bpph.archive).http_url,
                 "size": bpf.libraryfile.content.filesize,
                 "sha1": bpf.libraryfile.content.sha1,
+                "sha256": bpf.libraryfile.content.sha256,
                 } for bpf in bpph.binarypackagerelease.files]
         self.assertContentEqual(expected_info, info)

@@ -873,8 +873,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     def binaryFileUrls(include_meta=False):
         """URLs for this binary publication's binary files.
 
-        :param include_meta: Return a list of dicts with keys url, size
-            and sha1 for each url instead of a simple list.
+        :param include_meta: Return a list of dicts with keys url, size,
+            sha1, and sha256 for each URL instead of a simple list.
         :return: A collection of URLs for this binary.
         """
 

@@ -1076,9 +1076,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             [binary for binary, _ in binaries], self.archive)
         if include_meta:
             meta = [
-                (content.filesize, content.sha1) for _, content in binaries]
-            return [dict(url=url, size=size, sha1=sha1)
-                for url, (size, sha1) in zip(binary_urls, meta)]
+                (content.filesize, content.sha1, content.sha256)
+                for _, content in binaries]
+            return [dict(url=url, size=size, sha1=sha1, sha256=sha256)
+                for url, (size, sha1, sha256) in zip(binary_urls, meta)]
         return binary_urls
 
 

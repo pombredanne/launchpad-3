@@ -226,10 +226,11 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
             meta = [(
                 f.libraryfile.content.filesize,
                 f.libraryfile.content.sha1,
+                f.libraryfile.content.sha256,
             ) for f in bpr.files]
 
-            return [dict(url=url, size=size, sha1=sha1)
-                for url, (size, sha1) in zip(urls, meta)]
+            return [dict(url=url, size=size, sha1=sha1, sha256=sha256)
+                for url, (size, sha1, sha256) in zip(urls, meta)]
         return urls
 
     def makeBPPH(self, num_binaries=1):
