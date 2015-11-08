@@ -643,11 +643,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return getUtility(
             IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
-    def sourceFileUrls(self):
+    def sourceFileUrls(self, include_meta=False):
         """See `ISourcePackagePublishingHistory`."""
+        sources = Store.of(self).find(
+            (LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            SourcePackageReleaseFile.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.id == self.sourcepackagereleaseID)
         source_urls = proxied_urls(
-            [file.libraryfile for file in self.sourcepackagerelease.files],
-             self.archive)
+            [source for source, _ in sources], self.archive)
+        if include_meta:
+            meta = [
+                (content.filesize, content.sha256) for _, content in sources]
+            return [
+                dict(url=url, size=size, sha256=sha256)
+                for url, (size, sha256) in zip(source_urls, meta)]
         return source_urls
 
     def binaryFileUrls(self):
