@@ -211,12 +211,12 @@ class TestBugCommentVisibility(
 
     layer = DatabaseFunctionalLayer
 
-    def makeHiddenMessage(self):
+    def makeHiddenMessage(self, comment_owner=None):
         """Required by the mixin."""
         with celebrity_logged_in('admin'):
             bug = self.factory.makeBug()
             comment = self.factory.makeBugComment(
-                    bug=bug, body=self.comment_text)
+                    bug=bug, body=self.comment_text, owner=comment_owner)
             comment.visible = False
         return bug
 

@@ -16,34 +16,34 @@ class OpStats(LaunchpadXMLRPCView):
     """The XML-RPC API for extracting operational statistics."""
 
     # Statistics maintained by the publication machinery. Class global.
-    stats = {} # Initialized by OpStats.resetStats()
+    stats = {}  # Initialized by OpStats.resetStats()
 
     @classmethod
     def resetStats(cls):
         """Reset the collected stats to 0."""
         OpStats.stats.update({
             # Global
-            'requests': 0, # Requests, all protocols, all statuses
-            'retries': 0, # Optimistic transaction retries.
-            'soft timeouts': 0, # Requests that generated a soft timeout OOPS
-            'timeouts': 0, # Requests that generated a hard timeout OOPS
+            'requests': 0,       # Requests, all protocols, all statuses
+            'retries': 0,        # Optimistic transaction retries.
+            'soft timeouts': 0,  # Requests that generated a soft timeout OOPS
+            'timeouts': 0,       # Requests that generated a hard timeout OOPS
 
             # XML-RPC specific
-            'xml-rpc requests': 0, # XML-RPC requests, all statuses
-            'xml-rpc faults': 0, # XML-RPC requests returning a Fault
+            'xml-rpc requests': 0,  # XML-RPC requests, all statuses
+            'xml-rpc faults': 0,    # XML-RPC requests returning a Fault
 
             # HTTP specific
             'http requests': 0,
-            '404s': 0, # Not Found
-            '500s': 0, # Internal Server Error (eg. unhandled exception)
-            '503s': 0, # Service Unavailable (eg. Timeout)
-            '1XXs': 0, # Informational (Don't think Launchpad produces these)
-            '2XXs': 0, # Successful
-            '3XXs': 0, # Redirection
-            '4XXs': 0, # Client Errors
-            '5XXs': 0, # Server Errors
-            '6XXs': 0, # Internal Errors
-            '5XXs_b': 0, # Server Errors returned to browsers (not robots).
+            '404s': 0,  # Not Found
+            '500s': 0,  # Internal Server Error (eg. unhandled exception)
+            '503s': 0,  # Service Unavailable (eg. Timeout)
+            '1XXs': 0,  # Informational (Don't think Launchpad produces these)
+            '2XXs': 0,  # Successful
+            '3XXs': 0,  # Redirection
+            '4XXs': 0,  # Client Errors
+            '5XXs': 0,  # Server Errors
+            '6XXs': 0,  # Internal Errors
+            '5XXs_b': 0,  # Server Errors returned to browsers (not robots).
             })
 
     def opstats(self):
@@ -78,5 +78,4 @@ class OpStats(LaunchpadXMLRPCView):
         return out.getvalue()
 
 
-OpStats.resetStats() # Initialize the statistics
-
+OpStats.resetStats()  # Initialize the statistics

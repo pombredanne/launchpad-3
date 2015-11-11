@@ -89,4 +89,3 @@ class TranslationMessageData:
     def resetAllTranslations(self):
         """See `ITranslationMessageData`."""
         self._translations = []
-

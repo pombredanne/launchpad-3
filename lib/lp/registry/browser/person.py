@@ -274,6 +274,7 @@ from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.browser.hassnaps import HasSnapsMenuMixin
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
@@ -776,7 +777,7 @@ class PersonMenuMixin(CommonMenuLinks):
 
 
 class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
-                         HasRecipesMenuMixin):
+                         HasRecipesMenuMixin, HasSnapsMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -807,6 +808,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'oauth_tokens',
         'related_software_summary',
         'view_recipes',
+        'view_snaps',
         'subscriptions',
         'structural_subscriptions',
         ]
@@ -1239,7 +1241,7 @@ class PersonAdministerView(PersonRenameFormMixin):
     schema = IPerson
     label = "Review person"
     field_names = [
-        'name', 'displayname',
+        'name', 'display_name',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
@@ -2712,7 +2714,7 @@ class BasePersonEditView(LaunchpadEditFormView):
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot', 'description',
+    field_names = ['display_name', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'selfgenerated_bugnotifications',
                    'expanded_notification_footers']
@@ -4327,7 +4329,7 @@ class EmailToPersonView(LaunchpadFormView):
             return
         try:
             send_direct_contact_email(
-                sender_email, self.recipients, subject, message)
+                sender_email, self.recipients, self.context, subject, message)
         except QuotaReachedError as error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(

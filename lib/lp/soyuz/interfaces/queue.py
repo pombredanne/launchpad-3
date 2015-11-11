@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Queue interfaces."""
@@ -355,7 +355,7 @@ class IPackageUpload(Interface):
     @export_write_operation()
     @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def acceptFromQueue(logger=None, dry_run=False, user=None):
+    def acceptFromQueue(user=None):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
@@ -366,7 +366,7 @@ class IPackageUpload(Interface):
         comment=TextLine(title=_("Rejection comment"), required=False))
     @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def rejectFromQueue(user, logger=None, dry_run=False, comment=None):
+    def rejectFromQueue(user, comment=None):
         """Call setRejected, do a syncUpdate, and send notification email."""
 
     def realiseUpload(logger=None):
@@ -400,11 +400,15 @@ class IPackageUpload(Interface):
         committed to have some updates actually written to the database.
         """
 
-    def notify(summary_text=None, changes_file_object=None, logger=None):
+    def notify(status=None, summary_text=None, changes_file_object=None,
+               logger=None):
         """Notify by email when there is a new distroseriesqueue entry.
 
         This will send new, accept, announce and rejection messages as
         appropriate.
+
+        :param status: The current `PackageUploadStatus` when this
+            notification was generated.  Defaults to `self.status`.
 
         :param summary_text: Any additional text to append to the auto-
             generated summary.  This is also the only text used if there is

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'GitRefBatchNavigator',
+    'GitRepositoriesBreadcrumb',
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
     'GitRepositoryDeletionView',
@@ -25,7 +26,7 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from storm.expr import Desc
+from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
@@ -64,7 +65,10 @@ from lp.code.errors import (
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -86,10 +90,11 @@ from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.services.webapp.batching import TableBatchNavigator
-from lp.services.webapp.breadcrumb import NameBreadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
+from lp.snappy.browser.hassnaps import HasSnapsViewMixin
 
 
 @implementer(ICanonicalUrlData)
@@ -107,11 +112,28 @@ class GitRepositoryURL:
         return self.repository.unique_name
 
 
-class GitRepositoryBreadcrumb(NameBreadcrumb):
+class GitRepositoriesBreadcrumb(Breadcrumb):
+
+    text = "Git"
+
+    @property
+    def url(self):
+        return canonical_url(self.context, view_name="+git")
 
     @property
     def inside(self):
-        return self.context.target
+        return self.context
+
+
+class GitRepositoryBreadcrumb(Breadcrumb):
+
+    @property
+    def text(self):
+        return self.context.git_identity
+
+    @property
+    def inside(self):
+        return GitRepositoriesBreadcrumb(self.context.target)
 
 
 class GitRepositoryNavigation(WebhookTargetNavigationMixin, Navigation):
@@ -130,6 +152,14 @@ class GitRepositoryNavigation(WebhookTargetNavigationMixin, Navigation):
                     self.request.stepstogo.consume()
                 return ref
         raise NotFoundError
+
+    @stepthrough("+subscription")
+    def traverse_subscription(self, name):
+        """Traverses to an `IGitSubscription`."""
+        person = getUtility(IPersonSet).getByName(name)
+
+        if person is not None:
+            return self.context.getSubscription(person)
 
     @stepthrough("+merge")
     def traverse_merge_proposal(self, id):
@@ -198,7 +228,7 @@ class GitRepositoryContextMenu(ContextMenu):
         return Link("+addsubscriber", text, icon="add")
 
     def source(self):
-        """Return a link to the branch's browsing interface."""
+        """Return a link to the repository's browsing interface."""
         text = "Browse the code"
         url = self.context.getCodebrowseUrl()
         return Link(url, text, icon="info")
@@ -217,15 +247,10 @@ class GitRefBatchNavigator(TableBatchNavigator):
     def __init__(self, view, context):
         self.context = context
         super(GitRefBatchNavigator, self).__init__(
-            self._branches, view.request,
+            self.context.branches_by_date, view.request,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 3
-
-    @property
-    def _branches(self):
-        from lp.code.model.gitref import GitRef
-        return self.context.branches.order_by(Desc(GitRef.committer_date))
 
     @property
     def table_class(self):
@@ -238,7 +263,8 @@ class GitRefBatchNavigator(TableBatchNavigator):
             return "listing sortable"
 
 
-class GitRepositoryView(InformationTypePortletMixin, LaunchpadView):
+class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
+                        HasSnapsViewMixin):
 
     @property
     def page_title(self):

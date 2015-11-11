@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -453,8 +453,15 @@ class GPGHandler:
 
         conn.close()
 
-    def uploadPublicKey(self, fingerprint):
+    def uploadPublicKey(self, fingerprint, logger=None):
         """See IGPGHandler"""
+        if not config.gpghandler.upload_keys:
+            if logger is not None:
+                logger.info(
+                    "Not submitting key to keyserver "
+                    "(disabled in configuration).")
+            return
+
         pub_key = self.retrieveKey(fingerprint)
         self._submitKey(pub_key.export())
 

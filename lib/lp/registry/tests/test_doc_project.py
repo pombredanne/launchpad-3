@@ -18,6 +18,7 @@ def setUp(test):
     test.globs['getUtility'] = getUtility
     login(ANONYMOUS)
 
+
 def test_suite():
     suite = DocTestSuite('lp.registry.model.projectgroup', setUp=setUp)
     suite.layer = LaunchpadFunctionalLayer

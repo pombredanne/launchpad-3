@@ -75,5 +75,3 @@ class FeaturedProjectsView(LaunchpadFormView):
     @property
     def action_url(self):
         return "/+featuredprojects"
-
-

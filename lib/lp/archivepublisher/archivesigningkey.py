@@ -135,3 +135,12 @@ class ArchiveSigningKey:
             os.path.join(suite_path, 'Release.gpg'), 'w')
         release_signature_file.write(signature)
         release_signature_file.close()
+
+        inline_release = gpghandler.signContent(
+            release_file_content, secret_key.fingerprint,
+            mode=gpgme.SIG_MODE_CLEAR)
+
+        inline_release_file = open(
+            os.path.join(suite_path, 'InRelease'), 'w')
+        inline_release_file.write(inline_release)
+        inline_release_file.close()

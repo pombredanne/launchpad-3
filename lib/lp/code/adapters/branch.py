@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Components related to branches."""
@@ -79,9 +79,6 @@ class BranchMergeProposalDelta:
 
     delta_values = (
         'registrant',
-        'source_branch',
-        'target_branch',
-        'prerequisite_branch',
         'queue_status',
         )
     new_values = (

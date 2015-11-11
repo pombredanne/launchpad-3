@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from storm.store import Store
-from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.app.errors import UnexpectedFormData
@@ -29,7 +27,6 @@ from lp.translations.browser.pofile import POFileTranslateView
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.model.pofiletranslator import POFileTranslator
 
 
 class TestQueryCount(TestCaseWithFactory):
@@ -82,7 +79,7 @@ class TestQueryCount(TestCaseWithFactory):
             lambda: create_initialized_view(
                 pofile, '+translate', principal=person)(),
             create_suggestions, nb_objects)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestPOFileTranslateViewInvalidFiltering(TestCaseWithFactory):
@@ -333,7 +330,7 @@ class TestPOFileTranslateViewDocumentation(TestCaseWithFactory):
         pofile = self.factory.makePOFile('ie')
         translator_entry = self._makeTranslationTeam(pofile)
         self._setTeamGuide(pofile, team=translator_entry)
-        translator_entry.translator.displayname = "<blink>Y</blink>"
+        translator_entry.translator.display_name = "<blink>Y</blink>"
 
         view = self._makeView(pofile=pofile)
         self.assertIn(

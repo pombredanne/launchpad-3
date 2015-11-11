@@ -23,4 +23,3 @@ class IFeaturedProject(Interface):
 
     def destroySelf():
         """Remove this project from the featured project list."""
-

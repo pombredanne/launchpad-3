@@ -281,13 +281,17 @@ librarian file of the attachment.
     >>> request = LaunchpadTestRequest()
     >>> bug_seven = bugset.get(7)
     >>> attachment_1 = factory.makeBugAttachment(
-    ...     bug=bug_seven, description='attachment 1', is_patch=False)
+    ...     bug=bug_seven, description='attachment 1', is_patch=False,
+    ...     filename='a1')
     >>> attachment_2 = factory.makeBugAttachment(
-    ...     bug=bug_seven, description='attachment 2', is_patch=False)
+    ...     bug=bug_seven, description='attachment 2', is_patch=False,
+    ...     filename='a2')
     >>> patch_1 = factory.makeBugAttachment(
-    ...     bug=bug_seven, description='patch 1', is_patch=True)
+    ...     bug=bug_seven, description='patch 1', is_patch=True,
+    ...     filename='p1')
     >>> patch_2 = factory.makeBugAttachment(
-    ...     bug=bug_seven, description='patch 2', is_patch=True)
+    ...     bug=bug_seven, description='patch 2', is_patch=True,
+    ...     filename='p2')
     >>> view = BugView(bug_seven, request)
     >>> [attachment['attachment'].title
     ...  for attachment in view.regular_attachments]
@@ -296,11 +300,11 @@ librarian file of the attachment.
     [u'patch 1', u'patch 2']
     >>> [attachment['file'].http_url
     ...  for attachment in view.regular_attachments]
-    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/1/+files/...',
-     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/2/+files/...']
+    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/.../+files/a1',
+     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/.../+files/a2']
     >>> [patch['file'].http_url for patch in view.patches]
-    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/3/+files/...',
-     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/4/+files/...']
+    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/.../+files/p1',
+     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/.../+files/p2']
 
 
 Bug Navigation
@@ -822,11 +826,11 @@ The view offers a list of bugs similar to the one whose title we just
 searched for.
 
     >>> for bug in view.similar_bugs:
-    ...     print "Bug %s: %s" % (bug.id, bug.title)
-    Bug 1:  New title
-    Bug 4:  Reflow problems with complex page layouts
-    Bug 5:  Firefox install instructions should be complete
-    Bug 17: a firefox bug
+    ...     print bug.title
+    New title
+    Reflow problems with complex page layouts
+    Firefox install instructions should be complete
+    a firefox bug
 
 If we refine the search critera, we'll get different results.
 
@@ -837,5 +841,5 @@ If we refine the search critera, we'll get different results.
     ...     (firefox, request), name="+filebug-show-similar")
     >>> view.initialize()
     >>> for bug in view.similar_bugs:
-    ...     print "Bug %s: %s" % (bug.id, bug.title)
-    Bug 4:  Reflow problems with complex page layouts
+    ...     print bug.title
+    Reflow problems with complex page layouts

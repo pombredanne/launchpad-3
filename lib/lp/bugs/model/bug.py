@@ -99,11 +99,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.app.validators import LaunchpadValidationError
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.specificationbug import SpecificationBug
-from lp.blueprints.model.specificationsearch import (
-    get_specification_privacy_filter,
-    )
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
@@ -153,7 +148,6 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
@@ -199,6 +193,7 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -235,6 +230,7 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
     )
+from lp.services.xref.interfaces import IXRefSet
 
 
 def snapshot_bug_params(bug_params):
@@ -364,16 +360,7 @@ class Bug(SQLBase, InformationTypeMixin):
         'BugMessage', joinColumn='bug', orderBy='index')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
-        orderBy='sequence', joinColumn='bug', otherColumn='cve')
-    cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    specifications = SQLRelatedJoin(
-        'Specification', joinColumn='bug', otherColumn='specification',
-        intermediateTable='SpecificationBug', orderBy='-datecreated')
-    questions = SQLRelatedJoin('Question', joinColumn='bug',
-        otherColumn='question', intermediateTable='QuestionBug',
-        orderBy='-datecreated')
     linked_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
@@ -385,12 +372,43 @@ class Bug(SQLBase, InformationTypeMixin):
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
+    @property
+    def cves(self):
+        from lp.bugs.model.cve import Cve
+        xref_cve_sequences = [
+            sequence for _, sequence in getUtility(IXRefSet).findFrom(
+                (u'bug', unicode(self.id)), types=[u'cve'])]
+        expr = Cve.sequence.is_in(xref_cve_sequences)
+        return list(sorted(
+            IStore(Cve).find(Cve, expr), key=operator.attrgetter('sequence')))
+
+    @property
+    def questions(self):
+        from lp.answers.model.question import Question
+        question_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'bug', unicode(self.id)), types=[u'question'])]
+        return list(sorted(
+            bulk.load(Question, question_ids), key=operator.attrgetter('id')))
+
+    @property
+    def specifications(self):
+        from lp.blueprints.model.specification import Specification
+        spec_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'bug', unicode(self.id)), types=[u'specification'])]
+        return list(sorted(
+            bulk.load(Specification, spec_ids), key=operator.attrgetter('id')))
+
     def getSpecifications(self, user):
         """See `IBug`."""
-        return IStore(SpecificationBug).find(
+        from lp.blueprints.model.specification import Specification
+        from lp.blueprints.model.specificationsearch import (
+            get_specification_privacy_filter,
+            )
+        return IStore(Specification).find(
             Specification,
-            SpecificationBug.bugID == self.id,
-            SpecificationBug.specificationID == Specification.id,
+            Specification.id.is_in(spec.id for spec in self.specifications),
             *get_specification_privacy_filter(user))
 
     @property
@@ -1000,7 +1018,7 @@ class Bug(SQLBase, InformationTypeMixin):
             BugSubscription.subscribed_by_id == SubscribedBy.id,
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.id)))
-            ).order_by(Person.displayname)
+            ).order_by(Person.display_name)
         return results
 
     def getIndirectSubscribers(self, recipients=None, level=None):
@@ -1377,27 +1395,19 @@ class Bug(SQLBase, InformationTypeMixin):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user, return_cve=True):
+    def linkCVE(self, cve, user, check_permissions=True):
         """See `IBug`."""
-        if cve not in self.cves:
-            bugcve = BugCve(bug=self, cve=cve)
-            notify(ObjectCreatedEvent(bugcve, user=user))
-            if return_cve:
-                return bugcve
+        cve.linkBug(self, user=user, check_permissions=check_permissions)
 
-    def unlinkCVE(self, cve, user):
+    def unlinkCVE(self, cve, user, check_permissions=True):
         """See `IBug`."""
-        for cve_link in self.cve_links:
-            if cve_link.cve.id == cve.id:
-                notify(ObjectDeletedEvent(cve_link, user=user))
-                BugCve.delete(cve_link.id)
-                break
+        cve.unlinkBug(self, user=user, check_permissions=check_permissions)
 
     def findCvesInText(self, text, user):
         """See `IBug`."""
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:
-            self.linkCVE(cve, user)
+            self.linkCVE(cve, user, check_permissions=False)
 
     # Several other classes need to generate lists of bugs, and
     # one thing they often have to filter for is completeness. We maintain
@@ -2581,18 +2591,6 @@ class BugSet:
                     "Unable to locate bug with nickname %s." % bugid)
         return bug
 
-    def queryByRemoteBug(self, bugtracker, remotebug):
-        """See `IBugSet`."""
-        bug = Bug.selectFirst("""
-                bugwatch.bugtracker = %s AND
-                bugwatch.remotebug = %s AND
-                bugwatch.bug = bug.id
-                """ % sqlvalues(bugtracker.id, str(remotebug)),
-                distinct=True,
-                clauseTables=['BugWatch'],
-                orderBy=['datecreated'])
-        return bug
-
     def createBug(self, bug_params, notify_event=True):
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
@@ -2610,7 +2608,8 @@ class BugSet:
 
         bug, event = self._makeBug(params)
 
-        # Create the initial task on the specified target.
+        # Create the initial task on the specified target.  This also
+        # reconciles access policies for this bug based on that target.
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
 
@@ -2627,8 +2626,6 @@ class BugSet:
             bug_task.transitionToImportance(params.importance, params.owner)
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
-
-        bug._reconcileAccess()
 
         # Tell everyone.
         if notify_event:

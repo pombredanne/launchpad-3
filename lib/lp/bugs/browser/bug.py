@@ -59,7 +59,6 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -572,12 +571,15 @@ class BugView(LaunchpadView, BugViewMixin):
                 BugTaskSearchParams(self.user, bug=any(*duplicate_bugs))))
         dupes = []
         for bug in duplicate_bugs:
-            dupe = {}
-            try:
-                dupe['title'] = bug.title
-            except Unauthorized:
-                dupe['title'] = 'Private Bug'
-            dupe['id'] = bug.id
+            # Don't disclose even the ID of a private bug. The link will
+            # just 404.
+            if not check_permission('launchpad.View', bug):
+                continue
+            dupe = {
+                'title': bug.title,
+                'id': bug.id,
+                'bug': bug,
+                }
             # If the dupe has the same context as the one we're in, link
             # to that bug task directly.
             if bug in dupes_in_current_context:

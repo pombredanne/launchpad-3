@@ -29,10 +29,6 @@ __all__ = [
 
 from datetime import datetime
 
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.fields import Reference
@@ -119,15 +115,13 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
@@ -155,6 +149,11 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webhooks.browser import WebhookTargetNavigationMixin
+from lp.snappy.browser.hassnaps import (
+    HasSnapsMenuMixin,
+    HasSnapsViewMixin,
+    )
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
@@ -182,7 +181,7 @@ class BranchBreadcrumb(NameBreadcrumb):
         return self.context.target.components[-1]
 
 
-class BranchNavigation(Navigation):
+class BranchNavigation(WebhookTargetNavigationMixin, Navigation):
 
     usedfor = IBranch
 
@@ -201,7 +200,7 @@ class BranchNavigation(Navigation):
 
     @stepthrough("+subscription")
     def traverse_subscription(self, name):
-        """Traverses to an `IBranchSubcription`."""
+        """Traverses to an `IBranchSubscription`."""
         person = getUtility(IPersonSet).getByName(name)
 
         if person is not None:
@@ -239,7 +238,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'webhooks', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -266,17 +265,24 @@ class BranchEditMenu(NavigationMenu):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def webhooks(self):
+        text = 'Manage webhooks'
+        return Link(
+            '+webhooks', text, icon='edit',
+            enabled=bool(getFeatureFlag('webhooks.new.enabled')))
 
-class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
+
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
     """Context menu for branches."""
 
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
-        'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'visibility']
+        'add_subscriber', 'browse_revisions', 'create_recipe', 'create_snap',
+        'link_bug', 'link_blueprint', 'register_merge', 'source',
+        'subscription', 'edit_status', 'edit_import', 'upgrade_branch',
+        'view_recipes', 'view_snaps', 'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -397,7 +403,7 @@ class BranchMirrorMixin:
 
 
 class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
-                 LaunchpadView):
+                 LaunchpadView, HasSnapsViewMixin):
 
     feed_types = (
         BranchFeedLink,
@@ -512,23 +518,27 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        candidates = list(self.context.landing_candidates)
-        branches = load_related(
-            Branch, candidates, ['source_branchID', 'prerequisite_branchID'])
-        GenericBranchCollection.preloadVisibleStackedOnBranches(
-            branches, self.user)
+        candidates = self.context.getPrecachedLandingCandidates(self.user)
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
     @property
-    def recipe_count_text(self):
+    def recipes_link(self):
+        """A link to recipes for this branch."""
         count = self.context.recipes.count()
         if count == 0:
-            return 'No recipes'
+            # Nothing to link to.
+            return 'No recipes using this branch.'
         elif count == 1:
-            return '1 recipe'
+            # Link to the single recipe.
+            return structured(
+                '<a href="%s">1 recipe</a> using this branch.',
+                canonical_url(self.context.recipes.one())).escapedtext
         else:
-            return '%s recipes' % count
+            # Link to a recipe listing.
+            return structured(
+                '<a href="+recipes">%s recipes</a> using this branch.',
+                count).escapedtext
 
     @property
     def is_import_branch_with_no_landing_candidates(self):
@@ -1173,27 +1183,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class RegisterProposalStatus(EnumeratedType):
-    """A restricted status enum for the register proposal form."""
-
-    # The text in this enum is different from the general proposal status
-    # enum as we want the help text that is shown in the form to be more
-    # relevant to the registration of the proposal.
-
-    NEEDS_REVIEW = Item("""
-        Needs review
-
-        The changes are ready for review.
-        """)
-
-    WORK_IN_PROGRESS = Item("""
-        Work in progress
-
-        The changes are still being actively worked on, and are not
-        yet ready for review.
-        """)
 
 
 class RegisterProposalSchema(Interface):

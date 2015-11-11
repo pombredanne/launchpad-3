@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = ('IRosettaStats', )
 
+
 class IRosettaStats(Interface):
     """Rosetta-related statistics."""
 

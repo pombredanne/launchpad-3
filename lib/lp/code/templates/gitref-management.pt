@@ -1,0 +1,13 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+<tal:repository-management
+    define="kind string:branch;
+            repository context/repository;
+            branch_name context/name">
+  <div metal:use-macro="context/@@+macros/management" />
+</tal:repository-management>
+
+</tal:root>

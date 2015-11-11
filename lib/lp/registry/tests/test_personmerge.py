@@ -83,13 +83,6 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
             merge_people(from_person, to_person, reviewer=reviewer)
         return from_person, to_person
 
-    def _get_testable_account(self, person, date_created, openid_identifier):
-        # Return a naked account with predictable attributes.
-        account = removeSecurityProxy(person.account)
-        account.date_created = date_created
-        account.openid_identifier = openid_identifier
-        return account
-
     def test_delete_no_notifications(self):
         team = self.factory.makeTeam()
         owner = team.teamowner
@@ -574,7 +567,7 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(duplicate, mergee)
         login_person(mergee)
         duplicate, mergee = self._do_merge(duplicate, mergee)
-        self.assertEqual(1, getUtility(ISnapSet).findByPerson(mergee).count())
+        self.assertEqual(1, getUtility(ISnapSet).findByOwner(mergee).count())
 
     def test_merge_with_duplicated_snaps(self):
         # If both the from and to people have snap packages with the same
@@ -592,7 +585,7 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         login_person(mergee)
         duplicate, mergee = self._do_merge(duplicate, mergee)
         snaps = sorted(
-            getUtility(ISnapSet).findByPerson(mergee), key=attrgetter("name"))
+            getUtility(ISnapSet).findByOwner(mergee), key=attrgetter("name"))
         self.assertEqual(2, len(snaps))
         self.assertIsNone(snaps[0].branch)
         self.assertEqual(ref.repository, snaps[0].git_repository)

@@ -129,7 +129,7 @@
       set_attributes="priority whiteboard"
       />
     <!-- IBugLinkTarget -->
-    <allow attributes="bugs bug_links" />
+    <allow attributes="bugs" />
     <require
       permission="launchpad.AnyPerson"
       attributes="linkBug unlinkBug"

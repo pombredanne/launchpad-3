@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import re
 
 from pytz import utc
 from storm.locals import Store
@@ -27,17 +26,14 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource,
     )
-from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer,
-    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
-from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     login,
     person_logged_in,
@@ -78,7 +74,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # SourcePackageRecipeBuild provides IPackageBuild and
         # ISourcePackageRecipeBuild.
         spb = self.makeSourcePackageRecipeBuild()
-        self.assertProvides(spb, ISourcePackageRecipeBuild)
+        with admin_logged_in():
+            self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_implements_interface(self):
         build = self.makeSourcePackageRecipeBuild()
@@ -88,7 +85,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # A source package recipe build can be stored in the database
         spb = self.makeSourcePackageRecipeBuild()
         transaction.commit()
-        self.assertProvides(spb, ISourcePackageRecipeBuild)
+        with admin_logged_in():
+            self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()
@@ -111,7 +109,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # A recipe build's title currently consists of the base
         # branch's unique name.
         spb = self.makeSourcePackageRecipeBuild()
-        title = "%s recipe build" % spb.recipe.base_branch.unique_name
+        title = "%s recipe build in %s %s" % (
+            spb.recipe.base_branch.unique_name, spb.distribution.name,
+            spb.distroseries.name)
         self.assertEqual(spb.title, title)
 
     def test_distribution(self):
@@ -409,7 +409,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
 
     def test_destroySelf_clears_release(self):
         # Destroying a sourcepackagerecipebuild removes references to it from
@@ -418,7 +419,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         release = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=build)
         self.assertEqual(build, release.source_package_recipe_build)
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
         self.assertIs(None, release.source_package_recipe_build)
         transaction.commit()
 
@@ -431,18 +433,19 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # Ensure database ids are set.
         store.flush()
         build_farm_job_id = naked_build.build_farm_job_id
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
         self.assertIs(None, store.get(BuildFarmJob, build_farm_job_id))
 
-    def test_cancelBuild(self):
+    def test_cancel(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.cancelBuild()
+        build.queueBuild()
+        with admin_logged_in():
+            build.cancel()
 
-        self.assertEqual(
-            BuildStatus.SUPERSEDED,
-            build.status)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the build requester.
@@ -494,22 +497,6 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build.notify()
         self.assertEquals(0, len(pop_notifications()))
 
-    def assertBuildMessageValid(self, build, message):
-        # Not currently used; can be used if we do want to check about any
-        # notifications sent in other cases.
-        requester = build.requester
-        requester_address = format_address(
-            requester.displayname, requester.preferredemail.email)
-        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        expected = mailer.generateEmail(
-            requester.preferredemail.email, requester)
-        self.assertEqual(
-            requester_address, re.sub(r'\n\t+', ' ', message['To']))
-        self.assertEqual(expected.subject, message['Subject'].replace(
-            '\n\t', ' '))
-        self.assertEqual(
-            expected.body, message.get_payload(decode=True))
-
     def test_notify_when_recipe_deleted(self):
         """Notify does nothing if recipe has been deleted."""
         person = self.factory.makePerson(name='person')
@@ -522,7 +509,8 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         build.updateStatus(BuildStatus.FULLYBUILT)
-        cake.destroySelf()
+        with admin_logged_in():
+            cake.destroySelf()
         IStore(build).flush()
         build.notify()
         notifications = pop_notifications()

@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Bool,
     DateTime,
@@ -19,14 +18,43 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface import implementer
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.processor import Processor
-from lp.registry.interfaces.role import IHasOwner
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchcollection import (
+    IAllBranches,
+    IBranchCollection,
+    )
+from lp.code.interfaces.gitcollection import (
+    IAllGitRepositories,
+    IGitCollection,
+    )
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
+from lp.code.model.gitcollection import GenericGitCollection
+from lp.code.model.gitrepository import GitRepository
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -42,18 +70,20 @@ from lp.services.database.stormexpr import (
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.snappy.interfaces.snap import (
+    BadSnapSearchContext,
     CannotDeleteSnap,
+    CannotModifySnapProcessor,
     DuplicateSnapName,
     ISnap,
     ISnapSet,
+    NoSourceForSnap,
+    NoSuchSnap,
     SNAP_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
-    NoSourceForSnap,
-    NoSuchSnap,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.model.snapbuild import SnapBuild
@@ -62,6 +92,7 @@ from lp.soyuz.model.archive import (
     Archive,
     get_enabled_archive_filter,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
 def snap_modified(snap, event):
@@ -110,12 +141,12 @@ class Snap(Storm):
     require_virtualized = Bool(name='require_virtualized')
 
     def __init__(self, registrant, owner, distro_series, name,
-                 description=None, branch=None, git_repository=None,
-                 git_path=None, require_virtualized=True,
-                 date_created=DEFAULT):
+                 description=None, branch=None, git_ref=None,
+                 require_virtualized=True, date_created=DEFAULT):
         """Construct a `Snap`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
+
         super(Snap, self).__init__()
         self.registrant = registrant
         self.owner = owner
@@ -123,11 +154,48 @@ class Snap(Storm):
         self.name = name
         self.description = description
         self.branch = branch
-        self.git_repository = git_repository
-        self.git_path = git_path
+        self.git_ref = git_ref
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
+
+    @property
+    def git_ref(self):
+        """See `ISnap`."""
+        if self.git_repository is not None:
+            return self.git_repository.getRefByPath(self.git_path)
+        else:
+            return None
+
+    @git_ref.setter
+    def git_ref(self, value):
+        """See `ISnap`."""
+        if value is not None:
+            self.git_repository = value.repository
+            self.git_path = value.path
+        else:
+            self.git_repository = None
+            self.git_path = None
+
+    @property
+    def source(self):
+        if self.branch is not None:
+            return self.branch
+        elif self.git_ref is not None:
+            return self.git_ref
+        else:
+            return None
+
+    @property
+    def available_processors(self):
+        """See `ISnap`."""
+        processors = Store.of(self).find(
+            Processor,
+            Processor.id == DistroArchSeries.processor_id,
+            DistroArchSeries.id.is_in(
+                self.distro_series.enabled_architectures.get_select_expr(
+                    DistroArchSeries.id)))
+        return processors.config(distinct=True)
 
     def _getProcessors(self):
         return list(Store.of(self).find(
@@ -135,17 +203,37 @@ class Snap(Storm):
             Processor.id == SnapArch.processor_id,
             SnapArch.snap == self))
 
-    def setProcessors(self, processors):
+    def setProcessors(self, processors, check_permissions=False, user=None):
         """See `ISnap`."""
+        if check_permissions:
+            can_modify = None
+            if user is not None:
+                roles = IPersonRoles(user)
+                authz = lambda perm: getAdapter(self, IAuthorization, perm)
+                if authz('launchpad.Admin').checkAuthenticated(roles):
+                    can_modify = lambda proc: True
+                elif authz('launchpad.Edit').checkAuthenticated(roles):
+                    can_modify = lambda proc: not proc.restricted
+            if can_modify is None:
+                raise Unauthorized(
+                    'Permission launchpad.Admin or launchpad.Edit required '
+                    'on %s.' % self)
+        else:
+            can_modify = lambda proc: True
+
         enablements = dict(Store.of(self).find(
             (Processor, SnapArch),
             Processor.id == SnapArch.processor_id,
             SnapArch.snap == self))
         for proc in enablements:
             if proc not in processors:
+                if not can_modify(proc):
+                    raise CannotModifySnapProcessor(proc)
                 Store.of(self).remove(enablements[proc])
         for proc in processors:
             if proc not in self.processors:
+                if not can_modify(proc):
+                    raise CannotModifySnapProcessor(proc)
                 snaparch = SnapArch()
                 snaparch.snap = self
                 snaparch.processor = proc
@@ -153,11 +241,8 @@ class Snap(Storm):
 
     processors = property(_getProcessors, setProcessors)
 
-    def _getAllowedArchitectures(self):
-        """Return all distroarchseries that this package can build for.
-
-        :return: Sequence of `IDistroArchSeries` instances.
-        """
+    def getAllowedArchitectures(self):
+        """See `ISnap`."""
         return [
             das for das in self.distro_series.buildable_architectures
             if (
@@ -175,7 +260,7 @@ class Snap(Storm):
                 (requester.displayname, self.owner.displayname))
         if not archive.enabled:
             raise ArchiveDisabled(archive.displayname)
-        if distro_arch_series not in self._getAllowedArchitectures():
+        if distro_arch_series not in self.getAllowedArchitectures():
             raise SnapBuildDisallowedArchitecture(distro_arch_series)
         if archive.private and self.owner != archive.owner:
             # See rationale in `SnapBuildArchiveOwnerMismatch` docstring.
@@ -280,8 +365,8 @@ class SnapSet:
     """See `ISnapSet`."""
 
     def new(self, registrant, owner, distro_series, name, description=None,
-            branch=None, git_repository=None, git_path=None,
-            require_virtualized=True, processors=None, date_created=DEFAULT):
+            branch=None, git_ref=None, require_virtualized=True,
+            processors=None, date_created=DEFAULT):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -293,20 +378,17 @@ class SnapSet:
                     "%s cannot create snap packages owned by %s." %
                     (registrant.displayname, owner.displayname))
 
-        if branch is None and git_repository is None:
+        if branch is None and git_ref is None:
             raise NoSourceForSnap
+        if self.exists(owner, name):
+            raise DuplicateSnapName
 
         store = IMasterStore(Snap)
         snap = Snap(
             registrant, owner, distro_series, name, description=description,
-            branch=branch, git_repository=git_repository, git_path=git_path,
+            branch=branch, git_ref=git_ref,
             require_virtualized=require_virtualized, date_created=date_created)
         store.add(snap)
-
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicateSnapName
 
         if processors is None:
             processors = [
@@ -331,9 +413,43 @@ class SnapSet:
             raise NoSuchSnap(name)
         return snap
 
-    def findByPerson(self, owner):
+    def _getSnapsFromCollection(self, collection, owner=None):
+        if IBranchCollection.providedBy(collection):
+            id_column = Snap.branch_id
+            ids = collection.getBranchIds()
+        else:
+            id_column = Snap.git_repository_id
+            ids = collection.getRepositoryIds()
+        expressions = [id_column.is_in(ids._get_select())]
+        if owner is not None:
+            expressions.append(Snap.owner == owner)
+        return IStore(Snap).find(Snap, *expressions)
+
+    def findByOwner(self, owner):
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.owner == owner)
+
+    def findByPerson(self, person, visible_by_user=None):
+        """See `ISnapSet`."""
+        def _getSnaps(collection):
+            collection = collection.visibleByUser(visible_by_user)
+            owned = self._getSnapsFromCollection(collection.ownedBy(person))
+            packaged = self._getSnapsFromCollection(collection, owner=person)
+            return owned.union(packaged)
+
+        bzr_collection = removeSecurityProxy(getUtility(IAllBranches))
+        git_collection = removeSecurityProxy(getUtility(IAllGitRepositories))
+        return _getSnaps(bzr_collection).union(_getSnaps(git_collection))
+
+    def findByProject(self, project, visible_by_user=None):
+        """See `ISnapSet`."""
+        def _getSnaps(collection):
+            return self._getSnapsFromCollection(
+                collection.visibleByUser(visible_by_user))
+
+        bzr_collection = removeSecurityProxy(IBranchCollection(project))
+        git_collection = removeSecurityProxy(IGitCollection(project))
+        return _getSnaps(bzr_collection).union(_getSnaps(git_collection))
 
     def findByBranch(self, branch):
         """See `ISnapSet`."""
@@ -342,6 +458,69 @@ class SnapSet:
     def findByGitRepository(self, repository):
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.git_repository == repository)
+
+    def findByGitRef(self, ref):
+        """See `ISnapSet`."""
+        return IStore(Snap).find(
+            Snap,
+            Snap.git_repository == ref.repository, Snap.git_path == ref.path)
+
+    def findByContext(self, context, visible_by_user=None, order_by_date=True):
+        if IPerson.providedBy(context):
+            snaps = self.findByPerson(context, visible_by_user=visible_by_user)
+        elif IProduct.providedBy(context):
+            snaps = self.findByProject(
+                context, visible_by_user=visible_by_user)
+        # XXX cjwatson 2015-09-15: At the moment we can assume that if you
+        # can see the source context then you can see the snap packages
+        # based on it.  This will cease to be true if snap packages gain
+        # privacy of their own.
+        elif IBranch.providedBy(context):
+            snaps = self.findByBranch(context)
+        elif IGitRepository.providedBy(context):
+            snaps = self.findByGitRepository(context)
+        elif IGitRef.providedBy(context):
+            snaps = self.findByGitRef(context)
+        else:
+            raise BadSnapSearchContext(context)
+        if order_by_date:
+            snaps.order_by(Desc(Snap.date_last_modified))
+        return snaps
+
+    def preloadDataForSnaps(self, snaps, user=None):
+        """See `ISnapSet`."""
+        snaps = [removeSecurityProxy(snap) for snap in snaps]
+
+        branch_ids = set()
+        git_repository_ids = set()
+        person_ids = set()
+        for snap in snaps:
+            if snap.branch_id is not None:
+                branch_ids.add(snap.branch_id)
+            if snap.git_repository_id is not None:
+                git_repository_ids.add(snap.git_repository_id)
+            person_ids.add(snap.registrant_id)
+            person_ids.add(snap.owner_id)
+
+        branches = load_related(Branch, snaps, ["branch_id"])
+        repositories = load_related(
+            GitRepository, snaps, ["git_repository_id"])
+        if branches:
+            GenericBranchCollection.preloadDataForBranches(branches)
+        if repositories:
+            GenericGitCollection.preloadDataForRepositories(repositories)
+        # The stacked-on branches are used to check branch visibility.
+        GenericBranchCollection.preloadVisibleStackedOnBranches(branches, user)
+        GenericGitCollection.preloadVisibleRepositories(repositories, user)
+
+        # Add branch/repository owners to the list of pre-loaded persons.
+        # We need the target repository owner as well; unlike branches,
+        # repository unique names aren't trigger-maintained.
+        person_ids.update(branch.ownerID for branch in branches)
+        person_ids.update(repository.owner_id for repository in repositories)
+
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
 
     def detachFromBranch(self, branch):
         """See `ISnapSet`."""

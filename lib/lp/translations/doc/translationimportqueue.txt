@@ -793,31 +793,35 @@ plus the ones added in this test.
 
 First, let's check the status of the existing entries.
 
-    >>> entry1 = translationimportqueue.get(1)
+    >>> from operator import attrgetter
+    >>> entries = sorted(
+    ...     translationimportqueue.getAllEntries(), key=attrgetter('id'))
+
+    >>> entry1 = entries[0]
     >>> entry1.path
     u'po/evolution-2.2-test.pot'
     >>> entry1.status == RosettaImportStatus.IMPORTED
     True
 
-    >>> entry2 = translationimportqueue.get(2)
+    >>> entry2 = entries[1]
     >>> entry2.path
     u'po/pt_BR.po'
     >>> entry2.status == RosettaImportStatus.IMPORTED
     True
 
-    >>> entry3 = translationimportqueue.get(3)
+    >>> entry3 = entries[2]
     >>> entry3.path
     u'po/sr.po'
     >>> entry3.status == RosettaImportStatus.NEEDS_REVIEW
     True
 
-    >>> entry4 = translationimportqueue.get(4)
+    >>> entry4 = entries[3]
     >>> entry4.path
     u'po/sr.po'
     >>> entry4.status == RosettaImportStatus.NEEDS_REVIEW
     True
 
-    >>> entry5 = translationimportqueue.get(5)
+    >>> entry5 = entries[4]
     >>> entry5.path
     u'po/evolution-2.2.pot'
 
@@ -833,7 +837,6 @@ Let's see how many entries are blocked.
 
 Now is time to check that we only have one item on the NeedsReview status.
 
-    >>> entry3 = translationimportqueue.get(3)
     >>> entry3.path
     u'po/sr.po'
 
@@ -847,7 +850,6 @@ On the other hand, this other one is for the same
 distroseries/sourcepackagename than the .pot file we have so it's also
 blocked.
 
-    >>> entry4 = translationimportqueue.get(4)
     >>> entry4.path
     u'po/sr.po'
     >>> entry4.status == RosettaImportStatus.BLOCKED
@@ -855,7 +857,6 @@ blocked.
 
 And the .pot entry is still blocked.
 
-    >>> entry5 = translationimportqueue.get(5)
     >>> entry5.path
     u'po/evolution-2.2.pot'
     >>> entry5.status == RosettaImportStatus.BLOCKED

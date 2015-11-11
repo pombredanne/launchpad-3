@@ -46,7 +46,7 @@ def make_friendly_plural_forms(expression, expected_forms):
             "but we found forms %s." % (expected_forms, found_forms))
 
     return [
-        {'form' : form, 'examples' : examples}
+        {'form': form, 'examples': examples}
         for (form, examples) in forms.iteritems()
         ]
 

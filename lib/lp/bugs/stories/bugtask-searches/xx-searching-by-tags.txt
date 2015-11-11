@@ -43,8 +43,10 @@ Only 'test bug a' is returned.
     >>> anon_browser.getControl(name='field.tags_combinator').value = ['ALL']
     >>> anon_browser.getControl('Search', index=1).click()
     >>> from lp.bugs.tests.bug import print_bugtasks
-    >>> print_bugtasks(anon_browser.contents)
-    16 test bug a  Mozilla Firefox  Undecided   New
+    >>> 'test bug a' in anon_browser.contents
+    True
+    >>> 'test bug b' in anon_browser.contents
+    False
 
 We go to the bug search page and search for bugs with any of the tags.
 Both bugs are returned.
@@ -54,9 +56,10 @@ Both bugs are returned.
     ...     name='field.tag').value = 'test-tag-1 test-tag-2'
     >>> anon_browser.getControl(name='field.tags_combinator').value = ['ANY']
     >>> anon_browser.getControl('Search', index=1).click()
-    >>> print_bugtasks(anon_browser.contents)
-    16 test bug a  Mozilla Firefox Undecided   New
-    17 test bug b  Mozilla Firefox Undecided   New
+    >>> 'test bug a' in anon_browser.contents
+    True
+    >>> 'test bug b' in anon_browser.contents
+    True
 
 Same works for user related bugs:
 
@@ -65,9 +68,10 @@ Same works for user related bugs:
     ...     name='field.tag').value = 'test-tag-1 test-tag-2'
     >>> anon_browser.getControl(name='field.tags_combinator').value = ['ANY']
     >>> anon_browser.getControl('Search', index=1).click()
-    >>> print_bugtasks(anon_browser.contents)
-    16 test bug a  Mozilla Firefox  Undecided   New
-    17 test bug b  Mozilla Firefox  Undecided   New
+    >>> 'test bug a' in anon_browser.contents
+    True
+    >>> 'test bug b' in anon_browser.contents
+    True
 
 When we search for bugs with all the tags, though, only the first bug is
 returned, since it's the only bug with both tags.
@@ -77,8 +81,10 @@ returned, since it's the only bug with both tags.
     ...     name='field.tag').value = 'test-tag-1 test-tag-2'
     >>> anon_browser.getControl(name='field.tags_combinator').value = ['ALL']
     >>> anon_browser.getControl('Search', index=1).click()
-    >>> print_bugtasks(anon_browser.contents)
-    16 test bug a  Mozilla Firefox  Undecided   New
+    >>> 'test bug a' in anon_browser.contents
+    True
+    >>> 'test bug b' in anon_browser.contents
+    False
 
 And also for user related bugs:
 
@@ -87,5 +93,7 @@ And also for user related bugs:
     ...     name='field.tag').value = 'test-tag-1 test-tag-2'
     >>> anon_browser.getControl(name='field.tags_combinator').value = ['ALL']
     >>> anon_browser.getControl('Search', index=1).click()
-    >>> print_bugtasks(anon_browser.contents)
-    16 test bug a  Mozilla Firefox  Undecided   New
+    >>> 'test bug a' in anon_browser.contents
+    True
+    >>> 'test bug b' in anon_browser.contents
+    False

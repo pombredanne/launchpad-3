@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 
 from BeautifulSoup import BeautifulSoup
 import pytz
@@ -16,6 +17,7 @@ import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
+    Within,
     )
 from storm.store import Store
 from testtools.matchers import (
@@ -40,6 +42,7 @@ from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     login_person,
     person_logged_in,
@@ -62,23 +65,59 @@ class TestPrivateBugLinks(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def makeDupeOfPrivateBug(self):
-        bug = self.factory.makeBug()
+    def test_private_master_not_linked_without_permission(self):
+        bug = self.factory.makeBug(
+            information_type=InformationType.PRIVATESECURITY)
         dupe = self.factory.makeBug()
-        with person_logged_in(bug.owner):
-            bug.setPrivate(private=True, who=bug.owner)
+        with admin_logged_in():
             dupe.markAsDuplicate(bug)
-        return dupe
-
-    def test_private_bugs_are_not_linked_without_permission(self):
-        bug = self.makeDupeOfPrivateBug()
-        url = canonical_url(bug, rootsite="bugs")
-        browser = self.getUserBrowser(url)
-        dupe_warning = find_tag_by_id(
-            browser.contents,
-            'warning-comment-on-duplicate')
+        with person_logged_in(dupe.owner):
+            getUtility(IOpenLaunchBag).add(dupe.default_bugtask)
+            html = create_initialized_view(
+                dupe.default_bugtask, "+index", principal=dupe.owner)()
+        dupe_warning = find_tag_by_id(html, 'warning-comment-on-duplicate')
         # There is no link in the dupe_warning.
         self.assertTrue('href' not in dupe_warning)
+
+    def test_private_dupes_not_linked_without_permission(self):
+        bug = self.factory.makeBug()
+        publidupe = self.factory.makeBug()
+        visidupe = self.factory.makeBug(
+            information_type=InformationType.PRIVATESECURITY)
+        invisidupe = self.factory.makeBug(
+            information_type=InformationType.PRIVATESECURITY)
+        with admin_logged_in():
+            publidupe.markAsDuplicate(bug)
+            visidupe.markAsDuplicate(bug)
+            invisidupe.markAsDuplicate(bug)
+            visidupe.subscribe(bug.owner, visidupe.owner)
+        with person_logged_in(bug.owner):
+            getUtility(IOpenLaunchBag).add(bug.default_bugtask)
+            html = create_initialized_view(
+                bug.default_bugtask, "+index", principal=bug.owner)()
+        # The public dupe and subscribed private dupe are listed, but
+        # the unsubscribed one is not.
+        dupes_portlet = Tag(
+            "dupes portlet", "div", attrs={"id": "portlet-duplicates"})
+        self.assertThat(
+            html,
+            MatchesAll(
+                HTMLContains(
+                    Within(
+                        dupes_portlet,
+                        Tag(
+                            "public dupe", "a",
+                            text=re.compile("Bug #%d" % publidupe.id),
+                            attrs={"class": "sprite bug"})),
+                    Within(
+                        dupes_portlet,
+                        Tag(
+                            "private dupe", "a",
+                            text=re.compile("Bug #%d" % visidupe.id),
+                            attrs={"class": "sprite bug private"}))),
+                Not(HTMLContains(Tag(
+                    "invisible dupe", "a",
+                    text=re.compile("Bug #%d" % invisidupe.id))))))
 
 
 class TestAlsoAffectsLinks(BrowserTestCase):

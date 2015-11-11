@@ -305,7 +305,7 @@ We can create new products with the createProduct() method:
     >>> product = productset.createProduct(
     ...     owner=owner,
     ...     name='test-product',
-    ...     displayname='Test Product',
+    ...     display_name='Test Product',
     ...     title='Test Product',
     ...     summary='A test product',
     ...     description='A description of the test product',

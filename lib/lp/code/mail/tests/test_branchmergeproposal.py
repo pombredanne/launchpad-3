@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -11,7 +11,6 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction
 from zope.interface import providedBy
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.code.enums import (
@@ -31,15 +30,21 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.services.config import config
 from lp.services.database.interfaces import IStore
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 
@@ -47,7 +52,7 @@ from lp.testing.mail_helpers import pop_notifications
 class TestMergeProposalMailing(TestCaseWithFactory):
     """Test that reasonable mailings are generated"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestMergeProposalMailing, self).setUp('admin@canonical.com')
@@ -94,6 +99,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def test_generateCreationEmail(self):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         assert mailer.message_id is not None, 'Message-id should be set'
         mailer.message_id = '<foobar-example-com>'
@@ -129,13 +135,14 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Message-For': subscriber.name,
              'X-Launchpad-Notification-Type': 'code-review',
              'X-Launchpad-Project': bmp.source_branch.product.name,
              'Reply-To': bmp.address,
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
-        reviewer_id = mailer._format_user_address(reviewer)
+        reviewer_id = format_address_for_person(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
 
@@ -143,6 +150,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """If there is no commit message, email should say 'None Specified.'"""
         bmp, subscriber = self.makeProposalWithSubscriber()
         bmp.commit_message = None
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertNotIn('Commit message:', ctrl.body)
@@ -153,6 +161,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bug = self.factory.makeBug(title='I am a bug')
         bugtask = bug.default_bugtask
         bmp.source_branch.linkBug(bug, bmp.registrant)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         expected = (
@@ -164,6 +173,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def test_forCreation_without_bugs(self):
         """If there are no related bugs, omit 'Related bugs'."""
         bmp, subscriber = self.makeProposalWithSubscriber()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertNotIn('Related bugs:\n', ctrl.body)
@@ -173,6 +183,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         reviewer = self.factory.makePerson(name='review-person')
         bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
@@ -191,6 +202,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bugtask = bug.default_bugtask
         bmp.source_branch.linkBug(bug, bmp.registrant)
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         expected = (
@@ -232,6 +244,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
 
         # Set up the mailer
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
 
         # A non authorised email recipient doesn't see the private bug.
@@ -268,6 +281,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def test_forCreation_with_prerequisite_branch(self):
         """Correctly format list of reviewers."""
         bmp, subscriber = self.makeProposalWithSubscriber(prerequisite=True)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         prereq = bmp.prerequisite_branch.bzr_identity
@@ -280,11 +294,12 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.source_branch.subscribe(
             bmp.registrant, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, bmp.registrant)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(bmp.registrant.preferredemail.email,
                                     bmp.registrant)
         reviewer = request.recipient
-        reviewer_id = mailer._format_user_address(reviewer)
+        reviewer_id = format_address_for_person(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_team_reviewers(self):
@@ -293,11 +308,12 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         team = self.factory.makeTeam(email='group@team.com')
         CodeReviewVoteReference(
             branch_merge_proposal=bmp, reviewer=team, registrant=subscriber)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(subscriber.preferredemail.email,
                                     subscriber)
         reviewer = bmp.target_branch.owner
-        reviewer_id = mailer._format_user_address(reviewer)
+        reviewer_id = format_address_for_person(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_people_with_hidden_addresses(self):
@@ -305,6 +321,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         request, requester = self.makeReviewRequest()
         request.recipient.hide_email_addresses = True
         bmp = request.merge_proposal
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(request.recipient.preferredemail.email,
                                     request.recipient)
@@ -313,6 +330,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def test_RecordMessageId(self):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         mailer.message_id = '<foobar-example-com>'
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
@@ -333,6 +351,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """Ensure that messages are in reply to the root"""
         bmp, subscriber = self.makeProposalWithSubscriber()
         bmp.root_message_id = '<root-message-id>'
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual('<root-message-id>', ctrl.headers['In-Reply-To'])
@@ -348,6 +367,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         diff_text = ''.join(unified_diff('', 'Fake diff'))
         bmp, subscriber = self.makeProposalWithSubscriber(
             diff_text=diff_text)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
@@ -365,6 +385,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.STATUS, subscriber)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual(0, len(ctrl.attachments))
@@ -375,6 +396,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         diff_text = ''.join(unified_diff('', "1234567890" * 10))
         bmp, subscriber = self.makeProposalWithSubscriber(
             diff_text=diff_text)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
@@ -471,6 +493,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def test_forModificationHasMsgId(self):
         """Ensure the right delta is filled out if there is a change."""
         merge_proposal = self.factory.makeBranchMergeProposal()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forModification(
             merge_proposal, 'the diff', merge_proposal.registrant)
         self.assertIsNot(None, mailer.message_id, 'message_id not set')
@@ -487,7 +510,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """Should send emails when invoked with correct parameters."""
         job, subscriber = self.makeProposalUpdatedEmailJob()
         pop_notifications()
-        job.run()
+        with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+            job.run()
         emails = pop_notifications(
             sort_key=operator.itemgetter('x-launchpad-message-rationale'))
         self.assertEqual(3, len(emails),
@@ -542,6 +566,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def test_forReviewRequest(self):
         """Test creating a mailer for a review request."""
         request, requester = self.makeReviewRequest()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forReviewRequest(
             request, request.merge_proposal, requester)
         self.assertEqual(
@@ -553,16 +578,18 @@ class TestMergeProposalMailing(TestCaseWithFactory):
 
     def test_to_addrs_for_review_request(self):
         request, requester = self.makeReviewRequest()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forReviewRequest(
             request, request.merge_proposal, requester)
         ctrl = mailer.generateEmail(request.recipient.preferredemail.email,
                                     request.recipient)
-        recipient_addr = mailer._format_user_address(request.recipient)
+        recipient_addr = format_address_for_person(request.recipient)
         self.assertEqual([recipient_addr], ctrl.to_addrs)
 
     def test_forReviewRequestMessageId(self):
         """Test creating a mailer for a review request."""
         request, requester = self.makeReviewRequest()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = BMPMailer.forReviewRequest(
             request, request.merge_proposal, requester)
         assert mailer.message_id is not None, 'message_id not set'
@@ -571,7 +598,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     """Tests for `BranchMergeProposalRequestReviewView`."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def getReviewEmailJobs(self, bmp):
         """Return the result set for the merge proposals review email jobs."""
@@ -630,7 +657,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
             bmp.description = 'This branch is awesome.'
             bmp.nominateReviewer(reviewer, bmp.registrant, None)
         review_request_job = self.getReviewNotificationEmail(bmp)
-        review_request_job.run()
+        with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+            review_request_job.run()
         [sent_mail] = pop_notifications()
         expected = dedent("""\
             You have been requested to review the proposed merge of"""
@@ -664,7 +692,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         with person_logged_in(bmp.registrant):
             bmp.nominateReviewer(review_team, bmp.registrant, None)
         review_request_job = self.getReviewNotificationEmail(bmp)
-        review_request_job.run()
+        with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+            review_request_job.run()
         sent_mail = pop_notifications()
         self.assertEqual(
             ['Black Beard <black@pirates.example.com>',
@@ -682,10 +711,10 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
             bmp.nominateReviewer(candidate, bmp.registrant, None)
         # Send the mail.
         review_request_job = self.getReviewNotificationEmail(bmp)
-        review_request_job.run()
+        with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+            review_request_job.run()
         mails = pop_notifications()
         self.assertEqual(1, len(mails))
-        candidate = removeSecurityProxy(candidate)
         expected_email = '%s <%s>' % (
             candidate.displayname, candidate.preferredemail.email)
         self.assertEmailHeadersEqual(expected_email, mails[0]['To'])

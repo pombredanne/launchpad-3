@@ -51,14 +51,6 @@ class ILoginToken(IAuthToken):
         If fingerprint is set, send the message encrypted.
         """
 
-    def sendProfileCreatedEmail(profile, comment):
-        """Notify the profile's email owner that a new profile was created.
-
-        Send an email message to this token's email address explaining that
-        another user has created a launchpad profile for him and providing
-        a link where he can finish the registration process.
-        """
-
     def sendMergeRequestEmail():
         """Send an email to self.email (the dupe account's email address)
         with the URL of a page to finish the merge of Launchpad accounts.
@@ -70,11 +62,6 @@ class ILoginToken(IAuthToken):
 
         The message also includes the team administrator who made this
         request on behalf of the team.
-        """
-
-    def sendClaimProfileEmail():
-        """Send an email to self.email with instructions on how to finish
-        claiming the profile that owns self.email.
         """
 
     def sendClaimTeamEmail():

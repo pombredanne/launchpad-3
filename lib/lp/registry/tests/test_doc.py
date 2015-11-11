@@ -8,9 +8,6 @@ Run the doctests and pagetests.
 import logging
 import os
 
-import transaction
-
-from lp.registry.tests import mailinglists_helper
 from lp.services.testing import (
     build_doctest_suite,
     build_test_suite,

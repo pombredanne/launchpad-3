@@ -48,6 +48,7 @@ from zope.interface import (
     alsoProvides,
     implementer,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -66,6 +67,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
@@ -105,6 +107,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import BulkUpdate
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -132,10 +135,12 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
+    ArchiveAlreadyDeleted,
     ArchiveDependencyError,
     ArchiveDisabled,
     ArchiveNotPrivate,
     CannotCopy,
+    CannotModifyArchiveProcessor,
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -411,6 +416,19 @@ class Archive(SQLBase):
     def is_active(self):
         """See `IArchive`."""
         return self.status == ArchiveStatus.ACTIVE
+
+    @property
+    def can_be_published(self):
+        """See `IArchive`."""
+        # The explicit publish flag must be set.
+        if not self.publish:
+            return False
+        # In production configurations, PPAs can only be published once
+        # their signing key has been generated.
+        return (
+            not config.personalpackagearchive.require_signing_keys or
+            not self.is_ppa or
+            self.signing_key is not None)
 
     @property
     def reference(self):
@@ -2019,8 +2037,52 @@ class Archive(SQLBase):
                 AND BuildQueue.build_farm_job =
                     BinaryPackageBuild.build_farm_job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
-                AND BinaryPackageBuild.status = %s;
-            """, params=(status.value, self.id, BuildStatus.NEEDSBUILD.value))
+                AND BinaryPackageBuild.status = %s
+                AND BuildQueue.status != %s;
+            """, params=(
+                status.value, self.id, BuildStatus.NEEDSBUILD.value,
+                status.value))
+
+    def _recalculateBuildVirtualization(self):
+        """Update virtualized columns for this archive."""
+        store = Store.of(self)
+        bpb_clauses = [
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.NEEDSBUILD,
+            ]
+        bq_clauses = bpb_clauses + [
+            BuildQueue._build_farm_job_id ==
+                BinaryPackageBuild.build_farm_job_id,
+            ]
+        if self.require_virtualized:
+            # We can avoid the Processor join in this case.
+            value = True
+            match = False
+            proc_tables = []
+            proc_clauses = []
+            # BulkUpdate doesn't support an empty list of values.
+            bpb_rows = store.find(
+                BinaryPackageBuild,
+                BinaryPackageBuild.virtualized == match, *bpb_clauses)
+            bpb_rows.set(virtualized=value)
+        else:
+            value = Not(Processor.supports_nonvirtualized)
+            match = Processor.supports_nonvirtualized
+            proc_tables = [Processor]
+            proc_clauses = [BinaryPackageBuild.processor_id == Processor.id]
+            store.execute(BulkUpdate(
+                {BinaryPackageBuild.virtualized: value},
+                table=BinaryPackageBuild, values=proc_tables,
+                where=And(
+                    BinaryPackageBuild.virtualized == match,
+                    *(bpb_clauses + proc_clauses))))
+        store.execute(BulkUpdate(
+            {BuildQueue.virtualized: value},
+            table=BuildQueue, values=([BinaryPackageBuild] + proc_tables),
+            where=And(
+                BuildQueue.virtualized == match,
+                *(bq_clauses + proc_clauses))))
+        store.invalidate()
 
     def enable(self):
         """See `IArchive`."""
@@ -2028,6 +2090,10 @@ class Archive(SQLBase):
         assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
         self._setBuildQueueStatuses(BuildQueueStatus.WAITING)
+        # Suspended builds may have the wrong virtualization setting (due to
+        # changes to either Archive.require_virtualized or
+        # Processor.supports_nonvirtualized) and need to be updated.
+        self._recalculateBuildVirtualization()
 
     def disable(self):
         """See `IArchive`."""
@@ -2037,9 +2103,8 @@ class Archive(SQLBase):
 
     def delete(self, deleted_by):
         """See `IArchive`."""
-        assert self.status not in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED,
-            "This archive is already deleted.")
+        if self.status != ArchiveStatus.ACTIVE:
+            raise ArchiveAlreadyDeleted("Archive already deleted.")
 
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.
@@ -2067,7 +2132,7 @@ class Archive(SQLBase):
 
     def _setEnabledRestrictedProcessors(self, value):
         """Set the restricted architectures this archive can build on."""
-        self.processors = (
+        self.setProcessors(
             [proc for proc in self.processors if not proc.restricted]
             + list(value))
 
@@ -2076,7 +2141,25 @@ class Archive(SQLBase):
 
     def enableRestrictedProcessor(self, processor):
         """See `IArchive`."""
-        self.processors = set(self.processors + [processor])
+        # This method can only be called by people with launchpad.Admin, so
+        # we don't need to check permissions again.
+        self.setProcessors(set(self.processors + [processor]))
+
+    @property
+    def available_processors(self):
+        """See `IArchive`."""
+        # Circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        clauses = [
+            Processor.id == DistroArchSeries.processor_id,
+            DistroArchSeries.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            ]
+        if not self.permit_obsolete_series_uploads:
+            clauses.append(DistroSeries.status != SeriesStatus.OBSOLETE)
+        return Store.of(self).find(Processor, *clauses).config(distinct=True)
 
     def _getProcessors(self):
         return list(Store.of(self).find(
@@ -2084,17 +2167,37 @@ class Archive(SQLBase):
             Processor.id == ArchiveArch.processor_id,
             ArchiveArch.archive == self))
 
-    def setProcessors(self, processors):
+    def setProcessors(self, processors, check_permissions=False, user=None):
         """See `IArchive`."""
+        if check_permissions:
+            can_modify = None
+            if user is not None:
+                roles = IPersonRoles(user)
+                authz = lambda perm: getAdapter(self, IAuthorization, perm)
+                if authz('launchpad.Admin').checkAuthenticated(roles):
+                    can_modify = lambda proc: True
+                elif authz('launchpad.Edit').checkAuthenticated(roles):
+                    can_modify = lambda proc: not proc.restricted
+            if can_modify is None:
+                raise Unauthorized(
+                    'Permission launchpad.Admin or launchpad.Edit required '
+                    'on %s.' % self)
+        else:
+            can_modify = lambda proc: True
+
         enablements = dict(Store.of(self).find(
             (Processor, ArchiveArch),
             Processor.id == ArchiveArch.processor_id,
             ArchiveArch.archive == self))
         for proc in enablements:
             if proc not in processors:
+                if not can_modify(proc):
+                    raise CannotModifyArchiveProcessor(proc)
                 Store.of(self).remove(enablements[proc])
         for proc in processors:
             if proc not in self.processors:
+                if not can_modify(proc):
+                    raise CannotModifyArchiveProcessor(proc)
                 archivearch = ArchiveArch()
                 archivearch.archive = self
                 archivearch.processor = proc

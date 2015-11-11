@@ -228,14 +228,6 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin, TestCaseWithFactory):
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(local_revision, remote_revision)
 
-    def runInChdir(self, directory, func, *args, **kwargs):
-        old_dir = os.getcwdu()
-        os.chdir(directory)
-        try:
-            return func(*args, **kwargs)
-        finally:
-            os.chdir(old_dir)
-
     def _run_bzr(self, args, retcode=0):
         """Call run_bzr_subprocess with some common options.
 

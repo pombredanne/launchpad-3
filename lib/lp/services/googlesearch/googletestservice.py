@@ -73,7 +73,7 @@ class GoogleRequestHandler(BaseHTTPRequestHandler):
         message = ("%s - - [%s] %s" %
                    (self.address_string(),
                     self.log_date_time_string(),
-                    format%args))
+                    format % args))
         log.info(message)
 
 
@@ -103,7 +103,7 @@ def service_is_available(timeout=2.0):
         before returning False.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout) # Block for 'timeout' seconds.
+    sock.settimeout(timeout)  # Block for 'timeout' seconds.
     host, port = get_service_endpoint()
     try:
         try:
@@ -113,7 +113,7 @@ def service_is_available(timeout=2.0):
         else:
             return True
     finally:
-        sock.close() # Clean up.
+        sock.close()  # Clean up.
 
 
 def wait_for_service(timeout=15.0):
@@ -125,7 +125,7 @@ def wait_for_service(timeout=15.0):
     """
     host, port = get_service_endpoint()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout) # Block for at most X seconds.
+    sock.settimeout(timeout)  # Block for at most X seconds.
 
     start = time.time()  # Record when we started polling.
     try:
@@ -162,7 +162,7 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
     try:
         while True:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5.0) # Block for at most X seconds.
+            sock.settimeout(5.0)  # Block for at most X seconds.
             try:
                 sock.connect((host, port))
                 sock.close()
@@ -184,7 +184,7 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
 
 def hostpair(url):
     """Parse the host and port number out of a URL string."""
-    parts  = urlsplit(url)
+    parts = urlsplit(url)
     host, port = parts[1].split(':')
     port = int(port)
     return (host, port)

@@ -19,7 +19,7 @@ If a SLAVE_FLAVOR store is requested, it should trap all writes.
     >>> t = transaction.begin()
     >>> main_slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
     >>> janitor = main_slave.find(Person, name='janitor').one()
-    >>> janitor.displayname = 'Ben Dover'
+    >>> janitor.display_name = 'Ben Dover'
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
@@ -29,7 +29,7 @@ Test this once more to ensure the settings stick across transactions.
 
     >>> transaction.abort()
     >>> t = transaction.begin()
-    >>> main_slave.find(Person, name='janitor').one().displayname = 'BenD'
+    >>> main_slave.find(Person, name='janitor').one().display_name = 'BenD'
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
@@ -40,9 +40,9 @@ Store's replication set.
 
     >>> t = transaction.begin()
     >>> main_master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> main_master.find(Person, name='janitor').one().displayname = 'BenD'
+    >>> main_master.find(Person, name='janitor').one().display_name = 'BenD'
     >>> transaction.commit()
     >>> t = transaction.begin()
-    >>> main_master.find(Person, name='janitor').one().displayname
+    >>> main_master.find(Person, name='janitor').one().display_name
     u'BenD'
     >>> transaction.abort()

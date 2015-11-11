@@ -29,11 +29,6 @@ class EarlyExit(Exception):
         self.kwargs = kwargs
 
 
-def force_exit(*args, **kwargs):
-    """Raise `EarlyExit`."""
-    raise EarlyExit(*args, **kwargs)
-
-
 class TestDistroSeriesTranslationsCopying(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer

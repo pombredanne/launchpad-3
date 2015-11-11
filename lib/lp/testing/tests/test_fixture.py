@@ -123,11 +123,15 @@ class TestZopeUtilityFixture(TestCase):
         original_fake = DummyMailer()
         getGlobalSiteManager().registerUtility(
             original_fake, IMailDelivery, 'Mail')
-        self.assertEqual(original_fake, self.getMailer())
-        fake = DummyMailer()
-        with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
-            self.assertEqual(fake, self.getMailer())
-        self.assertEqual(original_fake, self.getMailer())
+        try:
+            self.assertEqual(original_fake, self.getMailer())
+            fake = DummyMailer()
+            with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
+                self.assertEqual(fake, self.getMailer())
+            self.assertEqual(original_fake, self.getMailer())
+        finally:
+            getGlobalSiteManager().unregisterUtility(
+                original_fake, IMailDelivery, 'Mail')
 
 
 class TestPGBouncerFixtureWithCA(TestCase):

@@ -334,8 +334,8 @@ the bug to the question.
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
     >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
-    >>> question_three.bugs.count() == 0
-    True
+    >>> question_three.bugs
+    []
 
     >>> makebug.initialize()
     >>> print question_three.bugs[0].title

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import
@@ -105,6 +105,7 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
+from zope.app.testing import ztapi
 from zope.component import (
     ComponentLookupError,
     getMultiAdapter,
@@ -113,10 +114,8 @@ from zope.component import (
     )
 import zope.event
 from zope.interface import Interface
-from zope.interface.verify import (
-    verifyClass,
-    verifyObject as zope_verifyObject,
-    )
+from zope.interface.verify import verifyObject as zope_verifyObject
+from zope.publisher.interfaces import IEndRequestEvent
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.management import queryInteraction
 from zope.security.proxy import (
@@ -144,6 +143,7 @@ from lp.services.features.webapp import ScopesFromRequest
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
 from lp.services.webapp.adapter import (
+    get_request_statements,
     print_queries,
     start_sql_logging,
     stop_sql_logging,
@@ -184,6 +184,7 @@ from lp.testing._webservice import (
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
+from lp.testing.mail_helpers import pop_notifications
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
@@ -312,11 +313,13 @@ class FakeTime:
 
 
 class StormStatementRecorder:
-    """A storm tracer to count queries.
+    """A Storm tracer to record all database queries.
 
-    This exposes the count and queries as
-    lp.testing._webservice.QueryCollector does permitting its use with the
-    HasQueryCount matcher.
+    Use the HasQueryCount matcher to check that code makes efficient use
+    of the database.
+
+    Similar to `RequestTimelineCollector`, but can operate outside a web
+    request context and only collects Storm queries.
 
     It also meets the context manager protocol, so you can gather queries
     easily:
@@ -361,6 +364,53 @@ class StormStatementRecorder:
         out = StringIO()
         print_queries(self.query_data, file=out)
         return out.getvalue()
+
+
+class RequestTimelineCollector:
+    """Collect timeline events logged in web requests.
+
+    These are only retrievable at the end of a request, and for tests it is
+    useful to be able to make assertions about the calls made during a
+    request: this class provides a tool to gather them in a simple fashion.
+
+    See `StormStatementRecorder` for a Storm-specific collector that
+    works outside a request.
+
+    :ivar count: The count of db queries the last web request made.
+    :ivar queries: The list of queries made. See
+        lp.services.webapp.adapter.get_request_statements for more
+        information.
+    """
+
+    def __init__(self):
+        self._active = False
+        self.count = None
+        self.queries = None
+
+    def register(self):
+        """Start counting queries.
+
+        Be sure to call unregister when finished with the collector.
+
+        After each web request the count and queries attributes are updated.
+        """
+        ztapi.subscribe((IEndRequestEvent, ), None, self)
+        self._active = True
+
+    def __enter__(self):
+        self.register()
+        return self
+
+    def __call__(self, event):
+        if self._active:
+            self.queries = get_request_statements()
+            self.count = len(self.queries)
+
+    def unregister(self):
+        self._active = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.unregister()
 
 
 def record_statements(function, *args, **kwargs):
@@ -480,17 +530,14 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
 
-    def assertClassImplements(self, cls, interface):
-        """Assert 'cls' may correctly implement 'interface'."""
-        self.assertTrue(
-            verifyClass(interface, cls),
-            "%r does not correctly implement %r." % (cls, interface))
-
-    def assertNotifies(self, event_types, callable_obj, *args, **kwargs):
+    def assertNotifies(self, event_types, propagate, callable_obj,
+                       *args, **kwargs):
         """Assert that a callable performs a given notification.
 
         :param event_type: One or more event types that notification is
             expected for.
+        :param propagate: If True, propagate events to their normal
+            subscribers.
         :param callable_obj: The callable to call.
         :param *args: The arguments to pass to the callable.
         :param **kwargs: The keyword arguments to pass to the callable.
@@ -499,7 +546,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """
         if not isinstance(event_types, (list, tuple)):
             event_types = [event_types]
-        with EventRecorder() as recorder:
+        with EventRecorder(propagate=propagate) as recorder:
             result = callable_obj(*args, **kwargs)
         if len(recorder.events) == 0:
             raise AssertionError('No notification was performed.')
@@ -743,6 +790,19 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                         attribute_names - expected_permissions[permission]),
                     sorted(
                         expected_permissions[permission] - attribute_names)))
+
+    def assertEmailQueueLength(self, length, sort_key=None):
+        """Pop the email queue, assert its length, and return it.
+
+        This commits the transaction as part of pop_notifications.
+        """
+        notifications = pop_notifications(sort_key=sort_key)
+        self.assertEqual(
+            length, len(notifications),
+            "Expected %d emails, got %d:\n\n%s" % (
+                length, len(notifications),
+                "\n\n".join(str(n) for n in notifications)))
+        return notifications
 
 
 class TestCaseWithFactory(TestCase):
@@ -1184,21 +1244,27 @@ class ZopeTestInSubProcess:
 class EventRecorder:
     """Intercept and record Zope events.
 
-    This prevents the events from propagating to their normal subscribers.
-    The recorded events can be accessed via the 'events' list.
+    This prevents the events from propagating to their normal subscribers,
+    unless `propagate=True` is passed to the constructor.  The recorded
+    events can be accessed via the 'events' list.
     """
 
-    def __init__(self):
+    def __init__(self, propagate=False):
+        self.propagate = propagate
         self.events = []
         self.old_subscribers = None
+        self.new_subscribers = None
 
     def __enter__(self):
         self.old_subscribers = zope.event.subscribers[:]
-        zope.event.subscribers[:] = [self.events.append]
+        if not self.propagate:
+            zope.event.subscribers[:] = []
+        zope.event.subscribers.append(self.events.append)
+        self.new_subscribers = zope.event.subscribers[:]
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        assert zope.event.subscribers == [self.events.append], (
+        assert zope.event.subscribers == self.new_subscribers, (
             'Subscriber list has been changed while running!')
         zope.event.subscribers[:] = self.old_subscribers
 

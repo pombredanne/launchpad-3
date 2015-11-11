@@ -11,6 +11,8 @@ __all__ = [
     'SpecificationSet',
     ]
 
+import operator
+
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
@@ -62,7 +64,6 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.blueprints.model.specificationbranch import SpecificationBranch
-from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.blueprints.model.specificationdependency import (
     SpecificationDependency,
     )
@@ -86,6 +87,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -105,6 +107,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.xref.interfaces import IXRefSet
 
 
 def recursive_blocked_query(user):
@@ -233,17 +236,12 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription',
-        orderBy=['displayname', 'name'])
+        orderBy=['display_name', 'name'])
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    bug_links = SQLMultipleJoin(
-        'SpecificationBug', joinColumn='specification', orderBy='id')
-    bugs = SQLRelatedJoin('Bug',
-        joinColumn='specification', otherColumn='bug',
-        intermediateTable='SpecificationBug', orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
@@ -793,12 +791,27 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
         return bool(self.subscription(person))
 
-    # Template methods for BugLinkTargetMixin
-    buglinkClass = SpecificationBug
+    @property
+    def bugs(self):
+        from lp.bugs.model.bug import Bug
+        bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'specification', unicode(self.id)), types=[u'bug'])]
+        return list(sorted(
+            bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        return SpecificationBug(specification=self, bug=bug)
+        # XXX: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'specification', unicode(self.id)):
+                {(u'bug', unicode(bug.id)): {}}})
+
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        getUtility(IXRefSet).delete(
+            {(u'specification', unicode(self.id)):
+                [(u'bug', unicode(bug.id))]})
 
     # sprint linking
     def linkSprint(self, sprint, user):

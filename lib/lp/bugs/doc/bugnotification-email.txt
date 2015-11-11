@@ -387,7 +387,7 @@ Adding an attachment will generate a notification that looks as follows:
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment added: "A screenshot of the problem"
-       http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/screenshot.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/screenshot.png
     -----------------------------
 
 Removing an attachment generates a notification, too.
@@ -402,7 +402,7 @@ Removing an attachment generates a notification, too.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment removed: "A screenshot of the problem"
-       http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/screenshot.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/screenshot.png
     -----------------------------
 
 Adding an attachment and marking it as a patch generates a different
@@ -421,7 +421,7 @@ notification.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Patch added: "A new icon for the application"
-       http://bugs.launchpad.dev/bugs/.../+attachment/2/+files/new-icon.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/new-icon.png
     -----------------------------
 
 Removing a patch also generates a different notification.
@@ -436,7 +436,7 @@ Removing a patch also generates a different notification.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Patch removed: "A new icon for the application"
-       http://bugs.launchpad.dev/bugs/.../+attachment/2/+files/new-icon.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/new-icon.png
     -----------------------------
 
 
@@ -584,6 +584,12 @@ parameter.
 
     >>> print notification_email['X-Launchpad-Message-Rationale']
     Because-I-said-so
+
+The X-Launchpad-Message-For header is set from the to_person (since this
+notification is not for a team).
+
+    >>> print notification_email['X-Launchpad-Message-For']
+    name16
 
 The references parameter sets the References header of the email.
 

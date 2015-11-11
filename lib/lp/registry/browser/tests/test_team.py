@@ -284,7 +284,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             view = create_initialized_view(team, name="+edit")
             self.assertEqual('team', view.widgets['name']._data)
             self.assertEqual(
-                'A Team', view.widgets['displayname']._data)
+                'A Team', view.widgets['display_name']._data)
             self.assertEqual(
                 'A great team', view.widgets['description']._data)
             self.assertEqual(
@@ -449,7 +449,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         team = self.factory.makeTeam(name="team", owner=owner)
         form = {
             'field.name': team.name,
-            'field.displayname': team.displayname,
+            'field.display_name': team.display_name,
             'field.defaultmembershipperiod': '180',
             'field.defaultrenewalperiod': '365',
             'field.membership_policy': 'RESTRICTED',
@@ -476,7 +476,7 @@ class TestTeamAddView(TestCaseWithFactory):
         person = self.factory.makePerson()
         form = {
             'field.actions.create': 'Create Team',
-            'field.displayname': 'liberty-land',
+            'field.display_name': 'liberty-land',
             'field.name': 'libertyland',
             'field.renewal_policy': 'NONE',
             'field.renewal_policy-empty-marker': 1,
@@ -526,7 +526,7 @@ class TestTeamAddView(TestCaseWithFactory):
         team_name = self.factory.getUniqueString()
         form = {
             'field.name': team_name,
-            'field.displayname': 'New Team',
+            'field.display_name': 'New Team',
             'field.membership_policy': 'RESTRICTED',
             'field.visibility': 'PRIVATE',
             'field.actions.create': 'Create',
@@ -578,7 +578,7 @@ class TestSimpleTeamAddView(TestCaseWithFactory):
         team_name = self.factory.getUniqueString()
         form = {
             'field.name': team_name,
-            'field.displayname': 'New Team',
+            'field.display_name': 'New Team',
             'field.visibility': 'PRIVATE',
             'field.membership_policy': 'RESTRICTED',
             'field.actions.create': 'Create',
@@ -925,5 +925,6 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
             superteams = find_tag_by_id(html, 'subteam-of')
         self.assertFalse('&lt;hidden&gt;' in superteams)
         self.assertEqual(
-            '<a href="/~private-team" class="sprite team private">Private Team</a>',
+            '<a href="/~private-team" class="sprite team private">'
+            'Private Team</a>',
             str(superteams.findNext('a')))

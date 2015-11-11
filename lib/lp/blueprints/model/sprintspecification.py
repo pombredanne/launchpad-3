@@ -66,4 +66,3 @@ class SprintSpecification(SQLBase):
         self.status = SprintSpecificationStatus.DECLINED
         self.decider = decider
         self.date_decided = UTC_NOW
-

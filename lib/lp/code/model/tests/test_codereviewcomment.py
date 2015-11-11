@@ -1,12 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComment"""
 
 from textwrap import dedent
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from lp.code.enums import CodeReviewVote
-from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.model.codereviewcomment import quote_text_as_email
 from lp.services.messages.model.message import MessageSet
 from lp.testing import (
@@ -107,7 +108,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Creating a CodeReviewComment should trigger a notification."""
         message = self.factory.makeMessage()
         self.assertNotifies(
-            NewCodeReviewCommentEvent, self.bmp.createCommentFromMessage,
+            ObjectCreatedEvent, False,
+            self.bmp.createCommentFromMessage,
             message, None, None, original_email=None, _validate=False)
 
 

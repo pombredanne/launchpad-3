@@ -25,6 +25,7 @@ class WarningReport:
         else:
             return self.message
 
+
 class ImportantInfo:
 
     def __init__(self, expressiontext, viewclassname, templatefilename,
@@ -74,6 +75,7 @@ from zope.pagetemplate.engine import TrustedZopeContext
 from zope.tal.talinterpreter import TALInterpreter
 
 from zope.browserpage.simpleviewclass import simple
+
 
 def find_important_info():
     stack = inspect.stack()
@@ -155,6 +157,8 @@ no_order_by = []
 other_warnings = {}
 
 old_show_warning = warnings.showwarning
+
+
 def launchpad_showwarning(message, category, filename, lineno, file=None,
                           line=None):
     if file is None:
@@ -183,6 +187,7 @@ def launchpad_showwarning(message, category, filename, lineno, file=None,
     other_warnings[(category, filename, lineno)] = WarningReport(
         warning_message, important_info)
 
+
 def report_need_page_titles():
     global need_page_titles
     if need_page_titles:
@@ -190,6 +195,7 @@ def report_need_page_titles():
         print "The following pages need titles."
         for message in need_page_titles:
             print "   ", message
+
 
 def report_no_order_by():
     global no_order_by
@@ -201,6 +207,7 @@ def report_no_order_by():
             print
             print report
 
+
 def report_other_warnings():
     global other_warnings
     if other_warnings:
@@ -210,10 +217,12 @@ def report_other_warnings():
             print
             print warninginfo
 
+
 def report_warnings():
     report_need_page_titles()
     report_no_order_by()
     report_other_warnings()
+
 
 def install_warning_handler():
     warnings.showwarning = launchpad_showwarning

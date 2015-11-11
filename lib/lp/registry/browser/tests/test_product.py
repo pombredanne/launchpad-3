@@ -127,7 +127,7 @@ def make_product_form(person=None, action=1, proprietary=False):
         return {
             'field.actions.continue': 'Continue',
             'field.__visited_steps__': ProjectAddStepOne.step_name,
-            'field.displayname': 'Fnord',
+            'field.display_name': 'Fnord',
             'field.name': 'fnord',
             'field.summary': 'fnord summary',
             }
@@ -136,7 +136,7 @@ def make_product_form(person=None, action=1, proprietary=False):
             'field.actions.continue': 'Continue',
             'field.__visited_steps__': '%s|%s' % (
                 ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
-            'field.displayname': 'Fnord',
+            'field.display_name': 'Fnord',
             'field.name': 'fnord',
             'field.summary': 'fnord summary',
             'field.disclaim_maintainer': 'off',
@@ -204,13 +204,13 @@ class TestProductAddView(TestCaseWithFactory):
         disclaim_widget = view.view.widgets['disclaim_maintainer']
         self.assertEqual('subordinate', disclaim_widget.cssClass)
         self.assertEqual(
-            ['displayname', 'name', 'summary', 'description',
+            ['display_name', 'name', 'summary', 'description',
              'homepageurl', 'information_type', 'licenses', 'license_info',
              'driver', 'bug_supervisor', 'owner',
              '__visited_steps__'],
             view.view.field_names)
         self.assertEqual(
-            ['displayname', 'name', 'summary', 'description',
+            ['display_name', 'name', 'summary', 'description',
              'homepageurl', 'information_type', 'licenses', 'driver',
              'bug_supervisor', 'owner', 'disclaim_maintainer',
              'source_package_name', 'distroseries', '__visited_steps__',
@@ -565,7 +565,7 @@ class TestProductEditView(BrowserTestCase):
         return {
             'field.actions.change': 'Change',
             'field.name': product.name,
-            'field.displayname': product.displayname,
+            'field.display_name': product.display_name,
             'field.title': product.title,
             'field.summary': product.summary,
             'field.information_type': information_type,

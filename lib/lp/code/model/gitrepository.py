@@ -24,6 +24,7 @@ from storm.databases.postgres import Returning
 from storm.expr import (
     And,
     Coalesce,
+    Desc,
     Insert,
     Join,
     Not,
@@ -149,7 +150,6 @@ from lp.services.propertycache import (
 from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
-from lp.snappy.interfaces.snap import ISnapSet
 
 
 object_type_map = {
@@ -233,6 +233,14 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             self.sourcepackagename = target.sourcepackagename
         self.owner_default = False
         self.target_default = False
+
+    @property
+    def valid_webhook_event_types(self):
+        return ["git:push:0.1", "merge-proposal:0.1"]
+
+    @property
+    def default_webhook_event_types(self):
+        return ["git:push:0.1"]
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     @property
@@ -416,6 +424,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             GitRef,
             GitRef.repository_id == self.id,
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
+
+    @property
+    def branches_by_date(self):
+        """See `IGitRepository`."""
+        return self.branches.order_by(Desc(GitRef.committer_date))
 
     @property
     def default_branch(self):
@@ -983,6 +996,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
+        from lp.snappy.interfaces.snap import ISnapSet
+
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target repositories to

@@ -44,7 +44,7 @@ class GitHostingClient:
         # XXX cjwatson 2015-03-01: The hardcoded timeout at least means that
         # we don't lock tables indefinitely if the hosting service falls
         # over, but is there some more robust way to do this?
-        return 5.0
+        return 30.0
 
     def _request(self, method, path, json_data=None, **kwargs):
         session = self._makeSession()

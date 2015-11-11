@@ -24,5 +24,3 @@ class IOpenIDPersistentIdentity(Interface):
         'The OpenID identity URL for the user.')
     openid_identifier = Attribute(
         'The OpenID identifier used with the request.')
-
-

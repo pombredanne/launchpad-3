@@ -28,7 +28,6 @@ class XMLValidator:
         self.schema_filename = schema_filename
         self._errors = ''
 
-
     def validate(self, xml):
         """Validate the string xml
 

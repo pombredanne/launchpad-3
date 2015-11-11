@@ -63,16 +63,16 @@ Test get method, retrieving a component by its id:
 New component creation for a given name:
 
  >>> new_comp = component_set.new('test')
- >>> print new_comp.id, new_comp.name
- 6 test
+ >>> print new_comp.name
+ test
 
 Ensuring a component (if not found, create it):
 
- >>> component_set.ensure('test').id
- 6
+ >>> component_set.ensure('test').id == new_comp.id
+ True
 
- >>> component_set.ensure('test2').id
- 7
+ >>> component_set.ensure('test2').id == new_comp.id
+ False
 
 
 Importing Section content class and its interface:
@@ -159,13 +159,13 @@ Test get method, retrieving a section by its id:
 New section creation for a given name:
 
  >>> new_sec = section_set.new('test')
- >>> print new_sec.id, new_sec.name
- 36 test
+ >>> print new_sec.name
+ test
 
 Ensuring a section (if not found, create it):
 
- >>> section_set.ensure('test').id
- 36
+ >>> section_set.ensure('test').id == new_sec.id
+ True
 
- >>> section_set.ensure('test2').id
- 37
+ >>> section_set.ensure('test2').id == new_sec.id
+ False

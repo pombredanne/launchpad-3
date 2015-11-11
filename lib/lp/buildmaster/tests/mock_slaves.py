@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -120,7 +120,7 @@ class OkSlave:
 
     def info(self):
         self.call_log.append('info')
-        return defer.succeed(('1.0', self.arch_tag, 'debian'))
+        return defer.succeed(('1.0', self.arch_tag, 'binarypackage'))
 
     def resume(self):
         self.call_log.append('resume')
@@ -276,7 +276,6 @@ class SlaveTestHelpers(fixtures.Fixture):
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
     BASE_URL = 'http://localhost:8221'
-    TEST_URL = '%s/rpc/' % (BASE_URL,)
 
     def getServerSlave(self):
         """Set up a test build slave server.
@@ -330,6 +329,11 @@ class SlaveTestHelpers(fixtures.Fixture):
         dsc_file = 'thing'
         self.makeCacheFile(tachandler, chroot_file)
         self.makeCacheFile(tachandler, dsc_file)
+        extra_args = {
+            'distribution': 'ubuntu',
+            'suite': 'precise',
+            'ogrecomponent': 'main',
+            }
         return slave.build(
-            build_id, 'debian', chroot_file, {'.dsc': dsc_file},
-            {'ogrecomponent': 'main'})
+            build_id, 'binarypackage', chroot_file, {'.dsc': dsc_file},
+            extra_args)

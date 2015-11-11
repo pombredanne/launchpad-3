@@ -938,7 +938,7 @@ class FormattersAPI:
 
         for css_class, row, _, _, line in parse_diff(text):
             result.append('<tr id="diff-line-%s">' % row)
-            result.append('<td class="line-no">%s</td>' % row)
+            result.append('<td class="line-no unselectable">%s</td>' % row)
             result.append(
                 structured(
                     '<td class="%s">%s</td>', css_class, line).escapedtext)
@@ -953,7 +953,8 @@ class FormattersAPI:
         # work, but displaying it would be confusing since there are also
         # per-file line numbers.
         result.append(
-            '<td class="line-no" style="display: none">%s</td>' % row)
+            '<td class="line-no unselectable" '
+            'style="display: none">%s</td>' % row)
         result.extend(cells)
         result.append('</tr>')
 
@@ -968,11 +969,11 @@ class FormattersAPI:
             else:
                 added_diff_row, added_row, added_line = 0, '', ''
             cells = (
-                '<td class="ss-line-no">%s</td>' % removed_row,
+                '<td class="ss-line-no unselectable">%s</td>' % removed_row,
                 structured(
                     '<td class="diff-removed text">%s</td>',
                     removed_line).escapedtext,
-                '<td class="ss-line-no">%s</td>' % added_row,
+                '<td class="ss-line-no unselectable">%s</td>' % added_row,
                 structured(
                     '<td class="diff-added text">%s</td>',
                     added_line).escapedtext,
@@ -1022,10 +1023,12 @@ class FormattersAPI:
                     if line.startswith(' '):
                         line = line[1:]
                     cells = [
-                        '<td class="ss-line-no">%s</td>' % orig_row,
+                        '<td class="ss-line-no unselectable">%s</td>' %
+                            orig_row,
                         structured(
                             '<td class="text">%s</td>', line).escapedtext,
-                        '<td class="ss-line-no">%s</td>' % mod_row,
+                        '<td class="ss-line-no unselectable">%s</td>' %
+                            mod_row,
                         structured(
                             '<td class="text">%s</td>', line).escapedtext,
                         ]

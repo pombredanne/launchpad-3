@@ -26,7 +26,7 @@ over, and the tag that surrounds the text.
     >>> from lp.registry.interfaces.product import IProduct
     >>> product = factory.makeProduct(
     ...     name='widget', displayname='Widgets > important')
-    >>> title_field = IProduct['displayname']
+    >>> title_field = IProduct['display_name']
     >>> title = 'Edit the title'
     >>> widget = TextLineEditorWidget(
     ...     product, title_field, title, 'h1', max_width='90%',
@@ -36,7 +36,7 @@ The widget is rendered by executing it, it prints out the attribute
 content.
 
     >>> print widget()
-    <h1 id="edit-displayname">
+    <h1 id="edit-display_name">
     <span style="max-width: 90%;"
           class="yui3-editable_text-text ellipsis">
         Widgets &gt; important
@@ -49,7 +49,7 @@ link into an AJAX control when JS is available:
 
     >>> ignored = login_person(product.owner)
     >>> print widget()
-    <h1 id="edit-displayname">
+    <h1 id="edit-display_name">
     <span style="max-width: 90%;"
           class="yui3-editable_text-text ellipsis">
         Widgets &gt; important

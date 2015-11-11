@@ -3,6 +3,7 @@
 
 __all__ = [
     'BranchJob',
+    'BranchModifiedMailJob',
     'BranchScanJob',
     'BranchJobDerived',
     'BranchJobType',
@@ -67,6 +68,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchjob import (
     IBranchJob,
+    IBranchModifiedMailJob,
+    IBranchModifiedMailJobSource,
     IBranchScanJob,
     IBranchScanJobSource,
     IBranchUpgradeJob,
@@ -93,6 +96,7 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.codehosting.vfs.branchfs import get_real_branch_path
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
@@ -117,6 +121,7 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.utils import text_delta
 from lp.services.webapp import canonical_url
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -182,6 +187,12 @@ class BranchJobType(DBEnumeratedType):
         Scan Branch
 
         This job scans a branch for new revisions.
+        """)
+
+    BRANCH_MODIFIED_MAIL = DBItem(8, """
+        Branch modified mail
+
+        This job runs against a branch to send emails about modifications.
         """)
 
 
@@ -990,3 +1001,44 @@ class ReclaimBranchSpaceJob(BranchJobDerived, BaseRunnableJobSource):
         branch_path = get_real_branch_path(self.branch_id)
         if os.path.exists(branch_path):
             shutil.rmtree(branch_path)
+
+
+@implementer(IBranchModifiedMailJob)
+@provider(IBranchModifiedMailJobSource)
+class BranchModifiedMailJob(BranchJobDerived):
+    """A Job that sends email about branch modifications."""
+
+    class_job_type = BranchJobType.BRANCH_MODIFIED_MAIL
+
+    config = config.IBranchModifiedMailJobSource
+
+    @classmethod
+    def create(cls, branch, user, branch_delta):
+        """See `IBranchModifiedMailJobSource`."""
+        metadata = {
+            'user': user.id,
+            'branch_delta': text_delta(
+                branch_delta, branch_delta.delta_values,
+                branch_delta.new_values, branch_delta.interface),
+            }
+        branch_job = BranchJob(branch, cls.class_job_type, metadata)
+        job = cls(branch_job)
+        job.celeryRunOnCommit()
+        return job
+
+    @property
+    def user(self):
+        return getUtility(IPersonSet).get(self.metadata['user'])
+
+    @property
+    def branch_delta(self):
+        return self.metadata['branch_delta']
+
+    def getMailer(self):
+        """Return a `BranchMailer` for this job."""
+        return BranchMailer.forBranchModified(
+            self.branch, self.user, self.branch_delta)
+
+    def run(self):
+        """See `IBranchModifiedMailJob`."""
+        self.getMailer().sendAll()

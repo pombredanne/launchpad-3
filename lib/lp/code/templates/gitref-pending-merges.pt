@@ -24,7 +24,7 @@
 
       <div id="dependent-landings" tal:condition="view/dependent_landings">
         <img src="/@@/merge-proposal-icon" />
-        <a href="+merges" tal:content="structure view/dependent_landing_count_text">
+        <a href="+dependent-merges" tal:content="structure view/dependent_landing_count_text">
           1 branch
         </a>
         dependent on this one.

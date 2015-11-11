@@ -111,4 +111,3 @@ class AddMissingBuilds(SoyuzScript):
             self.txn.abort()
             self.logger.info("Errors, aborted transaction.")
             sys.exit(1)
-

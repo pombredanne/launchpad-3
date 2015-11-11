@@ -41,7 +41,7 @@ class GettextPOChangedExporterTestCase(unittest.TestCase):
             "Expected GettextPOChangedExporter to provide POCHANGED format "
             "but got %r instead." % self.translation_exporter.format)
         self.failUnlessEqual(
-            self.translation_exporter.supported_source_formats ,
+            self.translation_exporter.supported_source_formats,
             [],
             "Expected GettextPOChangedExporter to support no source formats "
             "but got %r instead." % (

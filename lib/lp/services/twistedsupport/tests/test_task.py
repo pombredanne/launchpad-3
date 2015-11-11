@@ -119,8 +119,10 @@ class TestPollingTaskSource(TestCase):
         class NoTasksFoundCountingConsumer:
             def __init__(self):
                 self._noTasksFound_calls = 0
+
             def noTasksFound(self):
                 self._noTasksFound_calls += 1
+
         task_source = self.makeTaskSource(task_producer=lambda: None)
         consumer = NoTasksFoundCountingConsumer()
         task_source.start(consumer)
@@ -236,10 +238,12 @@ class TestPollingTaskSource(TestCase):
         # interval we're polling at.
         tasks_called = []
         produced_deferreds = []
+
         def producer():
             deferred = Deferred()
             produced_deferreds.append(deferred)
             return deferred
+
         clock = Clock()
         interval = self.factory.getUniqueInteger()
         task_source = self.makeTaskSource(
@@ -264,8 +268,10 @@ class TestPollingTaskSource(TestCase):
         # The value fired with is True if the source is still stopped when the
         # deferred fires.
         produced_deferred = Deferred()
+
         def producer():
             return produced_deferred
+
         task_source = self.makeTaskSource(task_producer=producer)
         task_source.start(NoopTaskConsumer())
         # The call to start calls producer.  It returns produced_deferred
@@ -286,8 +292,10 @@ class TestPollingTaskSource(TestCase):
         # The value fired with is False if the source is no longer stopped
         # when the deferred fires.
         produced_deferred = Deferred()
+
         def producer():
             return produced_deferred
+
         task_source = self.makeTaskSource(task_producer=producer)
         task_source.start(NoopTaskConsumer())
         # The call to start calls producer.  It returns produced_deferred
@@ -309,10 +317,12 @@ class TestPollingTaskSource(TestCase):
         # stop() again are called in sequence, we shouldn't try to acquire
         # another job when the first acquisition completes.
         produced_deferreds = []
+
         def producer():
             d = Deferred()
             produced_deferreds.append(d)
             return d
+
         task_source = self.makeTaskSource(task_producer=producer)
         # Start the source.  This calls the producer.
         task_source.start(NoopTaskConsumer())
@@ -335,14 +345,17 @@ class TestPollingTaskSource(TestCase):
             def taskStarted(self, task):
                 started.append(task)
                 return Deferred()
+
         interval = self.factory.getUniqueInteger()
         clock = Clock()
         produced = []
         started = []
+
         def producer():
             value = self.factory.getUniqueInteger()
             produced.append(value)
             return value
+
         task_source = self.makeTaskSource(
             task_producer=producer, interval=interval, clock=clock)
         consumer = DeferredStartingConsumer()
@@ -360,12 +373,14 @@ class TestPollingTaskSource(TestCase):
         class LoggingConsumer:
             def __init__(self):
                 self._task_production_failed_calls = []
+
             def taskStarted(self, task):
                 self.fail("taskStarted should not be called.")
+
             def taskProductionFailed(self, reason):
                 self._task_production_failed_calls.append(reason)
 
-        task_source = self.makeTaskSource(task_producer=lambda: 1/0)
+        task_source = self.makeTaskSource(task_producer=lambda: 1 / 0)
         consumer = LoggingConsumer()
         task_source.start(consumer)
         self.assertEqual(1, len(consumer._task_production_failed_calls))
@@ -379,14 +394,17 @@ class TestPollingTaskSource(TestCase):
             def taskProductionFailed(self, reason):
                 failures.append(reason)
                 return Deferred()
+
         interval = self.factory.getUniqueInteger()
         clock = Clock()
         produced = []
         failures = []
+
         def producer():
             exc = RuntimeError()
             produced.append(exc)
             raise exc
+
         task_source = self.makeTaskSource(
             task_producer=producer, interval=interval, clock=clock)
         consumer = DeferredFailingConsumer()
@@ -596,9 +614,11 @@ class TestParallelLimitedTaskConsumer(TestCase):
         # concurrency limit, we'll do the work anyway. We cannot rely on the
         # source sending us the work again.
         log = []
+
         def log_append(item):
             log.append(item)
             return Deferred()
+
         consumer = self.makeConsumer(worker_limit=1)
         consumer.consume(LoggingSource([]))
         consumer.taskStarted(lambda: log_append('task1'))

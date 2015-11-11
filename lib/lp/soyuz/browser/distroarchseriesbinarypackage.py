@@ -11,20 +11,12 @@ __all__ = [
 from lazr.restful.utils import smartquote
 
 from lp.services.webapp import (
-    ApplicationMenu,
     GetitemNavigation,
     LaunchpadView,
     )
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     IDistroArchSeriesBinaryPackage,
     )
-
-
-class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):
-
-    usedfor = IDistroArchSeriesBinaryPackage
-    facet = 'overview'
-    links = []
 
 
 class DistroArchSeriesBinaryPackageNavigation(GetitemNavigation):

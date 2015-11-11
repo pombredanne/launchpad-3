@@ -22,6 +22,7 @@ easier.
     >>> def print_notification_headers(email_notification, extra_headers=[]):
     ...     for header in ['To', 'From', 'Subject',
     ...                    'X-Launchpad-Message-Rationale',
+    ...                    'X-Launchpad-Message-For',
     ...                    'X-Launchpad-Subscription'] + extra_headers:
     ...         if email_notification[header]:
     ...             print "%s: %s" % (header, email_notification[header])
@@ -73,6 +74,7 @@ list of emails to send:
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
+    X-Launchpad-Message-For: name16
     <BLANKLINE>
     a comment.
     <BLANKLINE>
@@ -82,6 +84,7 @@ list of emails to send:
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Assignee
+    X-Launchpad-Message-For: mark
     <BLANKLINE>
     a comment.
     <BLANKLINE>
@@ -91,6 +94,7 @@ list of emails to send:
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Message-For: name12
     <BLANKLINE>
     a comment.
     <BLANKLINE>
@@ -154,6 +158,7 @@ subject, though, which is often the case when someone replies via email.
     From: Sample Person <1@bugs.launchpad.net>
     Subject: Re: [Bug 1] subject
     X-Launchpad-Message-Rationale: Assignee
+    X-Launchpad-Message-For: mark
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -193,6 +198,7 @@ Let's add a few changes and see how it looks like:
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Assignee
+    X-Launchpad-Message-For: mark
     <BLANKLINE>
     ** Summary changed:
     - Old summary
@@ -239,6 +245,7 @@ in the order they were added:
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Assignee
+    X-Launchpad-Message-For: mark
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -363,9 +370,10 @@ No duplicate information is included.
     ...         print_notification(
     ...             message, extra_headers=['X-Launchpad-Bug-Duplicate'])
     To: test@canonical.com
-    From: Sample Person <16@bugs.launchpad.net>
-    Subject: [Bug 16] [NEW] new bug
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug ...] [NEW] new bug
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Message-For: name12
     <BLANKLINE>
     Public bug reported:
     ...
@@ -393,9 +401,10 @@ top of the email:
     ...         print_notification(
     ...             message, extra_headers=['X-Launchpad-Bug-Duplicate'])
     To: test@canonical.com
-    From: Sample Person <16@bugs.launchpad.net>
-    Subject: [Bug 16] subject
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Message-For: name12
     X-Launchpad-Bug-Duplicate: 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -432,6 +441,7 @@ inserted at the top of the message body.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] [NEW] Zero-day on Frobulator
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Message-For: name12
     <BLANKLINE>
     *** This bug is a security vulnerability ***
     <BLANKLINE>
@@ -456,6 +466,7 @@ The message is only inserted for new bugs, not for modified bugs:
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Message-For: name12
     <BLANKLINE>
     a comment.
     <BLANKLINE>
@@ -538,6 +549,7 @@ makes it write out the emails it sends.
     References: foo@example.com-332342--1231
     ...
     X-Launchpad-Message-Rationale: Assignee
+    X-Launchpad-Message-For: name12
     ...
     INFO    Notifying foo.bar@canonical.com about bug 1.
     ...
@@ -548,6 +560,7 @@ makes it write out the emails it sends.
     References: sdsdfsfd
     ...
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
+    X-Launchpad-Message-For: name16
     ...
     INFO    Notifying mark@example.com about bug 1.
     ...
@@ -564,6 +577,7 @@ makes it write out the emails it sends.
     References: sdsdfsfd
     ...
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
+    X-Launchpad-Message-For: name16
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
     Precedence: bulk
@@ -840,12 +854,14 @@ with different verbose_bugnotifications settings.
     ...             "will be automatically wrapped by the BugNotification "
     ...             "machinery. Ain't technology great?")
     ...     verbose_person = factory.makePerson(
-    ...         displayname='Verbose Person', email='verbose@example.com',
+    ...         name='verbose-person', displayname='Verbose Person',
+    ...         email='verbose@example.com',
     ...         selfgenerated_bugnotifications=True)
     ...     verbose_person.verbose_bugnotifications = True
     ...     ignored = bug.subscribe(verbose_person, verbose_person)
     ...     concise_person = factory.makePerson(
-    ...         displayname='Concise Person', email='concise@example.com')
+    ...         name='concise-person', displayname='Concise Person',
+    ...         email='concise@example.com')
     ...     concise_person.verbose_bugnotifications = False
     ...     ignored = bug.subscribe(concise_person, concise_person)
 
@@ -858,7 +874,7 @@ Person, a member, does.
     ...         name='conciseteam', displayname='Concise Team')
     ...     concise_team.verbose_bugnotifications = False
     ...     concise_team_person = factory.makePerson(
-    ...         displayname='Concise Team Person',
+    ...         name='conciseteam-person', displayname='Concise Team Person',
     ...         email='conciseteam@example.com')
     ...     concise_team_person.verbose_bugnotifications = True
     ...     ignored = concise_team.addMember(
@@ -873,7 +889,7 @@ member, does not.
     ...         name='verboseteam', displayname='Verbose Team')
     ...     verbose_team.verbose_bugnotifications = True
     ...     verbose_team_person = factory.makePerson(
-    ...         displayname='Verbose Team Person',
+    ...         name='verboseteam-person', displayname='Verbose Team Person',
     ...         email='verboseteam@example.com')
     ...     verbose_team_person.verbose_bugnotifications = False
     ...     ignored = verbose_team.addMember(
@@ -934,6 +950,7 @@ We can see that Concise Person doesn't receive verbose notifications:
     From: Verbose Person <verbose@example.com>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Message-For: concise-person
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
@@ -961,6 +978,7 @@ that gets verbose email.
     From: Verbose Person <verbose@example.com>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @verboseteam
+    X-Launchpad-Message-For: verboseteam
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
@@ -980,6 +998,7 @@ Whereas Verbose Person does get the description and task status:
     From: Verbose Person <verbose@example.com>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
+    X-Launchpad-Message-For: verbose-person
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
@@ -1010,6 +1029,7 @@ And Concise Team Person does too, even though his team doesn't want them:
     From: Verbose Person <verbose@example.com>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @conciseteam
+    X-Launchpad-Message-For: conciseteam
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
@@ -1134,6 +1154,7 @@ notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Message-For: no-priv
     <BLANKLINE>
     another comment.
     <BLANKLINE>
@@ -1190,6 +1211,7 @@ COMMENTS, he also receives these notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Message-For: no-priv
     X-Launchpad-Subscription: Allow-comments filter
     <BLANKLINE>
     another comment.
@@ -1245,6 +1267,7 @@ no comment notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber @addressless
+    X-Launchpad-Message-For: addressless
     <BLANKLINE>
     no comment for no-priv.
     <BLANKLINE>
@@ -1291,6 +1314,7 @@ receives these notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Message-For: no-priv
     X-Launchpad-Subscription: Allow-comments filter
     <BLANKLINE>
     no comment for no-priv.
@@ -1350,6 +1374,7 @@ no notifications created by addChange().
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber @addressless
+    X-Launchpad-Message-For: addressless
     <BLANKLINE>
     ** Summary changed:
     - Whatever
@@ -1405,6 +1430,7 @@ after all.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Message-For: no-priv
     <BLANKLINE>
     ** Summary changed:
     - I'm losing my

@@ -95,7 +95,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
             ''' % sqlvalues(self.distroseries.distribution.id,
                             self.language.id),
             orderBy=['id'],
-            clauseTables=['TranslationGroup', 'Distribution',],
+            clauseTables=['TranslationGroup', 'Distribution'],
             distinct=True)
 
     @property
@@ -231,4 +231,3 @@ class DistroSeriesLanguageSet:
     def getDummy(self, distroseries, language):
         """See IDistroSeriesLanguageSet."""
         return DummyDistroSeriesLanguage(distroseries, language)
-

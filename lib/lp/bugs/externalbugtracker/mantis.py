@@ -390,58 +390,6 @@ class Mantis(ExternalBugTracker):
 
         return value_node.strip()
 
-    def _findValueBelowKey(self, page_soup, key):
-        """Scrape a value from a Mantis bug view page where the value
-        is displayed directly below the key.
-
-        The Mantis bug view page uses HTML tables for both layout and
-        representing tabular data, often within the same table. This
-        method assumes that the key and value are within the same
-        column on adjacent rows, with the key preceding the value:
-
-        ...
-        <tr>...<td>Key</td>...</tr>
-        <tr>...<td>Value</td>...</tr>
-        ...
-
-        This method does not compensate for colspan or rowspan.
-        """
-        key_node = page_soup.find(
-            text=lambda node: (node.strip() == key
-                               and not isinstance(node, Comment)))
-        if key_node is None:
-            raise UnparsableBugData("Key %r not found." % (key,))
-
-        key_cell = key_node.parent
-        if key_cell is None:
-            raise UnparsableBugData("Cell for key %r not found." % (key,))
-
-        key_row = key_cell.parent
-        if key_row is None:
-            raise UnparsableBugData("Row for key %r not found." % (key,))
-
-        try:
-            key_pos = key_row.findAll('td').index(key_cell)
-        except ValueError:
-            raise UnparsableBugData(
-                "Key cell in row for key %r not found." % (key,))
-
-        value_row = key_row.findNextSibling('tr')
-        if value_row is None:
-            raise UnparsableBugData(
-                "Value row for key %r not found." % (key,))
-
-        value_cell = value_row.findAll('td')[key_pos]
-        if value_cell is None:
-            raise UnparsableBugData(
-                "Value cell for key %r not found." % (key,))
-
-        value_node = value_cell.string
-        if value_node is None:
-            raise UnparsableBugData("Value for key %r not found." % (key,))
-
-        return value_node.strip()
-
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
 

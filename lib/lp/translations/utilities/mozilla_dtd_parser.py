@@ -136,7 +136,7 @@ class DtdFile:
         try:
             content = content.decode('utf-8')
         except UnicodeDecodeError:
-            raise TranslationFormatInvalidInputError, (
+            raise TranslationFormatInvalidInputError(
                 'Content is not valid UTF-8 text')
 
         error_handler = DtdErrorHandler()

@@ -67,7 +67,7 @@ The FAQ is created and the browser displays the page for Sample Person.
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+faq/...'
     >>> print owner_browser.title
-    FAQ #12 : Questions : Mozilla Firefox
+    FAQ #... : Questions : Mozilla Firefox
 
     >>> content = find_main_content(owner_browser.contents)
     >>> extract_text(find_tag_by_id(content, 'faq-keywords'))

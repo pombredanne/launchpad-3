@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Jobs classes to update products and send notifications."""
@@ -321,6 +321,7 @@ class ProductNotificationJob(ProductJobDerived):
             'X-Launchpad-Project':
                 '%(product_displayname)s (%(product_name)s)' % message_data,
             'X-Launchpad-Message-Rationale': rationale,
+            'X-Launchpad-Message-For': self.product.owner.name,
             }
         if reply_to is not None:
             headers['Reply-To'] = reply_to

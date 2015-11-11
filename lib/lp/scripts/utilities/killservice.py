@@ -40,7 +40,7 @@ def main():
     if len(args) < 1:
         parser.error('No service name provided')
 
-    pids = [] # List of pids we tried to kill.
+    pids = []  # List of pids we tried to kill.
     services = args[:]
 
     # Mailman is special, but only stop it if it was launched.
@@ -125,7 +125,7 @@ def wait_for_pids(pids, wait, log):
     """
     wait_start = time.time()
     while len(pids) > 0 and time.time() < wait_start + wait:
-        for service, pid in pids[:]: # Copy pids because we mutate it.
+        for service, pid in pids[:]:  # Copy pids because we mutate it.
             if not process_exists(pid):
                 pids.remove((service, pid))
         time.sleep(0.1)

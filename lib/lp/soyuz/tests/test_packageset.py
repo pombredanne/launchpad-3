@@ -6,7 +6,6 @@
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.app.errors import NotFoundError
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus

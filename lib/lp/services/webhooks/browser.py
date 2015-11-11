@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from lazr.restful.interface import use_template
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.interface import Interface
 
@@ -28,7 +29,11 @@ from lp.services.webapp import (
     Navigation,
     stepthrough,
     )
-from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    get_batch_properties_for_json_cache,
+    StormRangeFactory,
+    )
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webhooks.interfaces import (
     IWebhook,
@@ -105,8 +110,8 @@ class WebhookBreadcrumb(Breadcrumb):
 
 
 class WebhookEditSchema(Interface):
-    # XXX wgrant 2015-08-04: Need custom widget for secret.
-    use_template(IWebhook, include=['delivery_url', 'event_types', 'active'])
+    use_template(
+        IWebhook, include=['delivery_url', 'event_types', 'active', 'secret'])
 
 
 class WebhookAddView(LaunchpadFormView):
@@ -122,7 +127,10 @@ class WebhookAddView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        return {'active': True}
+        return {
+            'active': True,
+            'event_types': self.context.default_webhook_event_types,
+            }
 
     @property
     def cancel_url(self):
@@ -132,7 +140,8 @@ class WebhookAddView(LaunchpadFormView):
     def new_action(self, action, data):
         webhook = self.context.newWebhook(
             registrant=self.user, delivery_url=data['delivery_url'],
-            event_types=data['event_types'], active=data['active'])
+            event_types=data['event_types'], active=data['active'],
+            secret=data['secret'])
         self.next_url = canonical_url(webhook)
 
 
@@ -141,7 +150,22 @@ class WebhookView(LaunchpadEditFormView):
     label = "Manage webhook"
 
     schema = WebhookEditSchema
+    # XXX wgrant 2015-08-04: Need custom widget for secret.
+    field_names = ['delivery_url', 'event_types', 'active']
     custom_widget('event_types', LabeledMultiCheckBoxWidget)
+
+    def initialize(self):
+        super(WebhookView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['deliveries'] = list(self.deliveries.batch)
+        cache.objects.update(
+            get_batch_properties_for_json_cache(self, self.deliveries))
+
+    @cachedproperty
+    def deliveries(self):
+        return BatchNavigator(
+            self.context.deliveries, self.request, hide_counts=True,
+            range_factory=StormRangeFactory(self.context.deliveries))
 
     @property
     def next_url(self):

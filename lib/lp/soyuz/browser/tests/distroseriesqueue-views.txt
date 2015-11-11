@@ -260,6 +260,7 @@ Now that "foo" is published in Hoary, we can upload a new build.
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
     >>> from lp.testing.gpgkeys import import_public_test_keys
+    >>> from lp.testing.pages import permissive_security_policy
     >>> import_public_test_keys()
     >>> universe = getUtility(IComponentSet)['universe']
     >>> trash = ComponentSelection(distroseries=hoary, component=universe)
@@ -271,7 +272,8 @@ Now that "foo" is published in Hoary, we can upload a new build.
     ...    datadir('suite/foo_1.0-2_multi_binary/foo_1.0-2_i386.changes'),
     ...    sync_policy, DevNullLogger())
     >>> foo_upload.process()
-    >>> foo_upload.do_accept()
+    >>> with permissive_security_policy("uploader"):
+    ...     foo_upload.do_accept()
     True
 
 Now we can examine the view, which provides an is_new method:

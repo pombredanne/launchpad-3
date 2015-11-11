@@ -12,6 +12,7 @@
     i18n_domain="launchpad">
 
     <include package=".browser" />
+    <include file="vocabularies.zcml" />
 
     <!-- Snap -->
     <class class="lp.snappy.model.snap.Snap">
@@ -26,7 +27,6 @@
             set_schema="lp.snappy.interfaces.snap.ISnapEditableAttributes" />
         <require
             permission="launchpad.Admin"
-            interface="lp.snappy.interfaces.snap.ISnapAdmin"
             set_schema="lp.snappy.interfaces.snap.ISnapAdminAttributes" />
     </class>
     <subscriber

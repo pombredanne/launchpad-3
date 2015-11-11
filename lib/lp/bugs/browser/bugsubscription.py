@@ -202,19 +202,14 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def _subscribers_for_current_user(self):
         """Return a dict of the subscribers for the current user."""
         persons_for_user = {}
-        person_count = 0
         bug = self.context.bug
         for person in bug.getSubscribersForPerson(self.user):
             if person.id not in persons_for_user:
                 persons_for_user[person.id] = person
-                person_count += 1
-
-        self._subscriber_count_for_current_user = person_count
         return persons_for_user.values()
 
     def initialize(self):
         """See `LaunchpadFormView`."""
-        self._subscriber_count_for_current_user = 0
         self._redirecting_to_bug_list = False
         super(BugSubscriptionSubscribeSelfView, self).initialize()
 

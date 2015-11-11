@@ -39,7 +39,16 @@ class TestGitRef(TestCaseWithFactory):
     def test_getMergeProposals(self):
         [target_ref] = self.factory.makeGitRefs()
         bmp = self.factory.makeBranchMergeProposalForGit(target_ref=target_ref)
+        self.factory.makeBranchMergeProposalForGit()
         self.assertEqual([bmp], list(target_ref.getMergeProposals()))
+
+    def test_getDependentMergeProposals(self):
+        [prerequisite_ref] = self.factory.makeGitRefs()
+        bmp = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=prerequisite_ref)
+        self.factory.makeBranchMergeProposalForGit()
+        self.assertEqual(
+            [bmp], list(prerequisite_ref.getDependentMergeProposals()))
 
     def test_implements_IInformationType(self):
         [ref] = self.factory.makeGitRefs()

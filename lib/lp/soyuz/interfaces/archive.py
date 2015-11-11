@@ -8,12 +8,14 @@ __metaclass__ = type
 __all__ = [
     'ALLOW_RELEASE_BUILDS',
     'AlreadySubscribed',
+    'ArchiveAlreadyDeleted',
     'ArchiveDependencyError',
     'ArchiveDisabled',
     'ArchiveNotPrivate',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
+    'CannotModifyArchiveProcessor',
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
@@ -59,6 +61,7 @@ from lazr.restful.declarations import (
     error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_factory_operation,
     export_operation_as,
     export_read_operation,
@@ -183,6 +186,11 @@ class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
 
 
+@error_status(httplib.BAD_REQUEST)
+class ArchiveAlreadyDeleted(Exception):
+    """Archive already deleted."""
+
+
 @error_status(httplib.FORBIDDEN)
 class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
@@ -289,6 +297,19 @@ class InvalidExternalDependencies(Exception):
         error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
         super(Exception, self).__init__(self, error_msg)
         self.errors = errors
+
+
+@error_status(httplib.FORBIDDEN)
+class CannotModifyArchiveProcessor(Exception):
+    """Tried to enable or disable a restricted processor on an archive."""
+
+    _fmt = (
+        '%(processor)s is restricted, and may only be enabled or disabled '
+        'by administrators.')
+
+    def __init__(self, processor):
+        super(CannotModifyArchiveProcessor, self).__init__(
+            self._fmt % {'processor': processor.name})
 
 
 class IArchivePublic(IPrivacy, IHasOwner):
@@ -406,6 +427,11 @@ class IArchiveSubscriberView(Interface):
         description=_("Whether or not to update the apt repository.  If "
             "disabled, nothing will be published.  If the archive is "
             "private then additionally no builds will be dispatched."))
+    can_be_published = Bool(
+        title=_("Can be published"), required=True,
+        description=_(
+            "True if this archive can be published, considering both the "
+            "explicit publish flag and any other constraints."))
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     signing_key = Object(
@@ -638,6 +664,20 @@ class IArchiveView(IHasBuildRecords):
             value_type=Reference(schema=IProcessor),
             readonly=True),
         as_of='devel')
+
+    available_processors = Attribute(
+        "The architectures that are available to be enabled or disabled for "
+        "this archive.")
+
+    @call_with(check_permissions=True, user=REQUEST_USER)
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True),
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setProcessors(processors, check_permissions=False, user=None):
+        """Set the architectures on which the archive can build."""
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -1963,6 +2003,9 @@ class IArchiveEdit(Interface):
     def disable():
         """Disable the archive."""
 
+    @export_destructor_operation()
+    @call_with(deleted_by=REQUEST_USER)
+    @operation_for_version('devel')
     def delete(deleted_by):
         """Delete this archive.
 
@@ -2034,15 +2077,6 @@ class IArchiveEdit(Interface):
 
 class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
-
-    @operation_parameters(
-        processors=List(
-            value_type=Reference(schema=IProcessor), required=True),
-    )
-    @export_write_operation()
-    @operation_for_version('devel')
-    def setProcessors(processors):
-        """Set the architectures on which the archive can build."""
 
     @operation_parameters(
         processor=Reference(schema=IProcessor, required=True),

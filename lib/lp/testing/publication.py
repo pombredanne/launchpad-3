@@ -32,6 +32,7 @@ from lp.services.webapp.interaction import (
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.servers import ProtocolErrorPublication
 
+
 # Defines an helper function that returns the appropriate
 # IRequest and IPublication.
 def get_request_and_publication(host='localhost', port=None,

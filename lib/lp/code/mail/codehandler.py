@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import CodeReviewVote
 from lp.code.errors import UserNotBranchReviewer
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
@@ -53,10 +54,6 @@ class InvalidBranchMergeProposalAddress(BadBranchMergeProposalAddress):
 
 class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
     """The BranchMergeProposal specified by the address does not exist."""
-
-
-class InvalidVoteString(Exception):
-    """The user-supplied vote is not an acceptable value."""
 
 
 class CodeReviewEmailCommandExecutionContext:
@@ -262,12 +259,13 @@ class CodeHandler:
     def processCommands(self, context, commands):
         """Process the various merge proposal commands against the context."""
         processing_errors = []
-
-        for command in commands:
-            try:
-                command.execute(context)
-            except EmailProcessingError as error:
-                processing_errors.append((error, command))
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(
+                context.merge_proposal):
+            for command in commands:
+                try:
+                    command.execute(context)
+                except EmailProcessingError as error:
+                    processing_errors.append((error, command))
 
         if len(processing_errors) > 0:
             errors, commands = zip(*processing_errors)

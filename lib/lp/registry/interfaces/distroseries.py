@@ -185,10 +185,12 @@ class IDistroSeriesPublic(
             title=_("Name"), required=True,
             description=_("The name of this series."),
             constraint=name_validator))
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_("Display name"), required=True,
-            description=_("The series displayname.")))
+            description=_("The series displayname.")),
+        exported_as="displayname")
+    displayname = Attribute("Display name (deprecated)")
     fullseriesname = exported(
         TextLine(
             title=_("Series full name"), required=False,

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchNamespace`."""
@@ -157,6 +157,7 @@ class _BaseBranchNamespace:
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
+        branch._reconcileAccess()
 
         # The owner of the branch should also be automatically subscribed in
         # order for them to get code review notifications.  The default
@@ -168,8 +169,6 @@ class _BaseBranchNamespace:
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL,
             registrant)
-
-        branch._reconcileAccess()
 
         notify(ObjectCreatedEvent(branch))
         return branch

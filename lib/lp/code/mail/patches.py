@@ -360,6 +360,7 @@ def iter_file_patch(iter_lines, allow_dirty=False, keep_dirty=False):
     dirty_head = []
     orig_range = 0
     beginning = True
+    in_git_patch = False
 
     dirty_headers = ('=== ', 'diff ', 'index ')
     for line in iter_lines:
@@ -372,7 +373,16 @@ def iter_file_patch(iter_lines, allow_dirty=False, keep_dirty=False):
                     dirty_head = []
                 else:
                     yield saved_lines
+                in_git_patch = False
                 saved_lines = []
+            if line.startswith('diff --git'):
+                in_git_patch = True
+            dirty_head.append(line)
+            continue
+        if in_git_patch and line and line[0].islower():
+            # Extended header line in a git diff.  All extended header lines
+            # currently start with a lower-case character, and nothing else
+            # in the patch before the next "diff" header line can do so.
             dirty_head.append(line)
             continue
         if line.startswith('*** '):
@@ -395,6 +405,7 @@ def iter_file_patch(iter_lines, allow_dirty=False, keep_dirty=False):
                     dirty_head = []
                 else:
                     yield saved_lines
+                in_git_patch = False
             saved_lines = []
         elif line.startswith('@@'):
             hunk = hunk_from_header(line)

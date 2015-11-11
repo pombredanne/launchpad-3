@@ -241,7 +241,8 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         """Search for a bug with 'term_format_string', test if we redirect."""
         bug = self.factory.makeBug()
         login_person(bug.owner)
-        default_bugtask_url = canonical_url(bug.default_bugtask, rootsite='bugs')
+        default_bugtask_url = canonical_url(
+            bug.default_bugtask, rootsite='bugs')
 
         browser = self.getUserBrowser("http://bugs.launchpad.dev/")
         input_field = browser.getControl(name='field.searchtext')
@@ -261,7 +262,6 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
 
     def test_doesnt_redirect_to_bug_from_search_form_with_multiple_terms(self):
         self.assertSearchTermRedirects("#{} other terms", False)
-
 
 
 class BugTargetTestCase(TestCaseWithFactory):

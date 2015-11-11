@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
@@ -16,6 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.interfaces.archivesigningkey import IArchiveSigningKey
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import Publisher
 from lp.archivepublisher.scripts.publishdistro import PublishDistro
@@ -39,6 +40,8 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import KeyServerTac
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
@@ -195,6 +198,24 @@ class TestPublishDistro(TestNativePublishingBase):
             os.path.join("%s" % distsroot, distroseries, 'Release'))
         shutil.rmtree(tmp_path)
 
+    def setUpRequireSigningKeys(self):
+        config.push('ppa-require-signing-keys', """
+            [personalpackagearchive]
+            require_signing_keys: true
+            """)
+        self.addCleanup(config.pop, 'ppa-require-signing-keys')
+
+    def testForPPAWithoutSigningKey(self):
+        """publish-distro skips PPAs that do not yet have a signing key."""
+        self.setUpRequireSigningKeys()
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        pub_source = self.getPubSource(archive=cprov.archive)
+        removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
+        self.layer.txn.commit()
+        self.runPublishDistro(['--ppa'])
+        pub_source.sync()
+        self.assertEqual(PackagePublishingStatus.PENDING, pub_source.status)
+
     def testForPPA(self):
         """Try to run publish-distro in PPA mode.
 
@@ -218,6 +239,14 @@ class TestPublishDistro(TestNativePublishingBase):
         naked_archive.distribution = self.ubuntutest
         naked_archive = removeSecurityProxy(name16.archive)
         naked_archive.distribution = self.ubuntutest
+
+        self.setUpRequireSigningKeys()
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
+        name16.archive.signing_key = cprov.archive.signing_key
 
         self.layer.txn.commit()
 
@@ -260,6 +289,13 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source = self.getPubSource(
             sourcename='baz', filecontent='baz', archive=private_ppa)
         self.layer.txn.commit()
+
+        self.setUpRequireSigningKeys()
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        IArchiveSigningKey(private_ppa).setSigningKey(key_path)
 
         # Try a plain PPA run, to ensure the private one is NOT published.
         self.runPublishDistro(['--ppa'])
@@ -358,6 +394,7 @@ class FakeArchive:
     """A very simple fake `Archive`."""
     def __init__(self, purpose=ArchivePurpose.PRIMARY):
         self.publish = True
+        self.can_be_published = True
         self.purpose = purpose
         self.status = ArchiveStatus.ACTIVE
 

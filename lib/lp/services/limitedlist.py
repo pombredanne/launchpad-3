@@ -6,6 +6,7 @@ __all__ = [
     'LimitedList',
     ]
 
+
 class LimitedList(list):
     """A mutable sequence that takes a limited number of elements."""
 

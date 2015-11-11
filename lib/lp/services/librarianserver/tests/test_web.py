@@ -71,7 +71,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         for count in range(10):
             # Upload a file.  This should work without any exceptions being
             # thrown.
-            sampleData = 'x' + ('blah' * (count%5))
+            sampleData = 'x' + ('blah' * (count % 5))
             fileAlias = client.addFile('sample', len(sampleData),
                                                  StringIO(sampleData),
                                                  contentType='text/plain')
@@ -177,7 +177,7 @@ class LibrarianWebTestCase(unittest.TestCase):
 
         # Change the aliasid and assert we get a 404
         self.failUnless(str(aid) in url)
-        bad_id_url = uri_path_replace(url, str(aid), str(aid+1))
+        bad_id_url = uri_path_replace(url, str(aid), str(aid + 1))
         self.require404(bad_id_url)
 
         # Change the filename and assert we get a 404
@@ -243,7 +243,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         # restricted files are served from.
         client = LibrarianClient()
         fileAlias = client.addFile(
-            'sample', 12, StringIO('a'*12), contentType='text/plain')
+            'sample', 12, StringIO('a' * 12), contentType='text/plain')
         # Note: We're deliberately using the wrong url here: we should be
         # passing secure=True to getURLForAlias, but to use the returned URL
         # we would need a wildcard DNS facility patched into urlopen; instead
@@ -253,9 +253,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         url = client.getURLForAlias(fileAlias)
         # Now that we have a url which talks to the public librarian, make the
         # file restricted.
-        IMasterStore(LibraryFileAlias).find(LibraryFileAlias,
-            LibraryFileAlias.id==fileAlias).set(
-            LibraryFileAlias.restricted==True)
+        IMasterStore(LibraryFileAlias).find(
+            LibraryFileAlias, LibraryFileAlias.id == fileAlias).set(
+                restricted=True)
         self.commit()
         return fileAlias, url
 
@@ -263,9 +263,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         # IFF there is a .restricted. in the host, then the library file alias
         # in the subdomain must match that in the path.
         client = LibrarianClient()
-        fileAlias = client.addFile('sample', 12, StringIO('a'*12),
+        fileAlias = client.addFile('sample', 12, StringIO('a' * 12),
             contentType='text/plain')
-        fileAlias2 = client.addFile('sample', 12, StringIO('b'*12),
+        fileAlias2 = client.addFile('sample', 12, StringIO('b' * 12),
             contentType='text/plain')
         self.commit()
         url = client.getURLForAlias(fileAlias)
@@ -329,7 +329,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         # Now we should be able to access the file.
         fileObj = urlopen(url)
         try:
-            self.assertEqual("a"*12, fileObj.read())
+            self.assertEqual("a" * 12, fileObj.read())
         finally:
             fileObj.close()
 

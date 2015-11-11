@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -177,6 +177,7 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     IMultiFacetedBreadcrumb,
     )
+from lp.snappy.browser.hassnaps import HasSnapsMenuMixin
 
 
 @implementer(IObjectPrivacy)
@@ -233,7 +234,7 @@ class TeamFormMixin:
     * The user has a current commercial subscription.
     """
     field_names = [
-        "name", "visibility", "displayname",
+        "name", "visibility", "display_name",
         "description", "membership_policy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
@@ -376,7 +377,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 class TeamAdministerView(PersonAdministerView):
     """A view to administer teams on behalf of users."""
     label = "Review team"
-    default_field_names = ['name', 'displayname']
+    default_field_names = ['name', 'display_name']
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -1021,13 +1022,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         failure=LaunchpadFormView.ajax_failure_handler)
     def create_action(self, action, data):
         name = data.get('name')
-        displayname = data.get('displayname')
+        display_name = data.get('display_name')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, None, membership_policy,
+            teamowner, name, display_name, None, membership_policy,
             defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
@@ -1067,7 +1068,7 @@ class SimpleTeamAddView(TeamAddView):
     next_url = None
 
     field_names = [
-        "name", "displayname", "visibility", "membership_policy",
+        "name", "display_name", "visibility", "membership_policy",
         "teamowner"]
 
     # Use a dropdown - Javascript will be used to change this to a choice
@@ -1614,7 +1615,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         return Link(target, text, icon='team', enabled=enabled)
 
 
-class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin,
+                       HasSnapsMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
@@ -1643,6 +1645,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'ppa',
         'related_software_summary',
         'view_recipes',
+        'view_snaps',
         'subscriptions',
         'structural_subscriptions',
         'upcomingwork',
@@ -2065,9 +2068,10 @@ class TeamReassignmentView(ObjectReassignmentView):
             else:
                 relationship = 'an indirect member'
                 full_path = [self.context] + path
-		path_template = '&rArr;'.join(['%s'] * len(full_path))
+                path_template = '&rArr;'.join(['%s'] * len(full_path))
                 path_string = structured(
-                    '(%s)' % path_template, *[team.displayname for team in full_path])
+                    '(%s)' % path_template,
+                    *[team.displayname for team in full_path])
             error = structured(
                 'Circular team memberships are not allowed. '
                 '%(new)s cannot be the new team owner, since %(context)s '

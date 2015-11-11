@@ -1,5 +1,5 @@
-Hello %(recipient_name)s,
+Hello %(recipient)s,
 
-%(reviewer_name)s has declined the invitation to make %(member_name)s a member of %(team_name)s.
+%(reviewer)s has declined the invitation to make %(member)s a member of %(team)s.
 <%(team_url)s>
 %(comment)s

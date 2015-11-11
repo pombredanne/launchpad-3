@@ -52,10 +52,10 @@ displayed as the bug report).
     text/plain)
     >>> link = browser.getLink('sample data')
     >>> print link.url
-    http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
+    http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/.../+files/test.txt
     >>> print comment_0.find('a', text='Edit').parent
     <a class="sprite edit action-icon"
-       href="/jokosher/+bug/11/+attachment/1">Edit</a>
+       href="/jokosher/+bug/11/+attachment/...">Edit</a>
 
 
 Patch attachments are shown before non-patch attachments

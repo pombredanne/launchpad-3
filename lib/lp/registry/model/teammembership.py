@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -24,7 +24,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implementer
 
-from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import TeamMembershipRenewalPolicy
 from lp.registry.errors import (
@@ -32,12 +31,13 @@ from lp.registry.errors import (
     UserCannotChangeMembershipSilently,
     )
 from lp.registry.interfaces.person import (
-    IPersonSet,
     validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.persontransferjob import (
+    IExpiringMembershipNotificationJobSource,
     IMembershipNotificationJobSource,
+    ISelfRenewalNotificationJobSource,
     )
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import (
@@ -52,7 +52,6 @@ from lp.registry.interfaces.teammembership import (
     ITeamParticipation,
     TeamMembershipStatus,
     )
-from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
@@ -63,16 +62,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.mail.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from lp.services.mail.mailwrapper import MailWrapper
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
-from lp.services.webapp import canonical_url
 
 
 @implementer(ITeamMembership)
@@ -132,26 +121,8 @@ class TeamMembership(SQLBase):
 
     def sendSelfRenewalNotification(self):
         """See `ITeamMembership`."""
-        team = self.team
-        member = self.person
-        assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
-
-        from_addr = format_address(
-            team.displayname, config.canonical.noreply_from_address)
-        replacements = {'member_name': member.unique_displayname,
-                        'team_name': team.unique_displayname,
-                        'team_url': canonical_url(team),
-                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
-        subject = '%s extended their membership' % member.name
-        template = get_email_template(
-            'membership-member-renewed.txt', app='registry')
-        admins_addrs = self.team.getTeamAdminsEmailAddresses()
-        for address in admins_addrs:
-            recipient = getUtility(IPersonSet).getByEmail(address)
-            replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(
-                template % replacements, force_wrap=True)
-            simple_sendmail(from_addr, address, subject, msg)
+        getUtility(ISelfRenewalNotificationJobSource).create(
+            self.person, self.team, self.dateexpires)
 
     def canChangeStatusSilently(self, user):
         """Ensure that the user is in the Launchpad Administrators group.
@@ -194,68 +165,8 @@ class TeamMembership(SQLBase):
             # there is nothing to do. The member will have received emails
             # from previous calls by flag-expired-memberships.py
             return
-        member = self.person
-        team = self.team
-        if member.is_team:
-            recipient = member.teamowner
-            templatename = 'membership-expiration-warning-bulk.txt'
-            subject = '%s will expire soon from %s' % (member.name, team.name)
-        else:
-            recipient = member
-            templatename = 'membership-expiration-warning-personal.txt'
-            subject = 'Your membership in %s is about to expire' % team.name
-
-        if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
-            how_to_renew = (
-                "If you want, you can renew this membership at\n"
-                "<%s/+expiringmembership/%s>"
-                % (canonical_url(member), team.name))
-        elif not self.canChangeExpirationDate(recipient):
-            admins_names = []
-            admins = team.getDirectAdministrators()
-            assert admins.count() >= 1
-            if admins.count() == 1:
-                admin = admins[0]
-                how_to_renew = (
-                    "To prevent this membership from expiring, you should "
-                    "contact the\nteam's administrator, %s.\n<%s>"
-                    % (admin.unique_displayname, canonical_url(admin)))
-            else:
-                for admin in admins:
-                    admins_names.append(
-                        "%s <%s>" % (admin.unique_displayname,
-                                        canonical_url(admin)))
-
-                how_to_renew = (
-                    "To prevent this membership from expiring, you should "
-                    "get in touch\nwith one of the team's administrators:\n")
-                how_to_renew += "\n".join(admins_names)
-        else:
-            how_to_renew = (
-                "To stay a member of this team you should extend your "
-                "membership at\n<%s/+member/%s>"
-                % (canonical_url(team), member.name))
-
-        to_addrs = get_contact_email_addresses(recipient)
-        if len(to_addrs) == 0:
-            # The user does not have a preferred email address, he was
-            # probably suspended.
-            return
-        formatter = DurationFormatterAPI(
-            self.dateexpires - datetime.now(pytz.timezone('UTC')))
-        replacements = {
-            'recipient_name': recipient.displayname,
-            'member_name': member.unique_displayname,
-            'team_url': canonical_url(team),
-            'how_to_renew': how_to_renew,
-            'team_name': team.unique_displayname,
-            'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
-            'approximate_duration': formatter.approximateduration()}
-
-        msg = get_email_template(templatename, app='registry') % replacements
-        from_addr = format_address(
-            team.displayname, config.canonical.noreply_from_address)
-        simple_sendmail(from_addr, to_addrs, subject, msg)
+        getUtility(IExpiringMembershipNotificationJobSource).create(
+            self.person, self.team, self.dateexpires)
 
     def setStatus(self, status, user, comment=None, silent=False):
         """See `ITeamMembership`."""

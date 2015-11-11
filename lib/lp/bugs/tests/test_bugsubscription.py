@@ -13,9 +13,9 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     launchpadlib_for,
     person_logged_in,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
@@ -120,7 +120,7 @@ class TestBugSubscription(TestCaseWithFactory):
                 status=TeamMembershipStatus.ADMIN)
             self.bug.subscribe(team_2, team_2.teamowner)
 
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         with person_logged_in(self.subscriber):

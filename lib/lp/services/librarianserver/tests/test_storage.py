@@ -31,13 +31,17 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.committed = self.rolledback = False
         self.orig_commit = self.store.commit
         self.orig_rollback = self.store.rollback
+
         def commit():
             self.committed = True
             self.orig_commit()
+
         self.store.commit = commit
+
         def rollback():
             self.rolledback = True
             self.orig_rollback()
+
         self.store.rollback = rollback
 
     def tearDown(self):

@@ -43,4 +43,3 @@ def mirror(logger, manager):
     deferred.addCallback(recordSuccess)
     deferred.addBoth(unlock)
     return deferred
-

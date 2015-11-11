@@ -51,12 +51,16 @@ from lp.code.errors import (
     GitRepositoryExists,
     GitTargetError,
     )
+from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.githosting import IGitHostingClient
-from lp.code.interfaces.gitjob import IGitRefScanJobSource
+from lp.code.interfaces.gitjob import (
+    IGitRefScanJobSource,
+    IGitRepositoryModifiedMailJobSource,
+    )
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     IGitNamespacePolicy,
@@ -65,6 +69,7 @@ from lp.code.interfaces.gitnamespace import (
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     IGitRepositorySet,
+    IGitRepositoryView,
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchmergeproposal import BranchMergeProposal
@@ -129,8 +134,10 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import DoesNotSnapshot
 from lp.testing.pages import webservice_for_person
 
 
@@ -142,6 +149,12 @@ class TestGitRepository(TestCaseWithFactory):
     def test_implements_IGitRepository(self):
         repository = self.factory.makeGitRepository()
         verifyObject(IGitRepository, repository)
+
+    def test_avoids_large_snapshots(self):
+        large_properties = ['refs', 'branches']
+        self.assertThat(
+            self.factory.makeGitRepository(),
+            DoesNotSnapshot(large_properties, IGitRepositoryView))
 
     def test_unique_name_project(self):
         project = self.factory.makeProduct()
@@ -672,7 +685,7 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
 
 class TestGitRepositoryModifications(TestCaseWithFactory):
-    """Tests for Git repository modification notifications."""
+    """Tests for Git repository modifications."""
 
     layer = DatabaseFunctionalLayer
 
@@ -729,6 +742,12 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
+
+class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
+    """Tests for Git repository modification notifications."""
+
+    layer = ZopelessDatabaseLayer
+
     def test_sends_notifications(self):
         # Attribute modifications send mail to subscribers.
         self.assertEqual(0, len(stub.test_emails))
@@ -746,7 +765,9 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
             notify(ObjectModifiedEvent(
                 repository, repository_before_modification, ["name"],
                 user=repository.owner))
-        transaction.commit()
+        with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
+            JobRunner.fromReady(
+                getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
         self.assertEqual(1, len(stub.test_emails))
         message = email.message_from_string(stub.test_emails[0][2])
         body = message.get_payload(decode=True)
@@ -1852,7 +1873,7 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
         hosting_client.detectMerges = FakeMethod(
             result={source_1.commit_sha1: u"0" * 40})
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
-        repository.createOrUpdateRefs({
+        refs_info = {
             u"refs/heads/target-1": {
                 u"sha1": u"0" * 40,
                 u"type": GitObjectType.COMMIT,
@@ -1860,8 +1881,12 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             u"refs/heads/target-2": {
                 u"sha1": u"1" * 40,
                 u"type": GitObjectType.COMMIT,
-                }
-            })
+                },
+            }
+        expected_events = [
+            ObjectModifiedEvent, ObjectModifiedEvent, GitRefsUpdatedEvent]
+        _, events = self.assertNotifies(
+            expected_events, True, repository.createOrUpdateRefs, refs_info)
         expected_args = [
             (repository.getInternalPath(), target_1.commit_sha1,
              set([source_1.commit_sha1, source_2.commit_sha1])),
@@ -1876,6 +1901,15 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             BranchMergeProposalStatus.WORK_IN_PROGRESS, bmp2.queue_status)
         self.assertEqual(BranchMergeProposalStatus.MERGED, bmp3.queue_status)
         self.assertEqual(u"0" * 40, bmp3.merged_revision_id)
+        # The two ObjectModifiedEvents indicate the queue_status changes.
+        self.assertContentEqual(
+            [bmp1, bmp3], [event.object for event in events[:2]])
+        self.assertContentEqual(
+            [(BranchMergeProposalStatus.WORK_IN_PROGRESS,
+              BranchMergeProposalStatus.MERGED)],
+            set((event.object_before_modification.queue_status,
+                 event.object.queue_status)
+                for event in events[:2]))
 
 
 class TestGitRepositorySet(TestCaseWithFactory):

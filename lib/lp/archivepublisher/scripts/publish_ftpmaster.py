@@ -18,7 +18,10 @@ from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
-from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
+from lp.archivepublisher.publishing import (
+    cannot_modify_suite,
+    GLOBAL_PUBLISHER_LOCK,
+    )
 from lp.archivepublisher.scripts.processaccepted import ProcessAccepted
 from lp.archivepublisher.scripts.publishdistro import PublishDistro
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -600,6 +603,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         for series in distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
+                if cannot_modify_suite(archive, series, pocket):
+                    continue
                 updated = False
                 for arch in series.enabled_architectures:
                     if self.updateContentsFile(

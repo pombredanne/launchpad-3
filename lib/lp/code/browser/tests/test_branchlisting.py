@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -44,12 +44,15 @@ from lp.registry.model.product import Product
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
+    feature_flags,
     login_person,
     normalize_whitespace,
     person_logged_in,
+    set_feature_flag,
     TestCase,
     TestCaseWithFactory,
     time_counter,
@@ -84,12 +87,6 @@ class TestListingToSortOrder(TestCase):
         Asc(Owner.name),
         Asc(Branch.name),
         ]
-
-    def assertColumnNotReferenced(self, column, order_by_list):
-        """Ensure that column is not referenced in any way in order_by_list.
-        """
-        self.failIf(column in order_by_list or
-                    ('-' + column) in order_by_list)
 
     def assertSortsEqual(self, sort_one, sort_two):
         """Assert that one list of sort specs is equal to another."""
@@ -382,6 +379,23 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
         else:
             self.assertThat(page, Not(recipes_matcher))
 
+    def test_branch_list_snaps_link(self):
+        # The link to the snap packages is displayed if the appropriate
+        # feature flag is set.
+        snaps_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Snap packages link', 'a', text='Snap packages',
+                attrs={'href': self.base_url + '/+snaps'}))
+        page = self.get_branch_list_page()
+        self.assertThat(page, Not(snaps_matcher))
+        with feature_flags():
+            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
+            page = self.get_branch_list_page()
+            if IPerson.providedBy(self.default_target):
+                self.assertThat(page, snaps_matcher)
+            else:
+                self.assertThat(page, Not(snaps_matcher))
+
 
 class TestSimplifiedPersonProductBranchesView(
     TestSimplifiedPersonBranchesView):
@@ -603,6 +617,16 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         self.assertThat(
             series_branches_last_row.text_content(),
             DocTestMatches("%s ... ago" % branch.displayname))
+
+    def test_git_link(self):
+        page = create_initialized_view(
+            self.distro_source_package, name='+branches', rootsite='code')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(target=self.distro_source_package)
+        page = create_initialized_view(
+            self.distro_source_package, name='+branches', rootsite='code')()
+        self.assertIn('View Git repositories', page)
 
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):

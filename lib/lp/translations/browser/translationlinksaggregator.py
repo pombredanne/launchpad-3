@@ -116,7 +116,7 @@ class TranslationLinksAggregator:
         products = set(series.product for series in productseries)
 
         sourcepackagenames = set(
-            template.sourcepackagename 
+            template.sourcepackagename
             for template in templates
             if template.sourcepackagename)
 
@@ -171,8 +171,8 @@ class TranslationLinksAggregator:
     def aggregate(self, sheets):
         """Aggregate `sheets` into a list of translation target descriptions.
 
-        Targets are aggregated into "sensible" chunks first.c
-        
+        Targets are aggregated into "sensible" chunks first.
+
         :return: A list of whatever the implementation for `describe`
             returns for the sensible chunks.
         """

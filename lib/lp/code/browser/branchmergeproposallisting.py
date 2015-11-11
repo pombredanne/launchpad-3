@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ActiveReviewsView',
     'BranchActiveReviewsView',
+    'BranchDependentMergesView',
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
@@ -264,6 +265,21 @@ class BranchMergeProposalListingView(LaunchpadFormView):
                 self.context.displayname, self.status_value.title)
 
 
+class BranchDependentMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals that list this branch as a prerequisite."""
+
+    page_title = 'Dependent merge proposals'
+
+    @property
+    def label(self):
+        return "Merge proposals dependent on %s" % self.context.displayname
+
+    def getVisibleProposalsForUser(self):
+        """See `BranchMergeProposalListingView`."""
+        return self.context.getDependentMergeProposals(
+            self.status_filter, self.user, eager_load=True)
+
+
 class ActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for a context that are needing review."""
 
@@ -373,11 +389,11 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         reviewer = self._getReviewer()
         headings = {
             self.APPROVED: 'Approved reviews ready to land',
-            self.TO_DO: 'Reviews I have to do',
-            self.ARE_DOING: 'Reviews I am doing',
-            self.CAN_DO: 'Requested reviews I can do',
-            self.MINE: 'Reviews I am waiting on',
-            self.OTHER: 'Other reviews I am not actively reviewing',
+            self.TO_DO: 'Reviews you have to do',
+            self.ARE_DOING: 'Reviews you are doing',
+            self.CAN_DO: 'Requested reviews you can do',
+            self.MINE: 'Reviews you are waiting on',
+            self.OTHER: 'Other reviews you are not actively reviewing',
             self.WIP: 'Work in progress'}
         if reviewer is None:
             # If there is no reviewer, then there will be no TO_DO, ARE_DOING,

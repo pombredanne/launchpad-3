@@ -63,4 +63,3 @@ class SpecDependencyIsAlsoRemoval:
     @property
     def dependency(self):
         return self.specdep.dependency
-

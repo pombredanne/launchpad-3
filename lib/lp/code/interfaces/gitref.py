@@ -107,6 +107,9 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
         title=_("Display name"), required=True, readonly=True,
         description=_("Display name of the reference."))
 
+    displayname = Attribute(
+        "Copy of display_name for IHasMergeProposals views.")
+
     commit_message_first_line = TextLine(
         title=_("The first line of the commit message."),
         required=True, readonly=True)
@@ -301,6 +304,10 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
     def getMergeProposals(status=None, visible_by_user=None,
                           merged_revision_ids=None, eager_load=False):
         """Return matching BranchMergeProposals."""
+
+    def getDependentMergeProposals(status=None, visible_by_user=None,
+                                   eager_load=False):
+        """Return BranchMergeProposals dependent on merging this reference."""
 
     def getMergeProposalByID(id):
         """Return this reference's merge proposal with this id, or None."""

@@ -50,7 +50,7 @@ from lp.services.webapp.vhosts import allvhosts
 
 
 SUPPORTED_FEEDS = ('.atom', '.html')
-MINUTES = 60 # Seconds in a minute.
+MINUTES = 60  # Seconds in a minute.
 
 
 @implementer(IFeed)
@@ -179,7 +179,7 @@ class FeedBase(LaunchpadView):
             return utc_now()
         last_modified = sorted_items[0].last_modified
         if last_modified is None:
-            raise AssertionError, 'All feed entries require a date updated.'
+            raise AssertionError('All feed entries require a date updated.')
         return last_modified
 
     def render(self):
@@ -247,7 +247,7 @@ class FeedEntry:
         self.date_updated = date_updated
         self.date_published = date_published
         if date_updated is None:
-            raise AssertionError, 'date_updated is required by RFC 4287'
+            raise AssertionError('date_updated is required by RFC 4287')
         if authors is None:
             authors = []
         self.authors = authors

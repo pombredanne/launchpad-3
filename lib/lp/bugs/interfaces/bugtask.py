@@ -1060,7 +1060,7 @@ class IAddBugTaskWithProductCreationForm(ILinkPackaging):
     bug_url = StrippedTextLine(
         title=_('Bug URL'), required=True, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
-    displayname = TextLine(title=_('Project name'))
+    display_name = TextLine(title=_('Project name'))
     name = ProductNameField(
         title=_('Project ID'), constraint=name_validator, required=True,
         description=_(

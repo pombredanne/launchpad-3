@@ -131,11 +131,11 @@ class TranslationGroup(SQLBase):
         found = len(projects)
         if found < goal:
             projects.extend(
-                list(self.projects[:goal-found]))
+                list(self.projects[:goal - found]))
             found = len(projects)
         if found < goal:
             projects.extend(
-                list(self.products[:goal-found]))
+                list(self.products[:goal - found]))
         return projects
 
     @property
@@ -203,7 +203,7 @@ class TranslationGroup(SQLBase):
         product_data = ISlaveStore(Product).using(*using).find(
             columns,
             Product.translationgroupID == self.id, Product.active == True)
-        product_data = product_data.order_by(Product.displayname)
+        product_data = product_data.order_by(Product.display_name)
 
         return [
             ProductWithLicenses(product, tuple(licenses))
@@ -230,7 +230,7 @@ class TranslationGroup(SQLBase):
         project_data = ISlaveStore(ProjectGroup).using(*using).find(
             tables,
             ProjectGroup.translationgroupID == self.id,
-            ProjectGroup.active == True).order_by(ProjectGroup.displayname)
+            ProjectGroup.active == True).order_by(ProjectGroup.display_name)
 
         return DecoratedResultSet(project_data, operator.itemgetter(0))
 
@@ -254,7 +254,7 @@ class TranslationGroup(SQLBase):
             )
         distro_data = ISlaveStore(Distribution).using(*using).find(
             tables, Distribution.translationgroupID == self.id).order_by(
-            Distribution.displayname)
+            Distribution.display_name)
 
         return DecoratedResultSet(distro_data, operator.itemgetter(0))
 

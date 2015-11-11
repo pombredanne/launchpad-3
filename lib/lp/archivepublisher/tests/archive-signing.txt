@@ -15,9 +15,11 @@ fingerprint. E.g.: ABCDEF0123456789ABCDDCBA0000111112345678.key
 Once the signing key is available, the subsequent publications will
 result in a signed repository.
 
-The signed repository will contained a detached signature of the
-top-level 'Release' file, named 'Release.gpg' and a ASCII-armoded
-export of the public GPG key (name 'key.gpg')
+The signed repository will contain a detached signature of the
+top-level 'Release' file, named 'Release.gpg' and a ASCII-armored
+export of the public GPG key (name 'key.gpg'). A clearsigned
+'InRelease' file is also created, reducing the risk of clients
+acquiring skewed copies of the content and its signature.
 
 We will set up and use the test-keyserver.
 
@@ -338,7 +340,7 @@ When the signing key for the named-ppa is requested, it is generated
 in the default PPA context then propagated to the named-ppa. The key is
 named after the user, even if the default PPA name is something different.
 
-    >>> cprov.displayname = "Not Celso Providelo"
+    >>> cprov.display_name = "Not Celso Providelo"
     >>> named_ppa_signing_key = IArchiveSigningKey(named_ppa)
     >>> named_ppa_signing_key.generateSigningKey()
     Generating: Launchpad PPA for Not Celso Providelo
@@ -377,7 +379,7 @@ the expected file.
     /var/tmp/ppa.test/cprov/ppa/ubuntutest/dists/hoary/Release
 
 It produces a detached signature for the repository Release current
-file contents.
+file contents, and a clearsigned InRelease file.
 
     >>> from lp.archivepublisher.config import getPubConfig
     >>> archive_root = getPubConfig(cprov.archive).archiveroot
@@ -393,6 +395,15 @@ file contents.
     >>> archive_signing_key.signRepository(test_suite)
 
     >>> print open(release_path + '.gpg').read()
+    -----BEGIN PGP SIGNATURE-----
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+
+    >>> inline_release_path = os.path.join(suite_path, 'InRelease')
+    >>> print open(inline_release_path).read()
+    -----BEGIN PGP SIGNED MESSAGE-----
+    ...
     -----BEGIN PGP SIGNATURE-----
     ...
     -----END PGP SIGNATURE-----
@@ -414,6 +425,14 @@ keyserver.
     ...     archive_signing_key.archive.signing_key.fingerprint)
     >>> signature.fingerprint == expected_fingerprint
     True
+
+    >>> inline_signature = gpghandler.getVerifiedSignature(
+    ...     content=open(inline_release_path).read())
+    >>> inline_signature.fingerprint == expected_fingerprint
+    True
+    >>> print inline_signature.plain_data
+    This is a fake release file.
+    <BLANKLINE>
 
 Finally, if we try to sign a repository for which the archive doesn't
 have a 'signing_key' set,  it raises an error.

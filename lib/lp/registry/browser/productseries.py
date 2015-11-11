@@ -417,7 +417,8 @@ class ProductSeriesView(
     @property
     def long_bzr_identity(self):
         """The bzr identity of the branch including the unique_name."""
-        return self.context.branch.branchIdentities()[-1][0]
+        lp_prefix = config.codehosting.bzr_lp_prefix
+        return lp_prefix + self.context.branch.getBranchIdentities()[-1][0]
 
     @property
     def is_obsolete(self):

@@ -94,6 +94,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
             'private',
             formatter.global_css())
 
+
 class TestPillarFormatterAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

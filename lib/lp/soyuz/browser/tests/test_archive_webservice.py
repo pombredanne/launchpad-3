@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,7 +12,7 @@ from lazr.restfulclient.errors import (
     Unauthorized as LRUnauthorized,
     )
 from testtools import ExpectedException
-from testtools.matchers import Equals
+from testtools.matchers import MatchesStructure
 import transaction
 from zope.component import getUtility
 
@@ -105,7 +105,41 @@ class TestArchiveWebservice(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_permissions, create_permission, 1)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_delete(self):
+        with admin_logged_in():
+            ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+            ppa_url = api_url(ppa)
+            ws = webservice_for_person(
+                ppa.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        # DELETE on an archive resource doesn't actually remove it
+        # immediately, but it asks the publisher to delete it later.
+        self.assertEqual(
+            'Active',
+            ws.get(ppa_url, api_version='devel').jsonBody()['status'])
+        self.assertEqual(200, ws.delete(ppa_url, api_version='devel').status)
+        self.assertEqual(
+            'Deleting',
+            ws.get(ppa_url, api_version='devel').jsonBody()['status'])
+
+        # Deleting the PPA again fails.
+        self.assertThat(
+            ws.delete(ppa_url, api_version='devel'),
+            MatchesStructure.byEquality(
+                status=400, body="Archive already deleted."))
+
+    def test_delete_is_restricted(self):
+        with admin_logged_in():
+            ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+            ppa_url = api_url(ppa)
+            ws = webservice_for_person(
+                self.factory.makePerson(),
+                permission=OAuthPermission.WRITE_PRIVATE)
+
+        # A random user can't delete someone else's PPA.
+        self.assertEqual(401, ws.delete(ppa_url, api_version='devel').status)
 
 
 class TestExternalDependencies(WebServiceTestCase):
@@ -267,46 +301,82 @@ class TestProcessors(WebServiceTestCase):
         self.assertEqual('New ARM Title', ws_proc.title)
         self.assertEqual('New ARM Description', ws_proc.description)
 
-    def test_setProcessors(self):
-        """A new processor can be added to the enabled restricted set."""
+    def setProcessors(self, user, archive_url, names):
+        ws = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PUBLIC)
+        return ws.named_post(
+            archive_url, 'setProcessors',
+            processors=['/+processors/%s' % name for name in names],
+            api_version='devel')
+
+    def assertProcessors(self, user, archive_url, names):
+        body = webservice_for_person(user).get(
+            archive_url + '/processors', api_version='devel').jsonBody()
+        self.assertContentEqual(
+            names, [entry['name'] for entry in body['entries']])
+
+    def test_setProcessors_admin(self):
+        """An admin can add a new processor to the enabled restricted set."""
         commercial = getUtility(ILaunchpadCelebrities).commercial_admin
         commercial_admin = self.factory.makePerson(member_of=[commercial])
         self.factory.makeProcessor(
             'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
         ppa_url = api_url(self.factory.makeArchive(purpose=ArchivePurpose.PPA))
+        self.assertProcessors(
+            commercial_admin, ppa_url, ['386', 'hppa', 'amd64'])
 
-        body = webservice_for_person(commercial_admin).get(
-            ppa_url + '/processors', api_version='devel').jsonBody()
-        self.assertContentEqual(
-            ['386', 'hppa', 'amd64'],
-            [entry['name'] for entry in body['entries']])
-
-        response = webservice_for_person(
-                commercial_admin,
-                permission=OAuthPermission.WRITE_PUBLIC).named_post(
-            ppa_url, 'setProcessors',
-            processors=['/+processors/386', '/+processors/arm'],
-            api_version='devel')
+        response = self.setProcessors(
+            commercial_admin, ppa_url, ['386', 'arm'])
         self.assertEqual(200, response.status)
+        self.assertProcessors(commercial_admin, ppa_url, ['386', 'arm'])
 
-        body = webservice_for_person(commercial_admin).get(
-            ppa_url + '/processors', api_version='devel').jsonBody()
-        self.assertContentEqual(
-            ['386', 'arm'], [entry['name'] for entry in body['entries']])
+    def test_setProcessors_non_owner_forbidden(self):
+        """Only commercial admins and archive owners can call setProcessors."""
+        self.factory.makeProcessor(
+            'unrestricted', 'Unrestricted', 'Unrestricted', restricted=False,
+            build_by_default=False)
+        ppa_url = api_url(self.factory.makeArchive(purpose=ArchivePurpose.PPA))
 
-    def test_setProcessors_owner_forbidden(self):
-        """Only commercial admins can call setProcessors."""
+        response = self.setProcessors(
+            self.factory.makePerson(), ppa_url, ['386', 'unrestricted'])
+        self.assertEqual(401, response.status)
+
+    def test_setProcessors_owner(self):
+        """The archive owner can enable/disable unrestricted processors."""
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ppa_url = api_url(archive)
+        owner = archive.owner
+        self.assertProcessors(owner, ppa_url, ['386', 'hppa', 'amd64'])
+
+        response = self.setProcessors(owner, ppa_url, ['386'])
+        self.assertEqual(200, response.status)
+        self.assertProcessors(owner, ppa_url, ['386'])
+
+        response = self.setProcessors(owner, ppa_url, ['386', 'amd64'])
+        self.assertEqual(200, response.status)
+        self.assertProcessors(owner, ppa_url, ['386', 'amd64'])
+
+    def test_setProcessors_owner_restricted_forbidden(self):
+        """The archive owner cannot enable/disable restricted processors."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
         self.factory.makeProcessor(
             'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         ppa_url = api_url(archive)
         owner = archive.owner
 
-        response = webservice_for_person(owner).named_post(
-            ppa_url, 'setProcessors',
-            processors=['/+processors/386', '/+processors/arm'],
-            api_version='devel')
-        self.assertEqual(401, response.status)
+        response = self.setProcessors(owner, ppa_url, ['386', 'arm'])
+        self.assertEqual(403, response.status)
+
+        # If a commercial admin enables arm, the owner cannot disable it.
+        response = self.setProcessors(
+            commercial_admin, ppa_url, ['386', 'arm'])
+        self.assertEqual(200, response.status)
+        self.assertProcessors(owner, ppa_url, ['386', 'arm'])
+
+        response = self.setProcessors(owner, ppa_url, ['386'])
+        self.assertEqual(403, response.status)
 
     def test_enableRestrictedProcessor(self):
         """A new processor can be added to the enabled restricted set."""

@@ -85,4 +85,3 @@ class TestBuildStartEstimation(TestCaseWithFactory):
             build1.archive.disable()
         estimate = self.job_start_estimate(build2)
         self.assertEquals(5, (estimate - now).seconds)
-

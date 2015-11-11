@@ -63,6 +63,7 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
     CannotCopy,
+    CannotModifyArchiveProcessor,
     CannotUploadToPocket,
     CannotUploadToPPA,
     CannotUploadToSeries,
@@ -101,9 +102,9 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -342,6 +343,78 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         removeSecurityProxy(archive).enable()
         self.assertNoBuildQueuesHaveStatus(archive, BuildQueueStatus.SUSPENDED)
         self.assertTrue(archive.enabled)
+
+    def test_enableArchive_virt_sets_virtualized(self):
+        # Enabling an archive that requires virtualized builds changes all
+        # its pending builds to be virtualized.
+        archive = self.factory.makeArchive(virtualized=False)
+        other_archive = self.factory.makeArchive(virtualized=False)
+        pending_builds = [
+            self.factory.makeBinaryPackageBuild(
+                archive=archive, status=BuildStatus.NEEDSBUILD)
+            for _ in range(2)]
+        completed_build = self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.FULLYBUILT)
+        other_build = self.factory.makeBinaryPackageBuild(
+            archive=other_archive, status=BuildStatus.NEEDSBUILD)
+        for build in pending_builds + [completed_build, other_build]:
+            self.assertFalse(build.virtualized)
+            build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
+        removeSecurityProxy(archive).disable()
+        removeSecurityProxy(archive).require_virtualized = True
+        removeSecurityProxy(archive).enable()
+        # Pending builds in the just-enabled archive are now virtualized.
+        for build in pending_builds:
+            self.assertTrue(build.virtualized)
+            self.assertTrue(build.buildqueue_record.virtualized)
+        # Completed builds and builds in other archives are untouched.
+        for build in completed_build, other_build:
+            self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
+
+    def test_enableArchive_nonvirt_sets_virtualized(self):
+        # Enabling an archive that does not require virtualized builds
+        # changes its pending builds to be virtualized or not depending on
+        # whether their processor supports non-virtualized builds.
+        distroseries = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, virtualized=False)
+        other_archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, virtualized=False)
+        procs = [self.factory.makeProcessor() for _ in range(2)]
+        dases = [
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, processor=procs[i])
+            for i in range(2)]
+        pending_builds = [
+            self.factory.makeBinaryPackageBuild(
+                distroarchseries=dases[i], archive=archive,
+                status=BuildStatus.NEEDSBUILD, processor=procs[i])
+            for i in range(2)]
+        completed_build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=dases[0], archive=archive,
+            status=BuildStatus.FULLYBUILT, processor=procs[0])
+        other_build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=dases[0], archive=other_archive,
+            status=BuildStatus.NEEDSBUILD, processor=procs[0])
+        for build in pending_builds + [completed_build, other_build]:
+            self.assertFalse(build.virtualized)
+            build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
+        removeSecurityProxy(archive).disable()
+        procs[0].supports_nonvirtualized = False
+        removeSecurityProxy(archive).enable()
+        # Pending builds in the just-enabled archive are now virtualized iff
+        # their processor does not support non-virtualized builds.
+        self.assertTrue(pending_builds[0].virtualized)
+        self.assertTrue(pending_builds[0].buildqueue_record.virtualized)
+        self.assertFalse(pending_builds[1].virtualized)
+        self.assertFalse(pending_builds[1].buildqueue_record.virtualized)
+        # Completed builds and builds in other archives are untouched.
+        for build in completed_build, other_build:
+            self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
 
     def test_enableArchiveAlreadyEnabled(self):
         # Enabling an already enabled Archive should raise an AssertionError.
@@ -1005,11 +1078,11 @@ class TestProcessors(TestCaseWithFactory):
     """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestProcessors, self).setUp()
+        super(TestProcessors, self).setUp(user='foo.bar@canonical.com')
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
@@ -1064,8 +1137,45 @@ class TestProcessors(TestCaseWithFactory):
         self.archive.setProcessors(self.unrestricted_procs + [self.arm])
         self.assertContentEqual(
             self.unrestricted_procs + [self.arm], self.archive.processors)
-        self.archive.processors = []
+        self.archive.setProcessors([])
         self.assertContentEqual([], self.archive.processors)
+
+    def test_set_non_admin(self):
+        """Non-admins can only enable or disable unrestricted processors."""
+        self.archive.setProcessors(self.default_procs)
+        self.assertContentEqual(self.default_procs, self.archive.processors)
+        with person_logged_in(self.archive.owner) as owner:
+            # Adding arm is forbidden ...
+            self.assertRaises(
+                CannotModifyArchiveProcessor, self.archive.setProcessors,
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=owner)
+            # ... but removing amd64 is OK.
+            self.archive.setProcessors(
+                [self.default_procs[0]], check_permissions=True, user=owner)
+            self.assertContentEqual(
+                [self.default_procs[0]], self.archive.processors)
+        with admin_logged_in() as admin:
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=admin)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm], self.archive.processors)
+        with person_logged_in(self.archive.owner) as owner:
+            hppa = getUtility(IProcessorSet).getByName("hppa")
+            self.assertFalse(hppa.restricted)
+            # Adding hppa while removing arm is forbidden ...
+            self.assertRaises(
+                CannotModifyArchiveProcessor, self.archive.setProcessors,
+                [self.default_procs[0], hppa],
+                check_permissions=True, user=owner)
+            # ... but adding hppa while retaining arm is OK.
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm, hppa],
+                check_permissions=True, user=owner)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm, hppa],
+                self.archive.processors)
 
     def test_set_enabled_restricted_processors(self):
         """The deprecated enabled_restricted_processors property still works.
@@ -1377,26 +1487,29 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
         super(TestBuildDebugSymbols, self).setUp()
         self.archive = self.factory.makeArchive()
 
-    def setBuildDebugSymbols(self, archive, build_debug_symbols):
-        """Helper function."""
-        archive.build_debug_symbols = build_debug_symbols
-
     def test_build_debug_symbols_is_public(self):
         # Anyone can see the attribute.
         login(ANONYMOUS)
         self.assertFalse(self.archive.build_debug_symbols)
 
-    def test_owner_cannot_set_build_debug_symbols(self):
-        # The archive owner cannot set it.
-        login_person(self.archive.owner)
+    def test_non_owner_cannot_set_build_debug_symbols(self):
+        # A non-owner cannot set it.
+        login_person(self.factory.makePerson())
         self.assertRaises(
-            Unauthorized, self.setBuildDebugSymbols, self.archive, True)
+            Unauthorized, setattr, self.archive, "build_debug_symbols", True)
 
-    def test_commercial_admin_can_set_build_debug_symbols(self):
-        # A commercial admin can set it.
+    def test_owner_can_set_build_debug_symbols(self):
+        # The archive owner can set it.
+        login_person(self.archive.owner)
+        self.archive.build_debug_symbols = True
+        self.assertTrue(self.archive.build_debug_symbols)
+
+    def test_commercial_admin_cannot_set_build_debug_symbols(self):
+        # A commercial admin cannot set it.
         with celebrity_logged_in('commercial_admin'):
-            self.setBuildDebugSymbols(self.archive, True)
-            self.assertTrue(self.archive.build_debug_symbols)
+            self.assertRaises(
+                Unauthorized, setattr,
+                self.archive, "build_debug_symbols", True)
 
 
 class TestAddArchiveDependencies(TestCaseWithFactory):
@@ -2264,7 +2377,7 @@ class TestGetPublishedSourcesWebService(TestCaseWithFactory):
         webservice = webservice_for_person(
             ppa.owner, permission=OAuthPermission.READ_PRIVATE)
 
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
 

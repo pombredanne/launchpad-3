@@ -140,7 +140,10 @@ from lp.services.webapp import (
     NavigationMenu,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.batching import (
+    get_batch_properties_for_json_cache,
+    TableBatchNavigator,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -881,7 +884,6 @@ SORT_KEYS = [
     ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
     ('message_count', 'Number of comments', 'desc'),
     ('milestone', 'Milestone ID', 'desc'),
-    ('specification', 'Linked blueprint', 'asc'),
     ('task', 'Bug task ID', 'desc'),
     ('users_affected_count', 'Number of affected users', 'desc'),
     ]
@@ -1077,6 +1079,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['view_name'] = view_names.pop()
             batch_navigator = self.search()
             cache.objects['mustache_model'] = batch_navigator.model
+            cache.objects.update(
+                get_batch_properties_for_json_cache(self, batch_navigator))
             cache.objects['field_visibility'] = (
                 batch_navigator.field_visibility)
             cache.objects['field_visibility_defaults'] = (
@@ -1084,24 +1088,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['cbl_cookie_name'] = (
                 batch_navigator.getCookieName())
 
-            def _getBatchInfo(batch):
-                if batch is None:
-                    return None
-                return {'memo': batch.range_memo,
-                        'start': batch.startNumber() - 1}
-
-            next_batch = batch_navigator.batch.nextBatch()
-            cache.objects['next'] = _getBatchInfo(next_batch)
-            prev_batch = batch_navigator.batch.prevBatch()
-            cache.objects['prev'] = _getBatchInfo(prev_batch)
-            cache.objects['total'] = batch_navigator.batch.total()
             cache.objects['order_by'] = ','.join(
                 get_sortorder_from_request(self.request))
-            cache.objects['forwards'] = (
-                batch_navigator.batch.range_forwards)
-            last_batch = batch_navigator.batch.lastBatch()
-            cache.objects['last_start'] = last_batch.startNumber() - 1
-            cache.objects.update(_getBatchInfo(batch_navigator.batch))
             cache.objects['sort_keys'] = SORT_KEYS
 
     @property
@@ -1684,12 +1672,6 @@ class BugTargetView(LaunchpadView):
         tasklist = self.context.searchTasks(params)
         return tasklist[:quantity]
 
-    def getMostRecentlyUpdatedBugTasks(self, limit=5):
-        """Return the most recently updated bugtasks for this target."""
-        params = BugTaskSearchParams(
-            orderby="-date_last_updated", omit_dupes=True, user=self.user)
-        return list(self.context.searchTasks(params)[:limit])
-
 
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):
     """View that renders a list of bug IDs for a given set of search criteria.
@@ -1756,11 +1738,6 @@ class BugTaskExpirableListingView(BugTaskSearchListingView):
     def can_show_expirable_bugs(self):
         """Return True or False if expirable bug listing can be shown."""
         return target_has_expirable_bugs_listing(self.context)
-
-    @property
-    def inactive_expiration_age(self):
-        """Return the number of days an bug must be inactive to expire."""
-        return config.malone.days_before_expiration
 
     @property
     def columns_to_show(self):

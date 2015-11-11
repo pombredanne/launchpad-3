@@ -5,6 +5,7 @@ from zope.interface import implementer
 
 from lp.translations.interfaces.rosettastats import IRosettaStats
 
+
 # XXX: Carlos Perello Marin 2005-04-14 bug=396:
 # This code should be change to be an adaptor.
 

@@ -1028,8 +1028,8 @@ user.
     >>> bug = new_firefox_bug()
     >>> transaction.commit()
     >>> submit_commands(bug, 'cve no-such-cve')
-    >>> bug.cves.count()
-    0
+    >>> bug.cves
+    []
 
     >>> print_latest_email()
     Subject: Submit Request Failure
@@ -1196,6 +1196,14 @@ Like the web UI, we can assign a bug to nobody.
     ...     'assignee nobody')
     >>> debian_task.assignee is None
     True
+
+Also like the web UI, we can assign a bug to "me", the current user.
+
+    >>> submit_commands(
+    ...     bug_four, 'affects debian',
+    ...     'assignee me')
+    >>> debian_task.assignee.name
+    u'name12'
 
 To set which source package the bug affects, we use:
 
