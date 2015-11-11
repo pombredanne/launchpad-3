@@ -313,6 +313,27 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             MatchesStructure.byEquality(
                 webhook=hook, event_type='test', payload={'foo': 'bar'}))
 
+    def test_gitrepository__repr__(self):
+        # `WebhookDeliveryJob` objects for Git repositories have an
+        # informative __repr__.
+        repository = self.factory.makeGitRepository()
+        hook = self.factory.makeWebhook(target=repository)
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
+        self.assertEqual(
+            "<WebhookDeliveryJob for webhook %d on %r>" % (
+                hook.id, repository),
+            repr(job))
+
+    def test_branch__repr__(self):
+        # `WebhookDeliveryJob` objects for Bazaar branches have an
+        # informative __repr__.
+        branch = self.factory.makeAnyBranch()
+        hook = self.factory.makeWebhook(target=branch)
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
+        self.assertEqual(
+            "<WebhookDeliveryJob for webhook %d on %r>" % (hook.id, branch),
+            repr(job))
+
     def test_short_lease_and_timeout(self):
         # Webhook jobs have a request timeout of 30 seconds, a celery
         # timeout of 45 seconds, and a lease of 60 seconds, to give
