@@ -11,6 +11,7 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
+import re
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
@@ -1482,6 +1483,29 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 name='description',
                 content=description[:497] + '...'))
         self.assertThat(browser.contents, HTMLContains(expected_meta))
+
+
+class TestBranchMergeProposalBrowserView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_prerequisite_bzr(self):
+        # A prerequisite branch is rendered in the Bazaar case.
+        branch = self.factory.makeProductBranch()
+        identity = branch.identity
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
+        text = self.getMainText(bmp, '+index')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Prerequisite: ' + re.escape(identity), text)
+
+    def test_prerequisite_git(self):
+        # A prerequisite reference is rendered in the Git case.
+        [ref] = self.factory.makeGitRefs()
+        identity = ref.identity
+        bmp = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref)
+        text = self.getMainText(bmp, '+index')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Prerequisite: ' + re.escape(identity), text)
 
 
 class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
