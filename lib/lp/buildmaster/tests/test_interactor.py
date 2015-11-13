@@ -509,11 +509,9 @@ class TestSlave(TestCase):
         self.assertEqual(['1.0', 'i386'], info[:2])
         self.assertThat(
             info[2],
-            # XXX cjwatson 2015-09-07: This should also include 'snap' once
-            # the buildbot slaves are upgraded to python-lpbuildd >= 133.
             ContainsAll(
                 ('sourcepackagerecipe', 'translation-templates',
-                 'binarypackage', 'livefs')))
+                 'binarypackage', 'livefs', 'snap')))
 
     @defer.inlineCallbacks
     def test_initial_status(self):

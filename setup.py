@@ -47,6 +47,7 @@ setup(
         'python-keystoneclient',
         'python-subunit',
         'python-swiftclient',
+        'launchpad-buildd',
         'launchpadlib',
         'lazr.batchnavigator',
         'lazr.config',
