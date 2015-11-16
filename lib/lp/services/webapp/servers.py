@@ -419,7 +419,7 @@ class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
                 environment))
         if request_factory is None:
             mime_type = environment.get('CONTENT_TYPE')
-            if mime_type != 'text/xml':
+            if mime_type.split(';')[0].strip() != 'text/xml':
                 request_factory = ProtocolErrorRequest
                 # 415 - Unsupported Media Type
                 publication_factory = ProtocolErrorPublicationFactory(415)
