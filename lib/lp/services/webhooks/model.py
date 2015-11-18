@@ -341,6 +341,13 @@ class WebhookJobDerived(BaseRunnableJob):
     def __init__(self, webhook_job):
         self.context = webhook_job
 
+    def __repr__(self):
+        return "<%(job_class)s for webhook %(webhook_id)d on %(target)r>" % {
+            "job_class": self.__class__.__name__,
+            "webhook_id": self.context.webhook_id,
+            "target": self.context.webhook.target,
+            }
+
     @classmethod
     def iterReady(cls):
         """See `IJobSource`."""
