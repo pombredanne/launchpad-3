@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -67,13 +67,16 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
     [to_dsc] = [name for name in to_files
                 if name.lower().endswith('.dsc')]
     args = ['debdiff', from_dsc, to_dsc]
+    env = os.environ.copy()
+    env['TMPDIR'] = tmp_dir
 
     full_path = os.path.join(tmp_dir, out_filename)
     out_file = None
     try:
         out_file = open(full_path, 'w')
         process = subprocess.Popen(
-            args, stdout=out_file, stderr=subprocess.PIPE, cwd=tmp_dir)
+            args, stdout=out_file, stderr=subprocess.PIPE, cwd=tmp_dir,
+            env=env)
         stdout, stderr = process.communicate()
     finally:
         if out_file is not None:
