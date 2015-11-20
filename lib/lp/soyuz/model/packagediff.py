@@ -7,10 +7,12 @@ __all__ = [
     'PackageDiffSet',
     ]
 
+from functools import partial
 import gzip
 import itertools
 import os
 import shutil
+import signal
 import subprocess
 import tempfile
 
@@ -20,6 +22,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.services.config import config
 from lp.services.database.bulk import load
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -75,8 +78,9 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
     try:
         out_file = open(full_path, 'w')
         process = subprocess.Popen(
-            args, stdout=out_file, stderr=subprocess.PIPE, cwd=tmp_dir,
-            env=env)
+            args, stdout=out_file, stderr=subprocess.PIPE,
+            preexec_fn=partial(signal.alarm, config.diff.debdiff_time_limit),
+            cwd=tmp_dir, env=env)
         stdout, stderr = process.communicate()
     finally:
         if out_file is not None:

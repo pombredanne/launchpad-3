@@ -1,13 +1,16 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test source package diffs."""
+
+from __future__ import print_function
 
 __metaclass__ = type
 
 from datetime import datetime
 import os.path
 
+from fixtures import EnvironmentVariableFixture
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -156,3 +159,18 @@ class TestPackageDiffs(TestCaseWithFactory):
         [job] = IStore(Job).find(
             Job, Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF)
         self.assertIsNot(None, job)
+
+    def test_packagediff_time_limit(self):
+        # debdiff is killed after the time limit expires.
+        self.pushConfig("diff", debdiff_time_limit=1)
+        temp_dir = self.makeTemporaryDirectory()
+        mock_debdiff_path = os.path.join(temp_dir, "debdiff")
+        with open(mock_debdiff_path, "w") as mock_debdiff:
+            print("#! /bin/sh", file=mock_debdiff)
+            print("sleep 5", file=mock_debdiff)
+        os.chmod(mock_debdiff_path, 0o755)
+        mock_path = "%s:%s" % (temp_dir, os.environ["PATH"])
+        diff = create_proper_job(self.factory)
+        with EnvironmentVariableFixture("PATH", mock_path):
+            diff.performDiff()
+        self.assertEqual(PackageDiffStatus.FAILED, diff.status)
