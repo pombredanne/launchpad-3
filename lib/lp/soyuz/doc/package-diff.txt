@@ -649,33 +649,6 @@ FAILED request (empty 'diff_content' and 'date_fullfilled').
     None
 
 
-Problematic packages
---------------------
-
-XXX 2009-11-23 Julian bug=314436
-Because of bug 314436, diffs of udev can generate huge output which fills the
-disk very quickly.  For that reason, diffs of udev are created FAILED by
-default, which will stop the diff script from attempting to create the diff.
-
-    >>> from lp.soyuz.enums import PackagePublishingStatus
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> stp = SoyuzTestPublisher()
-    >>> discard = stp.setUpDefaultDistroSeries(hoary)
-    >>> udev_orig = stp.getPubSource(
-    ...     sourcename="udev", version="1.0",
-    ...     status=PackagePublishingStatus.PUBLISHED)
-    >>> udev_new = stp.getPubSource(
-    ...     sourcename="udev", version="1.1",
-    ...     status=PackagePublishingStatus.PENDING)
-
-    >>> udev_diff = udev_orig.sourcepackagerelease.requestDiffTo(
-    ...     requester=cprov,
-    ...     to_sourcepackagerelease=udev_new.sourcepackagerelease)
-
-    >>> print udev_diff.status.name
-    FAILED
-
-
 PackageDiff privacy
 -------------------
 
