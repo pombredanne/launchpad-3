@@ -70,6 +70,7 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
     Person,
     PersonSettings,
@@ -1461,6 +1462,40 @@ class PersonSettingsENFPopulator(BulkPruner):
         transaction.commit()
 
 
+class DistroSeriesPublishingOptionsPopulator(TunableLoop):
+    """Populates DistroSeries.publishing_options."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(DistroSeriesPublishingOptionsPopulator, self).__init__(
+            log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(DistroSeries)
+
+    def findSeries(self):
+        return self.store.find(
+            DistroSeries,
+            DistroSeries.id >= self.start_at).order_by(DistroSeries.id)
+
+    def isDone(self):
+        return self.findSeries().is_empty()
+
+    def __call__(self, chunk_size):
+        all_series = list(self.findSeries()[:chunk_size])
+        for series in all_series:
+            if series.publishing_options is None:
+                naked_series = removeSecurityProxy(series)
+                series.publishing_options = {
+                    "backports_not_automatic":
+                        naked_series._backports_not_automatic,
+                    "include_long_descriptions":
+                        naked_series._include_long_descriptions,
+                    }
+        self.start_at = all_series[-1].id + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1739,6 +1774,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         DiffPruner,
+        DistroSeriesPublishingOptionsPopulator,
         GitJobPruner,
         HWSubmissionEmailLinker,
         LiveFSFilePruner,
