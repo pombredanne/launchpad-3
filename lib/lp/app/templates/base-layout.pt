@@ -55,26 +55,6 @@
     <tal:view condition="not: view/macro:is-page-contentless">
       <metal:block define-slot="head_epilogue"></metal:block>
     </tal:view>
-
-    <tal:ga condition="python: is_lpnet">
-      <tal:script
-          replace="structure string:&lt;script type='text/javascript'&gt;" />
-        var _gaq = _gaq || [];
-        _gaq.push(['_setAccount', 'UA-12833497-1']);
-        _gaq.push(['_setDomainName', '.launchpad.net']);
-        _gaq.push(['_setAllowHash', false]);
-        _gaq.push(['_trackPageview']);
-
-        (function() {
-          var ga = document.createElement('script');
-          ga.type = 'text/javascript';
-          ga.async = true;
-          ga.src = '<tal:ga-js replace="string:${icingroot}/google-analytics/ga.js" />';
-          var s = document.getElementsByTagName('script')[0];
-          s.parentNode.insertBefore(ga, s);
-        })();
-      <tal:script replace="structure string:&lt;/script&gt;" />
-    </tal:ga>
   </head>
 
   <body id="document"
