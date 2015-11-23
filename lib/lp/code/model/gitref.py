@@ -237,10 +237,6 @@ class GitRefMixin:
             status, prerequisite_repository=self.repository,
             prerequisite_path=self.path, eager_load=eager_load)
 
-    def getMergeProposalByID(self, id):
-        """See `IGitRef`."""
-        return self.landing_targets.find(BranchMergeProposal.id == id).one()
-
     @property
     def pending_writes(self):
         """See `IGitRef`."""

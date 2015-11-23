@@ -873,9 +873,6 @@
         path_expression="string:+ref/${name}"
         attribute_to_parent="repository"
         rootsite="code"/>
-    <browser:navigation
-        module="lp.code.browser.gitref"
-        classes="GitRefNavigation"/>
     <browser:pages
         for="lp.code.interfaces.gitref.IGitRef"
         class="lp.code.browser.gitref.GitRefView"
