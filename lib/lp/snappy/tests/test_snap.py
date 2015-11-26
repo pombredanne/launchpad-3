@@ -858,19 +858,19 @@ class TestSnapWebservice(TestCaseWithFactory):
 
     def test_setProcessors_admin(self):
         """An admin can add a new processor to the enabled restricted set."""
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         self.factory.makeProcessor(
             "arm", "ARM", "ARM", restricted=True, build_by_default=False)
         snap = self.makeSnap()
-        self.assertProcessors(commercial_admin, snap, ["386", "hppa", "amd64"])
+        self.assertProcessors(ppa_admin, snap, ["386", "hppa", "amd64"])
 
-        response = self.setProcessors(commercial_admin, snap, ["386", "arm"])
+        response = self.setProcessors(ppa_admin, snap, ["386", "arm"])
         self.assertEqual(200, response.status)
-        self.assertProcessors(commercial_admin, snap, ["386", "arm"])
+        self.assertProcessors(ppa_admin, snap, ["386", "arm"])
 
     def test_setProcessors_non_owner_forbidden(self):
-        """Only commercial admins and snap owners can call setProcessors."""
+        """Only PPA admins and snap owners can call setProcessors."""
         self.factory.makeProcessor(
             "unrestricted", "Unrestricted", "Unrestricted", restricted=False,
             build_by_default=False)
@@ -895,8 +895,8 @@ class TestSnapWebservice(TestCaseWithFactory):
 
     def test_setProcessors_owner_restricted_forbidden(self):
         """The snap owner cannot enable/disable restricted processors."""
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         self.factory.makeProcessor(
             "arm", "ARM", "ARM", restricted=True, build_by_default=False)
         snap = self.makeSnap()
@@ -904,9 +904,8 @@ class TestSnapWebservice(TestCaseWithFactory):
         response = self.setProcessors(self.person, snap, ["386", "arm"])
         self.assertEqual(403, response.status)
 
-        # If a commercial admin enables arm, the owner cannot disable it.
-        response = self.setProcessors(
-            commercial_admin, snap, ["386", "arm"])
+        # If a PPA admin enables arm, the owner cannot disable it.
+        response = self.setProcessors(ppa_admin, snap, ["386", "arm"])
         self.assertEqual(200, response.status)
         self.assertProcessors(self.person, snap, ["386", "arm"])
 
