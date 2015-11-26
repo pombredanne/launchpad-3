@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test webservice methods related to the publisher."""
@@ -60,7 +60,7 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
             with person_logged_in(person):
                 self.factory.makeBinaryPackageFile(
                     binarypackagerelease=bpph.binarypackagerelease)
-        self.assertEqual(query_counts[0] - 1, query_counts[-1])
+        self.assertEqual(query_counts[0], query_counts[-1])
 
         self.assertEqual(200, response.status)
         urls = response.jsonBody()

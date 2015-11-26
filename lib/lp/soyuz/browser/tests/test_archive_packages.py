@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TestP3APackages."""
@@ -430,10 +430,14 @@ class TestP3APackagesQueryCount(TestCaseWithFactory):
             owner=self.team, private=True)
         self.private_ppa.newSubscription(
             self.person, registrant=self.team.teamowner)
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=self.private_ppa.distribution)
 
     def createPackage(self):
         with celebrity_logged_in('admin'):
             pkg = self.factory.makeBinaryPackagePublishingHistory(
+                distroarchseries=self.factory.makeDistroArchSeries(
+                    distroseries=self.distroseries),
                 status=PackagePublishingStatus.PUBLISHED,
                 archive=self.private_ppa)
         return pkg

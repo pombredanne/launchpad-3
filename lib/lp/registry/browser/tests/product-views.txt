@@ -144,6 +144,7 @@ him access.
     ...     'commercial-member@canonical.com')
     >>> registry_experts = getUtility(IPersonSet).getByName('registry')
     >>> ignored = registry_experts.addMember(commercial_member, reviewer=mark)
+    >>> transaction.commit()
     >>> login('commercial-member@canonical.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label
