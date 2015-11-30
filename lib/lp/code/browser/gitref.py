@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'GitRefContextMenu',
-    'GitRefNavigation',
     'GitRefRegisterMergeProposalView',
     'GitRefView',
     ]
@@ -48,33 +47,12 @@ from lp.services.webapp import (
     ContextMenu,
     LaunchpadView,
     Link,
-    Navigation,
-    stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
     HasSnapsViewMixin,
     )
-
-
-# XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
-# it's just a compatibility redirection.
-class GitRefNavigation(Navigation):
-
-    usedfor = IGitRef
-
-    @stepthrough("+merge")
-    def traverse_merge_proposal(self, id):
-        """Traverse to an `IBranchMergeProposal`."""
-        try:
-            id = int(id)
-        except ValueError:
-            # Not a number.
-            return None
-        proposal = self.context.getMergeProposalByID(id)
-        if proposal is not None:
-            return self.redirectSubTree(canonical_url(proposal))
 
 
 class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
