@@ -27,16 +27,20 @@ as 'packages', as:
 
   [
    {'pocketdetails': PackagePublishingPocket,
-    'packages': [IDistributionSourcePackageRelease, ...]}
+    'packages': [
+      {'spr': IDistributionSourcePackageRelease, 'component_name': 'main'},
+      ...
+      ]}
    ...
   ]
 
 Each pocket should only contain packages marked as PUBLISHED.
 
   >>> for pub in pmount_view.published_by_pocket():
-  ...     pkg_versions = [p.version for p in pub['packages']]
+  ...     pkg_versions = [
+  ...         (p['spr'].version, p['component_name']) for p in pub['packages']]
   ...     print pub['pocketdetails'].title, sorted(pkg_versions)
-  Release [u'0.1-2']
+  Release [(u'0.1-2', u'main')]
   Security []
   Updates []
   Proposed []
