@@ -105,8 +105,6 @@ uploaded to.
     Breezy Badger Autotest
     Original maintainer:
     Maintainer
-    Component:
-    main
     Architectures:
     all
     Section:

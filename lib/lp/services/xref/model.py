@@ -9,6 +9,8 @@ __all__ = [
     "XRefSet",
     ]
 
+from itertools import groupby
+
 import pytz
 from storm.expr import (
     And,
@@ -115,12 +117,15 @@ class XRefSet:
             return {}
 
         store = IStore(XRef)
+        extract_type = lambda id: id[0]
         rows = list(store.using(XRef).find(
             (XRef.from_type, XRef.from_id, XRef.to_type, XRef.to_id,
              XRef.creator_id, XRef.date_created, XRef.metadata),
             Or(*[
-                And(XRef.from_type == id[0], XRef.from_id == id[1])
-                for id in object_ids]),
+                And(XRef.from_type == from_type,
+                    XRef.from_id.is_in([id[1] for id in group]))
+                for from_type, group in groupby(
+                    sorted(object_ids, key=extract_type), extract_type)]),
             XRef.to_type.is_in(types) if types is not None else True))
         bulk.load(Person, [row[4] for row in rows])
         result = {}

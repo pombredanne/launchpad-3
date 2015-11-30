@@ -38,9 +38,10 @@
                   The description of the pocket.
                 </p>
                 <ul>
-                  <li tal:repeat="spr pocket/packages">
-                    <a tal:content="spr/displayname"
-                       tal:attributes="href spr/fmt:url">apache2</a>
+                  <li tal:repeat="package pocket/packages">
+                    <a tal:content="package/spr/displayname"
+                       tal:attributes="href package/spr/fmt:url">apache2</a>
+                    (<span tal:content="package/component_name">main</span>)
                   </li>
                 </ul>
               </dd>

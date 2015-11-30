@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes that implement SourcePackage items."""
@@ -422,9 +422,11 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             thedict[pocket] = []
         # add all the sourcepackagereleases in the right place
         for spph in result:
-            thedict[spph.pocket].append(
-                spph.distroseries.distribution.getSourcePackageRelease(
-                    spph.sourcepackagerelease))
+            thedict[spph.pocket].append({
+                'spr': spph.distroseries.distribution.getSourcePackageRelease(
+                    spph.sourcepackagerelease),
+                'component_name': spph.component_name,
+                })
         return thedict
 
     @property
