@@ -325,12 +325,16 @@ class GitRefRegisterMergeProposalView(LaunchpadFormView):
 
     def validate(self, data):
         source_ref = self.context
-        target_repository = self._validateRef(data, 'target')
-        if not target_repository.isRepositoryMergeable(source_ref.repository):
-            self.setFieldError(
-                'target_git_repository',
-                "%s is not mergeable into this repository." %
-                source_ref.repository.identity)
+        # The existence of target_git_repository is handled by the form
+        # machinery.
+        if data.get('target_git_repository') is not None:
+            target_repository = self._validateRef(data, 'target')
+            if not target_repository.isRepositoryMergeable(
+                    source_ref.repository):
+                self.setFieldError(
+                    'target_git_repository',
+                    "%s is not mergeable into this repository." %
+                    source_ref.repository.identity)
         if data.get('prerequisite_git_repository') is not None:
             prerequisite_repository = self._validateRef(data, 'prerequisite')
             if not target_repository.isRepositoryMergeable(

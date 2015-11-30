@@ -72,9 +72,7 @@ from lp.registry.enums import (
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import (
-    BrowserNotificationLevel,
-    )
+from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
@@ -882,6 +880,34 @@ class TestRegisterBranchMergeProposalViewGit(
                 'field.target_git_path':
                     ('The target repository and path together cannot be the '
                      'same as the source repository and path.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
+
+    def test_register_ajax_request_with_missing_target_git_repository(self):
+        # A missing target_git_repository is a validation error.
+        owner = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_git_repository.target_git_repository': '',
+                    'field.target_git_repository-empty-marker': '1',
+                    'field.target_git_path': 'master',
+                    },
+                **extra)
+            view = create_initialized_view(
+                self.source_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_git_repository': 'Required input is missing.',
+                },
             'form_wide_errors': []},
             simplejson.loads(view.form_result))
 
