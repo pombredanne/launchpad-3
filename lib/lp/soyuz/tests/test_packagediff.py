@@ -174,3 +174,18 @@ class TestPackageDiffs(TestCaseWithFactory):
         with EnvironmentVariableFixture("PATH", mock_path):
             diff.performDiff()
         self.assertEqual(PackageDiffStatus.FAILED, diff.status)
+
+    def test_packagediff_max_size(self):
+        # debdiff is killed if it generates more than the size limit.
+        self.pushConfig("packagediff", debdiff_max_size=1024)
+        temp_dir = self.makeTemporaryDirectory()
+        mock_debdiff_path = os.path.join(temp_dir, "debdiff")
+        with open(mock_debdiff_path, "w") as mock_debdiff:
+            print("#! /bin/sh", file=mock_debdiff)
+            print("yes | head -n2048 || exit 2", file=mock_debdiff)
+        os.chmod(mock_debdiff_path, 0o755)
+        mock_path = "%s:%s" % (temp_dir, os.environ["PATH"])
+        diff = create_proper_job(self.factory)
+        with EnvironmentVariableFixture("PATH", mock_path):
+            diff.performDiff()
+        self.assertEqual(PackageDiffStatus.FAILED, diff.status)

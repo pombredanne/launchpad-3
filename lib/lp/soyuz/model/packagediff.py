@@ -11,6 +11,7 @@ from functools import partial
 import gzip
 import itertools
 import os
+import resource
 import shutil
 import signal
 import subprocess
@@ -44,6 +45,19 @@ from lp.soyuz.interfaces.packagediff import (
     IPackageDiff,
     IPackageDiffSet,
     )
+
+
+def limit_deb_diff(timeout, max_size):
+    """Pre-exec function to apply resource limits to debdiff.
+
+    :param timeout: Time limit in seconds.
+    :param max_size: Maximum output file size in bytes.
+    """
+    signal.alarm(timeout)
+    _, hard_fsize = resource.getrlimit(resource.RLIMIT_FSIZE)
+    if hard_fsize != resource.RLIM_INFINITY and hard_fsize < max_size:
+        max_size = hard_fsize
+    resource.setrlimit(resource.RLIMIT_FSIZE, (max_size, hard_fsize))
 
 
 def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
@@ -80,7 +94,9 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
         process = subprocess.Popen(
             args, stdout=out_file, stderr=subprocess.PIPE,
             preexec_fn=partial(
-                signal.alarm, config.packagediff.debdiff_timeout),
+                limit_deb_diff,
+                config.packagediff.debdiff_timeout,
+                config.packagediff.debdiff_max_size),
             cwd=tmp_dir, env=env)
         stdout, stderr = process.communicate()
     finally:
