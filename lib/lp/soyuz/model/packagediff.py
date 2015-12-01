@@ -79,7 +79,8 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
         out_file = open(full_path, 'w')
         process = subprocess.Popen(
             args, stdout=out_file, stderr=subprocess.PIPE,
-            preexec_fn=partial(signal.alarm, config.diff.debdiff_time_limit),
+            preexec_fn=partial(
+                signal.alarm, config.packagediff.debdiff_timeout),
             cwd=tmp_dir, env=env)
         stdout, stderr = process.communicate()
     finally:

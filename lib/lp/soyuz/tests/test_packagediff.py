@@ -160,9 +160,9 @@ class TestPackageDiffs(TestCaseWithFactory):
             Job, Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF)
         self.assertIsNot(None, job)
 
-    def test_packagediff_time_limit(self):
+    def test_packagediff_timeout(self):
         # debdiff is killed after the time limit expires.
-        self.pushConfig("diff", debdiff_time_limit=1)
+        self.pushConfig("packagediff", debdiff_timeout=1)
         temp_dir = self.makeTemporaryDirectory()
         mock_debdiff_path = os.path.join(temp_dir, "debdiff")
         with open(mock_debdiff_path, "w") as mock_debdiff:
