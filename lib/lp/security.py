@@ -1977,7 +1977,7 @@ class AdminQuestion(AdminByAdminsTeam):
         """Allow only admins and owners of the question pillar target."""
         context = self.obj.product or self.obj.distribution
         return (AdminByAdminsTeam.checkAuthenticated(self, user) or
-                user.inTeam(context.owner))
+                user.in_registry_experts or user.inTeam(context.owner))
 
 
 class AppendQuestion(AdminQuestion):
@@ -2010,6 +2010,16 @@ class QuestionOwner(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Allow the question's owner."""
         return user.inTeam(self.obj.owner)
+
+
+class EditQuestion(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IQuestion
+
+    def checkAuthenticated(self, user):
+        return (
+            AppendQuestion(self.obj).checkAuthenticated(user)
+            or QuestionOwner(self.obj).checkAuthenticated(user))
 
 
 class ViewQuestion(AnonymousAuthorization):
