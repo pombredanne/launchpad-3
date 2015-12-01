@@ -1711,17 +1711,25 @@ Re-enable Celso's PPA.
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enable()
 
-Commercial admins can manage the privacy and build settings of any PPA.
-Additionally, a member of launchpad-ppa-self-admins can manage those
+PPA or commercial admins can manage the privacy and build settings of any
+PPA.  Additionally, a member of launchpad-ppa-self-admins can manage those
 settings on PPAs that they can otherwise edit.
 
     >>> login('celso.providelo@canonical.com')
     >>> check_permission('launchpad.Admin', cprov_archive)
     False
 
+    >>> ppa_admin = getUtility(IPersonSet).getByName('launchpad-ppa-admins')
+    >>> ppa_admin_member = factory.makePerson(
+    ...     email='ppa-member@canonical.com', member_of=[ppa_admin])
+    >>> login('ppa-member@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    True
+
     >>> login('commercial-member@canonical.com')
     >>> check_permission('launchpad.Admin', cprov_archive)
     True
+
     >>> celeb = getUtility(IPersonSet).getByName('launchpad-ppa-self-admins')
     >>> celeb.addMember(person=cprov, reviewer=celeb.teamowner)
     (True, ...)
