@@ -224,12 +224,12 @@ class TestSnapAdminView(BrowserTestCase):
     def test_admin_snap(self):
         # Admins can change require_virtualized.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
-        browser = self.getViewBrowser(snap, user=commercial_admin)
+        browser = self.getViewBrowser(snap, user=ppa_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Require virtualized builders").selected = False
         browser.getControl("Update snap package").click()
@@ -239,13 +239,13 @@ class TestSnapAdminView(BrowserTestCase):
     def test_admin_snap_sets_date_last_modified(self):
         # Administering a snap package sets the date_last_modified property.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
         snap = self.factory.makeSnap(
             registrant=self.person, date_created=date_created)
-        login_person(commercial_admin)
+        login_person(ppa_admin)
         view = SnapAdminView(snap, LaunchpadTestRequest())
         view.initialize()
         view.request_action.success({"require_virtualized": False})

@@ -2313,7 +2313,7 @@ def validate_ppa(owner, distribution, proposed_name, private=False):
     creator = getUtility(ILaunchBag).user
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
-        # which says that one needs 'launchpad.Admin' permission to set
+        # which says that one needs 'launchpad.Commercial' permission to set
         # 'private', and the logic in `AdminArchive` which determines
         # who is granted launchpad.Admin permissions. The difference is
         # that here we grant ability to set 'private' to people with a

@@ -813,11 +813,11 @@ class TestCalculateScore(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         self.assertScoreNotWriteableByOwner(archive)
 
-    def test_score_archive_allows_buildd_and_commercial_admin(self):
-        # Buildd and commercial admins can change an archive's build score.
+    def test_score_archive_allows_buildd_and_ppa_admin(self):
+        # Buildd and PPA admins can change an archive's build score.
         archive = self.factory.makeArchive()
         self.assertScoreWriteableByTeam(
             archive, getUtility(ILaunchpadCelebrities).buildd_admin)
         with anonymous_logged_in():
             self.assertScoreWriteableByTeam(
-                archive, getUtility(ILaunchpadCelebrities).commercial_admin)
+                archive, getUtility(ILaunchpadCelebrities).ppa_admin)
