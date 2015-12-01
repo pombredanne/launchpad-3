@@ -26,17 +26,21 @@ class TestQuestionSecurity(TestCaseWithFactory):
         with anonymous_logged_in():
             with ExpectedException(Unauthorized):
                 question.title = 'foo anon'
+            with ExpectedException(Unauthorized):
+                question.description = 'foo anon'
         with person_logged_in(self.factory.makePerson()):
             with ExpectedException(Unauthorized):
                 question.title = 'foo random'
+            with ExpectedException(Unauthorized):
+                question.description = 'foo random'
         with person_logged_in(question.owner):
-            question.title = 'foo owner'
+            question.title = question.description = 'foo owner'
         with person_logged_in(question.target.owner):
-            question.title = 'foo target owner'
+            question.title = question.description = 'foo target owner'
         with admin_logged_in():
-            question.title = 'foo admin'
+            question.title = question.description = 'foo admin'
         with celebrity_logged_in('registry_experts'):
-            question.title = 'foo registry'
+            question.title = question.description = 'foo registry'
 
 
 class TestQuestionSearch(TestCaseWithFactory):

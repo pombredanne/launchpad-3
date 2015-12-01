@@ -1969,15 +1969,16 @@ class ViewTranslationTemplatesBuild(DelegatedAuthorization):
         super(ViewTranslationTemplatesBuild, self).__init__(obj, obj.branch)
 
 
-class AdminQuestion(AdminByAdminsTeam):
+class AdminQuestion(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
         """Allow only admins and owners of the question pillar target."""
         context = self.obj.product or self.obj.distribution
-        return (AdminByAdminsTeam.checkAuthenticated(self, user) or
-                user.in_registry_experts or user.inTeam(context.owner))
+        return (
+            user.in_admin or user.in_registry_experts
+            or user.inTeam(context.owner))
 
 
 class AppendQuestion(AdminQuestion):
