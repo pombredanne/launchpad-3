@@ -52,6 +52,7 @@ from lp.testing import (
     api_url,
     launchpadlib_for,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -1361,13 +1362,10 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
 
     def test_getPackageUploads_query_count(self):
         person = self.makeQueueAdmin([self.universe])
-        uploads = []
-        for i in range(5):
-            upload, _ = self.makeBinaryPackageUpload(
-                person, component=self.universe)
-            uploads.append(upload)
         ws_distroseries = self.load(self.distroseries, person)
-        IStore(uploads[0].__class__).invalidate()
-        with StormStatementRecorder() as recorder:
-            ws_distroseries.getPackageUploads()
-        self.assertThat(recorder, HasQueryCount(Equals(29)))
+        recorder1, recorder2 = record_two_runs(
+            ws_distroseries.getPackageUploads,
+            lambda: self.makeBinaryPackageUpload(
+                person, component=self.universe),
+            5)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

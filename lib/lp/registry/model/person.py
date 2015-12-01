@@ -1411,6 +1411,10 @@ class Person(
         """See `IPerson`."""
         self._inTeam_cache = {}
 
+    def __storm_invalidated__(self):
+        super(Person, self).__storm_invalidated__()
+        self.clearInTeamCache()
+
     @cachedproperty
     def participant_ids(self):
         """See `IPerson`."""
