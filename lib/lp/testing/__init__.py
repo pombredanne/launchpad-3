@@ -425,7 +425,8 @@ def record_statements(function, *args, **kwargs):
 
 
 def record_two_runs(tested_method, item_creator, first_round_number,
-                    second_round_number=None, login_method=None):
+                    second_round_number=None, login_method=None,
+                    record_request=False):
     """A helper that returns the two storm statement recorders
     obtained when running tested_method after having run the
     method {item_creator} {first_round_number} times and then
@@ -435,9 +436,17 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     If {login_method} is not None, it is called before each batch of
     {item_creator} calls.
 
+    If {record_request} is True, `RequestTimelineCollector` is used to get
+    the query counts, so {tested_method} should make a web request.
+    Otherwise, `StormStatementRecorder` is used to get the query count.
+
     :return: a tuple containing the two recorders obtained by the successive
         runs.
     """
+    if record_request:
+        recorder_factory = RequestTimelineCollector
+    else:
+        recorder_factory = StormStatementRecorder
     if login_method is not None:
         login_method()
     for i in range(first_round_number):
@@ -449,7 +458,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     if queryInteraction() is not None:
         clear_permission_cache()
     getUtility(ILaunchpadCelebrities).clearCache()
-    with StormStatementRecorder() as recorder1:
+    with recorder_factory() as recorder1:
         tested_method()
     # Run {item_creator} {second_round_number} more times.
     if second_round_number is None:
@@ -463,7 +472,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     if queryInteraction() is not None:
         clear_permission_cache()
     getUtility(ILaunchpadCelebrities).clearCache()
-    with StormStatementRecorder() as recorder2:
+    with recorder_factory() as recorder2:
         tested_method()
     return recorder1, recorder2
 
