@@ -116,12 +116,16 @@
       attributes="requestInfo giveAnswer expireQuestion addComment
                   addCommentWithoutNotify linkFAQ subscribe unsubscribe
                   setCommentVisibility"
-      set_attributes="title description datedue target language"
+      set_attributes="datedue target language"
       />
     <require
       permission="launchpad.Append"
       attributes="reject"
       set_attributes="assignee"
+      />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="title description"
       />
     <require
       permission="launchpad.Admin"
