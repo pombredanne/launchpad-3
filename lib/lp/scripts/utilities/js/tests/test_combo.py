@@ -169,6 +169,30 @@ class TestCombo(ComboTestBase):
                                   root=test_dir)).strip(),
             expected)
 
+    def test_combine_css_handles_relative_links_from_top_level(self):
+        """
+        Combining CSS files handles making URLs relative even from the top
+        level (alongside combo.css).
+        """
+        test_dir = self.makeDir()
+
+        self.makeSampleFile(
+            test_dir, "ubuntu-webfonts.css",
+            """\
+            @font-face {
+              src: url('fonts/Ubuntu.woff');
+            }
+            """)
+
+        expected = "\n".join(
+            ("/* ubuntu-webfonts.css */",
+             "@font-face{src:url(fonts/Ubuntu.woff)}",
+             ))
+        self.assertEqual(
+            "".join(combine_files(["ubuntu-webfonts.css"],
+                                  root=test_dir)).strip(),
+            expected)
+
     def test_combine_css_leaves_absolute_urls_untouched(self):
         """
         Combining CSS files does not touch absolute URLs in
