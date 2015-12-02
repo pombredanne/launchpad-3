@@ -578,9 +578,13 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """
 
     @export_read_operation()
-    def sourceFileUrls():
+    @operation_parameters(
+        include_meta=Bool(title=_("Include Metadata"), required=False))
+    def sourceFileUrls(include_meta=False):
         """URLs for this source publication's uploaded source files.
 
+        :param include_meta: Return a list of dicts with keys url, size, and
+            sha256 for each URL instead of a simple list.
         :return: A collection of URLs for this source.
         """
 
@@ -869,8 +873,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     def binaryFileUrls(include_meta=False):
         """URLs for this binary publication's binary files.
 
-        :param include_meta: Return a list of dicts with keys url, size
-            and sha1 for each url instead of a simple list.
+        :param include_meta: Return a list of dicts with keys url, size,
+            sha1, and sha256 for each URL instead of a simple list.
         :return: A collection of URLs for this binary.
         """
 
