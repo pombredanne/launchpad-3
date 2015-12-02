@@ -28,10 +28,12 @@ from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-def create_proper_job(factory):
+def create_proper_job(factory, sourcepackagename=None):
     archive = factory.makeArchive()
-    foo_dash1 = factory.makeSourcePackageRelease(archive=archive)
-    foo_dash15 = factory.makeSourcePackageRelease(archive=archive)
+    foo_dash1 = factory.makeSourcePackageRelease(
+        archive=archive, sourcepackagename=sourcepackagename)
+    foo_dash15 = factory.makeSourcePackageRelease(
+        archive=archive, sourcepackagename=sourcepackagename)
     suite_dir = 'lib/lp/archiveuploader/tests/data/suite'
     files = {
         '%s/foo_1.0-1/foo_1.0-1.diff.gz' % suite_dir: None,
@@ -212,3 +214,10 @@ class TestPackageDiffs(TestCaseWithFactory):
             err = self.assertRaises(OSError, os.kill, debdiff_pid, 0)
             self.assertEqual(errno.ESRCH, err.errno)
             self.assertFalse(os.path.exists(debdiff_tmpdir))
+
+    def test_packagediff_blacklist(self):
+        # Package diff jobs for blacklisted package names do nothing.
+        self.pushConfig("packagediff", blacklist="udev cordova-cli")
+        diff = create_proper_job(self.factory, sourcepackagename="cordova-cli")
+        diff.performDiff()
+        self.assertEqual(PackageDiffStatus.FAILED, diff.status)

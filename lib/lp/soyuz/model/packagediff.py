@@ -197,6 +197,11 @@ class PackageDiff(SQLBase):
             self.status = PackageDiffStatus.FAILED
             return
 
+        blacklist = config.packagediff.blacklist.split()
+        if self.from_source.sourcepackagename.name in blacklist:
+            self.status = PackageDiffStatus.FAILED
+            return
+
         # Create the temporary directory where the files will be
         # downloaded to and where the debdiff will be performed.
         tmp_dir = tempfile.mkdtemp()
