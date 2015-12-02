@@ -110,7 +110,7 @@
       <td tal:content="structure context/merge_target/fmt:link">lp:~foo/bar/baz</td>
     </tr>
     <tr id="summary-row-a-prerequisite-branch"
-        tal:condition="context/prerequisite_branch">
+        tal:condition="context/merge_prerequisite">
       <th>Prerequisite:</th>
       <td tal:content="structure context/merge_prerequisite/fmt:link">lp:~foo/bar/baz</td>
     </tr>

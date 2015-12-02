@@ -28,7 +28,6 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.database.interfaces import IStore
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -36,6 +35,7 @@ from lp.testing import (
     logout,
     normalize_whitespace,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -226,15 +226,12 @@ class PillarSharingDetailsMixin:
     def test_view_query_count(self):
         # Test that the view bulk loads artifacts.
         person = self.factory.makePerson()
-        for x in range(0, 15):
-            self.makeArtifactGrantee(person, True, True, True, False)
         pillarperson = PillarPerson(self.pillar, person)
-
-        # Invalidate the Storm cache and check the query count.
-        IStore(self.pillar).invalidate()
-        with StormStatementRecorder() as recorder:
-            create_initialized_view(pillarperson, '+index')
-        self.assertThat(recorder, HasQueryCount(LessThan(14)))
+        recorder1, recorder2 = record_two_runs(
+            lambda: create_initialized_view(pillarperson, '+index'),
+            lambda: self.makeArtifactGrantee(person, True, True, True, False),
+            5, login_method=lambda: login_person(self.owner))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestProductSharingDetailsView(

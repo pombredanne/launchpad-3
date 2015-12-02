@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'GitRefContextMenu',
-    'GitRefNavigation',
     'GitRefRegisterMergeProposalView',
     'GitRefView',
     ]
@@ -48,33 +47,12 @@ from lp.services.webapp import (
     ContextMenu,
     LaunchpadView,
     Link,
-    Navigation,
-    stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
     HasSnapsViewMixin,
     )
-
-
-# XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
-# it's just a compatibility redirection.
-class GitRefNavigation(Navigation):
-
-    usedfor = IGitRef
-
-    @stepthrough("+merge")
-    def traverse_merge_proposal(self, id):
-        """Traverse to an `IBranchMergeProposal`."""
-        try:
-            id = int(id)
-        except ValueError:
-            # Not a number.
-            return None
-        proposal = self.context.getMergeProposalByID(id)
-        if proposal is not None:
-            return self.redirectSubTree(canonical_url(proposal))
 
 
 class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
@@ -325,12 +303,16 @@ class GitRefRegisterMergeProposalView(LaunchpadFormView):
 
     def validate(self, data):
         source_ref = self.context
-        target_repository = self._validateRef(data, 'target')
-        if not target_repository.isRepositoryMergeable(source_ref.repository):
-            self.setFieldError(
-                'target_git_repository',
-                "%s is not mergeable into this repository." %
-                source_ref.repository.identity)
+        # The existence of target_git_repository is handled by the form
+        # machinery.
+        if data.get('target_git_repository') is not None:
+            target_repository = self._validateRef(data, 'target')
+            if not target_repository.isRepositoryMergeable(
+                    source_ref.repository):
+                self.setFieldError(
+                    'target_git_repository',
+                    "%s is not mergeable into this repository." %
+                    source_ref.repository.identity)
         if data.get('prerequisite_git_repository') is not None:
             prerequisite_repository = self._validateRef(data, 'prerequisite')
             if not target_repository.isRepositoryMergeable(

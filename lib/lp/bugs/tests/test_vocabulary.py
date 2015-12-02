@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the bug domain vocabularies."""
@@ -133,3 +133,16 @@ class TestBugTaskMilestoneVocabulary(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
         self._assert_milestones(sourcepackage, milestone)
+
+    def test_sorted(self):
+        product = self.factory.makeProduct()
+        milestone1 = self.factory.makeMilestone(product=product, name="1.0.0")
+        milestone2 = self.factory.makeMilestone(product=product, name="1.10.0")
+        milestone3 = self.factory.makeMilestone(product=product, name="1.6.2")
+        milestone4 = self.factory.makeMilestone(product=product, name="1.8.4")
+        bugtask = self.factory.makeBugTask(target=product)
+        vocabulary = BugTaskMilestoneVocabulary(bugtask)
+        self.assertEqual(
+            [milestone2.displayname, milestone4.displayname,
+             milestone3.displayname, milestone1.displayname],
+            [term.title for term in vocabulary])

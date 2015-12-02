@@ -311,9 +311,10 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more importantly, administering Personal Package Archives is
-restricted to LP administrators and LP commercial administrators, as
-they need to be able to make PPAs private.
+But more importantly, administering Personal Package Archives is restricted
+to LP administrators, LP commercial administrators, and LP PPA
+administrators, as they need to be able to make PPAs private, change their
+virtualisation settings, and so on.
 
     >>> sample_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> print sample_browser.getLink("Administer archive")
@@ -330,6 +331,17 @@ they need to be able to make PPAs private.
     ...     auth='Basic commercial-member@canonical.com:test')
     >>> commercial_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> commercial_browser.getLink("Administer archive") is not None
+    True
+
+    >>> login('admin@canonical.com')
+    >>> ppa_admin = getUtility(IPersonSet).getByName('launchpad-ppa-admins')
+    >>> ppa_admin_member = factory.makePerson(
+    ...     email='ppa-member@canonical.com', member_of=[ppa_admin])
+    >>> logout()
+    >>> ppa_admin_browser = setupBrowser(
+    ...     auth='Basic ppa-member@canonical.com:test')
+    >>> ppa_admin_browser.open("http://launchpad.dev/~jblack/+archive")
+    >>> ppa_admin_browser.getLink("Administer archive") is not None
     True
 
 

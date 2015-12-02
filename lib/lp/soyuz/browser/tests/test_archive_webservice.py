@@ -164,11 +164,11 @@ class TestExternalDependencies(WebServiceTestCase):
         with ExpectedException(LRUnauthorized, '.*'):
             ws_archive.lp_save()
 
-    def test_external_dependencies_commercial_owner_invalid(self):
-        """Commercial admins can look and touch."""
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        owner = self.factory.makePerson(member_of=[commercial])
-        archive = self.factory.makeArchive(owner=owner)
+    def test_external_dependencies_ppa_owner_invalid(self):
+        """PPA admins can look and touch."""
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
+        archive = self.factory.makeArchive(owner=ppa_admin)
         transaction.commit()
         ws_archive = self.wsObject(archive, archive.owner)
         self.assertIs(None, ws_archive.external_dependencies)
@@ -177,11 +177,11 @@ class TestExternalDependencies(WebServiceTestCase):
         with ExpectedException(BadRequest, regex):
             ws_archive.lp_save()
 
-    def test_external_dependencies_commercial_owner_valid(self):
-        """Commercial admins can look and touch."""
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        owner = self.factory.makePerson(member_of=[commercial])
-        archive = self.factory.makeArchive(owner=owner)
+    def test_external_dependencies_ppa_owner_valid(self):
+        """PPA admins can look and touch."""
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
+        archive = self.factory.makeArchive(owner=ppa_admin)
         transaction.commit()
         ws_archive = self.wsObject(archive, archive.owner)
         self.assertIs(None, ws_archive.external_dependencies)
@@ -270,10 +270,10 @@ class TestProcessors(WebServiceTestCase):
         """The enabled_restricted_processors property is not in beta."""
         self.ws_version = 'beta'
         archive = self.factory.makeArchive()
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         transaction.commit()
-        ws_archive = self.wsObject(archive, user=commercial_admin)
+        ws_archive = self.wsObject(archive, user=ppa_admin)
         expected_re = (
             "(.|\n)*object has no attribute "
             "'enabled_restricted_processors'(.|\n)*")
@@ -284,10 +284,10 @@ class TestProcessors(WebServiceTestCase):
         """The enabled_restricted_processors property is in devel."""
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         transaction.commit()
-        ws_archive = self.wsObject(archive, user=commercial_admin)
+        ws_archive = self.wsObject(archive, user=ppa_admin)
         self.assertContentEqual([], ws_archive.enabled_restricted_processors)
 
     def test_processors(self):
@@ -317,21 +317,19 @@ class TestProcessors(WebServiceTestCase):
 
     def test_setProcessors_admin(self):
         """An admin can add a new processor to the enabled restricted set."""
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         self.factory.makeProcessor(
             'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
         ppa_url = api_url(self.factory.makeArchive(purpose=ArchivePurpose.PPA))
-        self.assertProcessors(
-            commercial_admin, ppa_url, ['386', 'hppa', 'amd64'])
+        self.assertProcessors(ppa_admin, ppa_url, ['386', 'hppa', 'amd64'])
 
-        response = self.setProcessors(
-            commercial_admin, ppa_url, ['386', 'arm'])
+        response = self.setProcessors(ppa_admin, ppa_url, ['386', 'arm'])
         self.assertEqual(200, response.status)
-        self.assertProcessors(commercial_admin, ppa_url, ['386', 'arm'])
+        self.assertProcessors(ppa_admin, ppa_url, ['386', 'arm'])
 
     def test_setProcessors_non_owner_forbidden(self):
-        """Only commercial admins and archive owners can call setProcessors."""
+        """Only PPA admins and archive owners can call setProcessors."""
         self.factory.makeProcessor(
             'unrestricted', 'Unrestricted', 'Unrestricted', restricted=False,
             build_by_default=False)
@@ -358,8 +356,8 @@ class TestProcessors(WebServiceTestCase):
 
     def test_setProcessors_owner_restricted_forbidden(self):
         """The archive owner cannot enable/disable restricted processors."""
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         self.factory.makeProcessor(
             'arm', 'ARM', 'ARM', restricted=True, build_by_default=False)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
@@ -369,9 +367,8 @@ class TestProcessors(WebServiceTestCase):
         response = self.setProcessors(owner, ppa_url, ['386', 'arm'])
         self.assertEqual(403, response.status)
 
-        # If a commercial admin enables arm, the owner cannot disable it.
-        response = self.setProcessors(
-            commercial_admin, ppa_url, ['386', 'arm'])
+        # If a PPA admin enables arm, the owner cannot disable it.
+        response = self.setProcessors(ppa_admin, ppa_url, ['386', 'arm'])
         self.assertEqual(200, response.status)
         self.assertProcessors(owner, ppa_url, ['386', 'arm'])
 
@@ -384,11 +381,11 @@ class TestProcessors(WebServiceTestCase):
         archive = self.factory.makeArchive()
         self.factory.makeProcessor(
             name='arm', restricted=True, build_by_default=False)
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         transaction.commit()
         ws_arm = self.service.processors.getByName(name='arm')
-        ws_archive = self.wsObject(archive, user=commercial_admin)
+        ws_archive = self.wsObject(archive, user=ppa_admin)
         self.assertContentEqual([], ws_archive.enabled_restricted_processors)
         ws_archive.enableRestrictedProcessor(processor=ws_arm)
         self.assertContentEqual(

@@ -180,9 +180,11 @@ class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
         # The vocab does the membership check for commercial admins too.
         user = self.factory.makeCommercialAdmin()
         com_admins = getUtility(IPersonSet).getByName('commercial-admins')
-        ppa_admins = getUtility(IPersonSet).getByName(
+        ppa_admins = getUtility(IPersonSet).getByName('launchpad-ppa-admins')
+        ppa_self_admins = getUtility(IPersonSet).getByName(
             'launchpad-ppa-self-admins')
         team1 = self.factory.makeTeam(members=[user])
         login_person(user)
         self.assertContentEqual(
-            [com_admins, ppa_admins, team1], self._vocabTermValues())
+            [com_admins, ppa_admins, ppa_self_admins, team1],
+            self._vocabTermValues())

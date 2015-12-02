@@ -154,7 +154,8 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
     published_by_pocket = Attribute("The set of source package releases "
         "currently published in this distro series, organised by "
         "pocket. The result is a dictionary, with the pocket dbschema "
-        "as a key, and a list of source package releases as the value.")
+        "as a key, and a list of {'spr': source package release, "
+        "'component_name': component name} as the value.")
 
     linked_branches = Attribute(
         "A mapping of pockets to officially linked branches, ordered by "

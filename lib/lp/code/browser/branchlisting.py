@@ -918,12 +918,6 @@ class PersonBaseBranchListingView(BranchListingView):
         return self.context
 
     @property
-    def show_action_menu(self):
-        if self.user is not None:
-            return self.user.inTeam(self.context)
-        return False
-
-    @property
     def show_junk_directions(self):
         return self.user == self.context
 
@@ -976,7 +970,6 @@ class PersonProductBranchesView(PersonBranchesView):
     no_sort_by = (
         BranchListingSort.DEFAULT, BranchListingSort.OWNER,
         BranchListingSort.PRODUCT)
-    show_action_menu = False
 
     @property
     def person(self):
@@ -1361,6 +1354,8 @@ class BaseSourcePackageBranchesView(BranchListingView):
 class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
+    can_have_git_link = True
+
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
@@ -1539,6 +1534,11 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
                      'total-count-string': count_string,
                      })
         return result
+
+    @property
+    def show_git_link(self):
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
 
 
 class SourcePackageBranchesView(BranchListingView):

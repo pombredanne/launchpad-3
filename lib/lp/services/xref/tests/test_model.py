@@ -76,6 +76,8 @@ class TestXRefSet(TestCaseWithFactory):
                 ('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},
             ('b', 'foo'): {
                 ('a', 'baz'): {'creator': creator, 'metadata': {'test': 2}}},
+            ('b', 'baz'): {
+                ('a', 'quux'): {'creator': creator, 'metadata': {'test': 3}}},
             })
 
         with StormStatementRecorder() as recorder:
@@ -122,6 +124,21 @@ class TestXRefSet(TestCaseWithFactory):
                     'creator': creator, 'date_created': now,
                     'metadata': {'test': 2}}}},
              bar_baz_refs)
+
+        with StormStatementRecorder() as recorder:
+            bar_foo_refs = getUtility(IXRefSet).findFromMany(
+                [('a', 'bar'), ('a', 'nonexistent'), ('b', 'baz')])
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertEqual(
+            {('a', 'bar'): {
+                ('b', 'foo'): {
+                    'creator': creator, 'date_created': now,
+                    'metadata': {'test': 1}}},
+             ('b', 'baz'): {
+                ('a', 'quux'): {
+                    'creator': creator, 'date_created': now,
+                    'metadata': {'test': 3}}}},
+             bar_foo_refs)
 
     def test_findFrom_creator(self):
         # findFrom issues a single query to get all of the people.

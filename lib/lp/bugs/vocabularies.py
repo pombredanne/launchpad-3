@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug domain vocabularies"""
@@ -61,6 +61,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.milestone import milestone_sort_key
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.vocabularies import DistributionVocabulary
 from lp.services.database.interfaces import IStore
@@ -393,7 +394,11 @@ class BugTaskMilestoneVocabulary:
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             milestones.append(bugtask.milestone)
-        return milestones
+
+        def naked_milestone_sort_key(milestone):
+            return milestone_sort_key(removeSecurityProxy(milestone))
+
+        return sorted(milestones, key=naked_milestone_sort_key, reverse=True)
 
     def getTerm(self, value):
         """See `IVocabulary`."""

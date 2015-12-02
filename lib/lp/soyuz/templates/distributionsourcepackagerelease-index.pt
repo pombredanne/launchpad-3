@@ -55,10 +55,6 @@
               >Foo Bar</dd>
         </dl>
         <dl>
-          <dt>Component:</dt>
-            <dd tal:content="context/component/name">main</dd>
-        </dl>
-        <dl>
           <dt>Architectures:</dt>
             <dd tal:content="context/architecturehintlist">i386, ppc</dd>
         </dl>
