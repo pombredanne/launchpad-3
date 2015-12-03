@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,10 +7,13 @@ __all__ = [
     'PackageDiffSet',
     ]
 
+from functools import partial
 import gzip
 import itertools
 import os
+import resource
 import shutil
+import signal
 import subprocess
 import tempfile
 
@@ -20,6 +23,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.services.config import config
 from lp.services.database.bulk import load
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -41,6 +45,19 @@ from lp.soyuz.interfaces.packagediff import (
     IPackageDiff,
     IPackageDiffSet,
     )
+
+
+def limit_deb_diff(timeout, max_size):
+    """Pre-exec function to apply resource limits to debdiff.
+
+    :param timeout: Time limit in seconds.
+    :param max_size: Maximum output file size in bytes.
+    """
+    signal.alarm(timeout)
+    _, hard_fsize = resource.getrlimit(resource.RLIMIT_FSIZE)
+    if hard_fsize != resource.RLIM_INFINITY and hard_fsize < max_size:
+        max_size = hard_fsize
+    resource.setrlimit(resource.RLIMIT_FSIZE, (max_size, hard_fsize))
 
 
 def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
@@ -67,13 +84,20 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
     [to_dsc] = [name for name in to_files
                 if name.lower().endswith('.dsc')]
     args = ['debdiff', from_dsc, to_dsc]
+    env = os.environ.copy()
+    env['TMPDIR'] = tmp_dir
 
     full_path = os.path.join(tmp_dir, out_filename)
     out_file = None
     try:
         out_file = open(full_path, 'w')
         process = subprocess.Popen(
-            args, stdout=out_file, stderr=subprocess.PIPE, cwd=tmp_dir)
+            args, stdout=out_file, stderr=subprocess.PIPE,
+            preexec_fn=partial(
+                limit_deb_diff,
+                config.packagediff.debdiff_timeout,
+                config.packagediff.debdiff_max_size),
+            cwd=tmp_dir, env=env)
         stdout, stderr = process.communicate()
     finally:
         if out_file is not None:
@@ -170,6 +194,11 @@ class PackageDiff(SQLBase):
         # Make sure the files associated with the two source packages are
         # still available in the librarian.
         if self._countDeletedLFAs() > 0:
+            self.status = PackageDiffStatus.FAILED
+            return
+
+        blacklist = config.packagediff.blacklist.split()
+        if self.from_source.sourcepackagename.name in blacklist:
             self.status = PackageDiffStatus.FAILED
             return
 

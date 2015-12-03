@@ -60,7 +60,6 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
@@ -395,21 +394,12 @@ class SourcePackageRelease(SQLBase):
             raise PackageDiffAlreadyRequested(
                 "%s has already been requested" % candidate.title)
 
-        if self.sourcepackagename.name == 'udev':
-            # XXX 2009-11-23 Julian bug=314436
-            # Currently diff output for udev will fill disks.  It's
-            # disabled until diffutils is fixed in that bug.
-            status = PackageDiffStatus.FAILED
-        else:
-            status = PackageDiffStatus.PENDING
-
         Store.of(to_sourcepackagerelease).flush()
         del get_property_cache(to_sourcepackagerelease).package_diffs
         packagediff = PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
-            requester=requester, status=status)
-        if status == PackageDiffStatus.PENDING:
-            getUtility(IPackageDiffJobSource).create(packagediff)
+            requester=requester)
+        getUtility(IPackageDiffJobSource).create(packagediff)
         return packagediff
 
     def aggregate_changelog(self, since_version):
