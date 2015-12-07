@@ -244,9 +244,7 @@ class AbstractPackageData:
             self.do_package(distro_name, archive_root)
         finally:
             os.chdir(cwd)
-        # We only rmtree if everything worked as expected; otherwise,
-        # leave it around for forensics.
-        shutil.rmtree(tempdir)
+            shutil.rmtree(tempdir)
 
         self.date_uploaded = UTC_NOW
         return True

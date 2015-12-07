@@ -4,9 +4,11 @@
 from doctest import DocTestSuite
 import hashlib
 import os
+import tempfile
 from textwrap import dedent
 from unittest import TestLoader
 
+from fixtures import EnvironmentVariableFixture
 import transaction
 
 from lp.archiveuploader.tagfiles import parse_tagfile
@@ -225,6 +227,65 @@ class TestSourcePackageData(TestCaseWithFactory):
             ExecutionError, sp_data.do_package, "ubuntu", archive_root)
         # But all is well in a Debian context.
         sp_data.do_package("debian", archive_root)
+
+    def test_process_package_cleans_up_after_unpack_failure(self):
+        archive_root = self.useTempDir()
+        pool_dir = os.path.join(archive_root, "pool/main/f/foo")
+        os.makedirs(pool_dir)
+
+        with open(os.path.join(
+            pool_dir, "foo_1.0.orig.tar.gz"), "wb+") as buffer:
+            orig_tar = LaunchpadWriteTarFile(buffer)
+            orig_tar.add_directory("foo-1.0")
+            orig_tar.close()
+            buffer.seek(0)
+            orig_tar_contents = buffer.read()
+        with open(os.path.join(
+            pool_dir, "foo_1.0-1.debian.tar.gz"), "wb+") as buffer:
+            debian_tar = LaunchpadWriteTarFile(buffer)
+            debian_tar.add_file("debian/source/format", "3.0 (quilt)\n")
+            debian_tar.add_file("debian/patches/series", "--- corrupt patch\n")
+            debian_tar.add_file("debian/rules", "")
+            debian_tar.close()
+            buffer.seek(0)
+            debian_tar_contents = buffer.read()
+        dsc_path = os.path.join(pool_dir, "foo_1.0-1.dsc")
+        with open(dsc_path, "w") as dsc:
+            dsc.write(dedent("""\
+                Format: 3.0 (quilt)
+                Source: foo
+                Binary: foo
+                Architecture: all
+                Version: 1.0-1
+                Maintainer: Foo Bar <foo.bar@canonical.com>
+                Files:
+                 %s %s foo_1.0.orig.tar.gz
+                 %s %s foo_1.0-1.debian.tar.gz
+                """ % (
+                    hashlib.md5(orig_tar_contents).hexdigest(),
+                    len(orig_tar_contents),
+                    hashlib.md5(debian_tar_contents).hexdigest(),
+                    len(debian_tar_contents))))
+
+        dsc_contents = parse_tagfile(dsc_path)
+        dsc_contents["Directory"] = pool_dir
+        dsc_contents["Package"] = "foo"
+        dsc_contents["Component"] = "main"
+        dsc_contents["Section"] = "misc"
+
+        sp_data = SourcePackageData(**dsc_contents)
+        unpack_tmpdir = self.makeTemporaryDirectory()
+        with EnvironmentVariableFixture("TMPDIR", unpack_tmpdir):
+            # Force tempfile to recheck TMPDIR.
+            tempfile.tempdir = None
+            try:
+                self.assertRaises(
+                    ExecutionError,
+                    sp_data.process_package, "ubuntu", archive_root)
+            finally:
+                # Force tempfile to recheck TMPDIR for future tests.
+                tempfile.tempdir = None
+        self.assertEqual([], os.listdir(unpack_tmpdir))
 
 
 class TestSourcePackageHandler(TestCaseWithFactory):
