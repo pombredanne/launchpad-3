@@ -378,6 +378,9 @@ class ErrorReportingUtility:
         #  - have a missing or offset REFERER header with a type listed in
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
+        #  - look like a deliberate DB outage, to cut down fastdowntime
+        #    noise.
+        self._oops_config.filters.append(self._filter_deliberate_db_outages)
 
     @property
     def oops_prefix(self):
@@ -422,6 +425,17 @@ class ErrorReportingUtility:
                 root_parts = urlparse.urlparse(
                     allvhosts.configs['mainsite'].rooturl)
                 if root_parts.netloc not in referer_parts.netloc:
+                    return True
+        return False
+
+    def _filter_deliberate_db_outages(self, report):
+        if _get_type(report) == 'DisconnectionError':
+            message = report.get('value', '')
+            for ok in (
+                    "database does not allow connections",
+                    "pgbouncer database is disabled"):
+                if (message.startswith(ok)
+                        or message.startswith("ERROR:  " + ok)):
                     return True
         return False
 
