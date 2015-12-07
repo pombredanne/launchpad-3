@@ -591,9 +591,11 @@ class LaunchpadBrowserPublication(
             pass
 
         # Log an OOPS for DisconnectionErrors: we don't expect to see
-        # disconnections as a routine event, so having information about them
-        # is important. See Bug #373837 for more information.
-        # We need to do this before we re-raise the exception as a Retry.
+        # most types of disconnections as a routine event
+        # (full-update.py produces very specific pgbouncer errors), so
+        # having information about them is important. See Bug #373837
+        # for more information.  We need to do this before we re-raise
+        # the exception as a Retry.
         if isinstance(exc_info[1], DisconnectionError):
             getUtility(IErrorReportingUtility).raising(exc_info, request)
 
@@ -643,6 +645,10 @@ class LaunchpadBrowserPublication(
                 orig_env.pop('launchpad.publicationticks', None)
             # Our endRequest needs to know if a retry is pending or not.
             request._wants_retry = True
+            # Abort any in-progress transaction and reset any
+            # disconnected stores. ZopePublication.handleException would
+            # do this for us if we weren't bypassing it.
+            transaction.abort()
             if isinstance(exc_info[1], Retry):
                 raise
             raise Retry(exc_info)
