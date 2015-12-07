@@ -645,12 +645,12 @@ class LaunchpadBrowserPublication(
                 orig_env.pop('launchpad.publicationticks', None)
             # Our endRequest needs to know if a retry is pending or not.
             request._wants_retry = True
-            if isinstance(exc_info[1], Retry):
-                raise
             # Abort any in-progress transaction and reset any
             # disconnected stores. ZopePublication.handleException would
             # do this for us if we weren't bypassing it.
             transaction.abort()
+            if isinstance(exc_info[1], Retry):
+                raise
             raise Retry(exc_info)
 
         superclass = zope.app.publication.browser.BrowserPublication
