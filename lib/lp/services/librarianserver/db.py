@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 import hashlib
+import urllib
 
 from storm.expr import (
     And,
@@ -56,13 +57,17 @@ class Library:
         """
         restricted = self.restricted
         if token and path:
-            # with a token and a path we may be able to serve restricted files
+            # With a token and a path we may be able to serve restricted files
             # on the public port.
+            #
+            # The URL-encoding of the path may have changed somewhere
+            # along the line, so reencode it canonically.
+            encoded_tilde_path = urllib.quote(urllib.unquote(path), safe='/')
             store = session_store()
             token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
                 TimeLimitedToken.token == hashlib.sha256(token).hexdigest(),
-                TimeLimitedToken.path == path).is_empty()
+                TimeLimitedToken.path == encoded_tilde_path).is_empty()
             store.reset()
             if token_found:
                 raise LookupError("Token stale/pruned/path mismatch")
