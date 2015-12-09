@@ -13,6 +13,7 @@ import urllib
 
 from storm.expr import (
     And,
+    Or,
     SQL,
     )
 
@@ -61,13 +62,25 @@ class Library:
             # on the public port.
             #
             # The URL-encoding of the path may have changed somewhere
-            # along the line, so reencode it canonically.
+            # along the line, so reencode it canonically. LFA.filename
+            # can't contain slashes, so they're safe to leave unencoded.
+            # And urllib.quote erroneously excludes ~ from its safe set,
+            # while RFC 3986 says it should be unescaped and Chromium
+            # forcibly decodes it in any URL that it sees.
+            #
+            # This needs to match url_path_quote.
+            plain_tilde_path = urllib.quote(urllib.unquote(path), safe='/~')
+            # XXX wgrant 2015-12-09: We used to generate URLs with
+            # escaped tildes, so support those until the tokens are all
+            # expired.
             encoded_tilde_path = urllib.quote(urllib.unquote(path), safe='/')
             store = session_store()
             token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
                 TimeLimitedToken.token == hashlib.sha256(token).hexdigest(),
-                TimeLimitedToken.path == encoded_tilde_path).is_empty()
+                Or(
+                    TimeLimitedToken.path == plain_tilde_path,
+                    TimeLimitedToken.path == encoded_tilde_path)).is_empty()
             store.reset()
             if token_found:
                 raise LookupError("Token stale/pruned/path mismatch")

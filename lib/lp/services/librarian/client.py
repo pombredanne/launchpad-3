@@ -53,9 +53,8 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 
 def url_path_quote(filename):
     """Quote `filename` for use in a URL."""
-    # XXX RobertCollins 2004-09-21: Perhaps filenames with / in them
-    # should be disallowed?
-    return urllib.quote(filename).replace('/', '%2F')
+    # This needs to match Library.getAlias' TimeLimitedToken handling.
+    return urllib.quote(filename, safe='~')
 
 
 def get_libraryfilealias_download_path(aliasID, filename):

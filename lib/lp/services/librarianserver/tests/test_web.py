@@ -337,7 +337,7 @@ class LibrarianWebTestCase(testtools.TestCase):
 
     def test_restricted_with_token_encoding(self):
         fileAlias, url = self.get_restricted_file_and_public_url('foo~%')
-        self.assertThat(url, EndsWith('/foo%7E%25'))
+        self.assertThat(url, EndsWith('/foo~%25'))
 
         # We have the base url for a restricted file; grant access to it
         # for a short time.
@@ -351,7 +351,7 @@ class LibrarianWebTestCase(testtools.TestCase):
             fileObj.close()
 
         # The token is valid even if the filename is encoded differently.
-        mangled_url = url.replace('%7E', '~')
+        mangled_url = url.replace('~', '%7E')
         self.assertNotEqual(mangled_url, url)
         fileObj = urlopen(mangled_url + "?token=%s" % token)
         try:
