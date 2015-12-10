@@ -545,7 +545,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             # any version is acceptable if no relationship is given
             '': lambda x: True,
             # strictly later
-            '>>': lambda x: x == 1,
+            '>>': lambda x: x > 0,
             # later or equal
             '>=': lambda x: x >= 0,
             # strictly equal
@@ -553,7 +553,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             # earlier or equal
             '<=': lambda x: x <= 0,
             # strictly earlier
-            '<<': lambda x: x == -1,
+            '<<': lambda x: x < 0,
             }
 
         # Use apt_pkg function to compare versions

@@ -325,6 +325,21 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
+    def testStrictInequalities(self):
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        for dep, expected in (
+                (u'dep-bin (<< 444)', u'dep-bin (<< 444)'),
+                (u'dep-bin (>> 444)', u''),
+                (u'dep-bin (<< 888)', u''),
+                (u'dep-bin (>> 888)', u'dep-bin (>> 888)'),
+                ):
+            depwait_build.updateStatus(
+                BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': dep})
+            depwait_build.updateDependencies()
+            self.assertEqual(expected, depwait_build.dependencies)
+
     def testDisjunctions(self):
         # If one of a set of alternatives becomes available, that set of
         # alternatives is dropped from the outstanding dependencies.
