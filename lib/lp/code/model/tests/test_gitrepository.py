@@ -2074,16 +2074,81 @@ class TestGitRepositorySet(TestCaseWithFactory):
                 self.repository_set.setDefaultRepositoryForOwner,
                 person, person, repository, user)
 
-    def test_setDefaultRepository_for_same_targetdefault_noops(self):
-        # If a repository is already the target default,
-        # setting the defaultRepository again should no-op.
+    def test_setDefaultRepositoryForOwner_noop(self):
+        # If a repository is already the target owner default, setting
+        # the default again should no-op.
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        repo = self.factory.makeGitRepository(owner=owner, target=target)
+        with person_logged_in(owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo, owner)
+            self.assertEqual(
+                repo,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo, owner)
+            self.assertEqual(
+                repo,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+
+    def test_setDefaultRepositoryForOwner_replaces_old(self):
+        # If another repository is already the target owner default,
+        # setting it overwrites.
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        repo1 = self.factory.makeGitRepository(owner=owner, target=target)
+        repo2 = self.factory.makeGitRepository(owner=owner, target=target)
+        with person_logged_in(owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo1, owner)
+            self.assertEqual(
+                repo1,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+            self.assertTrue(repo1.owner_default)
+            self.assertFalse(repo2.owner_default)
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo2, owner)
+            self.assertEqual(
+                repo2,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+            self.assertFalse(repo1.owner_default)
+            self.assertTrue(repo2.owner_default)
+
+    def test_setDefaultRepository_noop(self):
+        # If a repository is already the target default, setting the
+        # default again should no-op.
         project = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(target=project)
         with person_logged_in(project.owner):
             self.repository_set.setDefaultRepository(project, repository)
-            result = self.repository_set.setDefaultRepository(
-                project, repository)
-        self.assertEqual(None, result)
+            self.assertEqual(
+                repository, self.repository_set.getDefaultRepository(project))
+            self.repository_set.setDefaultRepository(project, repository)
+            self.assertEqual(
+                repository, self.repository_set.getDefaultRepository(project))
+
+    def test_setDefaultRepository_replaces_old(self):
+        # If another repository is already the target default, setting
+        # it overwrites.
+        project = self.factory.makeProduct()
+        repo1 = self.factory.makeGitRepository(target=project)
+        repo2 = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            self.repository_set.setDefaultRepository(project, repo1)
+            self.assertEqual(
+                repo1, self.repository_set.getDefaultRepository(project))
+            self.assertTrue(repo1.target_default)
+            self.assertFalse(repo2.target_default)
+            self.repository_set.setDefaultRepository(project, repo2)
+            self.assertEqual(
+                repo2, self.repository_set.getDefaultRepository(project))
+            self.assertFalse(repo1.target_default)
+            self.assertTrue(repo2.target_default)
 
 
 class TestGitRepositorySetDefaultsMixin:
