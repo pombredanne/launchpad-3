@@ -15,6 +15,8 @@ from urlparse import urlparse
 from lazr.uri import URI
 import pytz
 from storm.expr import SQL
+import testtools
+from testtools.matchers import EndsWith
 import transaction
 from zope.component import getUtility
 
@@ -48,7 +50,7 @@ def uri_path_replace(url, old, new):
     return str(parsed.replace(path=parsed.path.replace(old, new)))
 
 
-class LibrarianWebTestCase(unittest.TestCase):
+class LibrarianWebTestCase(testtools.TestCase):
     """Test the librarian's web interface."""
     layer = LaunchpadFunctionalLayer
     dbuser = 'librarian'
@@ -237,13 +239,13 @@ class LibrarianWebTestCase(unittest.TestCase):
         self.failUnlessEqual(
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
 
-    def get_restricted_file_and_public_url(self):
+    def get_restricted_file_and_public_url(self, filename='sample'):
         # Use a regular LibrarianClient to ensure we speak to the
         # nonrestricted port on the librarian which is where secured
         # restricted files are served from.
         client = LibrarianClient()
         fileAlias = client.addFile(
-            'sample', 12, StringIO('a' * 12), contentType='text/plain')
+            filename, 12, StringIO('a' * 12), contentType='text/plain')
         # Note: We're deliberately using the wrong url here: we should be
         # passing secure=True to getURLForAlias, but to use the returned URL
         # we would need a wildcard DNS facility patched into urlopen; instead
@@ -333,6 +335,30 @@ class LibrarianWebTestCase(unittest.TestCase):
         finally:
             fileObj.close()
 
+    def test_restricted_with_token_encoding(self):
+        fileAlias, url = self.get_restricted_file_and_public_url('foo~%')
+        self.assertThat(url, EndsWith('/foo~%25'))
+
+        # We have the base url for a restricted file; grant access to it
+        # for a short time.
+        token = TimeLimitedToken.allocate(url)
+
+        # Now we should be able to access the file.
+        fileObj = urlopen(url + "?token=%s" % token)
+        try:
+            self.assertEqual("a" * 12, fileObj.read())
+        finally:
+            fileObj.close()
+
+        # The token is valid even if the filename is encoded differently.
+        mangled_url = url.replace('~', '%7E')
+        self.assertNotEqual(mangled_url, url)
+        fileObj = urlopen(mangled_url + "?token=%s" % token)
+        try:
+            self.assertEqual("a" * 12, fileObj.read())
+        finally:
+            fileObj.close()
+
     def test_restricted_with_expired_token(self):
         fileAlias, url = self.get_restricted_file_and_public_url()
         # We have the base url for a restricted file; grant access to it
@@ -384,6 +410,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(LibrarianZopelessWebTestCase, self).setUp()
         switch_dbuser(config.librarian.dbuser)
 
     def commit(self):
@@ -409,6 +436,7 @@ class DeletedContentTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(DeletedContentTestCase, self).setUp()
         switch_dbuser(config.librarian.dbuser)
 
     def test_deletedContentNotFound(self):
