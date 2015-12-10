@@ -1241,16 +1241,16 @@ class GitRepositorySet:
             raise GitTargetError(
                 "Cannot set a default Git repository for a person, only "
                 "for a project or a package.")
-        if repository is not None:
-            if repository.target != target:
-                raise GitTargetError(
-                    "Cannot set default Git repository to one attached to "
-                    "another target.")
-            repository.setTargetDefault(True)
-        else:
-            previous = self.getDefaultRepository(target)
+        if repository is not None and repository.target != target:
+            raise GitTargetError(
+                "Cannot set default Git repository to one attached to "
+                "another target.")
+        previous = self.getDefaultRepository(target)
+        if previous != repository:
             if previous is not None:
                 previous.setTargetDefault(False)
+            if repository is not None:
+                repository.setTargetDefault(True)
 
     def setDefaultRepositoryForOwner(self, owner, target, repository, user):
         """See `IGitRepositorySet`."""
@@ -1276,11 +1276,12 @@ class GitRepositorySet:
                 raise GitTargetError(
                     "Cannot set a person's default Git repository to one "
                     "owned by somebody else.")
-            repository.setOwnerDefault(True)
-        else:
-            previous = self.getDefaultRepositoryForOwner(owner, target)
+        previous = self.getDefaultRepositoryForOwner(owner, target)
+        if previous != repository:
             if previous is not None:
                 previous.setOwnerDefault(False)
+            if repository is not None:
+                repository.setOwnerDefault(True)
 
     def empty_list(self):
         """See `IGitRepositorySet`."""
