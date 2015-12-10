@@ -69,7 +69,7 @@ class Library:
             # forcibly decodes it in any URL that it sees.
             #
             # This needs to match url_path_quote.
-            plain_tilde_path = urllib.quote(urllib.unquote(path), safe='/~')
+            plain_tilde_path = urllib.quote(urllib.unquote(path), safe='/~+')
             # XXX wgrant 2015-12-09: We used to generate URLs with
             # escaped tildes, so support those until the tokens are all
             # expired.

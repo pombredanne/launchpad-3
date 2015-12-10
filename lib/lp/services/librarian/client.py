@@ -53,8 +53,12 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 
 def url_path_quote(filename):
     """Quote `filename` for use in a URL."""
+    # RFC 3986 says ~ should not be generated escaped, but urllib.quote
+    # predates it. Additionally, + is safe to use unescaped in paths and is
+    # frequently used in Debian versions, so leave it alone.
+    #
     # This needs to match Library.getAlias' TimeLimitedToken handling.
-    return urllib.quote(filename, safe='~')
+    return urllib.quote(filename, safe='/~+')
 
 
 def get_libraryfilealias_download_path(aliasID, filename):
