@@ -115,18 +115,14 @@
   <div tal:condition="context/codehosting_usage/enumvalue:UNKNOWN">
     <div
        tal:condition="not: context/codehosting_usage/enumvalue:LAUNCHPAD"
-       tal:define="configure_codehosting view/configure_codehosting |
-       nothing">
+       tal:define="configure_code context/menu:overview/configure_code|nothing">
       <p>
         <a class="sprite maybe"
            href="https://help.launchpad.net/Code">Getting started
           with code hosting in Launchpad</a>.</p>
 
-      <p tal:condition="context/required:launchpad.Edit"
-         id="no-code-edit">
-        <a tal:condition="configure_codehosting"
-           tal:replace="structure configure_codehosting/fmt:link"/>
-      </p>
+      <p tal:condition="configure_code/enabled"
+         tal:content="structure configure_code/fmt:link"></p>
     </div>
   </div>
 

@@ -101,7 +101,7 @@ blueprints is not promoted.
     ...     print key, view.configuration_states[key]
     configure_answers False
     configure_bugtracker False
-    configure_codehosting False
+    configure_code False
     configure_translations False
 
 The percentage of the registration completed can be determined by
@@ -120,7 +120,7 @@ Changing the product's usage is reflected in the view properties.
     ...     print key, view.configuration_states[key]
     configure_answers False
     configure_bugtracker False
-    configure_codehosting False
+    configure_code False
     configure_translations True
 
     >>> print pretty(view.registration_completeness)

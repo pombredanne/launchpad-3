@@ -670,27 +670,6 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
         self.assertEqual('launchpad.dev', URI(link.url).host)
 
 
-class TestProductConfigureCodehosting(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_configure_codehosting_hidden(self):
-        # If the user does not have driver permissions, they are not shown
-        # the configure codehosting link.
-        product = self.factory.makeProduct()
-        browser = self.getUserBrowser(
-            canonical_url(product, rootsite='code'))
-        self.assertFalse('Configure Code' in browser.contents)
-
-    def test_configure_codehosting_shown(self):
-        # If the user has driver permissions, they are shown the configure
-        # codehosting link.
-        product = self.factory.makeProduct()
-        browser = self.getUserBrowser(
-            canonical_url(product, rootsite='code'), user=product.owner)
-        self.assertTrue('Configure Code' in browser.contents)
-
-
 class TestPersonBranchesPage(BrowserTestCase):
     """Tests for the person branches page.
 

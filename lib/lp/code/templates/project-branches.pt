@@ -25,7 +25,7 @@
           </p>
             <ul id="product-list" tal:repeat="product products">
               <li>
-                <a tal:attributes="href product/@@+branches/configure_codehosting/fmt:url"
+                <a tal:attributes="href product/menu:overview/configure_code/fmt:url"
                    tal:content="product/title" />
               </li>
             </ul>
