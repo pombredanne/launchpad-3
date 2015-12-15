@@ -44,7 +44,7 @@
 
       <div id="involvement" class="portlet"
            tal:define="configure_code context/menu:overview/configure_code|nothing"
-           tal:condition="configure_code|nothing/enabled">
+           tal:condition="configure_code/enabled|nothing">
         <ul>
           <li tal:content="structure configure_code/fmt:link"></li>
         </ul>

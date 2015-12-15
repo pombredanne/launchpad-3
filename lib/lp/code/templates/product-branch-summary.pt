@@ -121,7 +121,7 @@
            href="https://help.launchpad.net/Code">Getting started
           with code hosting in Launchpad</a>.</p>
 
-      <p tal:condition="configure_code/enabled"
+      <p tal:condition="configure_code/enabled|nothing"
          tal:content="structure configure_code/fmt:link"></p>
     </div>
   </div>

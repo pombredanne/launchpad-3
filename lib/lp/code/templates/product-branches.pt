@@ -45,7 +45,7 @@
               tal:condition="link/enabled"
               tal:content="structure link/render"></li>
           <li tal:define="configure_code context/menu:overview/configure_code|nothing"
-              tal:condition="configure_code/enabled"
+              tal:condition="configure_code/enabled|nothing"
               tal:replace="structure configure_code/fmt:link"></li>
         </ul>
       </div>
