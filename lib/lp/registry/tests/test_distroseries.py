@@ -349,6 +349,26 @@ class TestDistroSeries(TestCaseWithFactory):
             for s in distroseries.api_valid_specifications]
         self.assertContentEqual([spec.workitems_text], workitems)
 
+    def test_backports_not_automatic(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.backports_not_automatic)
+        with admin_logged_in():
+            distroseries.backports_not_automatic = True
+        self.assertTrue(distroseries.backports_not_automatic)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["backports_not_automatic"])
+
+    def test_include_long_descriptions(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(distroseries.include_long_descriptions)
+        with admin_logged_in():
+            distroseries.include_long_descriptions = False
+        self.assertFalse(distroseries.include_long_descriptions)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertFalse(
+            naked_distroseries.publishing_options["include_long_descriptions"])
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 

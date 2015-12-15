@@ -265,6 +265,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         'Section', joinColumn='distroseries', otherColumn='section',
         intermediateTable='SectionSelection')
 
+    def __init__(self, *args, **kwargs):
+        if "publishing_options" not in kwargs:
+            kwargs["publishing_options"] = {
+                "backports_not_automatic": False,
+                "include_long_descriptions": True,
+                }
+        super(DistroSeries, self).__init__(*args, **kwargs)
+
     @property
     def displayname(self):
         return self.display_name
