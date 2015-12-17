@@ -470,8 +470,9 @@ class BaseLayer:
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
                         "Test left uncollectable garbage\n"
-                        "%s (referenced from %s)"
-                        % (gc.garbage, gc.get_referrers(*gc.garbage)))
+                        "%s (referenced from %s; referencing %s)"
+                        % (gc.garbage, gc.get_referrers(*gc.garbage),
+                           gc.get_referents(*gc.garbage)))
 
     @classmethod
     @profiled
