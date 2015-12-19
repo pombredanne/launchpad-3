@@ -39,14 +39,15 @@
         </span>
       </div>
 
-      <div id="involvement" class="portlet"
-           tal:define="menu context/menu:branches">
-        <p tal:define="link menu/code_import"
-           tal:condition="link/enabled"
-           tal:content="structure link/render"></p>
-        <p tal:define="configure_codehosting view/configure_codehosting | nothing"
-           tal:condition="configure_codehosting"
-           tal:replace="structure configure_codehosting/fmt:link"></p>
+      <div id="involvement" class="portlet">
+        <ul>
+          <li tal:define="link context/menu:branches/code_import"
+              tal:condition="link/enabled"
+              tal:content="structure link/render"></li>
+          <li tal:define="configure_code context/menu:overview/configure_code|nothing"
+              tal:condition="configure_code/enabled|nothing"
+              tal:replace="structure configure_code/fmt:link"></li>
+        </ul>
       </div>
 
     </div>

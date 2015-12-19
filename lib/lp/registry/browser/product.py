@@ -356,7 +356,7 @@ class ProductInvolvementView(PillarInvolvementView):
             self.context.answers_usage != ServiceUsage.UNKNOWN)
         states['configure_translations'] = (
             self.context.translations_usage != ServiceUsage.UNKNOWN)
-        states['configure_codehosting'] = (
+        states['configure_code'] = (
             self.context.codehosting_usage != ServiceUsage.UNKNOWN)
         return states
 
@@ -389,7 +389,7 @@ class ProductInvolvementView(PillarInvolvementView):
         configure_code.summary = "Specify the location of this project's code."
         config_list.insert(0,
             dict(link=configure_code,
-                 configured=config_statuses['configure_codehosting']))
+                 configured=config_statuses['configure_code']))
         return config_list
 
     @property
@@ -585,7 +585,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     @enabled_with_permission('launchpad.Edit')
     def configure_code(self):
         """Return a link to configure code for this project."""
-        text = 'Configure code'
+        text = 'Configure Code'
         icon = 'edit'
         summary = 'Configure code for this project'
         return Link('+configure-code', text, summary, icon=icon)
