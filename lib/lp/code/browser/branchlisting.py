@@ -56,7 +56,6 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
-from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     ServiceUsage,
@@ -1130,16 +1129,6 @@ class ProductBranchListingView(BranchListingView):
     def can_configure_branches(self):
         """Whether or not the user can configure branches."""
         return check_permission("launchpad.Edit", self.context)
-
-    @property
-    def configure_codehosting(self):
-        """Get the menu link for configuring code hosting."""
-        if not check_permission('launchpad.Edit', self.context):
-            return None
-        menu = MenuAPI(self.context).overview
-        configure_code = menu['configure_code']
-        configure_code.text = 'Configure Code'
-        return configure_code
 
 
 class ProductBranchStatisticsView(BranchCountSummaryView,

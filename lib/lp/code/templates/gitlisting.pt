@@ -41,6 +41,14 @@
           </span>
         </div>
       </div>
+
+      <div id="involvement" class="portlet"
+           tal:define="configure_code context/menu:overview/configure_code|nothing"
+           tal:condition="configure_code/enabled|nothing">
+        <ul>
+          <li tal:content="structure configure_code/fmt:link"></li>
+        </ul>
+      </div>
     </tal:has-target>
   </metal:side>
   <metal:main fill-slot="main">
