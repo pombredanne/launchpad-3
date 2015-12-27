@@ -25,7 +25,6 @@ from lp.services.database import (
     read_transaction,
     write_transaction,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.librarian.client import url_path_quote
 from lp.services.librarian.utils import guess_librarian_encoding
 
@@ -118,31 +117,16 @@ class LibraryFileAliasResource(resource.Resource):
 
         token = request.args.get('token', [None])[0]
         path = request.path
-        if getFeatureFlag('librarian.swift.enabled'):
-            deferred = deferToThread(
-                self._getFileAlias_swift, self.aliasID, token, path)
-            deferred.addCallback(
-                self._cb_getFileAlias_swift, filename, request)
-        else:
-            deferred = deferToThread(
-                self._getFileAlias, self.aliasID, token, path)
-            deferred.addCallback(
-                    self._cb_getFileAlias, filename, request
-                    )
+        deferred = deferToThread(
+            self._getFileAlias, self.aliasID, token, path)
+        deferred.addCallback(
+                self._cb_getFileAlias, filename, request
+                )
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
     @write_transaction
     def _getFileAlias(self, aliasID, token, path):
-        try:
-            alias = self.storage.getFileAlias(aliasID, token, path)
-            return (alias.contentID, alias.filename,
-                alias.mimetype, alias.date_created, alias.restricted)
-        except LookupError:
-            raise NotFound
-
-    @write_transaction
-    def _getFileAlias_swift(self, aliasID, token, path):
         try:
             alias = self.storage.getFileAlias(aliasID, token, path)
             return (alias.contentID, alias.filename,
@@ -162,42 +146,8 @@ class LibraryFileAliasResource(resource.Resource):
         else:
             return fourOhFour
 
-    def _cb_getFileAlias(
-            self,
-            (dbcontentID, dbfilename, mimetype, date_created, restricted),
-            filename, request
-            ):
-        # Return a 404 if the filename in the URL is incorrect. This offers
-        # a crude form of access control (stuff we care about can have
-        # unguessable names effectively using the filename as a secret).
-        if dbfilename.encode('utf-8') != filename:
-            log.msg(
-                "404: dbfilename.encode('utf-8') != filename: %r != %r"
-                % (dbfilename.encode('utf-8'), filename))
-            return fourOhFour
-
-        if self.storage.hasFile(dbcontentID):
-            # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
-            # stored as part of a file's metadata this logic will be replaced.
-            encoding, mimetype = guess_librarian_encoding(filename, mimetype)
-            # Set our caching headers. Public Librarian files can be
-            # cached forever, while private ones mustn't be at all.
-            request.setHeader(
-                'Cache-Control',
-                'max-age=31536000, public'
-                if not restricted else 'max-age=0, private')
-            return File(
-                mimetype, encoding, date_created,
-                self.storage._fileLocation(dbcontentID))
-        elif self.upstreamHost is not None:
-            return proxy.ReverseProxyResource(self.upstreamHost,
-                                              self.upstreamPort, request.path)
-        else:
-            raise AssertionError(
-                "Content %d missing from storage." % dbcontentID)
-
     @defer.inlineCallbacks
-    def _cb_getFileAlias_swift(
+    def _cb_getFileAlias(
             self,
             (dbcontentID, dbfilename, mimetype, date_created, size,
                 restricted),
@@ -217,7 +167,7 @@ class LibraryFileAliasResource(resource.Resource):
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
             encoding, mimetype = guess_librarian_encoding(filename, mimetype)
-            file = File_swift(mimetype, encoding, date_created, stream, size)
+            file = File(mimetype, encoding, date_created, stream, size)
             assert file.exists
             # Set our caching headers. Public Librarian files can be
             # cached forever, while private ones mustn't be at all.
@@ -239,28 +189,6 @@ class LibraryFileAliasResource(resource.Resource):
 
 
 class File(static.File):
-    isLeaf = True
-
-    def __init__(
-        self, contentType, encoding, modification_time, *args, **kwargs):
-        # Have to convert the UTC datetime to POSIX timestamp (localtime)
-        offset = datetime.utcnow() - datetime.now()
-        local_modification_time = modification_time - offset
-        self._modification_time = time.mktime(
-            local_modification_time.timetuple())
-        static.File.__init__(self, *args, **kwargs)
-        self.type = contentType
-        self.encoding = encoding
-
-    def getModificationTime(self):
-        """Override the time on disk with the time from the database.
-
-        This is used by twisted to set the Last-Modified: header.
-        """
-        return self._modification_time
-
-
-class File_swift(static.File):
     isLeaf = True
 
     def __init__(
