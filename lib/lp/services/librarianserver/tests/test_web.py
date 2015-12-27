@@ -5,6 +5,7 @@ from cStringIO import StringIO
 from datetime import datetime
 import hashlib
 import httplib
+import os
 import unittest
 from urllib2 import (
     HTTPError,
@@ -37,6 +38,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     TimeLimitedToken,
     )
+from lp.services.librarianserver.storage import LibrarianStorage
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -238,6 +240,40 @@ class LibrarianWebTestCase(testtools.TestCase):
         # And we should have a correct Last-Modified header too.
         self.failUnlessEqual(
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
+
+    def test_missing_storage(self):
+        # When a file exists in the DB but is missing from disk, a 404
+        # is just confusing. It's an internal error, so 500 instead.
+        client = LibrarianClient()
+
+        # Upload a file so we can retrieve it.
+        sample_data = 'blah'
+        file_alias_id = client.addFile(
+            'sample', len(sample_data), StringIO(sample_data),
+            contentType='text/plain')
+        url = client.getURLForAlias(file_alias_id)
+
+        # Change the date_created to a known value that doesn't match
+        # the disk timestamp. The timestamp on disk cannot be trusted.
+        file_alias = IMasterStore(LibraryFileAlias).get(
+            LibraryFileAlias, file_alias_id)
+
+        # Commit so the file is available from the Librarian.
+        self.commit()
+
+        # Fetch the file via HTTP.
+        urlopen(url)
+
+        # Delete the on-disk file.
+        storage = LibrarianStorage(config.librarian_server.root, None)
+        os.remove(storage._fileLocation(file_alias.contentID))
+
+        # The URL now 500s, since the DB says it should exist.
+        exception = self.assertRaises(HTTPError, urlopen, url)
+        self.assertEqual(500, exception.code)
+        self.assertIn('Server', exception.info())
+        self.assertNotIn('Last-Modified', exception.info())
+        self.assertNotIn('Cache-Control', exception.info())
 
     def get_restricted_file_and_public_url(self, filename='sample'):
         # Use a regular LibrarianClient to ensure we speak to the
