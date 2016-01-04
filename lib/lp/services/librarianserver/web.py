@@ -176,25 +176,25 @@ class LibraryFileAliasResource(resource.Resource):
                 % (dbfilename.encode('utf-8'), filename))
             return fourOhFour
 
-        if not restricted:
-            # Set our caching headers. Librarian files can be cached forever.
-            request.setHeader('Cache-Control', 'max-age=31536000, public')
-        else:
-            # Restricted files require revalidation every time. For now,
-            # until the deployment details are completely reviewed, the
-            # simplest, most cautious approach is taken: no caching permited.
-            request.setHeader('Cache-Control', 'max-age=0, private')
-
-        if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
+        if self.storage.hasFile(dbcontentID):
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
             encoding, mimetype = guess_librarian_encoding(filename, mimetype)
+            # Set our caching headers. Public Librarian files can be
+            # cached forever, while private ones mustn't be at all.
+            request.setHeader(
+                'Cache-Control',
+                'max-age=31536000, public'
+                if not restricted else 'max-age=0, private')
             return File(
                 mimetype, encoding, date_created,
                 self.storage._fileLocation(dbcontentID))
-        else:
+        elif self.upstreamHost is not None:
             return proxy.ReverseProxyResource(self.upstreamHost,
                                               self.upstreamPort, request.path)
+        else:
+            raise AssertionError(
+                "Content %d missing from storage." % dbcontentID)
 
     @defer.inlineCallbacks
     def _cb_getFileAlias_swift(
@@ -212,26 +212,27 @@ class LibraryFileAliasResource(resource.Resource):
                 % (dbfilename.encode('utf-8'), filename))
             defer.returnValue(fourOhFour)
 
-        if not restricted:
-            # Set our caching headers. Librarian files can be cached forever.
-            request.setHeader('Cache-Control', 'max-age=31536000, public')
-        else:
-            # Restricted files require revalidation every time. For now,
-            # until the deployment details are completely reviewed, the
-            # simplest, most cautious approach is taken: no caching permited.
-            request.setHeader('Cache-Control', 'max-age=0, private')
-
         stream = yield self.storage.open(dbcontentID)
-        if stream is not None or self.upstreamHost is None:
+        if stream is not None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
             encoding, mimetype = guess_librarian_encoding(filename, mimetype)
-            defer.returnValue(File_swift(
-                mimetype, encoding, date_created, stream, size))
-        else:
+            file = File_swift(mimetype, encoding, date_created, stream, size)
+            assert file.exists
+            # Set our caching headers. Public Librarian files can be
+            # cached forever, while private ones mustn't be at all.
+            request.setHeader(
+                'Cache-Control',
+                'max-age=31536000, public'
+                if not restricted else 'max-age=0, private')
+            defer.returnValue(file)
+        elif self.upstreamHost is not None:
             defer.returnValue(
                 proxy.ReverseProxyResource(
                     self.upstreamHost, self.upstreamPort, request.path))
+        else:
+            raise AssertionError(
+                "Content %d missing from storage." % dbcontentID)
 
     def render_GET(self, request):
         return defaultResource.render(request)
