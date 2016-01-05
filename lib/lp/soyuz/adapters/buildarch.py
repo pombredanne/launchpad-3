@@ -65,15 +65,13 @@ def determine_architectures_to_build(hint_list, indep_hint_list, need_archs,
 
     # Use the indep hint list if it's set, otherwise fall back to the
     # main architecture list. If that's not set either (ie. it's just
-    # "all"), default to nominatedarchindep.
+    # "all"), allow any available arch to be chosen.
     if indep_hint_list:
         indep_archs, _ = resolve_arch_spec(indep_hint_list, need_archs)
     elif not indep_only:
         indep_archs = set(build_archs)
-    elif nominated_arch_indep in need_archs:
-        indep_archs = set([nominated_arch_indep])
     else:
-        indep_archs = set()
+        indep_archs = set(need_archs)
 
     indep_arch = None
     if need_arch_indep:
