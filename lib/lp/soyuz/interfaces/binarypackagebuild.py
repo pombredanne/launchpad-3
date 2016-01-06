@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BinaryPackageBuild interfaces."""
@@ -266,6 +266,25 @@ class IBinaryPackageBuildEdit(Interface):
         """
 
 
+class IBinaryPackageBuildRestricted(Interface):
+    """Restricted `IBinaryPackageBuild` attributes.
+
+    These attributes need launchpad.View to see, and launchpad.Moderate to
+    change.
+    """
+    external_dependencies = exported(
+        Text(
+            title=_("External dependencies"), required=False, readonly=False,
+            description=_(
+                "Newline-separated list of repositories to be used to "
+                "retrieve any external build dependencies when performing "
+                "this build, in the format:\n"
+                "deb http[s]://[user:pass@]<host>[/path] series[-pocket] "
+                "[components]\n"
+                "This is intended for bootstrapping build-dependency loops.")),
+        as_of="devel")
+
+
 class IBinaryPackageBuildAdmin(Interface):
     """A Build interface for items requiring launchpad.Admin."""
 
@@ -277,7 +296,7 @@ class IBinaryPackageBuildAdmin(Interface):
 
 class IBinaryPackageBuild(
     IBinaryPackageBuildView, IBinaryPackageBuildEdit,
-    IBinaryPackageBuildAdmin):
+    IBinaryPackageBuildRestricted, IBinaryPackageBuildAdmin):
     """A Build interface"""
     export_as_webservice_entry(singular_name='build', plural_name='builds')
 

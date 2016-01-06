@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -467,10 +467,14 @@
         class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuild">
         <require
             permission="launchpad.View"
-            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildView"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildView
+                       lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildRestricted"/>
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildEdit"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildRestricted"/>
         <require
             permission="launchpad.Admin"
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildAdmin"/>
