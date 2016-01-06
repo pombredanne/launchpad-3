@@ -277,7 +277,7 @@ class IBinaryPackageBuildRestricted(Interface):
             title=_("External dependencies"), required=False, readonly=False,
             description=_(
                 "Newline-separated list of repositories to be used to "
-                "retrieve any external build dependencies when performing "
+                "retrieve any external build-dependencies when performing "
                 "this build, in the format:\n"
                 "deb http[s]://[user:pass@]<host>[/path] series[-pocket] "
                 "[components]\n"

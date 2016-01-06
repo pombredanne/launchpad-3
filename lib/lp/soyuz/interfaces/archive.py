@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive interfaces."""
@@ -641,7 +641,7 @@ class IArchiveView(IHasBuildRecords):
         Text(title=_("External dependencies"), required=False,
         readonly=False, description=_(
             "Newline-separated list of repositories to be used to retrieve "
-            "any external build dependencies when building packages in the "
+            "any external build-dependencies when building packages in the "
             "archive, in the format:\n"
             "deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] "
                 "[components]\n"
