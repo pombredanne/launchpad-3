@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -1955,6 +1955,24 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         # See comment above.
         auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         return auth_spr.checkUnauthenticated()
+
+
+class ModerateBinaryPackageBuild(ViewBinaryPackageBuild):
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        # Only people who can see the build and administer its archive can
+        # edit restricted attributes of builds.  (Currently this allows
+        # setting BinaryPackageBuild.external_dependencies; people who can
+        # administer the archive can already achieve the same effect by
+        # setting Archive.external_dependencies.)
+        return (
+            super(ModerateBinaryPackageBuild, self).checkAuthenticated(
+                user) and
+            AdminArchive(self.obj.archive).checkAuthenticated(user))
+
+    def checkUnauthenticated(self, user):
+        return False
 
 
 class ViewTranslationTemplatesBuild(DelegatedAuthorization):
