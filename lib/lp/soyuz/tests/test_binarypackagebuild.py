@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -561,6 +561,65 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         logout()
         entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         self.assertEqual(name, entry['source_package_name'])
+
+    def test_external_dependencies_random_user(self):
+        # Normal users can look but not touch.
+        person = self.factory.makePerson()
+        build_url = api_url(self.build)
+        logout()
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": "random"}))
+        self.assertEqual(401, response.status)
+
+    def test_external_dependencies_owner(self):
+        # Normal archive owners can look but not touch.
+        build_url = api_url(self.build)
+        logout()
+        entry = self.webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        response = self.webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": "random"}))
+        self.assertEqual(401, response.status)
+
+    def test_external_dependencies_ppa_owner_invalid(self):
+        # PPA admins can look and touch.
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
+        build_url = api_url(self.build)
+        logout()
+        webservice = webservice_for_person(
+            ppa_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": "random"}))
+        self.assertEqual(400, response.status)
+        self.assertIn("Invalid external dependencies", response.body)
+
+    def test_external_dependencies_ppa_owner_valid(self):
+        # PPA admins can look and touch.
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
+        build_url = api_url(self.build)
+        logout()
+        webservice = webservice_for_person(
+            ppa_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        dependencies = "deb http://example.org suite components"
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": dependencies}))
+        self.assertEqual(209, response.status)
+        self.assertEqual(
+            dependencies, response.jsonBody()["external_dependencies"])
 
 
 class TestPostprocessCandidate(TestCaseWithFactory):
