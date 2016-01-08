@@ -370,19 +370,17 @@
         <!--
            NOTE: The 'private' permission controls who can turn a public
            archive into a private one, and vice versa. The logic that
-           says this requires launchpad.Commercial permissions is duplicated
+           says this requires launchpad.Admin permissions is duplicated
            in validate_ppa.
           -->
         <require
-            permission="launchpad.Commercial"
-            set_attributes="buildd_secret private"/>
-        <require
             permission="launchpad.Admin"
             interface="lp.soyuz.interfaces.archive.IArchiveAdmin"
-            set_attributes="authorized_size enabled_restricted_processors
+            set_attributes="authorized_size buildd_secret
+                            enabled_restricted_processors
                             external_dependencies name
                             permit_obsolete_series_uploads
-                            require_virtualized"/>
+                            private require_virtualized"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
