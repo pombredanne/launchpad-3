@@ -50,6 +50,7 @@ from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
     SourceOverride,
     )
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -755,17 +756,9 @@ class NascentUpload:
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
 
-        # Avoid cyclic imports.
-        from lp.soyuz.interfaces.queue import QueueInconsistentStateError
-        try:
-            self.queue_root.setRejected()
-        except QueueInconsistentStateError:
-            # These exceptions are ignored, we want to force the rejected
-            # state.
-            pass
-
         with open(self.changes.filepath, "r") as changes_file_object:
             self.queue_root.notify(
+                status=PackageUploadStatus.REJECTED,
                 summary_text=self.rejection_message,
                 changes_file_object=changes_file_object, logger=self.logger)
 
