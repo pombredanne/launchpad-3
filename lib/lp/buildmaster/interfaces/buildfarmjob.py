@@ -227,6 +227,13 @@ class IBuildFarmJob(Interface):
                 'attempting to build this request.')),
         as_of="beta")
 
+    # Only really used by IBinaryPackageBuild, but
+    # get_sources_list_for_building looks up this attribute for all build
+    # types.
+    external_dependencies = Attribute(
+        "Newline-separated list of repositories to be used to retrieve any "
+        "external build-dependencies when performing this build.")
+
 
 class ISpecificBuildFarmJobSource(Interface):
     """A utility for retrieving objects of a specific IBuildFarmJob type.

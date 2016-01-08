@@ -272,7 +272,7 @@ class IBinaryPackageBuildRestricted(Interface):
     These attributes need launchpad.View to see, and launchpad.Moderate to
     change.
     """
-    external_dependencies = exported(
+    api_external_dependencies = exported(
         Text(
             title=_("External dependencies"), required=False, readonly=False,
             description=_(
@@ -282,7 +282,8 @@ class IBinaryPackageBuildRestricted(Interface):
                 "deb http[s]://[user:pass@]<host>[/path] series[-pocket] "
                 "[components]\n"
                 "This is intended for bootstrapping build-dependency loops.")),
-        as_of="devel")
+        as_of="devel",
+        exported_as="external_dependencies")
 
 
 class IBinaryPackageBuildAdmin(Interface):
