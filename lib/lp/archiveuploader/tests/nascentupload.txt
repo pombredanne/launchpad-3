@@ -489,17 +489,6 @@ The upload will be rejected.
     cannot upload the same version within the same distribution. You
     have to modify the source version and re-upload.
 
-We rely on process-upload transaction rollback to not store bogus
-queue entry in the database.
-
-    >>> print ed_src_dup.queue_root.status.name
-    REJECTED
-
-    >>> from lp.soyuz.enums import PackageUploadStatus
-    >>> hoary.getPackageUploads(
-    ...     status=PackageUploadStatus.REJECTED, name=u"ed").count()
-    1
-
 
 Staged Source and Binary upload with multiple binaries
 ......................................................
@@ -717,6 +706,7 @@ Look for the respective SourcePackageRelease entry and inspect its
 content, it should have all the required fields except the
 'dsc_standards_version':
 
+    >>> from lp.soyuz.enums import PackageUploadStatus
     >>> inst_queue = hoary.getPackageUploads(
     ...     PackageUploadStatus.NEW, name=u'test75874', exact_match=True)[0]
     >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
