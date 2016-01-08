@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive dependencies helper function.
@@ -243,7 +243,14 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
         _get_sources_list_for_dependencies(deps)
 
     external_dep_lines = []
-    # Append external sources_list lines for this archive if it's
+    # Append external sources.list lines for this build if specified.  No
+    # series substitution is needed here, so we don't have to worry about
+    # malformedness.
+    dependencies = build.external_dependencies
+    if dependencies is not None:
+        for line in dependencies.splitlines():
+            external_dep_lines.append(line)
+    # Append external sources.list lines for this archive if it's
     # specified in the configuration.
     try:
         dependencies = build.archive.external_dependencies

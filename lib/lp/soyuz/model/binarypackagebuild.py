@@ -770,6 +770,14 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         """See `IBinaryPackageBuild`."""
         return changes.signer
 
+    @property
+    def api_external_dependencies(self):
+        return self.external_dependencies
+
+    @api_external_dependencies.setter
+    def api_external_dependencies(self, value):
+        self.external_dependencies = value
+
 
 @implementer(IBinaryPackageBuildSet)
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
