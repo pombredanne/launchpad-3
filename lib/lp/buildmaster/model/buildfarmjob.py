@@ -119,6 +119,10 @@ class BuildFarmJobMixin:
         return None
 
     @property
+    def external_dependencies(self):
+        return None
+
+    @property
     def title(self):
         """See `IBuildFarmJob`."""
         return self.job_type.title
