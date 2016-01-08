@@ -503,7 +503,7 @@ Now builds in Celso's PPA will use the external dependencies.
 
 We can also set external dependencies for a single build.
 
-    >>> a_build.external_dependencies = (
+    >>> a_build.api_external_dependencies = (
     ...     u"deb http://user:pass@repository foo bar")
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
@@ -514,7 +514,7 @@ We can also set external dependencies for a single build.
         main restricted universe multiverse
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
-    >>> a_build.external_dependencies = None
+    >>> a_build.api_external_dependencies = None
 
 
 == Build tools sources.list entries ==
