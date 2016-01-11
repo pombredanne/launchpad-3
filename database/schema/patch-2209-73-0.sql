@@ -10,6 +10,12 @@ ALTER TABLE SourcePackageRecipeData
 ALTER TABLE SourcePackageRecipeData
     ADD CONSTRAINT one_base_vcs CHECK ((base_branch IS NOT NULL) != (base_git_repository IS NOT NULL));
 
+DROP INDEX sourcepackagerecipedata__base_branch__idx;
+CREATE INDEX sourcepackagerecipedata__base_branch__idx
+    ON SourcePackageRecipeData(base_branch) WHERE base_branch IS NOT NULL;
+CREATE INDEX sourcepackagerecipedata__base_git_repository__idx
+    ON SourcePackageRecipeData(base_git_repository) WHERE base_git_repository IS NOT NULL;
+
 COMMENT ON COLUMN SourcePackageRecipeData.base_git_repository IS 'The Git repository the recipe is based on.';
 
 ALTER TABLE SourcePackageRecipeDataInstruction
