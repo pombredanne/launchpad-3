@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface of the `SourcePackageRecipe` content type."""
@@ -8,8 +8,10 @@ __metaclass__ = type
 
 
 __all__ = [
+    'IRecipeBranchSource',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
+    'ISourcePackageRecipeDataSource',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
     ]
@@ -86,6 +88,28 @@ class ISourcePackageRecipeData(Interface):
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
+
+
+class IRecipeBranchSource(Interface):
+
+    def getParsedRecipe(recipe_text):
+        """Parse recipe text into recipe data.
+
+        :param recipe_text: Recipe text as a string.
+        :return: a `RecipeBranch` representing the recipe.
+        """
+
+
+class ISourcePackageRecipeDataSource(Interface):
+
+    def createManifestFromText(text, sourcepackage_recipe_build):
+        """Create a manifest for the specified build.
+
+        :param text: The text of the recipe to create a manifest for.
+        :param sourcepackage_recipe_build: The build to associate the manifest
+            with.
+        :return: an instance of `SourcePackageRecipeData`.
+        """
 
 
 class ISourcePackageRecipeView(Interface):

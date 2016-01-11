@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the `SourcePackageRecipe` content type."""
@@ -42,6 +42,7 @@ from lp.code.errors import (
     BuildNotAllowedForDistro,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
+    IRecipeBranchSource,
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
     ISourcePackageRecipeSource,
@@ -167,7 +168,7 @@ class SourcePackageRecipe(Storm):
             owner_ids, need_validity=True))
 
     def setRecipeText(self, recipe_text):
-        parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
+        parsed = getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text)
         self._recipe_data.setRecipe(parsed)
 
     @property
@@ -187,7 +188,8 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        builder_recipe = SourcePackageRecipeData.getParsedRecipe(recipe)
+        builder_recipe = getUtility(IRecipeBranchSource).getParsedRecipe(
+            recipe)
         SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner

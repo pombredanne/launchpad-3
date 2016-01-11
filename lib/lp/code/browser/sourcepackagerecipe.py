@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -20,7 +20,6 @@ import itertools
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
     RecipeParseError,
-    RecipeParser,
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -92,6 +91,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.sourcepackagerecipe import (
+    IRecipeBranchSource,
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
@@ -611,10 +611,11 @@ class RecipeTextValidatorMixin:
                     'distroseries',
                     'You must specify at least one series for daily builds.')
         try:
-            parser = RecipeParser(data['recipe_text'])
-            parser.parse()
-        except RecipeParseError as error:
-            self.setFieldError('recipe_text', str(error))
+            self.error_handler(
+                getUtility(IRecipeBranchSource).getParsedRecipe,
+                data['recipe_text'])
+        except ErrorHandled:
+            pass
 
     def error_handler(self, callable, *args, **kwargs):
         try:
@@ -631,7 +632,7 @@ class RecipeTextValidatorMixin:
         except NoSuchBranch as e:
             self.setFieldError(
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-        except PrivateBranchRecipe as e:
+        except (RecipeParseError, PrivateBranchRecipe) as e:
             self.setFieldError('recipe_text', str(e))
         raise ErrorHandled()
 
@@ -872,14 +873,14 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             self.context, providing=providedBy(self.context))
 
         recipe_text = data.pop('recipe_text')
-        parser = RecipeParser(recipe_text)
-        recipe = parser.parse()
-        if self.context.builder_recipe != recipe:
-            try:
+        try:
+            recipe = self.error_handler(
+                getUtility(IRecipeBranchSource).getParsedRecipe, recipe_text)
+            if self.context.builder_recipe != recipe:
                 self.error_handler(self.context.setRecipeText, recipe_text)
                 changed = True
-            except ErrorHandled:
-                return
+        except ErrorHandled:
+            return
 
         distros = data.pop('distroseries')
         if distros != self.context.distroseries:
@@ -927,7 +928,7 @@ class SourcePackageRecipeDeleteView(LaunchpadFormView):
     label = title
 
     class schema(Interface):
-        """Schema for deleting a branch."""
+        """Schema for deleting a recipe."""
 
     @property
     def cancel_url(self):
