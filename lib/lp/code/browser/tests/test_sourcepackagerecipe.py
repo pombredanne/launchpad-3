@@ -34,7 +34,7 @@ from lp.code.browser.sourcepackagerecipe import (
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
-from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT_BZR
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -449,7 +449,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_recipe_bad_base_branch(self):
         # If a user tries to create source package recipe with a bad base
         # branch location, they should get an error.
-        browser = self.createRecipe(MINIMAL_RECIPE_TEXT % 'foo')
+        browser = self.createRecipe(MINIMAL_RECIPE_TEXT_BZR % 'foo')
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
             'foo is not a branch on Launchpad.')
@@ -461,7 +461,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        recipe = MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        recipe = MINIMAL_RECIPE_TEXT_BZR % branch.bzr_identity
         recipe += 'nest packaging foo debian'
         browser = self.createRecipe(recipe, branch)
         self.assertEqual(
@@ -518,7 +518,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             owner=self.user, information_type=InformationType.USERDATA)
         with person_logged_in(self.user):
             bzr_identity = branch.bzr_identity
-        recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
+        recipe_text = MINIMAL_RECIPE_TEXT_BZR % bzr_identity
         browser = self.createRecipe(recipe_text)
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
@@ -761,7 +761,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'fings'
         browser.getControl('Description').value = 'This is stuff'
         browser.getControl('Recipe text').value = (
-            MINIMAL_RECIPE_TEXT % meat_path)
+            MINIMAL_RECIPE_TEXT_BZR % meat_path)
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Mumbly Midget').click()
         browser.getControl('PPA 2').click()
@@ -828,7 +828,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'fings'
         browser.getControl('Description').value = 'This is stuff'
         browser.getControl('Recipe text').value = (
-            MINIMAL_RECIPE_TEXT % meat_path)
+            MINIMAL_RECIPE_TEXT_BZR % meat_path)
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Mumbly Midget').click()
         browser.getControl('Update Recipe').click()
@@ -926,7 +926,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'fings'
         browser.getControl('Description').value = 'This is stuff'
         browser.getControl('Recipe text').value = (
-            MINIMAL_RECIPE_TEXT % meat_path)
+            MINIMAL_RECIPE_TEXT_BZR % meat_path)
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Mumbly Midget').click()
         browser.getControl('Update Recipe').click()
@@ -943,7 +943,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.user, information_type=InformationType.USERDATA)
         with person_logged_in(self.user):
             bzr_identity = branch.bzr_identity
-        recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
+        recipe_text = MINIMAL_RECIPE_TEXT_BZR % bzr_identity
         browser = self.getViewBrowser(recipe, '+edit')
         browser.getControl('Recipe text').value = recipe_text
         browser.getControl('Update Recipe').click()

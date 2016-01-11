@@ -13,7 +13,7 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeDataSource',
     'ISourcePackageRecipeSource',
-    'MINIMAL_RECIPE_TEXT',
+    'MINIMAL_RECIPE_TEXT_BZR',
     ]
 
 
@@ -66,7 +66,7 @@ from lp.services.fields import (
 from lp.soyuz.interfaces.archive import IArchive
 
 
-MINIMAL_RECIPE_TEXT = dedent(u'''\
+MINIMAL_RECIPE_TEXT_BZR = dedent(u'''\
     # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
     %s
     ''')
