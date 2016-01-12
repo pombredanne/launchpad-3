@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation code for source package builds."""
@@ -46,6 +46,10 @@ from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
     )
+from lp.code.interfaces.sourcepackagerecipe import (
+    IRecipeBranchSource,
+    ISourcePackageRecipeDataSource,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource,
@@ -53,7 +57,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
-from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Person
 from lp.services.database.bulk import load_related
@@ -158,10 +161,11 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
             if self.manifest is not None:
                 IStore(self.manifest).remove(self.manifest)
         elif self.manifest is None:
-            SourcePackageRecipeData.createManifestFromText(text, self)
+            getUtility(ISourcePackageRecipeDataSource).createManifestFromText(
+                text, self)
         else:
-            from bzrlib.plugins.builder.recipe import RecipeParser
-            self.manifest.setRecipe(RecipeParser(text).parse())
+            self.manifest.setRecipe(
+                getUtility(IRecipeBranchSource).getParsedRecipe(text))
 
     def getManifestText(self):
         if self.manifest is None:
