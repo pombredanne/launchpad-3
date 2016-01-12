@@ -1047,6 +1047,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
+        deletion_operations.extend(
+            DeletionCallable(
+                recipe, msg("This recipe uses this repository."),
+                recipe.destroySelf)
+            for recipe in self.recipes)
         if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, msg("Some snap packages build from this repository."),
