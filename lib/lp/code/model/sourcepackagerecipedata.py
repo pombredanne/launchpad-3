@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the recipe storage.
@@ -38,6 +38,10 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
+from zope.interface import (
+    implementer,
+    provider,
+    )
 
 from lp.code.errors import (
     NoSuchBranch,
@@ -45,6 +49,11 @@ from lp.code.errors import (
     TooNewRecipeFormat,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.sourcepackagerecipe import (
+    IRecipeBranchSource,
+    ISourcePackageRecipeData,
+    ISourcePackageRecipeDataSource,
+    )
 from lp.code.model.branch import Branch
 from lp.services.database.bulk import (
     load_referencing,
@@ -142,6 +151,8 @@ class _SourcePackageRecipeDataInstruction(Storm):
 MAX_RECIPE_FORMAT = 0.4
 
 
+@implementer(ISourcePackageRecipeData)
+@provider(IRecipeBranchSource, ISourcePackageRecipeDataSource)
 class SourcePackageRecipeData(Storm):
     """The database representation of a BaseRecipeBranch from bzr-builder.
 
@@ -177,6 +188,7 @@ class SourcePackageRecipeData(Storm):
 
     @staticmethod
     def getParsedRecipe(recipe_text):
+        """See `IRecipeBranchSource`."""
         parser = RecipeParser(recipe_text)
         return parser.parse(permitted_instructions=SAFE_INSTRUCTIONS)
 
@@ -202,13 +214,7 @@ class SourcePackageRecipeData(Storm):
 
     @classmethod
     def createManifestFromText(cls, text, sourcepackage_recipe_build):
-        """Create a manifest for the specified build.
-
-        :param text: The text of the recipe to create a manifest for.
-        :param sourcepackage_recipe_build: The build to associate the manifest
-            with.
-        :return: an instance of SourcePackageRecipeData.
-        """
+        """See `ISourcePackageRecipeDataSource`."""
         parsed = cls.getParsedRecipe(text)
         return cls(
             parsed, sourcepackage_recipe_build=sourcepackage_recipe_build)
