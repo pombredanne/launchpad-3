@@ -98,6 +98,10 @@ class IBranchTarget(Interface):
     supports_code_imports = Attribute(
         "Does this target support code imports at all?")
 
+    allow_recipe_name_from_target = Attribute(
+        "Can recipe names reasonably be generated from the target name "
+        "rather than the branch name?")
+
     def areBranchesMergeable(other_target):
         """Are branches from other_target mergeable into this target?"""
 
