@@ -94,7 +94,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     IRecipeBranchSource,
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
-    MINIMAL_RECIPE_TEXT,
+    MINIMAL_RECIPE_TEXT_BZR,
     )
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
@@ -761,7 +761,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
             'name': self._find_unused_name(self.user),
-            'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
+            'recipe_text': MINIMAL_RECIPE_TEXT_BZR % self.context.bzr_identity,
             'owner': self.user,
             'distroseries': series,
             'build_daily': True,
