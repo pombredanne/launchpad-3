@@ -38,7 +38,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     ISourcePackageRecipeView,
-    MINIMAL_RECIPE_TEXT,
+    MINIMAL_RECIPE_TEXT_BZR,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -997,7 +997,7 @@ class TestWebservice(TestCaseWithFactory):
 
     def makeRecipeText(self):
         branch = self.factory.makeBranch()
-        return MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        return MINIMAL_RECIPE_TEXT_BZR % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None,
                    version='devel'):
