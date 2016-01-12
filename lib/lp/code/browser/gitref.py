@@ -62,7 +62,9 @@ class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['create_snap', 'register_merge', 'source', 'view_recipes']
+    links = [
+        'create_recipe', 'create_snap', 'register_merge', 'source',
+        'view_recipes']
 
     def source(self):
         """Return a link to the branch's browsing interface."""
@@ -74,6 +76,12 @@ class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
         text = 'Propose for merging'
         enabled = self.context.namespace.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
+
+    def create_recipe(self):
+        # You can't create a recipe for a reference in a private repository.
+        enabled = not self.context.private
+        text = "Create packaging recipe"
+        return Link("+new-recipe", text, enabled=enabled, icon="add")
 
 
 class GitRefView(LaunchpadView, HasSnapsViewMixin):
