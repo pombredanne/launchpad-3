@@ -1841,6 +1841,64 @@ class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
         self.assertEqual(0, len(jobs))
 
 
+class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_base_repository_recipe(self):
+        # On ref changes, recipes where this ref is the base become stale.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_base_repository_different_ref_recipe(self):
+        # On ref changes, recipes where a different ref in the same
+        # repository is the base are left alone.
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_instruction_repository_recipe(self):
+        # On ref changes, recipes including this repository become stale.
+        [base_ref] = self.factory.makeGitRefs()
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[base_ref, ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_instruction_repository_different_ref_recipe(self):
+        # On ref changes, recipes including a different ref in the same
+        # repository are left alone.
+        [base_ref] = self.factory.makeGitRefs()
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_ref, ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_unrelated_repository_recipe(self):
+        # On ref changes, unrelated recipes are left alone.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
