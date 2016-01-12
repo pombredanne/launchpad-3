@@ -11,7 +11,6 @@ interfaces.
 __metaclass__ = type
 __all__ = ['SourcePackageRecipeData']
 
-from itertools import groupby
 import re
 
 from bzrlib.plugins.builder.recipe import (
@@ -433,17 +432,14 @@ class SourcePackageRecipeData(Storm):
         caches = {
             sprd.id: [sprd, get_property_cache(sprd)]
             for sprd in sourcepackagerecipedatas}
-        for unused, [sprd, cache] in caches.items():
+        for _, [sprd, cache] in caches.items():
             cache._referenced_branches = [sprd.base]
-        for recipe_data_id, branches in groupby(
-                sub_branches, lambda branch: branch_to_recipe_data[branch.id]):
-            cache = caches[recipe_data_id][1]
-            cache._referenced_branches.extend(list(branches))
-        for recipe_data_id, repositories in groupby(
-                sub_repositories,
-                lambda repository: repository_to_recipe_data[repository.id]):
-            cache = caches[recipe_data_id][1]
-            cache._referenced_branches.extend(list(repositories))
+        for branch in sub_branches:
+            cache = caches[branch_to_recipe_data[branch.id]][1]
+            cache._referenced_branches.append(branch)
+        for repository in sub_repositories:
+            cache = caches[repository_to_recipe_data[repository.id]][1]
+            cache._referenced_branches.append(repository)
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch/GitRepository objects referenced
