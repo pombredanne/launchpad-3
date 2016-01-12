@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for classes that implement IHasRecipes."""
@@ -38,6 +38,33 @@ class TestIHasRecipes(TestCaseWithFactory):
             branches=[base_branch, nonbase_branch])
         self.factory.makeSourcePackageRecipe()
         self.assertEqual(recipe, nonbase_branch.recipes.one())
+
+    def test_git_repository_implements_hasrecipes(self):
+        # Git repositories should implement IHasRecipes.
+        repository = self.factory.makeGitRepository()
+        self.assertProvides(repository, IHasRecipes)
+
+    def test_git_repository_recipes(self):
+        # IGitRepository.recipes should provide all the SourcePackageRecipes
+        # attached to that repository.
+        base_ref1, base_ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
+        [other_ref] = self.factory.makeGitRefs()
+        self.factory.makeSourcePackageRecipe(branches=[base_ref1])
+        self.factory.makeSourcePackageRecipe(branches=[base_ref2])
+        self.factory.makeSourcePackageRecipe(branches=[other_ref])
+        self.assertEqual(2, base_ref1.repository.recipes.count())
+
+    def test_git_repository_recipes_nonbase(self):
+        # IGitRepository.recipes should provide all the SourcePackageRecipes
+        # that refer to the repository, even as a non-base branch.
+        [base_ref] = self.factory.makeGitRefs()
+        [nonbase_ref] = self.factory.makeGitRefs()
+        [other_ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_ref, nonbase_ref])
+        self.factory.makeSourcePackageRecipe(branches=[other_ref])
+        self.assertEqual(recipe, nonbase_ref.repository.recipes.one())
 
     def test_person_implements_hasrecipes(self):
         # Person should implement IHasRecipes.

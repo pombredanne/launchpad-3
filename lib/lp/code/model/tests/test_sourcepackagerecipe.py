@@ -1098,13 +1098,9 @@ class RecipeDateLastModified(TestCaseWithFactory):
             self.recipe, 'date_last_modified', UTC_NOW)
 
 
-class TestWebservice(TestCaseWithFactory):
+class TestWebserviceMixin:
 
     layer = AppServerLayer
-
-    def makeRecipeText(self):
-        branch = self.factory.makeBranch()
-        return MINIMAL_RECIPE_TEXT_BZR % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None,
                    version='devel'):
@@ -1279,3 +1275,11 @@ class TestWebservice(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             webservice.get(url)
         self.assertThat(recorder, HasQueryCount(Equals(23)))
+
+
+class TestWebserviceBzr(TestWebserviceMixin, BzrMixin, TestCaseWithFactory):
+    pass
+
+
+class TestWebserviceGit(TestWebserviceMixin, GitMixin, TestCaseWithFactory):
+    pass
