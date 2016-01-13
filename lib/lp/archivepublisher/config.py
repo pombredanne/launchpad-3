@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This is the python package that defines the
@@ -105,6 +105,15 @@ def getPubConfig(archive):
     else:
         pubconf.metaroot = None
 
+    # Files under this directory are moved into distsroot by the publisher
+    # the next time it runs.  This can be used by code that runs externally
+    # to the publisher (e.g. Contents generation) to publish files in a
+    # race-free way.
+    if archive.is_main:
+        pubconf.stagingroot = pubconf.archiveroot + '-staging'
+    else:
+        pubconf.stagingroot = None
+
     return pubconf
 
 
@@ -125,6 +134,7 @@ class Config(object):
             self.overrideroot,
             self.miscroot,
             self.temproot,
+            self.stagingroot,
             ]
 
         for directory in required_directories:

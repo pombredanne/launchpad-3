@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Master distro publishing script."""
@@ -32,6 +32,7 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.bulk import load_related
+from lp.services.osutils import ensure_directory_exists
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -563,55 +564,51 @@ class PublishFTPMaster(LaunchpadCronScript):
                 self.publishDistroArchive(
                     distribution, archive, updated_suites=updated_suites)
 
-    def updateContentsFile(self, archive, distribution, suite, arch):
-        """Update a single Contents file if necessary.
+    def updateStagedFilesForSuite(self, archive_config, suite):
+        """Install all staged files for a single archive and suite.
 
-        :return: True if a file was updated, otherwise False.
+        :return: True if any files were installed, otherwise False.
         """
-        config = self.configs[distribution][archive.purpose]
-        backup_dists = get_backup_dists(config)
-        content_dists = os.path.join(
-            config.distroroot, "contents-generation", distribution.name,
-            "dists")
-        contents_filename = "Contents-%s" % arch.architecturetag
-        current_contents = os.path.join(
-            backup_dists, suite, "%s.gz" % contents_filename)
-        new_contents = os.path.join(
-            content_dists, suite, "%s-staged.gz" % contents_filename)
-        if newer_mtime(new_contents, current_contents):
-            self.logger.debug(
-                "Installing new Contents file for %s/%s.", suite,
-                arch.architecturetag)
-            shutil.copy2(new_contents, current_contents)
-            # Due to http://bugs.python.org/issue12904, shutil.copy2 doesn't
-            # copy timestamps precisely, and unfortunately it rounds down.
-            # If we must lose accuracy, we need to round up instead.  This
-            # can be removed once Launchpad runs on Python >= 3.3.
-            st = os.stat(new_contents)
-            os.utime(
-                current_contents,
-                (math.ceil(st.st_atime), math.ceil(st.st_mtime)))
-            return True
-        return False
+        backup_top = os.path.join(get_backup_dists(archive_config), suite)
+        staging_top = os.path.join(archive_config.stagingroot, suite)
+        updated = False
+        for staging_dir, _, filenames in os.walk(staging_top):
+            rel_dir = os.path.relpath(staging_dir, staging_top)
+            backup_dir = os.path.join(backup_top, rel_dir)
+            for filename in filenames:
+                new_path = os.path.join(staging_dir, filename)
+                current_path = os.path.join(backup_dir, filename)
+                if newer_mtime(new_path, current_path):
+                    self.logger.debug(
+                        "Updating %s from %s." % (current_path, new_path))
+                    ensure_directory_exists(os.path.dirname(current_path))
+                    shutil.copy2(new_path, current_path)
+                    # Due to http://bugs.python.org/issue12904, shutil.copy2
+                    # doesn't copy timestamps precisely, and unfortunately
+                    # it rounds down.  If we must lose accuracy, we need to
+                    # round up instead.  This can be removed once Launchpad
+                    # runs on Python >= 3.3.
+                    st = os.stat(new_path)
+                    os.utime(
+                        current_path,
+                        (math.ceil(st.st_atime), math.ceil(st.st_mtime)))
+                    updated = True
+        return updated
 
-    def updateContentsFiles(self, distribution):
-        """Pick up updated Contents files if necessary."""
+    def updateStagedFiles(self, distribution):
+        """Install all staged files for a distribution's archives."""
         updated_suites = []
-        # XXX cjwatson 2015-03-20: GenerateContentsFiles currently only
-        # supports the primary archive.
-        archive = distribution.main_archive
-        for series in distribution.getNonObsoleteSeries():
-            for pocket in PackagePublishingPocket.items:
-                suite = series.getSuite(pocket)
-                if cannot_modify_suite(archive, series, pocket):
-                    continue
-                updated = False
-                for arch in series.enabled_architectures:
-                    if self.updateContentsFile(
-                            archive, distribution, suite, arch):
-                        updated = True
-                if updated:
-                    updated_suites.append((archive, suite))
+        for archive in get_publishable_archives(distribution):
+            if archive.purpose not in self.configs[distribution]:
+                continue
+            archive_config = self.configs[distribution][archive.purpose]
+            for series in distribution.getNonObsoleteSeries():
+                for pocket in PackagePublishingPocket.items:
+                    suite = series.getSuite(pocket)
+                    if cannot_modify_suite(archive, series, pocket):
+                        continue
+                    if self.updateStagedFilesForSuite(archive_config, suite):
+                        updated_suites.append((archive, suite))
         return updated_suites
 
     def publish(self, distribution, security_only=False):
@@ -629,7 +626,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             if security_only:
                 has_published = self.publishSecurityUploads(distribution)
             else:
-                updated_suites = self.updateContentsFiles(distribution)
+                updated_suites = self.updateStagedFiles(distribution)
                 self.publishDistroUploads(
                     distribution, updated_suites=updated_suites)
                 # Let's assume the main archive is always modified
