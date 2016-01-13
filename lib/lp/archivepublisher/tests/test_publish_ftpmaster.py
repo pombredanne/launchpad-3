@@ -13,6 +13,8 @@ import time
 from apt_pkg import TagFile
 from testtools.matchers import (
     MatchesStructure,
+    Not,
+    PathExists,
     StartsWith,
     )
 from zope.component import getUtility
@@ -866,6 +868,9 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(
             "Contents",
             read_marker_file([backup_suite, "%s.gz" % contents_filename]))
+        self.assertThat(
+            os.path.join(staging_suite, "%s.gz" % contents_filename),
+            Not(PathExists()))
 
     def test_updateStagedFilesForSuite_installs_changed_dep11(self):
         # updateStagedFilesForSuite installs changed files other than
@@ -891,6 +896,9 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             archive_config, distroseries.name))
         self.assertEqual("A", read_marker_file([backup_dep11, "a"]))
         self.assertEqual("B", read_marker_file([backup_dep11, "subdir", "b"]))
+        self.assertThat(os.path.join(staging_dep11, "a"), Not(PathExists()))
+        self.assertThat(
+            os.path.join(staging_dep11, "subdir", "b"), Not(PathExists()))
 
     def test_updateStagedFilesForSuite_twice(self):
         # If updateStagedFilesForSuite is run twice in a row, it does not

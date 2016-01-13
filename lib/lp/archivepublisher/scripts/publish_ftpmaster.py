@@ -582,16 +582,21 @@ class PublishFTPMaster(LaunchpadCronScript):
                     self.logger.debug(
                         "Updating %s from %s." % (current_path, new_path))
                     ensure_directory_exists(os.path.dirname(current_path))
-                    shutil.copy2(new_path, current_path)
                     # Due to http://bugs.python.org/issue12904, shutil.copy2
                     # doesn't copy timestamps precisely, and unfortunately
                     # it rounds down.  If we must lose accuracy, we need to
-                    # round up instead.  This can be removed once Launchpad
+                    # round up instead.  This can be removed (and the
+                    # try/except replaced by shutil.move) once Launchpad
                     # runs on Python >= 3.3.
-                    st = os.stat(new_path)
-                    os.utime(
-                        current_path,
-                        (math.ceil(st.st_atime), math.ceil(st.st_mtime)))
+                    try:
+                        os.rename(new_path, current_path)
+                    except OSError:
+                        shutil.copy2(new_path, current_path)
+                        st = os.stat(new_path)
+                        os.utime(
+                            current_path,
+                            (math.ceil(st.st_atime), math.ceil(st.st_mtime)))
+                        os.unlink(new_path)
                     updated = True
         return updated
 
