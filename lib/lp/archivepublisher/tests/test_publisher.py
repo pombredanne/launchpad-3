@@ -1848,6 +1848,37 @@ class TestPublisher(TestPublisherBase):
             self.assertReleaseContentsMatch(
                 release, 'Contents-i386.gz', contents_file.read())
 
+    def testReleaseFileForDEP11(self):
+        # Test Release file writing for DEP-11 metadata.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Put some DEP-11 metadata files in place, and force the publisher
+        # to republish that suite.
+        series_path = os.path.join(self.config.distsroot, 'breezy-autotest')
+        dep11_path = os.path.join(series_path, 'main', 'dep11')
+        dep11_names = ('Components-amd64.yml.gz', 'Components-i386.yml.gz',
+                       'icons-64x64.tar.gz', 'icons-128x128.tar.gz')
+        os.makedirs(dep11_path)
+        for name in dep11_names:
+            with gzip.GzipFile(os.path.join(dep11_path, name), 'wb') as f:
+                f.write(name)
+        publisher.markPocketDirty(
+            self.ubuntutest.getSeries('breezy-autotest'),
+            PackagePublishingPocket.RELEASE)
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        # The metadata files are listed correctly in Release.
+        release = self.parseRelease(os.path.join(series_path, 'Release'))
+        for name in dep11_names:
+            with open(os.path.join(dep11_path, name), 'rb') as f:
+                self.assertReleaseContentsMatch(
+                    release, os.path.join('main', 'dep11', name), f.read())
+
     def testReleaseFileTimestamps(self):
         # The timestamps of Release and all its entries match.
         publisher = Publisher(
