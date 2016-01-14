@@ -140,9 +140,12 @@ class Snap(Storm):
 
     require_virtualized = Bool(name='require_virtualized')
 
+    private = Bool(name='private')
+
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None,
-                 require_virtualized=True, date_created=DEFAULT):
+                 require_virtualized=True, date_created=DEFAULT,
+                 private=False):
         """Construct a `Snap`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
@@ -158,6 +161,7 @@ class Snap(Storm):
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
+        self.private = private
 
     @property
     def git_ref(self):
@@ -283,6 +287,9 @@ class Snap(Storm):
 
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
+
+        # XXX cprov 20160114: missing privacy checks.
+
         query_args = [
             SnapBuild.snap == self,
             SnapBuild.archive_id == Archive.id,
@@ -366,7 +373,7 @@ class SnapSet:
 
     def new(self, registrant, owner, distro_series, name, description=None,
             branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=DEFAULT):
+            processors=None, date_created=DEFAULT, private=False):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -383,11 +390,14 @@ class SnapSet:
         if self.exists(owner, name):
             raise DuplicateSnapName
 
+        # XXX cprov 20160114: missing privacy checks.
+
         store = IMasterStore(Snap)
         snap = Snap(
             registrant, owner, distro_series, name, description=description,
             branch=branch, git_ref=git_ref,
-            require_virtualized=require_virtualized, date_created=date_created)
+            require_virtualized=require_virtualized, date_created=date_created,
+            private=private)
         store.add(snap)
 
         if processors is None:

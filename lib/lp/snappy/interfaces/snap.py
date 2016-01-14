@@ -326,6 +326,10 @@ class ISnapEditableAttributes(IHasOwner):
             "The Git branch containing a snapcraft.yaml recipe at the top "
             "level.")))
 
+    private = exported(Bool(
+        title=_("Private"), required=False, readonly=False,
+        description=_("Whether or not this snap is private.")))
+
 
 class ISnapAdminAttributes(Interface):
     """`ISnap` attributes that can be edited by admins.
@@ -363,11 +367,11 @@ class ISnapSet(Interface):
     @export_factory_operation(
         ISnap, [
             "owner", "distro_series", "name", "description", "branch",
-            "git_ref"])
+            "git_ref", "private"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=None):
+            processors=None, date_created=None, private=False):
         """Create an `ISnap`."""
 
     def exists(owner, name):
