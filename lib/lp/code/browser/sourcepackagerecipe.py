@@ -830,7 +830,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     """View for editing Source Package Recipes."""
 
     def getBranch(self):
-        """The branch or repository which the recipe is built."""
+        """The branch or repository on which the recipe is built."""
         return self.context.base
 
     @property
