@@ -87,10 +87,16 @@ class TestIHasRecipes(TestCaseWithFactory):
 
     def test_product_recipes(self):
         # IProduct.recipes should provide all the SourcePackageRecipes
-        # attached to that product's branches.
+        # attached to that product's branches and Git repositories.
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
-        self.factory.makeSourcePackageRecipe(branches=[branch])
-        self.factory.makeSourcePackageRecipe(branches=[branch])
+        [ref] = self.factory.makeGitRefs(target=product)
+        recipe1 = self.factory.makeSourcePackageRecipe(branches=[branch])
+        recipe2 = self.factory.makeSourcePackageRecipe(branches=[branch])
         self.factory.makeSourcePackageRecipe()
-        self.assertEqual(2, product.recipes.count())
+        recipe3 = self.factory.makeSourcePackageRecipe(branches=[ref])
+        recipe4 = self.factory.makeSourcePackageRecipe(branches=[ref])
+        self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        self.assertContentEqual(
+            [recipe1, recipe2, recipe3, recipe4], product.recipes)
