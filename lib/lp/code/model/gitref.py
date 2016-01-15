@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -241,6 +241,18 @@ class GitRefMixin:
     def pending_writes(self):
         """See `IGitRef`."""
         return self.repository.pending_writes
+
+    @property
+    def recipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData,
+            )
+        recipes = SourcePackageRecipeData.findRecipes(
+            self.repository, revspecs=list(set([self.path, self.name])))
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
 
 @implementer(IGitRef)

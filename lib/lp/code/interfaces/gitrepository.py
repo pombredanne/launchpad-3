@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -64,6 +64,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -118,7 +119,7 @@ def git_repository_name_validator(name):
     return True
 
 
-class IGitRepositoryView(Interface):
+class IGitRepositoryView(IHasRecipes):
     """IGitRepository attributes that require launchpad.View permission."""
 
     id = Int(title=_("ID"), readonly=True, required=True)

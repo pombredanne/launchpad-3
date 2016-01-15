@@ -29,6 +29,7 @@ from lazr.enum import (
 from storm.expr import Union
 from storm.locals import (
     And,
+    In,
     Int,
     Reference,
     ReferenceSet,
@@ -243,21 +244,50 @@ class SourcePackageRecipeData(Storm):
         return parser.parse(permitted_instructions=SAFE_INSTRUCTIONS)
 
     @staticmethod
-    def findRecipes(branch):
+    def findRecipes(branch_or_repository, revspecs=None):
+        """Find recipes for a given branch or repository.
+
+        :param branch_or_repository: The branch or repository to search for.
+        :param revspecs: If not None, return only recipes whose `revspec` is
+            in this sequence.
+        :return: a collection of `ISourcePackageRecipe`s.
+        """
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-        store = Store.of(branch)
+        store = Store.of(branch_or_repository)
+        if IGitRepository.providedBy(branch_or_repository):
+            data_clause = (
+                SourcePackageRecipeData.base_git_repository ==
+                    branch_or_repository)
+            insn_clause = (
+                _SourcePackageRecipeDataInstruction.git_repository ==
+                    branch_or_repository)
+        elif IBranch.providedBy(branch_or_repository):
+            data_clause = (
+                SourcePackageRecipeData.base_branch == branch_or_repository)
+            insn_clause = (
+                _SourcePackageRecipeDataInstruction.branch ==
+                    branch_or_repository)
+        else:
+            raise AssertionError(
+                "Unsupported source: %r" % (branch_or_repository,))
+        if revspecs is not None:
+            data_clause = And(
+                data_clause, In(SourcePackageRecipeData.revspec, revspecs))
+            insn_clause = And(
+                insn_clause,
+                In(_SourcePackageRecipeDataInstruction.revspec, revspecs))
         return store.find(
             SourcePackageRecipe,
             SourcePackageRecipe.id.is_in(Union(
                 Select(
                     SourcePackageRecipeData.sourcepackage_recipe_id,
-                    SourcePackageRecipeData.base_branch == branch),
+                    data_clause),
                 Select(
                     SourcePackageRecipeData.sourcepackage_recipe_id,
                     And(
                         _SourcePackageRecipeDataInstruction.recipe_data_id ==
                         SourcePackageRecipeData.id,
-                        _SourcePackageRecipeDataInstruction.branch == branch)
+                        insn_clause)
                     )
             ))
         )
