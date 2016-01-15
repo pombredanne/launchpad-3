@@ -14,6 +14,7 @@ __all__ = [
     'ISourcePackageRecipeDataSource',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT_BZR',
+    'MINIMAL_RECIPE_TEXT_GIT',
     ]
 
 
@@ -55,6 +56,7 @@ from zope.schema import (
 from lp import _
 from lp.app.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
@@ -72,13 +74,26 @@ MINIMAL_RECIPE_TEXT_BZR = dedent(u'''\
     ''')
 
 
+MINIMAL_RECIPE_TEXT_GIT = dedent(u'''\
+    # git-build-recipe format 0.4 deb-version {debupstream}-0~{revtime}
+    %s %s
+    ''')
+
+
 class ISourcePackageRecipeData(Interface):
     """A recipe as database data, not text."""
 
     base_branch = exported(
         Reference(
             IBranch, title=_("The base branch used by this recipe."),
-            required=True, readonly=True))
+            required=False, readonly=True))
+    base_git_repository = exported(
+        Reference(
+            IGitRepository,
+            title=_("The base Git repository used by this recipe."),
+            required=False, readonly=True))
+    base = Attribute(
+        "The base branch/repository used by this recipe (VCS-agnostic).")
 
     deb_version_template = exported(
         TextLine(
