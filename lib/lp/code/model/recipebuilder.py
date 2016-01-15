@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
@@ -60,7 +60,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
             # Don't keep the naked requester around though.
             args["author_email"] = removeSecurityProxy(
                 requester).preferredemail.email
-        args["recipe_text"] = str(self.build.recipe.builder_recipe)
+        args["recipe_text"] = self.build.recipe.getRecipeText(validate=True)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
@@ -71,6 +71,8 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
             logger=logger)
         args['archive_private'] = self.build.archive.private
         args['distroseries_name'] = self.build.distroseries.name
+        if self.build.recipe.base_git_repository is not None:
+            args['git'] = True
         return args
 
     def composeBuildRequest(self, logger):
