@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Contents files generator."""
@@ -27,6 +27,7 @@ from lp.services.database.policy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )
+from lp.services.osutils import ensure_directory_exists
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -255,6 +256,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
         """Update Contents file, if it has changed."""
         contents_dir = os.path.join(
             self.content_archive, self.distribution.name, 'dists', suite)
+        staging_dir = os.path.join(self.config.stagingroot, suite)
         contents_filename = "Contents-%s" % arch
         last_contents = os.path.join(contents_dir, ".%s" % contents_filename)
         current_contents = os.path.join(contents_dir, contents_filename)
@@ -268,8 +270,9 @@ class GenerateContentsFiles(LaunchpadCronScript):
             new_contents = os.path.join(
                 contents_dir, "%s.gz" % contents_filename)
             contents_dest = os.path.join(
-                contents_dir, "%s-staged.gz" % contents_filename)
+                staging_dir, "%s.gz" % contents_filename)
 
+            ensure_directory_exists(os.path.dirname(contents_dest))
             os.rename(current_contents, last_contents)
             os.rename(new_contents, contents_dest)
             os.chmod(contents_dest, 0664)
