@@ -516,6 +516,14 @@ class IGitRepositoryView(IHasRecipes):
             diffs updated.
         """
 
+    def markRecipesStale(paths):
+        """Mark recipes associated with this repository as stale.
+
+        :param paths: A list of reference paths.  Any recipes that include
+            an entry that points to this repository and that has a `revspec`
+            that is one of these paths will be marked as stale.
+        """
+
     def detectMerges(paths, logger=None):
         """Detect merges of landing candidates.
 

@@ -977,6 +977,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(self._getRecipes(), pre_iter_hook=hook)
 
+    def markRecipesStale(self, paths):
+        """See `IGitRepository`."""
+        for recipe in self._getRecipes(paths):
+            recipe.is_stale = True
+
     def _markProposalMerged(self, proposal, merged_revision_id, logger=None):
         if logger is not None:
             logger.info(
