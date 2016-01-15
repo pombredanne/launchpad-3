@@ -30,7 +30,7 @@
     </p>
   </div>
 
-  <div metal:define-macro="no-keys" condition="not:view/user/sshkeys">
+  <div metal:define-macro="no-keys" tal:condition="not:view/user/sshkeys">
     <p class="infobox">To authenticate with the Launchpad branch upload service, you need to
     <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
     register an SSH key</a>.</p>
