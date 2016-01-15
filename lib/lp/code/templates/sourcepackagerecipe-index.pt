@@ -108,9 +108,9 @@
             <dt>Owner:</dt>
             <dd tal:content="structure view/person_picker"/>
           </dl>
-          <dl id="base-branch">
-            <dt>Base branch:</dt>
-            <dd tal:content="structure context/base_branch/fmt:link" />
+          <dl id="base-source">
+            <dt>Base source:</dt>
+            <dd tal:content="structure context/base/fmt:link" />
           </dl>
           <dl id="debian-version">
             <dt>Debian version:</dt>
@@ -151,8 +151,8 @@
         Y.on('lp:context:deb_version_template:changed', function(e) {
             Y.lp.deprecated.ui.update_field('#debian-version dd', e.new_value);
         });
-        Y.on('lp:context:base_branch_link:changed', function(e) {
-            Y.lp.deprecated.ui.update_field('#base-branch dd', e.new_value_html);
+        Y.on('lp:context:base_source_link:changed', function(e) {
+            Y.lp.deprecated.ui.update_field('#base-source dd', e.new_value_html);
         });
         Y.on('load', function() {
             Y.lp.code.requestbuild_overlay.hookUpDailyBuildsSchedule();

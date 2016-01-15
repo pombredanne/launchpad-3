@@ -237,6 +237,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
     has_defaults = False
     allow_push_to_set_default = False
     supports_merge_proposals = False
+    allow_recipe_name_from_target = False
 
     def __init__(self, person):
         self.owner = person
@@ -314,6 +315,7 @@ class ProjectGitNamespace(_BaseGitNamespace):
     has_defaults = True
     allow_push_to_set_default = True
     supports_merge_proposals = True
+    allow_recipe_name_from_target = True
 
     def __init__(self, person, project):
         self.owner = person
@@ -398,6 +400,7 @@ class PackageGitNamespace(_BaseGitNamespace):
     has_defaults = True
     allow_push_to_set_default = False
     supports_merge_proposals = True
+    allow_recipe_name_from_target = True
 
     def __init__(self, person, distro_source_package):
         self.owner = person

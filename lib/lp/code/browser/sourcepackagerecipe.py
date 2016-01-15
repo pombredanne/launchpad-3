@@ -57,7 +57,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import isinstance as zope_isinstance
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -86,9 +85,12 @@ from lp.app.widgets.suggestion import RecipeOwnerWidget
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
+    NoSuchGitRepository,
     PrivateBranchRecipe,
+    PrivateGitRepositoryRecipe,
     TooNewRecipeFormat,
     )
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.sourcepackagerecipe import (
     IRecipeBranchSource,
@@ -96,7 +98,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT_BZR,
     )
-from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import PersonChoice
@@ -627,12 +628,17 @@ class RecipeTextValidatorMixin:
         except ForbiddenInstructionError as e:
             self.setFieldError(
                 'recipe_text',
-                'The bzr-builder instruction "%s" is not permitted '
-                'here.' % e.instruction_name)
+                'The recipe instruction "%s" is not permitted here.' %
+                e.instruction_name)
         except NoSuchBranch as e:
             self.setFieldError(
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-        except (RecipeParseError, PrivateBranchRecipe) as e:
+        except NoSuchGitRepository as e:
+            self.setFieldError(
+                'recipe_text',
+                '%s is not a Git repository on Launchpad.' % e.name)
+        except (RecipeParseError, PrivateBranchRecipe,
+                PrivateGitRepositoryRecipe) as e:
             self.setFieldError('recipe_text', str(e))
         raise ErrorHandled()
 
@@ -676,24 +682,24 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
         super(RecipeRelatedBranchesMixin, self).setUpWidgets(context)
         self.widgets['related-branches'].display_label = False
         self.widgets['related-branches'].setRenderedValue(dict(
-                related_package_branch_info=self.related_package_branch_info,
-                related_series_branch_info=self.related_series_branch_info))
+            related_package_branch_info=self.related_package_branch_info,
+            related_series_branch_info=self.related_series_branch_info))
 
     @cachedproperty
     def related_series_branch_info(self):
         branch_to_check = self.getBranch()
-        return IBranchTarget(
-                branch_to_check.target).getRelatedSeriesBranchInfo(
-                                            branch_to_check,
-                                            limit_results=5)
+        if IBranch.providedBy(branch_to_check):
+            branch_target = IBranchTarget(branch_to_check.target)
+            return branch_target.getRelatedSeriesBranchInfo(
+                branch_to_check, limit_results=5)
 
     @cachedproperty
     def related_package_branch_info(self):
         branch_to_check = self.getBranch()
-        return IBranchTarget(
-                branch_to_check.target).getRelatedPackageBranchInfo(
-                                            branch_to_check,
-                                            limit_results=5)
+        if IBranch.providedBy(branch_to_check):
+            branch_target = IBranchTarget(branch_to_check.target)
+            return branch_target.getRelatedPackageBranchInfo(
+                branch_to_check, limit_results=5)
 
 
 class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
@@ -738,10 +744,10 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         """A generator of recipe names."""
         # +junk-daily doesn't make a very good recipe name, so use the
         # branch name in that case.
-        if zope_isinstance(self.context.target, PersonBranchTarget):
-            branch_target_name = self.context.name
-        else:
+        if self.context.target.allow_recipe_name_from_target:
             branch_target_name = self.context.target.name.split('/')[-1]
+        else:
+            branch_target_name = self.context.name
         yield "%s-daily" % branch_target_name
         counter = itertools.count(1)
         while True:
@@ -822,8 +828,8 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     """View for editing Source Package Recipes."""
 
     def getBranch(self):
-        """The branch on which the recipe is built."""
-        return self.context.base_branch
+        """The branch or repository on which the recipe is built."""
+        return self.context.base
 
     @property
     def title(self):
@@ -847,7 +853,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             any_owner_choice = PersonChoice(
                 __name__='owner', title=owner_field.title,
                 description=(u"As an administrator you are able to assign"
-                             u" this branch to any person or team."),
+                             u" this recipe to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
                 any_owner_choice, render_context=self.render_context)
