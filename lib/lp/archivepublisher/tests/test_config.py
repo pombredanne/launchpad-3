@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test publisher configs handling.
@@ -48,6 +48,7 @@ class TestGetPubConfig(TestCaseWithFactory):
             self.root + "/ubuntutest-temp", primary_config.temproot)
         self.assertEqual(archiveroot + "-uefi", primary_config.uefiroot)
         self.assertIs(None, primary_config.metaroot)
+        self.assertEqual(archiveroot + "-staging", primary_config.stagingroot)
 
     def test_partner_config(self):
         # Partner archive configuration is correct.
@@ -70,6 +71,7 @@ class TestGetPubConfig(TestCaseWithFactory):
             self.root + "/ubuntutest-temp", partner_config.temproot)
         self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
         self.assertIs(None, partner_config.metaroot)
+        self.assertEqual(archiveroot + "-staging", partner_config.stagingroot)
 
     def test_copy_config(self):
         # In the case of copy archives (used for rebuild testing) the
@@ -91,6 +93,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-temp", copy_config.temproot)
         self.assertIsNone(copy_config.uefiroot)
         self.assertIs(None, copy_config.metaroot)
+        self.assertIs(None, copy_config.stagingroot)
 
 
 class TestGetPubConfigPPA(TestCaseWithFactory):
@@ -129,6 +132,7 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
             self.ppa.owner.name, self.ppa.name)
         self.assertEqual(uefiroot, self.ppa_config.uefiroot)
         self.assertIs(None, self.ppa_config.metaroot)
+        self.assertIs(None, self.ppa_config.stagingroot)
 
     def test_private_ppa_separate_root(self):
         # Private PPAs are published to a different location.
@@ -162,6 +166,7 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
             p3a.owner.name, p3a.name)
         self.assertEqual(uefiroot, p3a_config.uefiroot)
         self.assertIs(None, p3a_config.metaroot)
+        self.assertIs(None, p3a_config.stagingroot)
 
     def test_metaroot(self):
         # The metadata directory structure doesn't include a distro
