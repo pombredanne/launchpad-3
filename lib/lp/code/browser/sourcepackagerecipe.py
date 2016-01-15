@@ -57,7 +57,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import isinstance as zope_isinstance
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -99,7 +98,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT_BZR,
     )
-from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import PersonChoice
@@ -746,10 +744,10 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         """A generator of recipe names."""
         # +junk-daily doesn't make a very good recipe name, so use the
         # branch name in that case.
-        if zope_isinstance(self.context.target, PersonBranchTarget):
-            branch_target_name = self.context.name
-        else:
+        if self.context.target.allow_recipe_name_from_target:
             branch_target_name = self.context.target.name.split('/')[-1]
+        else:
+            branch_target_name = self.context.name
         yield "%s-daily" % branch_target_name
         counter = itertools.count(1)
         while True:

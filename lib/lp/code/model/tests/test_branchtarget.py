@@ -215,6 +215,9 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
 
+    def test_allow_recipe_name_from_target(self):
+        self.assertTrue(self.target.allow_recipe_name_from_target)
+
     def test_related_branches(self):
         (branch, related_series_branch_info,
             related_package_branches) = (
@@ -334,6 +337,9 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
                 self.factory.makePerson(),
                 self.factory.getUniqueString("name-"),
                 RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
+
+    def test_does_not_allow_recipe_name_from_target(self):
+        self.assertFalse(self.target.allow_recipe_name_from_target)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -469,6 +475,9 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
+
+    def test_allow_recipe_name_from_target(self):
+        self.assertTrue(self.target.allow_recipe_name_from_target)
 
     def test_related_branches(self):
         (branch, related_series_branch_info,
