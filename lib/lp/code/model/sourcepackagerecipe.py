@@ -184,9 +184,9 @@ class SourcePackageRecipe(Storm):
         parsed = getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text)
         self._recipe_data.setRecipe(parsed)
 
-    @property
-    def recipe_text(self):
-        recipe_text = self.builder_recipe.get_recipe_text()
+    def getRecipeText(self, validate=False):
+        """See `ISourcePackageRecipe`."""
+        recipe_text = self.builder_recipe.get_recipe_text(validate=validate)
         # For git-based recipes, mangle the header line to say
         # "git-build-recipe" to reduce confusion; bzr-builder's recipe
         # parser will always round-trip this to "bzr-builder".
@@ -194,6 +194,10 @@ class SourcePackageRecipe(Storm):
             recipe_text = re.sub(
                 r"^(#\s*)bzr-builder", r"\1git-build-recipe", recipe_text)
         return recipe_text
+
+    @property
+    def recipe_text(self):
+        return self.getRecipeText()
 
     def updateSeries(self, distroseries):
         if distroseries != self.distroseries:

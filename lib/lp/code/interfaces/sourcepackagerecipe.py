@@ -140,6 +140,12 @@ class ISourcePackageRecipeView(Interface):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
 
+    def getRecipeText(validate=False):
+        """Return the text of this recipe.
+
+        :param validate: If True, check that the recipe text can be parsed.
+        """
+
     recipe_text = exported(Text(readonly=True))
 
     pending_builds = exported(doNotSnapshot(
