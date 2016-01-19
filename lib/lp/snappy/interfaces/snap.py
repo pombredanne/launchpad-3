@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package interfaces."""
@@ -16,6 +16,7 @@ __all__ = [
     'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_FEATURE_FLAG',
+    'SNAP_WEBHOOKS_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
@@ -80,11 +81,13 @@ from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     )
+from lp.services.webhooks.interfaces import IWebhookTarget
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 SNAP_FEATURE_FLAG = u"snap.allow_new"
+SNAP_WEBHOOKS_FEATURE_FLAG = u"snap.webhooks.enabled"
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -263,7 +266,7 @@ class ISnapView(Interface):
         value_type=Reference(schema=Interface), readonly=True)))
 
 
-class ISnapEdit(Interface):
+class ISnapEdit(IWebhookTarget):
     """`ISnap` methods that require launchpad.Edit permission."""
 
     @export_destructor_operation()

@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package build interfaces."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ISnapBuild',
     'ISnapBuildSet',
+    'ISnapBuildStatusChangedEvent',
     'ISnapFile',
     ]
 
@@ -20,6 +21,7 @@ from lazr.restful.declarations import (
     operation_parameters,
     )
 from lazr.restful.fields import Reference
+from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -37,6 +39,10 @@ from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+
+
+class ISnapBuildStatusChangedEvent(IObjectEvent):
+    """The status of a snap package build changed."""
 
 
 class ISnapFile(Interface):

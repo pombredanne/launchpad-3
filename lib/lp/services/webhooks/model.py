@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -102,6 +102,9 @@ class Webhook(StormBase):
     branch_id = Int(name='branch')
     branch = Reference(branch_id, 'Branch.id')
 
+    snap_id = Int(name='snap')
+    snap = Reference(snap_id, 'Snap.id')
+
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
     date_created = DateTime(tzinfo=utc, allow_none=False)
@@ -119,6 +122,8 @@ class Webhook(StormBase):
             return self.git_repository
         elif self.branch is not None:
             return self.branch
+        elif self.snap is not None:
+            return self.snap
         else:
             raise AssertionError("No target.")
 
@@ -172,11 +177,14 @@ class WebhookSet:
             secret):
         from lp.code.interfaces.branch import IBranch
         from lp.code.interfaces.gitrepository import IGitRepository
+        from lp.snappy.interfaces.snap import ISnap
         hook = Webhook()
         if IGitRepository.providedBy(target):
             hook.git_repository = target
         elif IBranch.providedBy(target):
             hook.branch = target
+        elif ISnap.providedBy(target):
+            hook.snap = target
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         hook.registrant = registrant
@@ -200,10 +208,13 @@ class WebhookSet:
     def findByTarget(self, target):
         from lp.code.interfaces.branch import IBranch
         from lp.code.interfaces.gitrepository import IGitRepository
+        from lp.snappy.interfaces.snap import ISnap
         if IGitRepository.providedBy(target):
             target_filter = Webhook.git_repository == target
         elif IBranch.providedBy(target):
             target_filter = Webhook.branch == target
+        elif ISnap.providedBy(target):
+            target_filter = Webhook.snap == target
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         return IStore(Webhook).find(Webhook, target_filter).order_by(

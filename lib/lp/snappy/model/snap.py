@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -69,6 +69,8 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webhooks.interfaces import IWebhookSet
+from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotDeleteSnap,
@@ -105,7 +107,7 @@ def snap_modified(snap, event):
 
 
 @implementer(ISnap, IHasOwner)
-class Snap(Storm):
+class Snap(Storm, WebhookTargetMixin):
     """See `ISnap`."""
 
     __storm_table__ = 'Snap'
@@ -158,6 +160,10 @@ class Snap(Storm):
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
+
+    @property
+    def valid_webhook_event_types(self):
+        return ["snap:build:0.1"]
 
     @property
     def git_ref(self):
@@ -344,6 +350,7 @@ class Snap(Storm):
             raise CannotDeleteSnap("Cannot delete a snap package with builds.")
         store = IStore(Snap)
         store.find(SnapArch, SnapArch.snap == self).remove()
+        getUtility(IWebhookSet).delete(self.webhooks)
         store.remove(self)
 
 

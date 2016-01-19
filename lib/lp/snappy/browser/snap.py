@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap views."""
@@ -63,6 +63,7 @@ from lp.services.webapp.breadcrumb import (
     Breadcrumb,
     NameBreadcrumb,
     )
+from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
 from lp.snappy.interfaces.snap import (
     ISnap,
@@ -78,7 +79,7 @@ from lp.soyuz.browser.build import get_build_by_id_str
 from lp.soyuz.interfaces.archive import IArchive
 
 
-class SnapNavigation(Navigation):
+class SnapNavigation(WebhookTargetNavigationMixin, Navigation):
     usedfor = ISnap
 
     @stepthrough('+build')
@@ -106,7 +107,7 @@ class SnapNavigationMenu(NavigationMenu):
 
     facet = 'overview'
 
-    links = ('edit', 'delete', 'admin')
+    links = ('admin', 'edit', 'webhooks', 'delete')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -115,6 +116,12 @@ class SnapNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         return Link('+edit', 'Edit snap package', icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def webhooks(self):
+        return Link(
+            '+webhooks', 'Manage webhooks', icon='edit',
+            enabled=bool(getFeatureFlag('webhooks.new.enabled')))
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
