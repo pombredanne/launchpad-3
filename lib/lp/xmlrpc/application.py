@@ -33,6 +33,7 @@ from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc.interfaces import IPrivateApplication
 
+
 # NOTE: If you add a traversal here, you should update
 # the regular expression in utilities/page-performance-report.ini
 @implementer(IPrivateApplication)

@@ -334,8 +334,8 @@ the bug to the question.
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
     >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
-    >>> question_three.bugs.count() == 0
-    True
+    >>> question_three.bugs
+    []
 
     >>> makebug.initialize()
     >>> print question_three.bugs[0].title
@@ -447,12 +447,6 @@ product and whiteboard.
 
     >>> view = getMultiAdapter((question_three, request), name='+edit')
     >>> view.initialize()
-    >>> question_three.title
-    u'Better Title'
-
-    >>> question_three.description
-    u'A better description.'
-
     >>> print question_three.distribution.name
     ubuntu
 
@@ -462,9 +456,16 @@ product and whiteboard.
     >>> print question_three.product
     None
 
-Since a user must have launchpad.Moderator privilege to change the
-assignee and launchpad.Admin privilege to change status whiteboard, the
-values are unchanged.
+Since a user must have launchpad.Edit (question creator or target answer
+contact) to change the title or description, launchpad.Append (target
+answer contact) to change the assignee and launchpad.Admin (target
+owner) to change status whiteboard, the values are unchanged.
+
+    >>> question_three.title
+    u'Firefox is slow and consumes too much RAM'
+
+    >>> question_three.description
+    u"I'm running on a 486 with 32 MB ram. And Firefox is slow! What should I do?"
 
     >>> question_three.assignee is None
     True
@@ -489,6 +490,12 @@ fields will be updated:
     >>> request.method = 'POST'
     >>> view = getMultiAdapter((question_three, request), name='+edit')
     >>> view.initialize()
+    >>> question_three.title
+    u'Better Title'
+
+    >>> question_three.description
+    u'A better description.'
+
     >>> print question_three.assignee.displayname
     Foo Bar
 

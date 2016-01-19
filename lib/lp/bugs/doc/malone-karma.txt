@@ -53,12 +53,11 @@ Change the description of a bug:
 Add a CVE reference to a bug:
 
     >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
-    >>> from lp.bugs.model.cve import BugCve
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
-    >>> bugcve = BugCve(cve=cve, bug=bug)
-    >>> notify(ObjectCreatedEvent(bugcve))
+    >>> cve.linkBug(bug)
     Karma added: action=bugcverefadded, distribution=debian
+    True
 
 Add watch for external bug to the bug:
 

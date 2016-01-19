@@ -23,6 +23,11 @@ from zope.interface import (
 
 from lp.services.mail import stub
 
+# XXX wgrant 2015-09-21: A Python 2.7 security update set the line
+# length limit to 2048 bytes, which real POP3 servers often exceed for
+# various reasons. http://bugs.python.org/issue23906
+poplib._MAXLINE = 10000000
+
 
 class MailBoxError(Exception):
     """Indicates that some went wrong while interacting with the mail box."""

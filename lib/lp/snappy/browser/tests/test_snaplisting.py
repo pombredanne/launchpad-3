@@ -6,10 +6,7 @@
 __metaclass__ = type
 
 import soupmatchers
-from testtools.matchers import (
-    Equals,
-    Not,
-    )
+from testtools.matchers import Not
 
 from lp.services.database.constants import (
     ONE_DAY_AGO,
@@ -55,20 +52,21 @@ class TestSnapListing(BrowserTestCase):
         self.assertThat(self.getViewBrowser(context).contents, Not(matcher))
         login(ANONYMOUS)
         self.makeSnap(**kwargs)
+        self.makeSnap(**kwargs)
         self.assertThat(self.getViewBrowser(context).contents, matcher)
 
     def test_branch_links_to_snaps(self):
         branch = self.factory.makeAnyBranch()
-        self.assertSnapsLink(branch, "1 snap package", branch=branch)
+        self.assertSnapsLink(branch, "2 snap packages", branch=branch)
 
     def test_git_repository_links_to_snaps(self):
         repository = self.factory.makeGitRepository()
         [ref] = self.factory.makeGitRefs(repository=repository)
-        self.assertSnapsLink(repository, "1 snap package", git_ref=ref)
+        self.assertSnapsLink(repository, "2 snap packages", git_ref=ref)
 
     def test_git_ref_links_to_snaps(self):
         [ref] = self.factory.makeGitRefs()
-        self.assertSnapsLink(ref, "1 snap package", git_ref=ref)
+        self.assertSnapsLink(ref, "2 snap packages", git_ref=ref)
 
     def test_person_links_to_snaps(self):
         person = self.factory.makePerson()
@@ -83,54 +81,38 @@ class TestSnapListing(BrowserTestCase):
             project, "View snap packages", link_has_context=True, git_ref=ref)
 
     def test_branch_snap_listing(self):
-        # We can see snap packages for a Bazaar branch.  We need to create
-        # two, since if there's only one then +snaps will redirect to that
-        # package.
+        # We can see snap packages for a Bazaar branch.
         branch = self.factory.makeAnyBranch()
-        for _ in range(2):
-            self.makeSnap(branch=branch)
+        self.makeSnap(branch=branch)
         text = self.getMainText(branch, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for lp:.*
             Name            Owner           Registered
-            snap-name.*     Team Name.*     .*
             snap-name.*     Team Name.*     .*""", text)
 
     def test_git_repository_snap_listing(self):
-        # We can see snap packages for a Git repository.  We need to create
-        # two, since if there's only one then +snaps will redirect to that
-        # package.
+        # We can see snap packages for a Git repository.
         repository = self.factory.makeGitRepository()
-        ref1, ref2 = self.factory.makeGitRefs(
-            repository=repository,
-            paths=[u"refs/heads/branch-1", u"refs/heads/branch-2"])
-        for ref in ref1, ref2:
-            self.makeSnap(git_ref=ref)
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        self.makeSnap(git_ref=ref)
         text = self.getMainText(repository, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for lp:~.*
             Name            Owner           Registered
-            snap-name.*     Team Name.*     .*
             snap-name.*     Team Name.*     .*""", text)
 
     def test_git_ref_snap_listing(self):
-        # We can see snap packages for a Git reference.  We need to create
-        # two, since if there's only one then +snaps will redirect to that
-        # package.
+        # We can see snap packages for a Git reference.
         [ref] = self.factory.makeGitRefs()
-        for _ in range(2):
-            self.makeSnap(git_ref=ref)
+        self.makeSnap(git_ref=ref)
         text = self.getMainText(ref, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for ~.*:.*
             Name            Owner           Registered
-            snap-name.*     Team Name.*     .*
             snap-name.*     Team Name.*     .*""", text)
 
     def test_person_snap_listing(self):
-        # We can see snap packages for a person.  We need to create two,
-        # since if there's only one then +snaps will redirect to that
-        # package.
+        # We can see snap packages for a person.
         owner = self.factory.makePerson(displayname="Snap Owner")
         self.makeSnap(
             registrant=owner, owner=owner, branch=self.factory.makeAnyBranch(),
@@ -146,9 +128,7 @@ class TestSnapListing(BrowserTestCase):
             snap-name.*     lp:.*           .*""", text)
 
     def test_project_snap_listing(self):
-        # We can see snap packages for a project.  We need to create two,
-        # since if there's only one then +snaps will redirect to that
-        # package.
+        # We can see snap packages for a project.
         project = self.factory.makeProduct(displayname="Snappable")
         self.makeSnap(
             branch=self.factory.makeProductBranch(product=project),
@@ -165,7 +145,7 @@ class TestSnapListing(BrowserTestCase):
     def assertSnapsQueryCount(self, context, item_creator):
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(context, "+snaps"), item_creator, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_branch_query_count(self):
         # The number of queries required to render the list of all snap

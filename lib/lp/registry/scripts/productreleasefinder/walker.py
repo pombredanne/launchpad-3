@@ -41,11 +41,6 @@ class WalkerError(Exception):
     pass
 
 
-class FTPWalkerError(WalkerError):
-    """An error in the ftp walker."""
-    pass
-
-
 class HTTPWalkerError(WalkerError):
     """An error in the http walker."""
     pass

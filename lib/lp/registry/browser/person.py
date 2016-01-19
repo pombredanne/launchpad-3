@@ -274,10 +274,7 @@ from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.snappy.browser.hassnaps import (
-    HasSnapsMenuMixin,
-    HasSnapsViewMixin,
-    )
+from lp.snappy.browser.hassnaps import HasSnapsMenuMixin
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
@@ -1244,7 +1241,7 @@ class PersonAdministerView(PersonRenameFormMixin):
     schema = IPerson
     label = "Review person"
     field_names = [
-        'name', 'displayname',
+        'name', 'display_name',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
@@ -1653,8 +1650,7 @@ class ContactViaWebLinksMixin:
             raise AssertionError('Unknown group to contact.')
 
 
-class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin,
-                 HasSnapsViewMixin):
+class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     """A View class used in almost all Person's pages."""
 
     @property
@@ -2718,7 +2714,7 @@ class BasePersonEditView(LaunchpadEditFormView):
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot', 'description',
+    field_names = ['display_name', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'selfgenerated_bugnotifications',
                    'expanded_notification_footers']

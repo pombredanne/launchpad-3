@@ -78,7 +78,7 @@ We can see 'mozilla-firefox' is published once in pocket RELEASE:
     Release
     The package versions that were published when the distribution release
     was made.
-    mozilla-firefox 0.9
+    mozilla-firefox 0.9 (main)
 
 The user can also download the files for the "currentrelease" (last
 published version) if they are available:

@@ -57,6 +57,18 @@
     </div>
   </div>
 
+  <div class="yui-g" tal:condition="context/pending_writes">
+    <div class="portlet">
+      <div id="repository-pending-writes" class="pending-update">
+        <h3>Updating repository...</h3>
+        <p>
+          Launchpad is processing new changes to this repository which will
+          be available shortly. Reload to see the changes.
+        </p>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 </body>

@@ -30,25 +30,10 @@ class Bug:
             self.tags = tags
         if report:
             self.report = report
-        description = None
 
     def is_open(self):
         #return not self.done and 'fixed' not in self.tags
         return self.status != 'done' and 'fixed' not in self.tags
-
-    def affects_unstable(self):
-        return 'sid' in self.tags or ('woody' not in self.tags and
-                                 'sarge' not in self.tags and
-                                 'experimental' not in self.tags)
-
-    def affects_package(self, packageset):
-        for package in self.packagelist():
-            if package in packageset:
-                return True
-        return False
-
-    def is_release_critical(self):
-        return self.severity in ('critical', 'grave', 'serious')
 
     def __str__(self):
         return 'Bug#%d' % self.id
@@ -57,19 +42,13 @@ class Bug:
         # Lazy loading of non-indexed attributes
 
         if not self.db.load(self, name):
-            raise AttributeError, name
+            raise AttributeError(name)
 
         if not hasattr(self, name):
-            raise InternalError, "Database.load did not provide attribute '%s'" % name
+            raise InternalError(
+                "Database.load did not provide attribute '%s'" % name)
 
         return getattr(self, name)
-
-    def packagelist(self):
-        if self.package is None:
-            return []
-        if ',' in self.package:
-            return self.package.split(',')
-        return [self.package]
 
     def emails(self):
         if self._emails:
@@ -79,17 +58,38 @@ class Bug:
             self._emails.append(message)
         return self._emails
 
-class IndexParseError(Exception): pass
-class StatusParseError(Exception): pass
-class StatusMissing(Exception): pass
-class SummaryMissing(Exception): pass
-class SummaryParseError(Exception): pass
-class SummaryVersionError(Exception): pass
-class ReportMissing(Exception): pass
-class ReportParseError(Exception): pass
-class LogMissing(Exception): pass
-class LogParseFailed(Exception): pass
-class InternalError(Exception): pass
+
+class IndexParseError(Exception):
+    pass
+
+
+class SummaryMissing(Exception):
+    pass
+
+
+class SummaryParseError(Exception):
+    pass
+
+
+class SummaryVersionError(Exception):
+    pass
+
+
+class ReportMissing(Exception):
+    pass
+
+
+class LogMissing(Exception):
+    pass
+
+
+class LogParseFailed(Exception):
+    pass
+
+
+class InternalError(Exception):
+    pass
+
 
 class Database:
     def __init__(self, root, debbugs_pl, subdir='db-h'):
@@ -98,7 +98,9 @@ class Database:
         self.subdir = subdir
 
     class bug_iterator:
-        index_record = re.compile(r'^(?P<package>\S+) (?P<bugid>\d+) (?P<date>\d+) (?P<status>\w+) \[(?P<originator>.*)\] (?P<severity>\w+)(?: (?P<tags>.*))?$')
+        index_record = re.compile(
+            r'^(?P<package>\S+) (?P<bugid>\d+) (?P<date>\d+) (?P<status>\w+) '
+            r'\[(?P<originator>.*)\] (?P<severity>\w+)(?: (?P<tags>.*))?$')
 
         def __init__(self, db, filter=None):
             self.db = db
@@ -151,20 +153,21 @@ class Database:
             fd = open(summary)
         except IOError as e:
             if e.errno == 2:
-                raise SummaryMissing, summary
+                raise SummaryMissing(summary)
             raise
 
         try:
             message = email.message_from_file(fd)
         except Exception as e:
-            raise SummaryParseError, '%s: %s' % (summary, str(e))
+            raise SummaryParseError('%s: %s' % (summary, str(e)))
 
         version = message['format-version']
         if version is None:
-            raise SummaryParseError, "%s: Missing Format-Version" % summary
+            raise SummaryParseError("%s: Missing Format-Version" % summary)
 
         if version not in ('2', '3'):
-            raise SummaryVersionError, "%s: I don't understand version %s" % (summary, version)
+            raise SummaryVersionError(
+                "%s: I don't understand version %s" % (summary, version))
 
         bug.originator = message['submitter']
         bug.date = datetime.fromtimestamp(int(message['date']))
@@ -176,7 +179,7 @@ class Database:
         bug.severity = message['severity']
 
         if 'merged-with' in message:
-            bug.mergedwith = map(int,message['merged-with'].split(' '))
+            bug.mergedwith = map(int, message['merged-with'].split(' '))
         else:
             bug.mergedwith = []
 
@@ -186,13 +189,14 @@ class Database:
             bug.tags = []
 
     def load_report(self, bug):
-        report = os.path.join(self.root, 'db-h', self._hash(bug), '%d.report' % bug.id)
+        report = os.path.join(
+            self.root, 'db-h', self._hash(bug), '%d.report' % bug.id)
 
         try:
             fd = open(report)
         except IOError as e:
             if e.errno == 2:
-                raise ReportMissing, report
+                raise ReportMissing(report)
             raise
 
         bug.report = fd.read()
@@ -241,7 +245,7 @@ class Database:
 
         except IOError as e:
             if e.errno == 2:
-                raise LogMissing, log
+                raise LogMissing(log)
             raise
 
         bug.comments = comments
@@ -268,5 +272,3 @@ if __name__ == '__main__':
             print bug, bug.subject
         except Exception as e:
             print >>sys.stderr, '%s: %s' % (e.__class__.__name__, str(e))
-
-

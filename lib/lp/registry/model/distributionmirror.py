@@ -122,8 +122,8 @@ class DistributionMirror(SQLBase):
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(
         alternateID=True, notNull=True)
-    displayname = StringCol(
-        notNull=False, default=None)
+    display_name = StringCol(
+        dbName='displayname', notNull=False, default=None)
     description = StringCol(
         notNull=False, default=None)
     http_base_url = StringCol(
@@ -173,18 +173,16 @@ class DistributionMirror(SQLBase):
             distribution_mirror=self, orderBy='-date_created')
 
     @property
-    def title(self):
-        """See IDistributionMirror"""
-        if self.displayname:
-            return self.displayname
-        else:
-            return self.name.capitalize()
+    def displayname(self):
+        return self.display_name
 
     @property
-    def has_ftp_or_rsync_base_url(self):
+    def title(self):
         """See IDistributionMirror"""
-        return (self.ftp_base_url is not None
-                or self.rsync_base_url is not None)
+        if self.display_name:
+            return self.display_name
+        else:
+            return self.name.capitalize()
 
     @cachedproperty
     def arch_mirror_freshness(self):

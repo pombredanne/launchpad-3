@@ -229,8 +229,9 @@ class NewCodeImportForm(Interface):
     git_repo_url = URIField(
         title=_("Repo URL"), required=False,
         description=_(
-            "The URL of the git repository.  The HEAD branch will be "
-            "imported."),
+            "The URL of the git repository. The HEAD branch will be "
+            "imported. You can import different branches by appending "
+            "',branch=$name' to the URL."),
         allowed_schemes=["git", "http", "https"],
         allow_userinfo=True,
         allow_port=True,

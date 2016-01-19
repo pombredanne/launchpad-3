@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TestP3APackages."""
@@ -35,9 +35,9 @@ from lp.testing import (
     login_person,
     person_logged_in,
     record_two_runs,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -183,7 +183,7 @@ class TestPPAPackages(TestCaseWithFactory):
     def test_source_query_counts(self):
         query_baseline = 43
         # Assess the baseline.
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
@@ -224,7 +224,7 @@ class TestPPAPackages(TestCaseWithFactory):
     def test_binary_query_counts(self):
         query_baseline = 40
         # Assess the baseline.
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
@@ -430,10 +430,14 @@ class TestP3APackagesQueryCount(TestCaseWithFactory):
             owner=self.team, private=True)
         self.private_ppa.newSubscription(
             self.person, registrant=self.team.teamowner)
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=self.private_ppa.distribution)
 
     def createPackage(self):
         with celebrity_logged_in('admin'):
             pkg = self.factory.makeBinaryPackagePublishingHistory(
+                distroarchseries=self.factory.makeDistroArchSeries(
+                    distroseries=self.distroseries),
                 status=PackagePublishingStatus.PUBLISHED,
                 archive=self.private_ppa)
         return pkg
@@ -447,4 +451,4 @@ class TestP3APackagesQueryCount(TestCaseWithFactory):
                 view.render()
         recorder1, recorder2 = record_two_runs(
             ppa_index_render, self.createPackage, 2, 3)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

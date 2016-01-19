@@ -76,7 +76,7 @@ def commit_file(branch, path, contents, merge_parents=None):
         committer.unlock()
 
 
-def create_example_merge(test_case):
+def create_example_bzr_merge(test_case):
     """Create a merge proposal with conflicts and updates."""
     bmp = test_case.factory.makeBranchMergeProposal()
     # Make the branches of the merge proposal look good as far as the
@@ -99,12 +99,12 @@ class FakeGitHostingClient:
 
 class DiffTestCase(TestCaseWithFactory):
 
-    def createExampleMerge(self):
+    def createExampleBzrMerge(self):
         self.useBzrBranches(direct_database=True)
-        return create_example_merge(self)
+        return create_example_bzr_merge(self)
 
-    def checkExampleMerge(self, diff_text):
-        """Ensure the diff text matches the values for ExampleMerge."""
+    def checkExampleBzrMerge(self, diff_text):
+        """Ensure the diff text matches the values for ExampleBzrMerge."""
         # The source branch added a line "b".
         self.assertIn('+b\n', diff_text)
         # The line "a" was present before any changes were made, so it's not
@@ -254,13 +254,13 @@ class TestDiffInScripts(DiffTestCase):
 
     def test_mergePreviewFromBranches(self):
         # mergePreviewFromBranches generates the correct diff.
-        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        bmp, source_rev_id, target_rev_id = self.createExampleBzrMerge()
         source_branch = bmp.source_branch.getBzrBranch()
         target_branch = bmp.target_branch.getBzrBranch()
         diff, conflicts = Diff.mergePreviewFromBranches(
             source_branch, source_rev_id, target_branch)
         transaction.commit()
-        self.checkExampleMerge(diff.text)
+        self.checkExampleBzrMerge(diff.text)
 
     diff_bytes = (
         "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
@@ -524,12 +524,12 @@ class TestPreviewDiff(DiffTestCase):
 
     def test_fromBranchMergeProposal(self):
         # Correctly generates a PreviewDiff from a BranchMergeProposal.
-        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        bmp, source_rev_id, target_rev_id = self.createExampleBzrMerge()
         preview = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual(source_rev_id, preview.source_revision_id)
         self.assertEqual(target_rev_id, preview.target_revision_id)
         transaction.commit()
-        self.checkExampleMerge(preview.text)
+        self.checkExampleBzrMerge(preview.text)
         self.assertEqual({'foo': (5, 0)}, preview.diffstat)
 
     def test_fromBranchMergeProposal_with_prerequisite(self):
@@ -545,7 +545,7 @@ class TestPreviewDiff(DiffTestCase):
 
     def test_fromBranchMergeProposal_sets_conflicts(self):
         """Conflicts are set on the PreviewDiff."""
-        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        bmp, source_rev_id, target_rev_id = self.createExampleBzrMerge()
         preview = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('Text conflict in foo\n', preview.conflicts)
         self.assertTrue(preview.has_conflicts)
@@ -553,7 +553,7 @@ class TestPreviewDiff(DiffTestCase):
     def test_fromBranchMergeProposal_does_not_warn_on_conflicts(self):
         """PreviewDiff generation emits no conflict warnings."""
         reload(trace)
-        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        bmp, source_rev_id, target_rev_id = self.createExampleBzrMerge()
         handler = RecordLister()
         logger = logging.getLogger('bzr')
         logger.addHandler(handler)

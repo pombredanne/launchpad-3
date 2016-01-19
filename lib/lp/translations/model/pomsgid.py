@@ -40,4 +40,3 @@ class POMsgID(SQLBase):
             raise SQLObjectNotFound(key)
         return r
     byMsgid = classmethod(byMsgid)
-

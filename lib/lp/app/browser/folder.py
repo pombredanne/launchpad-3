@@ -134,7 +134,6 @@ class ExportedImageFolder(ExportedFolder):
     can be served as "image1".
     """
 
-
     # The extensions we consider.
     image_extensions = ('.png', '.gif')
 

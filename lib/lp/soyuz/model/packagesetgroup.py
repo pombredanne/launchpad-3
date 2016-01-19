@@ -30,4 +30,3 @@ class PackagesetGroup(Storm):
 
     owner_id = Int(name='owner', allow_none=False)
     owner = Reference(owner_id, 'Person.id')
-

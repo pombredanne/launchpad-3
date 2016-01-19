@@ -25,5 +25,3 @@ class CveReference(SQLBase):
     source = StringCol(notNull=True)
     content = StringCol(notNull=True)
     url = StringCol(notNull=False, default=None)
-
-

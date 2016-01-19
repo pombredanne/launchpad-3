@@ -2,5 +2,3 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XMLRPC views and APIs on Launchpad objects."""
-
-

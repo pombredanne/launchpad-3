@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -25,6 +25,7 @@ from zope.interface import (
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.schema import (
     Bool,
+    Bytes,
     Choice,
     Datetime,
     Int,
@@ -273,6 +274,15 @@ class NoCanonicalUrl(TypeError):
         TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
             (object_url_requested_for, broken_link_in_chain)
             )
+
+
+class IFavicon(Interface):
+    """A favicon."""
+
+    path = TextLine(
+        title=u"The name of the file containing the favicon data.",
+        required=True)
+    data = Bytes(title=u"The favicon data.", required=True)
 
 
 # XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly

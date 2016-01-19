@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -17,6 +17,7 @@ __all__ = [
 
 import re
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
@@ -63,6 +64,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -117,7 +119,7 @@ def git_repository_name_validator(name):
     return True
 
 
-class IGitRepositoryView(Interface):
+class IGitRepositoryView(IHasRecipes):
     """IGitRepository attributes that require launchpad.View permission."""
 
     id = Int(title=_("ID"), readonly=True, required=True)
@@ -224,17 +226,21 @@ class IGitRepositoryView(Interface):
         title=_("SSH URL"), readonly=True,
         description=_("A git+ssh:// URL for this repository.")))
 
-    refs = exported(CollectionField(
+    refs = exported(doNotSnapshot(CollectionField(
         title=_("The references present in this repository."),
         readonly=True,
         # Really IGitRef, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+        value_type=Reference(Interface))))
 
-    branches = exported(CollectionField(
+    branches = exported(doNotSnapshot(CollectionField(
         title=_("The branch references present in this repository."),
         readonly=True,
         # Really IGitRef, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+        value_type=Reference(Interface))))
+
+    branches_by_date = Attribute(
+        "The branch references present in this repository, ordered by last "
+        "commit date.")
 
     subscriptions = exported(CollectionField(
         title=_("GitSubscriptions associated with this repository."),
@@ -510,6 +516,14 @@ class IGitRepositoryView(Interface):
             diffs updated.
         """
 
+    def markRecipesStale(paths):
+        """Mark recipes associated with this repository as stale.
+
+        :param paths: A list of reference paths.  Any recipes that include
+            an entry that points to this repository and that has a `revspec`
+            that is one of these paths will be marked as stale.
+        """
+
     def detectMerges(paths, logger=None):
         """Detect merges of landing candidates.
 
@@ -684,7 +698,8 @@ class IGitRepositorySet(Interface):
     def getByPath(user, path):
         """Find a repository by its path.
 
-        Any of these forms may be used, with or without a leading slash:
+        Any of these forms may be used::
+
             Unique names:
                 ~OWNER/PROJECT/+git/NAME
                 ~OWNER/DISTRO/+source/SOURCE/+git/NAME

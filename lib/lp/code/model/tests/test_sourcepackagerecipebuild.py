@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import re
 
 from pytz import utc
 from storm.locals import Store
@@ -27,15 +26,11 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource,
     )
-from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer,
-    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
-from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     admin_logged_in,
@@ -111,11 +106,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(bq, spb.buildqueue_record)
 
     def test_title(self):
-        # A recipe build's title currently consists of the base
-        # branch's unique name.
+        # A recipe build's title currently consists of the base source
+        # location's unique name.
         spb = self.makeSourcePackageRecipeBuild()
         title = "%s recipe build in %s %s" % (
-            spb.recipe.base_branch.unique_name, spb.distribution.name,
+            spb.recipe.base.unique_name, spb.distribution.name,
             spb.distroseries.name)
         self.assertEqual(spb.title, title)
 
@@ -501,22 +496,6 @@ class TestAsBuildmaster(TestCaseWithFactory):
         IStore(build).flush()
         build.notify()
         self.assertEquals(0, len(pop_notifications()))
-
-    def assertBuildMessageValid(self, build, message):
-        # Not currently used; can be used if we do want to check about any
-        # notifications sent in other cases.
-        requester = build.requester
-        requester_address = format_address(
-            requester.displayname, requester.preferredemail.email)
-        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        expected = mailer.generateEmail(
-            requester.preferredemail.email, requester)
-        self.assertEqual(
-            requester_address, re.sub(r'\n\t+', ' ', message['To']))
-        self.assertEqual(expected.subject, message['Subject'].replace(
-            '\n\t', ' '))
-        self.assertEqual(
-            expected.body, message.get_payload(decode=True))
 
     def test_notify_when_recipe_deleted(self):
         """Notify does nothing if recipe has been deleted."""

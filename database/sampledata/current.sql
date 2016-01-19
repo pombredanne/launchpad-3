@@ -943,6 +943,8 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243632, 'Ubuntu Technical Board', 243631, NULL, 'techboard', NULL, NULL, NULL, NULL, 3, NULL, '2009-08-04 10:50:39.370018', NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243651, 'Software-center-agent', NULL, NULL, 'software-center-agent', NULL, NULL, NULL, NULL, 1, NULL, '2010-07-12 09:48:27.198885', NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243652, 'Launchpad PPA Self Admins', 243621, NULL, 'launchpad-ppa-self-admins', NULL, NULL, NULL, NULL, 3, NULL, '2013-05-10 05:43:04.018122', NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL, NULL);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243653, 'Launchpad PPA Admins', 243621, NULL, 'launchpad-ppa-admins', NULL, NULL, NULL, NULL, 3, NULL, '2015-11-25 11:06:11.767934', NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL, NULL);
+
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -4844,6 +4846,7 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243632, 'Ubuntu Technical Board', 243631, NULL, 'techboard', NULL, NULL, NULL, NULL, 3, NULL, '2009-08-04 10:50:39.370018', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243651, 'Software-center-agent', NULL, NULL, 'software-center-agent', NULL, NULL, NULL, NULL, 1, NULL, '2010-07-12 09:48:27.198885', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243652, 'Launchpad PPA Self Admins', 243621, NULL, 'launchpad-ppa-self-admins', NULL, NULL, NULL, NULL, 3, NULL, '2013-05-10 05:43:04.018122', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
+INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243653, 'Launchpad PPA Admins', 243621, NULL, 'launchpad-ppa-admins', NULL, NULL, NULL, NULL, 3, NULL, '2015-11-25 11:06:11.767934', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 
 
 ALTER TABLE lp_person ENABLE TRIGGER ALL;
@@ -5064,6 +5067,9 @@ INSERT INTO lp_teamparticipation (id, team, person) VALUES (253, 243651, 243651)
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (254, 243652, 243652);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (256, 243652, 243621);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (257, 243652, 243622);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (258, 243653, 243653);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (259, 243653, 243621);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (260, 243653, 243622);
 
 
 ALTER TABLE lp_teamparticipation ENABLE TRIGGER ALL;
@@ -10040,6 +10046,7 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (104, 243623, 243630, 2, '2009-07-09 11:58:38.122886', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2009-07-09 11:58:38.122886');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (105, 243631, 243632, 3, '2009-08-04 10:50:47.920683', NULL, NULL, NULL, 243631, NULL, 243631, '2009-08-04 10:50:47.920683', NULL, NULL, '2009-08-04 10:50:47.920683', NULL, NULL, NULL, '2009-08-04 10:50:39.370018');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (107, 243621, 243652, 3, '2013-05-10 05:43:32.395783', NULL, NULL, NULL, 16, NULL, 16, '2013-05-10 05:43:32.395783', NULL, NULL, '2013-05-10 05:43:32.395783', NULL, NULL, NULL, '2013-05-10 05:43:32.221684');
+INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (108, 243621, 243653, 3, '2015-11-25 11:06:11.767934', NULL, NULL, NULL, 16, NULL, 16, '2015-11-25 11:06:11.767934', NULL, NULL, '2015-11-25 11:06:11.767934', NULL, NULL, NULL, '2015-11-25 11:06:11.767934');
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -10250,6 +10257,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (253, 243651, 243651);
 INSERT INTO teamparticipation (id, team, person) VALUES (254, 243652, 243652);
 INSERT INTO teamparticipation (id, team, person) VALUES (256, 243652, 243621);
 INSERT INTO teamparticipation (id, team, person) VALUES (257, 243652, 243622);
+INSERT INTO teamparticipation (id, team, person) VALUES (258, 243653, 243653);
+INSERT INTO teamparticipation (id, team, person) VALUES (259, 243653, 243621);
+INSERT INTO teamparticipation (id, team, person) VALUES (260, 243653, 243622);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -11334,5 +11344,18 @@ ALTER TABLE wikiname ENABLE TRIGGER ALL;
 
 
 
+
+
+ALTER TABLE xref DISABLE TRIGGER ALL;
+
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('bug', '1', 1, 'cve', '1999-8979', NULL, NULL, '2015-09-28 04:55:28.528879', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('bug', '1', 1, 'specification', '3', 3, NULL, '2015-09-28 04:55:28.528879', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('bug', '2', 2, 'cve', '1999-2345', NULL, NULL, '2015-09-28 04:55:28.540059', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('cve', '1999-2345', NULL, 'bug', '2', 2, NULL, '2015-09-28 04:55:28.540059', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('cve', '1999-8979', NULL, 'bug', '1', 1, NULL, '2015-09-28 04:55:28.528879', NULL);
+INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, creator, date_created, metadata) VALUES ('specification', '3', 3, 'bug', '1', 1, NULL, '2015-09-28 04:55:28.528879', NULL);
+
+
+ALTER TABLE xref ENABLE TRIGGER ALL;
 
 

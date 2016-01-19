@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BugTrackerAddView',
-    'BugTrackerBreadcrumb',
     'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
     'BugTrackerEditComponentView',
@@ -548,16 +547,6 @@ class BugTrackerSetBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return u"Bug trackers"
-
-
-class BugTrackerBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IBugTracker`."""
-
-    rootsite = None
-
-    @property
-    def text(self):
-        return self.context.title
 
 
 @implementer(IRemoteBug)

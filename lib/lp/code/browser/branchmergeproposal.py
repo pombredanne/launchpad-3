@@ -161,18 +161,6 @@ def notify(func):
     return decorator
 
 
-def update_and_notify(func):
-    """Decorate an action to update from a form and send a notification."""
-
-    @notify
-    def decorator(view, action, data):
-        result = func(view, action, data)
-        form.applyChanges(
-            view.context, view.form_fields, data, view.adapters)
-        return result
-    return decorator
-
-
 class BranchMergeCandidateView(LaunchpadView):
     """Provides a small fragment of landing targets"""
 
@@ -1028,6 +1016,7 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
         return dict(item for item in items if item[1] is not UNSET)
 
     @action('Resubmit', name='resubmit')
+    @notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
         try:

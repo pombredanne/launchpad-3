@@ -64,6 +64,7 @@ class GitRepositoryVocabulary(StormVocabularyBase):
     def _getCollection(self):
         return getUtility(IAllGitRepositories)
 
+
 class GitRepositoryRestrictedOnProductVocabulary(GitRepositoryVocabulary):
     """A vocabulary for searching git repositories restricted on product."""
 
@@ -79,4 +80,3 @@ class GitRepositoryRestrictedOnProductVocabulary(GitRepositoryVocabulary):
     def _getCollection(self):
         return getUtility(IAllGitRepositories).inProject(
             self.product).isExclusive()
-

@@ -39,7 +39,7 @@ from lp.services.utils import utc_now
 class TemporaryBlobStorage(SQLBase):
     """A temporary BLOB stored in Launchpad."""
 
-    _table='TemporaryBlobStorage'
+    _table = 'TemporaryBlobStorage'
 
     uuid = StringCol(notNull=True, alternateID=True)
     file_alias = ForeignKey(
@@ -82,8 +82,9 @@ class TemporaryBlobStorage(SQLBase):
             return None
         if 'processed_data' not in job_for_blob.metadata:
             return {}
-        
+
         return job_for_blob.metadata['processed_data']
+
 
 @implementer(ITemporaryStorageManager)
 class TemporaryStorageManager:

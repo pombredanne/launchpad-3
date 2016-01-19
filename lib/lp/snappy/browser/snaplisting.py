@@ -18,10 +18,7 @@ from zope.component import getUtility
 from lp.code.browser.decorations import DecoratedBranch
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.feeds.browser import FeedsMixin
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
+from lp.services.webapp import LaunchpadView
 from lp.snappy.interfaces.snap import ISnapSet
 
 
@@ -48,9 +45,6 @@ class SnapListingView(LaunchpadView, FeedsMixin):
         loader = partial(
             getUtility(ISnapSet).preloadDataForSnaps, user=self.user)
         self.snaps = DecoratedResultSet(snaps, pre_iter_hook=loader)
-        if self.snaps.count() == 1:
-            snap = self.snaps.one()
-            self.request.response.redirect(canonical_url(snap))
 
 
 class BranchSnapListingView(SnapListingView):

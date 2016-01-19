@@ -277,7 +277,7 @@ class DistroMirrorURIField(URIField):
         if IDistributionMirror.providedBy(self.context):
             orig_value = self.get(self.context)
             if orig_value is not None and URI(orig_value) == uri:
-                return # url was not changed
+                return  # url was not changed
 
         mirror = self.getMirrorByURI(str(uri))
         if mirror is not None:
@@ -328,9 +328,13 @@ class IDistributionMirror(Interface):
         title=_('Name'), required=True, readonly=False,
         description=_('A short and unique name for this mirror.'),
         constraint=name_validator))
-    displayname = exported(TextLine(
-        title=_('Organisation'), required=False, readonly=False,
-        description=_('The name of the organization hosting this mirror.')))
+    display_name = exported(
+        TextLine(
+            title=_('Organisation'), required=False, readonly=False,
+            description=_(
+                'The name of the organization hosting this mirror.')),
+        exported_as='displayname')
+    displayname = Attribute('Display name (deprecated)')
     description = exported(TextLine(
         title=_('Description'), required=False, readonly=False))
     http_base_url = exported(DistroMirrorHTTPURIField(
@@ -380,8 +384,6 @@ class IDistributionMirror(Interface):
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
-    has_ftp_or_rsync_base_url = Bool(
-        title=_('Does this mirror have a FTP or Rsync base URL?'))
     arch_mirror_freshness = Attribute(
         'The freshness of this mirror\'s archive mirrors')
     source_mirror_freshness = Attribute(

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -34,6 +34,7 @@ from storm.expr import (
     Or,
     SQL,
     )
+from storm.locals import JSON
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -217,7 +218,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol()
-    displayname = StringCol(notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
@@ -252,14 +253,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
-    backports_not_automatic = BoolCol(notNull=True, default=False)
-    include_long_descriptions = BoolCol(notNull=True, default=True)
+    _backports_not_automatic = BoolCol(
+        dbName="backports_not_automatic", notNull=True, default=False)
+    _include_long_descriptions = BoolCol(
+        dbName="include_long_descriptions", notNull=True, default=True)
+    publishing_options = JSON("publishing_options")
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
     sections = SQLRelatedJoin(
         'Section', joinColumn='distroseries', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    def __init__(self, *args, **kwargs):
+        if "publishing_options" not in kwargs:
+            kwargs["publishing_options"] = {
+                "backports_not_automatic": False,
+                "include_long_descriptions": True,
+                }
+        super(DistroSeries, self).__init__(*args, **kwargs)
+
+    @property
+    def displayname(self):
+        return self.display_name
 
     @property
     def pillar(self):
@@ -273,7 +289,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def named_version(self):
-        return '%s (%s)' % (self.displayname, self.version)
+        return '%s (%s)' % (self.display_name, self.version)
 
     @property
     def upload_components(self):
@@ -785,6 +801,38 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return LanguagePack.selectFirstBy(
             distroseries=self, type=LanguagePackType.DELTA,
             updates=self.language_pack_base, orderBy='-date_exported')
+
+    @property
+    def backports_not_automatic(self):
+        if self.publishing_options is not None:
+            return self.publishing_options.get(
+                "backports_not_automatic", False)
+        else:
+            return self._backports_not_automatic
+
+    @backports_not_automatic.setter
+    def backports_not_automatic(self, value):
+        assert isinstance(value, bool)
+        if self.publishing_options is not None:
+            self.publishing_options["backports_not_automatic"] = value
+        else:
+            self._backports_not_automatic = value
+
+    @property
+    def include_long_descriptions(self):
+        if self.publishing_options is not None:
+            return self.publishing_options.get(
+                "include_long_descriptions", True)
+        else:
+            return self._include_long_descriptions
+
+    @include_long_descriptions.setter
+    def include_long_descriptions(self, value):
+        assert isinstance(value, bool)
+        if self.publishing_options is not None:
+            self.publishing_options["include_long_descriptions"] = value
+        else:
+            self._include_long_descriptions = value
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""

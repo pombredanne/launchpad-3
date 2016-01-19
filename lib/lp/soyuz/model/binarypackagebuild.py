@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -86,6 +86,10 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.adapters.buildarch import determine_architectures_to_build
+from lp.soyuz.interfaces.archive import (
+    InvalidExternalDependencies,
+    validate_external_dependencies,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -147,6 +151,14 @@ def is_build_virtualized(archive, processor):
     return (
         archive.require_virtualized
         or not processor.supports_nonvirtualized)
+
+
+def storm_validate_external_dependencies(build, attr, value):
+    assert attr == 'external_dependencies'
+    errors = validate_external_dependencies(value)
+    if len(errors) > 0:
+        raise InvalidExternalDependencies(errors)
+    return value
 
 
 @implementer(IBinaryPackageBuild)
@@ -212,6 +224,10 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name_id = Int(name='source_package_name', allow_none=False)
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
+
+    external_dependencies = Unicode(
+        name='external_dependencies',
+        validator=storm_validate_external_dependencies)
 
     def getLatestSourcePublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -545,7 +561,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             # any version is acceptable if no relationship is given
             '': lambda x: True,
             # strictly later
-            '>>': lambda x: x == 1,
+            '>>': lambda x: x > 0,
             # later or equal
             '>=': lambda x: x >= 0,
             # strictly equal
@@ -553,7 +569,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             # earlier or equal
             '<=': lambda x: x <= 0,
             # strictly earlier
-            '<<': lambda x: x == -1,
+            '<<': lambda x: x < 0,
             }
 
         # Use apt_pkg function to compare versions
@@ -753,6 +769,14 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def getUploader(self, changes):
         """See `IBinaryPackageBuild`."""
         return changes.signer
+
+    @property
+    def api_external_dependencies(self):
+        return self.external_dependencies
+
+    @api_external_dependencies.setter
+    def api_external_dependencies(self, value):
+        self.external_dependencies = value
 
 
 @implementer(IBinaryPackageBuildSet)

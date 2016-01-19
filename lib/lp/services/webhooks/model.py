@@ -33,14 +33,19 @@ from storm.properties import (
 from storm.references import Reference
 from storm.store import Store
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface import (
     implementer,
     provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.security import IAuthorization
 import lp.app.versioninfo
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -66,6 +71,7 @@ from lp.services.webhooks.interfaces import (
     IWebhookJob,
     IWebhookJobSource,
     IWebhookSet,
+    WEBHOOK_EVENT_TYPES,
     WebhookDeliveryFailure,
     WebhookDeliveryRetry,
     WebhookFeatureDisabled,
@@ -93,6 +99,9 @@ class Webhook(StormBase):
     git_repository_id = Int(name='git_repository')
     git_repository = Reference(git_repository_id, 'GitRepository.id')
 
+    branch_id = Int(name='branch')
+    branch = Reference(branch_id, 'Branch.id')
+
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
     date_created = DateTime(tzinfo=utc, allow_none=False)
@@ -108,6 +117,8 @@ class Webhook(StormBase):
     def target(self):
         if self.git_repository is not None:
             return self.git_repository
+        elif self.branch is not None:
+            return self.branch
         else:
             raise AssertionError("No target.")
 
@@ -159,10 +170,13 @@ class WebhookSet:
 
     def new(self, target, registrant, delivery_url, event_types, active,
             secret):
+        from lp.code.interfaces.branch import IBranch
         from lp.code.interfaces.gitrepository import IGitRepository
         hook = Webhook()
         if IGitRepository.providedBy(target):
             hook.git_repository = target
+        elif IBranch.providedBy(target):
+            hook.branch = target
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         hook.registrant = registrant
@@ -184,18 +198,43 @@ class WebhookSet:
         return IStore(Webhook).get(Webhook, id)
 
     def findByTarget(self, target):
+        from lp.code.interfaces.branch import IBranch
         from lp.code.interfaces.gitrepository import IGitRepository
         if IGitRepository.providedBy(target):
             target_filter = Webhook.git_repository == target
+        elif IBranch.providedBy(target):
+            target_filter = Webhook.branch == target
         else:
             raise AssertionError("Unsupported target: %r" % (target,))
         return IStore(Webhook).find(Webhook, target_filter).order_by(
             Webhook.id)
 
-    def trigger(self, target, event_type, payload):
-        # XXX wgrant 2015-08-10: Two INSERTs and one celery submission
-        # for each webhook, but the set should be small and we'd have to
-        # defer the triggering itself to a job to fix it.
+    @classmethod
+    def _checkVisibility(cls, context, user):
+        """Check visibility of the webhook context object.
+
+        In order to be able to dispatch a webhook without disclosing
+        unauthorised information, the webhook owner (currently always equal
+        to the webhook target owner) must be able to see the context for the
+        action that caused the webhook to be triggered.
+
+        :return: True if the context is visible to the webhook owner,
+            otherwise False.
+        """
+        roles = IPersonRoles(user)
+        authz = getAdapter(
+            removeSecurityProxy(context), IAuthorization, "launchpad.View")
+        return authz.checkAuthenticated(roles)
+
+    def trigger(self, target, event_type, payload, context=None):
+        if context is None:
+            context = target
+        user = removeSecurityProxy(target).owner
+        if not self._checkVisibility(context, user):
+            return
+        # XXX wgrant 2015-08-10: Two INSERTs and one celery submission for
+        # each webhook, but the set should be small and we'd have to defer
+        # the triggering itself to a job to fix it.
         for webhook in self.findByTarget(target):
             if webhook.active and event_type in webhook.event_types:
                 WebhookDeliveryJob.create(webhook, event_type, payload)
@@ -211,6 +250,14 @@ class WebhookTargetMixin:
         return DecoratedResultSet(
             getUtility(IWebhookSet).findByTarget(self),
             pre_iter_hook=preload_registrants)
+
+    @property
+    def valid_webhook_event_types(self):
+        return sorted(WEBHOOK_EVENT_TYPES)
+
+    @property
+    def default_webhook_event_types(self):
+        return self.valid_webhook_event_types
 
     def newWebhook(self, registrant, delivery_url, event_types, active=True,
                    secret=None):
@@ -293,6 +340,13 @@ class WebhookJobDerived(BaseRunnableJob):
 
     def __init__(self, webhook_job):
         self.context = webhook_job
+
+    def __repr__(self):
+        return "<%(job_class)s for webhook %(webhook_id)d on %(target)r>" % {
+            "job_class": self.__class__.__name__,
+            "webhook_id": self.context.webhook_id,
+            "target": self.context.webhook.target,
+            }
 
     @classmethod
     def iterReady(cls):

@@ -310,7 +310,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="
-                displayname
+                display_name
                 title
                 summary
                 description
@@ -550,6 +550,7 @@
                 currentrelease
                 delete
                 development_version
+                display_name
                 displayname
                 distribution
                 distro
@@ -1033,7 +1034,7 @@
                 set_schema="lp.registry.interfaces.person.IPersonViewRestricted
                             lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname icon logo visibility"/>
+                set_attributes="display_name icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
                 interface="lp.registry.interfaces.person.IPersonModerateRestricted"
@@ -1340,7 +1341,7 @@
                 commercial_subscription
                 description
                 development_focus
-                displayname
+                display_name
                 downloadurl
                 driver
                 freshmeatproject
@@ -1759,7 +1760,7 @@
                 bug_reporting_guidelines
                 description
                 development_series_alias
-                displayname
+                display_name
                 driver
                 enable_bug_expiration
                 homepage_content
@@ -1981,6 +1982,7 @@
             attributes="
                 id
                 name
+                display_name
                 displayname
                 description
                 distribution
@@ -1999,7 +2001,6 @@
                 arch_series
                 last_probe_record
                 all_probe_records
-                has_ftp_or_rsync_base_url
                 base_url
                 date_created
                 country_dns_mirror
@@ -2023,7 +2024,7 @@
                 canTransitionToCountryMirror" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name displayname description whiteboard
+            set_attributes="name display_name description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
                             speed country content official_candidate owner"
             attributes="official_candidate whiteboard" />

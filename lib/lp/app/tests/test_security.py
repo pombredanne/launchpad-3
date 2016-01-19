@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
 from zope.component import (
     getSiteManager,
     getUtility,
@@ -246,8 +245,10 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
                 team_status,
                 main_team_owner)
 
-        checker = PublicOrPrivateTeamsExistence(removeSecurityProxy(private_team))
-        self.assertTrue(checker.checkAuthenticated(IPersonRoles(main_team_owner)))
+        checker = PublicOrPrivateTeamsExistence(
+            removeSecurityProxy(private_team))
+        self.assertTrue(
+            checker.checkAuthenticated(IPersonRoles(main_team_owner)))
 
     def test_can_list_team_with_deactivated_private_team(self):
         self.assertTeamOwnerCanListPrivateTeamWithTeamStatus(
@@ -283,4 +284,4 @@ class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             check_team_limited_view, create_subscribed_archive, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

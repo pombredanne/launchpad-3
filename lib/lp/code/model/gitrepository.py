@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -24,6 +24,7 @@ from storm.databases.postgres import Returning
 from storm.expr import (
     And,
     Coalesce,
+    Desc,
     Insert,
     Join,
     Not,
@@ -129,6 +130,7 @@ from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -232,6 +234,14 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             self.sourcepackagename = target.sourcepackagename
         self.owner_default = False
         self.target_default = False
+
+    @property
+    def valid_webhook_event_types(self):
+        return ["git:push:0.1", "merge-proposal:0.1"]
+
+    @property
+    def default_webhook_event_types(self):
+        return ["git:push:0.1"]
 
     # Marker for references to Git URL layouts: ##GITNAMESPACE##
     @property
@@ -415,6 +425,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             GitRef,
             GitRef.repository_id == self.id,
             GitRef.path.startswith(u"refs/heads/")).order_by(GitRef.path)
+
+    @property
+    def branches_by_date(self):
+        """See `IGitRepository`."""
+        return self.branches.order_by(Desc(GitRef.committer_date))
 
     @property
     def default_branch(self):
@@ -939,6 +954,34 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
         return jobs
 
+    def _getRecipes(self, paths=None):
+        """Undecorated version of recipes for use by `markRecipesStale`."""
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData,
+            )
+        if paths is not None:
+            revspecs = set()
+            for path in paths:
+                revspecs.add(path)
+                if path.startswith("refs/heads/"):
+                    revspecs.add(path[len("refs/heads/"):])
+            revspecs = list(revspecs)
+        else:
+            revspecs = None
+        return SourcePackageRecipeData.findRecipes(self, revspecs=revspecs)
+
+    @property
+    def recipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(self._getRecipes(), pre_iter_hook=hook)
+
+    def markRecipesStale(self, paths):
+        """See `IGitRepository`."""
+        for recipe in self._getRecipes(paths):
+            recipe.is_stale = True
+
     def _markProposalMerged(self, proposal, merged_revision_id, logger=None):
         if logger is not None:
             logger.info(
@@ -1009,6 +1052,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
+        deletion_operations.extend(
+            DeletionCallable(
+                recipe, msg("This recipe uses this repository."),
+                recipe.destroySelf)
+            for recipe in self.recipes)
         if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, msg("Some snap packages build from this repository."),
@@ -1227,16 +1275,16 @@ class GitRepositorySet:
             raise GitTargetError(
                 "Cannot set a default Git repository for a person, only "
                 "for a project or a package.")
-        if repository is not None:
-            if repository.target != target:
-                raise GitTargetError(
-                    "Cannot set default Git repository to one attached to "
-                    "another target.")
-            repository.setTargetDefault(True)
-        else:
-            previous = self.getDefaultRepository(target)
+        if repository is not None and repository.target != target:
+            raise GitTargetError(
+                "Cannot set default Git repository to one attached to "
+                "another target.")
+        previous = self.getDefaultRepository(target)
+        if previous != repository:
             if previous is not None:
                 previous.setTargetDefault(False)
+            if repository is not None:
+                repository.setTargetDefault(True)
 
     def setDefaultRepositoryForOwner(self, owner, target, repository, user):
         """See `IGitRepositorySet`."""
@@ -1262,11 +1310,12 @@ class GitRepositorySet:
                 raise GitTargetError(
                     "Cannot set a person's default Git repository to one "
                     "owned by somebody else.")
-            repository.setOwnerDefault(True)
-        else:
-            previous = self.getDefaultRepositoryForOwner(owner, target)
+        previous = self.getDefaultRepositoryForOwner(owner, target)
+        if previous != repository:
             if previous is not None:
                 previous.setOwnerDefault(False)
+            if repository is not None:
+                repository.setOwnerDefault(True)
 
     def empty_list(self):
         """See `IGitRepositorySet`."""

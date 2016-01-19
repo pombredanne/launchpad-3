@@ -31,7 +31,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         # Create a productseries that uses translations.
         TestCaseWithFactory.setUp(self)
         product = self.factory.makeProduct(
-            translations_usage = ServiceUsage.LAUNCHPAD)
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.productseries = self.factory.makeProductSeries(
             product=product)
         self.parent = self.productseries
@@ -46,7 +46,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
         for sequence in range(number_of_potmsgsets):
-            self.factory.makePOTMsgSet(potemplate, sequence=sequence+1)
+            self.factory.makePOTMsgSet(potemplate, sequence=sequence + 1)
         removeSecurityProxy(potemplate).messagecount = number_of_potmsgsets
         potemplate.priority = priority
         return potemplate
@@ -139,7 +139,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         # appropriately.
         potemplate1 = self.addPOTemplate(priority=2)
         pofile1 = self.addPOFile(potemplate1)
-        potemplate2 = self.addPOTemplate(priority=1)
+        self.addPOTemplate(priority=1)
         pofiles = translated_language.pofiles
         self.assertEqual(pofile1, pofiles[0])
         dummy_pofile = removeSecurityProxy(pofiles[1])
@@ -179,7 +179,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         translated_language = self.getTranslatedLanguage(self.language)
         # Three templates with different priorities so they get sorted
         # appropriately.
-        pofile1 = self.addPOFile(self.addPOTemplate(priority=2))
+        self.addPOFile(self.addPOTemplate(priority=2))
         pofile2 = self.addPOFile(self.addPOTemplate(priority=1))
         self.addPOTemplate(priority=0)
 
@@ -245,7 +245,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
     def test_recalculateCounts_total_one_pofile(self):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate = self.addPOTemplate(number_of_potmsgsets=5)
-        pofile = self.addPOFile(potemplate)
+        self.addPOFile(potemplate)
 
         translated_language.recalculateCounts()
         self.assertEqual(
@@ -254,13 +254,13 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
     def test_recalculateCounts_total_two_pofiles(self):
         translated_language = self.getTranslatedLanguage(self.language)
         potemplate1 = self.addPOTemplate(number_of_potmsgsets=5)
-        pofile1 = self.addPOFile(potemplate1)
+        self.addPOFile(potemplate1)
         potemplate2 = self.addPOTemplate(number_of_potmsgsets=3)
-        pofile2 = self.addPOFile(potemplate2)
+        self.addPOFile(potemplate2)
 
         translated_language.recalculateCounts()
         self.assertEqual(
-            5+3, translated_language.translation_statistics['total_count'])
+            5 + 3, translated_language.translation_statistics['total_count'])
 
     def test_recalculateCounts_translated_one_pofile(self):
         translated_language = self.getTranslatedLanguage(self.language)
@@ -473,7 +473,7 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         naked_pofile1.unreviewed_count = 3
 
         # Set up second template with a single PO file.
-        potemplate2 = self.addPOTemplate(number_of_potmsgsets=3)
+        self.addPOTemplate(number_of_potmsgsets=3)
 
         translated_language.recalculateCounts()
 

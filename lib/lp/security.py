@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -1957,6 +1957,24 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         return auth_spr.checkUnauthenticated()
 
 
+class ModerateBinaryPackageBuild(ViewBinaryPackageBuild):
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        # Only people who can see the build and administer its archive can
+        # edit restricted attributes of builds.  (Currently this allows
+        # setting BinaryPackageBuild.external_dependencies; people who can
+        # administer the archive can already achieve the same effect by
+        # setting Archive.external_dependencies.)
+        return (
+            super(ModerateBinaryPackageBuild, self).checkAuthenticated(
+                user) and
+            AdminArchive(self.obj.archive).checkAuthenticated(user))
+
+    def checkUnauthenticated(self, user):
+        return False
+
+
 class ViewTranslationTemplatesBuild(DelegatedAuthorization):
     """Permission to view an `ITranslationTemplatesBuild`.
 
@@ -1969,15 +1987,16 @@ class ViewTranslationTemplatesBuild(DelegatedAuthorization):
         super(ViewTranslationTemplatesBuild, self).__init__(obj, obj.branch)
 
 
-class AdminQuestion(AdminByAdminsTeam):
+class AdminQuestion(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
         """Allow only admins and owners of the question pillar target."""
         context = self.obj.product or self.obj.distribution
-        return (AdminByAdminsTeam.checkAuthenticated(self, user) or
-                user.inTeam(context.owner))
+        return (
+            user.in_admin or user.in_registry_experts
+            or user.inTeam(context.owner))
 
 
 class AppendQuestion(AdminQuestion):
@@ -2010,6 +2029,16 @@ class QuestionOwner(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Allow the question's owner."""
         return user.inTeam(self.obj.owner)
+
+
+class EditQuestion(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IQuestion
+
+    def checkAuthenticated(self, user):
+        return (
+            AppendQuestion(self.obj).checkAuthenticated(user)
+            or QuestionOwner(self.obj).checkAuthenticated(user))
 
 
 class ViewQuestion(AnonymousAuthorization):
@@ -2630,29 +2659,29 @@ class ModerateArchive(AuthorizationBase):
 
     Buildd admins can change this, as a site-wide resource that requires
     arbitration, especially between distribution builds and builds in
-    non-virtualized PPAs.  Commercial admins can also change this since it
-    affects the relative priority of (private) PPAs.
+    non-virtualized PPAs.  PPA/commercial admins can also change this since
+    it affects the relative priority of (private) PPAs.
     """
     permission = 'launchpad.Moderate'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        return (user.in_buildd_admin or user.in_commercial_admin or
-                user.in_admin)
+        return (user.in_buildd_admin or user.in_ppa_admin or
+                user.in_commercial_admin or user.in_admin)
 
 
 class AdminArchive(AuthorizationBase):
     """Restrict changing privacy and build settings on archives.
 
     The security of the non-virtualised build farm depends on these
-    settings, so they can only be changed by commercial admins, or by
+    settings, so they can only be changed by PPA/commercial admins, or by
     PPA self admins on PPAs that they can already edit.
     """
     permission = 'launchpad.Admin'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        if user.in_commercial_admin or user.in_admin:
+        if user.in_ppa_admin or user.in_commercial_admin or user.in_admin:
             return True
         return (
             user.in_ppa_self_admins
@@ -3016,14 +3045,14 @@ class AdminLiveFS(AuthorizationBase):
     """Restrict changing build settings on live filesystems.
 
     The security of the non-virtualised build farm depends on these
-    settings, so they can only be changed by commercial admins, or by "PPA"
-    self admins on live filesystems that they can already edit.
+    settings, so they can only be changed by "PPA"/commercial admins, or by
+    "PPA" self admins on live filesystems that they can already edit.
     """
     permission = 'launchpad.Admin'
     usedfor = ILiveFS
 
     def checkAuthenticated(self, user):
-        if user.in_commercial_admin or user.in_admin:
+        if user.in_ppa_admin or user.in_commercial_admin or user.in_admin:
             return True
         return (
             user.in_ppa_self_admins
@@ -3105,14 +3134,14 @@ class AdminSnap(AuthorizationBase):
     """Restrict changing build settings on snap packages.
 
     The security of the non-virtualised build farm depends on these
-    settings, so they can only be changed by commercial admins, or by "PPA"
-    self admins on snap packages that they can already edit.
+    settings, so they can only be changed by "PPA"/commercial admins, or by
+    "PPA" self admins on snap packages that they can already edit.
     """
     permission = 'launchpad.Admin'
     usedfor = ISnap
 
     def checkAuthenticated(self, user):
-        if user.in_commercial_admin or user.in_admin:
+        if user.in_ppa_admin or user.in_commercial_admin or user.in_admin:
             return True
         return (
             user.in_ppa_self_admins

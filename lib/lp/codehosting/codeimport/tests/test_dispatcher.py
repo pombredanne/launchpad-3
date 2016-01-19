@@ -86,8 +86,8 @@ class TestCodeImportDispatcherUnit(TestCase):
             arg for arg in arglist if not arg.startswith('--log-file=')]
         while '--log-file' in arglist:
             index = arglist.index('--log-file')
-            del arglist[index] # Delete the argument
-            del arglist[index] # And its parameter
+            del arglist[index]  # Delete the argument
+            del arglist[index]  # And its parameter
 
         parser = OptionParser()
         scripts.logger_options(parser)
@@ -158,10 +158,12 @@ class TestCodeImportDispatcherUnit(TestCase):
         # returned by _getSleepInterval.
         sleep_calls = []
         interval = self.factory.getUniqueInteger()
+
         def _sleep(delay):
             sleep_calls.append(delay)
+
         dispatcher = self.makeDispatcher(_sleep=_sleep)
         dispatcher.dispatchJob = lambda job_id: None
-        dispatcher._getSleepInterval = lambda : interval
+        dispatcher._getSleepInterval = lambda: interval
         dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 0]))
         self.assertEqual([interval], sleep_calls)

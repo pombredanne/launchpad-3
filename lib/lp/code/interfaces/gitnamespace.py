@@ -96,6 +96,10 @@ class IGitNamespacePolicy(Interface):
     supports_merge_proposals = Attribute(
         "Does this namespace support merge proposals at all?")
 
+    allow_recipe_name_from_target = Attribute(
+        "Can recipe names reasonably be generated from the target name "
+        "rather than the branch name?")
+
     def getAllowedInformationTypes(who):
         """Get the information types that a repository in this namespace can
         have.

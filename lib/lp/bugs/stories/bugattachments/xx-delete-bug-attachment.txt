@@ -36,7 +36,7 @@ If we go to the attachment edit page, there's an option to delete the
 attachment.
 
     >>> import re
-    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d$')).click()
+    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d+$')).click()
     >>> print user_browser.title
     Bug #2...
     >>> user_browser.getControl('Delete Attachment') is not None

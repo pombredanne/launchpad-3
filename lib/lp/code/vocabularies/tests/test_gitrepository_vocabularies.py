@@ -103,7 +103,8 @@ class TestRestrictedGitRepositoryVocabularyOnProduct(TestCaseWithFactory):
         # If there is a single search result that matches, use that
         # as the result.
         term = self.vocab.getTermByToken('mountain')
-        self.assertEqual(u'~scotty/widget/+git/mountain', term.value.unique_name)
+        self.assertEqual(
+            u'~scotty/widget/+git/mountain', term.value.unique_name)
 
     def test_multipleQueryResult(self):
         # If there are more than one search result, a LookupError is still

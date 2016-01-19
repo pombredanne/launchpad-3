@@ -822,7 +822,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
     label = "Register a new distribution"
     field_names = [
         "name",
-        "displayname",
+        "display_name",
         "summary",
         "description",
         "domainname",
@@ -857,6 +857,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
             u"The architectures on which the distribution's main archive can "
             u"build.")
 
@@ -864,8 +865,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
     def save_action(self, action, data):
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
-            displayname=data['displayname'],
-            title=data['displayname'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             summary=data['summary'],
             description=data['description'],
             domainname=data['domainname'],
@@ -875,7 +876,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
             )
         archive = distribution.main_archive
         self.updateRequireVirtualized(data['require_virtualized'], archive)
-        archive.processors = data['processors']
+        archive.setProcessors(
+            data['processors'], check_permissions=True, user=self.user)
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -887,7 +889,7 @@ class DistributionEditView(RegistryEditFormView,
 
     schema = IDistribution
     field_names = [
-        'displayname',
+        'display_name',
         'summary',
         'description',
         'bug_reporting_guidelines',
@@ -920,6 +922,7 @@ class DistributionEditView(RegistryEditFormView,
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
             u"The architectures on which the distribution's main archive can "
             u"build.")
 
@@ -951,7 +954,8 @@ class DistributionEditView(RegistryEditFormView,
         if new_processors is not None:
             if (set(self.context.main_archive.processors) !=
                     set(new_processors)):
-                self.context.main_archive.processors = new_processors
+                self.context.main_archive.setProcessors(
+                    new_processors, check_permissions=True, user=self.user)
             del(data['processors'])
 
     @action("Change", name='change')

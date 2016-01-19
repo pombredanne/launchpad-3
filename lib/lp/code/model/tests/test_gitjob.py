@@ -13,6 +13,7 @@ import hashlib
 
 import pytz
 from testtools.matchers import (
+    ContainsDict,
     Equals,
     MatchesDict,
     MatchesSetwise,
@@ -22,6 +23,9 @@ from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitObjectType
+from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
+    )
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitJob,
@@ -38,6 +42,7 @@ from lp.code.model.gitjob import (
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
+from lp.services.webapp import canonical_url
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
@@ -202,6 +207,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
             MatchesStructure(
                 event_type=Equals('git:push:0.1'),
                 payload=MatchesDict({
+                    'git_repository': Equals('/' + repository.unique_name),
                     'git_repository_path': Equals(repository.unique_name),
                     'ref_changes': Equals({
                         'refs/tags/1.0': {
@@ -211,6 +217,47 @@ class TestGitRefScanJob(TestCaseWithFactory):
                             'old': None,
                             'new': {'commit_sha1': sha1('refs/tags/2.0')}},
                     })})))
+
+    def test_merge_detection_triggers_webhooks(self):
+        self.useFixture(FeatureFixture(
+            {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: 'on'}))
+        repository = self.factory.makeGitRepository()
+        target, source = self.factory.makeGitRefs(
+            repository, paths=[u'refs/heads/target', u'refs/heads/source'])
+        bmp = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target, source_ref=source)
+        hook = self.factory.makeWebhook(
+            target=repository, event_types=['merge-proposal:0.1'])
+        new_refs = {
+            target.path: {'object': {
+                'sha1': u'0' * 40,
+                'type': 'commit',
+                }},
+            source.path: {'object': {
+                'sha1': source.commit_sha1,
+                'type': 'commit',
+                }},
+            }
+        hosting_client = FakeGitHostingClient(new_refs, [])
+        hosting_client.detectMerges = FakeMethod(
+            result={source.commit_sha1: u'0' * 40})
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        job = GitRefScanJob.create(repository)
+        with dbuser('branchscanner'):
+            JobRunner([job]).runAll()
+        delivery = hook.deliveries.one()
+        self.assertThat(
+            delivery,
+            MatchesStructure(
+                event_type=Equals('merge-proposal:0.1'),
+                payload=MatchesDict({
+                    'merge_proposal': Equals(
+                        canonical_url(bmp, force_local_path=True)),
+                    'action': Equals('modified'),
+                    'old': ContainsDict(
+                        {'queue_status': Equals('Work in progress')}),
+                    'new': ContainsDict({'queue_status': Equals('Merged')}),
+                    })))
 
     def test_composeWebhookPayload(self):
         repository = self.factory.makeGitRepository()
@@ -230,7 +277,8 @@ class TestGitRefScanJob(TestCaseWithFactory):
         payload = GitRefScanJob.composeWebhookPayload(
             repository, new_refs, removed_refs)
         self.assertEqual(
-            {'git_repository_path': repository.unique_name,
+            {'git_repository': '/' + repository.unique_name,
+             'git_repository_path': repository.unique_name,
              'ref_changes': {
                 'refs/heads/master': {
                     'old': {'commit_sha1': sha1('refs/heads/master')},

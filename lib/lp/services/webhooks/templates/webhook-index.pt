@@ -20,7 +20,7 @@
                   var navigator = new ns.WebhookDeliveriesListingNavigator({
                       current_url: window.location,
                       cache: LP.cache,
-                      target: Y.one('#webhook-deliveries-table'),
+                      target: container.one('.webhook-deliveries-table'),
                       container: container,
                   });
                   navigator.set('backwards_navigation',
@@ -37,8 +37,18 @@
                       function(e) {
                           deliveries_widget.set('deliveries', e.details[0]);
                       });
-
-                  deliveries_widget.set('deliveries', LP.cache.deliveries);
+                  deliveries_widget.subscribe(
+                      ns.WebhookDeliveries.RETRY_DELIVERY,
+                      function(e) {
+                          ns.retry_delivery(deliveries_widget, e.details[0]);
+                      });
+                  // Objects in LP.cache.deliveries are not wrapped on page
+                  // load, but the objects we get from batch navigation are.
+                  // Ensure we're always dealing with wrapped ones.
+                  var lp_client = new Y.lp.client.Launchpad();
+                  deliveries_widget.set(
+                      'deliveries',
+                      lp_client.wrap_resource(null, LP.cache.deliveries));
                   deliveries_widget.render();
               });
           });
@@ -62,14 +72,14 @@
       <div class="lesser"
           tal:content="structure view/deliveries/@@+navigation-links-upper" />
 
-      <table id="webhook-deliveries-table" class="listing">
+      <table class="webhook-deliveries-table listing">
         <colgroup>
           <col style="width: 18px" />
           <col style="width: 10em" />
           <col style="width: 5em" />
         </colgroup>
         <tbody>
-          <tr id='webhook-deliveries-table-loading'>
+          <tr class="webhook-deliveries-table-loading">
             <td colspan="3" style="padding-left: 0.25em">
               <img class="spinner" src="/@@/spinner" alt="Loading..." />
               Loading...

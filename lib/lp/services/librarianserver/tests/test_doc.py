@@ -36,6 +36,7 @@ class MockTransport:
 
 class MockLibrary:
     file = None
+
     def startAddFile(self, name, size):
         self.file = MockFile(name)
         return self.file
@@ -85,11 +86,15 @@ def upload_request(request):
     # Send tracebacks from Twisted to stderr, if they occur, to make debugging
     # test failures easier.
     import sys
+
+    from twisted.internet import defer
+    from twisted.python import log
+
     def log_observer(x):
         print >> sys.stderr, x
         if 'failure' in x:
             x['failure'].printTraceback(file=sys.stderr)
-    from twisted.python import log
+
     log.addObserver(log_observer)
 
     # Create a FileUploadProtocol, and instrument it for testing:
@@ -97,7 +102,6 @@ def upload_request(request):
 
     #  * hook _storeFile to dispatch straight to newFile.store without
     #    spawning a thread.
-    from twisted.internet import defer
     server._storeFile = lambda: defer.maybeDeferred(server.newFile.store)
 
     #  * give it a fake transport
@@ -141,6 +145,7 @@ special = {
             globs={'upload_request': upload_request},
             ),
 }
+
 
 def test_suite():
     return build_test_suite(here, special)

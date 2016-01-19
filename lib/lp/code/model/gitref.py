@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,7 @@ __all__ = [
 
 from urllib import quote_plus
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
 from storm.locals import (
     DateTime,
@@ -33,7 +34,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewBranchMergeProposalEvent,
     )
 from lp.code.interfaces.branch import WrongNumberOfReviewTypeArguments
 from lp.code.interfaces.branchmergeproposal import (
@@ -45,7 +45,9 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
     )
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -62,6 +64,9 @@ class GitRefMixin:
     def display_name(self):
         """See `IGitRef`."""
         return self.identity
+
+    # For IHasMergeProposals views.
+    displayname = display_name
 
     @property
     def name(self):
@@ -175,12 +180,22 @@ class GitRefMixin:
     @property
     def landing_candidates(self):
         """See `IGitRef`."""
-        return Store.of(self).find(
+        # Circular import.
+        from lp.code.model.gitrepository import GitRepository
+
+        result = Store.of(self).find(
             BranchMergeProposal,
             BranchMergeProposal.target_git_repository == self.repository,
             BranchMergeProposal.target_git_path == self.path,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+        def eager_load(rows):
+            load_related(
+                GitRepository, rows,
+                ["source_git_repositoryID", "prerequisite_git_repositoryID"])
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     @property
     def dependent_landings(self):
@@ -207,14 +222,37 @@ class GitRefMixin:
             status, target_repository=self.repository, target_path=self.path,
             merged_revision_ids=merged_revision_ids, eager_load=eager_load)
 
-    def getMergeProposalByID(self, id):
+    def getDependentMergeProposals(self, status=None, visible_by_user=None,
+                                   eager_load=False):
         """See `IGitRef`."""
-        return self.landing_targets.find(BranchMergeProposal.id == id).one()
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllGitRepositories).visibleByUser(
+            visible_by_user)
+        return collection.getMergeProposals(
+            status, prerequisite_repository=self.repository,
+            prerequisite_path=self.path, eager_load=eager_load)
 
     @property
     def pending_writes(self):
         """See `IGitRef`."""
         return self.repository.pending_writes
+
+    @property
+    def recipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData,
+            )
+        recipes = SourcePackageRecipeData.findRecipes(
+            self.repository, revspecs=list(set([self.path, self.name])))
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
 
 @implementer(IGitRef)
@@ -322,7 +360,7 @@ class GitRef(StormBase, GitRefMixin):
             bmp.nominateReviewer(
                 reviewer, registrant, review_type, _notify_listeners=False)
 
-        notify(NewBranchMergeProposalEvent(bmp))
+        notify(ObjectCreatedEvent(bmp, user=registrant))
         if needs_review:
             notify(BranchMergeProposalNeedsReviewEvent(bmp))
 

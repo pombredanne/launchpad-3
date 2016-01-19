@@ -86,6 +86,7 @@ class _BaseGitNamespace:
         repository = GitRepository(
             registrant, self.owner, self.target, name, information_type,
             date_created, reviewer=reviewer, description=description)
+        repository._reconcileAccess()
 
         # The owner of the repository should also be automatically subscribed
         # in order for them to get code review notifications.  The default
@@ -97,8 +98,6 @@ class _BaseGitNamespace:
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL,
             registrant)
-
-        repository._reconcileAccess()
 
         notify(ObjectCreatedEvent(repository))
 
@@ -238,6 +237,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
     has_defaults = False
     allow_push_to_set_default = False
     supports_merge_proposals = False
+    allow_recipe_name_from_target = False
 
     def __init__(self, person):
         self.owner = person
@@ -315,6 +315,7 @@ class ProjectGitNamespace(_BaseGitNamespace):
     has_defaults = True
     allow_push_to_set_default = True
     supports_merge_proposals = True
+    allow_recipe_name_from_target = True
 
     def __init__(self, person, project):
         self.owner = person
@@ -399,6 +400,7 @@ class PackageGitNamespace(_BaseGitNamespace):
     has_defaults = True
     allow_push_to_set_default = False
     supports_merge_proposals = True
+    allow_recipe_name_from_target = True
 
     def __init__(self, person, distro_source_package):
         self.owner = person

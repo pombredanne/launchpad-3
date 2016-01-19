@@ -126,7 +126,7 @@ First, create a private copy archive:
     ...     copy_location)
     >>> copy_archive = naked_copy_location.archive
     >>> copy_archive.private = True
-    >>> copy_archive.owner.displayname = "Harry Potter"
+    >>> copy_archive.owner.display_name = "Harry Potter"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     naked_copy_location, copy_archive.owner)
     >>> pub_src = stp.getPubSource(

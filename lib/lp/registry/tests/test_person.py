@@ -75,10 +75,10 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    RequestTimelineCollector,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
@@ -553,9 +553,9 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertFalse(person.canWrite(product, 'displayname'))
+            self.assertFalse(person.canWrite(product, 'display_name'))
         with person_logged_in(product.owner):
-            self.assertTrue(product.owner.canWrite(product, 'displayname'))
+            self.assertTrue(product.owner.canWrite(product, 'display_name'))
 
     def test_canWrite__checking_permissions_of_others(self):
         # Logged in users cannot call Person.canWrite() on Person
@@ -1254,7 +1254,7 @@ class TestAPIPartipication(TestCaseWithFactory):
             team.addMember(self.factory.makePerson(), team.teamowner)
             team.addMember(self.factory.makePerson(), team.teamowner)
         webservice = LaunchpadWebServiceCaller()
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         url = "/~%s/participants" % team.name

@@ -50,8 +50,8 @@ class FileBugDataParser:
                     return buffer
                 break
         end_index = self._buffer.index(end_string)
-        bytes = self._buffer[:end_index+len(end_string)]
-        self._buffer = self._buffer[end_index+len(end_string):]
+        bytes = self._buffer[:end_index + len(end_string)]
+        self._buffer = self._buffer[end_index + len(end_string):]
         return bytes
 
     def readHeaders(self):

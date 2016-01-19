@@ -82,6 +82,6 @@ class IHasCustomLanguageCodes(Interface):
 
     def removeCustomLanguageCode(language_code):
         """Remove `CustomLanguageCode`.
-        
+
         :param language_code: A `CustomLanguageCode` object.
         """

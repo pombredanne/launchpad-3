@@ -12,11 +12,9 @@ from datetime import (
 
 from pytz import UTC
 from storm.locals import Store
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     TestCaseWithFactory,
@@ -345,7 +343,7 @@ class TestApprove(TestCaseWithFactory):
         potmsgset = self.factory.makePOTMsgSet(potemplate=template)
         upstream_pofile = self.factory.makePOFile('nl')
         ubuntu_pofile = self.factory.makePOFile('nl', potemplate=template)
-        diverged_tm = self.factory.makeDivergedTranslationMessage(
+        self.factory.makeDivergedTranslationMessage(
             pofile=upstream_pofile, potmsgset=potmsgset)
         ubuntu_tm = self.factory.makeSuggestion(
             pofile=ubuntu_pofile, potmsgset=potmsgset)
@@ -373,7 +371,6 @@ class TestAcceptFromImport(TestCaseWithFactory):
         # An untranslated message receives an imported translation.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
-        reviewer = self.factory.makePerson()
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
 
@@ -390,7 +387,6 @@ class TestAcceptFromImport(TestCaseWithFactory):
         # side, subject to the share_with_other_side parameter.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
-        reviewer = self.factory.makePerson()
 
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
@@ -404,7 +400,6 @@ class TestAcceptFromImport(TestCaseWithFactory):
         # Accepting a suggestion does not update its review fields.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
-        reviewer = self.factory.makePerson()
 
         self.assertIs(None, suggestion.reviewer)
         self.assertIs(None, suggestion.date_reviewed)
@@ -604,7 +599,7 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
             self._getStates(suggestion, ubuntu_message, upstream_message))
 
     def test_accept_detects_conflict(self):
-        ubuntu_message = self._makeUbuntuMessage()
+        self._makeUbuntuMessage()
         suggestion = self._makeSuggestion()
         old = datetime.now(UTC) - timedelta(days=1)
 

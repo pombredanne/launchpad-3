@@ -124,7 +124,7 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
         view = create_initialized_view(
             self.bug_task, '+affects-new-product')
         self.assertEqual(
-            ['bug_url', 'displayname', 'name', 'summary', 'add_packaging'],
+            ['bug_url', 'display_name', 'name', 'summary', 'add_packaging'],
             view.field_names)
 
     def test_register_product_fields_packaging_does_not_exist(self):
@@ -136,7 +136,7 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
         view = create_initialized_view(
             self.bug_task, '+affects-new-product')
         self.assertEqual(
-            ['bug_url', 'displayname', 'name', 'summary'],
+            ['bug_url', 'display_name', 'name', 'summary'],
              view.field_names)
 
     def test_register_project_create_upstream_bugtask_with_packaging(self):
@@ -144,7 +144,7 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
         form = {
             'field.bug_url': 'http://bugs.foo.org/bugs/show_bug.cgi?id=8',
             'field.name': 'fruit',
-            'field.displayname': 'Fruit',
+            'field.display_name': 'Fruit',
             'field.summary': 'The Fruit summary',
             'field.add_packaging': 'on',
             'field.actions.continue': 'Continue',
@@ -171,7 +171,7 @@ class TestProductBugTaskCreationStep(TestCaseWithFactory):
         form = {
             'field.bug_url': 'http://bugs.foo.org/bugs/show_bug.cgi?id=8',
             'field.name': 'fruit',
-            'field.displayname': 'Fruit',
+            'field.display_name': 'Fruit',
             'field.summary': 'The Fruit summary',
             'field.add_packaging': 'on',
             'field.actions.continue': 'Continue',

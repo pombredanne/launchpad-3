@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'GitRefContextMenu',
-    'GitRefNavigation',
     'GitRefRegisterMergeProposalView',
     'GitRefView',
     ]
@@ -41,8 +40,6 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
-from lp.code.model.gitrepository import GitRepository
-from lp.services.database.bulk import load_related
 from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -50,33 +47,12 @@ from lp.services.webapp import (
     ContextMenu,
     LaunchpadView,
     Link,
-    Navigation,
-    stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
     HasSnapsViewMixin,
     )
-
-
-# XXX cjwatson 2015-05-26: We can get rid of this after a short while, since
-# it's just a compatibility redirection.
-class GitRefNavigation(Navigation):
-
-    usedfor = IGitRef
-
-    @stepthrough("+merge")
-    def traverse_merge_proposal(self, id):
-        """Traverse to an `IBranchMergeProposal`."""
-        try:
-            id = int(id)
-        except ValueError:
-            # Not a number.
-            return None
-        proposal = self.context.getMergeProposalByID(id)
-        if proposal is not None:
-            return self.redirectSubTree(canonical_url(proposal))
 
 
 class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
@@ -143,11 +119,7 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        candidates = list(self.context.landing_candidates)
-        load_related(
-            GitRepository, candidates,
-            ["source_git_repositoryID", "prerequisite_git_repositoryID"])
-        return [proposal for proposal in candidates
+        return [proposal for proposal in self.context.landing_candidates
                 if check_permission("launchpad.View", proposal)]
 
     def _getBranchCountText(self, count):
@@ -331,12 +303,16 @@ class GitRefRegisterMergeProposalView(LaunchpadFormView):
 
     def validate(self, data):
         source_ref = self.context
-        target_repository = self._validateRef(data, 'target')
-        if not target_repository.isRepositoryMergeable(source_ref.repository):
-            self.setFieldError(
-                'target_git_repository',
-                "%s is not mergeable into this repository." %
-                source_ref.repository.identity)
+        # The existence of target_git_repository is handled by the form
+        # machinery.
+        if data.get('target_git_repository') is not None:
+            target_repository = self._validateRef(data, 'target')
+            if not target_repository.isRepositoryMergeable(
+                    source_ref.repository):
+                self.setFieldError(
+                    'target_git_repository',
+                    "%s is not mergeable into this repository." %
+                    source_ref.repository.identity)
         if data.get('prerequisite_git_repository') is not None:
             prerequisite_repository = self._validateRef(data, 'prerequisite')
             if not target_repository.isRepositoryMergeable(

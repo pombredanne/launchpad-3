@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'ProductAddSeriesView',
     'ProductAddView',
-    'ProductAddViewBase',
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
@@ -26,7 +25,6 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
-    'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesSetView',
@@ -105,8 +103,8 @@ from lp.app.browser.tales import (
     )
 from lp.app.enums import (
     InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
     PILLAR_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import (
@@ -145,14 +143,8 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.codeimport import validate_import_url
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
-from lp.code.enums import (
-    BranchType,
-    RevisionControlSystems,
-    )
-from lp.code.errors import (
-    BranchCreationForbidden,
-    BranchExists,
-    )
+from lp.code.enums import RevisionControlSystems
+from lp.code.errors import BranchExists
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -201,7 +193,6 @@ from lp.services.fields import (
     PublicPersonChoice,
     URIField,
     )
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -365,7 +356,7 @@ class ProductInvolvementView(PillarInvolvementView):
             self.context.answers_usage != ServiceUsage.UNKNOWN)
         states['configure_translations'] = (
             self.context.translations_usage != ServiceUsage.UNKNOWN)
-        states['configure_codehosting'] = (
+        states['configure_code'] = (
             self.context.codehosting_usage != ServiceUsage.UNKNOWN)
         return states
 
@@ -398,7 +389,7 @@ class ProductInvolvementView(PillarInvolvementView):
         configure_code.summary = "Specify the location of this project's code."
         config_list.insert(0,
             dict(link=configure_code,
-                 configured=config_statuses['configure_codehosting']))
+                 configured=config_statuses['configure_code']))
         return config_list
 
     @property
@@ -594,7 +585,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     @enabled_with_permission('launchpad.Edit')
     def configure_code(self):
         """Return a link to configure code for this project."""
-        text = 'Configure code'
+        text = 'Configure Code'
         icon = 'edit'
         summary = 'Configure code for this project'
         return Link('+configure-code', text, summary, icon=icon)
@@ -1139,11 +1130,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
             header='Does the licence qualifiy the project for free hosting?')
 
 
-class ProductPurchaseSubscriptionView(ProductView):
-    """View the instructions to purchase a commercial subscription."""
-    page_title = 'Purchase subscription'
-
-
 class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
 
@@ -1381,7 +1367,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     label = "Edit details"
     schema = IProduct
     field_names = [
-        "displayname",
+        "display_name",
         "title",
         "summary",
         "description",
@@ -2000,30 +1986,6 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             else:
                 raise UnexpectedFormData(branch_type)
 
-    def _createBzrBranch(self, branch_name, branch_owner, repo_url=None):
-        """Create a new hosted Bazaar branch.
-
-        Return the branch on success or None.
-        """
-        branch = None
-        try:
-            namespace = self.target.getNamespace(branch_owner)
-            branch = namespace.createBranch(
-                branch_type=BranchType.HOSTED, name=branch_name,
-                registrant=self.user, url=repo_url)
-        except BranchCreationForbidden:
-            self.addError(
-                "You are not allowed to create branches in %s." %
-                self.context.displayname)
-        except BranchExists as e:
-            self._setBranchExists(e.existing_branch, 'branch_name')
-        if branch is None:
-            self.errors_in_action = True
-            # Abort transaction. This is normally handled by
-            # LaunchpadFormView, but we are already in the success handler.
-            self._abort()
-        return branch
-
 
 class ProductRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
@@ -2034,16 +1996,6 @@ class ProductRdfView(BaseRdfView):
     @property
     def filename(self):
         return '%s.rdf' % self.context.name
-
-
-class Icon:
-    """An icon for use with image:icon."""
-
-    def __init__(self, library_id):
-        self.library_alias = getUtility(ILibraryFileAliasSet)[library_id]
-
-    def getURL(self):
-        return self.library_alias.getURL()
 
 
 class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
@@ -2185,34 +2137,6 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         return BatchNavigator(result, self.request, size=50)
 
 
-class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
-    """Abstract class for adding a new product.
-
-    ProductLicenseMixin requires the "product" attribute be set in the
-    child classes' action handler.
-    """
-
-    schema = IProduct
-    product = None
-    field_names = ['name', 'displayname', 'summary',
-                   'description', 'homepageurl', 'sourceforgeproject',
-                   'wikiurl', 'screenshotsurl',
-                   'downloadurl', 'programminglang',
-                   'licenses', 'license_info']
-    custom_widget(
-        'licenses', LicenseWidget, column_count=3, orientation='vertical')
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
-    custom_widget('wikiurl', TextWidget, displayWidth=30)
-    custom_widget('downloadurl', TextWidget, displayWidth=30)
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
-
-
 def create_source_package_fields():
     return form.Fields(
         Choice(__name__='source_package_name',
@@ -2227,14 +2151,14 @@ def create_source_package_fields():
 class ProjectAddStepOne(StepView):
     """product/+new view class for creating a new project."""
 
-    _field_names = ['displayname', 'name', 'summary']
+    _field_names = ['display_name', 'name', 'summary']
     label = "Register a project in Launchpad"
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
     page_title = "Register a project in Launchpad"
 
-    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('display_name', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
 
     step_description = 'Project basics'
@@ -2283,7 +2207,7 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'summary', 'description',
+    _field_names = ['display_name', 'name', 'summary', 'description',
                     'homepageurl', 'information_type', 'licenses',
                     'license_info', 'driver', 'bug_supervisor', 'owner']
     schema = IProduct
@@ -2293,7 +2217,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     product = None
 
-    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('display_name', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
@@ -2404,7 +2328,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # phrasing is different.
         self.widgets['name'].hint = (
             "When published, this will be the project's URL.")
-        self.widgets['displayname'].visible = False
+        self.widgets['display_name'].visible = False
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
 
@@ -2440,7 +2364,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def _search_string(self):
         """Return the ORed terms to match."""
         search_text = SPACE.join((self.request.form['field.name'],
-                                  self.request.form['field.displayname'],
+                                  self.request.form['field.display_name'],
                                   self.request.form['field.summary']))
         # OR all the terms together.
         return OR.join(search_text.split())
@@ -2489,7 +2413,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
-                self.request.form['field.displayname'],
+                self.request.form['field.display_name'],
                 self.request.form['field.name'])
 
     def create_product(self, data):
@@ -2509,8 +2433,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             driver=data.get('driver', None),
             owner=owner,
             name=data['name'],
-            displayname=data['displayname'],
-            title=data['displayname'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             summary=data['summary'],
             description=description,
             homepageurl=data.get('homepageurl'),

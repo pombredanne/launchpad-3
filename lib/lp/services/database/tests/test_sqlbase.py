@@ -13,7 +13,7 @@ from lp.services.database import sqlbase
 
 
 def test_suite():
-    optionflags = ELLIPSIS|NORMALIZE_WHITESPACE|REPORT_NDIFF
+    optionflags = ELLIPSIS | NORMALIZE_WHITESPACE | REPORT_NDIFF
     dt_suite = doctest.DocTestSuite(sqlbase, optionflags=optionflags)
     return unittest.TestSuite((dt_suite,))
 

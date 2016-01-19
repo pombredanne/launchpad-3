@@ -208,12 +208,12 @@ class TestLiveFSAdminView(BrowserTestCase):
     def test_admin_livefs(self):
         # Admins can change require_virtualized.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         livefs = self.factory.makeLiveFS(registrant=self.person)
         self.assertTrue(livefs.require_virtualized)
-        browser = self.getViewBrowser(livefs, user=commercial_admin)
+        browser = self.getViewBrowser(livefs, user=ppa_admin)
         browser.getLink("Administer live filesystem").click()
         browser.getControl("Require virtualized builders").selected = False
         browser.getControl("Update live filesystem").click()
@@ -223,13 +223,13 @@ class TestLiveFSAdminView(BrowserTestCase):
     def test_admin_livefs_sets_date_last_modified(self):
         # Administering a live filesystem sets the date_last_modified property.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
         livefs = self.factory.makeLiveFS(
             registrant=self.person, date_created=date_created)
-        login_person(commercial_admin)
+        login_person(ppa_admin)
         view = LiveFSAdminView(livefs, LaunchpadTestRequest())
         view.initialize()
         view.request_action.success({"require_virtualized": False})

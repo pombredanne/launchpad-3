@@ -29,7 +29,7 @@
 
       <div id="dependent-branches" tal:condition="context/dependent_branches">
         <img src="/@@/merge-proposal-icon" />
-        <a href="+merges" tal:content="structure view/dependent_branch_count_text">
+        <a href="+dependent-merges" tal:content="structure view/dependent_branch_count_text">
           1 branch
         </a>
         dependent on this one.

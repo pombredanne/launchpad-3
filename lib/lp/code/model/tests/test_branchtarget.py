@@ -141,9 +141,9 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # Package branches do support merge proposals.
         self.assertTrue(self.target.supports_merge_proposals)
 
-    def test_supports_short_identites(self):
-        # Package branches do support short bzr identites.
-        self.assertTrue(self.target.supports_short_identites)
+    def test_supports_short_identities(self):
+        # Package branches do support short bzr identities.
+        self.assertTrue(self.target.supports_short_identities)
 
     def test_displayname(self):
         # The display name of a source package target is the display name of
@@ -215,6 +215,9 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
 
+    def test_allow_recipe_name_from_target(self):
+        self.assertTrue(self.target.allow_recipe_name_from_target)
+
     def test_related_branches(self):
         (branch, related_series_branch_info,
             related_package_branches) = (
@@ -280,9 +283,9 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # Personal branches do not support merge proposals.
         self.assertFalse(self.target.supports_merge_proposals)
 
-    def test_supports_short_identites(self):
-        # Personal branches do not support short bzr identites.
-        self.assertFalse(self.target.supports_short_identites)
+    def test_supports_short_identities(self):
+        # Personal branches do not support short bzr identities.
+        self.assertFalse(self.target.supports_short_identities)
 
     def test_displayname(self):
         # The display name of a person branch target is ~$USER/+junk.
@@ -334,6 +337,9 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
                 self.factory.makePerson(),
                 self.factory.getUniqueString("name-"),
                 RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
+
+    def test_does_not_allow_recipe_name_from_target(self):
+        self.assertFalse(self.target.allow_recipe_name_from_target)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -405,9 +411,9 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # Product branches do support merge proposals.
         self.assertTrue(self.target.supports_merge_proposals)
 
-    def test_supports_short_identites(self):
-        # Product branches do support short bzr identites.
-        self.assertTrue(self.target.supports_short_identites)
+    def test_supports_short_identities(self):
+        # Product branches do support short bzr identities.
+        self.assertTrue(self.target.supports_short_identities)
 
     def test_displayname(self):
         # The display name of a product branch target is the display name of
@@ -469,6 +475,9 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
+
+    def test_allow_recipe_name_from_target(self):
+        self.assertTrue(self.target.allow_recipe_name_from_target)
 
     def test_related_branches(self):
         (branch, related_series_branch_info,

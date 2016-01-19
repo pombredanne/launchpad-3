@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBranch."""
@@ -236,7 +236,8 @@ class TargetBranchWidget(SuggestionWidget):
         collection = collection.visibleByUser(logged_in_user)
         # May actually need some eager loading, but the API isn't fine grained
         # yet.
-        branches = collection.getBranches(eager_load=False).config(distinct=True)
+        branches = collection.getBranches(eager_load=False).config(
+            distinct=True)
         target_branches = list(branches.config(limit=5))
         # If there is a development focus branch, make sure it is always
         # shown, and as the first item.
@@ -354,7 +355,7 @@ class TargetGitRepositoryWidget(SuggestionWidget):
 class RecipeOwnerWidget(SuggestionWidget):
     """Widget for selecting a recipe owner.
 
-    The current user and the base branch owner are suggested.
+    The current user and the base source owner are suggested.
     """
 
     @staticmethod

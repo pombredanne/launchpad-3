@@ -9,11 +9,17 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 from textwrap import dedent
 
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 import pytz
+import soupmatchers
+from testtools.matchers import (
+    MatchesSetwise,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -33,6 +39,7 @@ from lp.snappy.browser.snap import (
     SnapView,
     )
 from lp.snappy.interfaces.snap import (
+    CannotModifySnapProcessor,
     SNAP_FEATURE_FLAG,
     SnapFeatureDisabled,
     )
@@ -58,7 +65,10 @@ from lp.testing.pages import (
     find_tags_by_class,
     )
 from lp.testing.publication import test_traverse
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestSnapNavigation(TestCaseWithFactory):
@@ -214,12 +224,12 @@ class TestSnapAdminView(BrowserTestCase):
     def test_admin_snap(self):
         # Admins can change require_virtualized.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
-        browser = self.getViewBrowser(snap, user=commercial_admin)
+        browser = self.getViewBrowser(snap, user=ppa_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Require virtualized builders").selected = False
         browser.getControl("Update snap package").click()
@@ -229,13 +239,13 @@ class TestSnapAdminView(BrowserTestCase):
     def test_admin_snap_sets_date_last_modified(self):
         # Administering a snap package sets the date_last_modified property.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
         snap = self.factory.makeSnap(
             registrant=self.person, date_created=date_created)
-        login_person(commercial_admin)
+        login_person(ppa_admin)
         view = SnapAdminView(snap, LaunchpadTestRequest())
         view.initialize()
         view.request_action.success({"require_virtualized": False})
@@ -244,7 +254,7 @@ class TestSnapAdminView(BrowserTestCase):
 
 class TestSnapEditView(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestSnapEditView, self).setUp()
@@ -318,6 +328,138 @@ class TestSnapEditView(BrowserTestCase):
             "There is already a snap package owned by Test Person with this "
             "name.",
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
+    def setUpDistroSeries(self):
+        """Set up a distroseries with some available processors."""
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        processor_names = ["386", "amd64", "hppa"]
+        for name in processor_names:
+            processor = getUtility(IProcessorSet).getByName(name)
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, architecturetag=name,
+                processor=processor)
+        return distroseries
+
+    def assertSnapProcessors(self, snap, names):
+        self.assertContentEqual(
+            names, [processor.name for processor in snap.processors])
+
+    def assertProcessorControls(self, processors_control, enabled, disabled):
+        matchers = [
+            MatchesStructure.byEquality(optionValue=name, disabled=False)
+            for name in enabled]
+        matchers.extend([
+            MatchesStructure.byEquality(optionValue=name, disabled=True)
+            for name in disabled])
+        self.assertThat(processors_control.controls, MatchesSetwise(*matchers))
+
+    def test_display_processors(self):
+        distroseries = self.setUpDistroSeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=distroseries)
+        browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(
+            ["Intel 386 (386)", "AMD 64bit (amd64)", "HPPA Processor (hppa)"],
+            [extract_text(option) for option in processors.displayOptions])
+        self.assertContentEqual(["386", "amd64", "hppa"], processors.options)
+
+    def test_edit_processors(self):
+        distroseries = self.setUpDistroSeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=distroseries)
+        self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
+        browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
+        processors.value = ["386", "amd64"]
+        browser.getControl("Update snap package").click()
+        login_person(self.person)
+        self.assertSnapProcessors(snap, ["386", "amd64"])
+
+    def test_edit_with_invisible_processor(self):
+        # It's possible for existing snap packages to have an enabled
+        # processor that's no longer usable with the current distroseries,
+        # which will mean it's hidden from the UI, but the non-admin
+        # Snap.setProcessors isn't allowed to disable it.  Editing the
+        # processor list of such a snap package leaves the invisible
+        # processor intact.
+        proc_386 = getUtility(IProcessorSet).getByName("386")
+        proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
+        proc_armel = self.factory.makeProcessor(
+            name="armel", restricted=True, build_by_default=False)
+        distroseries = self.setUpDistroSeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=distroseries)
+        snap.setProcessors([proc_386, proc_amd64, proc_armel])
+        browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(["386", "amd64"], processors.value)
+        processors.value = ["amd64"]
+        browser.getControl("Update snap package").click()
+        login_person(self.person)
+        self.assertSnapProcessors(snap, ["amd64", "armel"])
+
+    def test_edit_processors_restricted(self):
+        # A restricted processor is shown disabled in the UI and cannot be
+        # enabled.
+        self.useFixture(FakeLogger())
+        distroseries = self.setUpDistroSeries()
+        proc_armhf = self.factory.makeProcessor(
+            name="armhf", restricted=True, build_by_default=False)
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="armhf",
+            processor=proc_armhf)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=distroseries)
+        self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
+        browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
+        self.assertProcessorControls(
+            processors, ["386", "amd64", "hppa"], ["armhf"])
+        # Even if the user works around the disabled checkbox and forcibly
+        # enables it, they can't enable the restricted processor.
+        for control in processors.controls:
+            if control.optionValue == "armhf":
+                control.mech_item.disabled = False
+        processors.value = ["386", "amd64", "armhf"]
+        self.assertRaises(
+            CannotModifySnapProcessor,
+            browser.getControl("Update snap package").click)
+
+    def test_edit_processors_restricted_already_enabled(self):
+        # A restricted processor that is already enabled is shown disabled
+        # in the UI.  This causes form submission to omit it, but the
+        # validation code fixes that up behind the scenes so that we don't
+        # get CannotModifySnapProcessor.
+        proc_386 = getUtility(IProcessorSet).getByName("386")
+        proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
+        proc_armhf = self.factory.makeProcessor(
+            name="armhf", restricted=True, build_by_default=False)
+        distroseries = self.setUpDistroSeries()
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="armhf",
+            processor=proc_armhf)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=distroseries)
+        snap.setProcessors([proc_386, proc_amd64, proc_armhf])
+        self.assertSnapProcessors(snap, ["386", "amd64", "armhf"])
+        browser = self.getUserBrowser(
+            canonical_url(snap) + "/+edit", user=snap.owner)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(["386", "amd64"], processors.value)
+        self.assertProcessorControls(
+            processors, ["386", "amd64", "hppa"], ["armhf"])
+        processors.value = ["386"]
+        browser.getControl("Update snap package").click()
+        login_person(self.person)
+        self.assertSnapProcessors(snap, ["386", "armhf"])
 
 
 class TestSnapDeleteView(BrowserTestCase):
@@ -403,6 +545,31 @@ class TestSnapView(BrowserTestCase):
             requester=self.person, snap=snap, archive=archive,
             distroarchseries=self.distroarchseries, date_created=date_created,
             **kwargs)
+
+    def test_breadcrumb(self):
+        snap = self.makeSnap()
+        view = create_view(snap, "+index")
+        # To test the breadcrumbs we need a correct traversal stack.
+        view.request.traversed_objects = [self.person, snap, view]
+        view.initialize()
+        breadcrumbs_tag = soupmatchers.Tag(
+            "breadcrumbs", "ol", attrs={"class": "breadcrumbs"})
+        self.assertThat(
+            view(),
+            soupmatchers.HTMLContains(
+                soupmatchers.Within(
+                    breadcrumbs_tag,
+                    soupmatchers.Tag(
+                        "snap collection breadcrumb", "a",
+                        text="Snap packages",
+                        attrs={
+                            "href": re.compile(r"/~test-person/\+snaps$"),
+                            })),
+                soupmatchers.Within(
+                    breadcrumbs_tag,
+                    soupmatchers.Tag(
+                        "snap breadcrumb", "li",
+                        text=re.compile(r"\ssnap-name\s")))))
 
     def test_index_bzr(self):
         branch = self.factory.makePersonalBranch(

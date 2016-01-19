@@ -5,15 +5,12 @@ __metaclass__ = type
 
 __all__ = [
     'can_be_nominated_for_series',
-    'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
     'validate_date_interval',
     ]
-
-from textwrap import dedent
 
 from zope.component import getUtility
 from zope.formlib.interfaces import WidgetsError
@@ -45,17 +42,6 @@ def can_be_nominated_for_series(series):
         raise LaunchpadValidationError(_(
             "This bug has already been nominated for these "
             "series: ${series}", mapping={'series': series_str}))
-
-    return True
-
-
-def non_duplicate_branch(value):
-    """Ensure that this branch hasn't already been linked to this bug."""
-    current_bug = getUtility(ILaunchBag).bug
-    if current_bug.hasBranch(value):
-        raise LaunchpadValidationError(_(dedent("""
-            This branch is already registered on this bug.
-            """)))
 
     return True
 

@@ -50,7 +50,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getDistributionVocabulary(self):
         return 'Distribution'
-    
+
     def getProductVocabulary(self):
         return 'Product'
 

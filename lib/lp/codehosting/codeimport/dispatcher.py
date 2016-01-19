@@ -65,13 +65,11 @@ class CodeImportDispatcher:
             [interpreter, self.worker_script, str(job_id), '-vv',
              '--log-file', log_file])
 
-
     def findAndDispatchJob(self, scheduler_client):
         """Check for and dispatch a job if necessary.
 
         :return: A boolean, true if a job was found and dispatched.
         """
-
         job_id = scheduler_client.getJobForMachine(
             self.getHostname(), self.worker_limit)
 
@@ -93,7 +91,7 @@ class CodeImportDispatcher:
         We assume worker_limit will be roughly the number of CPUs in the
         machine, so load/worker_limit is roughly how loaded the machine is.
         """
-        return 5*os.getloadavg()[0]/self.worker_limit
+        return 5 * os.getloadavg()[0] / self.worker_limit
 
     def findAndDispatchJobs(self, scheduler_client):
         """Call findAndDispatchJob until no job is found."""

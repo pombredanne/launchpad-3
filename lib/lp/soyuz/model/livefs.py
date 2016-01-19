@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Bool,
     DateTime,
@@ -22,6 +21,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.errors import NoSuchDistroSeries
@@ -80,7 +80,7 @@ def livefs_modified(livefs, event):
     This method is registered as a subscriber to `IObjectModifiedEvent`
     events on live filesystems.
     """
-    livefs.date_last_modified = UTC_NOW
+    removeSecurityProxy(livefs).date_last_modified = UTC_NOW
 
 
 @implementer(ILiveFS, IHasOwner)
@@ -239,16 +239,14 @@ class LiveFSSet:
                     "%s cannot create live filesystems owned by %s." %
                     (registrant.displayname, owner.displayname))
 
+        if self.exists(owner, distro_series, name):
+            raise DuplicateLiveFSName
+
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
             registrant, owner, distro_series, name, metadata,
             require_virtualized, date_created)
         store.add(livefs)
-
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicateLiveFSName
 
         return livefs
 

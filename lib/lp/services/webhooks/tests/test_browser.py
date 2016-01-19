@@ -9,7 +9,6 @@ import re
 
 import soupmatchers
 from testtools.matchers import (
-    Equals,
     MatchesAll,
     MatchesStructure,
     Not,
@@ -25,7 +24,9 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import extract_text
 from lp.testing.views import create_view
+
 
 breadcrumbs_tag = soupmatchers.Tag(
     'breadcrumbs', 'ol', attrs={'class': 'breadcrumbs'})
@@ -47,12 +48,36 @@ batch_nav_tag = soupmatchers.Tag(
     'batch nav links', 'td', attrs={'class': 'batch-navigation-links'})
 
 
+class GitRepositoryTestHelpers:
+
+    event_type = "git:push:0.1"
+    expected_event_types = [
+        ("git:push:0.1", "Git push"),
+        ("merge-proposal:0.1", "Merge proposal"),
+        ]
+
+    def makeTarget(self):
+        return self.factory.makeGitRepository()
+
+
+class BranchTestHelpers:
+
+    event_type = "bzr:push:0.1"
+    expected_event_types = [
+        ("bzr:push:0.1", "Bazaar push"),
+        ("merge-proposal:0.1", "Merge proposal"),
+        ]
+
+    def makeTarget(self):
+        return self.factory.makeBranch()
+
+
 class WebhookTargetViewTestHelpers:
 
     def setUp(self):
         super(WebhookTargetViewTestHelpers, self).setUp()
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
-        self.target = self.factory.makeGitRepository()
+        self.target = self.makeTarget()
         self.owner = self.target.owner
         login_person(self.owner)
 
@@ -65,7 +90,7 @@ class WebhookTargetViewTestHelpers:
         return view
 
 
-class TestWebhooksView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
+class TestWebhooksViewBase(WebhookTargetViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -122,10 +147,22 @@ class TestWebhooksView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
         self.makeView("+webhooks")()
         recorder1, recorder2 = record_two_runs(
             lambda: self.makeView("+webhooks")(), create_webhook, 10)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
-class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
+class TestWebhooksViewGitRepository(
+    TestWebhooksViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhooksViewBranch(
+    TestWebhooksViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookAddViewBase(WebhookTargetViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -150,7 +187,8 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
             form={
                 "field.delivery_url": "http://example.com/test",
                 "field.active": "on", "field.event_types-empty-marker": "1",
-                "field.event_types": "git:push:0.1",
+                "field.event_types": self.event_type,
+                "field.secret": "secret code",
                 "field.actions.new": "Add webhook"})
         self.assertEqual([], view.errors)
         hook = self.target.webhooks.one()
@@ -161,7 +199,8 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
                 registrant=self.owner,
                 delivery_url="http://example.com/test",
                 active=True,
-                event_types=["git:push:0.1"]))
+                event_types=[self.event_type],
+                secret="secret code"))
 
     def test_rejects_bad_scheme(self):
         transaction.commit()
@@ -175,13 +214,52 @@ class TestWebhookAddView(WebhookTargetViewTestHelpers, TestCaseWithFactory):
             ['delivery_url'], [error.field_name for error in view.errors])
         self.assertIs(None, self.target.webhooks.one())
 
+    def test_no_secret(self):
+        # If the secret field is left empty, the secret is set to None
+        # rather than to the empty string.
+        view = self.makeView(
+            "+new-webhook", method="POST",
+            form={
+                "field.delivery_url": "http://example.com/test",
+                "field.active": "on", "field.event_types-empty-marker": "1",
+                "field.event_types": self.event_type,
+                "field.secret": "",
+                "field.actions.new": "Add webhook"})
+        self.assertEqual([], view.errors)
+        hook = self.target.webhooks.one()
+        self.assertIsNone(hook.secret)
+
+    def test_event_types(self):
+        # Only event types that are valid for the target are offered.
+        browser = self.getUserBrowser(
+            canonical_url(self.target, view_name="+new-webhook"),
+            user=self.owner)
+        event_types = browser.getControl(name="field.event_types")
+        display_options = [
+            extract_text(option) for option in event_types.displayOptions]
+        self.assertContentEqual(
+            self.expected_event_types,
+            zip(event_types.options, display_options))
+
+
+class TestWebhookAddViewGitRepository(
+    TestWebhookAddViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookAddViewBranch(
+    TestWebhookAddViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
 
 class WebhookViewTestHelpers:
 
     def setUp(self):
         super(WebhookViewTestHelpers, self).setUp()
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
-        self.target = self.factory.makeGitRepository()
+        self.target = self.makeTarget()
         self.owner = self.target.owner
         self.webhook = self.factory.makeWebhook(
             target=self.target, delivery_url=u'http://example.com/original')
@@ -196,7 +274,7 @@ class WebhookViewTestHelpers:
         return view
 
 
-class TestWebhookView(WebhookViewTestHelpers, TestCaseWithFactory):
+class TestWebhookViewBase(WebhookViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -248,8 +326,31 @@ class TestWebhookView(WebhookViewTestHelpers, TestCaseWithFactory):
                 active=True,
                 event_types=[]))
 
+    def test_event_types(self):
+        # Only event types that are valid for the target are offered.
+        browser = self.getUserBrowser(
+            canonical_url(self.webhook, view_name="+index"), user=self.owner)
+        event_types = browser.getControl(name="field.event_types")
+        display_options = [
+            extract_text(option) for option in event_types.displayOptions]
+        self.assertContentEqual(
+            self.expected_event_types,
+            zip(event_types.options, display_options))
 
-class TestWebhookDeleteView(WebhookViewTestHelpers, TestCaseWithFactory):
+
+class TestWebhookViewGitRepository(
+    TestWebhookViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookViewBranch(
+    TestWebhookViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookDeleteViewBase(WebhookViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -281,3 +382,15 @@ class TestWebhookDeleteView(WebhookViewTestHelpers, TestCaseWithFactory):
             form={"field.actions.delete": "Delete webhook"})
         self.assertEqual([], view.errors)
         self.assertIs(None, self.target.webhooks.one())
+
+
+class TestWebhookDeleteViewGitRepository(
+    TestWebhookDeleteViewBase, GitRepositoryTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookDeleteViewBranch(
+    TestWebhookDeleteViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass

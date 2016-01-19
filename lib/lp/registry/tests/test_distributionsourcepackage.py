@@ -41,7 +41,7 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         distribution_set = getUtility(IDistributionSet)
 
         distribution = distribution_set.new(name='wart',
-            displayname='wart', title='wart', description='lots of warts',
+            display_name='wart', title='wart', description='lots of warts',
             summary='lots of warts', domainname='wart.dumb',
             members=self.factory.makeTeam(), owner=self.factory.makePerson(),
             registrant=self.factory.makePerson())

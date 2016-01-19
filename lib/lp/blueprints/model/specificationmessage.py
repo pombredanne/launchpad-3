@@ -52,8 +52,3 @@ class SpecificationMessageSet:
     def get(self, specmessageid):
         """See ISpecificationMessageSet."""
         return SpecificationMessage.get(specmessageid)
-
-    def getBySpecificationAndMessage(self, spec, message):
-        """See ISpecificationMessageSet."""
-        return SpecificationMessage.selectOneBy(
-            specification=spec, message=message)

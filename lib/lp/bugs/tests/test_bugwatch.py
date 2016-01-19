@@ -124,7 +124,7 @@ class ExtractBugTrackerAndBugTestBase:
                 "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
 
     def test_invalid_bug_number(self):
-        # Replace the second digit of the remote bug id with an E, which all 
+        # Replace the second digit of the remote bug id with an E, which all
         # parsers will reject as invalid.
         invalid_url = re.sub(r'(\d)\d', r'\1E', self.bug_url, count=1)
         self.assertRaises(

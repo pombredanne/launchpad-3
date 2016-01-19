@@ -154,7 +154,7 @@ class TestWebhook(TestCaseWithFactory):
         get_deliveries()
         recorder1, recorder2 = record_two_runs(
             get_deliveries, create_delivery, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_delete(self):
         with person_logged_in(self.owner):
@@ -260,12 +260,12 @@ class TestWebhookDelivery(TestCaseWithFactory):
         self.assertIs(None, representation['date_first_sent'])
 
 
-class TestWebhookTarget(TestCaseWithFactory):
+class TestWebhookTargetBase:
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestWebhookTarget, self).setUp()
-        self.target = self.factory.makeGitRepository()
+        super(TestWebhookTargetBase, self).setUp()
+        self.target = self.makeTarget()
         self.owner = self.target.owner
         self.target_url = api_url(self.target)
         self.webservice = webservice_for_person(
@@ -302,20 +302,20 @@ class TestWebhookTarget(TestCaseWithFactory):
         get_webhooks()
         recorder1, recorder2 = record_two_runs(
             get_webhooks, create_webhook, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_newWebhook(self):
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
             delivery_url='http://example.com/ep',
-            event_types=['git:push:0.1'], api_version='devel')
+            event_types=[self.event_type], api_version='devel')
         self.assertEqual(201, response.status)
 
         representation = self.webservice.get(
             self.target_url + '/webhooks', api_version='devel').jsonBody()
         self.assertContentEqual(
-            [('http://example.com/ep', ['git:push:0.1'], True)],
+            [('http://example.com/ep', [self.event_type], True)],
             [(entry['delivery_url'], entry['event_types'], entry['active'])
              for entry in representation['entries']])
 
@@ -323,8 +323,9 @@ class TestWebhookTarget(TestCaseWithFactory):
         self.useFixture(FeatureFixture({'webhooks.new.enabled': 'true'}))
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', event_types=['git:push:0.1'],
-            secret='sekrit', api_version='devel')
+            delivery_url='http://example.com/ep',
+            event_types=[self.event_type], secret='sekrit',
+            api_version='devel')
         self.assertEqual(201, response.status)
 
         # The secret is set, but cannot be read back through the API.
@@ -339,16 +340,33 @@ class TestWebhookTarget(TestCaseWithFactory):
         webservice = LaunchpadWebServiceCaller()
         response = webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', event_types=['git:push:0.1'],
-            api_version='devel')
+            delivery_url='http://example.com/ep',
+            event_types=[self.event_type], api_version='devel')
         self.assertEqual(401, response.status)
         self.assertIn('launchpad.Edit', response.body)
 
     def test_newWebhook_feature_flag_guard(self):
         response = self.webservice.named_post(
             self.target_url, 'newWebhook',
-            delivery_url='http://example.com/ep', event_types=['git:push:0.1'],
-            api_version='devel')
+            delivery_url='http://example.com/ep',
+            event_types=[self.event_type], api_version='devel')
         self.assertEqual(401, response.status)
         self.assertEqual(
             'This webhook feature is not available yet.', response.body)
+
+
+class TestWebhookTargetGitRepository(
+    TestWebhookTargetBase, TestCaseWithFactory):
+
+    event_type = 'git:push:0.1'
+
+    def makeTarget(self):
+        return self.factory.makeGitRepository()
+
+
+class TestWebhookTargetBranch(TestWebhookTargetBase, TestCaseWithFactory):
+
+    event_type = 'bzr:push:0.1'
+
+    def makeTarget(self):
+        return self.factory.makeBranch()

@@ -1,13 +1,13 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
 
 __metaclass__ = type
 
-
 import bz2
 import crypt
+from functools import partial
 import gzip
 import hashlib
 import os
@@ -18,6 +18,7 @@ from textwrap import dedent
 import time
 
 from debian.deb822 import Release
+from testtools.matchers import ContainsAll
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -1847,6 +1848,61 @@ class TestPublisher(TestPublisherBase):
             self.assertReleaseContentsMatch(
                 release, 'Contents-i386.gz', contents_file.read())
 
+    def testReleaseFileForDEP11(self):
+        # Test Release file writing for DEP-11 metadata.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Put some DEP-11 metadata files in place, and force the publisher
+        # to republish that suite.
+        series_path = os.path.join(self.config.distsroot, 'breezy-autotest')
+        dep11_path = os.path.join(series_path, 'main', 'dep11')
+        dep11_names = ('Components-amd64.yml.gz', 'Components-i386.yml.gz',
+                       'icons-64x64.tar.gz', 'icons-128x128.tar.gz')
+        os.makedirs(dep11_path)
+        for name in dep11_names:
+            with gzip.GzipFile(os.path.join(dep11_path, name), 'wb') as f:
+                f.write(name)
+        publisher.markPocketDirty(
+            self.ubuntutest.getSeries('breezy-autotest'),
+            PackagePublishingPocket.RELEASE)
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        # The metadata files are listed correctly in Release.
+        release = self.parseRelease(os.path.join(series_path, 'Release'))
+        for name in dep11_names:
+            with open(os.path.join(dep11_path, name), 'rb') as f:
+                self.assertReleaseContentsMatch(
+                    release, os.path.join('main', 'dep11', name), f.read())
+
+    def testReleaseFileTimestamps(self):
+        # The timestamps of Release and all its entries match.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Hello world')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        sources = suite_path('main', 'source', 'Sources')
+        sources_timestamp = os.stat(sources).st_mtime - 60
+        os.utime(sources, (sources_timestamp, sources_timestamp))
+
+        publisher.D_writeReleaseFiles(False)
+
+        release = self.parseRelease(suite_path('Release'))
+        paths = ['Release'] + [entry['name'] for entry in release['md5sum']]
+        timestamps = set(os.stat(suite_path(path)).st_mtime for path in paths)
+        self.assertEqual(1, len(timestamps))
+
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
         publisher = Publisher(
@@ -2152,9 +2208,10 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
     def setupPublisher(self, archive):
         """Setup a `Publisher` instance for the given archive."""
-        allowed_suites = []
-        self.archive_publisher = getPublisher(
-            archive, allowed_suites, self.logger)
+        if self.archive_publisher is None:
+            allowed_suites = []
+            self.archive_publisher = getPublisher(
+                archive, allowed_suites, self.logger)
 
     def _publishArchive(self, archive):
         """Publish a test source in the given archive.
@@ -2183,6 +2240,10 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         return os.path.join(self.suite_path, 'Release.gpg')
 
     @property
+    def inline_release_file_path(self):
+        return os.path.join(self.suite_path, 'InRelease')
+
+    @property
     def public_key_path(self):
         return os.path.join(
             self.archive_publisher._config.distsroot, 'key.gpg')
@@ -2196,17 +2257,31 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         self.assertTrue(cprov.archive.signing_key is None)
 
+        self.setupPublisher(cprov.archive)
+        self.archive_publisher._syncTimestamps = FakeMethod()
+
         self._publishArchive(cprov.archive)
 
         # Release file exist but it doesn't have any signature.
         self.assertTrue(os.path.exists(self.release_file_path))
         self.assertFalse(os.path.exists(self.release_file_signature_path))
 
+        # The publisher synchronises the timestamp of the Release file with
+        # any other files, but does not do anything to Release.gpg or
+        # InRelease.
+        self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)
+        sync_args = self.archive_publisher._syncTimestamps.extract_args()[0]
+        self.assertEqual(self.distroseries.name, sync_args[0])
+        self.assertIn('Release', sync_args[1])
+        self.assertNotIn('Release.gpg', sync_args[1])
+        self.assertNotIn('InRelease', sync_args[1])
+
     def testRepositorySignatureWithSigningKey(self):
         """Check publisher behaviour when signing repositories.
 
         When the 'signing_key' is available every modified suite Release
-        file gets signed with a detached signature name 'Release.gpg'.
+        file gets signed with a detached signature name 'Release.gpg' and
+        a clearsigned file name 'InRelease'.
         """
         cprov = getUtility(IPersonSet).getByName('cprov')
         self.assertTrue(cprov.archive.signing_key is None)
@@ -2220,20 +2295,42 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
         self.assertTrue(cprov.archive.signing_key is not None)
 
+        self.setupPublisher(cprov.archive)
+        self.archive_publisher._syncTimestamps = FakeMethod()
+
         self._publishArchive(cprov.archive)
 
-        # Both, Release and Release.gpg exist.
+        # All of Release, Release.gpg, and InRelease exist.
         self.assertTrue(os.path.exists(self.release_file_path))
         self.assertTrue(os.path.exists(self.release_file_signature_path))
+        self.assertTrue(os.path.exists(self.inline_release_file_path))
 
         # Release file signature is correct and was done by Celso's PPA
         # signing_key.
         with open(self.release_file_path) as release_file:
+            release_content = release_file.read()
             with open(self.release_file_signature_path) as release_file_sig:
                 signature = getUtility(IGPGHandler).getVerifiedSignature(
-                    release_file.read(), release_file_sig.read())
+                    release_content, release_file_sig.read())
         self.assertEqual(
             cprov.archive.signing_key.fingerprint, signature.fingerprint)
+
+        # InRelease file signature and content are correct, and the
+        # signature was done by Celso's PPA signing_key.
+        with open(self.inline_release_file_path) as inline_release_file:
+            inline_signature = getUtility(IGPGHandler).getVerifiedSignature(
+                inline_release_file.read())
+        self.assertEqual(
+            inline_signature.fingerprint,
+            cprov.archive.signing_key.fingerprint)
+        self.assertEqual(release_content, inline_signature.plain_data)
+
+        # The publisher synchronises the various Release file timestamps.
+        self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)
+        sync_args = self.archive_publisher._syncTimestamps.extract_args()[0]
+        self.assertEqual(self.distroseries.name, sync_args[0])
+        self.assertThat(
+            sync_args[1], ContainsAll(['Release', 'Release.gpg', 'InRelease']))
 
         # All done, turn test-keyserver off.
         tac.tearDown()

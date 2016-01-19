@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -122,6 +122,7 @@ from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
+from lp.code.model.gitrepository import GitRepository
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasCodeImportsMixin,
@@ -392,7 +393,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
-    displayname = StringCol(dbName='displayname', notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
     _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(notNull=False, default=None)
@@ -436,8 +437,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     vcs = EnumCol(enum=VCSType, notNull=False)
 
     @property
+    def displayname(self):
+        return self.display_name
+
+    @property
     def title(self):
-        return self.displayname
+        return self.display_name
 
     @property
     def date_next_suggest_packaging(self):
@@ -1158,10 +1163,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     owner = property(_getOwner, _setOwner)
 
-    def _getBugTaskContextWhereClause(self):
-        """See BugTargetBase."""
-        return "BugTask.product = %d" % self.id
-
     def getExternalBugTracker(self):
         """See `IHasExternalBugTracker`."""
         if self.official_malone:
@@ -1280,7 +1281,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def bugtargetdisplayname(self):
         """See IBugTarget."""
-        return self.displayname
+        return self.display_name
 
     @property
     def bugtargetname(self):
@@ -1574,12 +1575,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        recipes = Store.of(self).find(
+        tables = [
+            SourcePackageRecipe,
+            SourcePackageRecipeData,
+            LeftJoin(Branch, SourcePackageRecipeData.base_branch == Branch.id),
+            LeftJoin(
+                GitRepository,
+                SourcePackageRecipeData.base_git_repository ==
+                    GitRepository.id),
+            ]
+        recipes = Store.of(self).using(*tables).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
-            SourcePackageRecipeData.base_branch == Branch.id,
-            Branch.product == self)
+            Or(Branch.product == self, GitRepository.project == self))
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
@@ -1913,7 +1922,7 @@ class ProductSet:
             results = results.limit(num_products)
         return results
 
-    def createProduct(self, owner, name, displayname, title, summary,
+    def createProduct(self, owner, name, display_name, title, summary,
                       description=None, projectgroup=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
@@ -1941,7 +1950,7 @@ class ProductSet:
                     ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
-            displayname=displayname, _title=title, projectgroup=projectgroup,
+            display_name=display_name, _title=title, projectgroup=projectgroup,
             summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=None,
@@ -2085,7 +2094,7 @@ class ProductSet:
         result = IStore(Product).find(
             Product, *conditions).config(
                 distinct=True).order_by(
-                    Product.datecreated, Product.displayname)
+                    Product.datecreated, Product.display_name)
 
         def eager_load(products):
             return get_precached_products(
@@ -2125,7 +2134,7 @@ class ProductSet:
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
-                distinct=True).order_by(Product.displayname)
+                distinct=True).order_by(Product.display_name)
 
         # We only want Product - the other tables are just to populate
         # the cache.

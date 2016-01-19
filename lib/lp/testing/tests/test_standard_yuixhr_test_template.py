@@ -1,8 +1,10 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """{Describe your test suite here}.
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = []
@@ -99,6 +101,8 @@ def example(request, data):
     # have been mutating the "data" dict that was passed in.  (This
     # will become slightly more important if you ever want to use
     # .extend.)
+
+
 @example.add_cleanup
 def example(request, data):
     # This is an example of a cleanup function, which will be called

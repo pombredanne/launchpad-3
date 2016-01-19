@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the scanner's merge detection."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 import logging
 
 from bzrlib.revision import NULL_REVISION
+from lazr.lifecycle.event import ObjectModifiedEvent
 import transaction
 from zope.component import getUtility
 from zope.event import notify
@@ -271,7 +272,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
-        mergedetection.merge_detected(
+        _, [event] = self.assertNotifies(
+            [ObjectModifiedEvent], True, mergedetection.merge_detected,
             logging.getLogger(),
             proposal.source_branch, proposal.target_branch, proposal)
         self.assertEqual(
@@ -279,6 +281,12 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
+        self.assertEqual(proposal, event.object)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            event.object_before_modification.queue_status)
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED, event.object.queue_status)
         job = IStore(proposal).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == proposal,

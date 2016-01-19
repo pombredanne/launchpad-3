@@ -105,6 +105,7 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
+from zope.app.testing import ztapi
 from zope.component import (
     ComponentLookupError,
     getMultiAdapter,
@@ -113,10 +114,8 @@ from zope.component import (
     )
 import zope.event
 from zope.interface import Interface
-from zope.interface.verify import (
-    verifyClass,
-    verifyObject as zope_verifyObject,
-    )
+from zope.interface.verify import verifyObject as zope_verifyObject
+from zope.publisher.interfaces import IEndRequestEvent
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.management import queryInteraction
 from zope.security.proxy import (
@@ -144,6 +143,7 @@ from lp.services.features.webapp import ScopesFromRequest
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
 from lp.services.webapp.adapter import (
+    get_request_statements,
     print_queries,
     start_sql_logging,
     stop_sql_logging,
@@ -313,11 +313,13 @@ class FakeTime:
 
 
 class StormStatementRecorder:
-    """A storm tracer to count queries.
+    """A Storm tracer to record all database queries.
 
-    This exposes the count and queries as
-    lp.testing._webservice.QueryCollector does permitting its use with the
-    HasQueryCount matcher.
+    Use the HasQueryCount matcher to check that code makes efficient use
+    of the database.
+
+    Similar to `RequestTimelineCollector`, but can operate outside a web
+    request context and only collects Storm queries.
 
     It also meets the context manager protocol, so you can gather queries
     easily:
@@ -364,6 +366,53 @@ class StormStatementRecorder:
         return out.getvalue()
 
 
+class RequestTimelineCollector:
+    """Collect timeline events logged in web requests.
+
+    These are only retrievable at the end of a request, and for tests it is
+    useful to be able to make assertions about the calls made during a
+    request: this class provides a tool to gather them in a simple fashion.
+
+    See `StormStatementRecorder` for a Storm-specific collector that
+    works outside a request.
+
+    :ivar count: The count of db queries the last web request made.
+    :ivar queries: The list of queries made. See
+        lp.services.webapp.adapter.get_request_statements for more
+        information.
+    """
+
+    def __init__(self):
+        self._active = False
+        self.count = None
+        self.queries = None
+
+    def register(self):
+        """Start counting queries.
+
+        Be sure to call unregister when finished with the collector.
+
+        After each web request the count and queries attributes are updated.
+        """
+        ztapi.subscribe((IEndRequestEvent, ), None, self)
+        self._active = True
+
+    def __enter__(self):
+        self.register()
+        return self
+
+    def __call__(self, event):
+        if self._active:
+            self.queries = get_request_statements()
+            self.count = len(self.queries)
+
+    def unregister(self):
+        self._active = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.unregister()
+
+
 def record_statements(function, *args, **kwargs):
     """Run the function and record the sql statements that are executed.
 
@@ -376,7 +425,8 @@ def record_statements(function, *args, **kwargs):
 
 
 def record_two_runs(tested_method, item_creator, first_round_number,
-                    second_round_number=None, login_method=None):
+                    second_round_number=None, login_method=None,
+                    record_request=False):
     """A helper that returns the two storm statement recorders
     obtained when running tested_method after having run the
     method {item_creator} {first_round_number} times and then
@@ -386,9 +436,17 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     If {login_method} is not None, it is called before each batch of
     {item_creator} calls.
 
+    If {record_request} is True, `RequestTimelineCollector` is used to get
+    the query counts, so {tested_method} should make a web request.
+    Otherwise, `StormStatementRecorder` is used to get the query count.
+
     :return: a tuple containing the two recorders obtained by the successive
         runs.
     """
+    if record_request:
+        recorder_factory = RequestTimelineCollector
+    else:
+        recorder_factory = StormStatementRecorder
     if login_method is not None:
         login_method()
     for i in range(first_round_number):
@@ -400,7 +458,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     if queryInteraction() is not None:
         clear_permission_cache()
     getUtility(ILaunchpadCelebrities).clearCache()
-    with StormStatementRecorder() as recorder1:
+    with recorder_factory() as recorder1:
         tested_method()
     # Run {item_creator} {second_round_number} more times.
     if second_round_number is None:
@@ -414,7 +472,7 @@ def record_two_runs(tested_method, item_creator, first_round_number,
     if queryInteraction() is not None:
         clear_permission_cache()
     getUtility(ILaunchpadCelebrities).clearCache()
-    with StormStatementRecorder() as recorder2:
+    with recorder_factory() as recorder2:
         tested_method()
     return recorder1, recorder2
 
@@ -481,17 +539,14 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
 
-    def assertClassImplements(self, cls, interface):
-        """Assert 'cls' may correctly implement 'interface'."""
-        self.assertTrue(
-            verifyClass(interface, cls),
-            "%r does not correctly implement %r." % (cls, interface))
-
-    def assertNotifies(self, event_types, callable_obj, *args, **kwargs):
+    def assertNotifies(self, event_types, propagate, callable_obj,
+                       *args, **kwargs):
         """Assert that a callable performs a given notification.
 
         :param event_type: One or more event types that notification is
             expected for.
+        :param propagate: If True, propagate events to their normal
+            subscribers.
         :param callable_obj: The callable to call.
         :param *args: The arguments to pass to the callable.
         :param **kwargs: The keyword arguments to pass to the callable.
@@ -500,7 +555,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """
         if not isinstance(event_types, (list, tuple)):
             event_types = [event_types]
-        with EventRecorder() as recorder:
+        with EventRecorder(propagate=propagate) as recorder:
             result = callable_obj(*args, **kwargs)
         if len(recorder.events) == 0:
             raise AssertionError('No notification was performed.')
@@ -1198,21 +1253,27 @@ class ZopeTestInSubProcess:
 class EventRecorder:
     """Intercept and record Zope events.
 
-    This prevents the events from propagating to their normal subscribers.
-    The recorded events can be accessed via the 'events' list.
+    This prevents the events from propagating to their normal subscribers,
+    unless `propagate=True` is passed to the constructor.  The recorded
+    events can be accessed via the 'events' list.
     """
 
-    def __init__(self):
+    def __init__(self, propagate=False):
+        self.propagate = propagate
         self.events = []
         self.old_subscribers = None
+        self.new_subscribers = None
 
     def __enter__(self):
         self.old_subscribers = zope.event.subscribers[:]
-        zope.event.subscribers[:] = [self.events.append]
+        if not self.propagate:
+            zope.event.subscribers[:] = []
+        zope.event.subscribers.append(self.events.append)
+        self.new_subscribers = zope.event.subscribers[:]
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        assert zope.event.subscribers == [self.events.append], (
+        assert zope.event.subscribers == self.new_subscribers, (
             'Subscriber list has been changed while running!')
         zope.event.subscribers[:] = self.old_subscribers
 

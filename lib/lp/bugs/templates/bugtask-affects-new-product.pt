@@ -53,7 +53,7 @@
             <metal:block use-macro="context/@@launchpad_form/widget_row" />
           </tal:bug-url>
 
-          <tal:product-name define="widget nocall:widgets/displayname">
+          <tal:product-name define="widget nocall:widgets/display_name">
             <metal:block use-macro="context/@@launchpad_form/widget_row" />
           </tal:product-name>
 

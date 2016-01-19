@@ -938,7 +938,7 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
             non_team_person.name,)
         self.assertRaisesWithContent(
             MuteNotAllowed, expected, self.filter.mute, non_team_person)
-        
+
     def test_mute_on_team_with_contact_address(self):
         # BugSubscriptionFilter.mute() will raise an error if called on
         # a subscription if the team has a contact address.

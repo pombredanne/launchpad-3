@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -85,6 +85,7 @@ from lp.services.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
+    IFavicon,
     ILaunchpadBrowserApplicationRequest,
     ILaunchpadProtocolError,
     INotificationRequest,
@@ -418,7 +419,7 @@ class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
                 environment))
         if request_factory is None:
             mime_type = environment.get('CONTENT_TYPE')
-            if mime_type != 'text/xml':
+            if mime_type.split(';')[0].strip() != 'text/xml':
                 request_factory = ProtocolErrorRequest
                 # 415 - Unsupported Media Type
                 publication_factory = ProtocolErrorPublicationFactory(415)
@@ -1125,9 +1126,10 @@ class FeedsPublication(LaunchpadBrowserPublication):
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
-            # the result is a feed, an image, or a redirection.
+            # the result is a feed, a favicon, an image, or a redirection.
             naked_result = removeSecurityProxy(result)
             if (IFeed.providedBy(result) or
+                IFavicon.providedBy(result) or
                 isinstance(naked_result, LaunchpadImageFolder) or
                 getattr(naked_result, 'status', None) == 301):
                 return result

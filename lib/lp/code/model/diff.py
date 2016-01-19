@@ -450,22 +450,15 @@ class PreviewDiff(Storm):
                 path = "%s:%s" % (
                     target_repository.getInternalPath(),
                     source_repository.getInternalPath())
-            # XXX cjwatson 2015-04-30: Add prerequisite handling once turnip
-            # supports it.
             response = getUtility(IGitHostingClient).getMergeDiff(
-                path, bmp.target_git_ref.commit_sha1,
-                bmp.source_git_ref.commit_sha1)
-            source_revision_id = bmp.source_git_ref.commit_sha1
-            target_revision_id = bmp.target_git_ref.commit_sha1
-            if bmp.prerequisite_git_ref is not None:
-                prerequisite_revision_id = bmp.prerequisite_git_ref.commit_sha1
-            else:
-                prerequisite_revision_id = None
+                path, bmp.target_git_commit_sha1, bmp.source_git_commit_sha1,
+                prerequisite=bmp.prerequisite_git_commit_sha1)
             conflicts = u"".join(
                 u"Conflict in %s\n" % path for path in response['conflicts'])
             preview = cls.create(
-                bmp, response['patch'].encode('utf-8'), source_revision_id,
-                target_revision_id, prerequisite_revision_id, conflicts,
+                bmp, response['patch'].encode('utf-8'),
+                bmp.source_git_commit_sha1, bmp.target_git_commit_sha1,
+                bmp.prerequisite_git_commit_sha1, conflicts,
                 strip_prefix_segments=1)
         del get_property_cache(bmp).preview_diffs
         del get_property_cache(bmp).preview_diff

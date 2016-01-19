@@ -284,6 +284,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                        Or(Branch.next_mirror_time == None,
                           Branch.branch_type != BranchType.HOSTED)),
                    BranchMergeProposal.source_git_repository != None)))
+        jobs = jobs.config(distinct=True)
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):

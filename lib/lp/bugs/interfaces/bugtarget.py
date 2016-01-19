@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
     'IHasExpirableBugs',
@@ -358,28 +357,6 @@ class IBugTarget(IHasBugs):
 patch_reference_property(IBugTask, 'target', IBugTarget)
 patch_plain_parameter_type(
     IBugTask, 'transitionToTarget', 'target', IBugTarget)
-
-
-class BugDistroSeriesTargetDetails:
-    """The details of a bug targeted to a specific IDistroSeries.
-
-    The following attributes are provided:
-
-    :series: The IDistroSeries.
-    :istargeted: Is there a fix targeted to this series?
-    :sourcepackage: The sourcepackage to which the fix would be targeted.
-    :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if series is not
-        targeted.
-    """
-
-    def __init__(self, series, istargeted=False, sourcepackage=None,
-                 assignee=None, status=None):
-        self.series = series
-        self.istargeted = istargeted
-        self.sourcepackage = sourcepackage
-        self.assignee = assignee
-        self.status = status
 
 
 class IHasOfficialBugTags(Interface):

@@ -44,7 +44,7 @@ class GitHostingClient:
         # XXX cjwatson 2015-03-01: The hardcoded timeout at least means that
         # we don't lock tables indefinitely if the hosting service falls
         # over, but is there some more robust way to do this?
-        return 5.0
+        return 30.0
 
     def _request(self, method, path, json_data=None, **kwargs):
         session = self._makeSession()
@@ -125,15 +125,17 @@ class GitHostingClient:
                 "Failed to get commit details from Git repository: %s" %
                 unicode(e))
 
-    def getMergeDiff(self, path, base, head, logger=None):
+    def getMergeDiff(self, path, base, head, prerequisite=None, logger=None):
         """See `IGitHostingClient`."""
         try:
             if logger is not None:
                 logger.info(
                     "Requesting merge diff for %s from %s to %s" % (
                         path, base, head))
-            return self._get(
-                "/repo/%s/compare-merge/%s:%s" % (path, base, head))
+            url = "/repo/%s/compare-merge/%s:%s" % (path, base, head)
+            if prerequisite is not None:
+                url += "?sha1_prerequisite=%s" % prerequisite
+            return self._get(url)
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get merge diff from Git repository: %s" %

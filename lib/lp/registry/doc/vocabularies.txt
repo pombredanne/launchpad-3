@@ -966,6 +966,7 @@ will be returned.
      (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
      (u'Launchpad Buildd Admins', u'Foo Bar'),
      (u'Launchpad Developers', u'Foo Bar'),
+     (u'Launchpad PPA Admins', u'Commercial Subscription Admins'),
      (u'Launchpad PPA Self Admins', u'Commercial Subscription Admins'),
      (u'Launchpad Users', u'Sample Person'),
      (u'Mailing List Experts', u'Launchpad Administrators'),

@@ -77,7 +77,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.coop.answersbugs.model import QuestionBug
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -94,6 +93,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -119,6 +119,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.helpers import is_english_variant
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
+from lp.services.xref.interfaces import IXRefSet
 
 
 class notify_question_modified:
@@ -210,10 +211,6 @@ class Question(SQLBase, BugLinkTargetMixin):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='question', otherColumn='person',
         intermediateTable='QuestionSubscription', orderBy='name')
-    bug_links = SQLMultipleJoin('QuestionBug',
-        joinColumn='question', orderBy='id')
-    bugs = SQLRelatedJoin('Bug', joinColumn='question', otherColumn='bug',
-        intermediateTable='QuestionBug', orderBy='id')
     messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
         prejoins=['message'], orderBy=['QuestionMessage.id'])
     reopenings = SQLMultipleJoin('QuestionReopening', orderBy='datecreated',
@@ -561,7 +558,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             (Person, QuestionSubscription),
             QuestionSubscription.person_id == Person.id,
             QuestionSubscription.question_id == self.id,
-            ).order_by(Person.displayname)
+            ).order_by(Person.display_name)
         return results
 
     def getIndirectSubscribers(self):
@@ -662,27 +659,26 @@ class Question(SQLBase, BugLinkTargetMixin):
         self.status = new_status
         return tktmsg
 
+    @property
+    def bugs(self):
+        from lp.bugs.model.bug import Bug
+        bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'question', unicode(self.id)), types=[u'bug'])]
+        return list(sorted(
+            bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
+
     # IBugLinkTarget implementation
-    def linkBug(self, bug):
-        """See `IBugLinkTarget`."""
-        # Subscribe the question's owner to the bug.
-        bug.subscribe(self.owner, self.owner)
-        return BugLinkTargetMixin.linkBug(self, bug)
-
-    def unlinkBug(self, bug):
-        """See `IBugLinkTarget`."""
-        buglink = BugLinkTargetMixin.unlinkBug(self, bug)
-        if buglink:
-            # Additionnaly, unsubscribe the question's owner to the bug
-            bug.unsubscribe(self.owner, self.owner)
-        return buglink
-
-    # Template methods for BugLinkTargetMixin.
-    buglinkClass = QuestionBug
-
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
-        return QuestionBug(question=self, bug=bug)
+        # XXX: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'question', unicode(self.id)): {(u'bug', unicode(bug.id)): {}}})
+
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        getUtility(IXRefSet).delete(
+            {(u'question', unicode(self.id)): [(u'bug', unicode(bug.id))]})
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""
@@ -711,11 +707,13 @@ class QuestionSet:
         return Question.select("""
             id in (SELECT Question.id
                 FROM Question
-                    LEFT OUTER JOIN QuestionBug
-                        ON Question.id = QuestionBug.question
-                    LEFT OUTER JOIN BugTask
-                        ON QuestionBug.bug = BugTask.bug
-                            AND BugTask.status != %s
+                LEFT OUTER JOIN XRef ON (
+                    XRef.from_type = 'question'
+                    AND XRef.from_id_int = Question.id
+                    AND XRef.to_type = 'bug')
+                LEFT OUTER JOIN BugTask ON (
+                    BugTask.bug = XRef.to_id_int
+                    AND BugTask.status != %s)
                 WHERE
                     Question.status IN (%s, %s)
                     AND (Question.datelastresponse IS NULL
@@ -1325,7 +1323,7 @@ class QuestionTargetMixin:
                   LeftJoin(Person, AnswerContact.person == Person.id)]
         conditions = self._getConditionsToQueryAnswerContacts()
         results = self._store.using(*origin).find(Person, conditions)
-        return list(results.order_by(Person.displayname))
+        return list(results.order_by(Person.display_name))
 
     @property
     def direct_answer_contacts_with_languages(self):
@@ -1395,7 +1393,7 @@ class QuestionTargetMixin:
         from lp.registry.model.person import Person
         return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
-            orderBy=['displayname'], distinct=True)
+            orderBy=['display_name'], distinct=True)
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""

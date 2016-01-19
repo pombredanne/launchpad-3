@@ -75,10 +75,7 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
-from lp.answers.vocabulary import (
-    UsesAnswersDistributionVocabulary,
-    UsesAnswersProductVocabulary,
-    )
+from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -650,7 +647,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     def context_uses_answers(self):
         """Return True if the context uses launchpad as an answer forum."""
         usage = IServiceUsage(self.context)
-        if usage is not None:             
+        if usage is not None:
             return usage.answers_usage == ServiceUsage.LAUNCHPAD
         else:
             return False
@@ -1099,11 +1096,11 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     @property
     def original_bug(self):
         """Return the bug that the question was created from or None."""
-        for buglink in self.context.bug_links:
-            if (check_permission('launchpad.View', buglink.bug)
-                and buglink.bug.owner == self.context.owner
-                and buglink.bug.datecreated == self.context.datecreated):
-                return buglink.bug
+        for bug in self.context.bugs:
+            if (check_permission('launchpad.View', bug)
+                and bug.owner == self.context.owner
+                and bug.datecreated == self.context.datecreated):
+                return bug
 
         return None
 

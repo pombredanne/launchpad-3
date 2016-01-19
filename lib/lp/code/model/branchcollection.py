@@ -307,8 +307,9 @@ class GenericBranchCollection:
         return self.getBranches(find_expr=Branch.id).get_plain_result_set()
 
     def getMergeProposals(self, statuses=None, for_branches=None,
-                          target_branch=None, merged_revnos=None,
-                          merged_revision=None, eager_load=False):
+                          target_branch=None, prerequisite_branch=None,
+                          merged_revnos=None, merged_revision=None,
+                          eager_load=False):
         """See `IBranchCollection`."""
         if for_branches is not None and not for_branches:
             # We have an empty branches list, so we can shortcut.
@@ -319,11 +320,12 @@ class GenericBranchCollection:
         elif (self._asymmetric_filter_expressions or
             for_branches is not None or
             target_branch is not None or
+            prerequisite_branch is not None or
             merged_revnos is not None or
             merged_revision is not None):
             return self._naiveGetMergeProposals(
-                statuses, for_branches, target_branch, merged_revnos,
-                merged_revision, eager_load=eager_load)
+                statuses, for_branches, target_branch, prerequisite_branch,
+                merged_revnos, merged_revision, eager_load=eager_load)
         else:
             # When examining merge proposals in a scope, this is a moderately
             # effective set of constrained queries. It is not effective when
@@ -332,8 +334,9 @@ class GenericBranchCollection:
                 statuses, eager_load=eager_load)
 
     def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
-                                target_branch=None, merged_revnos=None,
-                                merged_revision=None, eager_load=False):
+                                target_branch=None, prerequisite_branch=None,
+                                merged_revnos=None, merged_revision=None,
+                                eager_load=False):
         Target = ClassAlias(Branch, "target")
         extra_tables = list(set(
             self._tables.values() + self._asymmetric_tables.values()))
@@ -353,6 +356,9 @@ class GenericBranchCollection:
         if target_branch is not None:
             expressions.append(
                 BranchMergeProposal.target_branch == target_branch)
+        if prerequisite_branch is not None:
+            expressions.append(
+                BranchMergeProposal.prerequisite_branch == prerequisite_branch)
         if merged_revnos is not None:
             expressions.append(
                 BranchMergeProposal.merged_revno.is_in(merged_revnos))

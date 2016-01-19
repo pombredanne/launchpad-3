@@ -1011,6 +1011,7 @@ buildd_secret would leak through the public buildlogs.
 
     >>> login('foo.bar@canonical.com')
     >>> ignored = a_team.addMember(cprov, mark)
+    >>> transaction.commit()
     >>> login('celso.providelo@canonical.com')
 
     >>> view = create_initialized_view(

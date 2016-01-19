@@ -12,6 +12,10 @@ __all__ = [
 
 from email.utils import make_msgid
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -58,8 +62,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    BranchMergeProposalStatusChangeEvent,
-    NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -577,7 +579,6 @@ class BranchMergeProposal(SQLBase):
                         _date_reviewed=None):
         """Set the proposal to next_state."""
         # Check the reviewer can review the code for the target branch.
-        old_state = self.queue_status
         if not self.merge_target.isPersonTrustedReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
@@ -589,8 +590,6 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = _date_reviewed
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
-        notify(BranchMergeProposalStatusChangeEvent(
-                self, reviewer, old_state, next_state))
 
     def approveBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
@@ -762,6 +761,7 @@ class BranchMergeProposal(SQLBase):
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
+        notify(ObjectDeletedEvent(self))
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
@@ -939,8 +939,7 @@ class BranchMergeProposal(SQLBase):
             vote_reference.review_type = review_type
             vote_reference.comment = code_review_message
         if _notify_listeners:
-            notify(NewCodeReviewCommentEvent(
-                    code_review_message, original_email))
+            notify(ObjectCreatedEvent(code_review_message))
         return code_review_message
 
     def getInlineComments(self, previewdiff_id):

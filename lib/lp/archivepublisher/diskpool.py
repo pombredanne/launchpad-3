@@ -51,7 +51,8 @@ def relative_symlink(src_path, dst_path):
         if not os.path.isabs(dst_path):
             dst_path = os.path.abspath(dst_path)
         common_prefix = os.path.commonprefix([src_path_elems, dst_path_elems])
-        backward_elems = ['..'] * (len(dst_path_elems)-len(common_prefix)-1)
+        backward_elems = ['..'] * (
+            len(dst_path_elems) - len(common_prefix) - 1)
         forward_elems = src_path_elems[len(common_prefix):]
         src_path = path_sep.join(backward_elems + forward_elems)
     os.symlink(src_path, dst_path)
@@ -238,7 +239,6 @@ class DiskPoolEntry:
             raise NotInPool(
                 "File for removing %s %s/%s is not in pool, skipping." %
                 (component, self.source, self.filename))
-
 
         # Okay, it's there, if it's a symlink then we need to remove
         # it simply.

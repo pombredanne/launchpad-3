@@ -200,7 +200,7 @@ could not be created.
 
     >>> message = find_tag_by_id(user_browser.contents, 'bug-is-question')
     >>> print extract_text(message)
-    This bug report was converted into a question:...question #16...
+    This bug report was converted into a question:...question #...
 
 
 Remove the question

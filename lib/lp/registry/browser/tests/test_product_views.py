@@ -1,10 +1,13 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View tests for Product pages."""
 
 __metaclass__ = type
 
+import re
+
+from testtools.matchers import Not
 import soupmatchers
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -21,6 +24,10 @@ from lp.testing.layers import DatabaseFunctionalLayer
 class TestProductSetBranchView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
+
+    editsshkeys_tag = soupmatchers.Tag(
+        'edit SSH keys', 'a', text=re.compile('register an SSH key'),
+        attrs={'href': re.compile(r'/\+editsshkeys$')})
 
     def getBrowser(self, project, view_name=None):
         project = removeSecurityProxy(project)
@@ -58,3 +65,18 @@ class TestProductSetBranchView(BrowserTestCase):
             'success-div', 'div', attrs={'class': 'informational message'},
              text='Project settings updated.')
         self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
+
+    def test_editsshkeys_link_if_no_keys_registered(self):
+        project = self.factory.makeProduct()
+        browser = self.getBrowser(project, '+configure-code')
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(self.editsshkeys_tag))
+
+    def test_no_editsshkeys_link_if_keys_registered(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            self.factory.makeSSHKey(person=project.owner)
+        browser = self.getBrowser(project, '+configure-code')
+        self.assertThat(
+            browser.contents,
+            Not(soupmatchers.HTMLContains(self.editsshkeys_tag)))

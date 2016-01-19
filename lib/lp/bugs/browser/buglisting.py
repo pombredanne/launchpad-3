@@ -884,7 +884,6 @@ SORT_KEYS = [
     ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
     ('message_count', 'Number of comments', 'desc'),
     ('milestone', 'Milestone ID', 'desc'),
-    ('specification', 'Linked blueprint', 'asc'),
     ('task', 'Bug task ID', 'desc'),
     ('users_affected_count', 'Number of affected users', 'desc'),
     ]
@@ -1673,12 +1672,6 @@ class BugTargetView(LaunchpadView):
         tasklist = self.context.searchTasks(params)
         return tasklist[:quantity]
 
-    def getMostRecentlyUpdatedBugTasks(self, limit=5):
-        """Return the most recently updated bugtasks for this target."""
-        params = BugTaskSearchParams(
-            orderby="-date_last_updated", omit_dupes=True, user=self.user)
-        return list(self.context.searchTasks(params)[:limit])
-
 
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):
     """View that renders a list of bug IDs for a given set of search criteria.
@@ -1745,11 +1738,6 @@ class BugTaskExpirableListingView(BugTaskSearchListingView):
     def can_show_expirable_bugs(self):
         """Return True or False if expirable bug listing can be shown."""
         return target_has_expirable_bugs_listing(self.context)
-
-    @property
-    def inactive_expiration_age(self):
-        """Return the number of days an bug must be inactive to expire."""
-        return config.malone.days_before_expiration
 
     @property
     def columns_to_show(self):

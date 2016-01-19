@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -279,7 +279,7 @@
 
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           lp.code.interfaces.event.INewBranchMergeProposalEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_created"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
@@ -291,12 +291,16 @@
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_modified"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           lp.code.interfaces.event.INewBranchMergeProposalEvent"
+           lazr.lifecycle.interfaces.IObjectDeletedEvent"
+      handler="lp.code.subscribers.branchmergeproposal.merge_proposal_deleted"/>
+  <subscriber
+      for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.subscribers.karma.branch_merge_proposed"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           lp.code.interfaces.event.IBranchMergeProposalStatusChangeEvent"
-      handler="lp.code.subscribers.karma.branch_merge_status_changed"/>
+           lazr.lifecycle.interfaces.IObjectModifiedEvent"
+      handler="lp.code.subscribers.karma.branch_merge_modified"/>
 
   <!-- hierarchy -->
 
@@ -417,6 +421,9 @@
   <subscriber
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.bzrsync.update_recipes"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.trigger_webhooks"/>
   <subscriber
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
@@ -541,11 +548,11 @@
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           lp.code.interfaces.event.INewCodeReviewCommentEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.mail.codereviewcomment.send"/>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           lp.code.interfaces.event.INewCodeReviewCommentEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="lp.code.subscribers.karma.code_review_comment_added"/>
 
   <!-- CodeReviewInlineComment -->
@@ -1046,6 +1053,15 @@
     <require permission="launchpad.View"
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeData"/>
   </class>
+  <utility
+    component="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData"
+    provides="lp.code.interfaces.sourcepackagerecipe.IRecipeBranchSource">
+  </utility>
+  <securedutility
+      component="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData"
+      provides="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeDataSource">
+    <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeDataSource"/>
+  </securedutility>
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">

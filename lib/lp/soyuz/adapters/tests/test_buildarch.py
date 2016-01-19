@@ -122,12 +122,14 @@ class TestDetermineArchitecturesToBuild(TestCase):
         self.assertArchsForHint(
             'any-any', {'armel': False, 'hppa': False, 'i386': True})
 
-    def test_no_all_builds_when_nominatedarchindep_not_permitted(self):
-        # Some archives (eg. armel rebuilds) don't want arch-indep
-        # builds. If the nominatedarchindep architecture (normally
-        # i386) is omitted, no builds will be created for arch-indep
-        # sources.
-        self.assertArchsForHint('all', {}, allowed_arch_tags=['hppa'])
+    def test_disallowed_nominatedarchindep_falls_back(self):
+        # Some archives don't allow nominatedarchindep builds. In that
+        # case, one of the other architectures is chosen.
+        self.assertArchsForHint(
+            'any all', {'hppa': True, 'armel': False},
+            allowed_arch_tags=['hppa', 'armel'])
+        self.assertArchsForHint(
+            'all', {'hppa': True}, allowed_arch_tags=['hppa', 'armel'])
 
     def test_indep_hint_only(self):
         # Some packages need to build arch-indep builds on a specific

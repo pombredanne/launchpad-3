@@ -4,10 +4,7 @@
 __metaclass__ = type
 
 import soupmatchers
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -122,7 +119,7 @@ class TestDistroAddView(TestCaseWithFactory):
     def getDefaultAddDict(self):
         return {
             'field.name': 'newbuntu',
-            'field.displayname': 'newbuntu',
+            'field.display_name': 'newbuntu',
             'field.title': 'newbuntu',
             'field.summary': 'newbuntu',
             'field.description': 'newbuntu',
@@ -207,7 +204,7 @@ class TestDistroEditView(TestCaseWithFactory):
             widget._getCurrentValue())
 
     def test_edit_distro_init_value_processors(self):
-        self.distribution.main_archive.processors = self.all_processors
+        self.distribution.main_archive.setProcessors(self.all_processors)
         view = create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='GET')
@@ -219,7 +216,7 @@ class TestDistroEditView(TestCaseWithFactory):
 
     def getDefaultEditDict(self):
         return {
-            'field.displayname': 'newbuntu',
+            'field.display_name': 'newbuntu',
             'field.title': 'newbuntu',
             'field.summary': 'newbuntu',
             'field.description': 'newbuntu',
@@ -244,7 +241,7 @@ class TestDistroEditView(TestCaseWithFactory):
         edit_form = self.getDefaultEditDict()
         edit_form['field.processors'] = []
 
-        self.distribution.main_archive.processors = self.all_processors
+        self.distribution.main_archive.setProcessors(self.all_processors)
         create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='POST', form=edit_form)
@@ -365,7 +362,7 @@ class TestDistributionMirrorsViewMixin:
 
         recorder1, recorder2 = record_two_runs(
             render_mirrors, create_mirror, 10)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestDistributionArchiveMirrorsView(

@@ -21,7 +21,7 @@ def valid_cve(name):
     True
 
     And leading zeros were required for sequence in [1-999]:
-    
+
     >>> valid_cve('2014-999')
     False
     >>> valid_cve('2014-0999')

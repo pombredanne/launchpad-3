@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,6 +13,7 @@ import operator
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
+from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -96,7 +97,6 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewBranchMergeProposalEvent,
     )
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
@@ -179,10 +179,13 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webhooks.interfaces import IWebhookSet
+from lp.services.webhooks.model import WebhookTargetMixin
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
-class Branch(SQLBase, BzrIdentityMixin):
+class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
     _table = 'Branch'
 
@@ -200,6 +203,14 @@ class Branch(SQLBase, BzrIdentityMixin):
     mirror_status_message = StringCol(default=None)
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
+
+    @property
+    def valid_webhook_event_types(self):
+        return ["bzr:push:0.1", "merge-proposal:0.1"]
+
+    @property
+    def default_webhook_event_types(self):
+        return ["bzr:push:0.1"]
 
     @property
     def private(self):
@@ -474,10 +485,28 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        return Store.of(self).find(
+            BranchMergeProposal, BranchMergeProposal.target_branch == self,
+            Not(BranchMergeProposal.queue_status.is_in(
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getPrecachedLandingCandidates(self, user):
+        """See `IBranch`."""
+        # Circular import.
+        from lp.code.model.branchcollection import GenericBranchCollection
+
+        def eager_load(rows):
+            branches = load_related(
+                Branch, rows, ['source_branchID', 'prerequisite_branchID'])
+            GenericBranchCollection.preloadVisibleStackedOnBranches(
+                branches, user)
+
+        return DecoratedResultSet(
+            self.landing_candidates, pre_iter_hook=eager_load)
+
+    @property
+    def _api_landing_candidates(self):
+        return self.getPrecachedLandingCandidates(getUtility(ILaunchBag).user)
 
     @property
     def dependent_branches(self):
@@ -500,6 +529,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         return collection.getMergeProposals(
             status, target_branch=self, merged_revnos=merged_revnos,
             eager_load=eager_load)
+
+    def getDependentMergeProposals(self, status=None, visible_by_user=None,
+                                   eager_load=False):
+        """See `IBranch`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        return collection.getMergeProposals(
+            status, prerequisite_branch=self, eager_load=eager_load)
 
     def getMergeProposalByID(self, id):
         """See `IBranch`."""
@@ -578,7 +620,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             bmp.nominateReviewer(
                 reviewer, registrant, review_type, _notify_listeners=False)
 
-        notify(NewBranchMergeProposalEvent(bmp))
+        notify(ObjectCreatedEvent(bmp, user=registrant))
         if needs_review:
             notify(BranchMergeProposalNeedsReviewEvent(bmp))
 
@@ -818,7 +860,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         deletion_operations.extend(
-            DeletionCallable.forSourcePackageRecipe(recipe)
+            DeletionCallable(
+                recipe, _('This recipe uses this branch.'), recipe.destroySelf)
             for recipe in self.recipes)
         if not getUtility(ISnapSet).findByBranch(self).is_empty():
             alteration_operations.append(DeletionCallable(
@@ -1317,6 +1360,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         self._deleteBranchSubscriptions()
         self._deleteJobs()
+        getUtility(IWebhookSet).delete(self.webhooks)
 
         # Now destroy the branch.
         branch_id = self.id
@@ -1455,11 +1499,6 @@ class DeletionCallable(DeletionOperation):
     def __call__(self):
         self.func(*self.args, **self.kwargs)
 
-    @classmethod
-    def forSourcePackageRecipe(cls, recipe):
-        return cls(
-            recipe, _('This recipe uses this branch.'), recipe.destroySelf)
-
 
 class ClearDependentBranch(DeletionOperation):
     """Delete operation that clears a merge proposal's prerequisite branch."""
@@ -1590,6 +1629,10 @@ class BranchSet:
     def getByUrls(self, urls):
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrls(urls)
+
+    def getByPath(self, path):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByPath(path)
 
     def getBranches(self, limit=50, eager_load=True):
         """See `IBranchSet`."""

@@ -395,6 +395,12 @@ and then only when the MIME type is text/xml.
     PublicXMLRPCPublication
 
     >>> print_request_and_publication(
+    ...     'xmlrpc.launchpad.dev', method='POST',
+    ...     mime_type='text/xml; charset=utf-8')
+    PublicXMLRPCRequest
+    PublicXMLRPCPublication
+
+    >>> print_request_and_publication(
     ...     'xmlrpc.launchpad.dev', method='GET')
     ProtocolErrorRequest
     ProtocolErrorPublication: status=405
@@ -426,6 +432,12 @@ Try a normal request:
     >>> print_request_and_publication(
     ...     'xmlrpc-private.launchpad.dev', port=private_port, method='POST',
     ...     mime_type='text/xml')
+    PrivateXMLRPCRequest
+    PrivateXMLRPCPublication
+
+    >>> print_request_and_publication(
+    ...     'xmlrpc-private.launchpad.dev', port=private_port, method='POST',
+    ...     mime_type='text/xml; charset=utf-8')
     PrivateXMLRPCRequest
     PrivateXMLRPCPublication
 

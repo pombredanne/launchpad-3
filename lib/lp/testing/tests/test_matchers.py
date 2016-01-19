@@ -4,7 +4,9 @@
 __metaclass__ = type
 
 from testtools.matchers import (
+    Equals,
     Is,
+    KeysEqual,
     LessThan,
     Not,
     )
@@ -18,10 +20,10 @@ from zope.security.checker import NamesChecker
 from zope.security.proxy import ProxyFactory
 
 from lp.testing import (
+    RequestTimelineCollector,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
@@ -206,7 +208,7 @@ class TestQueryMatching(TestCase):
 
     def test_match(self):
         matcher = HasQueryCount(Is(3))
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.count = 3
         # not inspected
         del collector.queries
@@ -214,7 +216,7 @@ class TestQueryMatching(TestCase):
 
     def test_mismatch(self):
         matcher = HasQueryCount(LessThan(2))
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.count = 2
         collector.queries = [("foo", "bar"), ("baaz", "quux")]
         mismatch = matcher.match(collector)
@@ -229,6 +231,30 @@ class TestQueryMatching(TestCase):
             lines)
         self.assertEqual(
             "queries do not match: %s" % (LessThan(2).match(2).describe(),),
+            mismatch.describe())
+
+    def test_byEquality(self):
+        old_collector = RequestTimelineCollector()
+        old_collector.count = 2
+        old_collector.queries = [("a", "1"), ("b", "2")]
+        new_collector = RequestTimelineCollector()
+        new_collector.count = 3
+        new_collector.queries = [("a", "1"), ("b", "2"), ("c", "3")]
+        matcher = HasQueryCount.byEquality(old_collector)
+        mismatch = matcher.match(new_collector)
+        self.assertThat(mismatch, Not(Is(None)))
+        details = mismatch.get_details()
+        old_lines = []
+        new_lines = []
+        self.assertThat(details, KeysEqual("queries", "other_queries"))
+        self.assertEqual("text", details["other_queries"].content_type.type)
+        old_lines.append("".join(details["other_queries"].iter_text()))
+        self.assertEqual("text", details["queries"].content_type.type)
+        new_lines.append("".join(details["queries"].iter_text()))
+        self.assertEqual(["('a', '1')\n('b', '2')"], old_lines)
+        self.assertEqual(["('a', '1')\n('b', '2')\n('c', '3')"], new_lines)
+        self.assertEqual(
+            "queries do not match: %s" % (Equals(2).match(3).describe(),),
             mismatch.describe())
 
 

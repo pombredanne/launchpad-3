@@ -82,12 +82,6 @@ to it and see whether that changes things.
 
     >>> switch_dbuser('launchpad')
 
-    >>> def sort_by_id(iterable):
-    ...     return sorted(iterable, key=operator.attrgetter('id'))
-    >>> def print_data(iterable):
-    ...     for datum in sort_by_id(iterable):
-    ...          print('%3d -> %s' % (datum.id, datum.name))
-
 Here goes the empty package set.
 
     >>> ps_set = getUtility(IPackagesetSet)
@@ -137,10 +131,10 @@ Add 'bar' to the 'foo' package set.
     >>> foo_ps.add((bar_name,))
 
 Now 'bar' is included by the 'foo' package set.
-    >>> print_data(
-    ...     ps_set.setsIncludingSource('bar',
-    ...     direct_inclusion=True))
-      2 -> foo-pkg-set
+
+    >>> [ps] = ps_set.setsIncludingSource('bar', direct_inclusion=True)
+    >>> print ps.name
+    foo-pkg-set
 
 name16 has no package set based upload privileges for 'bar' yet.
 

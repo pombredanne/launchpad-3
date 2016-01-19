@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -112,6 +112,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -119,11 +120,13 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.gitnamespace import get_git_namespace
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
-    MINIMAL_RECIPE_TEXT,
+    MINIMAL_RECIPE_TEXT_BZR,
+    MINIMAL_RECIPE_TEXT_GIT,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -1049,7 +1052,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         project = getUtility(IProjectGroupSet).new(
             name=name,
-            displayname=displayname,
+            display_name=displayname,
             title=title,
             homepageurl=homepageurl,
             summary=summary,
@@ -2620,7 +2623,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         series = naked_distribution.newSeries(
             version=version,
             name=name,
-            displayname=displayname,
+            display_name=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             previous_series=previous_series, registrant=registrant)
@@ -2897,9 +2900,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branches = (self.makeAnyBranch(), )
         base_branch = branches[0]
         other_branches = branches[1:]
-        text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        if IBranch.providedBy(base_branch):
+            text = MINIMAL_RECIPE_TEXT_BZR % base_branch.identity
+        elif IGitRef.providedBy(base_branch):
+            text = MINIMAL_RECIPE_TEXT_GIT % (
+                base_branch.repository.identity, base_branch.name)
+        else:
+            raise AssertionError(
+                "Unsupported base_branch: %r" % (base_branch,))
         for i, branch in enumerate(other_branches):
-            text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
+            if IBranch.providedBy(branch):
+                text += 'merge dummy-%s %s\n' % (i, branch.identity)
+            elif IGitRef.providedBy(branch):
+                text += 'merge dummy-%s %s %s\n' % (
+                    i, branch.repository.identity, branch.name)
+            else:
+                raise AssertionError("Unsupported branch: %r" % (branch,))
         return text
 
     def makeRecipe(self, *branches):
@@ -3408,7 +3424,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             speed=MirrorSpeed.S256K,
             country=country,
             content=MirrorContent.ARCHIVE,
-            displayname=displayname,
+            display_name=displayname,
             description=None,
             http_base_url=http_url,
             ftp_base_url=ftp_url,

@@ -88,8 +88,7 @@ will be sent.
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
 
-    >>> login('no-priv@canonical.com')
-    >>> no_priv = getUtility(ILaunchBag).user
+    >>> login('test@canonical.com')
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> ubuntu_question.title = "Installer doesn't work on a Mac"
@@ -147,6 +146,7 @@ does not include priority.
 Changing the assignee will trigger a notification.
 
     >>> login('foo.bar@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> ubuntu_question.assignee = no_priv
@@ -197,7 +197,7 @@ has been linked to it:
     ...     comment=ubuntu_question.description)
     >>> bug = ubuntu_question.target.createBug(params)
     >>> ubuntu_question.linkBug(bug)
-    <QuestionBug...>
+    True
 
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
@@ -224,7 +224,7 @@ A notification is also sent when a bug is unlinked from the question:
     >>> unmodified_question = Snapshot(ubuntu_question,
     ...     providing=providedBy(ubuntu_question))
     >>> ubuntu_question.unlinkBug(bug)
-    <QuestionBug...>
+    True
 
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))

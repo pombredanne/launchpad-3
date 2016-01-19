@@ -266,6 +266,32 @@ class TestBranchView(BrowserTestCase):
         login_person(branch.owner)
         self.assertFalse(view.user_can_upload)
 
+    def test_recipes_link_no_recipes(self):
+        # A branch with no recipes does not show a recipes link.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        self.assertEqual('No recipes using this branch.', view.recipes_link)
+
+    def test_recipes_link_one_recipe(self):
+        # A branch with one recipe shows a link to that recipe.
+        branch = self.factory.makeAnyBranch()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+        view = create_initialized_view(branch, '+index')
+        expected_link = (
+            '<a href="%s">1 recipe</a> using this branch.' %
+            canonical_url(recipe))
+        self.assertEqual(expected_link, view.recipes_link)
+
+    def test_recipes_link_more_recipes(self):
+        # A branch with more than one recipe shows a link to a listing.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeSourcePackageRecipe(branches=[branch])
+        self.factory.makeSourcePackageRecipe(branches=[branch])
+        view = create_initialized_view(branch, '+index')
+        self.assertEqual(
+            '<a href="+recipes">2 recipes</a> using this branch.',
+            view.recipes_link)
+
     def _addBugLinks(self, branch):
         for status in BugTaskStatus.items:
             bug = self.factory.makeBug(status=status)
@@ -560,7 +586,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(29)))
+        self.assertThat(recorder, HasQueryCount(Equals(28)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):

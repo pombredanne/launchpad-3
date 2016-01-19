@@ -1,7 +1,8 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'cannot_modify_suite',
     'FORMAT_TO_SUBCOMPONENT',
     'GLOBAL_PUBLISHER_LOCK',
     'Publisher',
@@ -189,6 +190,13 @@ def get_packages_path(config, suite_name, component, arch, subcomp=None):
         return os.path.join(component_root, arch_path, "Packages")
     else:
         return os.path.join(component_root, subcomp, arch_path, "Packages")
+
+
+def cannot_modify_suite(archive, distroseries, pocket):
+    """Return True for Release pockets of stable series in primary archives."""
+    return (not distroseries.isUnstable() and
+            not archive.allowUpdatesToReleasePocket() and
+            pocket == PackagePublishingPocket.RELEASE)
 
 
 class I18nIndex(_multivalued):
@@ -482,7 +490,7 @@ class Publisher(object):
         for distroseries, pocket in chain(source_suites, binary_suites):
             if self.isDirty(distroseries, pocket):
                 continue
-            if (self.cannotModifySuite(distroseries, pocket)
+            if (cannot_modify_suite(self.archive, distroseries, pocket)
                 or not self.isAllowed(distroseries, pocket)):
                 # We don't want to mark release pockets dirty in a
                 # stable distroseries, no matter what other bugs
@@ -725,12 +733,6 @@ class Publisher(object):
         if separate_long_descriptions:
             translation_en.close()
 
-    def cannotModifySuite(self, distroseries, pocket):
-        """Return True if the distroseries is stable and pocket is release."""
-        return (not distroseries.isUnstable() and
-                not self.archive.allowUpdatesToReleasePocket() and
-                pocket == PackagePublishingPocket.RELEASE)
-
     def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
         """Last check before publishing a dirty suite.
 
@@ -738,7 +740,7 @@ class Publisher(object):
         in RELEASE pocket (primary archives) we certainly have a problem,
         better stop.
         """
-        if self.cannotModifySuite(distroseries, pocket):
+        if cannot_modify_suite(self.archive, distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
@@ -823,6 +825,17 @@ class Publisher(object):
                     distroseries, pocket, component, architecture, all_files)
             self._writeSuiteI18n(
                 distroseries, pocket, component, all_files)
+            dep11_dir = os.path.join(
+                self._config.distsroot, suite, component, "dep11")
+            try:
+                for dep11_file in os.listdir(dep11_dir):
+                    if (dep11_file.startswith("Components-") or
+                            dep11_file.startswith("icons-")):
+                        all_files.add(
+                            os.path.join(component, "dep11", dep11_file))
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
         for architecture in all_architectures:
             for contents_path in get_suffixed_indices(
                     'Contents-' + architecture):
@@ -874,15 +887,14 @@ class Publisher(object):
         self._writeReleaseFile(suite, release_file)
         all_files.add("Release")
 
-        # Skip signature if the archive signing key is undefined.
-        if self.archive.signing_key is None:
+        if self.archive.signing_key is not None:
+            # Sign the repository.
+            IArchiveSigningKey(self.archive).signRepository(suite)
+            all_files.add("Release.gpg")
+            all_files.add("InRelease")
+        else:
+            # Skip signature if the archive signing key is undefined.
             self.log.debug("No signing key available, skipping signature.")
-            return
-
-        # Sign the repository.
-        archive_signer = IArchiveSigningKey(self.archive)
-        archive_signer.signRepository(suite)
-        all_files.add("Release.gpg")
 
         # Make sure all the timestamps match, to make it easier to insert
         # caching headers on mirrors.

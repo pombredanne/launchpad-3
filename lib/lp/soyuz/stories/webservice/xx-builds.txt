@@ -122,6 +122,7 @@ devel webservice also contains build date_started and duration.
     dependencies: None
     distribution_link: u'http://.../ubuntu'
     duration: u'0:01:20'
+    external_dependencies: None
     pocket: u'Release'
     resource_type_link: u'http://.../#build'
     score: None

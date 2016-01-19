@@ -58,4 +58,3 @@ def doctest_unicode_search(encoding_name):
 
 codecs.register_error('doctest', doctest_unicode_error_handler)
 codecs.register(doctest_unicode_search)
-

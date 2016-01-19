@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the `SourcePackageRecipe` content type."""
@@ -13,6 +13,7 @@ from datetime import (
     timedelta,
     )
 from operator import attrgetter
+import re
 
 from lazr.delegates import delegate_to
 from pytz import utc
@@ -42,6 +43,7 @@ from lp.code.errors import (
     BuildNotAllowedForDistro,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
+    IRecipeBranchSource,
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
     ISourcePackageRecipeSource,
@@ -132,10 +134,6 @@ class SourcePackageRecipe(Storm):
 
     is_stale = Bool()
 
-    @property
-    def _sourcepackagename_text(self):
-        return self.sourcepackagename.name
-
     name = Unicode(allow_none=True)
     description = Unicode(allow_none=True)
 
@@ -154,6 +152,18 @@ class SourcePackageRecipe(Storm):
     def base_branch(self):
         return self._recipe_data.base_branch
 
+    @property
+    def base_git_repository(self):
+        return self._recipe_data.base_git_repository
+
+    @property
+    def base(self):
+        if self.base_branch is not None:
+            return self.base_branch
+        else:
+            assert self.base_git_repository is not None
+            return self.base_git_repository
+
     @staticmethod
     def preLoadDataForSourcePackageRecipes(sourcepackagerecipes):
         # Load the referencing SourcePackageRecipeData.
@@ -171,12 +181,23 @@ class SourcePackageRecipe(Storm):
             owner_ids, need_validity=True))
 
     def setRecipeText(self, recipe_text):
-        parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
+        parsed = getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text)
         self._recipe_data.setRecipe(parsed)
+
+    def getRecipeText(self, validate=False):
+        """See `ISourcePackageRecipe`."""
+        recipe_text = self.builder_recipe.get_recipe_text(validate=validate)
+        # For git-based recipes, mangle the header line to say
+        # "git-build-recipe" to reduce confusion; bzr-builder's recipe
+        # parser will always round-trip this to "bzr-builder".
+        if self.base_git_repository is not None:
+            recipe_text = re.sub(
+                r"^(#\s*)bzr-builder", r"\1git-build-recipe", recipe_text)
+        return recipe_text
 
     @property
     def recipe_text(self):
-        return self.builder_recipe.get_recipe_text()
+        return self.getRecipeText()
 
     def updateSeries(self, distroseries):
         if distroseries != self.distroseries:
@@ -191,7 +212,8 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        builder_recipe = SourcePackageRecipeData.getParsedRecipe(recipe)
+        builder_recipe = getUtility(IRecipeBranchSource).getParsedRecipe(
+            recipe)
         SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner

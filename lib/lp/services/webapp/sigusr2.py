@@ -19,6 +19,7 @@ def sigusr2_handler(signum, frame):
     "Rotate logfiles in response to SIGUSR2."""
     reopenFiles()
 
+
 def setup_sigusr2(event):
     """Configure the SIGUSR2 handler. Called at startup."""
     signal.signal(signal.SIGUSR2, sigusr2_handler)

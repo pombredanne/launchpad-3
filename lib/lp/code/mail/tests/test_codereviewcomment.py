@@ -468,7 +468,9 @@ class TestInlineCommentsSection(testtools.TestCase):
         "-bar\n"
         "+baz\n"
         "diff --git a/fulano b/fulano\n"
-        "index 5716ca5..7601807 100644\n"
+        "old mode 100644\n"
+        "new mode 100755\n"
+        "index 5716ca5..7601807\n"
         "--- a/fulano\n"
         "+++ b/fulano\n"
         "@@ -1,3 +1,3 @@\n"
@@ -556,7 +558,7 @@ class TestInlineCommentsSection(testtools.TestCase):
             self.getSection(comments).splitlines()[7:11])
 
     def test_comments_in_git_diff(self):
-        comments = {'1': 'foo', '5': 'bar', '15': 'baz'}
+        comments = {'1': 'foo', '5': 'bar', '17': 'baz'}
         section = self.getSection(comments, diff_text=self.git_diff_text)
         self.assertEqual(
             map(unicode, [
@@ -574,7 +576,9 @@ class TestInlineCommentsSection(testtools.TestCase):
                 "> -bar",
                 "> +baz",
                 "> diff --git a/fulano b/fulano",
-                "> index 5716ca5..7601807 100644",
+                "> old mode 100644",
+                "> new mode 100755",
+                "> index 5716ca5..7601807",
                 "> --- a/fulano",
                 "> +++ b/fulano",
                 "> @@ -1,3 +1,3 @@",
@@ -585,7 +589,7 @@ class TestInlineCommentsSection(testtools.TestCase):
                 "baz",
                 "",
                 "> +zutano"]),
-            section.splitlines()[4:29])
+            section.splitlines()[4:31])
 
     def test_commentless_hunks_ignored(self):
         # Hunks without inline comments are not returned in the diff text.
@@ -694,7 +698,7 @@ class TestInlineCommentsSection(testtools.TestCase):
             self.getSection(comments).splitlines()[6:12])
 
     def test_multiple_comments(self):
-        # Multiple inline comments are redered appropriately.
+        # Multiple inline comments are rendered appropriately.
         comments = {'4': 'Foo', '5': 'Bar'}
         self.assertEqual(
             ['> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500',

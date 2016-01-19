@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference ("ref") interfaces."""
@@ -47,11 +47,12 @@ from lp.code.enums import (
     GitObjectType,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
-class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
+class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
     """A reference in a Git repository."""
 
     # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
@@ -106,6 +107,9 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
     display_name = TextLine(
         title=_("Display name"), required=True, readonly=True,
         description=_("Display name of the reference."))
+
+    displayname = Attribute(
+        "Copy of display_name for IHasMergeProposals views.")
 
     commit_message_first_line = TextLine(
         title=_("The first line of the commit message."),
@@ -302,8 +306,9 @@ class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
                           merged_revision_ids=None, eager_load=False):
         """Return matching BranchMergeProposals."""
 
-    def getMergeProposalByID(id):
-        """Return this reference's merge proposal with this id, or None."""
+    def getDependentMergeProposals(status=None, visible_by_user=None,
+                                   eager_load=False):
+        """Return BranchMergeProposals dependent on merging this reference."""
 
     pending_writes = Attribute(
         "Whether there are recent changes in this repository that have not "

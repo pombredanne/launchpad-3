@@ -1103,7 +1103,7 @@ Non-virtualized archives
 
 
 Modifying the require_virtualized flag through the API is not allowed except
-for admins and commercial admins.
+for admins, commercial admins, and PPA admins.
 
     >>> import simplejson
     >>> def modify_archive(service, archive):
@@ -1144,7 +1144,7 @@ describes the maximum size, in MiB, allowed for the archive.
     1024
 
 Modifying the authorized_size attribute through the API is not allowed except
-for admins and commercial admins.
+for admins, commercial admins, and PPA admins.
 
     >>> mark_archive['authorized_size'] = 4096
     >>> response = modify_archive(admin_webservice, mark_archive)
@@ -1330,14 +1330,32 @@ Modifying privacy
 ~~~~~~~~~~~~~~~~~
 
 Modifying the privacy flag through the API is not allowed except for
-admins and commercial admins.
+admins, commercial admins, and PPA admins.
 
-    >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
-    >>> mark_archive['private'] = True
-    >>> print modify_archive(user_webservice, mark_archive)
+    >>> login('foo.bar@canonical.com')
+    >>> pubpriv_archive_db = factory.makeArchive(
+    ...     owner=cprov, distribution=ubuntu_db, name="pubpriv")
+    >>> logout()
+    >>> pubpriv_archive = webservice.get(
+    ...     "/~cprov/+archive/ubuntu/pubpriv").jsonBody()
+    >>> pubpriv_archive['private'] = True
+    >>> print modify_archive(user_webservice, pubpriv_archive)
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'private', 'launchpad.Admin')
+
+    >>> login('foo.bar@canonical.com')
+    >>> ppa_admin = factory.makePerson(member_of=[
+    ...     getUtility(IPersonSet).getByName('launchpad-ppa-admins')])
+    >>> logout()
+    >>> ppa_admin_webservice = webservice_for_person(
+    ...     ppa_admin, permission=OAuthPermission.WRITE_PRIVATE)
+    >>> print modify_archive(ppa_admin_webservice, pubpriv_archive)
+    HTTP/1.1 209 Content Returned
+    ...
+    >>> webservice.get(
+    ...     "/~cprov/+archive/ubuntu/pubpriv").jsonBody()['private']
+    True
 
 
 Copying private file to public archives

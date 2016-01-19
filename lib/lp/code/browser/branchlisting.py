@@ -56,7 +56,6 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
-from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     ServiceUsage,
@@ -108,6 +107,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     FeedsMixin,
     PersonBranchesFeedLink,
@@ -129,6 +129,7 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.publisher import LaunchpadView
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 
 
 class BranchBadges(HasBadgeBase):
@@ -867,7 +868,7 @@ class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['branches', 'active_reviews', 'source_package_recipes']
+    links = ['branches', 'active_reviews', 'source_package_recipes', 'snaps']
 
     @property
     def person(self):
@@ -890,11 +891,17 @@ class PersonBranchesMenu(ApplicationMenu):
             '+recipes', 'Source package recipes',
             enabled=IPerson.providedBy(self.context))
 
+    def snaps(self):
+        enabled = (
+            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) and
+            IPerson.providedBy(self.context))
+        return Link('+snaps', 'Snap packages', enabled=enabled)
+
 
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
-    links = ['branches', 'active_reviews', 'source_package_recipes']
+    links = ['branches', 'active_reviews', 'source_package_recipes', 'snaps']
 
     @property
     def person(self):
@@ -908,12 +915,6 @@ class PersonBaseBranchListingView(BranchListingView):
     @property
     def person(self):
         return self.context
-
-    @property
-    def show_action_menu(self):
-        if self.user is not None:
-            return self.user.inTeam(self.context)
-        return False
 
     @property
     def show_junk_directions(self):
@@ -968,7 +969,6 @@ class PersonProductBranchesView(PersonBranchesView):
     no_sort_by = (
         BranchListingSort.DEFAULT, BranchListingSort.OWNER,
         BranchListingSort.PRODUCT)
-    show_action_menu = False
 
     @property
     def person(self):
@@ -1129,16 +1129,6 @@ class ProductBranchListingView(BranchListingView):
     def can_configure_branches(self):
         """Whether or not the user can configure branches."""
         return check_permission("launchpad.Edit", self.context)
-
-    @property
-    def configure_codehosting(self):
-        """Get the menu link for configuring code hosting."""
-        if not check_permission('launchpad.Edit', self.context):
-            return None
-        menu = MenuAPI(self.context).overview
-        configure_code = menu['configure_code']
-        configure_code.text = 'Configure Code'
-        return configure_code
 
 
 class ProductBranchStatisticsView(BranchCountSummaryView,
@@ -1353,6 +1343,8 @@ class BaseSourcePackageBranchesView(BranchListingView):
 class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
+    can_have_git_link = True
+
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
             self.context)
@@ -1531,6 +1523,11 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
                      'total-count-string': count_string,
                      })
         return result
+
+    @property
+    def show_git_link(self):
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
 
 
 class SourcePackageBranchesView(BranchListingView):

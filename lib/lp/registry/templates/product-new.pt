@@ -81,7 +81,7 @@
           <img src="/@@/info" />
           There are similar projects already registered in Launchpad.
           Is project
-          <strong><tal:displayname tal:replace="view/request/field.displayname" />
+          <strong><tal:display_name tal:replace="view/request/field.display_name" />
           (<tal:name  tal:replace="view/request/field.name" />)</strong>
           one of these?
           </div>
@@ -108,7 +108,7 @@
               tal:condition="view/search_results_count"
               >Registration details</h3>
           Select the licences for project
-          <strong><tal:displayname tal:replace="view/request/field.displayname" />
+          <strong><tal:display_name tal:replace="view/request/field.display_name" />
           (<tal:name  tal:replace="view/request/field.name" />)</strong>
           and complete the registration.  You may also update the project's
           title and summary.

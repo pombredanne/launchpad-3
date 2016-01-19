@@ -205,7 +205,8 @@ class BMPMailer(BranchMailer):
         if not self.merge_proposal.commit_message:
             return ''
         else:
-            return 'Commit message:\n%s\n\n' % self.merge_proposal.commit_message
+            return 'Commit message:\n%s\n\n' % (
+                self.merge_proposal.commit_message)
 
     def _getRequestedReviews(self):
         """Return a string describing the requested reviews, if any."""

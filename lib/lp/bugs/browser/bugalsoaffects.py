@@ -342,15 +342,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
         self.next_url = canonical_url(task_added)
 
 
-class IAddDistroBugTaskForm(IAddBugTaskForm):
-
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
-        description=_("The source package in which the bug occurs. "
-                      "Leave blank if you are not sure."),
-        vocabulary='DistributionSourcePackage')
-
-
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
@@ -760,7 +751,7 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
     @property
     def field_names(self):
         """The fields needed to choose an existing project."""
-        names = ['bug_url', 'displayname', 'name', 'summary']
+        names = ['bug_url', 'display_name', 'name', 'summary']
         if self.can_link_package:
             names.append('add_packaging')
         return names
@@ -868,7 +859,7 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
         product = getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
-            displayname=data['displayname'], title=data['displayname'],
+            display_name=data['display_name'], title=data['display_name'],
             summary=data['summary'], licenses=self.licenses,
             registrant=self.user)
         data['product'] = product

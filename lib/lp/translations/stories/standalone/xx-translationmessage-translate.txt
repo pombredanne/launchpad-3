@@ -455,10 +455,16 @@ Also, we should still have previous translation:
 
 But also, the new one should appear in the form.
 
-    >>> find_tag_by_id(
-    ...     slow_submission.contents,
-    ...     'msgset_143_es_suggestion_703_0').renderContents()
-    'foo!!'
+    >>> import re
+    >>> elements = find_main_content(slow_submission.contents).findAll(
+    ...     True, {'id': re.compile(r'^msgset_143_es_suggestion_\d+_0$')})
+    >>> for element in elements:
+    ...     print element.renderContents()
+    La ubicación ...
+    Tenga paciencia ...
+    foo!!
+    This is a suggestion ...
+    It should work! :-P
 
 
 Unreviewed translations

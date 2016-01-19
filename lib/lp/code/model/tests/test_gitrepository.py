@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -51,6 +51,7 @@ from lp.code.errors import (
     GitRepositoryExists,
     GitTargetError,
     )
+from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
@@ -68,6 +69,7 @@ from lp.code.interfaces.gitnamespace import (
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     IGitRepositorySet,
+    IGitRepositoryView,
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchmergeproposal import BranchMergeProposal
@@ -135,6 +137,7 @@ from lp.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import DoesNotSnapshot
 from lp.testing.pages import webservice_for_person
 
 
@@ -146,6 +149,12 @@ class TestGitRepository(TestCaseWithFactory):
     def test_implements_IGitRepository(self):
         repository = self.factory.makeGitRepository()
         verifyObject(IGitRepository, repository)
+
+    def test_avoids_large_snapshots(self):
+        large_properties = ['refs', 'branches']
+        self.assertThat(
+            self.factory.makeGitRepository(),
+            DoesNotSnapshot(large_properties, IGitRepositoryView))
 
     def test_unique_name_project(self):
         project = self.factory.makeProduct()
@@ -443,6 +452,19 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
             [ReclaimGitRepositorySpaceJob(job).repository_path
              for job in jobs])
 
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        # If repository is a base_git_repository in a recipe, it is deleted.
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs(owner=self.user))
+        recipe.base_git_repository.destroySelf(break_references=True)
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        # If repository is referred to by a recipe, it is deleted.
+        [ref1] = self.factory.makeGitRefs(owner=self.user)
+        [ref2] = self.factory.makeGitRefs(owner=self.user)
+        self.factory.makeSourcePackageRecipe(branches=[ref1, ref2])
+        ref2.repository.destroySelf(break_references=True)
+
     def test_destroySelf_with_inline_comments_draft(self):
         # Draft inline comments related to a deleted repository (source or
         # target MP repository) also get removed.
@@ -673,6 +695,14 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
             merge_proposal, "blah", merge_proposal.deleteProposal)()
         self.assertRaises(
             SQLObjectNotFound, BranchMergeProposal.get, merge_proposal_id)
+
+    def test_deletionRequirements_with_SourcePackageRecipe(self):
+        # Recipes are listed as deletion requirements.
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        self.assertEqual(
+            {recipe: ("delete", "This recipe uses this repository.")},
+            recipe.base_git_repository.getDeletionRequirements())
 
 
 class TestGitRepositoryModifications(TestCaseWithFactory):
@@ -1811,6 +1841,64 @@ class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
         self.assertEqual(0, len(jobs))
 
 
+class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_base_repository_recipe(self):
+        # On ref changes, recipes where this ref is the base become stale.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_base_repository_different_ref_recipe(self):
+        # On ref changes, recipes where a different ref in the same
+        # repository is the base are left alone.
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_instruction_repository_recipe(self):
+        # On ref changes, recipes including this repository become stale.
+        [base_ref] = self.factory.makeGitRefs()
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[base_ref, ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_instruction_repository_different_ref_recipe(self):
+        # On ref changes, recipes including a different ref in the same
+        # repository are left alone.
+        [base_ref] = self.factory.makeGitRefs()
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_ref, ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_unrelated_repository_recipe(self):
+        # On ref changes, unrelated recipes are left alone.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -1864,7 +1952,7 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
         hosting_client.detectMerges = FakeMethod(
             result={source_1.commit_sha1: u"0" * 40})
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
-        repository.createOrUpdateRefs({
+        refs_info = {
             u"refs/heads/target-1": {
                 u"sha1": u"0" * 40,
                 u"type": GitObjectType.COMMIT,
@@ -1872,8 +1960,12 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             u"refs/heads/target-2": {
                 u"sha1": u"1" * 40,
                 u"type": GitObjectType.COMMIT,
-                }
-            })
+                },
+            }
+        expected_events = [
+            ObjectModifiedEvent, ObjectModifiedEvent, GitRefsUpdatedEvent]
+        _, events = self.assertNotifies(
+            expected_events, True, repository.createOrUpdateRefs, refs_info)
         expected_args = [
             (repository.getInternalPath(), target_1.commit_sha1,
              set([source_1.commit_sha1, source_2.commit_sha1])),
@@ -1888,6 +1980,15 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             BranchMergeProposalStatus.WORK_IN_PROGRESS, bmp2.queue_status)
         self.assertEqual(BranchMergeProposalStatus.MERGED, bmp3.queue_status)
         self.assertEqual(u"0" * 40, bmp3.merged_revision_id)
+        # The two ObjectModifiedEvents indicate the queue_status changes.
+        self.assertContentEqual(
+            [bmp1, bmp3], [event.object for event in events[:2]])
+        self.assertContentEqual(
+            [(BranchMergeProposalStatus.WORK_IN_PROGRESS,
+              BranchMergeProposalStatus.MERGED)],
+            set((event.object_before_modification.queue_status,
+                 event.object.queue_status)
+                for event in events[:2]))
 
 
 class TestGitRepositorySet(TestCaseWithFactory):
@@ -2052,16 +2153,81 @@ class TestGitRepositorySet(TestCaseWithFactory):
                 self.repository_set.setDefaultRepositoryForOwner,
                 person, person, repository, user)
 
-    def test_setDefaultRepository_for_same_targetdefault_noops(self):
-        # If a repository is already the target default,
-        # setting the defaultRepository again should no-op.
+    def test_setDefaultRepositoryForOwner_noop(self):
+        # If a repository is already the target owner default, setting
+        # the default again should no-op.
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        repo = self.factory.makeGitRepository(owner=owner, target=target)
+        with person_logged_in(owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo, owner)
+            self.assertEqual(
+                repo,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo, owner)
+            self.assertEqual(
+                repo,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+
+    def test_setDefaultRepositoryForOwner_replaces_old(self):
+        # If another repository is already the target owner default,
+        # setting it overwrites.
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        repo1 = self.factory.makeGitRepository(owner=owner, target=target)
+        repo2 = self.factory.makeGitRepository(owner=owner, target=target)
+        with person_logged_in(owner):
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo1, owner)
+            self.assertEqual(
+                repo1,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+            self.assertTrue(repo1.owner_default)
+            self.assertFalse(repo2.owner_default)
+            self.repository_set.setDefaultRepositoryForOwner(
+                owner, target, repo2, owner)
+            self.assertEqual(
+                repo2,
+                self.repository_set.getDefaultRepositoryForOwner(
+                    owner, target))
+            self.assertFalse(repo1.owner_default)
+            self.assertTrue(repo2.owner_default)
+
+    def test_setDefaultRepository_noop(self):
+        # If a repository is already the target default, setting the
+        # default again should no-op.
         project = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(target=project)
         with person_logged_in(project.owner):
             self.repository_set.setDefaultRepository(project, repository)
-            result = self.repository_set.setDefaultRepository(
-                project, repository)
-        self.assertEqual(None, result)
+            self.assertEqual(
+                repository, self.repository_set.getDefaultRepository(project))
+            self.repository_set.setDefaultRepository(project, repository)
+            self.assertEqual(
+                repository, self.repository_set.getDefaultRepository(project))
+
+    def test_setDefaultRepository_replaces_old(self):
+        # If another repository is already the target default, setting
+        # it overwrites.
+        project = self.factory.makeProduct()
+        repo1 = self.factory.makeGitRepository(target=project)
+        repo2 = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            self.repository_set.setDefaultRepository(project, repo1)
+            self.assertEqual(
+                repo1, self.repository_set.getDefaultRepository(project))
+            self.assertTrue(repo1.target_default)
+            self.assertFalse(repo2.target_default)
+            self.repository_set.setDefaultRepository(project, repo2)
+            self.assertEqual(
+                repo2, self.repository_set.getDefaultRepository(project))
+            self.assertFalse(repo1.target_default)
+            self.assertTrue(repo2.target_default)
 
 
 class TestGitRepositorySetDefaultsMixin:

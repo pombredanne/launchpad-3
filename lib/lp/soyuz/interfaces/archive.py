@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive interfaces."""
@@ -8,12 +8,14 @@ __metaclass__ = type
 __all__ = [
     'ALLOW_RELEASE_BUILDS',
     'AlreadySubscribed',
+    'ArchiveAlreadyDeleted',
     'ArchiveDependencyError',
     'ArchiveDisabled',
     'ArchiveNotPrivate',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
+    'CannotModifyArchiveProcessor',
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
@@ -295,6 +297,19 @@ class InvalidExternalDependencies(Exception):
         error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
         super(Exception, self).__init__(self, error_msg)
         self.errors = errors
+
+
+@error_status(httplib.FORBIDDEN)
+class CannotModifyArchiveProcessor(Exception):
+    """Tried to enable or disable a restricted processor on an archive."""
+
+    _fmt = (
+        '%(processor)s is restricted, and may only be enabled or disabled '
+        'by administrators.')
+
+    def __init__(self, processor):
+        super(CannotModifyArchiveProcessor, self).__init__(
+            self._fmt % {'processor': processor.name})
 
 
 class IArchivePublic(IPrivacy, IHasOwner):
@@ -626,7 +641,7 @@ class IArchiveView(IHasBuildRecords):
         Text(title=_("External dependencies"), required=False,
         readonly=False, description=_(
             "Newline-separated list of repositories to be used to retrieve "
-            "any external build dependencies when building packages in the "
+            "any external build-dependencies when building packages in the "
             "archive, in the format:\n"
             "deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] "
                 "[components]\n"
@@ -649,6 +664,20 @@ class IArchiveView(IHasBuildRecords):
             value_type=Reference(schema=IProcessor),
             readonly=True),
         as_of='devel')
+
+    available_processors = Attribute(
+        "The architectures that are available to be enabled or disabled for "
+        "this archive.")
+
+    @call_with(check_permissions=True, user=REQUEST_USER)
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=True),
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setProcessors(processors, check_permissions=False, user=None):
+        """Set the architectures on which the archive can build."""
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -2048,15 +2077,6 @@ class IArchiveEdit(Interface):
 
 class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
-
-    @operation_parameters(
-        processors=List(
-            value_type=Reference(schema=IProcessor), required=True),
-    )
-    @export_write_operation()
-    @operation_for_version('devel')
-    def setProcessors(processors):
-        """Set the architectures on which the archive can build."""
 
     @operation_parameters(
         processor=Reference(schema=IProcessor, required=True),

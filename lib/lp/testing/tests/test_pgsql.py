@@ -1,7 +1,8 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
+import uuid
 
 from fixtures import (
     EnvironmentVariableFixture,
@@ -36,7 +37,12 @@ class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
         BaseLayer.setUp()
         self.addCleanup(BaseLayer.tearDown)
         fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
-        expected_name = "%s_%d" % (PgTestSetup.dbname, os.getpid())
+        raw_uuid = os.environ['LP_TEST_INSTANCE'].split('_', 1)[1]
+        instance_uuid = uuid.UUID(raw_uuid)
+        self.assertEqual(uuid.RFC_4122, instance_uuid.variant)
+        self.assertEqual(1, instance_uuid.version)
+        expected_name = "%s_%d_%s" % (
+            PgTestSetup.dbname, os.getpid(), instance_uuid.hex)
         self.assertDBName(expected_name, fixture)
 
     def test_db_naming_without_LP_TEST_INSTANCE_is_static(self):
@@ -52,7 +58,7 @@ class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
         fixture.setUp()
         self.addCleanup(fixture.dropDb)
         self.addCleanup(fixture.tearDown)
-        expected_value = 'dbname=%s host=localhost' % fixture.dbname
+        expected_value = 'dbname=%s' % fixture.dbname
         self.assertEqual(expected_value, dbconfig.rw_main_master)
         self.assertEqual(expected_value, dbconfig.rw_main_slave)
         with ConfigUseFixture(BaseLayer.appserver_config_name):
@@ -119,82 +125,3 @@ class TestPgTestSetupTuning(testtools.TestCase, TestWithFixtures):
             con.commit()
         finally:
             fixture.tearDown()
-
-    def test_sequences(self):
-        # Sequences may be affected by connections even if the connection
-        # is rolled back. So ensure the database is reset fully, in the
-        # cases where we just rollback the changes we also need to reset all
-        # the sequences.
-
-        # Setup a table that uses a sequence
-        fixture = PgTestSetup()
-        fixture.setUp()
-        try:
-            con = fixture.connect()
-            cur = con.cursor()
-            cur.execute('CREATE TABLE foo (x serial, y integer)')
-            con.commit()
-            con.close()
-            # Fake it so the harness doesn't know a change has been made
-            ConnectionWrapper.committed = False
-        finally:
-            fixture.tearDown()
-
-        sequence_values = []
-        # Insert a row into it and roll back the changes. Each time, we
-        # should end up with the same sequence value
-        for i in range(3):
-            fixture.setUp()
-            try:
-                con = fixture.connect()
-                cur = con.cursor()
-                cur.execute('INSERT INTO foo (y) VALUES (1)')
-                cur.execute("SELECT currval('foo_x_seq')")
-                sequence_values.append(cur.fetchone()[0])
-                con.rollback()
-                con.close()
-            finally:
-                fixture.tearDown()
-
-        # Fail if we got a diffent sequence value at some point
-        for v in sequence_values:
-            self.failUnlessEqual(v, sequence_values[0])
-
-        # Repeat the test, but this time with some data already in the
-        # table
-        fixture.setUp()
-        try:
-            con = fixture.connect()
-            cur = con.cursor()
-            cur.execute('INSERT INTO foo (y) VALUES (1)')
-            con.commit()
-            con.close()
-            # Fake it so the harness doesn't know a change has been made
-            ConnectionWrapper.committed = False
-        finally:
-            fixture.tearDown()
-
-        sequence_values = []
-        # Insert a row into it and roll back the changes. Each time, we
-        # should end up with the same sequence value
-        for i in range(1, 3):
-            fixture.setUp()
-            try:
-                con = fixture.connect()
-                cur = con.cursor()
-                cur.execute('INSERT INTO foo (y) VALUES (1)')
-                cur.execute("SELECT currval('foo_x_seq')")
-                sequence_values.append(cur.fetchone()[0])
-                con.rollback()
-                con.close()
-            finally:
-                fixture.tearDown()
-
-        # Fail if we got a diffent sequence value at some point
-        for v in sequence_values:
-            self.failUnlessEqual(v, sequence_values[0])
-
-        # The database still exists because, after the last commit,
-        # ConnectionWrapper.committed was set to False.
-        # Drop the database here to avoid test ordering issues.
-        fixture.dropDb()
