@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository views."""
@@ -52,6 +52,7 @@ from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.browser.branch import CodeEditOwnerMixin
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.widgets.gitrepositorytarget import (
     GitRepositoryTargetDisplayWidget,
     GitRepositoryTargetWidget,
@@ -203,12 +204,14 @@ class GitRepositoryEditMenu(NavigationMenu):
         return Link("+delete", text, icon="trash-icon")
 
 
-class GitRepositoryContextMenu(ContextMenu):
+class GitRepositoryContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for `IGitRepository`."""
 
     usedfor = IGitRepository
     facet = "branches"
-    links = ["add_subscriber", "source", "subscription", "visibility"]
+    links = [
+        "add_subscriber", "source", "subscription",
+        "view_recipes", "visibility"]
 
     @enabled_with_permission("launchpad.AnyPerson")
     def subscription(self):
@@ -290,6 +293,24 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
     def branches(self):
         """All branches in this repository, sorted for display."""
         return GitRefBatchNavigator(self, self.context)
+
+    @property
+    def recipes_link(self):
+        """A link to recipes for this repository."""
+        count = self.context.recipes.count()
+        if count == 0:
+            # Nothing to link to.
+            return 'No recipes using this repository.'
+        elif count == 1:
+            # Link to the single recipe.
+            return structured(
+                '<a href="%s">1 recipe</a> using this repository.',
+                canonical_url(self.context.recipes.one())).escapedtext
+        else:
+            # Link to a recipe listing.
+            return structured(
+                '<a href="+recipes">%s recipes</a> using this repository.',
+                count).escapedtext
 
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):

@@ -7,6 +7,15 @@
   i18n:domain="launchpad"
 >
 
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    #merge-summary, #recipe-summary {
+      margin-top: .5em;
+      margin-bottom: .1em;
+    }
+  </style>
+</metal:block>
+
 <body>
 
 <tal:registering metal:fill-slot="registering">
@@ -24,10 +33,10 @@
   </div>
 
   <div class="yui-g">
-    <div id="ref-relations" class="portlet"
-         tal:condition="python: view.show_merge_links or view.show_snap_information">
+    <div id="ref-relations" class="portlet">
       <tal:ref-pending-merges
            replace="structure context/@@++ref-pending-merges" />
+      <tal:ref-recipes replace="structure context/@@++ref-recipes" />
       <div metal:use-macro="context/@@+snap-macros/related-snaps" />
     </div>
   </div>
