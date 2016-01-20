@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for the `generate-contents-files` script."""
@@ -299,8 +299,8 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         fake_overrides(script, distroseries)
         script.process()
         self.assertTrue(file_exists(os.path.join(
-            script.content_archive, distro.name, "dists", suite,
-            "Contents-%s-staged.gz" % das.architecturetag)))
+            script.config.stagingroot, suite,
+            "Contents-%s.gz" % das.architecturetag)))
         publisher_script = PublishFTPMaster(test_args=["-d", distro.name])
         publisher_script.txn = self.layer.txn
         publisher_script.logger = DevNullLogger()

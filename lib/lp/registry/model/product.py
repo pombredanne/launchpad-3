@@ -42,7 +42,6 @@ from storm.expr import (
     Or,
     Select,
     SQL,
-    Union,
     )
 from storm.locals import (
     Store,
@@ -1576,22 +1575,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        recipes = Store.of(self).find(
+        tables = [
+            SourcePackageRecipe,
+            SourcePackageRecipeData,
+            LeftJoin(Branch, SourcePackageRecipeData.base_branch == Branch.id),
+            LeftJoin(
+                GitRepository,
+                SourcePackageRecipeData.base_git_repository ==
+                    GitRepository.id),
+            ]
+        recipes = Store.of(self).using(*tables).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
-            SourcePackageRecipeData.id.is_in(Union(
-                Select(
-                    SourcePackageRecipeData.id,
-                    And(
-                        SourcePackageRecipeData.base_branch == Branch.id,
-                        Branch.product == self)),
-                Select(
-                    SourcePackageRecipeData.id,
-                    And(
-                        SourcePackageRecipeData.base_git_repository ==
-                            GitRepository.id,
-                        GitRepository.project == self)))))
+            Or(Branch.product == self, GitRepository.project == self))
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(recipes, pre_iter_hook=hook)
 

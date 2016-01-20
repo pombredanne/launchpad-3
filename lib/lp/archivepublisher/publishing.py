@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -825,6 +825,17 @@ class Publisher(object):
                     distroseries, pocket, component, architecture, all_files)
             self._writeSuiteI18n(
                 distroseries, pocket, component, all_files)
+            dep11_dir = os.path.join(
+                self._config.distsroot, suite, component, "dep11")
+            try:
+                for dep11_file in os.listdir(dep11_dir):
+                    if (dep11_file.startswith("Components-") or
+                            dep11_file.startswith("icons-")):
+                        all_files.add(
+                            os.path.join(component, "dep11", dep11_file))
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
         for architecture in all_architectures:
             for contents_path in get_suffixed_indices(
                     'Contents-' + architecture):
