@@ -70,6 +70,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -210,7 +211,7 @@ class GitRepositoryContextMenu(ContextMenu, HasRecipesMenuMixin):
     usedfor = IGitRepository
     facet = "branches"
     links = [
-        "add_subscriber", "source", "subscription",
+        "add_subscriber", "create_recipe", "source", "subscription",
         "view_recipes", "visibility"]
 
     @enabled_with_permission("launchpad.AnyPerson")
@@ -241,6 +242,14 @@ class GitRepositoryContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return the "Change information type" Link."""
         text = "Change information type"
         return Link("+edit-information-type", text)
+
+    def create_recipe(self):
+        # You can't create a recipe for a private repository.
+        enabled = (
+            not self.context.private and
+            bool(getFeatureFlag(GIT_RECIPES_FEATURE_FLAG)))
+        text = "Create packaging recipe"
+        return Link("+new-recipe", text, enabled=enabled, icon="add")
 
 
 @implementer(IGitRefBatchNavigator)

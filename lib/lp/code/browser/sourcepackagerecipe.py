@@ -92,11 +92,14 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.interfaces.sourcepackagerecipe import (
     IRecipeBranchSource,
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT_BZR,
+    MINIMAL_RECIPE_TEXT_GIT,
     )
 from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -737,14 +740,18 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         self.form_fields['distroseries'].for_input = True
 
     def getBranch(self):
-        """The branch on which the recipe is built."""
+        """The branch or repository on which the recipe is built."""
         return self.context
 
     def _recipe_names(self):
         """A generator of recipe names."""
         # +junk-daily doesn't make a very good recipe name, so use the
-        # branch name in that case.
-        if self.context.target.allow_recipe_name_from_target:
+        # branch name in that case; similarly for personal Git repositories.
+        if ((IBranch.providedBy(self.context) and
+                self.context.target.allow_recipe_name_from_target) or
+            ((IGitRepository.providedBy(self.context) or
+              IGitRef.providedBy(self.context)) and
+                self.context.namespace.allow_recipe_name_from_target)):
             branch_target_name = self.context.target.name.split('/')[-1]
         else:
             branch_target_name = self.context.name
@@ -765,9 +772,27 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         distroseries = BuildableDistroSeries.findSeries(self.user)
         series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
+        if IBranch.providedBy(self.context):
+            recipe_text = MINIMAL_RECIPE_TEXT_BZR % self.context.identity
+        elif IGitRepository.providedBy(self.context):
+            default_ref = None
+            if self.context.default_branch is not None:
+                default_ref = self.context.getRefByPath(
+                    self.context.default_branch)
+            if default_ref is not None:
+                branch_name = default_ref.name
+            else:
+                branch_name = "ENTER-BRANCH-NAME"
+            recipe_text = MINIMAL_RECIPE_TEXT_GIT % (
+                self.context.identity, branch_name)
+        elif IGitRef.providedBy(self.context):
+            recipe_text = MINIMAL_RECIPE_TEXT_GIT % (
+                self.context.repository.identity, self.context.name)
+        else:
+            raise AssertionError("Unsupported context: %r" % (self.context,))
         return {
             'name': self._find_unused_name(self.user),
-            'recipe_text': MINIMAL_RECIPE_TEXT_BZR % self.context.bzr_identity,
+            'recipe_text': recipe_text,
             'owner': self.user,
             'distroseries': series,
             'build_daily': True,

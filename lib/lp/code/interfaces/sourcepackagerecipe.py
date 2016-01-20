@@ -8,6 +8,7 @@ __metaclass__ = type
 
 
 __all__ = [
+    'GIT_RECIPES_FEATURE_FLAG',
     'IRecipeBranchSource',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
@@ -66,6 +67,9 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.soyuz.interfaces.archive import IArchive
+
+
+GIT_RECIPES_FEATURE_FLAG = u'code.git.recipes.enabled'
 
 
 MINIMAL_RECIPE_TEXT_BZR = dedent(u'''\

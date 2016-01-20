@@ -235,7 +235,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
                 '<a href="%s">%s recipe build in ubuntu shiny</a> '
                 '[~eric/ubuntu/ppa]'
                 % (canonical_url(build, path_only_if_possible=True),
-                   build.recipe.base_branch.unique_name)))
+                   build.recipe.base.unique_name)))
 
     def test_link_no_recipe(self):
         eric = self.factory.makePerson(name='eric')
