@@ -1219,6 +1219,18 @@
             name="+new-recipe"
             template="../templates/sourcepackagerecipe-new.pt"/>
         <browser:page
+            for="lp.code.interfaces.gitrepository.IGitRepository"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-recipe"
+            template="../templates/sourcepackagerecipe-new.pt"/>
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-recipe"
+            template="../templates/sourcepackagerecipe-new.pt"/>
+        <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
             permission="launchpad.Edit"

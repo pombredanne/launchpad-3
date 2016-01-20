@@ -30,6 +30,7 @@ __all__ = [
     'ClaimReviewFailed',
     'DiffNotFound',
     'GitDefaultConflict',
+    'GitRecipesFeatureDisabled',
     'GitRepositoryCreationException',
     'GitRepositoryCreationFault',
     'GitRepositoryCreationForbidden',
@@ -483,6 +484,15 @@ class TooNewRecipeFormat(Exception):
         super(TooNewRecipeFormat, self).__init__()
         self.supplied_format = supplied_format
         self.newest_supported = newest_supported
+
+
+@error_status(httplib.UNAUTHORIZED)
+class GitRecipesFeatureDisabled(Exception):
+    """Only certain users can create new Git recipes."""
+
+    def __init__(self):
+        message = "You do not have permission to create Git recipes."
+        Exception.__init__(self, message)
 
 
 @error_status(httplib.BAD_REQUEST)
