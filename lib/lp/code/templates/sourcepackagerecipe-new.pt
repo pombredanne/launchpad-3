@@ -23,10 +23,12 @@
 
     <div metal:fill-slot="main">
 
-      <div>
-        <p>A "recipe" is a description of the steps bzr-builder should take to
-        construct a source package from the various bzr branches. Its format
-        specifies:</p>
+      <div tal:define="is_bzr context/bzr_identity|nothing">
+        <p>A "recipe" is a description of the steps Launchpad's package builder
+        should take to construct a source package from the various
+        <tal:bzr condition="is_bzr">bzr</tal:bzr>
+        <tal:git condition="not: is_bzr">git</tal:git>
+        branches. Its format specifies:</p>
         <ul class="bulleted">
           <li>where to use the code from (trunk branch, beta branch, etc.), where to get the packaging from (separate branch? ubuntu branch?)</li>
           <li>the correct package version (so users will still be able to upgrade to the stable version of the distro once it gets released)</li>
