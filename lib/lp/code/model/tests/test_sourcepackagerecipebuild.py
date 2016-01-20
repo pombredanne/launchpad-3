@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -106,11 +106,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(bq, spb.buildqueue_record)
 
     def test_title(self):
-        # A recipe build's title currently consists of the base
-        # branch's unique name.
+        # A recipe build's title currently consists of the base source
+        # location's unique name.
         spb = self.makeSourcePackageRecipeBuild()
         title = "%s recipe build in %s %s" % (
-            spb.recipe.base_branch.unique_name, spb.distribution.name,
+            spb.recipe.base.unique_name, spb.distribution.name,
             spb.distroseries.name)
         self.assertEqual(spb.title, title)
 

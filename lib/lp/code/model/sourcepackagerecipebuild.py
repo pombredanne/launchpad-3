@@ -183,7 +183,7 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         if self.recipe is None:
             branch_name = 'deleted'
         else:
-            branch_name = self.recipe.base_branch.unique_name
+            branch_name = self.recipe.base.unique_name
         return '%s recipe build in %s %s' % (
             branch_name, self.distribution.name, self.distroseries.name)
 

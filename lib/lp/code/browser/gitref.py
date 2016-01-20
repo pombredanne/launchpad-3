@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference views."""
@@ -35,6 +35,7 @@ from lp.app.widgets.suggestion import TargetGitRepositoryWidget
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
@@ -49,18 +50,19 @@ from lp.services.webapp import (
     Link,
     )
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import structured
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
     HasSnapsViewMixin,
     )
 
 
-class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
+class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
     """Context menu for Git references."""
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['create_snap', 'register_merge', 'source']
+    links = ['create_snap', 'register_merge', 'source', 'view_recipes']
 
     def source(self):
         """Return a link to the branch's browsing interface."""
@@ -143,6 +145,24 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def dependent_landing_count_text(self):
         return self._getBranchCountText(len(self.dependent_landings))
+
+    @property
+    def recipes_link(self):
+        """A link to recipes for this reference."""
+        count = self.context.recipes.count()
+        if count == 0:
+            # Nothing to link to.
+            return 'No recipes using this branch.'
+        elif count == 1:
+            # Link to the single recipe.
+            return structured(
+                '<a href="%s">1 recipe</a> using this branch.',
+                canonical_url(self.context.recipes.one())).escapedtext
+        else:
+            # Link to a recipe listing.
+            return structured(
+                '<a href="+recipes">%s recipes</a> using this branch.',
+                count).escapedtext
 
 
 class GitRefRegisterMergeProposalSchema(Interface):

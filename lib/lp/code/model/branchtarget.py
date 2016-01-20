@@ -122,6 +122,11 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def allow_recipe_name_from_target(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -238,6 +243,11 @@ class PersonBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return False
 
+    @property
+    def allow_recipe_name_from_target(self):
+        """See `IBranchTarget`."""
+        return False
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         return False
@@ -320,6 +330,11 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     @property
     def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def allow_recipe_name_from_target(self):
         """See `IBranchTarget`."""
         return True
 

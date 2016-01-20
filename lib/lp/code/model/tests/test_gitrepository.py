@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -452,6 +452,19 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
             [ReclaimGitRepositorySpaceJob(job).repository_path
              for job in jobs])
 
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        # If repository is a base_git_repository in a recipe, it is deleted.
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs(owner=self.user))
+        recipe.base_git_repository.destroySelf(break_references=True)
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        # If repository is referred to by a recipe, it is deleted.
+        [ref1] = self.factory.makeGitRefs(owner=self.user)
+        [ref2] = self.factory.makeGitRefs(owner=self.user)
+        self.factory.makeSourcePackageRecipe(branches=[ref1, ref2])
+        ref2.repository.destroySelf(break_references=True)
+
     def test_destroySelf_with_inline_comments_draft(self):
         # Draft inline comments related to a deleted repository (source or
         # target MP repository) also get removed.
@@ -682,6 +695,14 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
             merge_proposal, "blah", merge_proposal.deleteProposal)()
         self.assertRaises(
             SQLObjectNotFound, BranchMergeProposal.get, merge_proposal_id)
+
+    def test_deletionRequirements_with_SourcePackageRecipe(self):
+        # Recipes are listed as deletion requirements.
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        self.assertEqual(
+            {recipe: ("delete", "This recipe uses this repository.")},
+            recipe.base_git_repository.getDeletionRequirements())
 
 
 class TestGitRepositoryModifications(TestCaseWithFactory):
@@ -1818,6 +1839,64 @@ class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
                 removeSecurityProxy(bmp).deleteProposal()
         jobs = source_ref.repository.scheduleDiffUpdates([source_ref.path])
         self.assertEqual(0, len(jobs))
+
+
+class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_base_repository_recipe(self):
+        # On ref changes, recipes where this ref is the base become stale.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_base_repository_different_ref_recipe(self):
+        # On ref changes, recipes where a different ref in the same
+        # repository is the base are left alone.
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_instruction_repository_recipe(self):
+        # On ref changes, recipes including this repository become stale.
+        [base_ref] = self.factory.makeGitRefs()
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[base_ref, ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_instruction_repository_different_ref_recipe(self):
+        # On ref changes, recipes including a different ref in the same
+        # repository are left alone.
+        [base_ref] = self.factory.makeGitRefs()
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_ref, ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_unrelated_repository_recipe(self):
+        # On ref changes, unrelated recipes are left alone.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
 
 
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):

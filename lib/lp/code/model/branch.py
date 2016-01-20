@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -860,7 +860,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         deletion_operations.extend(
-            DeletionCallable.forSourcePackageRecipe(recipe)
+            DeletionCallable(
+                recipe, _('This recipe uses this branch.'), recipe.destroySelf)
             for recipe in self.recipes)
         if not getUtility(ISnapSet).findByBranch(self).is_empty():
             alteration_operations.append(DeletionCallable(
@@ -1497,11 +1498,6 @@ class DeletionCallable(DeletionOperation):
 
     def __call__(self):
         self.func(*self.args, **self.kwargs)
-
-    @classmethod
-    def forSourcePackageRecipe(cls, recipe):
-        return cls(
-            recipe, _('This recipe uses this branch.'), recipe.destroySelf)
 
 
 class ClearDependentBranch(DeletionOperation):
