@@ -749,7 +749,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         # branch name in that case; similarly for personal Git repositories.
         if ((IBranch.providedBy(self.context) and
                 self.context.target.allow_recipe_name_from_target) or
-            (IGitRepository.providedBy(self.context) and
+            ((IGitRepository.providedBy(self.context) or
+              IGitRef.providedBy(self.context)) and
                 self.context.namespace.allow_recipe_name_from_target)):
             branch_target_name = self.context.target.name.split('/')[-1]
         else:
