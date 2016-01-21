@@ -19,12 +19,12 @@
  * This also needs to be updated
  */
 body.beta #locationbar, body.private #locationbar {
-    top: 47px;
+    padding-top: 47px;
 }
 
 /* If we have both classes make room for two banners height */
 body.beta.private #locationbar {
-    top: 94px;
+    padding-top: 94px;
 }
 
 /* If the container exists make sure we start out with the rest of the page
@@ -41,8 +41,11 @@ body.beta.private #locationbar {
     display: block;
     font-size: 14px;
     font-weight: bold;
+    left: 0;
     line-height: 21px;
     padding: 8px 20px;
+    position: fixed;
+    right: 0;
     text-align: left;
     text-shadow: 0 -1px 0 #631616;
     z-index: 10;
