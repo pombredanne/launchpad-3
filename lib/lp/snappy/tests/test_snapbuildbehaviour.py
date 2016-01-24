@@ -15,6 +15,7 @@ import fixtures
 import transaction
 from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.matchers import IsInstance
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
@@ -199,10 +200,8 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
         build_request = yield job.composeBuildRequest(None)
-        extraBuildArgs = yield job._extraBuildArgs()
-        self.assertEqual(
-            ('snap', job.build.distro_arch_series, {},
-             extraBuildArgs), build_request)
+        self.assertEqual(build_request[1], job.build.distro_arch_series)
+        self.assertThat(build_request[3], IsInstance(dict))
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_bzr(self):
