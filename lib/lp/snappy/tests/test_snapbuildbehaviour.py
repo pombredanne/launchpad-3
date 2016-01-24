@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import json
 from mock import (
     patch,
     Mock,
@@ -168,66 +167,21 @@ class TestSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         e = self.assertRaises(CannotBuild, job.verifyBuildRequest, logger)
         self.assertIn("Missing chroot", str(e))
 
-    def test_extraBuildArgs_bzr(self):
-        # _extraBuildArgs returns appropriate arguments if asked to build a
-        # job for a Bazaar branch.
-        branch = self.factory.makeBranch()
-        job = self.makeJob(branch=branch)
-        proxy_host = config.builddmaster.builder_proxy_host
-        proxy_port = config.builddmaster.builder_proxy_port
-        expected_archives = get_sources_list_for_building(
-            job.build, job.build.distro_arch_series, None)
-        self.assertEqual({
-            "archive_private": False,
-            "archives": expected_archives,
-            "arch_tag": "i386",
-            "branch": branch.bzr_identity,
-            "name": u"test-snap",
-            "proxy_host": proxy_host,
-            "proxy_port": proxy_port,
-            }, job._extraBuildArgs())
-
-    def test_extraBuildArgs_git(self):
-        # _extraBuildArgs returns appropriate arguments if asked to build a
-        # job for a Git branch.
-        [ref] = self.factory.makeGitRefs()
-        job = self.makeJob(git_ref=ref)
-        proxy_host = config.builddmaster.builder_proxy_host
-        proxy_port = config.builddmaster.builder_proxy_port
-        expected_archives = get_sources_list_for_building(
-            job.build, job.build.distro_arch_series, None)
-        self.assertEqual({
-            "archive_private": False,
-            "archives": expected_archives,
-            "arch_tag": "i386",
-            "git_repository": ref.repository.git_https_url,
-            "git_path": ref.name,
-            "name": u"test-snap",
-            "proxy_host": proxy_host,
-            "proxy_port": proxy_port,
-            }, job._extraBuildArgs())
-
-
-def mockRequestProxyToken(self):
-    print('called mock')
-    token = json.dumps(
-        {"token_id": "03368addc7994647ace69e7ac2eb1ae9",
-         "client_ip": "10.0.0.1",
-         "build_id": "SNAPBUILD-1",
-         "timestamp": str(datetime.utcnow())}
-    )
-    return defer.succeed(token)
-
 
 class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
     run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         super(TestAsyncSnapBuildBehaviour, self).setUp()
-        self.token = {"token_id": "03368addc7994647ace69e7ac2eb1ae9",
-                      "client_ip": "10.0.0.1",
-                      "build_id": "SNAPBUILD-1",
-                      "timestamp": str(datetime.utcnow())}
+        self.token = {'secret': '03368addc7994647ace69e7ac2eb1ae9',
+                      'username': 'SNAPBUILD-1',
+                      'timestamp': datetime.utcnow().isoformat()}
+        self.proxy_url = ("http://{username}:{password}"
+                          "@{host}:{port}".format(
+                              username=self.token['username'],
+                              password=self.token['secret'],
+                              host=config.snappy.builder_proxy_host,
+                              port=config.snappy.builder_proxy_port))
         self.patcher = patch.object(
             SnapBuildBehaviour, '_requestProxyToken',
             Mock(return_value=self.mockRequestProxyToken())).start()
@@ -237,7 +191,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.patcher.stop()
 
     def mockRequestProxyToken(self):
-        return defer.succeed(json.dumps(self.token))
+        return defer.succeed(self.token)
 
     @defer.inlineCallbacks
     def test_composeBuildRequest(self):
@@ -245,17 +199,59 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
         build_request = yield job.composeBuildRequest(None)
-        extraBuildArgs = job._extraBuildArgs()
-        extraBuildArgs['proxy_token'] = self.token
+        extraBuildArgs = yield job._extraBuildArgs()
         self.assertEqual(
             ('snap', job.build.distro_arch_series, {},
              extraBuildArgs), build_request)
 
     @defer.inlineCallbacks
-    def test_composeBuildRequest_proxy_token_set(self):
+    def test_extraBuildArgs_bzr(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for a Bazaar branch.
+        branch = self.factory.makeBranch()
+        job = self.makeJob(branch=branch)
+        expected_archives = get_sources_list_for_building(
+            job.build, job.build.distro_arch_series, None)
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "branch": branch.bzr_identity,
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_git(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for a Git branch.
+        [ref] = self.factory.makeGitRefs()
+        job = self.makeJob(git_ref=ref)
+        expected_archives = get_sources_list_for_building(
+            job.build, job.build.distro_arch_series, None)
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "git_repository": ref.repository.git_https_url,
+            "git_path": ref.name,
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_proxy_url_set(self):
         job = self.makeJob()
         build_request = yield job.composeBuildRequest(None)
-        self.assertEqual(self.token, build_request[3]['proxy_token'])
+        proxy_url = ("http://{username}:{password}"
+                     "@{host}:{port}".format(
+                         username=self.token['username'],
+                         password=self.token['secret'],
+                         host=config.snappy.builder_proxy_host,
+                         port=config.snappy.builder_proxy_port))
+        self.assertEqual(proxy_url, build_request[3]['proxy_url'])
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_deleted(self):

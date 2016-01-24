@@ -11,6 +11,7 @@ __all__ = [
     'SnapBuildBehaviour',
     ]
 
+import datetime
 import json
 from urllib import urlencode
 
@@ -75,16 +76,21 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             raise CannotBuild(
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
+    @defer.inlineCallbacks
     def _extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
         args = {}
-        args["build_cookie"] = build.build_cookie
+        token = yield self._requestProxyToken()
+        args["proxy_url"] = ("http://{username}:{password}"
+                             "@{host}:{port}".format(
+                                 username=token['username'],
+                                 password=token['secret'],
+                                 host=config.snappy.builder_proxy_host,
+                                 port=config.snappy.builder_proxy_port))
         args["name"] = build.snap.name
-        args["proxy_host"] = config.builddmaster.builder_proxy_host
-        args["proxy_port"] = config.builddmaster.builder_proxy_port
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
@@ -104,24 +110,27 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %
                 (build.snap.owner.name, build.snap.name))
-        return args
+        defer.returnValue(args)
 
     @defer.inlineCallbacks
     def _requestProxyToken(self):
-        url = config.builddmaster.builder_proxy_auth_api_endpoint
+        url = config.snappy.builder_proxy_auth_api_endpoint
+        proxy_username = '{build_id}-{timestamp}'.format(
+            build_id=self.build.build_cookie,
+            timestamp=datetime.utcnow().timestamp())
         result = yield getPage(
             url,
             method='POST',
-            postdata=urlencode({'build_id': self.build.build_cookie}),
+            postdata=urlencode({'username': proxy_username}),
             headers={'Content-Type': 'application/json'}
             )
-        defer.returnValue(result)
+        token = json.loads(result)
+        defer.returnValue(token)
 
     @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
-        args = self._extraBuildArgs(logger=logger)
-        token = yield self._requestProxyToken()
-        args['proxy_token'] = json.loads(token)
+        args = yield self._extraBuildArgs(logger=logger)
+        print('Args: %s' % args)
         defer.returnValue(("snap", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
