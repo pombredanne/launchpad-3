@@ -6,15 +6,13 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
 
-<body>
-
-  <h1 metal:fill-slot="heading"
-      tal:define="branch view/branch_merge_proposal/source_branch">
-    Code review comment for <tal:source content="branch/bzr_identity"/>
+ <body>
+   <h1 metal:fill-slot="heading"
+      tal:define="branch view/branch_merge_proposal/merge_source">
+    Code review comment for <tal:source content="branch/identity"/>
   </h1>
 
   <div metal:fill-slot="main">
-
     <tal:previous tal:condition="view/is_reply">
       <tal:content replace="structure view/reply_to/@@+render"/>
     </tal:previous>

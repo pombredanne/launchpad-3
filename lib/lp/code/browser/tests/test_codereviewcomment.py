@@ -169,6 +169,13 @@ class TestCodeReviewCommentHtmlMixin:
         disposition = 'attachment; filename="comment-%d.txt"' % comment.id
         self.assertEqual(disposition, browser.headers['Content-disposition'])
 
+    def test_parent_comment_in_reply(self):
+        """The reply view has the expected contents from the parent comment."""
+        contents = u'test-comment'.encode('utf-8')
+        comment = self.makeCodeReviewComment(body=contents)
+        browser = self.getViewBrowser(comment, view_name='+reply')
+        self.assertIn(contents, browser.contents)
+
 
 class TestCodeReviewCommentHtmlBzr(
     TestCodeReviewCommentHtmlMixin, BrowserTestCase):
