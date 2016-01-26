@@ -1067,13 +1067,13 @@ token.
     >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey(u'foobar123451432')
     >>> token, _ = consumer.newRequestToken()
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
     >>> access_token, access_secret = token.createAccessToken()
     >>> form = dict(
-    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_consumer_key=u'foobar123451432',
     ...     oauth_token=access_token.key,
     ...     oauth_version='1.0',
     ...     oauth_signature_method='PLAINTEXT',

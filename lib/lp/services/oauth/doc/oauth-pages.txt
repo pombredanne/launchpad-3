@@ -14,7 +14,7 @@ consumer's request to access Launchpad on his behalf.
     >>> from lp.services.webapp.interfaces import ILaunchpadRoot
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('launchpad-library')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey(u'launchpad-library')
     >>> root = getUtility(ILaunchpadRoot)
     >>> def get_view_with_fresh_token(form):
     ...     token, _ = consumer.newRequestToken()
@@ -44,7 +44,6 @@ token will have no expiration date set.
 When the client specifies a duration, the resulting request
 token will have an appropriate expiration date set.
 
-    >>> from datetime import datetime
     >>> import pytz
     >>> from lp.services.oauth.browser import (
     ...     TemporaryIntegrations)
