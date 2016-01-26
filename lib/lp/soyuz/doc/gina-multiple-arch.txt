@@ -171,7 +171,7 @@ component name.
 
 The bdftopcf package is in a bit of a fix. Its binary package is present
 in universe, but no source package is listed for it, and the actual
-package files are in main! Gina to the rescue: she finds them in the
+package files are in main! Gina to the rescue: it finds them in the
 right place, updates the component, and creates it with a semi-bogus
 DSC.
 

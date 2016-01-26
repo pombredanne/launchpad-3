@@ -42,7 +42,7 @@ But regular members can't access the +mailinglist page.
     >>> check_permission('launchpad.Moderate', view)
     False
 
-Sample Person trusts No Privileges Person so she makes no-priv a team
+Sample Person trusts No Privileges Person so they make no-priv a team
 administrator.
 
     >>> from lp.registry.interfaces.teammembership import (
@@ -131,7 +131,7 @@ Mailman side.
     >>> mailman.act()
     >>> transaction.commit()
 
-The team owner can purge his list, as well as a Launchpad administrator and
+The team owner can purge their list, as well as a Launchpad administrator and
 a mailing list expert.
 
     >>> login(ANONYMOUS)

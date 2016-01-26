@@ -517,7 +517,7 @@ class TestSourcePackageRecipeMixin:
 
         The case where the user is not in the PPA owner team but is allowed to
         upload to the PPA via an explicit ArchivePermission takes a different
-        security path than if he were part of the team.
+        security path than if they were part of the team.
         """
 
         # Create a team private PPA.

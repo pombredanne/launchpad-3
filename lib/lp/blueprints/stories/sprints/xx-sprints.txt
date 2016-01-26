@@ -414,7 +414,7 @@ start and end of the conference.
     ['yes']
 
 Sample Person can set a specific start and end time for participation,
-and specify that he is registering Carlos.
+and specify that they are registering Carlos.
 
     >>> browser.getControl('Attendee').value = 'carlos@canonical.com'
     >>> browser.getControl('From').value = '2006-01-10 18:30:00'

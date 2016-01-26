@@ -139,7 +139,7 @@ Create a function to check the expected links.
     ...             print '%s: NOT OK (%s != %s)' % (
     ...                 libraryfile.filename, found_url, expected_url)
 
-No Privileges user can access the files related with his PPA and its
+No Privileges user can access the files related with their PPA and its
 builds.
 
     >>> no_priv_browser = setupBrowser(

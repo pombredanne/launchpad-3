@@ -345,8 +345,8 @@ class StructuralSubscriptionMenuMixin:
     def subscribe(self):
         """The subscribe menu link.
 
-        If the user, or any of the teams he's a member of, already has a
-        subscription to the context, the link offer to edit the subscriptions
+        If the user, or any of the teams they're a member of, already has a
+        subscription to the context, the link offers to edit the subscriptions
         and displays the edit icon. Otherwise, the link offers to subscribe
         and displays the add icon.
         """

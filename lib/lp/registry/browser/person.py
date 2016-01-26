@@ -1140,7 +1140,7 @@ class BeginTeamClaimView(LaunchpadFormView):
 
 
 class RedirectToEditLanguagesView(LaunchpadView):
-    """Redirect the logged in user to his +editlanguages page.
+    """Redirect the logged in user to their +editlanguages page.
 
     This view should always be registered with a launchpad.AnyPerson
     permission, to make sure the user is logged in. It exists so that
@@ -1914,7 +1914,7 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
-        A person is said to be a team participant when he's a member
+        A person is said to be a team participant when they're a member
         of that team, either directly or indirectly via another team
         membership.
         """
@@ -2723,7 +2723,7 @@ class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     label = 'Change your personal details'
     page_title = label
 
-    # Will contain an hidden input when the user is renaming his
+    # Will contain an hidden input when the user is renaming their
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
 
@@ -3166,7 +3166,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.
 
-        This is 'Preferred address' if the user is subscribed using her
+        This is 'Preferred address' if the user is subscribed using their
         preferred address and 'Don't subscribe' if the user is not
         subscribed at all. Otherwise it's the EmailAddress under
         which the user is subscribed to this mailing list.
@@ -3279,7 +3279,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
                 else:
                     if new_value == "Preferred address":
                         # If the user is subscribed but not under any
-                        # particular address, her current preferred
+                        # particular address, their current preferred
                         # address will always be used.
                         new_value = None
                     subscription = mailing_list.getSubscription(self.context)
@@ -4064,8 +4064,8 @@ class ContactViaWebNotificationRecipientSet:
         """Initialize the state based on the context and the user.
 
         The recipients are determined by the relationship between the user
-        and the context that he is contacting: another user, himself, his
-        team, another team.
+        and the context that they are contacting: another user, themselves,
+        their team, another team.
 
         :param user: The person doing the contacting.
         :type user: an `IPerson`.

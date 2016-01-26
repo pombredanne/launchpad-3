@@ -496,7 +496,7 @@ class MailingListSet:
             # administrator of the team we're creating the mailing list for.
             # So you can't just do "registrant in
             # team.getDirectAdministrators()".  It's okay to use .inTeam() for
-            # all cases because a person is always a member of himself.
+            # all cases because a person is always a member of themselves.
             for admin in team.getDirectAdministrators():
                 if registrant.inTeam(admin):
                     break

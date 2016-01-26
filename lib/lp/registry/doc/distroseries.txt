@@ -658,8 +658,8 @@ Creating DistroSeries
 
 Users with launchpad.Driver permission may create DistroSeries. In the
 case of a distribution that doesn't use Soyuz officially, a user who is
-a driver can create the series and he is automatically assigned to the
-series' driver role so that he can edit it.
+a driver can create the series and they are automatically assigned to the
+series' driver role so that they can edit it.
 
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
     >>> yo_driver = factory.makePerson(name='yo-driver')

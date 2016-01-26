@@ -1016,7 +1016,7 @@ teams back.
      (u'Warty Security Team', u'Mark Shuttleworth'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
 
-A user who is a member of a private team will see that team in his
+A user who is a member of a private team will see that team in their
 search.
 
     >>> login('no-priv@canonical.com')

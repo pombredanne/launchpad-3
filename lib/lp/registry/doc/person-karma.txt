@@ -2,7 +2,7 @@
 People karma
 ============
 
-In Launchpad, everytime a user performs an action, we give him some karma
+In Launchpad, everytime a user performs an action, we give them some karma
 points. These karma points are stored in the KarmaAction table and the
 assignment to a user is made in the Karma table. The method used to calculate
 a users karma is time-dependent, because we want to give more karma points for

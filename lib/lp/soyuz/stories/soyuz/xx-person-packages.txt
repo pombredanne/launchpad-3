@@ -256,7 +256,7 @@ The not logged-in (anonymous) user's case:
     >>> print_ppa_rows(anon_browser)
     source1 PPA for Celso Providelo - Ubuntu Hoary 666 ...ago None
 
-However no-priv himself and any Launchpad Administrator can still see
+However no-priv themselves and any Launchpad Administrator can still see
 both packages:
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")

@@ -524,8 +524,8 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         - If the duplicate user has no other email addresses, does the merge.
 
         """
-        # The user proved that he has access to this email address of the
-        # dupe account, so we can assign it to him.
+        # The user proved that they have access to this email address of the
+        # dupe account, so we can assign it to them.
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
         email = removeSecurityProxy(emailset.getByEmail(self.context.email))

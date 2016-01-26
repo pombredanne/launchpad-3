@@ -121,7 +121,7 @@ Let's set up the filesystem:
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
-And give her a spin:
+And give it a spin:
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'hoary', 'breezy']

@@ -84,8 +84,8 @@ It approves the entry which leads to the creation of a new POTemplate object.
     >>> print repr(entry.status)
     <DBItem RosettaImportStatus.APPROVED, (1) Approved>
 
-Now the project owner wants to use two translation domains in his project and
-thus creates another template file in the branch. The branch upload job
+Now the project owner wants to use two translation domains in their project
+and thus creates another template file in the branch. The branch upload job
 detects this new file on its next run and places it into the import queue
 (but not the first one which is left unchanged).
 
@@ -113,10 +113,10 @@ object.
     <DBItem RosettaImportStatus.APPROVED, (1) Approved>
 
 
-Next the owner of the branch realizes that he needs to put his translation
+Next the owner of the branch realizes that they need to put their translation
 template files in proper subdirectories for multiple templates to work
-correctly. Also, he starts using a tool that calls the template 
-"messages.pot" consistently. So he moves and renames the files. The branch
+correctly. Also, they start using a tool that calls the template 
+"messages.pot" consistently. So they move and rename the files. The branch
 upload job detects two changed files and places them in the upload queue.
 
     >>> foo_entry = queue.addOrUpdateEntry("po/foo/messages.pot",

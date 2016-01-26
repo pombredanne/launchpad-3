@@ -285,7 +285,7 @@ class QuestionStatus(DBEnumeratedType):
     SOLVED = DBItem(20, """
         Solved
 
-        The submitter confirmed that an answer solved his question.
+        The submitter confirmed that an answer solved their question.
         """)
 
     EXPIRED = DBItem(25, """

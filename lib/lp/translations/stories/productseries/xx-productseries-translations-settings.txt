@@ -84,14 +84,14 @@ buttons in the form.
     ...         ['IMPORT_TEMPLATES'])
     >>> browser.getControl('Save settings').click()
 
-The user is automatically redirected to the page he came from.
+The user is automatically redirected to the page they came from.
 
     >>> print browser.url
     http://translations.launchpad.dev/evolution/trunk/
     >>> print_feedback_messages(browser.contents)
     The settings have been updated.
 
-If he looks at the synchonization settings page again, he sees that
+If they look at the synchonization settings page again, they see that
 the changes have been saved.
 
     >>> browser.getLink('Set up branch synchronization').click()

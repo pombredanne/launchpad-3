@@ -111,7 +111,7 @@ Try to validate the revoked OpenPGP key:
     and try again.
 
 The login tokens are only consumed if they're successfully processed.
-Otherwise they're kept around so the user can try again after fixing his
+Otherwise they're kept around so the user can try again after fixing their
 key.
 
     >>> login(ANONYMOUS)

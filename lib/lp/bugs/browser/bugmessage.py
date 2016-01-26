@@ -108,7 +108,7 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
             # If the patch flag is not consistent with the result of
             # the guess made in attachmentTypeConsistentWithContentType(),
             # we use the guessed type and lead the user to a page
-            # where he can override the flag value, if Launchpad's
+            # where they can override the flag value, if Launchpad's
             # guess is wrong.
             patch_flag_consistent = (
                 self.attachmentTypeConsistentWithContentType(

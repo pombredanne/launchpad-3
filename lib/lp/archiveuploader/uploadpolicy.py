@@ -239,7 +239,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 "if you need more space." % (
                 new_size / MEGA, self.archive.authorized_size))
         else:
-            # No need to warn user about his PPA's size.
+            # No need to warn user about their PPA's size.
             pass
 
     def policySpecificChecks(self, upload):

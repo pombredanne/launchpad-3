@@ -215,7 +215,7 @@ class IOAuthRequestToken(IOAuthToken):
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '
-                      'consumer to access his protected resources on '
+                      'consumer to access their protected resources on '
                       'Launchpad.'))
 
     is_reviewed = Bool(

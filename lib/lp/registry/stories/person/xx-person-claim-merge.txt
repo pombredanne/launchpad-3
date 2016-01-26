@@ -24,7 +24,7 @@ option to request a merge.
     >>> user_browser.open('http://launchpad.dev/~matsubara')
     >>> user_browser.getLink("Are you Diogo Matsubara?").click()
 
-Clicking on that link brought him to a page where he can request to
+Clicking on that link brought them to a page where they can request to
 merge the accounts, and the account name is already populated in the
 field.
 

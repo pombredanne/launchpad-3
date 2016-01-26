@@ -182,8 +182,8 @@ class AdminPeopleMergeView(AdminMergeBaseView):
         self.setUpPeople(data)
         if not self.dupe_person_emails.is_empty():
             # We're merging a person which has one or more email addresses,
-            # so we better warn the admin doing the operation and have him
-            # check the emails that will be reassigned to ensure he's not
+            # so we better warn the admin doing the operation and have them
+            # check the emails that will be reassigned to ensure they're not
             # doing anything stupid.
             self.should_confirm_email_reassignment = True
             return
@@ -246,7 +246,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
         self.setUpPeople(data)
         if not self.dupe_person.activemembers.is_empty():
             # Merging teams with active members is not possible, so we'll
-            # ask the admin if he wants to deactivate all members and then
+            # ask the admin if they want to deactivate all members and then
             # merge.
             self.should_confirm_member_deactivation = True
             return
@@ -341,7 +341,7 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
         result_count = results.count()
         if not result_count:
             # The user came back to visit this page with nothing to
-            # merge, so we redirect him away to somewhere useful.
+            # merge, so we redirect them away to somewhere useful.
             self.request.response.redirect(canonical_url(user))
             return
         assert result_count == 1
@@ -410,7 +410,7 @@ class RequestPeopleMergeMultipleEmailsView(LaunchpadView):
                 for emailaddress in emails:
                     email = emailaddrset.getByEmail(emailaddress)
                     if email is None or email not in self.dupeemails:
-                        # The dupe person has changes his email addresses.
+                        # The dupe person has changed their email addresses.
                         # See bug 239838.
                         self.request.response.addNotification(
                             "An address was removed from the duplicate "
@@ -444,7 +444,7 @@ class RequestPeopleMergeView(ValidatingMergeView):
     address and then redirect the user to other page saying that everything
     went fine. Otherwise we redirect the user to another page where we list
     all email addresses owned by the dupe account and the user selects which
-    of those (s)he wants to claim.
+    of those they want to claim.
     """
 
     label = 'Merge Launchpad accounts'
@@ -466,8 +466,8 @@ class RequestPeopleMergeView(ValidatingMergeView):
         emails_count = emails.count()
         if emails_count > 1:
             # The dupe account have more than one email address. Must redirect
-            # the user to another page to ask which of those emails (s)he
-            # wants to claim.
+            # the user to another page to ask which of those emails they
+            # want to claim.
             self.next_url = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
             return
 

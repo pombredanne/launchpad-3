@@ -36,7 +36,7 @@
     <private value="False"/>
 
     <!-- contactable: If True, the owner agrees to be contacted by other
-             persons about devices which appear in his submission. 
+             persons about devices which appear in their submission. 
              Example of a use case: Developers can ask device owners
              to perform tests.
     -->

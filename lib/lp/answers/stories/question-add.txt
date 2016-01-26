@@ -51,11 +51,11 @@ Searching for Similar FAQs and Questions
 ----------------------------------------
 
 Asking a new question is a two-step process. In the first step, the user
-enters a summary of his problem. Using that summary, a search
+enters a summary of their problem. Using that summary, a search
 is performed to find similar questions and similar FAQs that might
 exists.
 
-That step cannot be skipped by the user, if he just clicks 'Continue',
+That step cannot be skipped by the user, if they just click 'Continue',
 an error message will be displayed.
 
     >>> user_browser.getControl('Summary').value
@@ -65,7 +65,7 @@ an error message will be displayed.
     There is 1 error.
     You must enter a summary of your problem.
 
-The user enters his problem summary and a list of similar FAQs and
+The user enters their problem summary and a list of similar FAQs and
 questions are displayed.
 
 XXX: Original search, disabled due to performance issues RBC 20100725. This
@@ -128,21 +128,21 @@ hovers on the FAQ's title:
 Creating a New Question
 -----------------------
 
-If the shown questions don't help the user, he may post a new question
-by filling in the 'Description' field. He may also edit the
-summary he provided.
+If the shown questions don't help the user, they may post a new question
+by filling in the 'Description' field. They may also edit the
+summary they provided.
 
     >>> user_browser.getControl('Summary').value
     'java web pages'
 
-If the user doesn't provide details, he'll get an error message:
+If the user doesn't provide details, they'll get an error message:
 
     >>> user_browser.getControl('Post Question').click()
     >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     You must provide details about your problem.
 
-And if he decides to remove the title, he'll be brought back to the
+And if they decide to remove the title, they'll be brought back to the
 first step:
 
     >>> user_browser.getControl('Summary').value = ''

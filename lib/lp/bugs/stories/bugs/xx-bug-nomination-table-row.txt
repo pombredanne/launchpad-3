@@ -6,7 +6,7 @@ privileged users, i.e., users that have launchpad.Driver permission on
 the distroseries or productseries, to approve or decline the
 nomination.
 
-no-priv cannot approve or decline his nomination, because he does not
+no-priv cannot approve or decline their nomination, because they do not
 have the launchpad.Driver permission.
 
     >>> from zope.component import getUtility
@@ -32,7 +32,7 @@ have the launchpad.Driver permission.
     ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
     ...     "+bug/1/nominations/2/+bugtasks-and-nominations-table-row")
 
-no-priv will, of course, see his nomination.
+no-priv will, of course, see their nomination.
 
     >>> user_browser.contents
     '...Nominated...for...Hoary...by...No Privileges Person...'

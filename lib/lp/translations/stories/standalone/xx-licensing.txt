@@ -92,7 +92,7 @@ Karl can now browse to a +translate page without being forwarded.
 Permissions
 -----------
 
-If another logged-in user comes across Karl's translations page, he sees
+If another logged-in user comes across Karl's translations page, they see
 no link to change Karl's licensing choice.
 
     >>> user_browser.open('http://translations.launchpad.dev/~karl/')

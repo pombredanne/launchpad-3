@@ -53,9 +53,9 @@ class TestKarmaCacheUpdater(unittest.TestCase):
     # it's run.
     def test_karmacache_entries(self):
         # Sample Person has some KarmaCache entries, but it's a long time
-        # since we last updated this cache, and now the karma he earned a long
-        # ago is not worth anything, so the karmacache-updater script will
-        # delete the cache entries for Sample Person.
+        # since we last updated this cache, and now the karma they earned a
+        # long ago is not worth anything, so the karmacache-updater script
+        # will delete the cache entries for Sample Person.
         sample_person = self.personset.getByName('name12')
         cache_entries = self._getCacheEntriesByPerson(sample_person)
         self.failUnless(not cache_entries.is_empty())
@@ -63,7 +63,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
             self.failIf(cache.karmavalue <= 0)
 
         # As we can see, Foo Bar already has some karmacache entries. We'll
-        # now add some fresh Karma entries for him and later we'll check that
+        # now add some fresh Karma entries for them and later we'll check that
         # the cache-updater script simply updated the existing cache entries
         # instead of creating new ones.
         foobar = self.personset.getByName('name16')
@@ -75,9 +75,9 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         firefox = getUtility(IProductSet)['firefox']
         foobar.assignKarma('bugcreated', firefox)
 
-        # In the case of No Priv, he has no KarmaCache entries, so if we add
-        # some fresh Karma entries to him, our cache-updater script will have
-        # to create new KarmaCache entries for him.
+        # In the case of No Priv, they have no KarmaCache entries, so if we
+        # add some fresh Karma entries to them, our cache-updater script
+        # will have to create new KarmaCache entries for them.
         nopriv = self.personset.getByName('no-priv')
         self.failUnless(self._getCacheEntriesByPerson(nopriv).count() == 0)
         nopriv.assignKarma('bugcreated', firefox)
@@ -94,7 +94,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         self.failUnless(
             self._getCacheEntriesByPerson(sample_person).count() == 0)
 
-        # Check that Foo Bar had his KarmaCache entries updated.
+        # Check that Foo Bar had their KarmaCache entries updated.
         entries_count = self._getCacheEntriesByPerson(foobar).count()
         # The cache entries that would have their karmavalue updated to 0 are
         # instead deleted from the DB; that's why the new count can be smaller
