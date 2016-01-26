@@ -631,7 +631,7 @@ Menu linked links
 -----------------
 
 A link is not linked (the anchor is not rendered) when its URL matches
-the request URI; the user should not navigate to a page he is already
+the request URI; the user should not navigate to a page they are already
 seeing. The matched URI comes from the view's request...
 
     >>> recipe_navigationmenu = queryAdapter(

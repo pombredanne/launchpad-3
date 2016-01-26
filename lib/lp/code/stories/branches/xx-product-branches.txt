@@ -216,7 +216,7 @@ hosting configured or if it is not using Launchpad.
     Import a branch
     Configure Code
 
-The owner of the project sees the links for the activities he can
+The owner of the project sees the links for the activities they can
 perform, everything except defining branch visibility.
 
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')

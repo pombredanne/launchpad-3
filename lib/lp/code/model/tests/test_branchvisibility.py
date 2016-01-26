@@ -162,7 +162,7 @@ class TestBranchVisibility(TestCaseWithFactory):
             (test_branches[0], False),
         ], branch_info)
 
-        # An arbitrary person is not in eligible to see any of the private
+        # An arbitrary person is not eligible to see any of the private
         # branches.
         person = self.factory.makePerson()
         branch_info = [(branch, branch.private)
@@ -174,8 +174,8 @@ class TestBranchVisibility(TestCaseWithFactory):
             (test_branches[0], False),
         ], branch_info)
 
-        # Private owner sees his new private branch and other public
-        # branches, but not other's private branches.
+        # Private owner sees their new private branch and other public
+        # branches, but not other private branches.
         branch_info = [(branch, branch.private)
                 for branch in branch_set.getRecentlyRegisteredBranches(
                     3, visible_by_user=private_owner)]

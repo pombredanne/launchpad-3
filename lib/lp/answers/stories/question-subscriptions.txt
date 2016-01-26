@@ -8,7 +8,7 @@ will receive notifications for any changes to the question.
 
 To subscribe, users use the 'Subscribe' link and then confirm that
 they want to subscribe by clicking on the 'Subscribe' button. The user
-sees a link to his subscribed questions.
+sees a link to their subscribed questions.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
@@ -21,7 +21,7 @@ sees a link to his subscribed questions.
 
     >>> user_browser.getControl('Subscribe').click()
 
-A message confirming that he was subscribed is displayed:
+A message confirming that they were subscribed is displayed:
 
     >>> print_feedback_messages(user_browser.contents)
     You have subscribed to this question.

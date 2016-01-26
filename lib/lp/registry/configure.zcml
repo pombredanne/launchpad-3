@@ -1049,9 +1049,9 @@
 
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
-        sure only the user (and not launchpad admins) will be able to edit her own
-        ssh keys. Another option would be to require the user's password on this
-        page. GuilhermeSalgado 25/08/2005 -->
+        sure only the user (and not launchpad admins) will be able to edit
+        their own ssh keys. Another option would be to require the user's
+        password on this page. GuilhermeSalgado 25/08/2005 -->
 
 
         <!-- Team Views -->

@@ -212,7 +212,7 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(displayname='Mom')
         self.bug.subscribe(self.user, subscriber)
         self.saveOldChanges()
-        # Only the user can unsubscribe him or her self.
+        # Only the user can unsubscribe themselves.
         self.bug.unsubscribe(self.user, self.user)
 
         # This checks the activity's attribute and target attributes.

@@ -509,10 +509,11 @@ class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of valid, viewable Persons/Teams in Launchpad.
 
-    A Person is considered valid if she has a preferred email address, and
+    A Person is considered valid if they have a preferred email address, and
     Person.merged is None. Teams have no restrictions at all, which means that
     all teams the user has the permission to view are considered valid.  A
-    user can view private teams in which she is a member and any public team.
+    user can view private teams in which they are a member and any public
+    team.
 
     This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
     ValidMaintainer and ValidOwner, because they have exactly the same
@@ -1072,7 +1073,7 @@ class UserTeamsParticipationPlusSelfVocabulary(
 
 class AllUserTeamsParticipationPlusSelfVocabulary(
     UserTeamsParticipationPlusSelfVocabulary):
-    """All public and private teams participates in and himself.
+    """All public and private teams participated in and themselves.
 
     This redefines UserTeamsParticipationVocabulary to include private teams
     and it includes the logged in user from

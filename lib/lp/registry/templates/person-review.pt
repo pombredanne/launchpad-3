@@ -21,7 +21,7 @@
         <div metal:fill-slot="extra_info">
           <tal:review-person tal:condition="view/is_viewing_person">
             <p>
-              Changing a user's name will change his OpenID identifier and
+              Changing a user's name will change their OpenID identifier and
               may cause problems with relying parties. PPA and mailing lists
               will be broken too.
             </p>

@@ -1676,7 +1676,7 @@ class POFileToTranslationFileDataAdapter:
             email = self._pofile.lasttranslator.safe_email_or_blank
             if not email:
                 # We are supposed to have always a valid email address, but
-                # with removed accounts or people not wanting to show his
+                # with removed accounts or people not wanting to show their
                 # email that's not true anymore so we just set it to 'Unknown'
                 # to note we don't know it.
                 email = 'Unknown'

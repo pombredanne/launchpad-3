@@ -124,8 +124,8 @@ bug expiration.
 
     >>> content = find_main_content(admin_browser.contents)
 
-Foo Bar chooses to switch the bug tracker again, but this time he
-does not change the expiration check box, and he does the whole
+Foo Bar chooses to switch the bug tracker again, but this time they
+do not change the expiration check box, and they do the whole
 operation before the page complete loading.
 
     >>> admin_browser.getLink('Change details').click()

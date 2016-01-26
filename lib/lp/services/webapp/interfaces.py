@@ -496,12 +496,12 @@ class LoggedOutEvent:
 class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
-    a method to allow the acquisition of a principal using his
+    a method to allow the acquisition of a principal using their
     login name.
     """
 
     def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+        """Return a principal based on their login name."""
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -511,7 +511,7 @@ class IPlacelessLoginSource(IPrincipalSource):
     """
 
     def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+        """Return a principal based on their login name."""
 
     def getPrincipals(name):
         """Not implemented.

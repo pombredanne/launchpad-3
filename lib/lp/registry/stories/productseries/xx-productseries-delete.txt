@@ -3,7 +3,7 @@ Delete a productseries
 
 A project series can be made by accident and the project owner or driver
 may choose to delete it. Sample Person is the owner of the Firefox
-project and he wants to delete the trunk series because development
+project and they want to delete the trunk series because development
 is really happening in the 1.0 series.
 
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
@@ -16,7 +16,7 @@ is really happening in the 1.0 series.
     Delete Mozilla Firefox trunk series...
 
 The trunk series is the focus of development. It cannot be deleted.
-The owner learns that he must make another series the focus of development
+The owner learns that they must make another series the focus of development
 first. There is no delete button on the page.
 
     >>> print extract_text(
@@ -32,7 +32,7 @@ first. There is no delete button on the page.
     LookupError: ...
 
 Sample person chooses to cancel the action and make the 1.0 series the focus
-of development. He then removes the linked package which he believes is
+of development. They then remove the linked package which they believe is
 bogus.
 
     >>> owner_browser.getLink('Cancel').click()
@@ -51,9 +51,9 @@ bogus.
     >>> link.click()
     >>> owner_browser.getControl('Unlink').click()
 
-Then he returns to delete trunk. He is informed that deletion is permanent,
-and that the milestones, releases, and files will also be deleted. The
-milestones and releases are linked.
+Then they return to delete trunk. They are informed that deletion is
+permanent, and that the milestones, releases, and files will also be
+deleted. The milestones and releases are linked.
 
     >>> owner_browser.getLink('trunk series').click()
     >>> owner_browser.getLink('Delete series').click()
@@ -81,7 +81,7 @@ milestones and releases are linked.
     ... find_tag_by_id(contents, 'bugtasks-and-blueprints'))
     Support E4X in EcmaScript
 
-The owner deletes the series and the project page is displayed. He reads
+The owner deletes the series and the project page is displayed. They read
 that the series was deleted, and can not see a link to it anymore.
 
     >>> owner_browser.getControl('Delete this Series').click()
@@ -97,7 +97,7 @@ that the series was deleted, and can not see a link to it anymore.
     LinkNotFoundError
 
 A series with translations can never be deleted. The project owner or
-release manager sees the explaination when he tries to delete the series.
+release manager sees the explanation when they try to delete the series.
 
     >>> owner_browser.open('http://launchpad.dev/evolution/trunk')
     >>> owner_browser.getLink('Delete series').click()

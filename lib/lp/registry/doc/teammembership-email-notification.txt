@@ -603,10 +603,10 @@ Membership expiration warnings
 ------------------------------
 
 When we get close to the expiration date of a given membership, an
-expiration warning is sent to the member, so that he can contact the
-team's administrators (or renew it himself when he has necessary rights)
-in case he wants to retain that membership. This is done by the flag-
-expired-memberships cronscript, which uses
+expiration warning is sent to the member, so that they can contact the
+team's administrators (or renew it themselves if they have the necessary
+permissions) in case they want to retain that membership. This is done by
+the flag-expired-memberships cronscript, which uses
 ITeamMembership.sendExpirationWarningEmail to do its job.
 
     >>> import pytz
@@ -614,9 +614,9 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
 
 In the case of the beta-testers team, the email is sent only to the
-team's owner, which doesn't have the necessary rights to renew the
-membership of his team, so he's instructed to contact one of the ubuntu-
-team's admins.
+team's owner, who doesn't have the necessary rights to renew the
+membership of their team, so they're instructed to contact one of the
+ubuntu-team's admins.
 
     >>> beta_testers = personset.getByName('launchpad-beta-testers')
     >>> beta_testers_on_ubuntu_team = membershipset.getByPersonAndTeam(
@@ -662,7 +662,7 @@ team's admins.
     ----------------------------------------
 
 If the team's renewal policy is ONDEMAND, though, the member is invited
-to renew his own membership.
+to renew their own membership.
 
     >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
     >>> ubuntu_team.defaultrenewalperiod = 365
@@ -732,9 +732,9 @@ to renew his own membership.
     ----------------------------------------
 
 If the team's renewal policy is NONE but the member has the necessary
-rights to change the expiration date of his own membership (i.e. by
-being the team's owner), the notification he gets will contain a link to
-his memberhip page, where he can extend it.
+rights to change the expiration date of their own membership (i.e. by
+being the team's owner), the notification they get will contain a link to
+their membership page, where they can extend it.
 
     >>> landscape.renewal_policy = TeamMembershipRenewalPolicy.NONE
     >>> landscape.teamowner.preferredemail.email
@@ -780,7 +780,7 @@ Memberships renewed by the members themselves
 
 Another possible renewal policy for teams is ONDEMAND, which means that
 team members are invited to renew their membership once it gets close to
-their expiration date. When a member renew his own membership, a
+their expiration date. When a member renews their own membership, a
 notification is sent to all team admins.
 
     >>> karl = personset.getByName('karl')
@@ -834,8 +834,8 @@ notification is sent to all team admins.
 Some special cases
 ------------------
 
-When creating a new team, the owner has his membership's status changed
-from approved to admin, but he won't get a notification of that.
+When creating a new team, the owner has their membership's status changed
+from approved to admin, but they won't get a notification of that.
 
     >>> team = personset.newTeam(mark, 'testteam', 'Test')
     >>> run_mail_jobs()
@@ -896,8 +896,8 @@ email notification.
     <BLANKLINE>
     ----------------------------------------
 
-If a team admin changes his own membership, the notification sent will
-clearly say that the change was performed by the user himself, and it
+If a team admin changes their own membership, the notification sent will
+clearly say that the change was performed by the user themselves, and it
 will only be sent to the team administrators.
 
     >>> jdub = getUtility(IPersonSet).getByName('jdub')

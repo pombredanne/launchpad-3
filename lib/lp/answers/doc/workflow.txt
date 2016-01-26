@@ -79,15 +79,15 @@ A question starts its lifecycle in the Open state.
 The following scenarios are now possible.
 
 
-1) Another user helps the submitter with his question
-=====================================================
+1) Another user helps the submitter with their question
+=======================================================
 
 The most common scenario is where another user comes to help the submitter and
-answers his question.  This may involve exchanging information with the
+answers their question.  This may involve exchanging information with the
 submitter to clarify the question.
 
 The requestInfo() method is used to ask the user for more information.  This
-method takes two mandatory parameters: the user asking the question and his
+method takes two mandatory parameters: the user asking the question and their
 question.  It can also takes a 'datecreated' parameter specifying the creation
 date of the question (which defaults to 'now').
 
@@ -188,7 +188,7 @@ updated to contain the date of the message.
     True
 
 At that point, the question is considered answered, but we don't have
-feedback from the user on whether it solved his problem or not.  If it
+feedback from the user on whether it solved their problem or not.  If it
 doesn't, the user can reopen the question.
 
     >>> login('no-priv@canonical.com')
@@ -228,8 +228,9 @@ The question is moved back to the ANSWERED state.
     >>> print question.status.name
     ANSWERED
 
-The question owner will hopefully come back to confirm that his problem is
-solved.  He can specify which answer message helped him solved his problem.
+The question owner will hopefully come back to confirm that their problem is
+solved.  They can specify which answer message helped them solve their
+problem.
 
     >>> login('no-priv@canonical.com')
     >>> two_weeks_from_now = now + timedelta(days=14)
@@ -262,9 +263,9 @@ updated.
 =================
 
 In this scenario the user comes back to give the solution to the question
-himself.  The question owner can choose a best answer message later on.  The
-workflow permits the question owner to choose an answer before or after the
-question status is set to SOLVED.
+themselves.  The question owner can choose a best answer message later on.
+The workflow permits the question owner to choose an answer before or after
+the question status is set to SOLVED.
 
 A new question is posed.
 
@@ -280,7 +281,8 @@ The answer provides some useful information to the questioner.
     ...     "to install to. You must mess with the hardware to trick "
     ...     "the core chips to let it install. You may not want to do this.")
 
-The question has researched the problem, and has comes to a solution himself.
+The question owner has researched the problem, and has come to a solution
+themselves.
 
     >>> login('no-priv@canonical.com')
     >>> self_answer_message = question.giveAnswer(
@@ -310,7 +312,7 @@ will be the question owner.
     >>> print question.answer
     None
 
-The question owner can still specify which message helped him solved his
+The question owner can still specify which message helped them solve their
 problem.  The confirmAnswer() method is used when the question owner chooses
 another user's answer as a best answer.  The status will remain SOLVED.  The
 'answerer' will be the message owner, and the 'answer' will be the message.
@@ -464,7 +466,7 @@ Other scenarios
 Many other scenarios are possible and some are likely more common than others.
 For example, it is likely that a user will directly answer a question without
 asking for other information first.  Sometimes, the original questioner won't
-come back to confirm that an answer solved his problem.
+come back to confirm that an answer solved their problem.
 
 Another likely scenario is where the question will expire in the NEEDSINFO
 state because the question owner doesn't reply to the request for more
@@ -577,7 +579,7 @@ Setting the question assignee
 Users with launchpad.Moderator privileges, which are answer contacts,
 question target owners, and admins, can assign someone to answer a question.
 
-Sample Person is an answer contact for ubuntu, so he can set the assignee.
+Sample Person is an answer contact for ubuntu, so they can set the assignee.
 
     >>> login('test@canonical.com')
     >>> question.assignee = stub

@@ -52,7 +52,7 @@ class TestLibraryFileAliasForBugAttachment(TestCaseWithFactory):
         login_person(other_person)
         self.assertRaises(
             Unauthorized, setattr, self.bug_attachment, 'title', 'whatever')
-        # ...he also can't change the LibraryFileAlias for this bug.
+        # ...they also can't change the LibraryFileAlias for this bug.
         self.assertRaises(
             Unauthorized, setattr, self.lfa_with_parent, 'restricted', True)
 

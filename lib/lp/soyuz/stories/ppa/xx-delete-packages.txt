@@ -426,7 +426,7 @@ records are presented.
     >>> print_ppa_packages(user_browser.contents)
     No matching package for ''.
 
-When he selects 'Superseded' the SUPERSEDED source shows up again.
+When they select 'Superseded' the SUPERSEDED source shows up again.
 
     >>> user_browser.getControl(
     ...     name='field.status_filter').value = ['superseded']
@@ -455,7 +455,7 @@ source and binaries are marked as DELETED and the corresponding
 
 After the deletion, any user accessing No-privileges' PPA page can see
 a row representing 'foo' and it is marked as 'superseded'. In its
-corresponding expandable area, he can see that the 'Built packages'
+corresponding expandable area, they can see that the 'Built packages'
 section is omitted, however the source and binary files can be
 downloaded from librarian.
 

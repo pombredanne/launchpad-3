@@ -434,7 +434,7 @@ changes was made to the bug, and the comment wasn't added.
     >>> print bug_one.title
     Better summary
 
-And an error message was sent to the Sample Person, telling him what's
+And an error message was sent to the Sample Person, telling them what's
 wrong.
 
     >>> print_latest_email()
@@ -794,7 +794,7 @@ the unsubscribe request, an error message wil be sent.
 
 Unsubscribing from a bug also unsubscribes you from its duplicates. To
 demonstrate, let's first make no_privs an indirect subscriber from bug
-#5, by subscribing him directly to a dupe of bug #5, bug #6.
+#5, by subscribing them directly to a dupe of bug #5, bug #6.
 
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -817,7 +817,7 @@ demonstrate, let's first make no_privs an indirect subscriber from bug
     ...  for subscriber in bug_five.getIndirectSubscribers()])
     [u'No Privileges Person', u'Sample Person']
 
-Now, if we unsubscribe no-priv from bug #5, he will actually get
+Now, if we unsubscribe no-priv from bug #5, they will actually get
 unsubscribed from bug #6, thus no longer being indirectly subscribed to
 bug #5.
 
@@ -1242,7 +1242,7 @@ generic Ubuntu task, though.
     Mozilla Firefox
     Ubuntu
 
-Because Sample Person isn't a driver of Ubuntu, he's not allowed to
+Because Sample Person isn't a driver of Ubuntu, they're not allowed to
 target a bug directly, instead a nomination was created.
 
     >>> for nomination in bug.getNominations():
@@ -1277,7 +1277,7 @@ Targeting an existing nomination won't create another nomination.
     Ubuntu Hoary
     Ubuntu Warty
 
-If Sample Person would be the Ubuntu driver, he'll be able to target
+If Sample Person would be the Ubuntu driver, they'll be able to target
 bugs directly to series.
 
     >>> from lp.testing.dbuser import lp_dbuser
@@ -1302,7 +1302,7 @@ Now a new bugtask for the series will be created directly.
     Ubuntu
     Ubuntu Grumpy
 
-He can also approve existing nominations.
+They can also approve existing nominations.
 
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
@@ -1772,7 +1772,7 @@ No matching bug task
 ~~~~~~~~~~~~~~~~~~~~
 
 If none of the bug tasks can be chosen, an error message is sent to the
-user, telling him that he has to use the 'affects' command.
+user, telling them that they have to use the 'affects' command.
 
     >>> del stub.test_emails[:]
     >>> login('stuart.bishop@canonical.com')
@@ -1802,7 +1802,7 @@ More About Error Handling
 -------------------------
 
 If an error is encountered, an email is sent to the sender informing
-him about the error. Let's start with trying to submit a bug without
+them about the error. Let's start with trying to submit a bug without
 signing the mail:
 
     >>> del stub.test_emails[:]

@@ -21,10 +21,10 @@ class KarmaCacheUpdater(LaunchpadCronScript):
     def main(self):
         """Update the KarmaCache table for all valid Launchpad users.
 
-        For each Launchpad user with a preferred email address, calculate his
-        karmavalue for each category of actions we have and update his entry
-        in the KarmaCache table. If a user doesn't have an entry for that
-        category in KarmaCache a new one will be created.
+        For each Launchpad user with a preferred email address, calculate
+        their karmavalue for each category of actions we have and update
+        their entry in the KarmaCache table. If a user doesn't have an entry
+        for that category in KarmaCache a new one will be created.
 
         Entries in the KarmaTotalCache table will also be created/updated for
         each user which has entries in the KarmaCache table. Any user which

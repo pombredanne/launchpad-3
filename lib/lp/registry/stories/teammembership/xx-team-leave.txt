@@ -1,7 +1,7 @@
 == Leaving the team ==
 
-Foo Bar decided to leave the 'ubuntu-team'. He visits the home page
-and chooses the "Leave" link. He confirm that wants to leave the team
+Foo Bar decided to leave the 'ubuntu-team'. They visit the home page
+and chooses the "Leave" link. They confirm that they want to leave the team
 by choosing the 'Leave' button.
 
     >>> admin_browser.open('http://launchpad.dev/~ubuntu-team')
@@ -16,7 +16,7 @@ by choosing the 'Leave' button.
     <p>Are you sure you want to leave this team?</p>
     >>> admin_browser.getControl('Leave').click()
 
-Foo Bar is redirect to the team page after he leaves.
+Foo Bar is redirected to the team page after they leave.
 
     >>> admin_browser.title
     'Ubuntu Team in Launchpad'

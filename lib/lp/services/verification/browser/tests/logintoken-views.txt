@@ -1,9 +1,9 @@
 = LoginToken pages =
 
 Users interact with login tokens for operations that require the user to prove
-he has access to a resource that is external to Launchpad. For example,
+they have access to a resource that is external to Launchpad. For example,
 claiming an email address or a OpenPGP key require the user to use the login
-token sent to him in an email.
+token sent to them in an email.
 
 
 == Validating GPG keys ==
@@ -13,7 +13,7 @@ registering it decrypt an email and follow the instructions in it.
 The last step in that workflow is the +validategpg page, which can
 be accessed by non-logged-in users. That page will attempt to access
 all email addresses of the requester but that may fail when the user
-is not logged in and the requester has chosen to hide his email
+is not logged in and the requester has chosen to hide their email
 addresses, so here we'll make sure that even non-logged-in users can
 perform the last step of the workflow for adding a GPG key.
 

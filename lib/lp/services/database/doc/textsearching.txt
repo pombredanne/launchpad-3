@@ -636,7 +636,7 @@ The standard boolean searches of tsearch2 are fine, but sometime you
 want more fuzzy searches.
 
 For example, the KDE bug tracker has a guided bug submission form where
-the user first enters the summary of his problem. A list of similar
+the user first enters the summary of their problem. A list of similar
 bug reports is then displayed. The key here is 'similar', we want bug
 reports that have some words in common with the summary and we want the
 ones that are the most similar listed first. We don't necessarily want

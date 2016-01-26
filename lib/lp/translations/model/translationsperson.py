@@ -106,7 +106,7 @@ class TranslationsPerson:
     def _translations_relicensing_agreement(self):
         """Return whether translator agrees to relicense their translations.
 
-        If she has made no explicit decision yet, return None.
+        If they have made no explicit decision yet, return None.
         """
         relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
             person=self.person)
@@ -121,7 +121,7 @@ class TranslationsPerson:
     def set_translations_relicensing_agreement(self, value):
         """Set a translations relicensing decision by translator.
 
-        If she has already made a decision, overrides it with the new one.
+        If they have already made a decision, overrides it with the new one.
         """
         relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
             person=self.person)

@@ -934,7 +934,7 @@ COMMENT ON COLUMN TeamMembership.date_last_changed IS 'The date this membership 
 COMMENT ON COLUMN TeamMembership.proposed_by IS 'The user who proposed the person as member of the team.';
 COMMENT ON COLUMN TeamMembership.proponent_comment IS 'The comment left by the proponent.';
 COMMENT ON COLUMN TeamMembership.date_proposed IS 'The date of the proposal.';
-COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The member (or someone acting on his behalf) who accepts an invitation to join a team';
+COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The member (or someone acting on their behalf) who accepts an invitation to join a team';
 COMMENT ON COLUMN TeamMembership.date_acknowledged IS 'The date of acknowledgement.';
 COMMENT ON COLUMN TeamMembership.acknowledger_comment IS 'The comment left by the person who acknowledged the membership.';
 COMMENT ON COLUMN TeamMembership.reviewed_by IS 'The team admin who reviewed (approved/declined) the membership.';
@@ -1289,7 +1289,7 @@ COMMENT ON COLUMN PersonLocation.latitude IS 'The latitude this person has given
 COMMENT ON COLUMN PersonLocation.longitude IS 'The longitude this person has given for their default location.';
 COMMENT ON COLUMN PersonLocation.last_modified_by IS 'The person who last updated this record. We allow people to provide location and time zone information for other users, when those users have not specified their own location. This allows people to garden the location information for their teams, for example, like a wiki.';
 COMMENT ON COLUMN PersonLocation.date_last_modified IS 'The date this record was last modified.';
-COMMENT ON COLUMN PersonLocation.locked IS 'Whether or not this record can be modified by someone other than the person himself?';
+COMMENT ON COLUMN PersonLocation.locked IS 'Whether or not this record can be modified by someone other than the person themselves?';
 COMMENT ON COLUMN PersonLocation.visible IS 'Should this person''s location and time zone be visible to others?';
 
 
@@ -1818,7 +1818,7 @@ COMMENT ON COLUMN Vote.person IS 'The person who voted. It''s NULL for secret po
 COMMENT ON COLUMN Vote.poll IS 'The poll for which this vote applies.';
 COMMENT ON COLUMN Vote.preference IS 'Used to identify in what order the options were chosen by a given user (in case of preferential voting).';
 COMMENT ON COLUMN Vote.option IS 'The choosen option.';
-COMMENT ON COLUMN Vote.token IS 'A unique token that''s give to the user so he can change his vote later.';
+COMMENT ON COLUMN Vote.token IS 'A unique token that''s given to the user so they can change their vote later.';
 
 -- VoteCast
 COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to ensure they do not vote again, and potentially to notify people that they may still vote.';

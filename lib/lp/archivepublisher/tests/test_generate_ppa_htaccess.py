@@ -266,7 +266,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
-        # Now remove someone from team1, he will lose his token but
+        # Now remove someone from team1. They will lose their token but
         # everyone else keeps theirs.
         with lp_dbuser():
             team1_person.leave(team1)
@@ -282,8 +282,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Ensure that a cancellation email was sent.
         self.assertEmailQueueLength(1)
 
-        # Promiscuous_person now leaves team1, but does not lose his
-        # token because he's also in team2. No other tokens are
+        # Promiscuous_person now leaves team1, but does not lose their
+        # token because they're also in team2. No other tokens are
         # affected.
         with lp_dbuser():
             promiscuous_person.leave(team1)
@@ -310,11 +310,11 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         for person in persons2:
             self.assertDeactivated(tokens[person])
 
-        # promiscuous_person also loses the token because he's not in
+        # promiscuous_person also loses the token because they're not in
         # either team now.
         self.assertDeactivated(tokens[promiscuous_person])
 
-        # lonely_person still has his token, he's not in any teams.
+        # lonely_person still has their token; they're not in any teams.
         self.assertNotDeactivated(tokens[lonely_person])
 
     def setupDummyTokens(self):

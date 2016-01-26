@@ -9,8 +9,8 @@ of the question. By default, the question language is 'English'.
     >>> user_browser.getControl('Language').value
     ['en']
 
-The user may choose from any of his preferred languages and there is a
-link to enable to change his preferred languages:
+The user may choose from any of their preferred languages and there is a
+link to enable to change their preferred languages:
 
     >>> user_browser.getLink('Change your preferred languages').click()
     >>> print user_browser.title
@@ -27,7 +27,7 @@ The languages that are supported are displayed with an asterisk.
     ['English (en) *', 'Portuguese (Brazil) (pt_BR)']
 
 Although it's possible to ask questions in any of the user's preferred
-languages, we need to do some checks to warn the user in case he's using
+languages, we need to do some checks to warn the user in case they're using
 a language that is not spoken/understood by any of the context's answer
 contacts.
 
@@ -69,7 +69,7 @@ the list of available languages:
     '.../+editmylanguages'
 
 Since we've already shown the warning, we won't try to block the user
-from asking a question in the language of his choice.
+from asking a question in the language of their choice.
 
     >>> browser.getControl('Language').value
     ['pt_BR']
@@ -101,7 +101,7 @@ the language in the question details portlet.
     Language: Portuguese (Brazil) ...
 
 It's also possible that the user chose English in the first page but
-then changed his mind on the second page.
+then changed their mind on the second page.
 
     >>> browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
@@ -110,14 +110,14 @@ then changed his mind on the second page.
     >>> browser.getControl('Summary').value = 'some random words'
     >>> browser.getControl('Continue').click()
 
-In this case he won't be warned, because we assume all members of the
+In this case they won't be warned, because we assume all members of the
 support community can understand English.
 
     >>> len(find_tags_by_class(browser.contents, 'warning message'))
     0
 
-If now he changes his mind and decides to enter the question details in
-Welsh, we'll have to warn him.
+If now they change their mind and decides to enter the question details in
+Welsh, we'll have to warn them.
 
     >>> browser.getControl('Language').value = ['cy']
     >>> browser.getControl('Summary').value = 'Gofyn cymorth'
@@ -136,7 +136,7 @@ Welsh, we'll have to warn him.
     contacts will be able to read it. Currently, the languages spoken
     by at least one answer contact are: English.
 
-If he changes the language to another unsupported language, we will
+If they change the language to another unsupported language, we will
 display the warning again.
 
     >>> browser.getControl('Language').value = ['ja']
@@ -154,7 +154,7 @@ display the warning again.
     contacts will be able to read it. Currently, the languages spoken
     by at least one answer contact are: English.
 
-If even after the warning he decides to go ahead, we have to accept the
+If even after the warning they decide to go ahead, we have to accept the
 new question.
 
     >>> browser.getControl('Post Question').click()

@@ -5,7 +5,7 @@ To promote community contributions in the Launchpad Answer Tracker, it's
 very important that we acknowledge their work and give them some karma
 points.
 
-These karma points are assigned to a user when he performs one of the
+These karma points are assigned to a user when they perform one of the
 actions we consider to be a reasonable contribution.
 
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -129,7 +129,7 @@ Adding a comment
 Confirming that the problem is solved
 .....................................
 
-When the user confirms that his problem is solved, karma will be given
+When the user confirms that their problem is solved, karma will be given
 for accepting an answer. The person whose answer was accepted will also
 receives karma.
 
@@ -201,7 +201,7 @@ Solving own problem
 ...................
 
 There is a special karma action to cover the case when the question
-owner comes back to provide an answer to his own problem. We no longer
+owner comes back to provide an answer to their own problem. We no longer
 award karma for the questionownersolved action. It remains among the
 answers karma actions so that we can continue to calculate karma for
 persons who were awarded it in the past.

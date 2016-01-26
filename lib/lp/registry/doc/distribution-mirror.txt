@@ -186,7 +186,7 @@ The getBy*Url methods return the corresponding mirrors:
 == Finding the best mirror for a given user ==
 
 In order to be able to guess what would be the best mirror for a given
-user based on his IP address, we provide simple API to find official
+user based on their IP address, we provide simple API to find official
 mirrors of a given content type located on a given country (or any other
 country in its continent if the country doesn't have any).
 

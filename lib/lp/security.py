@@ -885,7 +885,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself.
+        """A user can edit the Person who is themselves.
 
         The admin team can also edit any Person.
         """
@@ -920,7 +920,7 @@ class EditPersonBySelf(AuthorizationBase):
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself."""
+        """A user can edit the Person who is themselves."""
         return self.obj.id == user.person.id
 
 
@@ -2885,8 +2885,8 @@ class ViewEmailAddress(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
-        If the email address' owner doesn't want his email addresses to be
-        hidden, anyone can see them.  Otherwise only the owner himself or
+        If the email address' owner doesn't want their email addresses to be
+        hidden, anyone can see them.  Otherwise only the owner themselves or
         admins can see them.
         """
         # Always allow users to see their own email addresses.

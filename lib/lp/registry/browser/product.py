@@ -2303,9 +2303,9 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def _createDisclaimMaintainerField(self):
         """Return a Bool field for disclaiming maintainer.
 
-        If the registrant does not want to maintain the project she can select
-        this checkbox and the ownership will be transfered to the registry
-        admins team.
+        If the registrant does not want to maintain the project they can
+        select this checkbox and the ownership will be transferred to the
+        registry admins team.
         """
         return form.Fields(
             Bool(__name__='disclaim_maintainer',

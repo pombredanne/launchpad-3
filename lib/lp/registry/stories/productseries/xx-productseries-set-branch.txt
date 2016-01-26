@@ -94,7 +94,7 @@ Likewise Subversion can use the "svn://" scheme.
     >>> print browser.url
     http://launchpad.dev/firefox/trunk
 
-The branch owner can be the logged in user or one of her teams.
+The branch owner can be the logged in user or one of their teams.
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/+setbranch')
     >>> browser.getControl('Import a branch hosted somewhere else').click()

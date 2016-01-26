@@ -40,7 +40,8 @@ Salgado receives the email message from No Priv.
     Subject: Hi Salgado
     ...
 
-No Priv starts to send another message to Salgado, but then changes her mind.
+No Priv starts to send another message to Salgado, but then changes their
+mind.
 
     >>> user_browser.getLink('Contact this user').click()
     >>> user_browser.getControl('Subject').value = 'Hi Salgado'
@@ -60,13 +61,13 @@ Sample Person has multiple registered and validated email addresses.
     >>> browser.getControl('Subject').value = 'Hi Salgado'
     >>> browser.getControl('Message').value = 'Hello again'
 
-By default, Sample can use her preferred email address.
+By default, Sample can use their preferred email address.
 
     >>> print browser.getControl('From').value
     ['test@canonical.com']
 
-But she doesn't have to use her preferred address, she can use one of her
-alternative addresses.
+But they don't have to use their preferred address; they can use one of
+their alternative addresses.
 
     >>> del stub.test_emails[:]
     >>> browser.getControl('From').value = ['testing@canonical.com']

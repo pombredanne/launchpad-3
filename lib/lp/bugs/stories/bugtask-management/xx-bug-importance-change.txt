@@ -74,7 +74,7 @@ For a product owner.
     True
 
 For someone else. We'll unset no_priv as the bug supervisor, and note that
-he can no longer see the widget.
+they can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
     >>> firefox.bug_supervisor = None
