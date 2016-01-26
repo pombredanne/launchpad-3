@@ -1276,7 +1276,7 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     page_title = label
 
     def __init__(self, context, request):
-        # Only the member himself or admins of the member (in case it's a
+        # Only the member themselves or admins of the member (in case it's a
         # team) can see the page in which they renew memberships that are
         # about to expire.
         if not check_permission('launchpad.Edit', context.person):
@@ -1585,7 +1585,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         if not userIsActiveTeamMember(self.person):
             enabled = False
         if self.person.teamowner == self.user:
-            # The owner cannot leave his team.
+            # The owner cannot leave their team.
             enabled = False
         target = '+leave'
         text = 'Leave the Team'
@@ -1807,8 +1807,8 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def user_can_request_to_join(self):
         """Can the logged in user request to join this team?
 
-        The user can request if he's allowed to join this team and if he's
-        not yet an active member of this team.
+        The user can request if they're allowed to join this team and if
+        they're not yet an active member of this team.
         """
         if not self.join_allowed:
             return False
@@ -2092,11 +2092,11 @@ class TeamReassignmentView(ObjectReassignmentView):
     def _afterOwnerChange(self, team, oldOwner, newOwner):
         """Add the new and the old owners as administrators of the team.
 
-        When a user creates a new team, he is added as an administrator of
+        When a user creates a new team, they are added as an administrator of
         that team. To be consistent with this, we must make the new owner an
         administrator of the team. This rule is ignored only if the new owner
-        is an inactive member of the team, as that means he's not interested
-        in being a member. The same applies to the old owner.
+        is an inactive member of the team, as that means they're not
+        interested in being a member. The same applies to the old owner.
         """
         # Both new and old owners won't be added as administrators of the team
         # only if they're inactive members. If they're either active or

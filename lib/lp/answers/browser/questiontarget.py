@@ -765,10 +765,10 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         """Check or update the Person's preferred languages as needed.
 
         Answer contacts must tell Launchpad in which languages they provide
-        help. If the Person has not already set his preferred languages, they
-        are set to his browser languages. In the case of a team without
-        languages, only English is added to the preferred languages. When
-        languages are added, a notification is added to the response.
+        help. If the Person has not already set their preferred languages,
+        they are set to their browser languages. In the case of a team
+        without languages, only English is added to the preferred languages.
+        When languages are added, a notification is added to the response.
         """
         if len(person_or_team.languages) > 0:
             return

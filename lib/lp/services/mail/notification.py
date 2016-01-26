@@ -32,7 +32,7 @@ def send_process_error_notification(to_address, subject, error_msg,
                                     max_return_size=MAX_RETURN_MESSAGE_SIZE):
     """Send a mail about an error occurring while using the email interface.
 
-    Tells the user that an error was encountered while processing his
+    Tells the user that an error was encountered while processing their
     request and attaches the original email which caused the error to
     happen.  The original message will be truncated to
     max_return_size bytes.

@@ -5,7 +5,7 @@ The pages used in our implementation of the OAuth protocol.
 == +authorize-token ==
 
 This is the page where a user reviews (approving or declining) a
-consumer's request to access Launchpad on his behalf.
+consumer's request to access Launchpad on their behalf.
 
     # Define some things we're going to use throughout this test.
     >>> from zope.component import getMultiAdapter

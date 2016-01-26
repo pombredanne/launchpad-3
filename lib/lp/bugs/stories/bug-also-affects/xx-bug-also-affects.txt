@@ -353,7 +353,7 @@ We get a nice error message.
     Required input is missing.
 
 If we enter a product name that doesn't exist, we inform the user about
-this and ask him to search for the product.
+this and ask them to search for the product.
 
     >>> user_browser.getControl('Project').value = 'no-such-product'
     >>> user_browser.getControl('Continue').click()
@@ -579,7 +579,7 @@ As before, if we change our mind, we can back out if we want.
     >>> print cancel_link.url
     http://bugs.launchpad.dev/firefox/+bug/4
 
-Now the user confirms he wants us to register the bug tracker for him
+Now the user confirms they want us to register the bug tracker for them
 and we do that before creating the new bug watch.
 
     >>> user_browser.getControl('Register Bug Tracker').click()

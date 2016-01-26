@@ -469,7 +469,7 @@ class PackageUpload(SQLBase):
         sourcepackagename = self.sources[
             0].sourcepackagerelease.sourcepackagename
 
-        # The package creator always gets his karma.
+        # The package creator always gets their karma.
         changed_by.assignKarma(
             main_karma_action, distribution=distribution,
             sourcepackagename=sourcepackagename)
@@ -477,7 +477,7 @@ class PackageUpload(SQLBase):
         if self.archive.is_ppa:
             return
 
-        # If a sponsor was involved, give him some too.
+        # If a sponsor was involved, give them some too.
         if uploader is not None and changed_by != uploader:
             uploader.assignKarma(
                 'sponsoruploadaccepted', distribution=distribution,

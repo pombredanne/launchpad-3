@@ -1,7 +1,7 @@
 Builder page
 ============
 
-An anonymous user visits the +builds page. He can see a summary of the
+An anonymous user visits the +builds page. They can see a summary of the
 builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
 

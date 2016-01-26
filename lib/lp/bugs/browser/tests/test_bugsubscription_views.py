@@ -840,7 +840,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 dumps([expected_result]), harness.view.subscriber_data_js)
 
     def test_data_person_subscription_user_excluded(self):
-        # With the subscriber logged in, he is not included in the results.
+        # With the subscriber logged in, they are not included in the results.
         bug = self._makeBugWithNoSubscribers()
         subscriber = self.factory.makePerson(
             name='a-person', displayname='Subscriber Name')

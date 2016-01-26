@@ -1901,7 +1901,7 @@ class ArchiveActivateView(LaunchpadFormView):
 
         Reorder the fields in a way the make more sense to users and also
         present a checkbox for acknowledging the PPA-ToS if the user is
-        creating his first PPA.
+        creating their first PPA.
         """
         LaunchpadFormView.setUpFields(self)
 

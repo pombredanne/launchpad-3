@@ -299,9 +299,9 @@ from the librarian.
 Security
 --------
 
-If a user can view/edit the bug the attachment is attached to, he can
+If a user can view/edit the bug the attachment is attached to, they can
 also view/edit the attachment. At the moment the bug_four is public, so
-anonymous can read the attachment's attributes, but he can't set them:
+anonymous can read the attachment's attributes, but they can't set them:
 
     >>> login(ANONYMOUS)
     >>> attachment.title
@@ -331,8 +331,8 @@ Now let's make the bug private instead:
     >>> bug_four.setPrivate(True, getUtility(ILaunchBag).user)
     True
 
-Foo Bar isn't explicitly subscribed to the bug, BUT he is an admin, so he can
-access and set the attachment's attributes:
+Foo Bar isn't explicitly subscribed to the bug, BUT they are an admin, so
+they can access and set the attachment's attributes:
 
     >>> attachment.title
     u'Even Better Title'
@@ -364,7 +364,7 @@ Of course, anonymous is also not allowed to access or set them:
     ...
     Unauthorized: (..., 'title',...
 
-Sample Person is explicitly subscribed, so he can both access and set
+Sample Person is explicitly subscribed, so they can both access and set
 the attributes:
 
     >>> login('test@canonical.com')

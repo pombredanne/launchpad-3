@@ -111,8 +111,8 @@ more bugs than questions.
     None
 
 Private bugs are not matched if the user does not have permission to
-see them. For example, Sample Person can see a private bug that he
-created because he is the owner.
+see them. For example, Sample Person can see a private bug that they
+created because they are the owner.
 
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.app.enums import InformationType

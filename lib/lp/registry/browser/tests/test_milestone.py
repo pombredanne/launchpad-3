@@ -296,7 +296,8 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         self.factory.makeBug(milestone=milestone)
         self.factory.makeBug(
             milestone=milestone, information_type=InformationType.USERDATA)
-        # Remove the APG the product owner has so he can't see the private bug.
+        # Remove the APG the product owner has so they can't see the private
+        # bug.
         ap = getUtility(IAccessPolicySource).find(
             [(milestone.product, InformationType.USERDATA)]).one()
         getUtility(IAccessPolicyGrantSource).revoke(

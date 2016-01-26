@@ -44,7 +44,7 @@ Let's create a new LoginToken to confirm an email address for foobar.
     >>> stub.test_emails = []
 
 The email does not have a precedence header because the user implicitly
-requested it to complete his task.
+requested it to complete their task.
 
     >>> import email
 
@@ -52,7 +52,7 @@ requested it to complete his task.
     >>> print msg['Precedence']
     None
 
-As the process is not yet finished, foobar will see this as one of his
+As the process is not yet finished, foobar will see this as one of their
 unconfirmed email addresses.
 
     >>> flush_database_updates()
@@ -70,7 +70,7 @@ emails.
     >>> foobar.unvalidatedemails
     [u'foo.bar2@canonical.com']
 
-Once foobar finished the process, confirming his new email address, we
+Once foobar finished the process, confirming their new email address, we
 mark the token as consumed.
 
     >>> token.date_consumed is not None

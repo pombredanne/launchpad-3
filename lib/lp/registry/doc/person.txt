@@ -106,8 +106,8 @@ caused the entry to be created.
     >>> p.hide_email_addresses
     True
 
-Since this person has chosen to hide his email addresses they won't be
-visible to other users which are not admins.
+Since this person has chosen to hide their email addresses they won't be
+visible to other users who are not admins.
 
     >>> from lp.services.webapp.authorization import check_permission
     >>> login('randomuser@randomhost.com')
@@ -497,7 +497,7 @@ The team owner is also added as an administrator of its team.
     [u'ddaa']
 
     # As said previously, no notifications are sent when we add the
-    # team owner as a member of his team.
+    # team owner as a member of their team.
 
     >>> transaction.commit()
     >>> stub.test_emails
@@ -551,7 +551,7 @@ admin members of that team.
     [u'Guilherme Salgado', u'Sample Person']
 
 TeamMemberships with a PROPOSED or INVITED status represent a
-person/team which has proposed himself as a member or which has been
+person/team which has proposed themselves as a member or which has been
 invited to join the team.
 
     >>> [member.displayname for member in landscape_devs.proposedmembers]
@@ -947,8 +947,8 @@ To obtain the packages a person is related to, we can use:
  3. getLatestUploadedPPAPackages
 
 The 1st will return the latest SourcePackageReleases related to a person
-in which he is listed as the Maintainer. The second will return the
-latest SourcePackageReleases a person uploaded (and where he isn't the
+in which they are listed as the Maintainer. The second will return the
+latest SourcePackageReleases a person uploaded (and where they aren't the
 maintainer).
 
 Both, 1st and 2nd methods, only consider sources upload to primary

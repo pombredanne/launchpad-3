@@ -853,9 +853,8 @@ We can also create new subscriptions.
     self_link: u'http://.../bugs/1/+subscription/cprov'
     ...
 
-An individual can only unsubscribe him or her self.  If
-the person argument is not provided, the web service
-uses the calling user.
+An individual can only unsubscribe themselves.  If the person argument is
+not provided, the web service uses the calling user.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
@@ -897,8 +896,7 @@ service will return an unauthorized error.
     ...     person=webservice.getAbsoluteUrl('/~mark'))
     HTTP/1.1 401 Unauthorized...
 
-An individual can, however, unsubscribe a team to which
-he or she belongs.
+An individual can, however, unsubscribe a team to which they belong.
 
 For this example, we need a member of the ubuntu-team group,
 any member will do.
@@ -1738,7 +1736,7 @@ user:
     >>> int(related['entries'][0]['bug_link'].split('/')[-1]) == testbug2.id
     True
 
-`testuser3` is not active, so the collection of related tasks to him is
+`testuser3` is not active, so the collection of related tasks to them is
 empty:
 
     >>> related = webservice.named_get(

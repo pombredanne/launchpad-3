@@ -340,10 +340,10 @@ The complete question workflow is documented in
 Unsupported questions
 =====================
 
-While a Person may ask questions in his language of choice, that does not mean
-that indirect subscribers (Answer Contacts) to an IQuestionTarget speak that
-language.  IQuestionTarget can return a list Questions in languages that are
-not supported.
+While a Person may ask questions in their language of choice, that does not
+mean that indirect subscribers (Answer Contacts) to an IQuestionTarget speak
+that language.  IQuestionTarget can return a list of Questions in languages
+that are not supported.
 
     >>> unsupported_questions = firefox.searchQuestions(unsupported=True)
     >>> sorted(question.title for question in unsupported_questions)

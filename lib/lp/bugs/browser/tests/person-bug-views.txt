@@ -333,7 +333,7 @@ Bugs commented on by a Person
 
 It is possible to search for all the bugs commented on by a specific Person
 using that Person's +commentedbugs page. Since No Privileges Person hasn't
-commented on any bugs, viewing his +commentedbugs page will return no bugs:
+commented on any bugs, viewing their +commentedbugs page will return no bugs:
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> commented_bugtasks_view = create_view(no_priv, '+commentedbugs')
@@ -341,10 +341,10 @@ commented on any bugs, viewing his +commentedbugs page will return no bugs:
     >>> [bugtask.bug.id for bugtask in sorted(commented_bugs)]
     []
 
-If No Privileges Person comments on bug one, his +commentedbugs page will list
-that bug as being one of the bugs on which he has commented. The bug will be
-listed three times since there are three BugTasks for that particular bug (see
-bug 1357):
+If No Privileges Person comments on bug one, their +commentedbugs page will
+list that bug as being one of the bugs on which they have commented. The bug
+will be listed three times since there are three BugTasks for that
+particular bug (see bug 1357):
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)

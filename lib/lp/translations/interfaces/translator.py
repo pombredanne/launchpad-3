@@ -25,7 +25,7 @@ from lp.services.fields import (
 
 
 class IEditTranslator(Interface):
-    """Set of translator attributes that the translator can edit himself as
+    """Set of translator attributes that the translator can edit themselves as
     well as being editable by the translation group owner.
 
     Translators can edit the data in their `ITranslator` entry.

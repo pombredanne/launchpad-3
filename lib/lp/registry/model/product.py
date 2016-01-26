@@ -1501,7 +1501,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             summary=summary, branch=branch, releasefileglob=releasefileglob)
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # The user is a product driver, and should be the driver of this
-            # series to make him the release manager.
+            # series to make them the release manager.
             series.driver = owner
         return series
 

@@ -255,7 +255,7 @@ class PollVoteView(BasePollView):
     """A view class to where the user can vote on a poll.
 
     If the user already voted, the current vote is displayed and the user can
-    change it. Otherwise he can register his vote.
+    change it. Otherwise they can register their vote.
     """
 
     default_template = ViewPageTemplateFile(
@@ -359,7 +359,7 @@ class PollVoteView(BasePollView):
                 # XXX: Guilherme Salgado 2005-09-14:
                 # User tried to specify a value which we can't convert to
                 # an integer. Better thing to do would be to notify the user
-                # and ask him to fix it.
+                # and ask them to fix it.
                 preference = None
             newvotes[option] = preference
 

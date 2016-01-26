@@ -9,7 +9,7 @@ to select:
 
  * One or more source packages from the current PPA;
 
- * A destination PPA amongst the ones he has access to, including the
+ * A destination PPA amongst the ones they have access to, including the
    current one;
 
  * A destination series amongst all ubuntu series;

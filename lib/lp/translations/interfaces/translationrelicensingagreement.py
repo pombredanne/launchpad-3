@@ -43,7 +43,7 @@ class ITranslationRelicensingAgreement(Interface):
         readonly=False, default=True, required=True)
 
     date_decided = Datetime(
-        title=_("The date person made her decision"),
+        title=_("The date person made their decision"),
         readonly=True, required=True)
 
 

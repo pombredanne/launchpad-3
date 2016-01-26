@@ -23,7 +23,7 @@ MOTU upload-admin role
 
 In our sample data, there is a user 'no-team-memberships' who has
 rights to administer the queue in the universe and multiverse
-components only.  We'll set up a browser for him:
+components only.  We'll set up a browser for them:
 
     >>> motu_browser = setupBrowser(
     ...     auth="Basic no-team-memberships@test.com:test")
@@ -97,11 +97,11 @@ permission to manipulate them.
     >>> logout()
 
 So now our user will be able to manipulate the alsa-utils source and
-the pmount binary.  However, he is still constrained with any component
-override that is applied; this must still be one of his permitted
+the pmount binary.  However, they are still constrained with any component
+override that is applied; this must still be one of their permitted
 components.
 
-If he tries to override back to main, it will fail:
+If they try to override back to main, it will fail:
 
     >>> motu_browser.getControl(name="QUEUE_ID").value = ['4']
     >>> motu_browser.getControl(
@@ -137,9 +137,9 @@ Our user is also able to reject, let's reject alsa-utils:
     >>> print_feedback_messages(motu_browser.contents)
     OK: alsa-utils
 
-In some cases the user might select more than one item at once, but he
-only has permission to change a subset of those items.  In this case,
-the items he has permission to change will be processed, but the others
+In some cases the user might select more than one item at once, but they
+only have permission to change a subset of those items.  In this case,
+the items they have permission to change will be processed, but the others
 will be left alone.
 
     >>> motu_browser.getControl(name="QUEUE_ID").value = ['1', '3']

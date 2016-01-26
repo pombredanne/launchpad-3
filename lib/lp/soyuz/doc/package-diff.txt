@@ -471,9 +471,9 @@ diff since the package is NEW, and then we will upload the same
 version to the Foo Bar's PPA.
 
 Note that this is a legitimate use-case, let's say Foo Bar user
-suspects 'staging' will be affected by his new toolchain, already
-hosted in the PPA. Since he cannot copy the primary archive sources,
-he simply re-upload the source as it is in ubuntu to his PPA and check
+suspects 'staging' will be affected by their new toolchain, already
+hosted in the PPA. Since they cannot copy the primary archive sources,
+they simply re-upload the source as it is in ubuntu to their PPA and check
 if it builds correctly.
 
     >>> packager = FakePackager(

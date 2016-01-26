@@ -603,8 +603,8 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         :param person: The person to check to see if they are a contributor.
 
         Return a dict with the following values:
-        is_contributor: True if the user has any bugs assigned to him in the
-        context of this bug task's pillar, either directly or by team
+        is_contributor: True if the user has any bugs assigned to them in
+        the context of this bug task's pillar, either directly or by team
         participation.
         person_name: the displayname of the person
         pillar_name: the displayname of the bug task's pillar

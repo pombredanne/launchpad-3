@@ -65,7 +65,7 @@ give us that field with information.
   'alsa-utils'
 
 Let's move to the .po file. The language is guessed from the file name
-and the user sees a warning so he checks that it's ok.
+and the user sees a warning so they check that it's ok.
 
   >>> browser.open('http://translations.launchpad.dev/+imports/%d' % po_qid)
   >>> browser.getControl(name='field.file_type').value

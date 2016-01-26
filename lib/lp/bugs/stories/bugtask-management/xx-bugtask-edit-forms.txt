@@ -8,7 +8,7 @@ on dedicated pages.
 
 If a user visits a bug page with a browser that does not have
 Javascript, the links shown in the columns "Status" and "Importance"
-of the bug task table lead him to the bug task edit forms of the
+of the bug task table lead them to the bug task edit forms of the
 respective bug task.
 
     >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')

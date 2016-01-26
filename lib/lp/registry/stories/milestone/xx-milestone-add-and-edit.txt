@@ -106,7 +106,7 @@ the series.
     ...
 
 A user with launchpad.Edit rights for a release can see the delete link and
-access the delete page. Sample Person is the driver so he has those rights.
+access the delete page. Sample Person is the driver so they have those rights.
 
     >>> driver_browser.getLink('0.9.2').click()
     >>> print driver_browser.title

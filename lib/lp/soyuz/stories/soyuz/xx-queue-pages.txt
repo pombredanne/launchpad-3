@@ -479,7 +479,7 @@ And now accepts the checked items:
 
     >>> upload_manager_browser.getControl(name="Accept").click()
 
-He sees the informational message that confirms the details of what was
+They see the informational message that confirms the details of what was
 overridden:
 
     >>> print_feedback_messages(upload_manager_browser.contents)

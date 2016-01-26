@@ -220,7 +220,7 @@ to make sure it's stored properly.
     >>> transaction.commit()
 
 Tell the PO file to import from the file data it has.  The user has rights
-to edit translations directly, so his suggestion is approved directly.
+to edit translations directly, so their suggestion is approved directly.
 No karma is awarded for this action.
 
     >>> potemplate = POTemplate.get(1)
@@ -292,15 +292,15 @@ that should not add any kind of karma to this user.
     >>> fuzzy = False
     >>> by_maintainer = False
 
-And we can see as he won't get any karma activity from that, otherwise it'd be
-printed after the call to set current translation.
+And we can see as they won't get any karma activity from that, otherwise
+it'd be printed after the call to set current translation.
 
     >>> translationmessage = factory.makeCurrentTranslationMessage(
     ...     pofile, potmsgset, no_priv, translations=new_translations,
     ...     current_other=by_maintainer)
     >>> flush_database_caches()
 
-But now, he will provide a new suggestion.
+But now, they will provide a new suggestion.
 
     >>> new_translations = {0: u'somethingelse'}
 
@@ -320,9 +320,9 @@ do other translations.
 
     >>> kurem = personset.getByEmail('kurem@debian.cz')
 
-Now, he will approve a suggestion.  This will give him karma for reviewing the
-suggestion and will also give karma to the user who made the suggestion for it
-being approved.
+Now, they will approve a suggestion.  This will give them karma for
+reviewing the suggestion and will also give karma to the user who made the
+suggestion for it being approved.
 
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
@@ -335,8 +335,8 @@ being approved.
     Karma added: action=translationreview, product=evolution
     >>> transaction.commit()
 
-Finally, this reviewer, is going to add a new translation directly. He should
-get karma for his translation, but not for a review.
+Finally, this reviewer, is going to add a new translation directly. They
+should get karma for their translation, but not for a review.
 
     >>> kurem = personset.getByEmail('kurem@debian.cz')
     >>> potemplate = POTemplate.get(1)
@@ -357,8 +357,8 @@ When someone adds a description for an IPOTemplate, we give them some karma
 because they are giving more information to our users about the usage of
 that template.
 
-We are going to use Sample Person for this test as he's the owner of the
-product from where the IPOTemplate is and he has rights to change the
+We are going to use Sample Person for this test as they're the owner of the
+product from where the IPOTemplate is and they have rights to change the
 description.
 
     >>> sample_person = personset.getByEmail('test@canonical.com')

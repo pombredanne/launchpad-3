@@ -4,7 +4,7 @@ Changing Milestones of Bugtasks
 Bugtasks associated with products, productseries, distributions and
 distroseries can be targeted to milestones.
 
-Sample Person is the owner of the Firefox product. He decides to plan
+Sample Person is the owner of the Firefox product. They decide to plan
 when bugs should be fixed by setting up some milestones.
 
     >>> owner_browser = setupBrowser('Basic test@canonical.com:test')
@@ -49,7 +49,7 @@ Sample Person defines milestone 1.0.1 for firefox series 1.0...
     >>> owner_browser.getControl('Register Milestone').click()
     >>> print_errors(owner_browser.contents)
 
-...and then he approves the nomination of bug #1 for the firefox series 1.0.
+...and then they approve the nomination of bug #1 for the firefox series 1.0.
 
     >>> owner_browser.open('http://launchpad.dev/firefox/+bug/1')
     >>> owner_browser.getControl('Approve', index=0).click()
@@ -72,15 +72,15 @@ are listed too.
     ['Mozilla Firefox 1.0.1']
 
 Foo Bar is a member of the Ubuntu team that owns the Ubuntu
-distribution. He decides to assign some bug to some milestones.
-First he registers a new milestone.
+distribution. They decide to assign some bug to some milestones.
+First they register a new milestone.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
     >>> name_field = admin_browser.getControl('Name:')
     >>> name_field.value = '5.04.rc1'
     >>> admin_browser.getControl('Register Milestone').click()
 
-He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
+They target bug #1 to milestone 5.04-rc1 for Ubuntu.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+bug/1')
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
@@ -110,14 +110,14 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> milestone_control.displayValue
     ['Ubuntu 5.04.rc1']
 
-Bug #1 is already nominated for Hoary, so he can create another bugtask
+Bug #1 is already nominated for Hoary, so they can create another bugtask
 by clicking on the "approve" button for this nomination.
 
     >>> admin_browser.getControl('Approve').click()
 
-Now he can set the milestone for the bug in Hoary. Note that the
-milestone assigned for Ubuntu has been "carried over", so he
-removes the milestone now.
+Now they can set the milestone for the bug in Hoary. Note that the
+milestone assigned for Ubuntu has been "carried over", so they
+remove the milestone now.
 
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_hoary_mozilla-firefox.milestone')

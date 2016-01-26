@@ -751,7 +751,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
-        # property, he has permission to see the bug, so we're not
+        # property, they have permission to see the bug, so we're not
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
@@ -776,7 +776,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
-        # property, he has permission to see the bug, so we're not
+        # property, they have permission to see the bug, so we're not
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(

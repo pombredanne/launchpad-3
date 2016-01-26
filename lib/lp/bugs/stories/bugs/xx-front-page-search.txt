@@ -71,7 +71,7 @@ the form at the front page.
 
 == Searching one project ==
 
-If the user chooses to search only one project, he will be forwarded to
+If the user chooses to search only one project, they will be forwarded to
 the project's bug listing, and the search will be performed there. If no
 name is specified, an error message will be displayed.
 
@@ -105,7 +105,7 @@ in the Launchpad.
     ...     print message.renderContents()
     There is no project named &#x27;invalid&#x27; registered in Launchpad
 
-If the user doesn't know what name to write, he can use the 'Choose'
+If the user doesn't know what name to write, they can use the 'Choose'
 link if the browser supports javascript. The test browser does not
 support javascript, so a 'Find' link pointing to /bugs is displayed.
 

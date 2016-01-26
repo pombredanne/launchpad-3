@@ -162,7 +162,7 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         # Bulk-load the data we'll need from each source publication.
         load_related(SourcePackageRelease, sources, ["sourcepackagereleaseID"])
 
-    # If there is a requester, check that he has upload permission into
+    # If there is a requester, check that they have upload permission into
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.

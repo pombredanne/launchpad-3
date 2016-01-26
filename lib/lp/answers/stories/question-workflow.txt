@@ -48,10 +48,10 @@ It's not unusual that the original message of a question is terse and
 quite vague. In these cases, to help the user, some more information
 will be required.
 
-No Privileges Person visits the question. He see the heading 'Can you
-help with this problem?'. The problem is not clear, he needs more
+No Privileges Person visits the question. They see the heading 'Can you
+help with this problem?'. The problem is not clear, they need more
 information. To request for more information from the question owner, No
-Privileges Person enters his question in the 'Message' field and clicks
+Privileges Person enters their question in the 'Message' field and clicks
 on the 'Add Information Request' button.
 
     >>> support_browser.open(
@@ -115,11 +115,11 @@ Answering with More Information
 -------------------------------
 
 When the question is in the 'Needs information' state, it means that the
-question owner should come back and provide more information. He can do
+question owner should come back and provide more information. They can do
 so by entering the reply in the 'Message' box and clicking on the "I'm
 Providing More Information" button. Note that the question owner cannot
 see the 'Can you help with this problem?' heading because it is not
-relevant to his tasks.
+relevant to their tasks.
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
@@ -134,7 +134,7 @@ relevant to his tasks.
     >>> owner_browser.getControl("I'm Providing More Information").click()
 
 Once the owner replied with the, hopefully, requested information, the
-status is changed to Open and his answer appended to the question
+status is changed to Open and their answer appended to the question
 discussion.
 
     >>> print find_request_status(owner_browser.contents)
@@ -173,7 +173,7 @@ the end of the discussion:
 Confirming an Answer
 --------------------
 
-When the owner comes back on the question page, he will now see a new
+When the owner comes back on the question page, they will now see a new
 'This Solved My Problem' button near the answer.
 
     >>> owner_browser.open(
@@ -259,7 +259,7 @@ Reopening
 ---------
 
 It can happen that, altough the owner confirmed the question was solved,
-the original problem reappears. In this case, he can reopen the question
+the original problem reappears. In this case, they can reopen the question
 by entering a new message and clicking the "I Still Need an Answer"
 button.
 
@@ -307,8 +307,8 @@ reopening portlet.
 Self-Answer
 -----------
 
-The owner can also gives the solution to his own question. He simply has
-to enter his solution in the 'Message' box and click the 'Problem
+The owner can also give the solution to their own question. They simply have
+to enter their solution in the 'Message' box and click the 'Problem
 Solved' button.
 
     >>> owner_browser.getControl('Message').value = (
@@ -331,7 +331,7 @@ message as the "Best answer".
 
 A message is displayed to the user confirming that the question is
 solved and suggesting that the user choose an answer that helped the
-question owner to solve the his problem.
+question owner to solve their problem.
 
     >>> for message in soup.findAll('div', 'informational message'):
     ...     print extract_text(message)
@@ -444,14 +444,14 @@ choosing an answer that helped him solve his problem.
 Asking a separate question
 --------------------------
 
-A user that is new to Answers is not familiar with the workflow. He may
-have a problem of his own, and has discovered an existing question. We
-want him to ask his own question instead of intruding into the workflow
+A user that is new to Answers is not familiar with the workflow. They may
+have a problem of their own, and has discovered an existing question. We
+want them to ask their own question instead of intruding into the workflow
 of existing questions.
 
 No Privileges Person (a different user from the one above) discovers the
-Firefox question. The solution does not work, but he thinks he has a
-similar problem so he asks his own question.
+Firefox question. The solution does not work, but they think they have a
+similar problem so they ask their own question.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
 

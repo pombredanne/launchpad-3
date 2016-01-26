@@ -10,8 +10,8 @@ access that page.
     Location: http://.../+soft-timeout/+login
     ...
 
-Sample Person doesn't have access to the page since he isn't a
-Launchpad develper:
+Sample Person doesn't have access to the page since they aren't a
+Launchpad developer:
 
     >>> print http(r"""
     ... GET /+soft-timeout HTTP/1.1
@@ -20,7 +20,7 @@ Launchpad develper:
     HTTP/1.1 403 Forbidden
     ...
 
-Foo Bar is a Launchpad developer, so he has access to the page. Since
+Foo Bar is a Launchpad developer, so they have access to the page. Since
 no timeout value is set, no soft timeout will be generated, though.
 
     >>> from lp.services.config import config

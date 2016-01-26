@@ -18,7 +18,7 @@ that.
     No Privileges Person is not an answer contact for any project.
 
 But when the person is an answer contact, the page displays the project
-he registered for.
+they registered for.
 
     >>> anon_browser.open('http://answers.launchpad.dev/~name16')
     >>> anon_browser.getLink('Answer contact for').click()
@@ -43,8 +43,9 @@ Clicking on the name of the project will show the project answers.
     >>> print anon_browser.title
     Questions : gnomebaker
 
-When the user is logged in, and he is visiting this page in his profile
-he will see a link after each project to manage his registration.
+When the user is logged in, and they are visiting this page in their
+profile, they will see a link after each project to manage their
+registration.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
@@ -63,8 +64,8 @@ he will see a link after each project to manage his registration.
     >>> print browser.title
     Answer contact for...
 
-The Remove yourself/team links only appears in his profile. He cannot
-see the link for other users
+The Remove yourself/team links only appears in their profile. They cannot
+see the link for other users.
 
     >>> browser.open(
     ...     'http://answers.launchpad.dev/~name16')

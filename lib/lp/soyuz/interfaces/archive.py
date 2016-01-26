@@ -980,7 +980,7 @@ class IArchiveView(IHasBuildRecords):
         """The `ArchivePermission` records for the person's package sets.
 
         :param person: An `IPerson` for whom you want to find out which
-            package sets he has access to.
+            package sets they have access to.
 
         :return: `ArchivePermission` records for all the package sets that
             'person' is allowed to upload to.
@@ -1028,7 +1028,7 @@ class IArchiveView(IHasBuildRecords):
         :param sourcepackagename: the source package name; can be
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
-            package sets he has access to.
+            package sets they have access to.
 
         :raises NoSuchSourcePackageName: if a source package with the
             given name could not be found.
@@ -1082,7 +1082,7 @@ class IArchiveView(IHasBuildRecords):
         Return True if there exists a permission that combines
             * this archive
             * a package set that includes the given source package name
-            * the given person or a team he is a member of
+            * the given person or a team they are a member of
 
         If the source package name is included by *any* package set with
         an explicit permission then only such explicit permissions will
@@ -1091,7 +1091,7 @@ class IArchiveView(IHasBuildRecords):
         :param sourcepackagename: the source package name; can be
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
-            package sets he has access to.
+            package sets they have access to.
         :param distroseries: The `IDistroSeries` for which to check
             permissions. If none is supplied then `currentseries` in
             the archive's distribution is assumed.
