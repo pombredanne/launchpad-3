@@ -404,6 +404,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertIsNone(snap.git_path)
         self.assertIsNone(snap.git_ref)
         self.assertTrue(snap.require_virtualized)
+        self.assertFalse(snap.private)
 
     def test_creation_git(self):
         # The metadata entries supplied when a Snap is created for a Git
@@ -420,6 +421,16 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(ref.path, snap.git_path)
         self.assertEqual(ref, snap.git_ref)
         self.assertTrue(snap.require_virtualized)
+        self.assertFalse(snap.private)
+
+    def test_orthogonal_privacy(self):
+        # Snap privacy is orthogonal to its content privacy.
+        [ref] = self.factory.makeGitRefs()
+        components = self.makeSnapComponents(git_ref=ref)
+        components['private'] = True
+        snap = getUtility(ISnapSet).new(**components)
+        with person_logged_in(components['owner']):
+            self.assertTrue(snap.private)
 
     def test_creation_no_source(self):
         # Attempting to create a Snap with neither a Bazaar branch nor a Git
@@ -703,14 +714,16 @@ class TestSnapWebservice(TestCaseWithFactory):
         return self.webservice.getAbsoluteUrl(api_url(obj))
 
     def makeSnap(self, owner=None, distroseries=None, branch=None,
-                 git_ref=None, processors=None, webservice=None):
+                 git_ref=None, processors=None, webservice=None, private=False):
         if owner is None:
             owner = self.person
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries(registrant=owner)
         if branch is None and git_ref is None:
             branch = self.factory.makeAnyBranch()
-        kwargs = {}
+        kwargs = {
+            'private': private,
+        }
         if webservice is None:
             webservice = self.webservice
         transaction.commit()
@@ -774,6 +787,21 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertEqual(ref.path, snap["git_path"])
             self.assertEqual(self.getURL(ref), snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
+
+    def test_new_private(self):
+        # Ensure Snap creation based on a Git branch works.
+        team = self.factory.makeTeam(owner=self.person)
+        distroseries = self.factory.makeDistroSeries(registrant=team)
+        [ref] = self.factory.makeGitRefs()
+        private_webservice = webservice_for_person(
+            self.person, permission=OAuthPermission.WRITE_PRIVATE)
+        private_webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+        snap = self.makeSnap(
+            owner=team, distroseries=distroseries, git_ref=ref,
+            webservice=private_webservice, private=True)
+        with person_logged_in(self.person):
+            self.assertTrue(snap["private"])
 
     def test_duplicate(self):
         # An attempt to create a duplicate Snap fails.
