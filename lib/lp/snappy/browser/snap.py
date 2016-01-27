@@ -273,6 +273,7 @@ class ISnapEditSchema(Interface):
     use_template(ISnap, include=[
         'owner',
         'name',
+        'private',
         'require_virtualized',
         ])
     distro_series = Choice(
@@ -291,7 +292,7 @@ class SnapAddView(LaunchpadFormView):
     page_title = label = 'Create a new snap package'
 
     schema = ISnapEditSchema
-    field_names = ['owner', 'name', 'distro_series']
+    field_names = ['owner', 'name', 'private', 'distro_series']
     custom_widget('distro_series', LaunchpadRadioWidget)
 
     def initialize(self):
@@ -417,7 +418,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     page_title = 'Edit'
 
     field_names = [
-        'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_ref']
+        'owner', 'name', 'private', 'distro_series', 'vcs', 'branch', 'git_ref']
     custom_widget('distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)

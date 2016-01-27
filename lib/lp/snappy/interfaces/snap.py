@@ -66,6 +66,7 @@ from zope.security.interfaces import (
     )
 
 from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
@@ -349,7 +350,7 @@ class ISnapAdminAttributes(Interface):
 
 
 class ISnap(
-    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes):
+    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes, IPrivacy):
     """A buildable snap package."""
 
     # XXX cjwatson 2015-07-17 bug=760849: "beta" is a lie to get WADL
