@@ -789,7 +789,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertTrue(snap["require_virtualized"])
 
     def test_new_private(self):
-        # Ensure Snap creation based on a Git branch works.
+        # Ensure private Snap creation works.
         team = self.factory.makeTeam(owner=self.person)
         distroseries = self.factory.makeDistroSeries(registrant=team)
         [ref] = self.factory.makeGitRefs()
