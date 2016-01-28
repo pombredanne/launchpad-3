@@ -11,6 +11,7 @@ __all__ = [
     'SnapBuildBehaviour',
     ]
 
+import base64
 from datetime import datetime
 import json
 from urllib import urlencode
@@ -114,18 +115,27 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
 
     @defer.inlineCallbacks
     def _requestProxyToken(self):
+        admin_username = config.snappy.builder_proxy_auth_api_admin_username
+        secret = config.snappy.builder_proxy_auth_api_admin_secret
         url = config.snappy.builder_proxy_auth_api_endpoint
         timestamp = (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()
         proxy_username = '{build_id}-{timestamp}'.format(
             build_id=self.build.build_cookie,
             timestamp=timestamp)
+        auth_string = '{}:{}'.format(admin_username, secret).strip()
+        auth_header = 'Basic ' + base64.encodestring(auth_string)
+        data = json.dumps({'username': proxy_username})
+
         result = yield getPage(
             url,
             method='POST',
-            postdata=urlencode({'username': proxy_username}),
-            headers={'Content-Type': 'application/json'}
+            postdata=data,
+            headers={
+                'Authorization': auth_header,
+                'Content-Type': 'application/json'}
             )
         token = json.loads(result)
+        print(token)
         defer.returnValue(token)
 
     @defer.inlineCallbacks
