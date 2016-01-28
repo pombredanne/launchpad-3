@@ -74,6 +74,19 @@ class OAuthBase:
         return IMasterStore(cls)
 
 
+def sha256_digest(data):
+    """Return the SHA-256 hash of some data.
+
+    The returned string is always Unicode, to satisfy Storm.  In Python 3,
+    this is straightforward because hexdigest() returns that anyway, but in
+    Python 2 we must decode.
+    """
+    digest = hashlib.sha256(data).hexdigest()
+    if isinstance(digest, bytes):
+        digest = digest.decode('ASCII')
+    return digest
+
+
 @implementer(IOAuthConsumer)
 class OAuthConsumer(OAuthBase, StormBase):
     """See `IOAuthConsumer`."""
@@ -89,7 +102,7 @@ class OAuthConsumer(OAuthBase, StormBase):
     def __init__(self, key, secret):
         super(OAuthConsumer, self).__init__()
         self.key = key
-        self._secret = unicode(hashlib.sha256(secret).hexdigest())
+        self._secret = sha256_digest(secret)
 
     # This regular expression singles out a consumer key that
     # represents any and all apps running on a specific computer. The
@@ -150,7 +163,7 @@ class OAuthConsumer(OAuthBase, StormBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return unicode(hashlib.sha256(secret).hexdigest()) == self._secret
+        return sha256_digest(secret) == self._secret
 
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
@@ -227,7 +240,7 @@ class OAuthAccessToken(OAuthBase, StormBase):
         self.consumer = consumer
         self.permission = permission
         self.key = key
-        self._secret = unicode(hashlib.sha256(secret).hexdigest())
+        self._secret = sha256_digest(secret)
         self.person = person
         self.date_expires = date_expires
         self.product = product
@@ -258,7 +271,7 @@ class OAuthAccessToken(OAuthBase, StormBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthToken`."""
-        return unicode(hashlib.sha256(secret).hexdigest()) == self._secret
+        return sha256_digest(secret) == self._secret
 
 
 @implementer(IOAuthRequestToken)
@@ -297,7 +310,7 @@ class OAuthRequestToken(OAuthBase, StormBase):
         self.consumer = consumer
         self.permission = permission
         self.key = key
-        self._secret = unicode(hashlib.sha256(secret).hexdigest())
+        self._secret = sha256_digest(secret)
         self.person = person
         self.date_expires = date_expires
         self.product = product
@@ -329,7 +342,7 @@ class OAuthRequestToken(OAuthBase, StormBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthToken`."""
-        return unicode(hashlib.sha256(secret).hexdigest()) == self._secret
+        return sha256_digest(secret) == self._secret
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
