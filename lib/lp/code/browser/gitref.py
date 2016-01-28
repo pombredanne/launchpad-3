@@ -90,6 +90,10 @@ class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
 
 class GitRefView(LaunchpadView, HasSnapsViewMixin):
 
+    related_features = {
+        "code.git.recipes.enabled": False,
+        }
+
     @property
     def label(self):
         return self.context.display_name

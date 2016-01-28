@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -221,6 +221,12 @@ flag_info = sorted([
      'disabled',
      'PPA Separate Long Descriptions',
      ''),
+    ('code.git.recipes.enabled',
+     'boolean',
+     'If true, allow creation of new Git-based recipes.',
+     'disabled',
+     'Git recipes',
+     'https://help.launchpad.net/Packaging/SourceBuilds'),
     ])
 
 # The set of all flag names that are documented.

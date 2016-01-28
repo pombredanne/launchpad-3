@@ -278,6 +278,10 @@ class GitRefBatchNavigator(TableBatchNavigator):
 class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
                         HasSnapsViewMixin):
 
+    related_features = {
+        "code.git.recipes.enabled": False,
+        }
+
     @property
     def page_title(self):
         return self.context.display_name
