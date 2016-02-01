@@ -91,6 +91,10 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 password=token['secret'],
                 host=config.snappy.builder_proxy_host,
                 port=config.snappy.builder_proxy_port))
+        args["revocation_endpoint"] = (
+            "{endpoint}/{token}".format(
+                endpoint=config.snappy.builder_proxy_auth_api_endpoint,
+                token=token['username']))
         args["name"] = build.snap.name
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
@@ -135,7 +139,6 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 'Content-Type': 'application/json'}
             )
         token = json.loads(result)
-        print(token)
         defer.returnValue(token)
 
     @defer.inlineCallbacks
