@@ -286,7 +286,7 @@ class IGPGHandler(Interface):
             signing the content.
         :param password: optional password to the key identified by
             key_fingerprint, the default value is '',
-        :param mode: optional he type of GPG signature to produce, the
+        :param mode: optional type of GPG signature to produce, the
             default mode is gpgme.SIG_MODE_CLEAR (clearsigned signatures)
 
         :return: The ASCII-armored signature for the content.

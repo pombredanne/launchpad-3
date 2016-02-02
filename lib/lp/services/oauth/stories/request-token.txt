@@ -3,7 +3,6 @@
 Our sample consumer (whose key is 'foobar123451432') asks Launchpad for
 a request token which may later be exchanged for an access token.
 
-    >>> import time
     >>> from urllib import urlencode
     >>> data = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -47,7 +46,7 @@ so that the application can proceed.
     >>> from lp.testing import login, logout
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
     >>> login('salgado@ubuntu.com')
-    >>> print getUtility(IOAuthConsumerSet).getByKey('joe-feed-reader')
+    >>> print getUtility(IOAuthConsumerSet).getByKey(u'joe-feed-reader')
     None
 
     >>> logout()
@@ -60,7 +59,7 @@ so that the application can proceed.
     oauth_token=...&oauth_token_secret=...
 
     >>> login('salgado@ubuntu.com')
-    >>> getUtility(IOAuthConsumerSet).getByKey('joe-feed-reader')
+    >>> getUtility(IOAuthConsumerSet).getByKey(u'joe-feed-reader')
     <...OAuthConsumer...
     >>> logout()
 

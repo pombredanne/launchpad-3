@@ -1,13 +1,3 @@
-Date Handling
-=============
-
-She's really hot, you're really nervous. What are you going to wear? What if
-she doesn't like the restaurant you suggested? What if you get spaghetti sauce
-all over your shirt?
-
-Handling dates can be tricky. This document is about handling dates.
-Thankfully, it's not about handling /those/ kinds of dates.
-
 Date Handling in Launchpad
 ==========================
 
@@ -22,7 +12,7 @@ pretend we're logged in as Sample Person:
     >>> from lp.testing import login
     >>> login("testing@canonical.com")
 
-Then let's grab one of his bug tasks to work with:
+Then let's grab one of their bug tasks to work with:
 
     >>> from zope.component import getUtility
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet

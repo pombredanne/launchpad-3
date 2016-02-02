@@ -815,8 +815,8 @@ for further checks:
 The ACL rules also enable us to specify that a user has a
 package-specific upload right.  In the test package data, bar_1.0-1 is
 signed by "Foo Bar" who is name16 in the sample data.  As shown above,
-he currently has no upload rights at all to Ubuntu.  However, we can add
-an ArchivePermission record to permit him to upload "bar" specifically.
+they currently have no upload rights at all to Ubuntu.  However, we can add
+an ArchivePermission record to permit them to upload "bar" specifically.
 
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)

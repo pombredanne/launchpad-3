@@ -149,7 +149,7 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
             # real patch data, indicated by guessed_content_type ==
             # 'text/x-diff'. If there are inconsistencies, we don't
             # set the value automatically. Instead, we lead the user to
-            # another form where we ask him if he is sure about his
+            # another form where we ask them if they are sure about their
             # choice of the patch flag.
             new_type_consistent_with_guessed_type = (
                 self.attachmentTypeConsistentWithContentType(
@@ -191,8 +191,8 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
 
     If the user sets the "patch" flag to a value that is inconsistent
     with the result of a call of guess_content_type() for this
-    attachment, we show this view to ask the user if he is sure
-    about his selection.
+    attachment, we show this view to ask the user if they are sure
+    about their selection.
     """
 
     schema = IBugAttachmentIsPatchConfirmationForm

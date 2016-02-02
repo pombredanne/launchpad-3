@@ -31,11 +31,13 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
     BuildAlreadyPending,
+    GitRecipesFeatureDisabled,
     PrivateBranchRecipe,
     PrivateGitRepositoryRecipe,
     TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
+    GIT_RECIPES_FEATURE_FLAG,
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     ISourcePackageRecipeView,
@@ -56,6 +58,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
@@ -121,6 +124,10 @@ class GitMixin:
     private_error = PrivateGitRepositoryRecipe
     branch_type = "repository"
     recipe_id = "git-build-recipe"
+
+    def setUp(self):
+        super(GitMixin, self).setUp()
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
 
     def makeBranch(self, **kwargs):
         return self.factory.makeGitRefs(**kwargs)[0]
@@ -510,7 +517,7 @@ class TestSourcePackageRecipeMixin:
 
         The case where the user is not in the PPA owner team but is allowed to
         upload to the PPA via an explicit ArchivePermission takes a different
-        security path than if he were part of the team.
+        security path than if they were part of the team.
         """
 
         # Create a team private PPA.
@@ -822,6 +829,12 @@ class TestSourcePackageRecipeBzr(
 class TestSourcePackageRecipeGit(
     TestSourcePackageRecipeMixin, GitMixin, TestCaseWithFactory):
     """Test `SourcePackageRecipe` objects for Git."""
+
+    def test_feature_flag_disabled(self):
+        # Without a feature flag, we will not create new Git recipes.
+        self.useFixture(FeatureFixture({}))
+        self.assertRaises(
+            GitRecipesFeatureDisabled, self.makeSourcePackageRecipe)
 
 
 class TestRecipeBranchRoundTrippingMixin:

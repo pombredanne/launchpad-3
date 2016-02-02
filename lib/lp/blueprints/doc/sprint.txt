@@ -202,7 +202,7 @@ sample_person is the driver for the paris sprint.
     >>> paris.driver == sample_person
     True
 
-Obviously, we'd expect isDriver to return true for her.
+Obviously, we'd expect isDriver to return true for them.
 
     >>> paris.isDriver(sample_person)
     True

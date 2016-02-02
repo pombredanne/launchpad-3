@@ -260,7 +260,7 @@ are tested in detail later.
     >>> anon_browser.goBack(1)
 
 Submissions that are marked as private are only displayed to the
-submitter himself.
+submitter themselves.
 
     >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> from StringIO import StringIO
@@ -305,8 +305,8 @@ submitter himself.
     >>> import transaction
     >>> transaction.commit()
 
-The owner of a submission sees a complete lists of his own submissions.
-He also gets an additional column in the listing, showing the "private"
+The owner of a submission sees a complete list of their own submissions.
+They also get an additional column in the listing, showing the "private"
 status of each submission.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')

@@ -236,7 +236,7 @@ Also, we get redirected to the next batch.
     >>> pofile_view.request.response.getHeader('Location')
     'http://127.0.0.1?memo=10&start=10'
 
-The messsage's sequence is the position of that message in latest imported
+The message's sequence is the position of that message in latest imported
 template. We are going to test now what happens when we submit a potmsgset
 that has a sequence == 0. It means that that msgset is disabled and we don't
 serve such messages in our translation form, but we could get it in some
@@ -245,7 +245,8 @@ situations, like when this set of actions happen:
  - A user gets a translation form for the template X.
  - A new template X is imported into the system that removes some messages
    from the previous import.
- - Previous user, submits the translation form he got for the old template X.
+ - Previous user, submits the translation form they got for the old template
+   X.
 
 The problem here is that some of the messages on that form are disabled so
 their sequence is 0.

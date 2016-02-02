@@ -10,7 +10,7 @@ AssigneeDisplayWidget
 ---------------------
 
 This widget is used to display the assignee of a bug task. It displays
-the assignee's browser name, with a link to his person page, and with a
+the assignee's browser name, with a link to their person page, and with a
 person icon in front of the name.
 
     >>> from lp.bugs.browser.widgets.bugtask import AssigneeDisplayWidget

@@ -184,8 +184,8 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
 
         # The user has entered a product name but we couldn't find it.
         # Tell the user to search for it using the popup widget as it'll allow
-        # the user to register a new product if the one he is looking for is
-        # not yet registered.
+        # the user to register a new product if the one they are looking for
+        # is not yet registered.
         widget_link_id = self.widgets['product'].show_widget_id
         self.setFieldError(
             'product',
@@ -271,7 +271,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
                 extracted_bugtracker, extracted_bug = getUtility(
                     IBugWatchSet).extractBugTrackerAndBug(bug_url)
             except NoBugTrackerFound:
-                # Delegate to another view which will ask the user if (s)he
+                # Delegate to another view which will ask the user if they
                 # wants to create the bugtracker now.
                 if 'product' in self.target_field_names:
                     self.next_step = UpstreamBugTrackerCreationStep
@@ -379,7 +379,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             target.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             # We have no URL for the remote bug and the target does not use
             # Launchpad for bug tracking, so we warn the user this is not
-            # optimal and ask for his confirmation.
+            # optimal and ask for their confirmation.
 
             # Add a hidden field to fool LaunchpadFormView into thinking we
             # submitted the action it expected when in fact we're submiting
@@ -686,7 +686,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
 class BugTrackerCreationStep(AlsoAffectsStep):
     """View for creating a bugtracker from the given URL.
 
-    This view will ask the user if he really wants to register the new bug
+    This view will ask the user if they really want to register the new bug
     tracker, perform the registration and then delegate to one of
     BugTaskCreationStep's subclasses.
     """
@@ -847,7 +847,7 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
 
         If the URL of the remote bug given is of a bugtracker used by any
         other products registered in Launchpad, then we show these products to
-        the user and ask if he doesn't want to create the task in one of them.
+        the user and ask if they don't want to create the task in one of them.
         """
         if self.existing_products and not self.request.form.get('create_new'):
             # Present the projects using that bugtracker to the user as

@@ -1560,7 +1560,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Upload the first version and accept it to make it known in
         # Ubuntu.  The uploader has rights to upload NEW packages to
-        # components that he does not have direct rights to.
+        # components that they do not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
         self.publishPackage('bar', '1.0-1')
@@ -1616,7 +1616,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Upload the first version and accept it to make it known in
         # Ubuntu.  The uploader has rights to upload NEW packages to
-        # components that he does not have direct rights to.
+        # components that they do not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
         self.publishPackage('bar', '1.0-1')

@@ -62,7 +62,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
     def _assert_perform_merge_request(self):
         # Perform a merge request, asserting expected bahviour along the way.
         # We are redirected to a page displaying the email addresses owned by
-        # the dupe account. The user chooses which one he wants to claim.
+        # the dupe account. The user chooses which one they want to claim.
         target = self.factory.makePerson()
         login_person(target)
         browser = self.getUserBrowser(
@@ -133,7 +133,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
 
     def test_validation_email_complete(self):
         # Test that the merge completes successfully when the user proves that
-        # he's the owner of the second email address of the dupe account.
+        # they're the owner of the second email address of the dupe account.
         browser, emails = self._assert_validation_email_confirm()
         ignore, ignore2, raw_msg2 = emails.pop()
         token_url = get_token_url_from_email(raw_msg2)

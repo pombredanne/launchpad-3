@@ -150,7 +150,7 @@ We can search for bugs whose reporters own a given device. A device
 must be specified by a bus as enumerated by HWBus, a vendor ID and a
 product ID. If we search for bugs related to the PCI device (0x10de,
 0x0455), which appears in a HWDB submission from Sample Person, bugs
-reported by him will be returned.
+reported by them will be returned.
 
     >>> from lp.hardwaredb.interfaces.hwdb import HWBus
     >>> search_params = BugTaskSearchParams(

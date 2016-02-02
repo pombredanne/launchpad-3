@@ -41,6 +41,8 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -62,7 +64,9 @@ class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['create_snap', 'register_merge', 'source', 'view_recipes']
+    links = [
+        'create_recipe', 'create_snap', 'register_merge', 'source',
+        'view_recipes']
 
     def source(self):
         """Return a link to the branch's browsing interface."""
@@ -75,8 +79,20 @@ class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
         enabled = self.context.namespace.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
+    def create_recipe(self):
+        # You can't create a recipe for a reference in a private repository.
+        enabled = (
+            not self.context.private and
+            bool(getFeatureFlag(GIT_RECIPES_FEATURE_FLAG)))
+        text = "Create packaging recipe"
+        return Link("+new-recipe", text, enabled=enabled, icon="add")
+
 
 class GitRefView(LaunchpadView, HasSnapsViewMixin):
+
+    related_features = {
+        "code.git.recipes.enabled": False,
+        }
 
     @property
     def label(self):

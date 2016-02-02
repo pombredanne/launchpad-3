@@ -53,7 +53,7 @@ Sample Person and the Landscape team are now subscribed.
       To all Ubuntu bugs:
         Landscape Developers
 
-Sample Person can also unsubscribe himself and the Landscape team.
+Sample Person can also unsubscribe themselves and the Landscape team.
 
     >>> subscribe_myself = browser.getControl(
     ...    'I want to receive these notifications by email')
@@ -92,7 +92,7 @@ Firstly, we appoint Sample Person as the driver for the distribution.
     >>> flush_database_updates()
     >>> logout()
 
-The driver sees an extended form in the +subscribe view, which allows him
+The driver sees an extended form in the +subscribe view, which allows them
 to subscribe other people.
 
     >>> browser.open(
@@ -179,7 +179,7 @@ purges the submitted form data from now unexpected values.
       To all Ubuntu bugs:
         Landscape Developers
 
-When Sample Person now visits the bug subscription page, he no longer sees
+When Sample Person now visits the bug subscription page, they no longer see
 the UI elements for the subscription/unsubscription of arbitrary persons.
 
     >>> browser.open(

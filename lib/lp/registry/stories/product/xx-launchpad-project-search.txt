@@ -18,7 +18,7 @@ The user is informed when no matches are found.
 
 Launchpad shows up to config.launchpad.default_batch_size results; if there
 are more results than that, the user sees an informational message that asks
-the user to refine his search.
+the user to refine their search.
 
     >>> from lp.services.config import config
     >>> config.launchpad.default_batch_size
@@ -65,7 +65,7 @@ project-group, or distribution.
     >>> anon_browser.url
     'http://launchpad.dev/tomcat'
 
-If the user searches without any search terms, the page asks him to enter
+If the user searches without any search terms, the page asks them to enter
 some terms and do another search.
 
     >>> anon_browser.open('http://launchpad.dev/projects')

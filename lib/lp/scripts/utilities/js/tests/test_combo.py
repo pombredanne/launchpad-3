@@ -467,7 +467,7 @@ class TestCombo(ComboTestBase):
             expected)
 
     def test_no_parent_hack(self):
-        """If someone tries to hack going up the root, he'll get a miss."""
+        """If someone tries to hack going up the root, they'll get a miss."""
         test_dir = self.makeDir()
         self.makeSampleFile(
             test_dir,
@@ -503,7 +503,7 @@ class TestCombo(ComboTestBase):
             expected)
 
     def test_no_absolute_path_hack(self):
-        """If someone tries to fetch an absolute file, he'll get nothing."""
+        """If someone tries to fetch an absolute file, they'll get nothing."""
         test_dir = self.makeDir()
 
         hack = "/etc/passwd"

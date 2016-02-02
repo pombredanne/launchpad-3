@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -79,7 +79,10 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
         with a 401 status.  If the key is not empty but there's no consumer
         with it, we register a new consumer.
         """
-        form = get_oauth_authorization(self.request)
+        try:
+            form = get_oauth_authorization(self.request)
+        except UnicodeDecodeError:
+            raise UnexpectedFormData("Invalid UTF-8.")
         consumer_key = form.get('oauth_consumer_key')
         if not consumer_key:
             self.request.unauthorized(OAUTH_CHALLENGE)
@@ -306,7 +309,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
     def initialize(self):
         self.storeTokenContext()
-        form = get_oauth_authorization(self.request)
+        try:
+            form = get_oauth_authorization(self.request)
+        except UnicodeDecodeError:
+            raise UnexpectedFormData("Invalid UTF-8.")
         key = form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
@@ -349,7 +355,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         # We have no guarantees that lp.context will be together with the
         # OAuth parameters, so we need to check in the Authorization header
         # and on the request's form if it's not in the former.
-        oauth_data = get_oauth_authorization(self.request)
+        try:
+            oauth_data = get_oauth_authorization(self.request)
+        except UnicodeDecodeError:
+            raise UnexpectedFormData("Invalid UTF-8.")
         context = oauth_data.get('lp.context')
         if not context:
             context = self.request.form.get('lp.context')

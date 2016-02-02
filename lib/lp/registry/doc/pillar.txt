@@ -140,7 +140,7 @@ aliases, in the same way that it can't be retrieved through its name.
 Setting the aliases of a pillar is an operation that requires launchpad.Admin
 rights on the pillar.
 
-Sample Person has edit rights on firefox, but he'd need admin rights
+Sample Person has edit rights on firefox, but they'd need admin rights
 to be able to set its aliases.
 
     >>> login('test@canonical.com')

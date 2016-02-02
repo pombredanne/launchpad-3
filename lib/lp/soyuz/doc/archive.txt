@@ -1190,7 +1190,7 @@ and user and give the team access to cprov's PPA:
     >>> for ppa in archive_set.getPPAsForUser(indirect_uploader):
     ...     print ppa.displayname
 
-But if we make him part of the uploader_team he'll gain access:
+But if we make them part of the uploader_team they'll gain access:
 
     >>> ignored = uploader_team.addMember(
     ...     indirect_uploader, indirect_uploader)

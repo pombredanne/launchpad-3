@@ -149,7 +149,7 @@ But Sample Person is now listed as its owner:
     ...     print t.renderContents()
     Sample Person
 
-That means that Sample Person is allowed to administer "his" group.
+That means that Sample Person is allowed to administer "their" group.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
@@ -741,7 +741,7 @@ So now No Privileges Person is the Welsh translator for the PolyGlot
 translation group, and they are the translation group for Ubuntu, which
 uses the Closed translation mode. This means that No Privileges Person
 should be able to translate any strings in Ubuntu to Welsh. In other
-languages, he will not be able to add or change translations.
+languages, they will not be able to add or change translations.
 
 Let's see if No Privileges Person can see the translated strings in
 Southern Sotho. We expect them to see a readonly form:
@@ -819,7 +819,7 @@ translation group, and they are the translation group for Ubuntu, which
 we are going to set as having Restricted translations. This means that
 No Privileges Person should be able to translate any strings in Ubuntu
 to Welsh. In other languages, No Privileges Person should be warned that
-he is not a designated translator.
+they are not a designated translator.
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
 

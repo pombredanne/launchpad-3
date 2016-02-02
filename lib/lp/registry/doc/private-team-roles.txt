@@ -38,7 +38,7 @@ The same team can also unsubscribe the person.
 
     >>> bug.unsubscribe(team_owner, priv_team)
 
-Only the person can unsubscribe him or her self.
+Only the person can unsubscribe themselves.
 
     >>> priv_subscription = bug.subscribe(team_owner, priv_team)
     >>> bug.unsubscribe(team_owner, team_owner)

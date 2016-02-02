@@ -144,7 +144,7 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
 class ViewBugAttachment(DelegatedAuthorization):
     """Security adapter for viewing a bug attachment.
 
-    If the user is authorized to view the bug, he's allowed to view the
+    If the user is authorized to view the bug, they're allowed to view the
     attachment.
     """
     permission = 'launchpad.View'
@@ -158,7 +158,7 @@ class ViewBugAttachment(DelegatedAuthorization):
 class EditBugAttachment(DelegatedAuthorization):
     """Security adapter for editing a bug attachment.
 
-    If the user is authorized to view the bug, he's allowed to edit the
+    If the user is authorized to view the bug, they're allowed to edit the
     attachment.
     """
     permission = 'launchpad.Edit'

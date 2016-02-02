@@ -70,7 +70,7 @@ No Privileges Person isn't allowed to translate into Welsh.
     >>> pofile.canEditTranslations(no_priv)
     False
 
-Let's add him to the group.
+Let's add them to the group.
 
     >>> welsh = language_set['cy']
 

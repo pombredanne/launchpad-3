@@ -228,8 +228,8 @@ membership is causing us to send mail.
           of testing Spanish team, which is subscribed to a
           duplicate bug report.
 
-This doesn't help the end-user too much if he's a member of this team
-indirectly (for instance, if he's a member of a team which is in turn a
+This doesn't help the end-user too much if they're a member of this team
+indirectly (for instance, if they're a member of a team which is in turn a
 member of another team); however, in that case, the user can still visit
 the team page and see the membership graph directly. This may be worth
 fixing in the future.
@@ -239,7 +239,7 @@ First impressions stick
 
 Another important property of BugNotificationRecipients is that the
 first rationale presented to it is the one that is presented -- even if
-the recipient has multiple reasons for which he might be emailed. Here's
+the recipient has multiple reasons for which they might be emailed. Here's
 a pathological example:
 
     >>> recipients = BugNotificationRecipients()
@@ -247,7 +247,7 @@ a pathological example:
     >>> recipients.addAssignee(test)
     >>> recipients.addDirectSubscriber(foo_bar)
 
-This guy is emailed because he's a direct subscriber, an assignee and an
+This guy is emailed because they're a direct subscriber, an assignee and an
 upstream registrant. However, if we ask the rationales instance:
 
     >>> print_rationales(recipients)

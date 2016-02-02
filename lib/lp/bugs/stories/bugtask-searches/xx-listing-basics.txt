@@ -44,7 +44,7 @@ An anonymous user views the bug tasks in upstream Ubuntu.
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder Tomcat Low New
 
-Foo Bar views the upstream Ubuntu bug tasks listing. Note that he can
+Foo Bar views the upstream Ubuntu bug tasks listing. Note that they can
 see the extra "quick search" links "my todo list" and "submitted by
 me".
 

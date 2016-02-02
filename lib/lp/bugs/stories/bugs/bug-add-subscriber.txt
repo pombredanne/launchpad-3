@@ -13,7 +13,7 @@ Anonymous users should not be able to subscribe someone else to a bug.
     ...
     Unauthorized: ...
 
-No Privileges wants to subscribe David Allouche to the bug because he knows
+No Privileges wants to subscribe David Allouche to the bug because they know
 that he's interested in that feature.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
@@ -28,7 +28,7 @@ that will return the browser to the bug page.
     >>> cancel_link.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
-By looking at the 'Subscribers' portlet, he sees that David Allouche is not
+By looking at the 'Subscribers' portlet, they see that David Allouche is not
 currently subscribed to the bug:
 
     >>> from lp.bugs.tests.bug import (
@@ -45,7 +45,7 @@ currently subscribed to the bug:
     Foo Bar
     Mark Shuttleworth
 
-He subscribes David Allouche to the bug using his Launchpad username.
+They subscribe David Allouche to the bug using his Launchpad username.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> user_browser.getControl("Person").value = 'ddaa'
@@ -53,7 +53,7 @@ He subscribes David Allouche to the bug using his Launchpad username.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
-He is notified that David Allouche has been subscribed.
+They are notified that David Allouche has been subscribed.
 
     >>> for tag in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
@@ -120,8 +120,8 @@ Subscription of private teams
 -----------------------------
 
 Private teams can be subscribed to bugs. Any logged in user can see
-the private team in the subscribers list. Additionally if she is a member of
-the private team she can unsubscribe the team.
+the private team in the subscribers list. Additionally if they are a member
+of the private team they can unsubscribe the team.
 
     >>> # Create a private team with Foo Bar as the owner.
     >>> from zope.component import getUtility

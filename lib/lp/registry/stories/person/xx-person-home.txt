@@ -35,8 +35,8 @@ A logged in user such as Sample Person, can see Mark's addresses.
     ...     find_tag_by_id(sample_browser.contents, 'email-addresses'))
     Email: mark@example.com
 
-As for Sample Person, he has chosen not to disclose his email addresses.
-unprivileged users like No Privileges Person cannot see his addresses:
+As for Sample Person, they have chosen not to disclose their email addresses.
+Unprivileged users like No Privileges Person cannot see their addresses:
 
     >>> user_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(
@@ -58,8 +58,7 @@ But Foo Bar can:
 Open ID link
 ------------
 
-When a person visits his or her own page, they'll see their OpenID login
-URL.
+When a person visits their own page, they'll see their OpenID login URL.
 
     >>> user_browser.open('http://launchpad.dev/~no-priv')
     >>> print extract_text(
@@ -131,7 +130,7 @@ Privileges Person can see the languages that mark speaks.
     Languages:
     Catalan, English, Spanish
 
-When viewing his own page, No Privileges Person sees his languages and
+When viewing their own page, No Privileges Person sees their languages and
 can edit them.
 
     >>> user_browser.open('http://launchpad.dev/~no-priv')
@@ -184,7 +183,7 @@ Table of contributions
 
 A person's home page also displays a table with the contributions made
 by that person. This table includes 5 projects in which this person is
-most active and also the areas in which (s)he worked on each project.
+most active and also the areas in which they worked on each project.
 
     >>> anon_browser.open('http://launchpad.dev/~name16')
     >>> table = find_tag_by_id(anon_browser.contents, 'contributions')

@@ -637,7 +637,7 @@ can check how it looks.
     >>> transaction.commit()
 
 Publications created, now when any user access the 'Ubuntu PPAs' page,
-he will be able to see 4 PPAs where we've added publications listed in
+they will be able to see 4 PPAs where we've added publications listed in
 the 'Most active' section.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")

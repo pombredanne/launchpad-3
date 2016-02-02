@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -274,9 +274,16 @@ def get_oauth_authorization(request):
     or it might be in the query string or entity-body.
 
     :return: a dictionary of authorization information.
+    :raises UnicodeDecodeError: If the Authorization header is not valid
+        UTF-8.
     """
     header = request._auth
     if header is not None and header.startswith("OAuth "):
+        # http://oauth.net/core/1.0/#encoding_parameters says "Text names
+        # and values MUST be encoded as UTF-8 octets before percent-encoding
+        # them", so we can reasonably fail if this hasn't been done.
+        if isinstance(header, bytes):
+            header = header.decode("UTF-8")
         return OAuthRequest._split_header(header)
     else:
         return request.form
@@ -288,7 +295,11 @@ def check_oauth_signature(request, consumer, token):
     If the signature is incorrect or its method is not supported, set the
     appropriate status in the request's response and return False.
     """
-    authorization = get_oauth_authorization(request)
+    try:
+        authorization = get_oauth_authorization(request)
+    except UnicodeDecodeError:
+        request.response.setStatus(400)
+        return False
 
     if authorization.get('oauth_signature_method') != 'PLAINTEXT':
         # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported

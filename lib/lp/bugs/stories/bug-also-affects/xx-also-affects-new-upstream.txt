@@ -96,7 +96,7 @@ the bug as affecting another (unregistered) upstream.
 == Error handling ==
 
 If the URL of the remote bug is not recognized by Launchpad, we'll tell the
-user and ask him to check if it's correct.
+user and ask them to check if it's correct.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product')

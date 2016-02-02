@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
+from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -47,6 +49,7 @@ class TestIHasRecipes(TestCaseWithFactory):
     def test_git_repository_recipes(self):
         # IGitRepository.recipes should provide all the SourcePackageRecipes
         # attached to that repository.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         base_ref1, base_ref2 = self.factory.makeGitRefs(
             paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
         [other_ref] = self.factory.makeGitRefs()
@@ -58,6 +61,7 @@ class TestIHasRecipes(TestCaseWithFactory):
     def test_git_repository_recipes_nonbase(self):
         # IGitRepository.recipes should provide all the SourcePackageRecipes
         # that refer to the repository, even as a non-base branch.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         [base_ref] = self.factory.makeGitRefs()
         [nonbase_ref] = self.factory.makeGitRefs()
         [other_ref] = self.factory.makeGitRefs()
@@ -88,6 +92,7 @@ class TestIHasRecipes(TestCaseWithFactory):
     def test_product_recipes(self):
         # IProduct.recipes should provide all the SourcePackageRecipes
         # attached to that product's branches and Git repositories.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
         [ref] = self.factory.makeGitRefs(target=product)

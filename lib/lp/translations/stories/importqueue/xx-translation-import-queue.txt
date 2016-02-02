@@ -250,7 +250,7 @@ But Jordi, a Rosetta expert, will be allowed to remove it.
   ...Foo Bar...
   ...Template "evolution-2.2-test" in Evolution trunk...
 
-Foo Bar Person is a launchpad admin and he's allowed to remove an entry.
+Foo Bar Person is a launchpad admin and they're allowed to remove an entry.
 
   >>> admin_browser.open('http://translations.launchpad.dev/+imports')
   >>> admin_browser.getControl(name='field.status_2').value = ['DELETED']
