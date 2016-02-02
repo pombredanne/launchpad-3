@@ -17,7 +17,7 @@ and authorize or not the consumer to act on their behalf.
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey(u'foobar123451432')
     >>> logout()
     >>> token = request_token_for(consumer)
 
@@ -308,7 +308,7 @@ we'll create such a consumer, and then a request token for that consumer.
 
     >>> login('foo.bar@canonical.com')
     >>> consumer = factory.makeOAuthConsumer(
-    ...     "System-wide: Ubuntu (mycomputer)")
+    ...     u"System-wide: Ubuntu (mycomputer)")
     >>> logout()
 
     >>> token = request_token_for(consumer)

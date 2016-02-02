@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests publication.py"""
@@ -101,7 +101,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         self.failIfEqual(person.id, person.account.id)
 
         # Create an access token for our new person.
-        consumer = getUtility(IOAuthConsumerSet).new('test-consumer')
+        consumer = getUtility(IOAuthConsumerSet).new(u'test-consumer')
         request_token, _ = consumer.newRequestToken()
         request_token.review(
             person, permission=OAuthPermission.READ_PUBLIC, context=None)
@@ -110,7 +110,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Use oauth.OAuthRequest just to generate a dictionary containing all
         # the parameters we need to use in a valid OAuth request, using the
         # access token we just created for our new person.
-        oauth_consumer = OAuthConsumer(consumer.key, '')
+        oauth_consumer = OAuthConsumer(consumer.key, u'')
         oauth_token = OAuthToken(access_token.key, access_secret)
         oauth_request = OAuthRequest.from_consumer_and_token(
             oauth_consumer, oauth_token)

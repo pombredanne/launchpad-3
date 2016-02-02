@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -1255,7 +1255,10 @@ class WebServicePublication(WebServicePublicationMixin,
             return super(WebServicePublication, self).getPrincipal(request)
 
         # Fetch OAuth authorization information from the request.
-        form = get_oauth_authorization(request)
+        try:
+            form = get_oauth_authorization(request)
+        except UnicodeDecodeError:
+            raise TokenException('Invalid UTF-8.')
 
         consumer_key = form.get('oauth_consumer_key')
         consumers = getUtility(IOAuthConsumerSet)
@@ -1271,8 +1274,10 @@ class WebServicePublication(WebServicePublicationMixin,
             # header.
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
-            if consumer_key == '':
-                consumer_key = 'anonymous client'
+            if isinstance(consumer_key, bytes):
+                consumer_key = consumer_key.decode('UTF-8')
+            if consumer_key == u'':
+                consumer_key = u'anonymous client'
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:

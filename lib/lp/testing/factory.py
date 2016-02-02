@@ -456,8 +456,8 @@ class ObjectFactory:
         string = "%s-%s" % (prefix, self.getUniqueInteger())
         return string
 
-    def getUniqueUnicode(self):
-        return self.getUniqueString().decode('latin-1')
+    def getUniqueUnicode(self, prefix=None):
+        return self.getUniqueString(prefix=prefix).decode('latin-1')
 
     def getUniqueURL(self, scheme=None, host=None):
         """Return a URL unique to this run of the test case."""
@@ -4263,7 +4263,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
         from lp.testing.layers import BaseLayer
         launchpad = launchpadlib_for(
-            "test", person, service_root=BaseLayer.appserver_root_url("api"),
+            u"test", person, service_root=BaseLayer.appserver_root_url("api"),
             version=version)
         login_person(person)
         return launchpad
@@ -4295,9 +4295,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     # Factory methods for OAuth tokens.
     def makeOAuthConsumer(self, key=None, secret=None):
         if key is None:
-            key = self.getUniqueString("oauthconsumerkey")
+            key = self.getUniqueUnicode("oauthconsumerkey")
         if secret is None:
-            secret = ''
+            secret = u''
         return getUtility(IOAuthConsumerSet).new(key, secret)
 
     def makeOAuthRequestToken(self, consumer=None, date_created=None,
