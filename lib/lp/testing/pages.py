@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
@@ -75,9 +75,9 @@ from lp.testing.systemdocs import (
     )
 
 SAMPLEDATA_ACCESS_SECRETS = {
-    'salgado-read-nonprivate': 'secret',
-    'salgado-change-anything': 'test',
-    'nopriv-read-nonprivate': 'mystery',
+    u'salgado-read-nonprivate': u'secret',
+    u'salgado-change-anything': u'test',
+    u'nopriv-read-nonprivate': u'mystery',
     }
 
 
@@ -136,10 +136,14 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         Other parameters are passed to the HTTPCaller used to make the calls.
         """
         if oauth_consumer_key is not None and oauth_access_key is not None:
-            self.consumer = OAuthConsumer(oauth_consumer_key, '')
+            # XXX cjwatson 2016-01-25: Callers should be updated to pass
+            # Unicode directly, but that's a big change.
+            if isinstance(oauth_consumer_key, bytes):
+                oauth_consumer_key = unicode(oauth_consumer_key)
+            self.consumer = OAuthConsumer(oauth_consumer_key, u'')
             if oauth_access_secret is None:
                 oauth_access_secret = SAMPLEDATA_ACCESS_SECRETS.get(
-                    oauth_access_key, '')
+                    oauth_access_key, u'')
             self.access_token = OAuthToken(
                 oauth_access_key, oauth_access_secret)
             # This shouldn't be here, but many old tests expect it.
@@ -691,7 +695,7 @@ def safe_canonical_url(*args, **kwargs):
     return str(canonical_url(*args, **kwargs))
 
 
-def webservice_for_person(person, consumer_key='launchpad-library',
+def webservice_for_person(person, consumer_key=u'launchpad-library',
                           permission=OAuthPermission.READ_PUBLIC,
                           context=None):
     """Return a valid LaunchpadWebServiceCaller for the person.
