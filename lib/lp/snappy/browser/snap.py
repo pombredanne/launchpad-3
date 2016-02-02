@@ -146,7 +146,7 @@ class SnapView(LaunchpadView):
     def person_picker(self):
         field = copy_field(
             ISnap['owner'],
-            vocabularyName='UserTeamsParticipationPlusSelfSimpleDisplay')
+            vocabularyName='AllUserTeamsParticipationPlusSelf')
         return InlinePersonEditPickerWidget(
             self.context, field, format_link(self.context.owner),
             header='Change owner', step_title='Select a new owner')
@@ -322,6 +322,7 @@ class SnapAddView(LaunchpadFormView):
             kwargs = {'git_ref': self.context}
         else:
             kwargs = {'branch': self.context}
+        kwargs['private'] = data['private']
         snap = getUtility(ISnapSet).new(
             self.user, data['owner'], data['distro_series'], data['name'],
             **kwargs)
@@ -337,6 +338,19 @@ class SnapAddView(LaunchpadFormView):
                     'name',
                     'There is already a snap package owned by %s with this '
                     'name.' % owner.displayname)
+            private = data.get('private', None)
+            if private is not None:
+                if IGitRef.providedBy(self.context):
+                    kwargs = {'git_ref': self.context}
+                else:
+                    kwargs = {'branch': self.context}
+                if not getUtility(ISnapSet).isValidPrivacy(
+                        private, owner, **kwargs):
+                    self.setFieldError(
+                        'private',
+                        u'This snap contains private information and cannot '
+                        u'be public.'
+                    )
 
 
 class BaseSnapEditView(LaunchpadEditFormView):
@@ -418,7 +432,9 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     page_title = 'Edit'
 
     field_names = [
-        'owner', 'name', 'private', 'distro_series', 'vcs', 'branch', 'git_ref']
+        'owner', 'name', 'private', 'distro_series', 'vcs', 'branch',
+        'git_ref',
+    ]
     custom_widget('distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
@@ -454,6 +470,16 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
                         'this name.' % owner.displayname)
             except NoSuchSnap:
                 pass
+            private = data.get('private', None)
+            if private is not None:
+                if not getUtility(ISnapSet).isValidPrivacy(
+                        private, owner, self.context.branch,
+                        self.context.git_ref):
+                    self.setFieldError(
+                        'private',
+                        u'This snap contains private information and cannot '
+                        u'be public.'
+                    )
         if 'processors' in data:
             available_processors = set(self.context.available_processors)
             widget = self.widgets['processors']

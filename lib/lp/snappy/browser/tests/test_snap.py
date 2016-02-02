@@ -27,6 +27,7 @@ from zope.security.interfaces import Unauthorized
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
@@ -197,6 +198,40 @@ class TestSnapAddView(BrowserTestCase):
             ["Test Person (test-person)", "Test Team (test-team)"],
             sorted(str(option) for option in options))
 
+    def test_create_new_private_snap(self):
+        # Anyone can create private snaps.
+        branch = self.factory.makeAnyBranch()
+        owner_name = self.person.name
+
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl("Name").value = "brand-new-snap"
+        browser.getControl("Owner").value = [owner_name]
+        browser.getControl("Private").selected = True
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("brand-new-snap", extract_text(content.h1))
+
+    def test_create_new_snap_privacy_mismatch(self):
+        # Private teams can only create private snaps.
+        login_person(self.person)
+        team = self.factory.makeTeam(
+            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch()
+        team_name = team.name
+
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        # XXX cprov 20160202: what other controls named 'Name' ?
+        browser.getControl("Name", index=0).value = "snap-name"
+        browser.getControl("Owner").value = [team_name]
+        browser.getControl("Create snap package").click()
+
+        self.assertEqual(
+            'This snap contains private information and cannot be public.',
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
 
 class TestSnapAdminView(BrowserTestCase):
 
@@ -327,6 +362,21 @@ class TestSnapEditView(BrowserTestCase):
         self.assertEqual(
             "There is already a snap package owned by Test Person with this "
             "name.",
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
+    def test_edit_snap_privacy(self):
+        # Cannot make snap public if there still contain private information.
+        login_person(self.person)
+        team = self.factory.makeTeam(
+            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=team, private=True)
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Private").selected = False
+        browser.getControl("Update snap package").click()
+        self.assertEqual(
+            'This snap contains private information and cannot be public.',
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
     def setUpDistroSeries(self):

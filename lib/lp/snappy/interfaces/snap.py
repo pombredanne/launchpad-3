@@ -21,6 +21,7 @@ __all__ = [
     'SnapBuildDisallowedArchitecture',
     'SnapFeatureDisabled',
     'SnapNotOwner',
+    'SnapPrivacyMismatch',
     ]
 
 import httplib
@@ -162,6 +163,15 @@ class NoSourceForSnap(Exception):
         super(NoSourceForSnap, self).__init__(
             "New snap packages must have either a Bazaar branch or a Git "
             "branch.")
+
+
+@error_status(httplib.BAD_REQUEST)
+class SnapPrivacyMismatch(Exception):
+    """Snap package privacy does not match its content."""
+
+    def __init__(self):
+        super(SnapPrivacyMismatch, self).__init__(
+            "Snap contains private information and cannot be public.")
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -350,7 +360,8 @@ class ISnapAdminAttributes(Interface):
 
 
 class ISnap(
-    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes, IPrivacy):
+        ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
+        IPrivacy):
     """A buildable snap package."""
 
     # XXX cjwatson 2015-07-17 bug=760849: "beta" is a lie to get WADL
@@ -377,6 +388,9 @@ class ISnapSet(Interface):
 
     def exists(owner, name):
         """Check to see if a matching snap exists."""
+
+    def isValidPrivacy(private, owner, branch=None, git_ref=None):
+        """Whether or not the privacy context is valid."""
 
     @operation_parameters(
         owner=Reference(IPerson, title=_("Owner"), required=True),

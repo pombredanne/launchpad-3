@@ -26,6 +26,7 @@ from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
@@ -45,6 +46,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.gitcollection import GenericGitCollection
 from lp.code.model.gitrepository import GitRepository
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -84,6 +86,7 @@ from lp.snappy.interfaces.snap import (
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
+    SnapPrivacyMismatch,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.model.snapbuild import SnapBuild
@@ -390,7 +393,8 @@ class SnapSet:
         if self.exists(owner, name):
             raise DuplicateSnapName
 
-        # XXX cprov 20160114: missing privacy checks.
+        if not self.isValidPrivacy(private, owner, branch, git_ref):
+            raise SnapPrivacyMismatch
 
         store = IMasterStore(Snap)
         snap = Snap(
@@ -407,6 +411,23 @@ class SnapSet:
         snap.setProcessors(processors)
 
         return snap
+
+    def isValidPrivacy(self, private, owner, branch=None, git_ref=None):
+        """See `ISnapSet`."""
+        # Private snaps may contain anything.
+        if private:
+            return True
+
+        # Public snaps with private sources are not allowed.
+        source_ref = branch or git_ref
+        if source_ref.information_type in PRIVATE_INFORMATION_TYPES:
+            return False
+
+        # Public snaps owned by private teams are not allowed.
+        if owner.is_team and owner.visibility == PersonVisibility.PRIVATE:
+            return False
+
+        return True
 
     def _getByName(self, owner, name):
         return IStore(Snap).find(
