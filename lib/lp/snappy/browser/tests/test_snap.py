@@ -64,6 +64,7 @@ from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    first_tag_by_class,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
@@ -212,6 +213,13 @@ class TestSnapAddView(BrowserTestCase):
 
         content = find_main_content(browser.contents)
         self.assertEqual("brand-new-snap", extract_text(content.h1))
+        # XXX cprov 20160202: something more clever ...
+        private_portlet_content = extract_text(
+            first_tag_by_class(browser.contents, "portlet")
+        ).replace('\n', ' ')
+        self.assertEqual(
+            'This snap contains Private information',
+            private_portlet_content)
 
     def test_create_new_snap_privacy_mismatch(self):
         # Private teams can only create private snaps.
