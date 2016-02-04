@@ -8,9 +8,9 @@
   "
 >
     <span tal:attributes="class python: path('context/private') and 'sprite private' or 'sprite public'"
-      >This snap contains
-      <strong tal:content="python: path('context/private') and 'Private' or 'Public'"></strong>
-      information</span>
+      >This snap contains <strong
+        tal:content="python: path('context/private') and 'Private' or 'Public'"
+      ></strong> information</span>
 </div>
 
 

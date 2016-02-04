@@ -64,7 +64,7 @@ from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
-    first_tag_by_class,
+    find_tag_by_id,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
@@ -199,50 +199,42 @@ class TestSnapAddView(BrowserTestCase):
             ["Test Person (test-person)", "Test Team (test-team)"],
             sorted(str(option) for option in options))
 
-    def assertPrivacyPortletContent(self, text, content):
-        """Assert contents of the privacy portlet.
-
-        Linefeeds are ignored.
-        """
-        # XXX cprov 20160202: something more clever ...
-        found = extract_text(
-            first_tag_by_class(content, "portlet")).replace('\n', ' ')
-        self.assertEqual(text, found)
-
     def test_create_new_snap_public(self):
         # Public owner implies in public snap.
         branch = self.factory.makeAnyBranch()
 
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
-        browser.getControl("Name", index=0).value = "public-snap"
+        browser.getControl("Name").value = "public-snap"
         browser.getControl("Create snap package").click()
 
         content = find_main_content(browser.contents)
         self.assertEqual("public-snap", extract_text(content.h1))
-        self.assertPrivacyPortletContent(
-            'This snap contains Public information', browser.contents
+        self.assertEqual(
+            'This snap contains Public information',
+            extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
 
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.
         login_person(self.person)
-        team = self.factory.makeTeam(
-            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        self.factory.makeTeam(
+            name='super-private', owner=self.person,
+            visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makeAnyBranch()
-        team_name = team.name
 
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
-        # XXX cprov 20160202: what other controls named 'Name' ?
-        browser.getControl("Name", index=0).value = "private-snap"
-        browser.getControl("Owner").value = [team_name]
+        browser.getControl("Name").value = "private-snap"
+        browser.getControl("Owner").value = ['super-private']
         browser.getControl("Create snap package").click()
 
         content = find_main_content(browser.contents)
         self.assertEqual("private-snap", extract_text(content.h1))
-        self.assertPrivacyPortletContent(
-            'This snap contains Private information', browser.contents)
+        self.assertEqual(
+            'This snap contains Private information',
+            extract_text(find_tag_by_id(browser.contents, "privacy"))
+        )
 
 
 class TestSnapAdminView(BrowserTestCase):
@@ -295,11 +287,11 @@ class TestSnapAdminView(BrowserTestCase):
             owner=self.person, visibility=PersonVisibility.PRIVATE)
         snap = self.factory.makeSnap(
             registrant=self.person, owner=team, private=True)
-        # XXX cprov 20160203: this is not correct, PPA (self) admins and
-        # Commercial cannot view private teams ...
-        admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).admin])
-        browser = self.getViewBrowser(snap, user=admin)
+        # Note that only LP admins or, in this case, commercial_admins
+        # can reach this snap because it's owned by a private team.
+        commercial_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        browser = self.getViewBrowser(snap, user=commercial_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Private").selected = False
         browser.getControl("Update snap package").click()

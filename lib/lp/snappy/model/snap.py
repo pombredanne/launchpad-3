@@ -424,9 +424,6 @@ class SnapSet:
         if owner.is_team and owner.visibility == PersonVisibility.PRIVATE:
             return False
 
-        # XXX cprov 20160203: block public snaps with builds from private
-        # archives.
-
         return True
 
     def _getByName(self, owner, name):
