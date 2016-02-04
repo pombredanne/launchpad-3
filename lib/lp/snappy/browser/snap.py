@@ -146,7 +146,7 @@ class SnapView(LaunchpadView):
     def person_picker(self):
         field = copy_field(
             ISnap['owner'],
-            vocabularyName='UserTeamsParticipationPlusSelfSimpleDisplay')
+            vocabularyName='AllUserTeamsParticipationPlusSelfSimpleDisplay')
         return InlinePersonEditPickerWidget(
             self.context, field, format_link(self.context.owner),
             header='Change owner', step_title='Select a new owner')
@@ -273,6 +273,7 @@ class ISnapEditSchema(Interface):
     use_template(ISnap, include=[
         'owner',
         'name',
+        'private',
         'require_virtualized',
         ])
     distro_series = Choice(
@@ -321,9 +322,11 @@ class SnapAddView(LaunchpadFormView):
             kwargs = {'git_ref': self.context}
         else:
             kwargs = {'branch': self.context}
+        private = not getUtility(
+            ISnapSet).isValidPrivacy(False, data['owner'], **kwargs)
         snap = getUtility(ISnapSet).new(
             self.user, data['owner'], data['distro_series'], data['name'],
-            **kwargs)
+            private=private, **kwargs)
         self.next_url = canonical_url(snap)
 
     def validate(self, data):
@@ -404,7 +407,20 @@ class SnapAdminView(BaseSnapEditView):
 
     page_title = 'Administer'
 
-    field_names = ['require_virtualized']
+    field_names = ['private', 'require_virtualized']
+
+    def validate(self, data):
+        super(SnapAdminView, self).validate(data)
+        private = data.get('private', None)
+        if private is not None:
+            if not getUtility(ISnapSet).isValidPrivacy(
+                    private, self.context.owner, self.context.branch,
+                    self.context.git_ref):
+                self.setFieldError(
+                    'private',
+                    u'This snap contains private information and cannot '
+                    u'be public.'
+                )
 
 
 class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):

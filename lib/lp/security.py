@@ -3112,12 +3112,18 @@ class ViewWebhookDeliveryJob(DelegatedAuthorization):
             obj, obj.webhook, 'launchpad.View')
 
 
-class ViewSnap(DelegatedAuthorization):
+class ViewSnap(AuthorizationBase):
+    """Private snaps are only visible to their owners and admins."""
     permission = 'launchpad.View'
     usedfor = ISnap
 
-    def __init__(self, obj):
-        super(ViewSnap, self).__init__(obj, obj.owner, 'launchpad.View')
+    def checkUnauthenticated(self):
+        return not self.obj.private
+
+    def checkAuthenticated(self, user):
+        return (
+            not self.obj.private or
+            self.forwardCheckAuthenticated(user, self.obj.owner))
 
 
 class EditSnap(AuthorizationBase):
