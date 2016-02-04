@@ -1105,6 +1105,20 @@ class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
         return SimpleTerm(obj, obj.name, obj.displayname)
 
 
+class AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
+    AllUserTeamsParticipationPlusSelfVocabulary):
+    """Like `AllUserTeamsParticipationPlusSelfVocabulary` but the term title is
+    the person.displayname rather than unique_displayname.
+
+    See `UserTeamsParticipationPlusSelfSimpleDisplayVocabulary` for more
+    information on usage.
+    """
+
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        return SimpleTerm(obj, obj.name, obj.displayname)
+
+
 @implementer(IHugeVocabulary)
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     """All `IProductRelease` objects vocabulary."""

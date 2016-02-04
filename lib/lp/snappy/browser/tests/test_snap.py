@@ -27,6 +27,7 @@ from zope.security.interfaces import Unauthorized
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
@@ -63,6 +64,7 @@ from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    find_tag_by_id,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
@@ -197,6 +199,43 @@ class TestSnapAddView(BrowserTestCase):
             ["Test Person (test-person)", "Test Team (test-team)"],
             sorted(str(option) for option in options))
 
+    def test_create_new_snap_public(self):
+        # Public owner implies in public snap.
+        branch = self.factory.makeAnyBranch()
+
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl("Name").value = "public-snap"
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("public-snap", extract_text(content.h1))
+        self.assertEqual(
+            'This snap contains Public information',
+            extract_text(find_tag_by_id(browser.contents, "privacy"))
+        )
+
+    def test_create_new_snap_private(self):
+        # Private teams will automatically create private snaps.
+        login_person(self.person)
+        self.factory.makeTeam(
+            name='super-private', owner=self.person,
+            visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch()
+
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl("Name").value = "private-snap"
+        browser.getControl("Owner").value = ['super-private']
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("private-snap", extract_text(content.h1))
+        self.assertEqual(
+            'This snap contains Private information',
+            extract_text(find_tag_by_id(browser.contents, "privacy"))
+        )
+
 
 class TestSnapAdminView(BrowserTestCase):
 
@@ -222,19 +261,43 @@ class TestSnapAdminView(BrowserTestCase):
             user=self.person)
 
     def test_admin_snap(self):
-        # Admins can change require_virtualized.
+        # Admins can change require_virtualized and privacy.
         login("admin@canonical.com")
         ppa_admin = self.factory.makePerson(
             member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
+        self.assertFalse(snap.private)
+
         browser = self.getViewBrowser(snap, user=ppa_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Require virtualized builders").selected = False
+        browser.getControl("Private").selected = True
         browser.getControl("Update snap package").click()
+
         login_person(self.person)
         self.assertFalse(snap.require_virtualized)
+        self.assertTrue(snap.private)
+
+    def test_admin_snap_privacy_mismatch(self):
+        # Cannot make snap public if it still contains private information.
+        login_person(self.person)
+        team = self.factory.makeTeam(
+            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=team, private=True)
+        # Note that only LP admins or, in this case, commercial_admins
+        # can reach this snap because it's owned by a private team.
+        commercial_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        browser = self.getViewBrowser(snap, user=commercial_admin)
+        browser.getLink("Administer snap package").click()
+        browser.getControl("Private").selected = False
+        browser.getControl("Update snap package").click()
+        self.assertEqual(
+            'This snap contains private information and cannot be public.',
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
     def test_admin_snap_sets_date_last_modified(self):
         # Administering a snap package sets the date_last_modified property.

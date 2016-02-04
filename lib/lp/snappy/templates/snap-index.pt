@@ -18,6 +18,7 @@
   </metal:registering>
 
   <metal:side fill-slot="side">
+    <div tal:replace="structure context/@@+portlet-privacy" />
     <div tal:replace="structure context/@@+global-actions"/>
   </metal:side>
 

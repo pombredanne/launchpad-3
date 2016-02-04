@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
     BuildQueueStatus,
@@ -23,6 +24,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import (
@@ -43,6 +45,7 @@ from lp.snappy.interfaces.snap import (
     SnapBuildAlreadyPending,
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
+    SnapPrivacyMismatch,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.testing import (
@@ -404,6 +407,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertIsNone(snap.git_path)
         self.assertIsNone(snap.git_ref)
         self.assertTrue(snap.require_virtualized)
+        self.assertFalse(snap.private)
 
     def test_creation_git(self):
         # The metadata entries supplied when a Snap is created for a Git
@@ -420,6 +424,65 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(ref.path, snap.git_path)
         self.assertEqual(ref, snap.git_ref)
         self.assertTrue(snap.require_virtualized)
+        self.assertFalse(snap.private)
+
+    def test_private_snap_for_public_sources(self):
+        # Creating private snaps for public sources is allowed.
+        [ref] = self.factory.makeGitRefs()
+        components = self.makeSnapComponents(git_ref=ref)
+        components['private'] = True
+        snap = getUtility(ISnapSet).new(**components)
+        with person_logged_in(components['owner']):
+            self.assertTrue(snap.private)
+
+    def test_private_git_requires_private_snap(self):
+        # Snaps for a private Git branch cannot be public.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            [git_ref] = self.factory.makeGitRefs(
+                owner=owner, information_type=InformationType.PRIVATESECURITY)
+            components = dict(
+                registrant=owner,
+                owner=owner,
+                git_ref=git_ref,
+                distro_series=self.factory.makeDistroSeries(),
+                name=self.factory.getUniqueString(u"snap-name"),
+            )
+            self.assertRaises(
+                SnapPrivacyMismatch, getUtility(ISnapSet).new, **components)
+
+    def test_private_bzr_requires_private_snap(self):
+        # Snaps for a private Bzr branch cannot be public.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            branch = self.factory.makeAnyBranch(
+                owner=owner, information_type=InformationType.PRIVATESECURITY)
+            components = dict(
+                registrant=owner,
+                owner=owner,
+                branch=branch,
+                distro_series=self.factory.makeDistroSeries(),
+                name=self.factory.getUniqueString(u"snap-name"),
+            )
+            self.assertRaises(
+                SnapPrivacyMismatch, getUtility(ISnapSet).new, **components)
+
+    def test_private_team_requires_private_snap(self):
+        # Snaps owned by private teams cannot be public.
+        registrant = self.factory.makePerson()
+        with person_logged_in(registrant):
+            private_team = self.factory.makeTeam(
+                owner=registrant, visibility=PersonVisibility.PRIVATE)
+            [git_ref] = self.factory.makeGitRefs()
+            components = dict(
+                registrant=registrant,
+                owner=private_team,
+                git_ref=git_ref,
+                distro_series=self.factory.makeDistroSeries(),
+                name=self.factory.getUniqueString(u"snap-name"),
+            )
+            self.assertRaises(
+                SnapPrivacyMismatch, getUtility(ISnapSet).new, **components)
 
     def test_creation_no_source(self):
         # Attempting to create a Snap with neither a Bazaar branch nor a Git
@@ -703,7 +766,8 @@ class TestSnapWebservice(TestCaseWithFactory):
         return self.webservice.getAbsoluteUrl(api_url(obj))
 
     def makeSnap(self, owner=None, distroseries=None, branch=None,
-                 git_ref=None, processors=None, webservice=None):
+                 git_ref=None, processors=None, webservice=None,
+                 private=False):
         if owner is None:
             owner = self.person
         if distroseries is None:
@@ -726,7 +790,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         logout()
         response = webservice.named_post(
             "/+snaps", "new", owner=owner_url, distro_series=distroseries_url,
-            name="mir", **kwargs)
+            name="mir", private=private, **kwargs)
         self.assertEqual(201, response.status)
         return webservice.get(response.getHeader("Location")).jsonBody()
 
@@ -774,6 +838,21 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertEqual(ref.path, snap["git_path"])
             self.assertEqual(self.getURL(ref), snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
+
+    def test_new_private(self):
+        # Ensure private Snap creation works.
+        team = self.factory.makeTeam(owner=self.person)
+        distroseries = self.factory.makeDistroSeries(registrant=team)
+        [ref] = self.factory.makeGitRefs()
+        private_webservice = webservice_for_person(
+            self.person, permission=OAuthPermission.WRITE_PRIVATE)
+        private_webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+        snap = self.makeSnap(
+            owner=team, distroseries=distroseries, git_ref=ref,
+            webservice=private_webservice, private=True)
+        with person_logged_in(self.person):
+            self.assertTrue(snap["private"])
 
     def test_duplicate(self):
         # An attempt to create a duplicate Snap fails.
