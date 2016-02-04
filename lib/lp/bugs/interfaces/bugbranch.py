@@ -16,15 +16,10 @@ from lazr.restful.declarations import (
     )
 from lazr.restful.fields import ReferenceChoice
 from zope.interface import Interface
-from zope.schema import (
-    Int,
-    Object,
-    TextLine,
-    )
+from zope.schema import Object
 
 from lp import _
 from lp.app.interfaces.launchpad import IHasDateCreated
-from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -37,25 +32,14 @@ class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
 
     export_as_webservice_entry()
 
-    id = Int(title=_("Bug Branch #"))
     bug = exported(
         BugField(
             title=_("Bug #"),
             required=True, readonly=True))
-    branch_id = Int(title=_("Branch ID"), required=True, readonly=True)
     branch = exported(
         ReferenceChoice(
             title=_("Branch"), schema=IBranch,
             vocabulary="Branch", required=True))
-    revision_hint = TextLine(title=_("Revision Hint"))
-
-    bug_task = Object(
-        schema=IBugTask, title=_("The bug task that the branch fixes"),
-        description=_(
-            "the bug task reported against this branch's product or the "
-            "first bug task (in case where there is no task reported "
-            "against the branch's product)."),
-        readonly=True)
 
     registrant = Object(
         schema=IPerson, readonly=True, required=True,

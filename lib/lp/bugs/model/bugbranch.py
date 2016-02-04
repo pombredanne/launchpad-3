@@ -12,7 +12,6 @@ from sqlobject import (
     ForeignKey,
     IN,
     IntCol,
-    StringCol,
     )
 from zope.interface import implementer
 
@@ -36,7 +35,6 @@ class BugBranch(SQLBase):
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
     branch_id = IntCol(dbName="branch", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
-    revision_hint = StringCol(default=None)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -46,15 +44,6 @@ class BugBranch(SQLBase):
     def target(self):
         """See `IHasBranchTarget`."""
         return self.branch.target
-
-    @property
-    def bug_task(self):
-        """See `IBugBranch`."""
-        task = self.bug.getBugTask(self.branch.product)
-        if task is None:
-            # Just choose the first task for the bug.
-            task = self.bug.bugtasks[0]
-        return task
 
 
 @implementer(IBugBranchSet)
