@@ -28,7 +28,6 @@ import re
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
-    ObjectDeletedEvent,
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
@@ -148,6 +147,10 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.buglinktarget import (
+    ObjectLinkedEvent,
+    ObjectUnlinkedEvent,
+    )
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
@@ -1366,7 +1369,8 @@ class Bug(SQLBase, InformationTypeMixin):
         branch.date_last_modified = UTC_NOW
 
         self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))
-        notify(ObjectCreatedEvent(bug_branch))
+        notify(ObjectLinkedEvent(branch, self, user=registrant))
+        notify(ObjectLinkedEvent(self, branch, user=registrant))
 
         return bug_branch
 
@@ -1375,7 +1379,8 @@ class Bug(SQLBase, InformationTypeMixin):
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:
             self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
-            notify(ObjectDeletedEvent(bug_branch, user=user))
+            notify(ObjectUnlinkedEvent(branch, self, user=user))
+            notify(ObjectUnlinkedEvent(self, branch, user=user))
             bug_branch.destroySelf()
 
     def getVisibleLinkedBranches(self, user, eager_load=False):
