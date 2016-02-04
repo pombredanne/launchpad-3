@@ -1900,7 +1900,9 @@ class TestPublisher(TestPublisherBase):
 
         release = self.parseRelease(suite_path('Release'))
         paths = ['Release'] + [entry['name'] for entry in release['md5sum']]
-        timestamps = set(os.stat(suite_path(path)).st_mtime for path in paths)
+        timestamps = set(
+            os.stat(suite_path(path)).st_mtime
+            for path in paths if os.path.exists(suite_path(path)))
         self.assertEqual(1, len(timestamps))
 
     def testCreateSeriesAliasesNoAlias(self):
