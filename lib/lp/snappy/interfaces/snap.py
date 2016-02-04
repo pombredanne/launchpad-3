@@ -337,16 +337,17 @@ class ISnapEditableAttributes(IHasOwner):
             "The Git branch containing a snapcraft.yaml recipe at the top "
             "level.")))
 
-    private = exported(Bool(
-        title=_("Private"), required=False, readonly=False,
-        description=_("Whether or not this snap is private.")))
-
 
 class ISnapAdminAttributes(Interface):
     """`ISnap` attributes that can be edited by admins.
 
     These attributes need launchpad.View to see, and launchpad.Admin to change.
     """
+
+    private = exported(Bool(
+        title=_("Private"), required=False, readonly=False,
+        description=_("Whether or not this snap is private.")))
+
     require_virtualized = exported(Bool(
         title=_("Require virtualized builders"), required=True, readonly=False,
         description=_("Only build this snap package on virtual builders.")))
@@ -360,8 +361,8 @@ class ISnapAdminAttributes(Interface):
 
 
 class ISnap(
-        ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
-        IPrivacy):
+    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
+    IPrivacy):
     """A buildable snap package."""
 
     # XXX cjwatson 2015-07-17 bug=760849: "beta" is a lie to get WADL

@@ -315,7 +315,6 @@
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
-
   <securedutility
     name="AllUserTeamsParticipationPlusSelf"
     component="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfVocabulary"
@@ -325,6 +324,18 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+  <securedutility
+    name="AllUserTeamsParticipationPlusSelfSimpleDisplay"
+    component="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary">
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 

@@ -290,9 +290,6 @@ class Snap(Storm):
 
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
-
-        # XXX cprov 20160114: missing privacy checks.
-
         query_args = [
             SnapBuild.snap == self,
             SnapBuild.archive_id == Archive.id,
@@ -426,6 +423,9 @@ class SnapSet:
         # Public snaps owned by private teams are not allowed.
         if owner.is_team and owner.visibility == PersonVisibility.PRIVATE:
             return False
+
+        # XXX cprov 20160203: block public snaps with builds from private
+        # archives.
 
         return True
 

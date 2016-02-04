@@ -163,10 +163,11 @@ class SnapBuild(PackageBuildMixin, Storm):
     @property
     def is_private(self):
         """See `IBuildFarmJob`."""
-
-        # XXX cprov 20160114: consider snap privacy.
-
-        return self.snap.owner.private or self.archive.private
+        return (
+            self.snap.private or
+            self.snap.owner.private or
+            self.archive.private
+        )
 
     @property
     def title(self):

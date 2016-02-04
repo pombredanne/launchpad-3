@@ -774,9 +774,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             distroseries = self.factory.makeDistroSeries(registrant=owner)
         if branch is None and git_ref is None:
             branch = self.factory.makeAnyBranch()
-        kwargs = {
-            'private': private,
-        }
+        kwargs = {}
         if webservice is None:
             webservice = self.webservice
         transaction.commit()
@@ -792,7 +790,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         logout()
         response = webservice.named_post(
             "/+snaps", "new", owner=owner_url, distro_series=distroseries_url,
-            name="mir", **kwargs)
+            name="mir", private=private, **kwargs)
         self.assertEqual(201, response.status)
         return webservice.get(response.getHeader("Location")).jsonBody()
 

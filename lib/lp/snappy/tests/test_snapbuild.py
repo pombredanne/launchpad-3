@@ -127,7 +127,7 @@ class TestSnapBuild(TestCaseWithFactory):
             visibility=PersonVisibility.PRIVATE)
         with person_logged_in(private_team.teamowner):
             build = self.factory.makeSnapBuild(
-                requester=private_team.teamowner, owner=private_team)
+                requester=private_team.teamowner, owner=private_team, private=True)
             self.assertTrue(build.is_private)
         private_archive = self.factory.makeArchive(private=True)
         with person_logged_in(private_archive.owner):
@@ -366,7 +366,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             owner=self.person, visibility=PersonVisibility.PRIVATE)
         with person_logged_in(self.person):
             db_build = self.factory.makeSnapBuild(
-                requester=self.person, owner=db_team)
+                requester=self.person, owner=db_team, private=True)
             build_url = api_url(db_build)
         unpriv_webservice = webservice_for_person(
             self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)

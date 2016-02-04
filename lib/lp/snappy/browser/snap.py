@@ -146,7 +146,7 @@ class SnapView(LaunchpadView):
     def person_picker(self):
         field = copy_field(
             ISnap['owner'],
-            vocabularyName='AllUserTeamsParticipationPlusSelf')
+            vocabularyName='AllUserTeamsParticipationPlusSelfSimpleDisplay')
         return InlinePersonEditPickerWidget(
             self.context, field, format_link(self.context.owner),
             header='Change owner', step_title='Select a new owner')
@@ -292,7 +292,7 @@ class SnapAddView(LaunchpadFormView):
     page_title = label = 'Create a new snap package'
 
     schema = ISnapEditSchema
-    field_names = ['owner', 'name', 'private', 'distro_series']
+    field_names = ['owner', 'name', 'distro_series']
     custom_widget('distro_series', LaunchpadRadioWidget)
 
     def initialize(self):
@@ -322,10 +322,11 @@ class SnapAddView(LaunchpadFormView):
             kwargs = {'git_ref': self.context}
         else:
             kwargs = {'branch': self.context}
-        kwargs['private'] = data['private']
+        private = not getUtility(
+            ISnapSet).isValidPrivacy(False, data['owner'], **kwargs)
         snap = getUtility(ISnapSet).new(
             self.user, data['owner'], data['distro_series'], data['name'],
-            **kwargs)
+            private=private, **kwargs)
         self.next_url = canonical_url(snap)
 
     def validate(self, data):
@@ -338,19 +339,6 @@ class SnapAddView(LaunchpadFormView):
                     'name',
                     'There is already a snap package owned by %s with this '
                     'name.' % owner.displayname)
-            private = data.get('private', None)
-            if private is not None:
-                if IGitRef.providedBy(self.context):
-                    kwargs = {'git_ref': self.context}
-                else:
-                    kwargs = {'branch': self.context}
-                if not getUtility(ISnapSet).isValidPrivacy(
-                        private, owner, **kwargs):
-                    self.setFieldError(
-                        'private',
-                        u'This snap contains private information and cannot '
-                        u'be public.'
-                    )
 
 
 class BaseSnapEditView(LaunchpadEditFormView):
@@ -419,7 +407,20 @@ class SnapAdminView(BaseSnapEditView):
 
     page_title = 'Administer'
 
-    field_names = ['require_virtualized']
+    field_names = ['private', 'require_virtualized']
+
+    def validate(self, data):
+        super(SnapAdminView, self).validate(data)
+        private = data.get('private', None)
+        if private is not None:
+            if not getUtility(ISnapSet).isValidPrivacy(
+                    private, self.context.owner, self.context.branch,
+                    self.context.git_ref):
+                self.setFieldError(
+                    'private',
+                    u'This snap contains private information and cannot '
+                    u'be public.'
+                )
 
 
 class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
@@ -432,8 +433,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     page_title = 'Edit'
 
     field_names = [
-        'owner', 'name', 'private', 'distro_series', 'vcs', 'branch',
-        'git_ref',
+        'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_ref',
     ]
     custom_widget('distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
@@ -470,16 +470,6 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
                         'this name.' % owner.displayname)
             except NoSuchSnap:
                 pass
-            private = data.get('private', None)
-            if private is not None:
-                if not getUtility(ISnapSet).isValidPrivacy(
-                        private, owner, self.context.branch,
-                        self.context.git_ref):
-                    self.setFieldError(
-                        'private',
-                        u'This snap contains private information and cannot '
-                        u'be public.'
-                    )
         if 'processors' in data:
             available_processors = set(self.context.available_processors)
             widget = self.widgets['processors']

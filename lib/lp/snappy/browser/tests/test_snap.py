@@ -199,30 +199,33 @@ class TestSnapAddView(BrowserTestCase):
             ["Test Person (test-person)", "Test Team (test-team)"],
             sorted(str(option) for option in options))
 
-    def test_create_new_private_snap(self):
-        # Anyone can create private snaps.
+    def assertPrivacyPortletContent(self, text, content):
+        """Assert contents of the privacy portlet.
+
+        Linefeeds are ignored.
+        """
+        # XXX cprov 20160202: something more clever ...
+        found = extract_text(
+            first_tag_by_class(content, "portlet")).replace('\n', ' ')
+        self.assertEqual(text, found)
+
+    def test_create_new_snap_public(self):
+        # Public owner implies in public snap.
         branch = self.factory.makeAnyBranch()
-        owner_name = self.person.name
 
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
-        browser.getControl("Name").value = "brand-new-snap"
-        browser.getControl("Owner").value = [owner_name]
-        browser.getControl("Private").selected = True
+        browser.getControl("Name", index=0).value = "public-snap"
         browser.getControl("Create snap package").click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual("brand-new-snap", extract_text(content.h1))
-        # XXX cprov 20160202: something more clever ...
-        private_portlet_content = extract_text(
-            first_tag_by_class(browser.contents, "portlet")
-        ).replace('\n', ' ')
-        self.assertEqual(
-            'This snap contains Private information',
-            private_portlet_content)
+        self.assertEqual("public-snap", extract_text(content.h1))
+        self.assertPrivacyPortletContent(
+            'This snap contains Public information', browser.contents
+        )
 
-    def test_create_new_snap_privacy_mismatch(self):
-        # Private teams can only create private snaps.
+    def test_create_new_snap_private(self):
+        # Private teams will automatically create private snaps.
         login_person(self.person)
         team = self.factory.makeTeam(
             owner=self.person, visibility=PersonVisibility.PRIVATE)
@@ -232,13 +235,14 @@ class TestSnapAddView(BrowserTestCase):
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
         # XXX cprov 20160202: what other controls named 'Name' ?
-        browser.getControl("Name", index=0).value = "snap-name"
+        browser.getControl("Name", index=0).value = "private-snap"
         browser.getControl("Owner").value = [team_name]
         browser.getControl("Create snap package").click()
 
-        self.assertEqual(
-            'This snap contains private information and cannot be public.',
-            extract_text(find_tags_by_class(browser.contents, "message")[1]))
+        content = find_main_content(browser.contents)
+        self.assertEqual("private-snap", extract_text(content.h1))
+        self.assertPrivacyPortletContent(
+            'This snap contains Private information', browser.contents)
 
 
 class TestSnapAdminView(BrowserTestCase):
@@ -265,19 +269,43 @@ class TestSnapAdminView(BrowserTestCase):
             user=self.person)
 
     def test_admin_snap(self):
-        # Admins can change require_virtualized.
+        # Admins can change require_virtualized and privacy.
         login("admin@canonical.com")
         ppa_admin = self.factory.makePerson(
             member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
+        self.assertFalse(snap.private)
+
         browser = self.getViewBrowser(snap, user=ppa_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Require virtualized builders").selected = False
+        browser.getControl("Private").selected = True
         browser.getControl("Update snap package").click()
+
         login_person(self.person)
         self.assertFalse(snap.require_virtualized)
+        self.assertTrue(snap.private)
+
+    def test_admin_snap_privacy_mismatch(self):
+        # Cannot make snap public if it still contains private information.
+        login_person(self.person)
+        team = self.factory.makeTeam(
+            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=team, private=True)
+        # XXX cprov 20160203: this is not correct, PPA (self) admins and
+        # Commercial cannot view private teams ...
+        admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).admin])
+        browser = self.getViewBrowser(snap, user=admin)
+        browser.getLink("Administer snap package").click()
+        browser.getControl("Private").selected = False
+        browser.getControl("Update snap package").click()
+        self.assertEqual(
+            'This snap contains private information and cannot be public.',
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
     def test_admin_snap_sets_date_last_modified(self):
         # Administering a snap package sets the date_last_modified property.
@@ -370,21 +398,6 @@ class TestSnapEditView(BrowserTestCase):
         self.assertEqual(
             "There is already a snap package owned by Test Person with this "
             "name.",
-            extract_text(find_tags_by_class(browser.contents, "message")[1]))
-
-    def test_edit_snap_privacy(self):
-        # Cannot make snap public if there still contain private information.
-        login_person(self.person)
-        team = self.factory.makeTeam(
-            owner=self.person, visibility=PersonVisibility.PRIVATE)
-        snap = self.factory.makeSnap(
-            registrant=self.person, owner=team, private=True)
-        browser = self.getViewBrowser(snap, user=self.person)
-        browser.getLink("Edit snap package").click()
-        browser.getControl("Private").selected = False
-        browser.getControl("Update snap package").click()
-        self.assertEqual(
-            'This snap contains private information and cannot be public.',
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
     def setUpDistroSeries(self):
