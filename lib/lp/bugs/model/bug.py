@@ -1381,7 +1381,7 @@ class Bug(SQLBase, InformationTypeMixin):
             self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
             notify(ObjectUnlinkedEvent(branch, self, user=user))
             notify(ObjectUnlinkedEvent(self, branch, user=user))
-            bug_branch.destroySelf()
+            Store.of(bug_branch).remove(bug_branch)
 
     def getVisibleLinkedBranches(self, user, eager_load=False):
         """Return all the branches linked to the bug that `user` can see."""

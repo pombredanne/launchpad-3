@@ -524,10 +524,6 @@
         class="lp.bugs.model.bugbranch.BugBranch">
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranch"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
-                destroySelf"/>
     </class>
 
     <!-- BugBranchSet -->
