@@ -1355,10 +1355,6 @@ class Bug(SQLBase, InformationTypeMixin):
             title=title, message=message,
             send_notifications=send_notifications)
 
-    def hasBranch(self, branch):
-        """See `IBug`."""
-        return BugBranch.selectOneBy(branch=branch, bug=self) is not None
-
     def linkBranch(self, branch, registrant):
         """See `IBug`."""
         for bug_branch in shortlist(self.linked_bugbranches):

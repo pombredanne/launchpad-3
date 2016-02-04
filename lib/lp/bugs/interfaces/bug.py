@@ -399,9 +399,6 @@ class IBugView(Interface):
             None to prevent lazy evaluation triggering database lookups.
         """
 
-    def hasBranch(branch):
-        """Is this branch linked to this bug?"""
-
     def isSubscribed(person):
         """Is person subscribed to this bug?
 
