@@ -315,6 +315,7 @@
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+
   <securedutility
     name="AllUserTeamsParticipationPlusSelf"
     component="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfVocabulary"
@@ -327,6 +328,7 @@
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+
   <securedutility
     name="AllUserTeamsParticipationPlusSelfSimpleDisplay"
     component="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary"
@@ -338,6 +340,7 @@
   <class class="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary">
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
+
 
   <securedutility
     name="ActiveMailingList"

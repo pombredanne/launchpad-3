@@ -433,8 +433,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     page_title = 'Edit'
 
     field_names = [
-        'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_ref',
-    ]
+        'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_ref']
     custom_widget('distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
