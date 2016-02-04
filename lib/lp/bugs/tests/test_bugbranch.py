@@ -188,7 +188,7 @@ class TestBugBranch(TestCaseWithFactory):
         # Bugs have a linked_branches attribute which is initially an empty
         # collection.
         bug = self.factory.makeBug()
-        self.assertEqual([], list(bug.linked_bugbranches))
+        self.assertEqual([], list(bug.linked_branches))
 
     def test_linkBranch_adds_to_linked_branches(self):
         # Bug.linkBranch populates the Bug.linked_branches with the created
@@ -235,7 +235,7 @@ class TestBugBranch(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         bug.linkBranch(branch, self.factory.makePerson())
         bug.unlinkBranch(branch, self.factory.makePerson())
-        self.assertEqual([], list(bug.linked_bugbranches))
+        self.assertEqual([], list(bug.linked_branches))
         self.assertFalse(bug.hasBranch(branch))
 
     def test_unlink_not_linked_branch(self):
@@ -244,7 +244,7 @@ class TestBugBranch(TestCaseWithFactory):
         bug = self.factory.makeBug()
         branch = self.factory.makeBranch()
         bug.unlinkBranch(branch, self.factory.makePerson())
-        self.assertEqual([], list(bug.linked_bugbranches))
+        self.assertEqual([], list(bug.linked_branches))
         self.assertFalse(bug.hasBranch(branch))
 
     def test_the_unwashed_cannot_link_branch_to_private_bug(self):
