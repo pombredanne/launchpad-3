@@ -143,20 +143,6 @@ class TestBugBranchSet(TestCaseWithFactory):
         self.assertContentEqual(
             [branch.id], utility.getBranchesWithVisibleBugs([branch], admin))
 
-    def test_getBugBranchesForBugTasks(self):
-        # IBugBranchSet.getBugBranchesForBugTasks returns all of the BugBranch
-        # objects associated with the given bug tasks.
-        bug_a = self.factory.makeBug()
-        bug_b = self.factory.makeBug()
-        bugtasks = bug_a.bugtasks + bug_b.bugtasks
-        branch = self.factory.makeBranch()
-        self.factory.loginAsAnyone()
-        link_1 = bug_a.linkBranch(branch, self.factory.makePerson())
-        link_2 = bug_b.linkBranch(branch, self.factory.makePerson())
-        found_links = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
-            bugtasks)
-        self.assertEqual(set([link_1, link_2]), set(found_links))
-
 
 class TestBugBranch(TestCaseWithFactory):
 

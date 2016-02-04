@@ -10,7 +10,6 @@ __all__ = ["BugBranch",
 
 from sqlobject import (
     ForeignKey,
-    IN,
     IntCol,
     )
 from zope.interface import implementer
@@ -49,10 +48,6 @@ class BugBranch(SQLBase):
 @implementer(IBugBranchSet)
 class BugBranchSet:
 
-    def getBugBranch(self, bug, branch):
-        """See `IBugBranchSet`."""
-        return BugBranch.selectOneBy(bugID=bug.id, branchID=branch.id)
-
     def getBranchesWithVisibleBugs(self, branches, user):
         """See `IBugBranchSet`."""
         # Avoid circular imports.
@@ -69,13 +64,3 @@ class BugBranchSet:
             BugBranch.branch_id.is_in(branch_ids),
             BugTaskFlat.bug_id == BugBranch.bugID,
             visible).config(distinct=True)
-
-    def getBugBranchesForBugTasks(self, tasks):
-        """See `IBugBranchSet`."""
-        bug_ids = [task.bugID for task in tasks]
-        if not bug_ids:
-            return []
-        bugbranches = BugBranch.select(IN(BugBranch.q.bugID, bug_ids),
-                                       orderBy=['branch'])
-        return bugbranches.prejoin(
-            ['branch', 'branch.owner', 'branch.product'])

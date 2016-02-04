@@ -48,12 +48,6 @@ class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
 
 class IBugBranchSet(Interface):
 
-    def getBugBranch(bug, branch):
-        """Return the BugBranch for the given bug and branch.
-
-        Return None if there is no such link.
-        """
-
     def getBranchesWithVisibleBugs(branches, user):
         """Find which of `branches` are for bugs that `user` can see.
 
@@ -63,7 +57,3 @@ class IBugBranchSet(Interface):
             found in `branches`, but limited to branches that are
             visible to `user`.
         """
-
-    def getBugBranchesForBugTasks(tasks):
-        """Return a sequence of IBugBranch instances associated with
-        the bugs for the given tasks."""

@@ -11,7 +11,6 @@ from zope.event import notify
 
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
@@ -141,9 +140,7 @@ class TestBugLinking(BzrSyncTestCase):
 
         Raises an assertion error if there's no such bug.
         """
-        bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, branch)
-        if bug_branch is None:
-            self.fail('No BugBranch found for %r, %r' % (bug, branch))
+        self.assertIn(branch, bug.linked_branches)
 
     def test_newMainlineRevisionAddsBugBranch(self):
         """New mainline revisions with bugs properties create BugBranches."""
@@ -187,11 +184,7 @@ class TestBugLinking(BzrSyncTestCase):
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         # Create a new DB branch to sync with.
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.new_db_branch)
-        self.assertEqual(
-            getUtility(IBugBranchSet).getBugBranch(
-                self.bug1, self.new_db_branch),
-            None,
-            "Should not create a BugBranch.")
+        self.assertNotIn(self.new_db_branch, self.bug1.linked_branches)
 
     def test_nonMainlineRevisionsDontMakeBugBranches(self):
         """Don't add BugBranches based on non-mainline revisions."""
@@ -224,10 +217,7 @@ class TestBugLinking(BzrSyncTestCase):
                 allow_pointless=True)
 
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
-        self.assertEqual(
-            getUtility(IBugBranchSet).getBugBranch(self.bug1, self.db_branch),
-            None,
-            "Should not create a BugBranch.")
+        self.assertNotIn(self.db_branch, self.bug1.linked_branches)
 
     def test_ignoreNonExistentBug(self):
         """If the bug doesn't actually exist, we just ignore it."""
@@ -272,5 +262,4 @@ class TestSubscription(TestCaseWithFactory):
         revision_set.newFromBazaarRevisions([bzr_revision])
         notify(events.NewMainlineRevisions(
             db_branch, tree.branch, [bzr_revision]))
-        bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
-        self.assertIsNot(None, bug_branch)
+        self.assertIn(db_branch, bug.linked_branches)
