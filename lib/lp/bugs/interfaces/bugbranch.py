@@ -22,12 +22,11 @@ from lp import _
 from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import BugField
 
 
-class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
+class IBugBranch(IHasDateCreated, IHasBug):
     """A branch linked to a bug."""
 
     export_as_webservice_entry()

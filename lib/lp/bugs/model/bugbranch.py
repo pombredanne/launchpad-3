@@ -18,7 +18,6 @@ from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
     IBugBranchSet,
     )
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -26,7 +25,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 
 
-@implementer(IBugBranch, IHasBranchTarget)
+@implementer(IBugBranch)
 class BugBranch(SQLBase):
     """See `IBugBranch`."""
 
@@ -38,11 +37,6 @@ class BugBranch(SQLBase):
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-
-    @property
-    def target(self):
-        """See `IHasBranchTarget`."""
-        return self.branch.target
 
 
 @implementer(IBugBranchSet)
