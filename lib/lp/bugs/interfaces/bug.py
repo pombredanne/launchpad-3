@@ -999,14 +999,15 @@ class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
-    linked_branches = exported(
+    linked_bugbranches = exported(
         CollectionField(
             title=_("Branches associated with this bug, usually "
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
-            readonly=True))
+            readonly=True),
+        exported_as='linked_branches')
 
-    @accessor_for(linked_branches)
+    @accessor_for(linked_bugbranches)
     @call_with(user=REQUEST_USER)
     @export_read_operation()
     @operation_for_version('beta')

@@ -361,7 +361,7 @@ class Bug(SQLBase, InformationTypeMixin):
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    linked_branches = SQLMultipleJoin(
+    linked_bugbranches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
@@ -371,6 +371,10 @@ class Bug(SQLBase, InformationTypeMixin):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def linked_branches(self):
+        return [link.branch for link in self.linked_bugbranches]
 
     @property
     def cves(self):
@@ -1357,7 +1361,7 @@ class Bug(SQLBase, InformationTypeMixin):
 
     def linkBranch(self, branch, registrant):
         """See `IBug`."""
-        for bug_branch in shortlist(self.linked_branches):
+        for bug_branch in shortlist(self.linked_bugbranches):
             if bug_branch.branch == branch:
                 return bug_branch
 

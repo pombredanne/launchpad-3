@@ -291,7 +291,7 @@ Let's take a look to see that the branch actually got linked to the bug:
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
-    >>> for bug_branch in bug_one.linked_branches:
+    >>> for bug_branch in bug_one.linked_bugbranches:
     ...     print bug_branch.branch.url
     http://foo.com/other_branch
 

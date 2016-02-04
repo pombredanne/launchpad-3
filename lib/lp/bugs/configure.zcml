@@ -719,6 +719,7 @@
                 interface="lp.bugs.interfaces.bug.IBugView"
                 attributes="
                     linked_branches
+                    linked_bugbranches
                     getVisibleLinkedBranches"/>
             <require
                 permission="launchpad.Edit"

@@ -190,7 +190,7 @@ class BranchNavigation(WebhookTargetNavigationMixin, Navigation):
         """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
-        for bug_branch in bug.linked_branches:
+        for bug_branch in bug.linked_bugbranches:
             if bug_branch.branch == self.context:
                 return bug_branch
 
