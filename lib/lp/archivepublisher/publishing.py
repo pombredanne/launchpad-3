@@ -575,20 +575,26 @@ class Publisher(object):
                 self._writeSuite(distroseries, pocket)
 
     def _allIndexFiles(self, distroseries):
-        """Return all index files on disk for a distroseries."""
+        """Return all index files on disk for a distroseries.
+
+        For each index file, this yields a tuple of (function to open file
+        in uncompressed form, path to file).
+        """
         components = self.archive.getComponentsForSeries(distroseries)
         for pocket in self.archive.getPockets():
             suite_name = distroseries.getSuite(pocket)
             for component in components:
-                yield get_sources_path(self._config, suite_name, component)
+                yield gzip.open, get_sources_path(
+                    self._config, suite_name, component) + ".gz"
                 for arch in distroseries.architectures:
                     if not arch.enabled:
                         continue
-                    yield get_packages_path(
-                        self._config, suite_name, component, arch)
+                    yield gzip.open, get_packages_path(
+                        self._config, suite_name, component, arch) + ".gz"
                     for subcomp in self.subcomponents:
-                        yield get_packages_path(
-                            self._config, suite_name, component, arch, subcomp)
+                        yield gzip.open, get_packages_path(
+                            self._config, suite_name, component, arch,
+                            subcomp) + ".gz"
 
     def _latestNonEmptySeries(self):
         """Find the latest non-empty series in an archive.
@@ -599,11 +605,12 @@ class Publisher(object):
         through what we published on disk.
         """
         for distroseries in self.distro:
-            for index in self._allIndexFiles(distroseries):
+            for open_func, index in self._allIndexFiles(distroseries):
                 try:
-                    if os.path.getsize(index) > 0:
-                        return distroseries
-                except OSError:
+                    with open_func(index) as index_file:
+                        if index_file.read(1):
+                            return distroseries
+                except IOError:
                     pass
 
     def createSeriesAliases(self):

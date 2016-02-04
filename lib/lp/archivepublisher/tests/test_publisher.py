@@ -1009,42 +1009,39 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             1 + old_num_pending_archives, new_num_pending_archives)
 
-    def _checkCompressedFile(self, archive_publisher, compressed_file_path,
-                             uncompressed_file_path):
-        """Assert that a compressed file is equal to its uncompressed version.
+    def _checkCompressedFiles(self, archive_publisher, base_file_path,
+                              suffixes):
+        """Assert that the various compressed versions of a file are equal.
 
-        Check that a compressed file, such as Packages.gz and Sources.gz,
-        and bz2 variations, matches its uncompressed partner.  The file
-        paths are relative to breezy-autotest/main under the
-        archive_publisher's configured dist root. 'breezy-autotest' is
-        our test distroseries name.
+        Check that the various versions of a compressed file, such as
+        Packages.gz/Packages.bz2 and Sources.gz/Sources.bz2, and bz2
+        variations, all have identical contents.  The file paths are
+        relative to breezy-autotest/main under the archive_publisher's
+        configured dist root.  'breezy-autotest' is our test distroseries
+        name.
 
         The contents of the uncompressed file is returned as a list of lines
         in the file.
         """
-        index_compressed_path = os.path.join(
+        index_base_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
-            compressed_file_path)
-        index_path = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
-            uncompressed_file_path)
+            base_file_path)
 
-        if index_compressed_path.endswith('.gz'):
-            index_compressed_contents = gzip.GzipFile(
-                filename=index_compressed_path).read().splitlines()
-        elif index_compressed_path.endswith('.bz2'):
-            index_compressed_contents = bz2.BZ2File(
-                filename=index_compressed_path).read().splitlines()
-        else:
-            raise AssertionError(
-                'Unsupported compression: %s' % compressed_file_path)
+        all_contents = []
+        for suffix in suffixes:
+            if suffix == '.gz':
+                open_func = gzip.open
+            elif suffix == '.bz2':
+                open_func = bz2.BZ2File
+            else:
+                open_func = open
+            with open_func(index_base_path + suffix) as index_file:
+                all_contents.append(index_file.read().splitlines())
 
-        with open(index_path, 'r') as index_file:
-            index_contents = index_file.read().splitlines()
+        for contents in all_contents[1:]:
+            self.assertEqual(all_contents[0], contents)
 
-        self.assertEqual(index_contents, index_compressed_contents)
-
-        return index_contents
+        return all_contents[0]
 
     def setupPPAArchiveIndexTest(self, long_descriptions=True,
                                  feature_flag=False):
@@ -1100,16 +1097,11 @@ class TestPublisher(TestPublisherBase):
         """Building Archive Indexes from PPA publications."""
         archive_publisher = self.setupPPAArchiveIndexTest()
 
-        # A compressed and uncompressed Sources file are written;
-        # ensure that they are the same after uncompressing the former.
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('source', 'Sources.bz2'),
-            os.path.join('source', 'Sources'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('source', 'Sources.gz'),
-            os.path.join('source', 'Sources'))
-
+        # Various compressed Sources files are written; ensure that they are
+        # the same after decompression.
+        index_contents = self._checkCompressedFiles(
+            archive_publisher, os.path.join('source', 'Sources'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: foo',
              'Binary: foo-bin',
@@ -1131,16 +1123,11 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # A compressed and an uncompressed Packages file are written;
-        # ensure that they are the same after uncompressing the former.
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('binary-i386', 'Packages.bz2'),
-            os.path.join('binary-i386', 'Packages'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
-            os.path.join('binary-i386', 'Packages'))
-
+        # Various compressed Packages files are written; ensure that they
+        # are the same after decompression.
+        index_contents = self._checkCompressedFiles(
+            archive_publisher, os.path.join('binary-i386', 'Packages'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: foo-bin',
              'Source: foo',
@@ -1163,19 +1150,13 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # A compressed and an uncompressed Packages file are written for
-        # 'debian-installer' section for each architecture. It will list
+        # Various compressed Packages files are written for the
+        # 'debian-installer' section for each architecture.  They will list
         # the 'udeb' files.
-        index_contents = self._checkCompressedFile(
+        index_contents = self._checkCompressedFiles(
             archive_publisher,
-            os.path.join('debian-installer', 'binary-i386', 'Packages.bz2'),
-            os.path.join('debian-installer', 'binary-i386', 'Packages'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher,
-            os.path.join('debian-installer', 'binary-i386', 'Packages.gz'),
-            os.path.join('debian-installer', 'binary-i386', 'Packages'))
-
+            os.path.join('debian-installer', 'binary-i386', 'Packages'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: bingo',
              'Source: foo',
@@ -1197,16 +1178,10 @@ class TestPublisher(TestPublisherBase):
             index_contents)
 
         # 'debug' too, when publish_debug_symbols is enabled.
-        index_contents = self._checkCompressedFile(
+        index_contents = self._checkCompressedFiles(
             archive_publisher,
-            os.path.join('debug', 'binary-i386', 'Packages.bz2'),
-            os.path.join('debug', 'binary-i386', 'Packages'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher,
-            os.path.join('debug', 'binary-i386', 'Packages.gz'),
-            os.path.join('debug', 'binary-i386', 'Packages'))
-
+            os.path.join('debug', 'binary-i386', 'Packages'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: foo-bin-dbgsym',
              'Source: foo',
@@ -1272,16 +1247,11 @@ class TestPublisher(TestPublisherBase):
         archive_publisher = self.setupPPAArchiveIndexTest(
             long_descriptions=False, feature_flag=True)
 
-        # A compressed and uncompressed Sources file are written;
-        # ensure that they are the same after uncompressing the former.
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('source', 'Sources.bz2'),
-            os.path.join('source', 'Sources'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('source', 'Sources.gz'),
-            os.path.join('source', 'Sources'))
-
+        # Various compressed Sources files are written; ensure that they are
+        # the same after decompression.
+        index_contents = self._checkCompressedFiles(
+            archive_publisher, os.path.join('source', 'Sources'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: foo',
              'Binary: foo-bin',
@@ -1303,16 +1273,11 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # A compressed and an uncompressed Packages file are written;
-        # ensure that they are the same after uncompressing the former.
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('binary-i386', 'Packages.bz2'),
-            os.path.join('binary-i386', 'Packages'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
-            os.path.join('binary-i386', 'Packages'))
-
+        # Various compressed Packages files are written; ensure that they
+        # are the same after decompression.
+        index_contents = self._checkCompressedFiles(
+            archive_publisher, os.path.join('binary-i386', 'Packages'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: foo-bin',
              'Source: foo',
@@ -1333,19 +1298,13 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # A compressed and an uncompressed Packages file are written for
-        # 'debian-installer' section for each architecture. It will list
+        # Various compressed Packages files are written for the
+        # 'debian-installer' section for each architecture.  They will list
         # the 'udeb' files.
-        index_contents = self._checkCompressedFile(
+        index_contents = self._checkCompressedFiles(
             archive_publisher,
-            os.path.join('debian-installer', 'binary-i386', 'Packages.bz2'),
-            os.path.join('debian-installer', 'binary-i386', 'Packages'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher,
-            os.path.join('debian-installer', 'binary-i386', 'Packages.gz'),
-            os.path.join('debian-installer', 'binary-i386', 'Packages'))
-
+            os.path.join('debian-installer', 'binary-i386', 'Packages'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: bingo',
              'Source: foo',
@@ -1367,16 +1326,10 @@ class TestPublisher(TestPublisherBase):
             index_contents)
 
         # 'debug' too, when publish_debug_symbols is enabled.
-        index_contents = self._checkCompressedFile(
+        index_contents = self._checkCompressedFiles(
             archive_publisher,
-            os.path.join('debug', 'binary-i386', 'Packages.bz2'),
-            os.path.join('debug', 'binary-i386', 'Packages'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher,
-            os.path.join('debug', 'binary-i386', 'Packages.gz'),
-            os.path.join('debug', 'binary-i386', 'Packages'))
-
+            os.path.join('debug', 'binary-i386', 'Packages'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: foo-bin-dbgsym',
              'Source: foo',
@@ -1402,16 +1355,11 @@ class TestPublisher(TestPublisherBase):
             ('breezy-autotest', PackagePublishingPocket.RELEASE) in
             archive_publisher.release_files_needed)
 
-        # A compressed and an uncompressed Translation-en file is written.
-        # ensure that they are the same after uncompressing the former.
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('i18n', 'Translation-en.gz'),
-            os.path.join('i18n', 'Translation-en'))
-
-        index_contents = self._checkCompressedFile(
-            archive_publisher, os.path.join('i18n', 'Translation-en.bz2'),
-            os.path.join('i18n', 'Translation-en'))
-
+        # Various compressed Translation-en files are written; ensure that
+        # they are the same after decompression.
+        index_contents = self._checkCompressedFiles(
+            archive_publisher, os.path.join('i18n', 'Translation-en'),
+            ['.gz', '.bz2'])
         self.assertEqual(
             ['Package: bingo',
              'Description-md5: 6fecedf187298acb6bc5f15cc5807fb7',
@@ -1656,8 +1604,8 @@ class TestPublisher(TestPublisherBase):
 
         arch_sources_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
-            'main', 'source', 'Sources')
-        with open(arch_sources_path) as arch_sources_file:
+            'main', 'source', 'Sources.gz')
+        with gzip.open(arch_sources_path) as arch_sources_file:
             self.assertReleaseContentsMatch(
                 release, 'main/source/Sources', arch_sources_file.read())
 
@@ -1892,7 +1840,7 @@ class TestPublisher(TestPublisherBase):
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
-        sources = suite_path('main', 'source', 'Sources')
+        sources = suite_path('main', 'source', 'Sources.gz')
         sources_timestamp = os.stat(sources).st_mtime - 60
         os.utime(sources, (sources_timestamp, sources_timestamp))
 
@@ -1992,8 +1940,7 @@ class TestPublisher(TestPublisherBase):
         i18n_root = os.path.join(
             self.config.distsroot, 'breezy-autotest', 'main', 'i18n')
 
-        # Write a zero-length Translation-en file and compressed versions of
-        # it.
+        # Write compressed versions of a zero-length Translation-en file.
         translation_en_index = RepositoryIndexFile(
             os.path.join(i18n_root, 'Translation-en'), self.config.temproot)
         translation_en_index.close()
@@ -2016,7 +1963,8 @@ class TestPublisher(TestPublisherBase):
                          i18n_index['sha1'][1]['size'])
 
         # i18n/Index and i18n/Translation-en.bz2 are scheduled for inclusion
-        # in Release.
+        # in Release.  Checksums of the uncompressed version are included
+        # despite it not actually being written to disk.
         self.assertEqual(4, len(all_files))
         self.assertContentEqual(
             ['main/i18n/Index',
@@ -2089,8 +2037,8 @@ class TestArchiveIndices(TestPublisherBase):
             publisher._config.distsroot, series.getSuite(pocket), '%s/%s')
 
         release_template = os.path.join(arch_template, 'Release')
-        packages_template = os.path.join(arch_template, 'Packages')
-        sources_template = os.path.join(arch_template, 'Sources')
+        packages_template = os.path.join(arch_template, 'Packages.gz')
+        sources_template = os.path.join(arch_template, 'Sources.gz')
         release_path = os.path.join(
             publisher._config.distsroot, series.getSuite(pocket), 'Release')
         with open(release_path) as release_file:
