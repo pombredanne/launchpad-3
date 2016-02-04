@@ -96,7 +96,7 @@ class BugActivity(SQLBase):
             elif result in (ATTACHMENT_ADDED, ATTACHMENT_REMOVED):
                 result = 'attachments'
             elif result in (BRANCH_LINKED, BRANCH_UNLINKED):
-                result = 'linked_bugbranches'
+                result = 'linked_branches'
             elif result in (BUG_WATCH_ADDED, BUG_WATCH_REMOVED):
                 result = 'watches'
             elif result in (CVE_LINKED, CVE_UNLINKED):
