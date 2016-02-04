@@ -160,16 +160,6 @@ class TestBugBranch(TestCaseWithFactory):
             registrant=self.factory.makePerson())
         self.assertProvides(bug_branch, IBugBranch)
 
-    def test_linkBranch_returns_IBugBranch(self):
-        # Bug.linkBranch returns an IBugBranch linking the bug to the branch.
-        bug = self.factory.makeBug()
-        branch = self.factory.makeBranch()
-        registrant = self.factory.makePerson()
-        bug_branch = bug.linkBranch(branch, registrant)
-        self.assertEqual(branch, bug_branch.branch)
-        self.assertEqual(bug, bug_branch.bug)
-        self.assertEqual(registrant, bug_branch.registrant)
-
     def test_bug_start_with_no_linked_branches(self):
         # Bugs have a linked_branches attribute which is initially an empty
         # collection.
@@ -181,8 +171,9 @@ class TestBugBranch(TestCaseWithFactory):
         # BugBranch object.
         bug = self.factory.makeBug()
         branch = self.factory.makeBranch()
-        bug_branch = bug.linkBranch(branch, self.factory.makePerson())
-        self.assertEqual([bug_branch], list(bug.linked_bugbranches))
+        self.assertContentEqual([], list(bug.linked_branches))
+        bug.linkBranch(branch, self.factory.makePerson())
+        self.assertContentEqual([branch], list(bug.linked_branches))
 
     def test_linking_branch_twice_returns_same_IBugBranch(self):
         # Calling Bug.linkBranch twice with the same parameters returns the

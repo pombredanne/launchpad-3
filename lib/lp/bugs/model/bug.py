@@ -1360,19 +1360,15 @@ class Bug(SQLBase, InformationTypeMixin):
 
     def linkBranch(self, branch, registrant):
         """See `IBug`."""
-        for bug_branch in shortlist(self.linked_bugbranches):
-            if bug_branch.branch == branch:
-                return bug_branch
+        if branch in self.linked_branches:
+            return
 
-        bug_branch = BugBranch(
-            branch=branch, bug=self, registrant=registrant)
+        BugBranch(branch=branch, bug=self, registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
         self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))
         notify(ObjectLinkedEvent(branch, self, user=registrant))
         notify(ObjectLinkedEvent(self, branch, user=registrant))
-
-        return bug_branch
 
     def unlinkBranch(self, branch, user):
         """See `IBug`."""
