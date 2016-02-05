@@ -1309,5 +1309,5 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.listSuitesNeedingIndexes(series))
         sources = os.path.join(
             getPubConfig(series.main_archive).distsroot,
-            series.name, "main", "source", "Sources")
+            series.name, "main", "source", "Sources.gz")
         self.assertTrue(file_exists(sources))

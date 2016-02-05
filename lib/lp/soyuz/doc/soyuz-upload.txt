@@ -464,9 +464,11 @@ Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
 required entry for 'etherwake':
 
-    >>> sources = open(
+    >>> import gzip
+
+    >>> sources = gzip.open(
     ...    "/var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source"
-    ...    "/Sources").read()
+    ...    "/Sources.gz").read()
     >>> print sources + '\nEND'
     Package: etherwake
     Binary: etherwake
@@ -548,16 +550,16 @@ Check the publishing history again
 
 Check if the package was moved properly to the component 'multiverse':
 
-    >>> main_sources = open(
+    >>> main_sources = gzip.open(
     ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-    ...     "/main/source/Sources").read()
+    ...     "/main/source/Sources.gz").read()
     >>> print main_sources + '\nEND'
     <BLANKLINE>
     END
 
-    >>> multiverse_sources = open(
+    >>> multiverse_sources = gzip.open(
     ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-    ...     "/multiverse/source/Sources").read()
+    ...     "/multiverse/source/Sources.gz").read()
     >>> print multiverse_sources + '\nEND'
     Package: drdsl
     ...

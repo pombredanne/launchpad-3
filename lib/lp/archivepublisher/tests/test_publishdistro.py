@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
@@ -376,17 +376,18 @@ class TestPublishDistro(TestNativePublishingBase):
 
         # Check some index files
         index_path = (
-            "%s/hoary-test-updates/main/binary-i386/Packages"
+            "%s/hoary-test-updates/main/binary-i386/Packages.gz"
             % self.config.distsroot)
         self.assertExists(index_path)
 
         index_path = (
-            "%s/hoary-test-backports/main/binary-i386/Packages"
+            "%s/hoary-test-backports/main/binary-i386/Packages.gz"
             % self.config.distsroot)
         self.assertExists(index_path)
 
         index_path = (
-            "%s/hoary-test/main/binary-i386/Packages" % self.config.distsroot)
+            "%s/hoary-test/main/binary-i386/Packages.gz" %
+            self.config.distsroot)
         self.assertNotExists(index_path)
 
 

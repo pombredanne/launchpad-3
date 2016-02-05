@@ -11,8 +11,10 @@ __all__ = [
 
 __metaclass__ = type
 
+import bz2
 from datetime import datetime
 import errno
+import gzip
 import hashlib
 from itertools import (
     chain,
@@ -108,6 +110,16 @@ def reorder_components(components):
             remaining.remove(comp)
     ordered.extend(remaining)
     return ordered
+
+
+def remove_suffix(path):
+    """Return `path` but with any compression suffix removed."""
+    if path.endswith('.gz'):
+        return path[:-len('.gz')]
+    elif path.endswith('.bz2'):
+        return path[:-len('.bz2')]
+    else:
+        return path
 
 
 def get_suffixed_indices(path):
@@ -563,20 +575,26 @@ class Publisher(object):
                 self._writeSuite(distroseries, pocket)
 
     def _allIndexFiles(self, distroseries):
-        """Return all index files on disk for a distroseries."""
+        """Return all index files on disk for a distroseries.
+
+        For each index file, this yields a tuple of (function to open file
+        in uncompressed form, path to file).
+        """
         components = self.archive.getComponentsForSeries(distroseries)
         for pocket in self.archive.getPockets():
             suite_name = distroseries.getSuite(pocket)
             for component in components:
-                yield get_sources_path(self._config, suite_name, component)
+                yield gzip.open, get_sources_path(
+                    self._config, suite_name, component) + ".gz"
                 for arch in distroseries.architectures:
                     if not arch.enabled:
                         continue
-                    yield get_packages_path(
-                        self._config, suite_name, component, arch)
+                    yield gzip.open, get_packages_path(
+                        self._config, suite_name, component, arch) + ".gz"
                     for subcomp in self.subcomponents:
-                        yield get_packages_path(
-                            self._config, suite_name, component, arch, subcomp)
+                        yield gzip.open, get_packages_path(
+                            self._config, suite_name, component, arch,
+                            subcomp) + ".gz"
 
     def _latestNonEmptySeries(self):
         """Find the latest non-empty series in an archive.
@@ -587,11 +605,12 @@ class Publisher(object):
         through what we published on disk.
         """
         for distroseries in self.distro:
-            for index in self._allIndexFiles(distroseries):
+            for open_func, index in self._allIndexFiles(distroseries):
                 try:
-                    if os.path.getsize(index) > 0:
-                        return distroseries
-                except OSError:
+                    with open_func(index) as index_file:
+                        if index_file.read(1):
+                            return distroseries
+                except IOError:
                     pass
 
     def createSeriesAliases(self):
@@ -793,6 +812,7 @@ class Publisher(object):
         """Make sure the timestamps on all files in a suite match."""
         location = os.path.join(self._config.distsroot, suite)
         paths = [os.path.join(location, path) for path in all_files]
+        paths = [path for path in paths if os.path.exists(path)]
         latest_timestamp = max(os.stat(path).st_mtime for path in paths)
         for path in paths:
             os.utime(path, (latest_timestamp, latest_timestamp))
@@ -831,17 +851,17 @@ class Publisher(object):
                 for dep11_file in os.listdir(dep11_dir):
                     if (dep11_file.startswith("Components-") or
                             dep11_file.startswith("icons-")):
-                        all_files.add(
-                            os.path.join(component, "dep11", dep11_file))
+                        dep11_path = os.path.join(
+                            component, "dep11", dep11_file)
+                        all_files.add(remove_suffix(dep11_path))
+                        all_files.add(dep11_path)
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
         for architecture in all_architectures:
             for contents_path in get_suffixed_indices(
                     'Contents-' + architecture):
-                if os.path.exists(os.path.join(
-                        self._config.distsroot, suite, contents_path)):
-                    all_files.add(contents_path)
+                all_files.add(contents_path)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)
@@ -868,21 +888,12 @@ class Publisher(object):
             release_file["ButAutomaticUpgrades"] = "yes"
 
         for filename in sorted(all_files, key=os.path.dirname):
-            entry = self._readIndexFileContents(suite, filename)
-            if entry is None:
+            hashes = self._readIndexFileHashes(suite, filename)
+            if hashes is None:
                 continue
-            release_file.setdefault("MD5Sum", []).append({
-                "md5sum": hashlib.md5(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
-            release_file.setdefault("SHA1", []).append({
-                "sha1": hashlib.sha1(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
-            release_file.setdefault("SHA256", []).append({
-                "sha256": hashlib.sha256(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
+            release_file.setdefault("MD5Sum", []).append(hashes["md5sum"])
+            release_file.setdefault("SHA1", []).append(hashes["sha1"])
+            release_file.setdefault("SHA256", []).append(hashes["sha256"])
 
         self._writeReleaseFile(suite, release_file)
         all_files.add("Release")
@@ -960,12 +971,13 @@ class Publisher(object):
 
         i18n_subpath = os.path.join(component, "i18n")
         i18n_dir = os.path.join(self._config.distsroot, suite, i18n_subpath)
-        i18n_files = []
+        i18n_files = set()
         try:
             for i18n_file in os.listdir(i18n_dir):
                 if not i18n_file.startswith('Translation-'):
                     continue
-                i18n_files.append(i18n_file)
+                i18n_files.add(remove_suffix(i18n_file))
+                i18n_files.add(i18n_file)
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
@@ -976,14 +988,11 @@ class Publisher(object):
 
         i18n_index = I18nIndex()
         for i18n_file in sorted(i18n_files):
-            entry = self._readIndexFileContents(
+            hashes = self._readIndexFileHashes(
                 suite, os.path.join(i18n_subpath, i18n_file))
-            if entry is None:
+            if hashes is None:
                 continue
-            i18n_index.setdefault("SHA1", []).append({
-                "sha1": hashlib.sha1(entry).hexdigest(),
-                "name": i18n_file,
-                "size": len(entry)})
+            i18n_index.setdefault("SHA1", []).append(hashes["sha1"])
             # Schedule i18n files for inclusion in the Release file.
             all_series_files.add(os.path.join(i18n_subpath, i18n_file))
 
@@ -993,24 +1002,47 @@ class Publisher(object):
         # Schedule this for inclusion in the Release file.
         all_series_files.add(os.path.join(component, "i18n", "Index"))
 
-    def _readIndexFileContents(self, distroseries_name, file_name):
-        """Read an index files' contents.
+    def _readIndexFileHashes(self, distroseries_name, file_name):
+        """Read an index file and return its hashes.
 
         :param distroseries_name: Distro series name
         :param file_name: Filename relative to the parent container directory.
-        :return: File contents, or None if the file could not be found.
+        :return: A dictionary mapping hash field names to dictionaries of
+            their components as defined by debian.deb822.Release (e.g.
+            {"md5sum": {"md5sum": ..., "size": ..., "name": ...}}), or None
+            if the file could not be found.
         """
+        open_func = open
         full_name = os.path.join(self._config.distsroot,
                                  distroseries_name, file_name)
         if not os.path.exists(full_name):
-            # The file we were asked to write out doesn't exist.
-            # Most likely we have an incomplete archive (E.g. no sources
-            # for a given distroseries). This is a non-fatal issue
-            self.log.debug("Failed to find " + full_name)
-            return None
+            if os.path.exists(full_name + '.gz'):
+                open_func = gzip.open
+                full_name = full_name + '.gz'
+            elif os.path.exists(full_name + '.bz2'):
+                open_func = bz2.BZ2File
+                full_name = full_name + '.bz2'
+            else:
+                # The file we were asked to write out doesn't exist.
+                # Most likely we have an incomplete archive (e.g. no sources
+                # for a given distroseries). This is a non-fatal issue.
+                self.log.debug("Failed to find " + full_name)
+                return None
 
-        with open(full_name, 'r') as in_file:
-            return in_file.read()
+        hashes = {
+            "md5sum": hashlib.md5(),
+            "sha1": hashlib.sha1(),
+            "sha256": hashlib.sha256(),
+            }
+        size = 0
+        with open_func(full_name) as in_file:
+            for chunk in iter(lambda: in_file.read(256 * 1024), ""):
+                for hashobj in hashes.values():
+                    hashobj.update(chunk)
+                size += len(chunk)
+        return {
+            alg: {alg: hashobj.hexdigest(), "name": file_name, "size": size}
+            for alg, hashobj in hashes.items()}
 
     def deleteArchive(self):
         """Delete the archive.
