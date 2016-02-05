@@ -81,12 +81,14 @@ from lp.snappy.interfaces.snap import (
     NoSourceForSnap,
     NoSuchSnap,
     SNAP_FEATURE_FLAG,
+    SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
     SnapPrivacyMismatch,
+    SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.model.snapbuild import SnapBuild
@@ -411,8 +413,11 @@ class SnapSet:
 
     def isValidPrivacy(self, private, owner, branch=None, git_ref=None):
         """See `ISnapSet`."""
-        # Private snaps may contain anything.
+        # Private snaps may contain anything ...
         if private:
+            # If appropriately enabled via feature flag.
+            if not getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG):
+                raise SnapPrivateFeatureDisabled
             return True
 
         # Public snaps with private sources are not allowed.

@@ -36,6 +36,8 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -69,8 +71,10 @@ from lp.snappy.interfaces.snap import (
     ISnapSet,
     NoSuchSnap,
     SNAP_FEATURE_FLAG,
+    SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapFeatureDisabled,
+    SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.soyuz.browser.archive import EnableProcessorsMixin
@@ -299,7 +303,15 @@ class SnapAddView(LaunchpadFormView):
         """See `LaunchpadView`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
+
         super(SnapAddView, self).initialize()
+
+        # Once initialized, if the private_snap flag is disabled, it
+        # prevents snap creation for private contexts.
+        if not getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG):
+            if (IInformationType.providedBy(self.context) and
+                self.context.information_type in PRIVATE_INFORMATION_TYPES):
+                raise SnapPrivateFeatureDisabled
 
     @property
     def cancel_url(self):

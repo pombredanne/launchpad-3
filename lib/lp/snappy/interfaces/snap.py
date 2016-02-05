@@ -16,12 +16,15 @@ __all__ = [
     'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_FEATURE_FLAG',
+    'SNAP_PRIVATE_FEATURE_FLAG',
+    'SNAP_TESTING_FLAGS',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
     'SnapFeatureDisabled',
     'SnapNotOwner',
     'SnapPrivacyMismatch',
+    'SnapPrivateFeatureDisabled',
     ]
 
 import httplib
@@ -87,6 +90,13 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 SNAP_FEATURE_FLAG = u"snap.allow_new"
+SNAP_PRIVATE_FEATURE_FLAG = u"snap.allow_private"
+
+
+SNAP_TESTING_FLAGS = {
+    SNAP_FEATURE_FLAG: u"on",
+    SNAP_PRIVATE_FEATURE_FLAG: u"on",
+}
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -134,6 +144,15 @@ class SnapFeatureDisabled(Unauthorized):
         super(SnapFeatureDisabled, self).__init__(
             "You do not have permission to create new snaps or new snap "
             "builds.")
+
+
+@error_status(httplib.UNAUTHORIZED)
+class SnapPrivateFeatureDisabled(Unauthorized):
+    """Only certain users can create private snap objects."""
+
+    def __init__(self):
+        super(SnapPrivateFeatureDisabled, self).__init__(
+            "You do not have permission to create private snaps")
 
 
 @error_status(httplib.BAD_REQUEST)

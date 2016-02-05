@@ -24,6 +24,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
@@ -42,13 +43,17 @@ from lp.snappy.browser.snap import (
 from lp.snappy.interfaces.snap import (
     CannotModifySnapProcessor,
     SNAP_FEATURE_FLAG,
+    SNAP_TESTING_FLAGS,
     SnapFeatureDisabled,
+    SnapPrivateFeatureDisabled,
     )
 from lp.testing import (
     BrowserTestCase,
+    feature_flags,
     login,
     login_person,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -79,7 +84,7 @@ class TestSnapNavigation(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapNavigation, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
 
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
@@ -105,6 +110,19 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
         self.assertRaises(
             SnapFeatureDisabled, create_initialized_view, branch, "+new-snap")
 
+    def test_private_feature_flag_disabled(self):
+        # Without a private_snap feature flag, we will not create Snaps for
+        # private contexts.
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        with feature_flags():
+            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
+            with person_logged_in(owner):
+                self.assertRaises(
+                    SnapPrivateFeatureDisabled, create_initialized_view,
+                    branch, "+new-snap")
+
 
 class TestSnapAddView(BrowserTestCase):
 
@@ -112,7 +130,7 @@ class TestSnapAddView(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapAddView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.useFixture(FakeLogger())
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
@@ -215,6 +233,22 @@ class TestSnapAddView(BrowserTestCase):
             extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
 
+    def test_create_new_snap_private_link(self):
+        # Link for create new snaps for private content is only displayed
+        # if the 'snap.allow_private' is enabled.
+        login_person(self.person)
+        branch = self.factory.makeAnyBranch(
+            owner=self.person,
+            information_type=InformationType.USERDATA)
+
+        browser = self.getViewBrowser(branch, user=self.person)
+        browser.getLink('Create snap package')
+
+        with FeatureFixture({SNAP_FEATURE_FLAG: u'on'}):
+            browser = self.getViewBrowser(branch, user=self.person)
+            self.assertRaises(
+                LinkNotFoundError, browser.getLink, "Create snap package")
+
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.
         login_person(self.person)
@@ -243,7 +277,7 @@ class TestSnapAdminView(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapAdminView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.useFixture(FakeLogger())
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
@@ -263,14 +297,14 @@ class TestSnapAdminView(BrowserTestCase):
     def test_admin_snap(self):
         # Admins can change require_virtualized and privacy.
         login("admin@canonical.com")
-        ppa_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
+        commercial_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
         login_person(self.person)
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
-        browser = self.getViewBrowser(snap, user=ppa_admin)
+        browser = self.getViewBrowser(snap, user=commercial_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Require virtualized builders").selected = False
         browser.getControl("Private").selected = True
@@ -321,7 +355,7 @@ class TestSnapEditView(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapEditView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.useFixture(FakeLogger())
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
@@ -531,7 +565,7 @@ class TestSnapDeleteView(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapDeleteView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
 
@@ -577,7 +611,7 @@ class TestSnapView(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.ubuntu, name="shiny", displayname="Shiny")
@@ -748,7 +782,7 @@ class TestSnapRequestBuildsView(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapRequestBuildsView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.useFixture(FakeLogger())
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.distroseries = self.factory.makeDistroSeries(
