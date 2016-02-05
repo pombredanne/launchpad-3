@@ -888,21 +888,12 @@ class Publisher(object):
             release_file["ButAutomaticUpgrades"] = "yes"
 
         for filename in sorted(all_files, key=os.path.dirname):
-            entry = self._readIndexFileContents(suite, filename)
-            if entry is None:
+            hashes = self._readIndexFileHashes(suite, filename)
+            if hashes is None:
                 continue
-            release_file.setdefault("MD5Sum", []).append({
-                "md5sum": hashlib.md5(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
-            release_file.setdefault("SHA1", []).append({
-                "sha1": hashlib.sha1(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
-            release_file.setdefault("SHA256", []).append({
-                "sha256": hashlib.sha256(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
+            release_file.setdefault("MD5Sum", []).append(hashes["md5sum"])
+            release_file.setdefault("SHA1", []).append(hashes["sha1"])
+            release_file.setdefault("SHA256", []).append(hashes["sha256"])
 
         self._writeReleaseFile(suite, release_file)
         all_files.add("Release")
@@ -997,14 +988,11 @@ class Publisher(object):
 
         i18n_index = I18nIndex()
         for i18n_file in sorted(i18n_files):
-            entry = self._readIndexFileContents(
+            hashes = self._readIndexFileHashes(
                 suite, os.path.join(i18n_subpath, i18n_file))
-            if entry is None:
+            if hashes is None:
                 continue
-            i18n_index.setdefault("SHA1", []).append({
-                "sha1": hashlib.sha1(entry).hexdigest(),
-                "name": i18n_file,
-                "size": len(entry)})
+            i18n_index.setdefault("SHA1", []).append(hashes["sha1"])
             # Schedule i18n files for inclusion in the Release file.
             all_series_files.add(os.path.join(i18n_subpath, i18n_file))
 
@@ -1014,12 +1002,15 @@ class Publisher(object):
         # Schedule this for inclusion in the Release file.
         all_series_files.add(os.path.join(component, "i18n", "Index"))
 
-    def _readIndexFileContents(self, distroseries_name, file_name):
-        """Read an index files' contents.
+    def _readIndexFileHashes(self, distroseries_name, file_name):
+        """Read an index file and return its hashes.
 
         :param distroseries_name: Distro series name
         :param file_name: Filename relative to the parent container directory.
-        :return: File contents, or None if the file could not be found.
+        :return: A dictionary mapping hash field names to dictionaries of
+            their components as defined by debian.deb822.Release (e.g.
+            {"md5sum": {"md5sum": ..., "size": ..., "name": ...}}), or None
+            if the file could not be found.
         """
         open_func = open
         full_name = os.path.join(self._config.distsroot,
@@ -1038,8 +1029,20 @@ class Publisher(object):
                 self.log.debug("Failed to find " + full_name)
                 return None
 
+        hashes = {
+            "md5sum": hashlib.md5(),
+            "sha1": hashlib.sha1(),
+            "sha256": hashlib.sha256(),
+            }
+        size = 0
         with open_func(full_name) as in_file:
-            return in_file.read()
+            for chunk in iter(lambda: in_file.read(256 * 1024), ""):
+                for hashobj in hashes.values():
+                    hashobj.update(chunk)
+                size += len(chunk)
+        return {
+            alg: {alg: hashobj.hexdigest(), "name": file_name, "size": size}
+            for alg, hashobj in hashes.items()}
 
     def deleteArchive(self):
         """Delete the archive.
