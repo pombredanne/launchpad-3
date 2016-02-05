@@ -3126,7 +3126,6 @@ class ViewSnap(AuthorizationBase):
 
         return (
             user.isOwner(self.obj) or
-            user.in_ppa_admin or
             user.in_commercial_admin or
             user.in_admin)
 
