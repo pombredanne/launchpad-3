@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from collections import defaultdict
@@ -67,10 +67,10 @@ Dir
 
 Default
 {
-    Packages::Compress ". gzip bzip2";
-    Sources::Compress ". gzip bzip2";
+    Packages::Compress "gzip bzip2";
+    Sources::Compress "gzip bzip2";
     Contents::Compress "gzip";
-    Translation::Compress ". gzip bzip2";
+    Translation::Compress "gzip bzip2";
     DeLinkLimit 0;
     MaxContentsChange 12000;
     FileMode 0644;

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Miscellaneous functions for publisher."""
@@ -43,16 +43,20 @@ class PlainTempFile:
     # File path built on initialization.
     path = None
 
-    def __init__(self, temp_root, filename):
+    def __init__(self, temp_root, filename, auto_open=True):
+        self.temp_root = temp_root
         self.filename = filename + self.suffix
 
-        fd, self.path = tempfile.mkstemp(
-            dir=temp_root, prefix='%s_' % filename)
-
-        self._fd = self._buildFile(fd)
+        if auto_open:
+            self.open()
 
     def _buildFile(self, fd):
         return os.fdopen(fd, 'wb')
+
+    def open(self):
+        fd, self.path = tempfile.mkstemp(
+            dir=self.temp_root, prefix='%s_' % self.filename)
+        self._fd = self._buildFile(fd)
 
     def write(self, content):
         self._fd.write(content)
@@ -102,9 +106,11 @@ class RepositoryIndexFile:
         assert os.path.exists(temp_root), 'Temporary root does not exist.'
 
         self.index_files = (
-            PlainTempFile(temp_root, filename),
             GzipTempFile(temp_root, filename),
             Bzip2TempFile(temp_root, filename),
+            )
+        self.old_index_files = (
+            PlainTempFile(temp_root, filename, auto_open=False),
             )
 
     def write(self, content):
@@ -138,3 +144,10 @@ class RepositoryIndexFile:
             mode = stat.S_IMODE(os.stat(root_path).st_mode)
             os.chmod(root_path,
                      mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
+
+        # Remove files that may have been created by older versions of this
+        # code.
+        for index_file in self.old_index_files:
+            root_path = os.path.join(self.root, index_file.filename)
+            if os.path.exists(root_path):
+                os.remove(root_path)
