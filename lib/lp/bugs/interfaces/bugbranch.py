@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for linking BugTasks and Branches."""
@@ -15,18 +15,20 @@ from lazr.restful.declarations import (
     exported,
     )
 from lazr.restful.fields import ReferenceChoice
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Object
 
 from lp import _
-from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import BugField
 
 
-class IBugBranch(IHasDateCreated, IHasBug):
+class IBugBranch(IHasBug):
     """A branch linked to a bug."""
 
     export_as_webservice_entry()
@@ -40,6 +42,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
             title=_("Branch"), schema=IBranch,
             vocabulary="Branch", required=True))
 
+    datecreated = Attribute("The date on which I was created.")
     registrant = Object(
         schema=IPerson, readonly=True, required=True,
         title=_("The person who linked the bug to the branch"))

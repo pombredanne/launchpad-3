@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `RepositoryIndexFile`."""
@@ -44,7 +44,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
     def testWorkflow(self):
         """`RepositoryIndexFile` workflow.
 
-        On creation, 3 temporary files are atomically created in the
+        On creation, 2 temporary files are atomically created in the
         'temp_root' location (mkstemp). One for storing the plain contents
         and other for the corresponding compressed contents. At this point,
         no files were created in the 'root' location yet.
@@ -58,16 +58,15 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         repo_file = self.getRepoFile('boing')
 
         self.assertEqual(0, len(os.listdir(self.root)))
-        self.assertEqual(3, len(os.listdir(self.temp_root)))
+        self.assertEqual(2, len(os.listdir(self.temp_root)))
 
         repo_file.close()
 
-        self.assertEqual(3, len(os.listdir(self.root)))
+        self.assertEqual(2, len(os.listdir(self.root)))
         self.assertEqual(0, len(os.listdir(self.temp_root)))
 
         resulting_files = sorted(os.listdir(self.root))
-        self.assertEqual(
-            ['boing', 'boing.bz2', 'boing.gz'], resulting_files)
+        self.assertEqual(['boing.bz2', 'boing.gz'], resulting_files)
 
         for filename in resulting_files:
             file_path = os.path.join(self.root, filename)
@@ -87,14 +86,12 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         repo_file.write('hello')
         repo_file.close()
 
-        plain_content = open(os.path.join(self.root, 'boing')).read()
         gzip_content = gzip.open(os.path.join(self.root, 'boing.gz')).read()
         bz2_content = bz2.decompress(
             open(os.path.join(self.root, 'boing.bz2')).read())
 
-        self.assertEqual(plain_content, bz2_content)
-        self.assertEqual(plain_content, gzip_content)
-        self.assertEqual('hello', plain_content)
+        self.assertEqual(gzip_content, bz2_content)
+        self.assertEqual('hello', gzip_content)
 
     def testUnreferencing(self):
         """`RepositoryIndexFile` unreferencing.
@@ -105,7 +102,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         repo_file = self.getRepoFile('boing')
 
         self.assertEqual(0, len(os.listdir(self.root)))
-        self.assertEqual(3, len(os.listdir(self.temp_root)))
+        self.assertEqual(2, len(os.listdir(self.temp_root)))
 
         del repo_file
 
@@ -123,7 +120,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         repo_file.close()
 
         self.assertEqual(
-            ['boing', 'boing.bz2', 'boing.gz'],
+            ['boing.bz2', 'boing.gz'],
             sorted(os.listdir(missing_root)))
 
     def testMissingTempRoot(self):
@@ -132,3 +129,14 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         self.assertRaises(
             AssertionError, RepositoryIndexFile,
             os.path.join(self.root, 'boing'), missing_temp_root)
+
+    def testRemoveOld(self):
+        """`RepositoryIndexFile` removes old index files."""
+        old_path = os.path.join(self.root, 'boing')
+        with open(old_path, 'w'):
+            pass
+        self.assertEqual(['boing'], sorted(os.listdir(self.root)))
+        repo_file = self.getRepoFile('boing')
+        repo_file.close()
+        self.assertEqual(
+            ['boing.bz2', 'boing.gz'], sorted(os.listdir(self.root)))
