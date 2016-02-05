@@ -297,14 +297,14 @@ class TestSnapAdminView(BrowserTestCase):
     def test_admin_snap(self):
         # Admins can change require_virtualized and privacy.
         login("admin@canonical.com")
-        ppa_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
+        commercial_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
         login_person(self.person)
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
-        browser = self.getViewBrowser(snap, user=ppa_admin)
+        browser = self.getViewBrowser(snap, user=commercial_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Require virtualized builders").selected = False
         browser.getControl("Private").selected = True
