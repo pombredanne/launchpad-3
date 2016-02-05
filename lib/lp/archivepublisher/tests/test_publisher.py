@@ -18,6 +18,10 @@ from textwrap import dedent
 import time
 
 from debian.deb822 import Release
+try:
+    import lzma
+except ImportError:
+    from backports import lzma
 from testtools.matchers import ContainsAll
 import transaction
 from zope.component import getUtility
@@ -56,6 +60,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     BinaryPackageFormat,
+    IndexCompressionType,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -1014,11 +1019,10 @@ class TestPublisher(TestPublisherBase):
         """Assert that the various compressed versions of a file are equal.
 
         Check that the various versions of a compressed file, such as
-        Packages.gz/Packages.bz2 and Sources.gz/Sources.bz2, and bz2
-        variations, all have identical contents.  The file paths are
-        relative to breezy-autotest/main under the archive_publisher's
-        configured dist root.  'breezy-autotest' is our test distroseries
-        name.
+        Packages.{gz,bz2,xz} and Sources.{gz,bz2,xz} all have identical
+        contents.  The file paths are relative to breezy-autotest/main under
+        the archive_publisher's configured dist root.  'breezy-autotest' is
+        our test distroseries name.
 
         The contents of the uncompressed file is returned as a list of lines
         in the file.
@@ -1033,6 +1037,8 @@ class TestPublisher(TestPublisherBase):
                 open_func = gzip.open
             elif suffix == '.bz2':
                 open_func = bz2.BZ2File
+            elif suffix == '.xz':
+                open_func = lzma.LZMAFile
             else:
                 open_func = open
             with open_func(index_base_path + suffix) as index_file:
@@ -1044,7 +1050,7 @@ class TestPublisher(TestPublisherBase):
         return all_contents[0]
 
     def setupPPAArchiveIndexTest(self, long_descriptions=True,
-                                 feature_flag=False):
+                                 feature_flag=False, index_compressors=None):
         # Setup for testPPAArchiveIndex tests
         allowed_suites = []
 
@@ -1082,10 +1088,12 @@ class TestPublisher(TestPublisherBase):
             self.assertEqual('enabled', getFeatureFlag(
                 'soyuz.ppa.separate_long_descriptions'))
 
+        ds = self.ubuntutest.getSeries('breezy-autotest')
         if not long_descriptions:
             # Make sure that NMAF generates i18n/Translation-en* files.
-            ds = self.ubuntutest.getSeries('breezy-autotest')
             ds.include_long_descriptions = False
+        if index_compressors is not None:
+            ds.index_compressors = index_compressors
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -1218,6 +1226,8 @@ class TestPublisher(TestPublisherBase):
             os.path.join(i18n_path, 'Translation-en.gz')))
         self.assertFalse(os.path.exists(
             os.path.join(i18n_path, 'Translation-en.bz2')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.xz')))
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -1237,6 +1247,8 @@ class TestPublisher(TestPublisherBase):
             os.path.join(i18n_path, 'Translation-en.gz')))
         self.assertFalse(os.path.exists(
             os.path.join(i18n_path, 'Translation-en.bz2')))
+        self.assertFalse(os.path.exists(
+            os.path.join(i18n_path, 'Translation-en.xz')))
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -1401,9 +1413,31 @@ class TestPublisher(TestPublisherBase):
         with open(release_path) as release_file:
             content = release_file.read()
             self.assertIn('main/i18n/Translation-en.bz2', content)
+            self.assertIn('main/i18n/Translation-en.gz', content)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
+
+    def testPPAArchiveIndexCompressors(self):
+        # Archive index generation honours DistroSeries.index_compressors.
+        archive_publisher = self.setupPPAArchiveIndexTest(
+            long_descriptions=False, feature_flag=True,
+            index_compressors=[
+                IndexCompressionType.UNCOMPRESSED, IndexCompressionType.XZ])
+        suite_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'main')
+        for uncompressed_file_path in (
+                os.path.join('source', 'Sources'),
+                os.path.join('binary-i386', 'Packages'),
+                os.path.join('debian-installer', 'binary-i386', 'Packages'),
+                os.path.join('debug', 'binary-i386', 'Packages'),
+                os.path.join('i18n', 'Translation-en'),
+                ):
+            for suffix in ('bz2', 'gz'):
+                self.assertFalse(os.path.exists(os.path.join(
+                    suite_path, '%s.%s' % (uncompressed_file_path, suffix))))
+            self._checkCompressedFiles(
+                archive_publisher, uncompressed_file_path, ['.xz'])
 
     def checkDirtyPockets(self, publisher, expected):
         """Check dirty_pockets contents of a given publisher."""
@@ -1768,6 +1802,7 @@ class TestPublisher(TestPublisherBase):
             content = release_file.read()
             for component in components:
                 self.assertIn(component + '/i18n/Translation-en.bz2', content)
+                self.assertIn(component + '/i18n/Translation-en.gz', content)
 
     def testReleaseFileForContents(self):
         """Test Release file writing for Contents files."""
@@ -1942,7 +1977,8 @@ class TestPublisher(TestPublisherBase):
 
         # Write compressed versions of a zero-length Translation-en file.
         translation_en_index = RepositoryIndexFile(
-            os.path.join(i18n_root, 'Translation-en'), self.config.temproot)
+            os.path.join(i18n_root, 'Translation-en'), self.config.temproot,
+            self.ubuntutest['breezy-autotest'].index_compressors)
         translation_en_index.close()
 
         all_files = set()

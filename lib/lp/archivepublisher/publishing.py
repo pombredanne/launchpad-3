@@ -118,13 +118,15 @@ def remove_suffix(path):
         return path[:-len('.gz')]
     elif path.endswith('.bz2'):
         return path[:-len('.bz2')]
+    elif path.endswith('.xz'):
+        return path[:-len('.xz')]
     else:
         return path
 
 
 def get_suffixed_indices(path):
     """Return a set of paths to compressed copies of the given index."""
-    return set([path + suffix for suffix in ('', '.gz', '.bz2')])
+    return set([path + suffix for suffix in ('', '.gz', '.bz2', '.xz')])
 
 
 def _getDiskPool(pubconf, log):
@@ -685,11 +687,11 @@ class Publisher(object):
             translation_en = RepositoryIndexFile(
                 os.path.join(self._config.distsroot, suite_name,
                              component.name, "i18n", "Translation-en"),
-                self._config.temproot)
+                self._config.temproot, distroseries.index_compressors)
 
         source_index = RepositoryIndexFile(
             get_sources_path(self._config, suite_name, component),
-            self._config.temproot)
+            self._config.temproot, distroseries.index_compressors)
 
         for spp in distroseries.getSourcePackagePublishing(
                 pocket, component, self.archive):
@@ -710,13 +712,13 @@ class Publisher(object):
             indices = {}
             indices[None] = RepositoryIndexFile(
                 get_packages_path(self._config, suite_name, component, arch),
-                self._config.temproot)
+                self._config.temproot, distroseries.index_compressors)
 
             for subcomp in self.subcomponents:
                 indices[subcomp] = RepositoryIndexFile(
                     get_packages_path(
                         self._config, suite_name, component, arch, subcomp),
-                    self._config.temproot)
+                    self._config.temproot, distroseries.index_compressors)
 
             for bpp in distroseries.getBinaryPackagePublishing(
                     arch.architecturetag, pocket, component, self.archive):

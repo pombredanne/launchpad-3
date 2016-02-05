@@ -29,6 +29,7 @@ setup(
         'ampoule',
         'auditorclient',
         'auditorfixture',
+        'backports.lzma',
         'BeautifulSoup',
         'bzr',
         'cssselect',

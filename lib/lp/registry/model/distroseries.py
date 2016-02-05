@@ -124,6 +124,7 @@ from lp.services.propertycache import (
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -202,6 +203,12 @@ ACTIVE_UNRELEASED_STATUSES = [
     ]
 
 
+DEFAULT_INDEX_COMPRESSORS = [
+    IndexCompressionType.GZIP,
+    IndexCompressionType.BZIP2,
+    ]
+
+
 @implementer(
     IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
     IServiceUsage, ISeriesBugTarget)
@@ -266,6 +273,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             kwargs["publishing_options"] = {
                 "backports_not_automatic": False,
                 "include_long_descriptions": True,
+                "index_compressors": [
+                    compressor.title
+                    for compressor in DEFAULT_INDEX_COMPRESSORS],
                 }
         super(DistroSeries, self).__init__(*args, **kwargs)
 
@@ -815,6 +825,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def include_long_descriptions(self, value):
         assert isinstance(value, bool)
         self.publishing_options["include_long_descriptions"] = value
+
+    @property
+    def index_compressors(self):
+        if "index_compressors" in self.publishing_options:
+            return [
+                IndexCompressionType.getTermByToken(name).value
+                for name in self.publishing_options["index_compressors"]]
+        else:
+            return list(DEFAULT_INDEX_COMPRESSORS)
+
+    @index_compressors.setter
+    def index_compressors(self, value):
+        assert isinstance(value, list)
+        self.publishing_options["index_compressors"] = [
+            compressor.title for compressor in value]
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""

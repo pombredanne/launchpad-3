@@ -27,6 +27,7 @@ from lp.services.librarian.model import LibraryFileAlias
 from lp.services.osutils import write_file
 from lp.soyuz.enums import (
     BinaryPackageFormat,
+    IndexCompressionType,
     PackagePublishingStatus,
     )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -67,10 +68,7 @@ Dir
 
 Default
 {
-    Packages::Compress "gzip bzip2";
-    Sources::Compress "gzip bzip2";
     Contents::Compress "gzip";
-    Translation::Compress "gzip bzip2";
     DeLinkLimit 0;
     MaxContentsChange 12000;
     FileMode 0644;
@@ -95,6 +93,9 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
     SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
     %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
     Packages::Extensions "%(EXTENSIONS)s";
+    Packages::Compress "%(COMPRESSORS)s";
+    Sources::Compress "%(COMPRESSORS)s";
+    Translation::Compress "%(COMPRESSORS)s";
     BinCacheDB "packages%(CACHEINSERT)s-$(ARCH).db";
     SrcCacheDB "sources%(CACHEINSERT)s.db";
     Contents " ";
@@ -114,6 +115,13 @@ SUBCOMPONENT_TO_EXT = {
     }
 
 CLEANUP_FREQUENCY = 60 * 60 * 24
+
+COMPRESSOR_TO_CONFIG = {
+    IndexCompressionType.UNCOMPRESSED: '.',
+    IndexCompressionType.GZIP: 'gzip',
+    IndexCompressionType.BZIP2: 'bzip2',
+    IndexCompressionType.XZ: 'xz',
+    }
 
 
 class AptFTPArchiveFailure(Exception):
@@ -743,7 +751,8 @@ class FTPArchiveHandler:
 
         self.writeAptConfig(
             apt_config, suite, comps, archs,
-            distroseries.include_long_descriptions)
+            distroseries.include_long_descriptions,
+            distroseries.index_compressors)
 
         # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
         for comp in comps:
@@ -759,8 +768,10 @@ class FTPArchiveHandler:
                         component_path, subcomp, "binary-" + arch))
 
     def writeAptConfig(self, apt_config, suite, comps, archs,
-                       include_long_descriptions):
+                       include_long_descriptions, index_compressors):
         self.log.debug("Generating apt config for %s" % suite)
+        compressors = " ".join(
+            COMPRESSOR_TO_CONFIG[c] for c in index_compressors)
         apt_config.write(STANZA_TEMPLATE % {
                          "LISTPATH": self._config.overrideroot,
                          "DISTRORELEASE": suite,
@@ -769,6 +780,7 @@ class FTPArchiveHandler:
                          "ARCHITECTURES": " ".join(archs + ["source"]),
                          "SECTIONS": " ".join(comps),
                          "EXTENSIONS": ".deb",
+                         "COMPRESSORS": compressors,
                          "CACHEINSERT": "",
                          "DISTS": os.path.basename(self._config.distsroot),
                          "HIDEEXTRA": "",
@@ -787,6 +799,7 @@ class FTPArchiveHandler:
                         "ARCHITECTURES": " ".join(archs),
                         "SECTIONS": subcomp,
                         "EXTENSIONS": '.%s' % SUBCOMPONENT_TO_EXT[subcomp],
+                        "COMPRESSORS": compressors,
                         "CACHEINSERT": "-%s" % subcomp,
                         "DISTS": os.path.basename(self._config.distsroot),
                         "HIDEEXTRA": "// ",
@@ -828,7 +841,7 @@ class FTPArchiveHandler:
                 comps.add(comp.name)
         self.writeAptConfig(
             apt_config, "nonexistent-suite", sorted(comps), sorted(archs),
-            True)
+            True, [IndexCompressionType.UNCOMPRESSED])
 
         with open(apt_config_filename, "w") as fp:
             fp.write(apt_config.getvalue())

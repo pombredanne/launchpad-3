@@ -8,10 +8,7 @@ Dir
 
 Default
 {
-    Packages::Compress "gzip bzip2";
-    Sources::Compress "gzip bzip2";
     Contents::Compress "gzip";
-    Translation::Compress "gzip bzip2";
     DeLinkLimit 0;
     MaxContentsChange 12000;
     FileMode 0644;
@@ -34,6 +31,9 @@ tree "dists/hoary-test-updates"
     SrcOverride "override.hoary-test-updates.$(SECTION).src";
     ExtraOverride "override.hoary-test-updates.extra.$(SECTION)";
     Packages::Extensions ".deb";
+    Packages::Compress "gzip bzip2";
+    Sources::Compress "gzip bzip2";
+    Translation::Compress "gzip bzip2";
     BinCacheDB "packages-$(ARCH).db";
     SrcCacheDB "sources.db";
     Contents " ";
@@ -51,6 +51,9 @@ tree "dists/hoary-test-updates/main"
     SrcOverride "override.hoary-test-updates.main.$(SECTION).src";
     // ExtraOverride "override.hoary-test-updates.main.extra.$(SECTION)";
     Packages::Extensions ".udeb";
+    Packages::Compress "gzip bzip2";
+    Sources::Compress "gzip bzip2";
+    Translation::Compress "gzip bzip2";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
     SrcCacheDB "sources-debian-installer.db";
     Contents " ";
@@ -68,6 +71,9 @@ tree "dists/hoary-test-updates/restricted"
     SrcOverride "override.hoary-test-updates.restricted.$(SECTION).src";
     // ExtraOverride "override.hoary-test-updates.restricted.extra.$(SECTION)";
     Packages::Extensions ".udeb";
+    Packages::Compress "gzip bzip2";
+    Sources::Compress "gzip bzip2";
+    Translation::Compress "gzip bzip2";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
     SrcCacheDB "sources-debian-installer.db";
     Contents " ";
@@ -85,6 +91,9 @@ tree "dists/hoary-test-updates/universe"
     SrcOverride "override.hoary-test-updates.universe.$(SECTION).src";
     // ExtraOverride "override.hoary-test-updates.universe.extra.$(SECTION)";
     Packages::Extensions ".udeb";
+    Packages::Compress "gzip bzip2";
+    Sources::Compress "gzip bzip2";
+    Translation::Compress "gzip bzip2";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
     SrcCacheDB "sources-debian-installer.db";
     Contents " ";
@@ -102,6 +111,9 @@ tree "dists/hoary-test-updates/multiverse"
     SrcOverride "override.hoary-test-updates.multiverse.$(SECTION).src";
     // ExtraOverride "override.hoary-test-updates.multiverse.extra.$(SECTION)";
     Packages::Extensions ".udeb";
+    Packages::Compress "gzip bzip2";
+    Sources::Compress "gzip bzip2";
+    Translation::Compress "gzip bzip2";
     BinCacheDB "packages-debian-installer-$(ARCH).db";
     SrcCacheDB "sources-debian-installer.db";
     Contents " ";
