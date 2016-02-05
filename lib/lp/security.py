@@ -3121,9 +3121,14 @@ class ViewSnap(AuthorizationBase):
         return not self.obj.private
 
     def checkAuthenticated(self, user):
+        if not self.obj.private:
+            return True
+
         return (
-            not self.obj.private or
-            self.forwardCheckAuthenticated(user, self.obj.owner))
+            user.isOwner(self.obj) or
+            user.in_ppa_admin or
+            user.in_commercial_admin or
+            user.in_admin)
 
 
 class EditSnap(AuthorizationBase):
