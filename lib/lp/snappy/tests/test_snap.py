@@ -42,19 +42,23 @@ from lp.snappy.interfaces.snap import (
     ISnapView,
     NoSourceForSnap,
     SNAP_FEATURE_FLAG,
+    SNAP_TESTING_FLAGS,
     SnapBuildAlreadyPending,
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapPrivacyMismatch,
+    SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
     api_url,
+    feature_flags,
     login,
     logout,
     person_logged_in,
+    set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -81,6 +85,16 @@ class TestSnapFeatureFlag(TestCaseWithFactory):
             SnapFeatureDisabled, getUtility(ISnapSet).new,
             person, person, None, None, branch=self.factory.makeAnyBranch())
 
+    def test_private_feature_flag_disabled(self):
+        # Without a private feature flag, we will not create new private Snaps.
+        person = self.factory.makePerson()
+        with feature_flags():
+            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
+            self.assertRaises(
+                SnapPrivateFeatureDisabled, getUtility(ISnapSet).new,
+                person, person, None, None,
+                branch=self.factory.makeAnyBranch(), private=True)
+
 
 class TestSnap(TestCaseWithFactory):
 
@@ -88,7 +102,7 @@ class TestSnap(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnap, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
 
     def test_implements_interfaces(self):
         # Snap implements ISnap.
@@ -364,7 +378,7 @@ class TestSnapSet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapSet, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
 
     def test_class_implements_interfaces(self):
         # The SnapSet class implements ISnapSet.
@@ -668,7 +682,7 @@ class TestSnapProcessors(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapProcessors, self).setUp(user="foo.bar@canonical.com")
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.default_procs = [
             getUtility(IProcessorSet).getByName("386"),
             getUtility(IProcessorSet).getByName("amd64")]
@@ -755,7 +769,7 @@ class TestSnapWebservice(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapWebservice, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.person = self.factory.makePerson(displayname="Test Person")
         self.webservice = webservice_for_person(
             self.person, permission=OAuthPermission.WRITE_PUBLIC)
