@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -35,12 +35,6 @@
         factory="lp.app.utilities.celebrities.LaunchpadCelebrities"
         provides="lp.app.interfaces.launchpad.ILaunchpadCelebrities">
     </utility>
-
-    <!-- Configuration related to datetime classes in Launchpad. -->
-    <adapter
-        for="lp.app.interfaces.launchpad.IHasDateCreated"
-        provides="lp.app.interfaces.launchpad.IAging"
-        factory="lp.app.model.cdatetime.AgingAdapter" />
 
     <adapter
         provides="lp.app.interfaces.launchpad.IPrivacy"

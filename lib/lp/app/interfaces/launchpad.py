@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for the Launchpad application.
@@ -9,8 +9,6 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 __all__ = [
-    'IAging',
-    'IHasDateCreated',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
@@ -159,17 +157,6 @@ class IHasMugshot(Interface):
     mugshot = Attribute("The 192x192 mugshot.")
 
 
-class IAging(Interface):
-    """Something that gets older as time passes."""
-
-    def currentApproximateAge():
-        """Return a human-readable string of how old this thing is.
-
-        Values returned are things like '2 minutes', '3 hours',
-        '1 month', etc.
-        """
-
-
 class IPrivacy(Interface):
     """Something that can be private."""
 
@@ -178,12 +165,6 @@ class IPrivacy(Interface):
         required=False,
         description=_(
             "Private objects are visible to members or subscribers."))
-
-
-class IHasDateCreated(Interface):
-    """Something created on a certain date."""
-
-    datecreated = Attribute("The date on which I was created.")
 
 
 class IHeadingContext(Interface):
