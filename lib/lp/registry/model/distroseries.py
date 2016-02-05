@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -253,10 +253,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
-    _backports_not_automatic = BoolCol(
-        dbName="backports_not_automatic", notNull=True, default=False)
-    _include_long_descriptions = BoolCol(
-        dbName="include_long_descriptions", notNull=True, default=True)
     publishing_options = JSON("publishing_options")
 
     language_packs = SQLMultipleJoin(
@@ -804,35 +800,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def backports_not_automatic(self):
-        if self.publishing_options is not None:
-            return self.publishing_options.get(
-                "backports_not_automatic", False)
-        else:
-            return self._backports_not_automatic
+        return self.publishing_options.get("backports_not_automatic", False)
 
     @backports_not_automatic.setter
     def backports_not_automatic(self, value):
         assert isinstance(value, bool)
-        if self.publishing_options is not None:
-            self.publishing_options["backports_not_automatic"] = value
-        else:
-            self._backports_not_automatic = value
+        self.publishing_options["backports_not_automatic"] = value
 
     @property
     def include_long_descriptions(self):
-        if self.publishing_options is not None:
-            return self.publishing_options.get(
-                "include_long_descriptions", True)
-        else:
-            return self._include_long_descriptions
+        return self.publishing_options.get("include_long_descriptions", True)
 
     @include_long_descriptions.setter
     def include_long_descriptions(self, value):
         assert isinstance(value, bool)
-        if self.publishing_options is not None:
-            self.publishing_options["include_long_descriptions"] = value
-        else:
-            self._include_long_descriptions = value
+        self.publishing_options["include_long_descriptions"] = value
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""

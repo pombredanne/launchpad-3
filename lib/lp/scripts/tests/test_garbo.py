@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -1432,34 +1432,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             _assert_enf_by_person(person, False)
         for person in people_enf_true:
             _assert_enf_by_person(person, True)
-
-    def test_DistroSeriesPublishingOptionsPopulator(self):
-        switch_dbuser('testadmin')
-        all_series = []
-        all_options = (
-            (False, False), (False, True), (True, False), (True, True))
-        for backports_not_automatic, include_long_descriptions in all_options:
-            series = self.factory.makeDistroSeries()
-            naked_series = removeSecurityProxy(series)
-            naked_series.publishing_options = None
-            naked_series._backports_not_automatic = backports_not_automatic
-            naked_series._include_long_descriptions = include_long_descriptions
-            all_series.append(series)
-
-        self.runDaily()
-
-        for series, (backports_not_automatic, include_long_descriptions) in (
-                zip(all_series, all_options)):
-            expected_options = {
-                "backports_not_automatic": backports_not_automatic,
-                "include_long_descriptions": include_long_descriptions,
-                }
-            naked_series = removeSecurityProxy(series)
-            self.assertEqual(expected_options, naked_series.publishing_options)
-            self.assertEqual(
-                backports_not_automatic, series.backports_not_automatic)
-            self.assertEqual(
-                include_long_descriptions, series.include_long_descriptions)
 
 
 class TestGarboTasks(TestCaseWithFactory):
