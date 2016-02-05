@@ -214,7 +214,7 @@ token to a fixed value:
     >>> logintoken = LoginToken.selectOneBy(
     ...     _token=hashlib.sha256(token_value).hexdigest())
     >>> logintoken.date_created = datetime.datetime(
-    ...     2005,04,01, 12,00,00, tzinfo=pytz.timezone('UTC'))
+    ...     2005, 4, 1, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> logintoken.sync()
 
 Back to Sample User. They visit the token URL and is asked to sign some

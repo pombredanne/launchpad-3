@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -395,7 +395,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         order_by = [
             Person.id, Person.datecreated, Person.name, Person.display_name]
-        limits = [1, datetime(2011, 07, 25, 0, 0, 0), 'foo', 'bar']
+        limits = [1, datetime(2011, 7, 25, 0, 0, 0), 'foo', 'bar']
         result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         self.assertEqual([(order_by, limits)], result)
         order_by = [
@@ -443,7 +443,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             Person.id, Person.datecreated, Desc(Person.name),
             Desc(Person.display_name)]
         limits = [
-            1, datetime(2011, 07, 25, 0, 0, 0, tzinfo=pytz.UTC), 'foo', 'bar']
+            1, datetime(2011, 7, 25, 0, 0, 0, tzinfo=pytz.UTC), 'foo', 'bar']
         limits = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         equals_expressions = range_factory.equalsExpressionsFromLimits(limits)
         equals_expressions = map(compile, equals_expressions)

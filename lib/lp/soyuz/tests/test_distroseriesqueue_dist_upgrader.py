@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test upload and queue manipulation of dist-upgrader tarballs.
@@ -32,8 +32,8 @@ class TestDistroSeriesQueueDistUpgrader(TestNativePublishingBase):
     def setUp(self):
         super(TestDistroSeriesQueueDistUpgrader, self).setUp()
         import_public_test_keys()
-        # CustomUpload.installFiles requires a umask of 022.
-        old_umask = os.umask(022)
+        # CustomUpload.installFiles requires a umask of 0o022.
+        old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
         self.anything_policy = getPolicy(
             name="anything", distro="ubuntutest", distroseries=None)

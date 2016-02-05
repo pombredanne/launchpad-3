@@ -576,8 +576,8 @@ so we need to skip that upload.
     ...     warty.components[0])
     >>> warty_i386_mirror = removeSecurityProxy(warty_i386_mirror)
     >>> recent_freshness, threshold = warty_i386_mirror.freshness_times[0]
-    >>> start = datetime(2005, 06, 20, tzinfo=utc)
-    >>> end = datetime(2005, 06, 20, tzinfo=utc) + timedelta(hours=0.5)
+    >>> start = datetime(2005, 6, 20, tzinfo=utc)
+    >>> end = datetime(2005, 6, 20, tzinfo=utc) + timedelta(hours=0.5)
     >>> time_interval = (start, end)
     >>> upload = warty_i386_mirror.getLatestPublishingEntry(
     ...     time_interval, deb_only=False)

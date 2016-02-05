@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """distributionmirror-prober tests."""
@@ -930,7 +930,7 @@ class TestLoggingMixin(TestCase):
 
     def _fake_gettime(self):
         # Fake the current time.
-        fake_time = datetime(2004, 10, 20, 12, 00, 00, 000000)
+        fake_time = datetime(2004, 10, 20, 12, 0, 0, 0)
         return fake_time
 
     def test_logMessage_output(self):

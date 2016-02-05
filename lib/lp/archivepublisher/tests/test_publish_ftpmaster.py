@@ -320,7 +320,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script_file = file(script_path, "w")
         script_file.write(script_code)
         script_file.close()
-        os.chmod(script_path, 0755)
+        os.chmod(script_path, 0o755)
 
     def test_script_runs_successfully(self):
         self.prepareUbuntu()

@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `GitJob`s."""
@@ -162,7 +162,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
         job = GitRefScanJob.create(repository)
         paths = (u"refs/heads/master", u"refs/tags/1.0")
         author = repository.owner
-        author_date_start = datetime(2015, 01, 01, tzinfo=pytz.UTC)
+        author_date_start = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         author_date_gen = time_counter(author_date_start, timedelta(days=1))
         hosting_client = FakeGitHostingClient(
             self.makeFakeRefs(paths),

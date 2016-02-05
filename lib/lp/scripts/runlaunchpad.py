@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -273,7 +273,7 @@ def stop_process(process):
 
 def prepare_for_librarian():
     if not os.path.isdir(config.librarian_server.root):
-        os.makedirs(config.librarian_server.root, 0700)
+        os.makedirs(config.librarian_server.root, 0o700)
 
 
 SERVICES = {
