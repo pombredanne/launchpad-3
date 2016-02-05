@@ -50,7 +50,7 @@ class ISourcePackageRelease(Interface):
                       "package depends to build"),
         required=False)
     builddependsindep = TextLine(
-        title=_("DSC build depends"),
+        title=_("DSC arch-independent build depends"),
         description=_("Same as builddepends, but the list is of "
                       "arch-independent packages"),
         required=False)

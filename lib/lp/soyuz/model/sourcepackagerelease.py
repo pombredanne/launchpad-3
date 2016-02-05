@@ -8,6 +8,7 @@ __all__ = [
 
 
 import datetime
+import json
 import operator
 import re
 from StringIO import StringIO
@@ -19,7 +20,6 @@ from debian.changelog import (
     ChangelogParseError,
     )
 import pytz
-import simplejson
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -132,7 +132,7 @@ class SourcePackageRelease(SQLBase):
 
     def __init__(self, *args, **kwargs):
         if 'user_defined_fields' in kwargs:
-            kwargs['_user_defined_fields'] = simplejson.dumps(
+            kwargs['_user_defined_fields'] = json.dumps(
                 kwargs['user_defined_fields'])
             del kwargs['user_defined_fields']
         # copyright isn't on the Storm class, since we don't want it
@@ -173,13 +173,15 @@ class SourcePackageRelease(SQLBase):
         """See `IBinaryPackageRelease`."""
         if self._user_defined_fields is None:
             return []
-        return simplejson.loads(self._user_defined_fields)
+        user_defined_fields = json.loads(self._user_defined_fields)
+        if user_defined_fields is None:
+            return []
+        return user_defined_fields
 
     def getUserDefinedField(self, name):
-        if self.user_defined_fields:
-            for k, v in self.user_defined_fields:
-                if k.lower() == name.lower():
-                    return v
+        for k, v in self.user_defined_fields:
+            if k.lower() == name.lower():
+                return v
 
     @cachedproperty
     def package_diffs(self):

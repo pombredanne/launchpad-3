@@ -64,7 +64,10 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         """
         pub_source = self.getPubSource(
             builddepends='fooish', builddependsindep='pyfoo',
-            build_conflicts='bar', build_conflicts_indep='pybar')
+            build_conflicts='bar', build_conflicts_indep='pybar',
+            user_defined_fields=[
+                ("Build-Depends-Arch", "libfoo-dev"),
+                ("Build-Conflicts-Arch", "libbar-dev")])
 
         self.assertEqual(
             [u'Package: foo',
@@ -74,8 +77,10 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Build-Depends: fooish',
              u'Build-Depends-Indep: pyfoo',
+             u'Build-Depends-Arch: libfoo-dev',
              u'Build-Conflicts: bar',
              u'Build-Conflicts-Indep: pybar',
+             u'Build-Conflicts-Arch: libbar-dev',
              u'Architecture: all',
              u'Standards-Version: 3.6.2',
              u'Format: 1.0',
@@ -102,7 +107,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             build_conflicts='bar', build_conflicts_indep='pybar',
             user_defined_fields=[
                 ("Python-Version", "< 1.5"),
-                ("CHECKSUMS-SHA1", "BLAH")])
+                ("CHECKSUMS-SHA1", "BLAH"),
+                ("Build-Depends-Arch", "libfoo-dev"),
+                ("Build-Conflicts-Arch", "libbar-dev")])
 
         self.assertEqual(
             [u'Package: foo',
@@ -112,8 +119,10 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Build-Depends: fooish',
              u'Build-Depends-Indep: pyfoo',
+             u'Build-Depends-Arch: libfoo-dev',
              u'Build-Conflicts: bar',
              u'Build-Conflicts-Indep: pybar',
+             u'Build-Conflicts-Arch: libbar-dev',
              u'Architecture: all',
              u'Standards-Version: 3.6.2',
              u'Format: 1.0',
