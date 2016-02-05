@@ -66,14 +66,9 @@ class HasSnapsViewMixin:
 
     @property
     def show_snap_information(self):
-        if not bool(getFeatureFlag(SNAP_FEATURE_FLAG)):
-            return False
-
-        if (self.context.private and
-            not bool(getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG))):
-            return False
-
-        return not self.snaps.is_empty()
+        return (
+            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) or
+            not self.snaps.is_empty())
 
     @property
     def snaps_link(self):

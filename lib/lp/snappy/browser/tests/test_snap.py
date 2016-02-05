@@ -233,6 +233,22 @@ class TestSnapAddView(BrowserTestCase):
             extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
 
+    def test_create_new_snap_private_link(self):
+        # Link for create new snaps for private content is only displayed
+        # if the 'snap.allow_private' is enabled.
+        login_person(self.person)
+        branch = self.factory.makeAnyBranch(
+            owner=self.person,
+            information_type=InformationType.USERDATA)
+
+        browser = self.getViewBrowser(branch, user=self.person)
+        browser.getLink('Create snap package')
+
+        with FeatureFixture({SNAP_FEATURE_FLAG: u'on'}):
+            browser = self.getViewBrowser(branch, user=self.person)
+            self.assertRaises(
+                LinkNotFoundError, browser.getLink, "Create snap package")
+
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.
         login_person(self.person)
