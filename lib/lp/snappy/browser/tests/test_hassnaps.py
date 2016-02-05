@@ -5,12 +5,58 @@
 
 __metaclass__ = type
 
+from lp.app.enums import InformationType
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
-from lp.testing import TestCaseWithFactory
+from lp.snappy.interfaces.snap import (
+    SNAP_FEATURE_FLAG,
+    SNAP_PRIVATE_FEATURE_FLAG,
+)
+from lp.testing import (
+    feature_flags,
+    person_logged_in,
+    set_feature_flag,
+    TestCaseWithFactory,
+)
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
+
+
+class TestRelatedSnapsFeatureFlag(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_show_snap_information_public(self):
+        #
+        branch = self.factory.makeAnyBranch()
+
+        with feature_flags():
+            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
+            self.factory.makeSnap(branch=branch)
+            view = create_initialized_view(branch, "+index")
+            self.assertTrue(view.show_snap_information)
+
+        view = create_initialized_view(branch, "+index")
+        self.assertFalse(view.show_snap_information)
+
+    def test_show_snap_information_private(self):
+        #
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            branch = self.factory.makeAnyBranch(
+                owner=owner, information_type=InformationType.PRIVATESECURITY)
+            with feature_flags():
+                set_feature_flag(SNAP_FEATURE_FLAG, u'on')
+                set_feature_flag(SNAP_PRIVATE_FEATURE_FLAG, u'on')
+                self.factory.makeSnap(
+                    registrant=owner, owner=owner, branch=branch, private=True)
+                view = create_initialized_view(branch, "+index")
+                self.assertTrue(view.show_snap_information)
+
+                # XXX cprov 20160205: how do I disable/reset a flag??
+
+
+# XXX cprov 20160205: missing tests for HasSnapsMenuMixin ...
 
 
 class TestRelatedSnapsMixin:
