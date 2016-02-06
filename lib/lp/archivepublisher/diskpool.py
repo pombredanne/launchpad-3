@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = ['DiskPoolEntry', 'DiskPool', 'poolify', 'unpoolify']
@@ -105,7 +105,7 @@ class _diskpool_atomicfile:
     def close(self):
         """Make the atomic move into place having closed the temp file."""
         self.fd.close()
-        os.chmod(self.tempname, 0644)
+        os.chmod(self.tempname, 0o644)
         # Note that this will fail if the target and the temp dirs are on
         # different filesystems.
         os.rename(self.tempname, self.targetfilename)

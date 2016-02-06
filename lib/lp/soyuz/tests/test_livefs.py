@@ -1,4 +1,4 @@
-# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystems."""
@@ -96,14 +96,14 @@ class TestLiveFS(TestCaseWithFactory):
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
         livefs = self.factory.makeLiveFS(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         self.assertEqual(livefs.date_created, livefs.date_last_modified)
 
     def test_modifiedevent_sets_date_last_modified(self):
         # When a LiveFS receives an object modified event, the last modified
         # date is set to UTC_NOW.
         livefs = self.factory.makeLiveFS(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         notify(ObjectModifiedEvent(
             removeSecurityProxy(livefs), livefs, [ILiveFS["name"]]))
         self.assertSqlAttributeEqualsDate(

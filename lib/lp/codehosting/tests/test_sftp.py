@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the transport-backed SFTP server implementation."""
@@ -138,7 +138,7 @@ class TestSFTPAdapter(TestCase):
         branch_name = self.factory.getUniqueString()
         deferred = server.makeDirectory(
             '~%s/%s/%s' % (avatar.username, product.name, branch_name),
-            {'permissions': 0777})
+            {'permissions': 0o777})
         return deferred
 
 
@@ -507,12 +507,12 @@ class TestSFTPServer(TestCaseInTempDir, SFTPTestMixin):
         # makeDirectory makes the directory.
         directory = self.getPathSegment()
         deferred = self.sftp_server.makeDirectory(
-            directory, {'permissions': 0777})
+            directory, {'permissions': 0o777})
 
         def assertDirectoryExists(ignored):
             self.assertTrue(
                 os.path.isdir(directory), '%r is not a directory' % directory)
-            self.assertEqual(040777, os.stat(directory).st_mode)
+            self.assertEqual(0o40777, os.stat(directory).st_mode)
 
         return deferred.addCallback(assertDirectoryExists)
 
@@ -521,7 +521,7 @@ class TestSFTPServer(TestCaseInTempDir, SFTPTestMixin):
         nonexistent = self.getPathSegment()
         nonexistent_child = '%s/%s' % (nonexistent, self.getPathSegment())
         deferred = self.sftp_server.makeDirectory(
-            nonexistent_child, {'permissions': 0777})
+            nonexistent_child, {'permissions': 0o777})
         return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_removeDirectory(self):

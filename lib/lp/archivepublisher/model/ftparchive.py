@@ -52,7 +52,7 @@ def package_name(filename):
 def safe_mkdir(path):
     """Ensures the path exists, creating it if it doesn't."""
     if not os.path.exists(path):
-        os.makedirs(path, 0755)
+        os.makedirs(path, 0o755)
 
 
 DEFAULT_COMPONENT = "main"

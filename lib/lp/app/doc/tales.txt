@@ -634,7 +634,8 @@ Bug branches
     >>> login('test@canonical.com')
     >>> branch = factory.makeAnyBranch()
     >>> bug = factory.makeBug()
-    >>> bugbranch = bug.linkBranch(branch, branch.owner)
+    >>> bug.linkBranch(branch, branch.owner)
+    >>> [bugbranch] = bug.linked_bugbranches
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
     u'<a href="...+bug...">Bug #...</a>'
 

@@ -10,6 +10,7 @@ __all__ = [
 
 __metaclass__ = type
 
+from collections import OrderedDict
 import hashlib
 import os.path
 import re
@@ -109,6 +110,9 @@ def build_source_stanza_fields(spr, component, section):
         files_list.append((spf.libraryfile.content.md5, common))
         sha1_list.append((spf.libraryfile.content.sha1, common))
         sha256_list.append((spf.libraryfile.content.sha256, common))
+    user_defined_fields = OrderedDict([
+        (key.lower(), (key, value))
+        for key, value in spr.user_defined_fields])
     # Filling stanza options.
     fields = IndexStanzaFields()
     fields.append('Package', spr.name)
@@ -118,8 +122,16 @@ def build_source_stanza_fields(spr, component, section):
     fields.append('Maintainer', spr.dsc_maintainer_rfc822)
     fields.append('Build-Depends', spr.builddepends)
     fields.append('Build-Depends-Indep', spr.builddependsindep)
+    if 'build-depends-arch' in user_defined_fields:
+        fields.append(
+            'Build-Depends-Arch',
+            user_defined_fields.pop('build-depends-arch')[1])
     fields.append('Build-Conflicts', spr.build_conflicts)
     fields.append('Build-Conflicts-Indep', spr.build_conflicts_indep)
+    if 'build-conflicts-arch' in user_defined_fields:
+        fields.append(
+            'Build-Conflicts-Arch',
+            user_defined_fields.pop('build-conflicts-arch')[1])
     fields.append('Architecture', spr.architecturehintlist)
     fields.append('Standards-Version', spr.dsc_standards_version)
     fields.append('Format', spr.dsc_format)
@@ -128,8 +140,7 @@ def build_source_stanza_fields(spr, component, section):
     fields.append('Checksums-Sha1', format_file_list(sha1_list))
     fields.append('Checksums-Sha256', format_file_list(sha256_list))
     fields.append('Homepage', spr.homepage)
-    if spr.user_defined_fields:
-        fields.extend(spr.user_defined_fields)
+    fields.extend(user_defined_fields.values())
 
     return fields
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
@@ -223,7 +223,7 @@ class LibrarianWebTestCase(testtools.TestCase):
         file_alias = IMasterStore(LibraryFileAlias).get(
             LibraryFileAlias, file_alias_id)
         file_alias.date_created = datetime(
-            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+            2001, 1, 30, 13, 45, 59, tzinfo=pytz.utc)
 
         # Commit so the file is available from the Librarian.
         self.commit()
@@ -419,7 +419,7 @@ class LibrarianWebTestCase(testtools.TestCase):
         file_alias = IMasterStore(LibraryFileAlias).get(
             LibraryFileAlias, fileAlias)
         file_alias.date_created = datetime(
-            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+            2001, 1, 30, 13, 45, 59, tzinfo=pytz.utc)
         # Commit the update.
         self.commit()
         # Fetch the file via HTTP, recording the interesting headers

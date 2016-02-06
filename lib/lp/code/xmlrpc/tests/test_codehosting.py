@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -230,8 +230,8 @@ class CodehostingTest(TestCaseWithFactory):
 
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into ScriptActivity.
-        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
-        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started = datetime.datetime(2007, 7, 5, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 7, 5, 19, 34, 24, tzinfo=UTC)
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
         success = self.codehosting_api.recordSuccess(

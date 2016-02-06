@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad object factory."""
@@ -326,7 +326,7 @@ class TestFactory(TestCaseWithFactory):
         self.assertEqual(110, bpr.installedsize)
 
     def test_makeBinaryPackageName_uses_date_created(self):
-        date_created = datetime(2000, 01, 01, tzinfo=pytz.UTC)
+        date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
         bpr = self.factory.makeBinaryPackageRelease(
             date_created=date_created)
         self.assertEqual(date_created, bpr.datecreated)

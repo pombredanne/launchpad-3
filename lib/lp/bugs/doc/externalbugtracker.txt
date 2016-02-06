@@ -518,7 +518,7 @@ passed to getModifiedRemoteBugs(). Only the bugs that have been modified
 will then be passed on to initializeRemoteBugDB().
 
     >>> some_time_ago = datetime(
-    ...     2007, 03, 17, 16, 00, tzinfo=pytz.timezone('UTC'))
+    ...     2007, 3, 17, 16, 0, tzinfo=pytz.timezone('UTC'))
     >>> for bug_watch in bug_watches:
     ...     bug_watch.lastchecked = some_time_ago
     >>> transaction.commit()

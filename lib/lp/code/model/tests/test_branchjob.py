@@ -202,7 +202,7 @@ class TestBranchScanJob(TestCaseWithFactory):
         with dbuser("branchscanner"):
             job.run()
         self.assertEqual(db_branch.revision_count, 1)
-        self.assertTrue(private_bug.hasBranch(db_branch))
+        self.assertIn(db_branch, private_bug.linked_branches)
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):

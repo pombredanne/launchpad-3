@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build features."""
@@ -239,7 +239,7 @@ class TestSnapBuild(TestCaseWithFactory):
         build = self.factory.makeSnapBuild(
             name=u"snap-1", requester=person, owner=person,
             distroarchseries=distroarchseries,
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
             status=BuildStatus.FAILEDTOBUILD,
             builder=self.factory.makeBuilder(name="bob"),
             duration=timedelta(minutes=10))
@@ -333,7 +333,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         # The basic properties of a SnapBuild are sensible.
         db_build = self.factory.makeSnapBuild(
             requester=self.person,
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         build_url = api_url(db_build)
         logout()
         build = self.webservice.get(build_url).jsonBody()

@@ -159,8 +159,8 @@ HWSubmission table.
     ...     HWSubmissionFormat,
     ...     IHWSubmissionSet,
     ...     )
-    >>> date_created = datetime(2007, 04, 01, tzinfo=pytz.timezone('UTC'))
-    >>> date_submitted = datetime(2007, 04, 02, tzinfo=pytz.timezone('UTC'))
+    >>> date_created = datetime(2007, 4, 1, tzinfo=pytz.timezone('UTC'))
+    >>> date_submitted = datetime(2007, 4, 2, tzinfo=pytz.timezone('UTC'))
     >>> submission_data = 'submission data'
     >>> hw_submission_set = getUtility(IHWSubmissionSet)
     >>> submission = hw_submission_set.createSubmission(
