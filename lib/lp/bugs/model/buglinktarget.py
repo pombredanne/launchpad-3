@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = [
     'BugLinkTargetMixin',
+    'ObjectLinkedEvent',
+    'ObjectUnlinkedEvent',
     ]
 
 import lazr.lifecycle.event
