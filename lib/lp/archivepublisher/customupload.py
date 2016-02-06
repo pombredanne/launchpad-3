@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for handling custom uploads.
@@ -247,7 +247,7 @@ class CustomUpload:
         """Ensure the parent directory exists."""
         parentdir = os.path.dirname(path)
         if not os.path.isdir(parentdir):
-            os.makedirs(parentdir, 0755)
+            os.makedirs(parentdir, 0o755)
 
     def installFiles(self):
         """Install the files from the custom upload to the archive."""
@@ -267,8 +267,8 @@ class CustomUpload:
                 # Also, ensure that the process has the expected umask.
                 old_mask = os.umask(0)
                 try:
-                    if old_mask != 022:
-                        raise CustomUploadBadUmask(022, old_mask)
+                    if old_mask != 0o022:
+                        raise CustomUploadBadUmask(0o022, old_mask)
                 finally:
                     os.umask(old_mask)
                 if os.path.islink(sourcepath):
@@ -296,7 +296,7 @@ class CustomUpload:
                     os.symlink(os.readlink(sourcepath), destpath)
                 else:
                     shutil.copy(sourcepath, destpath)
-                    os.chmod(destpath, 0644)
+                    os.chmod(destpath, 0o644)
 
                 extracted = True
 

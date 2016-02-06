@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1444,7 +1444,7 @@ class PackageUploadCustom(SQLBase):
         dest_file = os.path.join(
             archive_config.metaroot, self.libraryfilealias.filename)
         if not os.path.isdir(archive_config.metaroot):
-            os.makedirs(archive_config.metaroot, 0755)
+            os.makedirs(archive_config.metaroot, 0o755)
 
         # At this point we now have a directory of the format:
         # <person_name>/meta/<ppa_name>

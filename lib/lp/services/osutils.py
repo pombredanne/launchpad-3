@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for doing the sort of thing the os module does."""
@@ -64,7 +64,7 @@ def override_environ(**kwargs):
         set_environ(old_values)
 
 
-def ensure_directory_exists(directory, mode=0777):
+def ensure_directory_exists(directory, mode=0o777):
     """Create 'directory' if it doesn't exist.
 
     :return: True if the directory had to be created, False otherwise.
@@ -78,7 +78,7 @@ def ensure_directory_exists(directory, mode=0777):
     return True
 
 
-def open_for_writing(filename, mode, dirmode=0777):
+def open_for_writing(filename, mode, dirmode=0o777):
     """Open 'filename' for writing, creating directories if necessary.
 
     :param filename: The path of the file to open.

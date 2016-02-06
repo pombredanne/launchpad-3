@@ -1200,10 +1200,10 @@ class TestSourcePackageRecipeViewMixin:
             recipe=recipe, distroseries=self.squirrel, archive=archive)
         build.updateStatus(
             BuildStatus.BUILDING,
-            date_started=datetime(2010, 03, 16, tzinfo=UTC))
+            date_started=datetime(2010, 3, 16, tzinfo=UTC))
         build.updateStatus(
             BuildStatus.FULLYBUILT,
-            date_finished=datetime(2010, 03, 16, tzinfo=UTC))
+            date_finished=datetime(2010, 3, 16, tzinfo=UTC))
         return build
 
     def test_index(self):
@@ -1290,10 +1290,10 @@ class TestSourcePackageRecipeViewMixin:
         binary_build.queueBuild()
         binary_build.updateStatus(
             BuildStatus.BUILDING,
-            date_started=datetime(2010, 04, 16, tzinfo=UTC))
+            date_started=datetime(2010, 4, 16, tzinfo=UTC))
         binary_build.updateStatus(
             BuildStatus.FULLYBUILT,
-            date_finished=datetime(2010, 04, 16, tzinfo=UTC))
+            date_finished=datetime(2010, 4, 16, tzinfo=UTC))
         binary_build.setLog(self.factory.makeLibraryFileAlias())
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
@@ -1360,7 +1360,7 @@ class TestSourcePackageRecipeViewMixin:
         # We create builds in time ascending order (oldest first) since we
         # use id as the ordering attribute and lower ids mean created earlier.
         date_gen = time_counter(
-            datetime(2010, 03, 16, tzinfo=UTC), timedelta(days=1))
+            datetime(2010, 3, 16, tzinfo=UTC), timedelta(days=1))
         build1 = self.makeBuildJob(recipe, date_gen.next())
         build2 = self.makeBuildJob(recipe, date_gen.next())
         build3 = self.makeBuildJob(recipe, date_gen.next())

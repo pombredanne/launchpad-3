@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -735,7 +735,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.factory.makePerson(name='test-unlinked-person-new')
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
-            2008, 01, 01, tzinfo=UTC)
+            2008, 1, 1, tzinfo=UTC)
 
         # Normally, the garbage collector will do nothing because the
         # PersonPruner is experimental
@@ -1030,7 +1030,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             path="sample path"))))
         # One to clean and one to keep
         store.add(TimeLimitedToken(path="sample path", token="foo",
-            created=datetime(2008, 01, 01, tzinfo=UTC)))
+            created=datetime(2008, 1, 1, tzinfo=UTC)))
         store.add(TimeLimitedToken(path="sample path", token="bar")),
         store.commit()
         self.assertEqual(2, len(list(store.find(TimeLimitedToken,

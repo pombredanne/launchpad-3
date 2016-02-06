@@ -141,4 +141,4 @@ class Config(object):
             if directory is None:
                 continue
             if not os.path.exists(directory):
-                os.makedirs(directory, 0755)
+                os.makedirs(directory, 0o755)

@@ -724,7 +724,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         # When a GitRepository receives an object modified event, the last
         # modified date is set to UTC_NOW.
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 02, 04, 17, 42, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 2, 4, 17, 42, 0, tzinfo=pytz.UTC))
         notify(ObjectModifiedEvent(
             removeSecurityProxy(repository), repository,
             [IGitRepository["name"]], user=repository.owner))
@@ -733,7 +733,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_create_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
             ref.path: {
@@ -747,7 +747,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_update_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
             u"refs/heads/new": {
@@ -761,7 +761,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_remove_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         repository.removeRefs(set([ref.path]))
         self.assertSqlAttributeEqualsDate(
