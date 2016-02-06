@@ -17,7 +17,15 @@ import os
 import stat
 import tempfile
 
-from lp.soyuz.enums import ArchivePurpose
+try:
+    import lzma
+except ImportError:
+    from backports import lzma
+
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    IndexCompressionType,
+    )
 from lp.soyuz.interfaces.archive import default_name_by_purpose
 
 
@@ -38,6 +46,8 @@ def get_ppa_reference(ppa):
 
 class PlainTempFile:
 
+    # Enumerated identifier.
+    compression_type = IndexCompressionType.UNCOMPRESSED
     # Filename suffix.
     suffix = ''
     # File path built on initialization.
@@ -71,6 +81,7 @@ class PlainTempFile:
 
 
 class GzipTempFile(PlainTempFile):
+    compression_type = IndexCompressionType.GZIP
     suffix = '.gz'
 
     def _buildFile(self, fd):
@@ -78,6 +89,7 @@ class GzipTempFile(PlainTempFile):
 
 
 class Bzip2TempFile(PlainTempFile):
+    compression_type = IndexCompressionType.BZIP2
     suffix = '.bz2'
 
     def _buildFile(self, fd):
@@ -85,14 +97,23 @@ class Bzip2TempFile(PlainTempFile):
         return bz2.BZ2File(self.path, mode='wb')
 
 
+class XZTempFile(PlainTempFile):
+    compression_type = IndexCompressionType.XZ
+    suffix = '.xz'
+
+    def _buildFile(self, fd):
+        os.close(fd)
+        return lzma.LZMAFile(self.path, mode='wb', format=lzma.FORMAT_XZ)
+
+
 class RepositoryIndexFile:
     """Facilitates the publication of repository index files.
 
     It allows callsites to publish index files in different medias
-    (plain, gzip and bzip2) transparently and atomically.
+    (plain, gzip, bzip2, and xz) transparently and atomically.
     """
 
-    def __init__(self, path, temp_root):
+    def __init__(self, path, temp_root, compressors):
         """Store repositories destinations and filename.
 
         The given 'temp_root' needs to exist; on the other hand, the
@@ -105,13 +126,14 @@ class RepositoryIndexFile:
         self.root, filename = os.path.split(path)
         assert os.path.exists(temp_root), 'Temporary root does not exist.'
 
-        self.index_files = (
-            GzipTempFile(temp_root, filename),
-            Bzip2TempFile(temp_root, filename),
-            )
-        self.old_index_files = (
-            PlainTempFile(temp_root, filename, auto_open=False),
-            )
+        self.index_files = []
+        self.old_index_files = []
+        for cls in (PlainTempFile, GzipTempFile, Bzip2TempFile, XZTempFile):
+            if cls.compression_type in compressors:
+                self.index_files.append(cls(temp_root, filename))
+            else:
+                self.old_index_files.append(
+                    cls(temp_root, filename, auto_open=False))
 
     def write(self, content):
         """Write contents to all target medias."""
