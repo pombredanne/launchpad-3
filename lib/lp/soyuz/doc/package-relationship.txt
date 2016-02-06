@@ -1,12 +1,16 @@
 = Package Relationship Model =
 
 We call "package relationship" the DSC field which describes relation
-between the package in question and others availble:
+between the package in question and others available:
 
 For sources DSC provides:
 
  * builddepends
  * builddependsindep
+ * builddependsarch
+ * build_conflicts
+ * build_conflicts_indep
+ * build_conflicts_arch
 
 For binaries we have:
 
