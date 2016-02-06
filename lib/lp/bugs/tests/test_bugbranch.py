@@ -143,20 +143,6 @@ class TestBugBranchSet(TestCaseWithFactory):
         self.assertContentEqual(
             [branch.id], utility.getBranchesWithVisibleBugs([branch], admin))
 
-    def test_getBugBranchesForBugTasks(self):
-        # IBugBranchSet.getBugBranchesForBugTasks returns all of the BugBranch
-        # objects associated with the given bug tasks.
-        bug_a = self.factory.makeBug()
-        bug_b = self.factory.makeBug()
-        bugtasks = bug_a.bugtasks + bug_b.bugtasks
-        branch = self.factory.makeBranch()
-        self.factory.loginAsAnyone()
-        link_1 = bug_a.linkBranch(branch, self.factory.makePerson())
-        link_2 = bug_b.linkBranch(branch, self.factory.makePerson())
-        found_links = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
-            bugtasks)
-        self.assertEqual(set([link_1, link_2]), set(found_links))
-
 
 class TestBugBranch(TestCaseWithFactory):
 
@@ -174,16 +160,6 @@ class TestBugBranch(TestCaseWithFactory):
             registrant=self.factory.makePerson())
         self.assertProvides(bug_branch, IBugBranch)
 
-    def test_linkBranch_returns_IBugBranch(self):
-        # Bug.linkBranch returns an IBugBranch linking the bug to the branch.
-        bug = self.factory.makeBug()
-        branch = self.factory.makeBranch()
-        registrant = self.factory.makePerson()
-        bug_branch = bug.linkBranch(branch, registrant)
-        self.assertEqual(branch, bug_branch.branch)
-        self.assertEqual(bug, bug_branch.bug)
-        self.assertEqual(registrant, bug_branch.registrant)
-
     def test_bug_start_with_no_linked_branches(self):
         # Bugs have a linked_branches attribute which is initially an empty
         # collection.
@@ -195,8 +171,9 @@ class TestBugBranch(TestCaseWithFactory):
         # BugBranch object.
         bug = self.factory.makeBug()
         branch = self.factory.makeBranch()
-        bug_branch = bug.linkBranch(branch, self.factory.makePerson())
-        self.assertEqual([bug_branch], list(bug.linked_branches))
+        self.assertContentEqual([], list(bug.linked_branches))
+        bug.linkBranch(branch, self.factory.makePerson())
+        self.assertContentEqual([branch], list(bug.linked_branches))
 
     def test_linking_branch_twice_returns_same_IBugBranch(self):
         # Calling Bug.linkBranch twice with the same parameters returns the
@@ -217,18 +194,6 @@ class TestBugBranch(TestCaseWithFactory):
         bug_branch_2 = bug.linkBranch(branch, self.factory.makePerson())
         self.assertEqual(bug_branch, bug_branch_2)
 
-    def test_bug_has_no_branches(self):
-        # Bug.hasBranch returns False for any branch that it is not linked to.
-        bug = self.factory.makeBug()
-        self.assertFalse(bug.hasBranch(self.factory.makeBranch()))
-
-    def test_bug_has_branch(self):
-        # Bug.hasBranch returns False for any branch that it is linked to.
-        bug = self.factory.makeBug()
-        branch = self.factory.makeBranch()
-        bug.linkBranch(branch, self.factory.makePerson())
-        self.assertTrue(bug.hasBranch(branch))
-
     def test_unlink_branch(self):
         # Bug.unlinkBranch removes the bug<->branch link.
         bug = self.factory.makeBug()
@@ -236,7 +201,6 @@ class TestBugBranch(TestCaseWithFactory):
         bug.linkBranch(branch, self.factory.makePerson())
         bug.unlinkBranch(branch, self.factory.makePerson())
         self.assertEqual([], list(bug.linked_branches))
-        self.assertFalse(bug.hasBranch(branch))
 
     def test_unlink_not_linked_branch(self):
         # When unlinkBranch is called with a branch that isn't already linked,
@@ -245,7 +209,6 @@ class TestBugBranch(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         bug.unlinkBranch(branch, self.factory.makePerson())
         self.assertEqual([], list(bug.linked_branches))
-        self.assertFalse(bug.hasBranch(branch))
 
     def test_the_unwashed_cannot_link_branch_to_private_bug(self):
         # Those who cannot see a bug are forbidden to link a branch to it.
