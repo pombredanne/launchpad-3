@@ -1583,7 +1583,7 @@ class TestBranchDeletionConsequences(TestCase):
         bug1 = self.factory.makeBug()
         bug1.linkBranch(self.branch, self.branch.owner)
         bug_branch1 = bug1.linked_bugbranches[0]
-        bug_branch1_id = bug_branch1.id
+        bug_branch1_id = removeSecurityProxy(bug_branch1).id
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch1_id)
 
