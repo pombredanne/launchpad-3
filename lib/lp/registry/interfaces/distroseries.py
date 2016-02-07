@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistroSeries."""
@@ -91,6 +91,7 @@ from lp.services.fields import (
     UniqueField,
     )
 from lp.services.webservice.apihelpers import patch_plain_parameter_type
+from lp.soyuz.enums import IndexCompressionType
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -377,6 +378,14 @@ class IDistroSeriesPublic(
                 file reduces the bandwidth footprint of enabling multiarch
                 on clients, which requires downloading Packages files for
                 multiple architectures.""")))
+
+    index_compressors = exported(List(
+        value_type=Choice(vocabulary=IndexCompressionType),
+        title=_("Compression types to use for published index files"),
+        required=True,
+        description=_("""
+            A list of compression types to use for published index files
+            (Packages, Sources, etc.).""")))
 
     inherit_overrides_from_parents = Bool(
         title=_("Inherit overrides from parents"),

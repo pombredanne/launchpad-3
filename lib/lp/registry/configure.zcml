@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -317,6 +317,7 @@
                 driver
                 backports_not_automatic
                 include_long_descriptions
+                index_compressors
                 inherit_overrides_from_parents"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to

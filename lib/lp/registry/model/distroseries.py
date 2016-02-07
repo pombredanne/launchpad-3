@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -124,6 +124,7 @@ from lp.services.propertycache import (
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -202,6 +203,12 @@ ACTIVE_UNRELEASED_STATUSES = [
     ]
 
 
+DEFAULT_INDEX_COMPRESSORS = [
+    IndexCompressionType.GZIP,
+    IndexCompressionType.BZIP2,
+    ]
+
+
 @implementer(
     IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
     IServiceUsage, ISeriesBugTarget)
@@ -253,10 +260,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
-    _backports_not_automatic = BoolCol(
-        dbName="backports_not_automatic", notNull=True, default=False)
-    _include_long_descriptions = BoolCol(
-        dbName="include_long_descriptions", notNull=True, default=True)
     publishing_options = JSON("publishing_options")
 
     language_packs = SQLMultipleJoin(
@@ -270,6 +273,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             kwargs["publishing_options"] = {
                 "backports_not_automatic": False,
                 "include_long_descriptions": True,
+                "index_compressors": [
+                    compressor.title
+                    for compressor in DEFAULT_INDEX_COMPRESSORS],
                 }
         super(DistroSeries, self).__init__(*args, **kwargs)
 
@@ -804,35 +810,36 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def backports_not_automatic(self):
-        if self.publishing_options is not None:
-            return self.publishing_options.get(
-                "backports_not_automatic", False)
-        else:
-            return self._backports_not_automatic
+        return self.publishing_options.get("backports_not_automatic", False)
 
     @backports_not_automatic.setter
     def backports_not_automatic(self, value):
         assert isinstance(value, bool)
-        if self.publishing_options is not None:
-            self.publishing_options["backports_not_automatic"] = value
-        else:
-            self._backports_not_automatic = value
+        self.publishing_options["backports_not_automatic"] = value
 
     @property
     def include_long_descriptions(self):
-        if self.publishing_options is not None:
-            return self.publishing_options.get(
-                "include_long_descriptions", True)
-        else:
-            return self._include_long_descriptions
+        return self.publishing_options.get("include_long_descriptions", True)
 
     @include_long_descriptions.setter
     def include_long_descriptions(self, value):
         assert isinstance(value, bool)
-        if self.publishing_options is not None:
-            self.publishing_options["include_long_descriptions"] = value
+        self.publishing_options["include_long_descriptions"] = value
+
+    @property
+    def index_compressors(self):
+        if "index_compressors" in self.publishing_options:
+            return [
+                IndexCompressionType.getTermByToken(name).value
+                for name in self.publishing_options["index_compressors"]]
         else:
-            self._include_long_descriptions = value
+            return list(DEFAULT_INDEX_COMPRESSORS)
+
+    @index_compressors.setter
+    def index_compressors(self, value):
+        assert isinstance(value, list)
+        self.publishing_options["index_compressors"] = [
+            compressor.title for compressor in value]
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""
