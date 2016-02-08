@@ -75,7 +75,7 @@ bug got submitted correctly:
     >>> def construct_email(raw_mail):
     ...     msg = email.message_from_string(
     ...         raw_mail, _class=MockSignedMessage)
-    ...     if not msg.has_key('Message-Id'):
+    ...     if 'Message-Id' not in msg:
     ...         msg['Message-Id'] = factory.makeUniqueRFC822MsgId()
     ...     return msg
 
