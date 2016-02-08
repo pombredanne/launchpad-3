@@ -54,11 +54,11 @@ been uploaded over FTP.
     >>> for changes_filepath in changes:
     ...     tf = parse_tagfile(changes_filepath)
     ...
-    ...     if tf.has_key("Source"):
+    ...     if "Source" in tf:
     ...         package_names.append(tf["Source"])
     ...
     ...     send_filepaths = [changes_filepath]
-    ...     if tf.has_key("Files"):
+    ...     if "Files" in tf:
     ...         send_filepaths.extend(
     ...             [os.path.join(test_files_dir, line.split()[-1])
     ...              for line in tf["Files"].splitlines() if line])
