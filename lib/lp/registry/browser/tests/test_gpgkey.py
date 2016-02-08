@@ -50,4 +50,5 @@ class TestPersonGPGView(TestCaseWithFactory):
         view = create_initialized_view(person, "+editpgpkeys", principal=person, have_fresh_login=True)
         login_person(person)
         response = view.request.response
+        self.assertEqual(200, response.getStatus())
         # import pudb; pudb.set_trace()
