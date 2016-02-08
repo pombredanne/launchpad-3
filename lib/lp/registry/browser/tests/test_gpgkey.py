@@ -8,10 +8,12 @@ __metaclass__ = type
 from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
+from lp.services.webapp.login import logInPrincipal
 
 
 class TestCanonicalUrl(TestCaseWithFactory):
@@ -42,3 +44,10 @@ class TestPersonGPGView(TestCaseWithFactory):
         expected_url = (
             '%s/+editpgpkeys/+login?reauth=1' % canonical_url(person))
         self.assertEqual(expected_url, response.getHeader('location'))
+
+    def test_gpgkeys_readonly_with_feature_flag_set(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, "+editpgpkeys", principal=person, have_fresh_login=True)
+        login_person(person)
+        response = view.request.response
+        # import pudb; pudb.set_trace()

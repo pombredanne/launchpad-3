@@ -465,6 +465,8 @@ class AlreadyLoggedInView(LaunchpadView):
 
 def isFreshLogin(request):
     """Return True if the principal login happened in the last 120 seconds."""
+    if getattr(request, 'have_fresh_login', False):
+        return True
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     logintime = authdata.get('logintime', None)

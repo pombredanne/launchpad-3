@@ -911,7 +911,8 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
-                 skin=None, outstream=None, method='GET', **kw):
+                 skin=None, outstream=None, method='GET', have_fresh_login=False,
+                 **kw):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
@@ -921,6 +922,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         self.features = get_relevant_feature_controller()
         if self.features is None:
             self.features = NullFeatureController()
+        self.have_fresh_login = have_fresh_login
 
     @property
     def uuid(self):
