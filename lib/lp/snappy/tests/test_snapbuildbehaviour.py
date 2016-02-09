@@ -6,12 +6,13 @@
 __metaclass__ = type
 
 from datetime import datetime
+import uuid
+
+import fixtures
 from mock import (
     patch,
     Mock,
     )
-
-import fixtures
 import transaction
 from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
@@ -174,8 +175,9 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
 
     def setUp(self):
         super(TestAsyncSnapBuildBehaviour, self).setUp()
-        self.token = {'secret': '03368addc7994647ace69e7ac2eb1ae9',
-                      'username': 'SNAPBUILD-1',
+        build_username = 'SNAPBUILD-1'
+        self.token = {'secret': uuid.uuid4().get_hex(),
+                      'username': build_username,
                       'timestamp': datetime.utcnow().isoformat()}
         self.proxy_url = ("http://{username}:{password}"
                           "@{host}:{port}".format(
@@ -183,6 +185,9 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
                               password=self.token['secret'],
                               host=config.snappy.builder_proxy_host,
                               port=config.snappy.builder_proxy_port))
+        self.revocation_endpoint = "{endpoint}/{username}".format(
+            endpoint=config.snappy.builder_proxy_auth_api_endpoint,
+            username=build_username)
         self.patcher = patch.object(
             SnapBuildBehaviour, '_requestProxyToken',
             Mock(return_value=self.mockRequestProxyToken())).start()
@@ -219,6 +224,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "branch": branch.bzr_identity,
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
             }, args)
 
     @defer.inlineCallbacks
@@ -238,6 +244,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "git_path": ref.name,
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
             }, args)
 
     @defer.inlineCallbacks
