@@ -904,6 +904,11 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
+
+    If have_fresh_login is set to True, views such as PersonGPGView that insist
+    on the user being recently logged in will render their contents rather than
+    redirecting to the login page.
+    
     """
 
     # These two attributes satisfy IParticipation.
