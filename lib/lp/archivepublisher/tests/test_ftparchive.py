@@ -33,6 +33,7 @@ from lp.services.log.logger import (
     )
 from lp.soyuz.enums import (
     BinaryPackageFormat,
+    IndexCompressionType,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
@@ -535,6 +536,63 @@ class TestFTPArchive(TestCaseWithFactory):
         self.assertFalse(os.path.exists(
             os.path.join(self._distsdir, "hoary-test", "main",
                          "source", "Sources.gz")))
+
+    def test_generateConfig_index_compressors_changed(self):
+        # If index_compressors changes between runs, then old compressed
+        # files are removed.
+        publisher = Publisher(
+            self._logger, self._config, self._dp, self._archive)
+        fa = FTPArchiveHandler(
+            self._logger, self._config, self._dp, self._distribution,
+            publisher)
+        fa.createEmptyPocketRequests(fullpublish=True)
+        self._publishDefaultOverrides(fa, "main")
+        self._publishDefaultFileLists(fa, "main")
+        self._addRepositoryFile("main", "tiny", "tiny_0.1.dsc")
+        self._addRepositoryFile("main", "tiny", "tiny_0.1.tar.gz")
+        self._addRepositoryFile("main", "tiny", "tiny_0.1_i386.deb")
+        comp_dir = os.path.join(self._distsdir, "hoary-test", "main")
+        os.makedirs(os.path.join(comp_dir, "uefi"))
+        with open(os.path.join(comp_dir, "uefi", "stuff"), "w"):
+            pass
+
+        # Run the publisher once with gzip and bzip2 compressors.
+        apt_conf = fa.generateConfig(fullpublish=True)
+        with open(apt_conf) as apt_conf_file:
+            self.assertIn(
+                'Packages::Compress "gzip bzip2";', apt_conf_file.read())
+        fa.runApt(apt_conf)
+        self.assertContentEqual(
+            ["Packages.gz", "Packages.bz2"],
+            os.listdir(os.path.join(comp_dir, "binary-i386")))
+        self.assertContentEqual(
+            ["Packages.gz", "Packages.bz2"],
+            os.listdir(os.path.join(
+                comp_dir, "debian-installer", "binary-i386")))
+        self.assertContentEqual(
+            ["Sources.gz", "Sources.bz2"],
+            os.listdir(os.path.join(comp_dir, "source")))
+
+        # Try again, this time with gzip and xz compressors.  There are no
+        # bzip2 leftovers, but other files are left untouched.
+        self._distribution["hoary-test"].index_compressors = [
+            IndexCompressionType.GZIP, IndexCompressionType.XZ]
+        apt_conf = fa.generateConfig(fullpublish=True)
+        with open(apt_conf) as apt_conf_file:
+            self.assertIn(
+                'Packages::Compress "gzip xz";', apt_conf_file.read())
+        fa.runApt(apt_conf)
+        self.assertContentEqual(
+            ["Packages.gz", "Packages.xz"],
+            os.listdir(os.path.join(comp_dir, "binary-i386")))
+        self.assertContentEqual(
+            ["Packages.gz", "Packages.xz"],
+            os.listdir(os.path.join(
+                comp_dir, "debian-installer", "binary-i386")))
+        self.assertContentEqual(
+            ["Sources.gz", "Sources.xz"],
+            os.listdir(os.path.join(comp_dir, "source")))
+        self.assertEqual(["stuff"], os.listdir(os.path.join(comp_dir, "uefi")))
 
     def test_cleanCaches_noop_if_recent(self):
         # cleanCaches does nothing if it was run recently.
