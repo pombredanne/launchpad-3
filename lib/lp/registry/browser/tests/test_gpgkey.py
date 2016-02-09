@@ -8,6 +8,7 @@ __metaclass__ = type
 from testtools.matchers import (
     Not,
     Raises,
+    raises,
     )
 
 from lp.services.features.testing import FeatureFixture
@@ -61,7 +62,7 @@ class TestPersonGPGView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(person, "+editpgpkeys", principal=person,
                                        method='POST', have_fresh_login=True)
-        self.assertThat(view.render, Raises(GPGReadOnly))
+        self.assertThat(view.render, raises(GPGReadOnly))
 
     def test_gpgkeys_GET_readonly_with_feature_flag_set(self):
         self.useFixture(FeatureFixture({
