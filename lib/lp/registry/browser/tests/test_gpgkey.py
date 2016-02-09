@@ -5,6 +5,11 @@
 
 __metaclass__ = type
 
+from testtools.matchers import (
+    Not,
+    Raises,
+    )
+
 from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.interfaces import (
     GPGReadOnly,
@@ -13,7 +18,6 @@ from lp.services.gpg.interfaces import (
 from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
-    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -67,4 +71,4 @@ class TestPersonGPGView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(person, "+editpgpkeys", principal=person,
                                        method='GET', have_fresh_login=True)
-        view.render()
+        self.assertThat(view.render, Not(Raises()))
