@@ -61,7 +61,7 @@ class TestPersonGPGView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(person, "+editpgpkeys", principal=person,
                                        method='POST', have_fresh_login=True)
-        self.assertRaises(GPGReadOnly, view.render)
+        self.assertThat(view.render, Raises(GPGReadOnly))
 
     def test_gpgkeys_GET_readonly_with_feature_flag_set(self):
         self.useFixture(FeatureFixture({
