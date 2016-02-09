@@ -205,10 +205,13 @@ from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
+    GPG_SERVICE_READONLY_FEATURE_FLAG,
     GPGKeyNotFoundError,
+    GPGReadOnly,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -2531,14 +2534,16 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
+        if self.request.method != "POST":
+            return ''
+        if getFeatureFlag(GPG_SERVICE_READONLY_FEATURE_FLAG):
+            raise GPGReadOnly()
         permitted_actions = [
             'claim_gpg',
             'deactivate_gpg',
             'remove_gpgtoken',
             'reactivate_gpg',
             ]
-        if self.request.method != "POST":
-            return ''
         action = self.request.form.get('action')
         if action not in permitted_actions:
             raise UnexpectedFormData("Action not permitted: %s" % action)
