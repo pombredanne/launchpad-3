@@ -56,8 +56,8 @@ def make_empty_dir(path):
         for name in os.listdir(path):
             child_path = os.path.join(path, name)
             # Directories containing index files should never have
-            # subdirectories.  Guard against expensive mistakes.
-            assert os.path.isfile(child_path)
+            # subdirectories.  Guard against expensive mistakes by not
+            # recursing here.
             os.unlink(child_path)
     else:
         os.makedirs(path, 0o755)
