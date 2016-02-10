@@ -14,7 +14,7 @@ from testtools.matchers import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.interfaces import (
     GPGReadOnly,
-    GPG_SERVICE_READONLY_FEATURE_FLAG,
+    GPG_DATABASE_READONLY_FEATURE_FLAG,
     )
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -56,7 +56,7 @@ class TestPersonGPGView(TestCaseWithFactory):
 
     def test_gpgkeys_POST_readonly_with_feature_flag_set(self):
         self.useFixture(FeatureFixture({
-            GPG_SERVICE_READONLY_FEATURE_FLAG: True,
+            GPG_DATABASE_READONLY_FEATURE_FLAG: True,
         }))
         person = self.factory.makePerson()
         login_person(person)
@@ -66,7 +66,7 @@ class TestPersonGPGView(TestCaseWithFactory):
 
     def test_gpgkeys_GET_readonly_with_feature_flag_set(self):
         self.useFixture(FeatureFixture({
-            GPG_SERVICE_READONLY_FEATURE_FLAG: True,
+            GPG_DATABASE_READONLY_FEATURE_FLAG: True,
         }))
         person = self.factory.makePerson()
         login_person(person)

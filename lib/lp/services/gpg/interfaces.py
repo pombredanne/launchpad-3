@@ -2,7 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
-    'GPG_SERVICE_READONLY_FEATURE_FLAG',
+    'GPG_DATABASE_READONLY_FEATURE_FLAG',
     'GPGKeyAlgorithm',
     'GPGKeyDoesNotExistOnServer',
     'GPGKeyExpired',
@@ -49,7 +49,7 @@ class GPGReadOnly(Forbidden):
             "read-only. Please try again later.")
 
 
-GPG_SERVICE_READONLY_FEATURE_FLAG = u"gpgservice.read_only"
+GPG_DATABASE_READONLY_FEATURE_FLAG = u"gpg.database_read_only"
 
 
 def valid_fingerprint(fingerprint):

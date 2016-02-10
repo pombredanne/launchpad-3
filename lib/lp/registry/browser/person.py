@@ -209,7 +209,7 @@ from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
-    GPG_SERVICE_READONLY_FEATURE_FLAG,
+    GPG_DATABASE_READONLY_FEATURE_FLAG,
     GPGKeyNotFoundError,
     GPGReadOnly,
     IGPGHandler,
@@ -2536,7 +2536,7 @@ class PersonGPGView(LaunchpadView):
     def form_action(self):
         if self.request.method != "POST":
             return ''
-        if getFeatureFlag(GPG_SERVICE_READONLY_FEATURE_FLAG):
+        if getFeatureFlag(GPG_DATABASE_READONLY_FEATURE_FLAG):
             raise GPGReadOnly()
         permitted_actions = [
             'claim_gpg',

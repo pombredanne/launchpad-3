@@ -905,10 +905,11 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
 
-    If have_fresh_login is set to True, views such as PersonGPGView that insist
-    on the user being recently logged in will render their contents rather than
-    redirecting to the login page.
-    
+    If force_fresh_login_for_testing is set to True, the
+    ``lp.services.webapp.login.isFreshLogin`` function will always return True.
+    This is useful in tests where you want to avoid needing a fresh login when
+    exercising views such as ``PersonGPGView``
+
     """
 
     # These two attributes satisfy IParticipation.
@@ -916,8 +917,8 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
-                 skin=None, outstream=None, method='GET', have_fresh_login=False,
-                 **kw):
+                 skin=None, outstream=None, method='GET',
+                 force_fresh_login_for_testing=False, **kw):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
@@ -927,7 +928,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         self.features = get_relevant_feature_controller()
         if self.features is None:
             self.features = NullFeatureController()
-        self.have_fresh_login = have_fresh_login
+        self.force_fresh_login_for_testing = force_fresh_login_for_testing
 
     @property
     def uuid(self):
