@@ -1997,6 +1997,9 @@ class TestPublisher(TestPublisherBase):
                          i18n_index['sha1'][1]['sha1'])
         self.assertEqual(str(len(translation_en_contents)),
                          i18n_index['sha1'][1]['size'])
+        self.assertContentEqual(
+            ['Translation-en', 'Translation-en.gz', 'Translation-en.bz2'],
+            [hash['name'] for hash in i18n_index['sha1']])
 
         # i18n/Index and i18n/Translation-en.bz2 are scheduled for inclusion
         # in Release.  Checksums of the uncompressed version are included
