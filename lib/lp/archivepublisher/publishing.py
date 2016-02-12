@@ -991,7 +991,7 @@ class Publisher(object):
         i18n_index = I18nIndex()
         for i18n_file in sorted(i18n_files):
             hashes = self._readIndexFileHashes(
-                suite, os.path.join(i18n_subpath, i18n_file))
+                suite, i18n_file, subpath=i18n_subpath)
             if hashes is None:
                 continue
             i18n_index.setdefault("SHA1", []).append(hashes["sha1"])
@@ -1004,19 +1004,25 @@ class Publisher(object):
         # Schedule this for inclusion in the Release file.
         all_series_files.add(os.path.join(component, "i18n", "Index"))
 
-    def _readIndexFileHashes(self, distroseries_name, file_name):
+    def _readIndexFileHashes(self, distroseries_name, file_name,
+                             subpath=None):
         """Read an index file and return its hashes.
 
         :param distroseries_name: Distro series name
         :param file_name: Filename relative to the parent container directory.
+        :param subpath: Optional subpath within the distroseries root.
+            Generated indexes will not include this path. If omitted,
+            filenames are assumed to be relative to the distroseries
+            root.
         :return: A dictionary mapping hash field names to dictionaries of
             their components as defined by debian.deb822.Release (e.g.
             {"md5sum": {"md5sum": ..., "size": ..., "name": ...}}), or None
             if the file could not be found.
         """
         open_func = open
-        full_name = os.path.join(self._config.distsroot,
-                                 distroseries_name, file_name)
+        full_name = os.path.join(
+            self._config.distsroot, distroseries_name, subpath or '.',
+            file_name)
         if not os.path.exists(full_name):
             if os.path.exists(full_name + '.gz'):
                 open_func = gzip.open
