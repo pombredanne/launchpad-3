@@ -8,6 +8,7 @@ __all__ = [
     'RecipeBuildBehaviour',
     ]
 
+from twisted.internet import defer
 from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -83,8 +84,8 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                  self.build.distroseries.displayname))
-        return (
-            "sourcepackagerecipe", das, {}, self._extraBuildArgs(das, logger))
+        args = self._extraBuildArgs(das, logger=logger)
+        yield ("sourcepackagerecipe", das, {}, args)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

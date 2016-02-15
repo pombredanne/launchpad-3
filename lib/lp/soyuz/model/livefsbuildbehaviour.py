@@ -11,6 +11,7 @@ __all__ = [
     'LiveFSBuildBehaviour',
     ]
 
+from twisted.internet import defer
 from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -94,9 +95,8 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         return args
 
     def composeBuildRequest(self, logger):
-        return (
-            "livefs", self.build.distro_arch_series, {},
-            self._extraBuildArgs())
+        return defer.succeed("livefs", self.build.distro_arch_series, {},
+                             self._extraBuildArgs())
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""

@@ -21,7 +21,7 @@ class IBuildFarmJobBehaviour(Interface):
         """Compose parameters for a slave build request.
 
         :param logger: A logger to be used to log diagnostic information.
-        :return: A tuple of (
+        :return: A deferred, yielding a tuple of (
             "builder type", `DistroArchSeries` to build against,
             {filename: `sendFileToSlave` arguments}, {extra build arguments})
         """

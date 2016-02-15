@@ -198,10 +198,10 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        build_request = yield job.composeBuildRequest(None)
         self.assertEqual(
             ('livefs', job.build.distro_arch_series, {},
-             job._extraBuildArgs()),
-            job.composeBuildRequest(None))
+             job._extraBuildArgs()), build_request)
 
 
 class MakeLiveFSBuildMixin:
