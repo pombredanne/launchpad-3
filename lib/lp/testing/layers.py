@@ -28,6 +28,7 @@ __all__ = [
     'FunctionalLayer',
     'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
+    'GPGServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
@@ -147,6 +148,7 @@ from lp.testing import (
     logout,
     reset_logging,
     )
+from lp.testing.gpgservice import GPGKeyServiceFixture
 from lp.testing.pgsql import PgTestSetup
 from lp.testing.smtpd import SMTPController
 
@@ -907,12 +909,42 @@ class LibrarianLayer(DatabaseLayer):
         config.pop('hide_librarian')
 
 
+class GPGServiceLayer(BaseLayer):
+
+    service_fixture = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.service_fixture = GPGKeyServiceFixture()
+        cls.service_fixture.setUp()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.service_fixture.cleanUp()
+        cls.service_fixture = None
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # XXX: detect if the service was modified somehow, and only reset if
+        # it needs it.
+        cls.service_fixture.reset_service_database()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
 def test_default_timeout():
     """Don't timeout by default in tests."""
     return None
 
 
-class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer):
+class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer,
+                     GPGServiceLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
