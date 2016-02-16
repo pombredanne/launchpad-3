@@ -80,7 +80,7 @@ class GPGKeyServiceFixture(Fixture):
 
     def _wait_for_service_start(self):
         errors = []
-        for i in range(10):
+        for i in range(50):
             conn = httplib.HTTPConnection(self.bind_address)
             try:
                 conn.request('GET', '/')
