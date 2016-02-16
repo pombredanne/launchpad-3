@@ -14,10 +14,18 @@ from testtools.matchers import (
     PathExists,
 )
 
+from lp.services.config import config
+from lp.services.config.fixture import (
+    ConfigFixture,
+    ConfigUseFixture,
+    )
+from lp.testing.layers import BaseLayer
 from lp.testing.gpgservice import GPGKeyServiceFixture
 
 
 class GPGServiceFixtureTests(TestCase):
+
+    layer = BaseLayer
 
     def test_fixture_writes_and_deletes_service_config_file(self):
         fixture = GPGKeyServiceFixture()
@@ -43,3 +51,13 @@ class GPGServiceFixtureTests(TestCase):
         data = json.loads(resp.read())
         self.assertThat(data, Contains('keys'))
         self.assertThat(data['keys'], HasLength(1))
+
+    def test_fixture_can_set_config_data(self):
+        config_name = self.getUniqueString()
+        config_fixture = self.useFixture(
+            ConfigFixture(config_name, BaseLayer.config_fixture.instance_name))
+        self.useFixture(ConfigUseFixture(config_name))
+        gpg_fixture = self.useFixture(GPGKeyServiceFixture(config_fixture))
+
+        self.assertEqual(
+            gpg_fixture.bind_address, config.gpg_service.service_location)

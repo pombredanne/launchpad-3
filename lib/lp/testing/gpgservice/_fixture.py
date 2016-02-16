@@ -26,6 +26,15 @@ class GPGKeyServiceFixture(Fixture):
 
     """Run the gpgservice webapp and test key server."""
 
+    def __init__(self, config_fixture=None):
+        """Create a new GPGKeyServiceFixture.
+
+        :param config_fixture: If specified, this must be a ConfigFixture
+            instance. It will be updated with the relevant GPG service config
+            details.
+        """
+        self._config_fixture = config_fixture
+
     def setUp(self):
         super(GPGKeyServiceFixture, self).setUp()
         # Figure out if the keyserver is running,and if not, run it:
@@ -61,6 +70,13 @@ class GPGKeyServiceFixture(Fixture):
         self.addCleanup(self._kill_server)
         self._wait_for_service_start()
         self.reset_service_database()
+        if self._config_fixture is not None:
+            config_section = service_config = dedent("""\
+                [gpg_service]
+                service_location: %s
+                """ % self.bind_address)
+            self._config_fixture.add_section(config_section)
+            config.reloadConfig()
 
     def _kill_server(self):
         self._process.terminate()
