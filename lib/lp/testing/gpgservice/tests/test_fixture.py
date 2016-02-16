@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import
@@ -12,6 +12,7 @@ from testtools.matchers import (
     HasLength,
     Not,
     PathExists,
+    StartsWith,
 )
 
 from lp.services.config import config
@@ -40,7 +41,7 @@ class GPGServiceFixtureTests(TestCase):
         conn.request('GET', '/')
         resp = conn.getresponse()
         self.assertEqual(200, resp.status)
-        self.assertEqual('gpgservice - Copyright 2015 Canonical', resp.read())
+        self.assertThat(resp.read(), StartsWith('gpgservice - Copyright'))
 
     def test_fixture_can_create_test_data(self):
         fixture = self.useFixture(GPGKeyServiceFixture())
@@ -60,4 +61,4 @@ class GPGServiceFixtureTests(TestCase):
         gpg_fixture = self.useFixture(GPGKeyServiceFixture(config_fixture))
 
         self.assertEqual(
-            gpg_fixture.bind_address, config.gpg_service.service_location)
+            gpg_fixture.bind_address, config.gpgservice.api_endpoint)

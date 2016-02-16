@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import
@@ -16,7 +16,6 @@ import time
 
 from fixtures import Fixture
 
-from lp.testing.keyserver import KeyServerTac
 from lp.services.config import config
 
 __metaclass__ = type
@@ -37,11 +36,6 @@ class GPGKeyServiceFixture(Fixture):
 
     def setUp(self):
         super(GPGKeyServiceFixture, self).setUp()
-        # Figure out if the keyserver is running,and if not, run it:
-        keyserver = KeyServerTac()
-        if not os.path.exists(keyserver.pidfile):
-            self.useFixture(KeyServerTac())
-
         # Write service config to a file on disk. This file gets deleted when the
         # fixture ends.
         service_config = _get_default_service_config()
@@ -50,7 +44,7 @@ class GPGKeyServiceFixture(Fixture):
         service_config.write(self._config_file)
         self._config_file.flush()
 
-        # Set the environment variable that tells gpgservice where to read it's
+        # Set the environment variable that tells gpgservice where to read its
         # config file from:
         env = os.environ.copy()
         env['GPGSERVICE_CONFIG_PATH'] = self._config_file.name
@@ -72,8 +66,8 @@ class GPGKeyServiceFixture(Fixture):
         self.reset_service_database()
         if self._config_fixture is not None:
             config_section = service_config = dedent("""\
-                [gpg_service]
-                service_location: %s
+                [gpgservice]
+                api_endpoint: %s
                 """ % self.bind_address)
             self._config_fixture.add_section(config_section)
             config.reloadConfig()
@@ -81,8 +75,8 @@ class GPGKeyServiceFixture(Fixture):
     def _kill_server(self):
         self._process.terminate()
         stdout, stderr = self._process.communicate()
-        self.addDetail('gunicorn-stdout', stdout)
-        self.addDetail('gunicorn-stderr', stderr)
+        self.addDetail('gpgservice-stdout', stdout)
+        self.addDetail('gpgservice-stderr', stderr)
 
     def _wait_for_service_start(self):
         errors = []
@@ -100,7 +94,7 @@ class GPGKeyServiceFixture(Fixture):
         raise RuntimeError("Service not responding: %r" % errors)
 
     def reset_service_database(self):
-        """Reset the gpgservice instance database to the launchpad test data set."""
+        """Reset the gpgservice instance database to the launchpad sampledata."""
         conn = httplib.HTTPConnection(self.bind_address)
         test_data = {
             'keys': [
