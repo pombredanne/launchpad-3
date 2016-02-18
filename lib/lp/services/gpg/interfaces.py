@@ -440,13 +440,18 @@ class IGPGClient(Interface):
     """A client for querying a gpgservice instance."""
 
     def get_keys_for_owner(owner_id):
-        """Get a list of keys for a given owner."""
+        """Get a list of keys for a given owner.
+
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
 
     def add_key_for_owner(owner_id, fingerprint):
         """Add a GPG key.
 
         :raises ValueError: if the fingerprint isn't valid.
         :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
         """
 
     def disable_key_for_owner(owner_id, fingerprint):
@@ -454,6 +459,7 @@ class IGPGClient(Interface):
 
         :raises ValueError: if the fingerprint isn't valid.
         :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
         """
 
     def register_write_hook(hook_callable):
