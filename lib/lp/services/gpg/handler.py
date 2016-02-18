@@ -621,8 +621,7 @@ def sanitize_fingerprint(fingerprint):
     """Sanitize a GPG Fingerprint.
 
     This is the ultimate implementation of IGPGHandler.sanitizeFingerprint, and
-    is also used by the IGPGClient implementation. Ultimately it will be a
-    separate exported function.
+    is also used by the IGPGClient implementation.
 
     """
     # remove whitespaces, truncate to max of 40 (as per v4 keys) and
@@ -636,7 +635,7 @@ def sanitize_fingerprint(fingerprint):
     return fingerprint
 
 
-def check_fingerprint(fingerprint):
+def sanitize_fingerprint_or_raise(fingerprint):
     """Check the sanity of 'fingerprint'.
 
     If 'fingerprint' is a valid fingerprint, the sanitised version will be
@@ -674,7 +673,7 @@ class GPGClient:
 
     def add_key_for_owner(self, owner_id, fingerprint):
         """See IGPGClient."""
-        fingerprint = check_fingerprint(fingerprint)
+        fingerprint = sanitize_fingerprint_or_raise(fingerprint)
         try:
             conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
             headers = {
@@ -695,7 +694,7 @@ class GPGClient:
 
     def disable_key_for_owner(self, owner_id, fingerprint):
         """See IGPGClient."""
-        fingerprint = check_fingerprint(fingerprint)
+        fingerprint = sanitize_fingerprint_or_raise(fingerprint)
         try:
             conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
             path = '/users/%s/keys/%s' % (self._encode_owner_id(owner_id), fingerprint)

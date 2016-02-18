@@ -208,25 +208,19 @@ class TestImportKeyRing(TestCase):
             removeSecurityProxy(self.gpg_handler)._getPubKey, fingerprint)
 
 
-class GPGCLientZopeTests(TestCase):
+class GPGClientTests(TestCase):
 
-    layer = FunctionalLayer
+    layer = GPGServiceLayer
 
     def test_can_get_utility(self):
         client = getUtility(IGPGClient)
         self.assertIsNot(None, client)
-
-
-class GPGClientTests(TestCase):
-
-    layer = GPGServiceLayer
 
     def get_random_owner_id_string(self):
         """Get a random string that's representative of the owner id scheme."""
         candidates = string.ascii_lowercase + string.digits
         openid_id = ''.join((random.choice(candidates) for i in range(6)))
         return 'https://login.ubuntu.com/+id/' + openid_id
-
 
     def test_get_key_for_user_with_sampledata(self):
         client = getUtility(IGPGClient)
@@ -245,15 +239,13 @@ class GPGClientTests(TestCase):
         client = getUtility(IGPGClient)
         self.assertThat(
             lambda: client.register_write_hook("not a callable"),
-            raises(TypeError)
-        )
+            raises(TypeError))
 
     def test_deregister_with_unregstered_hook_raises_ValueError(self):
         client = getUtility(IGPGClient)
         self.assertThat(
             lambda: client.deregister_write_hook("not registerred"),
-            raises(ValueError)
-        )
+            raises(ValueError))
 
     def test_can_deregister_registerred_write_hook(self):
         client = getUtility(IGPGClient)
@@ -263,8 +255,7 @@ class GPGClientTests(TestCase):
 
         self.assertThat(
             lambda: client.deregister_write_hook(hook),
-            raises(ValueError)
-        )
+            raises(ValueError))
 
     def test_can_add_new_fingerprint_for_user(self):
         self.useFixture(KeyServerTac())
@@ -294,8 +285,7 @@ class GPGClientTests(TestCase):
         client = getUtility(IGPGClient)
         self.assertThat(
             lambda: client.add_key_for_owner(self.get_random_owner_id_string(), ''),
-            raises(ValueError("Invalid fingerprint: ''."))
-        )
+            raises(ValueError("Invalid fingerprint: ''.")))
 
     def test_adding_duplicate_fingerprint_raises_GPGServiceException(self):
         self.useFixture(KeyServerTac())
