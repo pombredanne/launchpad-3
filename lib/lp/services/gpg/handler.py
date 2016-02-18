@@ -23,9 +23,12 @@ import sys
 import tempfile
 import urllib
 import urllib2
+from urlparse import urljoin
 
 import gpgme
 from lazr.restful.utils import get_current_browser_request
+import requests
+from requests.status_codes import codes as http_codes
 from zope.interface import implementer
 
 from lp.app.validators.email import valid_email
@@ -657,49 +660,32 @@ class GPGClient:
 
     def getKeysForOwner(self, owner_id):
         """See IGPGClient."""
-        try:
-            conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
-            conn.request('GET', '/users/%s/keys' % self._encode_owner_id(owner_id))
-            resp = conn.getresponse()
-            if resp.status != httplib.OK:
-                self.raise_for_error(resp)
-            return json.load(resp)
-        finally:
-            conn.close()
+        path = '/users/%s/keys' % self._encode_owner_id(owner_id)
+        resp = self._request('get', path)
+        if resp.status_code != http_codes['OK']:
+            self.raise_for_error(resp)
+        return resp.json()
 
     def addKeyForOwner(self, owner_id, fingerprint):
         """See IGPGClient."""
         fingerprint = sanitize_fingerprint_or_raise(fingerprint)
-        try:
-            conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
-            headers = {
-            'Content-Type': 'application/json'
-            }
-            path = '/users/%s/keys' % self._encode_owner_id(owner_id)
-            body = json.dumps(dict(fingerprint=fingerprint))
-            conn.request('POST', path, body, headers)
-            resp = conn.getresponse()
-            if resp.status == httplib.CREATED:
-                self._notify_writes()
-            else:
-                self.raise_for_error(resp)
-        finally:
-            conn.close()
+        path = '/users/%s/keys' % self._encode_owner_id(owner_id)
+        data = dict(fingerprint=fingerprint)
+        resp = self._request('post', path, data)
+        if resp.status_code == http_codes['CREATED']:
+            self._notify_writes()
+        else:
+            self.raise_for_error(resp)
 
     def disableKeyForOwner(self, owner_id, fingerprint):
         """See IGPGClient."""
         fingerprint = sanitize_fingerprint_or_raise(fingerprint)
-        try:
-            conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
-            path = '/users/%s/keys/%s' % (self._encode_owner_id(owner_id), fingerprint)
-            conn.request('DELETE', path)
-            resp = conn.getresponse()
-            if resp.status == httplib.OK:
-                self._notify_writes()
-            else:
-                self.raise_for_error(resp)
-        finally:
-            conn.close()
+        path = '/users/%s/keys/%s' % (self._encode_owner_id(owner_id), fingerprint)
+        resp = self._request('delete', path)
+        if resp.status_code == http_codes['OK']:
+            self._notify_writes()
+        else:
+            self.raise_for_error(resp)
 
     def registerWriteHook(self, hook_callable):
         """See IGPGClient."""
@@ -729,9 +715,23 @@ class GPGClient:
 
     def raise_for_error(self, response):
         """Raise GPGServiceException based on what's in 'response'."""
-        if response.getheader('Content-Type') == 'application/json':
-            message = json.load(response)['status']
+        if response.headers['Content-Type'] == 'application/json':
+            message = response.json()['status']
         else:
             message = "Unhandled service error. HTTP Status: %d HTTP Body: %s" % (
-                response.status, response.read())
+                response.status_code, response.content)
         raise GPGServiceException(message)
+
+    @property
+    def timeout(self):
+        # Perhaps this should be from config?
+        return 30.0
+
+    @property
+    def endpoint(self):
+        return "http://{}".format(config.gpgservice.api_endpoint)
+
+    def _request(self, method, path, data=None, **kwargs):
+        response = getattr(requests, method)(
+            urljoin(self.endpoint, path), json=data, timeout=self.timeout, **kwargs)
+        return response
