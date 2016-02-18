@@ -36,9 +36,7 @@ from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.security.interfaces import (
-    Forbidden,
-    )
+from zope.security.interfaces import Forbidden
 
 
 @error_status(httplib.FORBIDDEN)
@@ -431,7 +429,6 @@ class GPGServiceException(Exception):
 
     More specific errors for commonly encountered errors may be added once we
     actually integrate gpgservice with the rest of launchpad.
-
     """
 
 
@@ -439,14 +436,14 @@ class IGPGClient(Interface):
 
     """A client for querying a gpgservice instance."""
 
-    def get_keys_for_owner(owner_id):
+    def getKeysForOwner(owner_id):
         """Get a list of keys for a given owner.
 
         :raises GPGServiceException: If we get an error from the gpgservice.
         :raises socket.error" on socket-level errors (connection timeouts etc)
         """
 
-    def add_key_for_owner(owner_id, fingerprint):
+    def addKeyForOwner(owner_id, fingerprint):
         """Add a GPG key.
 
         :raises ValueError: if the fingerprint isn't valid.
@@ -454,7 +451,7 @@ class IGPGClient(Interface):
         :raises socket.error" on socket-level errors (connection timeouts etc)
         """
 
-    def disable_key_for_owner(owner_id, fingerprint):
+    def disableKeyForOwner(owner_id, fingerprint):
         """Disable a GPG key.
 
         :raises ValueError: if the fingerprint isn't valid.
@@ -462,7 +459,7 @@ class IGPGClient(Interface):
         :raises socket.error" on socket-level errors (connection timeouts etc)
         """
 
-    def register_write_hook(hook_callable):
+    def registerWriteHook(hook_callable):
         """Register a write hook.
 
         The hook_callable will be called with no arguments whenever an operation
@@ -472,7 +469,7 @@ class IGPGClient(Interface):
         :raises GPGServiceException: If we get an error from the gpgservice.
         """
 
-    def deregister_write_hook(hook_callable):
+    def unregisterWriteHook(hook_callable):
         """Deregister a write hook that was registered with register_write_hook.
 
         :raises ValueError: if hook_callable was not registered.

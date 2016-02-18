@@ -13,15 +13,15 @@
         <allow interface="lp.services.gpg.interfaces.IGPGHandler" />
     </class>
 
-    <class class="lp.services.gpg.handler.GPGClient">
-        <allow interface="lp.services.gpg.interfaces.IGPGClient" />
-    </class>
-
     <securedutility
         class="lp.services.gpg.handler.GPGHandler"
         provides="lp.services.gpg.interfaces.IGPGHandler">
         <allow interface="lp.services.gpg.interfaces.IGPGHandler" />
     </securedutility>
+
+    <class class="lp.services.gpg.handler.GPGClient">
+    <allow interface="lp.services.gpg.interfaces.IGPGClient" />
+    </class>
 
     <securedutility
         class="lp.services.gpg.handler.GPGClient"

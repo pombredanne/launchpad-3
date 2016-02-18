@@ -618,11 +618,10 @@ class PymeUserId:
 
 
 def sanitize_fingerprint(fingerprint):
-    """Sanitize a GPG Fingerprint.
+    """Sanitize a GPG fingerprint.
 
     This is the ultimate implementation of IGPGHandler.sanitizeFingerprint, and
     is also used by the IGPGClient implementation.
-
     """
     # remove whitespaces, truncate to max of 40 (as per v4 keys) and
     # convert to upper case
@@ -642,7 +641,6 @@ def sanitize_fingerprint_or_raise(fingerprint):
     returned (see sanitize_fingerprint).
 
     Otherwise, a ValueError will be raised.
-
     """
     sane_fingerprint = sanitize_fingerprint(fingerprint)
     if sane_fingerprint is None:
@@ -657,7 +655,7 @@ class GPGClient:
     def __init__(self):
         self.write_hooks = set()
 
-    def get_keys_for_owner(self, owner_id):
+    def getKeysForOwner(self, owner_id):
         """See IGPGClient."""
         try:
             conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
@@ -666,12 +664,10 @@ class GPGClient:
             if resp.status != httplib.OK:
                 self.raise_for_error(resp)
             return json.load(resp)
-        except socket.error:
-            raise
         finally:
             conn.close()
 
-    def add_key_for_owner(self, owner_id, fingerprint):
+    def addKeyForOwner(self, owner_id, fingerprint):
         """See IGPGClient."""
         fingerprint = sanitize_fingerprint_or_raise(fingerprint)
         try:
@@ -687,12 +683,10 @@ class GPGClient:
                 self._notify_writes()
             else:
                 self.raise_for_error(resp)
-        except socket.error:
-            raise
         finally:
             conn.close()
 
-    def disable_key_for_owner(self, owner_id, fingerprint):
+    def disableKeyForOwner(self, owner_id, fingerprint):
         """See IGPGClient."""
         fingerprint = sanitize_fingerprint_or_raise(fingerprint)
         try:
@@ -704,29 +698,31 @@ class GPGClient:
                 self._notify_writes()
             else:
                 self.raise_for_error(resp)
-        except socket.error:
-            raise
         finally:
             conn.close()
 
-    def register_write_hook(self, hook_callable):
+    def registerWriteHook(self, hook_callable):
         """See IGPGClient."""
         if not callable(hook_callable):
             raise TypeError("'hook_callable' parameter must be a callable.")
         self.write_hooks.add(hook_callable)
 
-    def deregister_write_hook(self, hook_callable):
+    def unregisterWriteHook(self, hook_callable):
         """See IGPGClient."""
         if hook_callable not in self.write_hooks:
             raise ValueError("%r not registered.")
         self.write_hooks.remove(hook_callable)
 
     def _notify_writes(self):
+        errors = []
         for hook in self.write_hooks:
             try:
                 hook()
-            except:
-                pass
+            except Exception as e:
+                errors.append(str(e))
+        if errors:
+            raise Exception("The operation succeeded, but one or more write"
+                            " hooks failed: %s" % ', '.join(errors))
 
     def _encode_owner_id(self, owner_id):
         return base64.b64encode(owner_id, altchars='-_')
@@ -736,5 +732,6 @@ class GPGClient:
         if response.getheader('Content-Type') == 'application/json':
             message = json.load(response)['status']
         else:
-            message = "Unhandled service error:\n" + response.read()
+            message = "Unhandled service error. HTTP Status: %d HTTP Body: %s" % (
+                response.status, response.read())
         raise GPGServiceException(message)

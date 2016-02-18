@@ -99,6 +99,7 @@ from zope.security.management import (
     endInteraction,
     getSecurityPolicy,
     )
+from zope.security.proxy import removeSecurityProxy
 from zope.server.logger.pythonlogger import PythonLogger
 
 from lp.services import pidfile
@@ -1164,7 +1165,7 @@ class ZopelessLayer(BaseLayer):
         logout()
 
 
-class GPGServiceLayer(ZopelessLayer):
+class GPGServiceLayer(BaseLayer):
 
     service_fixture = None
     gpgservice_needs_reset = False
@@ -1173,17 +1174,15 @@ class GPGServiceLayer(ZopelessLayer):
     @profiled
     def setUp(cls):
         gpg_client = getUtility(IGPGClient)
-        gpg_client.register_write_hook(cls._on_gpgservice_write)
+        gpg_client.registerWriteHook(cls._on_gpgservice_write)
         cls.service_fixture = GPGKeyServiceFixture(BaseLayer.config_fixture)
         cls.service_fixture.setUp()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        # ZopelessLayer logs us out, but then we can't deregister out write hook
-        login(ANONYMOUS)
-        gpg_client = getUtility(IGPGClient)
-        gpg_client.deregister_write_hook(cls._on_gpgservice_write)
+        gpg_client = removeSecurityProxy(getUtility(IGPGClient))
+        gpg_client.unregisterWriteHook(cls._on_gpgservice_write)
         cls.service_fixture.cleanUp()
         cls.service_fixture = None
         logout()
@@ -1191,14 +1190,14 @@ class GPGServiceLayer(ZopelessLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        if cls.gpgservice_needs_reset:
-            cls.service_fixture.reset_service_database()
-            cls.gpgservice_needs_reset = False
+        pass
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        if cls.gpgservice_needs_reset:
+            cls.service_fixture.reset_service_database()
+            cls.gpgservice_needs_reset = False
 
     @classmethod
     def _on_gpgservice_write(cls):
