@@ -117,6 +117,7 @@ from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
+from lp.services.gpg.interfaces import IGPGClient
 from lp.services.job.tests import celery_worker
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
@@ -909,42 +910,12 @@ class LibrarianLayer(DatabaseLayer):
         config.pop('hide_librarian')
 
 
-class GPGServiceLayer(BaseLayer):
-
-    service_fixture = None
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        cls.service_fixture = GPGKeyServiceFixture()
-        cls.service_fixture.setUp()
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        cls.service_fixture.cleanUp()
-        cls.service_fixture = None
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        # XXX: detect if the service was modified somehow, and only reset if
-        # it needs it.
-        cls.service_fixture.reset_service_database()
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        pass
-
-
 def test_default_timeout():
     """Don't timeout by default in tests."""
     return None
 
 
-class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer,
-                     GPGServiceLayer):
+class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
@@ -1191,6 +1162,47 @@ class ZopelessLayer(BaseLayer):
                 "This test removed the LaunchpadPermissiveSecurityPolicy and "
                 "didn't restore it.")
         logout()
+
+
+class GPGServiceLayer(ZopelessLayer):
+
+    service_fixture = None
+    gpgservice_needs_reset = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        gpg_client = getUtility(IGPGClient)
+        gpg_client.register_write_hook(cls._on_gpgservice_write)
+        cls.service_fixture = GPGKeyServiceFixture(BaseLayer.config_fixture)
+        cls.service_fixture.setUp()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        # ZopelessLayer logs us out, but then we can't deregister out write hook
+        login(ANONYMOUS)
+        gpg_client = getUtility(IGPGClient)
+        gpg_client.deregister_write_hook(cls._on_gpgservice_write)
+        cls.service_fixture.cleanUp()
+        cls.service_fixture = None
+        logout()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        if cls.gpgservice_needs_reset:
+            cls.service_fixture.reset_service_database()
+            cls.gpgservice_needs_reset = False
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+    @classmethod
+    def _on_gpgservice_write(cls):
+        cls.gpgservice_needs_reset = True
 
 
 class TwistedLayer(BaseLayer):

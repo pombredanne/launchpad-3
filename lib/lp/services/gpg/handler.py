@@ -11,7 +11,9 @@ __all__ = [
     ]
 
 import atexit
+import base64
 import httplib
+import json
 import os
 import shutil
 import socket
@@ -35,8 +37,10 @@ from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     GPGKeyRevoked,
     GPGKeyTemporarilyNotFoundError,
+    GPGServiceException,
     GPGUploadFailure,
     GPGVerificationError,
+    IGPGClient,
     IGPGHandler,
     IPymeKey,
     IPymeSignature,
@@ -106,15 +110,7 @@ class GPGHandler:
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
-        # remove whitespaces, truncate to max of 40 (as per v4 keys) and
-        # convert to upper case
-        fingerprint = fingerprint.replace(' ', '')
-        fingerprint = fingerprint[:40].upper()
-
-        if not valid_fingerprint(fingerprint):
-            return None
-
-        return fingerprint
+        return sanitize_fingerprint(fingerprint)
 
     def resetLocalState(self):
         """See IGPGHandler."""
@@ -619,3 +615,127 @@ class PymeUserId:
         self.name = uid.name
         self.email = uid.email
         self.comment = uid.comment
+
+
+def sanitize_fingerprint(fingerprint):
+    """Sanitize a GPG Fingerprint.
+
+    This is the ultimate implementation of IGPGHandler.sanitizeFingerprint, and
+    is also used by the IGPGClient implementation. Ultimately it will be a
+    separate exported function.
+
+    """
+    # remove whitespaces, truncate to max of 40 (as per v4 keys) and
+    # convert to upper case
+    fingerprint = fingerprint.replace(' ', '')
+    fingerprint = fingerprint[:40].upper()
+
+    if not valid_fingerprint(fingerprint):
+        return None
+
+    return fingerprint
+
+
+def check_fingerprint(fingerprint):
+    """Check the sanity of 'fingerprint'.
+
+    If 'fingerprint' is a valid fingerprint, the sanitised version will be
+    returned (see sanitize_fingerprint).
+
+    Otherwise, a ValueError will be raised.
+
+    """
+    sane_fingerprint = sanitize_fingerprint(fingerprint)
+    if sane_fingerprint is None:
+        raise ValueError("Invalid fingerprint: %r." % fingerprint)
+    return sane_fingerprint
+
+
+@implementer(IGPGClient)
+class GPGClient:
+    """See IGPGClient."""
+
+    def __init__(self):
+        self.write_hooks = set()
+
+    def get_keys_for_owner(self, owner_id):
+        """See IGPGClient."""
+        try:
+            conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
+            conn.request('GET', '/users/%s/keys' % self._encode_owner_id(owner_id))
+            resp = conn.getresponse()
+            if resp.status != httplib.OK:
+                self.raise_for_error(resp)
+            return json.load(resp)
+        except socket.error:
+            raise
+        finally:
+            conn.close()
+
+    def add_key_for_owner(self, owner_id, fingerprint):
+        """See IGPGClient."""
+        fingerprint = check_fingerprint(fingerprint)
+        try:
+            conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
+            headers = {
+            'Content-Type': 'application/json'
+            }
+            path = '/users/%s/keys' % self._encode_owner_id(owner_id)
+            body = json.dumps(dict(fingerprint=fingerprint))
+            conn.request('POST', path, body, headers)
+            resp = conn.getresponse()
+            if resp.status == httplib.CREATED:
+                self._notify_writes()
+            else:
+                self.raise_for_error(resp)
+        except socket.error:
+            raise
+        finally:
+            conn.close()
+
+    def disable_key_for_owner(self, owner_id, fingerprint):
+        """See IGPGClient."""
+        fingerprint = check_fingerprint(fingerprint)
+        try:
+            conn = httplib.HTTPConnection(config.gpgservice.api_endpoint)
+            path = '/users/%s/keys/%s' % (self._encode_owner_id(owner_id), fingerprint)
+            conn.request('DELETE', path)
+            resp = conn.getresponse()
+            if resp.status == httplib.OK:
+                self._notify_writes()
+            else:
+                self.raise_for_error(resp)
+        except socket.error:
+            raise
+        finally:
+            conn.close()
+
+    def register_write_hook(self, hook_callable):
+        """See IGPGClient."""
+        if not callable(hook_callable):
+            raise TypeError("'hook_callable' parameter must be a callable.")
+        self.write_hooks.add(hook_callable)
+
+    def deregister_write_hook(self, hook_callable):
+        """See IGPGClient."""
+        if hook_callable not in self.write_hooks:
+            raise ValueError("%r not registered.")
+        self.write_hooks.remove(hook_callable)
+
+    def _notify_writes(self):
+        for hook in self.write_hooks:
+            try:
+                hook()
+            except:
+                pass
+
+    def _encode_owner_id(self, owner_id):
+        return base64.b64encode(owner_id, altchars='-_')
+
+    def raise_for_error(self, response):
+        """Raise GPGServiceException based on what's in 'response'."""
+        if response.getheader('Content-Type') == 'application/json':
+            message = json.load(response)['status']
+        else:
+            message = "Unhandled service error:\n" + response.read()
+        raise GPGServiceException(message)

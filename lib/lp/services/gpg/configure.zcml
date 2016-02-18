@@ -13,10 +13,20 @@
         <allow interface="lp.services.gpg.interfaces.IGPGHandler" />
     </class>
 
+    <class class="lp.services.gpg.handler.GPGClient">
+        <allow interface="lp.services.gpg.interfaces.IGPGClient" />
+    </class>
+
     <securedutility
         class="lp.services.gpg.handler.GPGHandler"
         provides="lp.services.gpg.interfaces.IGPGHandler">
         <allow interface="lp.services.gpg.interfaces.IGPGHandler" />
+    </securedutility>
+
+    <securedutility
+        class="lp.services.gpg.handler.GPGClient"
+        provides="lp.services.gpg.interfaces.IGPGClient">
+        <allow interface="lp.services.gpg.interfaces.IGPGClient" />
     </securedutility>
 
     <class class="lp.services.gpg.handler.PymeSignature">
