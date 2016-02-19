@@ -1,4 +1,4 @@
-<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -52,6 +52,10 @@
             permission="launchpad.Admin"
             interface="lp.snappy.interfaces.snapbuild.ISnapBuildAdmin" />
     </class>
+    <subscriber
+        for="lp.snappy.interfaces.snapbuild.ISnapBuild
+             lp.snappy.interfaces.snapbuild.ISnapBuildStatusChangedEvent"
+        handler="lp.snappy.subscribers.snapbuild.snap_build_status_changed" />
 
     <!-- SnapBuildSet -->
     <securedutility

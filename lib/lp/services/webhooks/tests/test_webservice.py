@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the webhook webservice objects."""
@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     api_url,
     person_logged_in,
@@ -370,3 +371,13 @@ class TestWebhookTargetBranch(TestWebhookTargetBase, TestCaseWithFactory):
 
     def makeTarget(self):
         return self.factory.makeBranch()
+
+
+class TestWebhookTargetSnap(TestWebhookTargetBase, TestCaseWithFactory):
+
+    event_type = 'snap:build:0.1'
+
+    def makeTarget(self):
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: 'true'}))
+        owner = self.factory.makePerson()
+        return self.factory.makeSnap(registrant=owner, owner=owner)

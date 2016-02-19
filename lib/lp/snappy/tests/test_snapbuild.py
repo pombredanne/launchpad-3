@@ -15,6 +15,11 @@ from urllib2 import (
     )
 
 import pytz
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -29,6 +34,7 @@ from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.snappy.interfaces.snap import (
     SNAP_TESTING_FLAGS,
     SnapFeatureDisabled,
@@ -217,6 +223,25 @@ class TestSnapBuild(TestCaseWithFactory):
         self.assertFalse(self.build.verifySuccessfulUpload())
         self.factory.makeSnapFile(snapbuild=self.build)
         self.assertTrue(self.build.verifySuccessfulUpload())
+
+    def test_updateStatus_triggers_webhooks(self):
+        # Updating the status of a SnapBuild triggers webhooks on the
+        # corresponding Snap.
+        hook = self.factory.makeWebhook(
+            target=self.build.snap, event_types=["snap:build:0.1"])
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        expected_payload = {
+            "snap_build": Equals(
+                canonical_url(self.build, force_local_path=True)),
+            "action": Equals("status-changed"),
+            "snap": Equals(
+                canonical_url(self.build.snap, force_local_path=True)),
+            "status": Equals("Successfully built"),
+            }
+        self.assertThat(
+            hook.deliveries.one(), MatchesStructure(
+                event_type=Equals("snap:build:0.1"),
+                payload=MatchesDict(expected_payload)))
 
     def test_notify_fullybuilt(self):
         # notify does not send mail when a SnapBuild completes normally.
