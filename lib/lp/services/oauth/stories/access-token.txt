@@ -12,13 +12,12 @@ access token.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.testing import login, logout
     >>> login('salgado@ubuntu.com')
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey(u'foobar123451432')
     >>> token, secret = consumer.newRequestToken()
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
     >>> logout()
 
-    >>> import time
     >>> from urllib import urlencode
     >>> data = dict(
     ...     oauth_consumer_key='foobar123451432',

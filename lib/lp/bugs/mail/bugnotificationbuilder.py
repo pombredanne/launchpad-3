@@ -54,8 +54,8 @@ def get_bugmail_from_address(person, bug):
         return format_address(person.displayname, person.preferredemail.email)
 
     # XXX: Bjorn Tillenius 2006-04-05:
-    # The person doesn't have a preferred email set, but he
-    # added a comment (either via the email UI, or because he was
+    # The person doesn't have a preferred email set, but they
+    # added a comment (either via the email UI, or because they were
     # imported as a deaf reporter). It shouldn't be possible to use the
     # email UI if you don't have a preferred email set, but work around
     # it for now by trying hard to find the right email address to use.

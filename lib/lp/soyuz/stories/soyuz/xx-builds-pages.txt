@@ -396,7 +396,7 @@ first view if there are no GET arguments.
     >>> find_tag_by_id(anon_browser.contents, 'empty-result') is None
     True
 
-When he updates the page, the message changes to say that 'No matching
+When they update the page, the message changes to say that 'No matching
 builds' be found. This message clearly differentiate first page loads
 from searches, helping the anonymous user to figure out exactly what
 was done before.
@@ -443,7 +443,7 @@ message is presented.
     >>> find_tag_by_id(anon_browser.contents, 'empty-result') is None
     True
 
-When he updates the page, the message for empty results changes to 'No
+When they update the page, the message for empty results changes to 'No
 matching builds'.
 
     >>> anon_browser.getControl(name="build_state").value = ['all']

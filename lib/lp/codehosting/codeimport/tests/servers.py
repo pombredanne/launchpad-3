@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server classes that know how to create various kinds of foreign archive."""
@@ -277,7 +277,7 @@ class GitServer(Server):
             in tree_contents]
         repo.object_store.add_objects(blobs)
         root_id = dulwich.index.commit_tree(repo.object_store, [
-            (filename, b.id, stat.S_IFREG | 0644)
+            (filename, b.id, stat.S_IFREG | 0o644)
             for (b, filename) in blobs])
         repo.do_commit(committer='Joe Foo <joe@foo.com>',
             message=u'<The commit message>', tree=root_id)

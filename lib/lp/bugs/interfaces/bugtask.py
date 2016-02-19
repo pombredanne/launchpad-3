@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug task interfaces."""
@@ -79,7 +79,6 @@ from zope.schema import (
 from zope.security.interfaces import Unauthorized
 
 from lp import _
-from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugwatch import (
@@ -390,7 +389,7 @@ class IBugTaskDelete(Interface):
         """
 
 
-class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
+class IBugTask(IHasBug, IBugTaskDelete):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -603,8 +602,8 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         :param person: The person to check to see if they are a contributor.
 
         Return a dict with the following values:
-        is_contributor: True if the user has any bugs assigned to him in the
-        context of this bug task's pillar, either directly or by team
+        is_contributor: True if the user has any bugs assigned to them in
+        the context of this bug task's pillar, either directly or by team
         participation.
         person_name: the displayname of the person
         pillar_name: the displayname of the bug task's pillar

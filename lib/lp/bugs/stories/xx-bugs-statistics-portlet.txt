@@ -394,7 +394,7 @@ If the user is not logged-in general stats are shown.
     0 Bugs with patches
     1 Open CVE bug - CVE report
 
-Once the user has identified him or herself, information on assigned
+Once the user has identified themselves, information on assigned
 bugs is also shown.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)

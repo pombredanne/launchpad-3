@@ -520,6 +520,12 @@ class SourcePackageView(LaunchpadView):
             self.context.currentrelease.builddependsindep)
 
     @property
+    def builddependsarch(self):
+        return self._relationship_parser(
+            self.context.currentrelease.getUserDefinedField(
+                "Build-Depends-Arch"))
+
+    @property
     def build_conflicts(self):
         return self._relationship_parser(
             self.context.currentrelease.build_conflicts)
@@ -528,6 +534,12 @@ class SourcePackageView(LaunchpadView):
     def build_conflicts_indep(self):
         return self._relationship_parser(
             self.context.currentrelease.build_conflicts_indep)
+
+    @property
+    def build_conflicts_arch(self):
+        return self._relationship_parser(
+            self.context.currentrelease.getUserDefinedField(
+                "Build-Conflicts-Arch"))
 
     def requestCountry(self):
         return ICountry(self.request, None)

@@ -9,6 +9,10 @@
 
 <metal:block fill-slot="head_epilogue">
   <style type="text/css">
+    #merge-summary, #recipe-summary {
+      margin-top: .5em;
+      margin-bottom: .1em;
+    }
     #clone-url dt {
       font-weight: strong;
     }
@@ -41,8 +45,9 @@
   </div>
 
   <div class="yui-g">
-    <div id="repository-relations" class="portlet"
-         tal:condition="view/show_snap_information">
+    <div id="repository-relations" class="portlet">
+      <tal:repository-recipes
+           replace="structure context/@@++repository-recipes" />
       <div metal:use-macro="context/@@+snap-macros/related-snaps">
         <metal:context-type fill-slot="context_type">repository</metal:context-type>
       </div>

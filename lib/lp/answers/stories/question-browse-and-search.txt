@@ -321,7 +321,7 @@ problems:
 
 === Answered Questions ===
 
-A random user has a problem with firefox in Ubuntu. He uses the
+A random user has a problem with firefox in Ubuntu. They use the
 'Answered' link on the 'Answers' facet of the distribution to look for
 similar problems. (This listing includes both 'Answered' and 'Solved'
 questions.)
@@ -340,8 +340,8 @@ questions.)
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
 
-This report is also searchable. He's having a problem with Evolution, so
-he enters 'Evolution' as a keyword and hits the search button.
+This report is also searchable. They're having a problem with Evolution, so
+they enter 'Evolution' as a keyword and hit the search button.
 
     >>> browser.getControl(name='field.search_text').value = 'Evolution'
     >>> browser.getControl('Search', index=0).click()
@@ -355,11 +355,11 @@ he enters 'Evolution' as a keyword and hits the search button.
 
 === My questions ===
 
-Sample Person remembers posting a question on mozilla-firefox. He uses
+Sample Person remembers posting a question on mozilla-firefox. They use
 the 'My questions' link on the distribution source package Answers facet
-to list all the questions he ever made about that package.
+to list all the questions they ever made about that package.
 
-He needs to login to access that page:
+They need to login to access that page:
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
@@ -384,20 +384,20 @@ He needs to login to access that page:
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
 
-His problem was about integrating his email client in firefox, so he
-enters 'email client in firefox'
+Their problem was about integrating their email client in firefox, so they
+enter 'email client in firefox'
 
     >>> sample_person_browser.getControl(name='field.search_text').value = (
     ...     'email client in firefox')
 
-He also remembers that his question was answered, so he unselects the
-other statuses and hits the search button.
+They also remember that their question was answered, so they unselect the
+other statuses and hit the search button.
 
     >>> sample_person_browser.getControl('Open').selected = False
     >>> sample_person_browser.getControl('Invalid').selected = False
     >>> sample_person_browser.getControl('Search', index=0).click()
 
-The exact question he was searching for is displayed!
+The exact question they were searching for is displayed!
 
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
@@ -406,7 +406,7 @@ The exact question he was searching for is displayed!
     mailto: problem in webpage
 
 If the user didn't make any questions on the product, a message
-informing him of this fact is displayed.
+informing them of this fact is displayed.
 
     >>> # gnmomebaker must enable answers to access questions.
     >>> from lp.registry.interfaces.product import IProductSet
@@ -426,13 +426,13 @@ informing him of this fact is displayed.
 
 === Need attention ===
 
-A user can often forget which questions need his attention. For
+A user can often forget which questions need their attention. For
 this purpose, there is a 'Need attention' report which displays the
 questions made by the user which require a reply. It also lists
-the questions on which he provided an answer or requested for more
+the questions on which they provided an answer or requested for more
 information and that are now back in the 'Open' state.
 
-He needs to login to access that page:
+They need to login to access that page:
 
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> anon_browser.getLink('Need attention').click()
@@ -466,7 +466,7 @@ Like all other report, this one is searchable:
     ...
 
 If there is no questions needing the user's attention, a message
-informing him of this fact is displayed.
+informing them of this fact is displayed.
 
     >>> sample_person_browser.open(
     ...    'http://launchpad.dev/products/gnomebaker/+questions')
@@ -617,7 +617,7 @@ the attention of that person.
 
 === Subscribed ===
 
-Foo Bar can find all the questions to which he is subscribed by
+Foo Bar can find all the questions to which they are subscribed by
 visiting the 'Subscribed' link in the 'Answers' facet.
 
     >>> browser.getLink('Subscribed').click()
@@ -748,7 +748,7 @@ From the Answers front page, the user can select to search questions
 only in a particular project. In this context a "project" means either
 a distribution, product or project group.
 
-He must enter the project's name in the text field:
+They must enter the project's name in the text field:
 
     >>> anon_browser.open('http://answers.launchpad.dev')
     >>> anon_browser.getControl('One project').selected = True

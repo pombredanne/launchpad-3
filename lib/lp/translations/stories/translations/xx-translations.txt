@@ -298,8 +298,8 @@ Legend and headers display
 ==========================
 
 On template overview page, when user is not logged in (and there is no
-sufficient GeoIP data), or user has not set his preferred languages,
-legend should be hidden from him since he's looking only at the list
+sufficient GeoIP data), or user has not set their preferred languages,
+legend should be hidden from them since he's looking only at the list
 of templates.
 
 We are pretending to be coming from 255.255.255.255 so no GeoIP data
@@ -314,7 +314,7 @@ a random choice of an IP address for which we hold no GeoIP mappings.
     >>> find_tag_by_id(anon_browser.contents, 'legend') is None
     False
 
-When looking at a specific template with at least one translation, he
+When looking at a specific template with at least one translation, they
 will again see the legend.
 
     >>> anon_browser.open(

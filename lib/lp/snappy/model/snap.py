@@ -26,6 +26,7 @@ from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
@@ -45,6 +46,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.gitcollection import GenericGitCollection
 from lp.code.model.gitrepository import GitRepository
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -81,11 +83,14 @@ from lp.snappy.interfaces.snap import (
     NoSourceForSnap,
     NoSuchSnap,
     SNAP_FEATURE_FLAG,
+    SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
     SnapFeatureDisabled,
     SnapNotOwner,
+    SnapPrivacyMismatch,
+    SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.model.snapbuild import SnapBuild
@@ -142,9 +147,12 @@ class Snap(Storm, WebhookTargetMixin):
 
     require_virtualized = Bool(name='require_virtualized')
 
+    private = Bool(name='private')
+
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None,
-                 require_virtualized=True, date_created=DEFAULT):
+                 require_virtualized=True, date_created=DEFAULT,
+                 private=False):
         """Construct a `Snap`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
@@ -160,6 +168,7 @@ class Snap(Storm, WebhookTargetMixin):
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
+        self.private = private
 
     @property
     def valid_webhook_event_types(self):
@@ -373,7 +382,7 @@ class SnapSet:
 
     def new(self, registrant, owner, distro_series, name, description=None,
             branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=DEFAULT):
+            processors=None, date_created=DEFAULT, private=False):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -390,11 +399,15 @@ class SnapSet:
         if self.exists(owner, name):
             raise DuplicateSnapName
 
+        if not self.isValidPrivacy(private, owner, branch, git_ref):
+            raise SnapPrivacyMismatch
+
         store = IMasterStore(Snap)
         snap = Snap(
             registrant, owner, distro_series, name, description=description,
             branch=branch, git_ref=git_ref,
-            require_virtualized=require_virtualized, date_created=date_created)
+            require_virtualized=require_virtualized, date_created=date_created,
+            private=private)
         store.add(snap)
 
         if processors is None:
@@ -404,6 +417,26 @@ class SnapSet:
         snap.setProcessors(processors)
 
         return snap
+
+    def isValidPrivacy(self, private, owner, branch=None, git_ref=None):
+        """See `ISnapSet`."""
+        # Private snaps may contain anything ...
+        if private:
+            # If appropriately enabled via feature flag.
+            if not getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG):
+                raise SnapPrivateFeatureDisabled
+            return True
+
+        # Public snaps with private sources are not allowed.
+        source_ref = branch or git_ref
+        if source_ref.information_type in PRIVATE_INFORMATION_TYPES:
+            return False
+
+        # Public snaps owned by private teams are not allowed.
+        if owner.is_team and owner.visibility == PersonVisibility.PRIVATE:
+            return False
+
+        return True
 
     def _getByName(self, owner, name):
         return IStore(Snap).find(

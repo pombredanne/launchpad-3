@@ -7,7 +7,7 @@ preferred languages are listed and searched.
 == Anonymous searching ==
 
 For example, a user who isn't logged in will only see questions
-written in English, in one of the language configured in his browser,
+written in English, in one of the language configured in their browser,
 or inferred from GeoIP information. In this example, only English
 questions will be shown when the user has not provided language
 information.
@@ -111,7 +111,7 @@ When the project has questions in only one language, and that language
 is among the users' languages, the language controls are not displayed.
 The mozilla-firefox sourcepackage only has English questions. When the
 anonymous user makes a request from a GeoIP that has no languages
-mapped, we assume he speaks the default language of English.
+mapped, we assume they speak the default language of English.
 
     >>> anon_browser.addHeader('X_FORWARDED_FOR', '172.16.1.1')
     >>> anon_browser.open(
@@ -121,7 +121,7 @@ mapped, we assume he speaks the default language of English.
       ...
     LookupError: name 'field.language...
 
-But if the user configures his browser to accept Spanish and English
+But if the user configures their browser to accept Spanish and English
 then questions with those language will be displayed:
 
     >>> anon_browser.addHeader('Accept-Language', 'es, en')
@@ -155,7 +155,7 @@ Authenticated users without preferred languages are assumed to have
 the languages determined by what their browser sends in the
 Accept-Languages request, or by their GeoIP, just as with anonymous
 users. In this example, No Privileges Person does not have preferred
-languages, nor is his browser configured with a language; we use GeoIP
+languages, nor is their browser configured with a language; we use GeoIP
 rules. As with the anonymous user, the intersection of the GeoIP
 languages and the target's question languages is 'en'.
 
@@ -174,7 +174,7 @@ that language, we do not show the language controls.
       ...
     LookupError: name 'field.language...
 
-When No Privileges Person adds Spanish and English to his browser, they
+When No Privileges Person adds Spanish and English to their browser, they
 are added to the language controls.
 
     >>> user_browser.addHeader('Accept-Language', 'es, en')
@@ -232,7 +232,7 @@ searching Ubuntu.
 
 The user's languages are presented as controls in the question form.
 The controls are filters that allow the user to see questions in
-his languages. Daf, in this example, can see a language filter for
+their languages. Daf, in this example, can see a language filter for
 English, and can use it to locate English questions.
 
     >>> daf_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
@@ -262,8 +262,8 @@ When open questions are in languages that no answer contacts
 speak, the project questions page displays links to see those
 questions. Each link is to a page that displays the questions
 for a specific language. No Privileges Person is looking for a
-project that needs help. He visits Kubuntu and does not see a need,
-but when he visits Mozilla Firefox, he is informed that there are
+project that needs help. They visit Kubuntu and does not see a need,
+but when they visit Mozilla Firefox, they are informed that there are
 questions going unanswered.
 
     >>> user_browser.open('http://answers.launchpad.dev/kubuntu')
@@ -306,9 +306,9 @@ The page in all other respects behaves like a question search page.
 == My questions ignores preferred languages ==
 
 The "My questions" view ignores the user's language preferences, because
-he may change them over time, but he must always see his questions. For
+they may change them over time, but they must always see their questions. For
 example, Sample Person has asked a question in Arabic in the Ubuntu
-project. He can see the question on the second page of "My questions"...
+project. They can see the question on the second page of "My questions"...
 
     >>> sample_person_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
@@ -329,7 +329,7 @@ project. He can see the question on the second page of "My questions"...
     ...     question.find('a').renderContents()
     '\xd8\xb9\xd9\x83\xd8\xb3 \xd8\xa7\xd9\x84\xd8\xaa\xd8\xba...'
 
-...even though he has not set Arabic as one of his preferred languages.
+...even though they have not set Arabic as one of their preferred languages.
 
     >>> sample_person_browser.getLink(
     ...     'Change your preferred languages').click()

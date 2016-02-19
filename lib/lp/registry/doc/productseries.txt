@@ -86,8 +86,8 @@ owner or driver can call Product.newSeries().
     >>> print emacs_series.releasefileglob
     ftp://gnu.org/emacs*.gz
 
-When a driver creates a series, he is also the driver of the new series
-to make him the release manager.
+When a driver creates a series, they are also the driver of the new series
+to make them the release manager.
 
     >>> firefox.driver = series_driver
     >>> ignored = login_person(series_driver)

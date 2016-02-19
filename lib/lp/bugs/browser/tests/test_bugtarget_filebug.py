@@ -243,7 +243,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
     def test_bug_filing_view_with_dupe_search_enabled(self):
         # When a user files a bug for a product where searching for
-        # duplicate bugs is enabled, he is asked to provide a
+        # duplicate bugs is enabled, they are asked to provide a
         # summary of the bug. This summary is used to find possible
         # existing duplicates f this bug.
         product = self.factory.makeProduct()
@@ -269,7 +269,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
     def test_bug_filing_view_with_dupe_search_disabled(self):
         # When a user files a bug for a product where searching for
-        # duplicate bugs is disabled, he can directly enter all
+        # duplicate bugs is disabled, they can directly enter all
         # details of the bug.
         product = self.factory.makeProduct()
         login_person(product.owner)

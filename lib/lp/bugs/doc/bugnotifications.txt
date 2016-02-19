@@ -223,7 +223,7 @@ bug. Let's take a look at each type.
 === Editing a task ===
 
 Let's demonstrate a notification email where Sample Person marks a
-task Fixed, and assigns himself to it.
+task Fixed, and assigns themselves to it.
 
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bugtask import (

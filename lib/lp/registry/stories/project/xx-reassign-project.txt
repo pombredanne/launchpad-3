@@ -1,7 +1,7 @@
   Change the owner of the mozilla project.
 
 
-  Logged in as no-priv@canonical.com we can't do that, because he's not the
+  Logged in as no-priv@canonical.com we can't do that, because they're not the
   owner of the project nor a member of admins.
 
   >>> print http(r"""

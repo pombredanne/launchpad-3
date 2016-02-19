@@ -100,7 +100,7 @@ Unlogged-in users cannot post any comments on the question:
     >>> getAvailableActionNames(workflow_harness.view)
     []
 
-When question is in the OPEN state, the owner can comment, answer his
+When question is in the OPEN state, the owner can comment, answer their
 own question or provide more information.
 
     >>> login('test@canonical.com')
@@ -108,7 +108,7 @@ own question or provide more information.
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment', 'giveinfo', 'selfanswer']
 
-But when another user sees the question, he can comment, provide an
+But when another user sees the question, they can comment, provide an
 answer or request more information.
 
     >>> login('no-priv@canonical.com')
@@ -147,7 +147,7 @@ And the question owner still has the same possibilities as at first:
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment', 'giveinfo', 'selfanswer']
 
-If he replies with the requested information, the question is moved back
+If they reply with the requested information, the question is moved back
 to the OPEN state.
 
     >>> form = {
@@ -184,8 +184,8 @@ The other user can come back and gives an answer:
     '.../+question/2'
 
 Once the question is answered, the set of possible actions for the
-question owner changes. He can now either comment, confirm the answer,
-answer the problem himself, or reopen the request because that answer
+question owner changes. They can now either comment, confirm the answer,
+answer the problem themselves, or reopen the request because that answer
 isn't working.
 
     >>> login('test@canonical.com')
@@ -193,7 +193,7 @@ isn't working.
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment', 'confirm', 'reopen', 'selfanswer']
 
-Let's say he confirms the previous answer, in this case, the question
+Let's say they confirm the previous answer, in this case, the question
 will move to the 'SOLVED' state. Note that the UI doesn't enable the
 user to enter a confirmation message at that stage.
 
@@ -266,7 +266,7 @@ to 'OPEN'.
     >>> workflow_harness.redirectionTarget()
     '.../+question/2'
 
-When the question owner answers his own question, it is moved straight
+When the question owner answers their own question, it is moved straight
 to the SOLVED state. The question owner is attributed as the answerer,
 but no answer message is assigned to the answer.
 
@@ -553,12 +553,12 @@ The QuestionLanguageVocabularyFactory is an IContextSourceBinder which
 is used in browser forms to create a vocabulary containing only the
 languages that are likely to interest the user.
 
-When the user has not configured his preferred languages, the vocabulary
+When the user has not configured their preferred languages, the vocabulary
 will contain languages from the HTTP request, or the most likely
 interesting languages based on GeoIP information.
 
-For example, if the user doesn't log in and his browser is configured to
-accept brazilian Portuguese, the vocabulary will contain the languages
+For example, if the user doesn't log in and their browser is configured to
+accept Brazilian Portuguese, the vocabulary will contain the languages
 spoken in South Africa (because the 127.0.0.1 IP address is mapped to
 South Africa in the tests).
 
@@ -573,7 +573,7 @@ South Africa in the tests).
     >>> sorted([lang.code for lang in languages])
     [u'af', u'en', u'pt_BR', u'st', u'xh', u'zu']
 
-If the user logs in but didn't configure his preferred languages, the
+If the user logs in but didn't configure their preferred languages, the
 same logic is used to find the languages:
 
     >>> login('test@canonical.com')
@@ -586,7 +586,7 @@ same logic is used to find the languages:
     >>> sorted(lang.code for lang in languages)
     [u'af', u'en', u'pt_BR', u'st', u'xh', u'zu']
 
-But if the user configured his preferred languages, only these are used:
+But if the user configured their preferred languages, only these are used:
 
     >>> login('carlos@canonical.com')
     >>> user = getUtility(ILaunchBag).user
@@ -654,7 +654,7 @@ The set of languages to use for support is defined in the
 Like all operations involving languages in the Answer Tracker, we ignore
 all other English variants.
 
-When the user is not logged in, or didn't define his preferred
+When the user is not logged in, or didn't define their preferred
 languages, the set will be initialized from the request. That's the
 languages configured in the browser, plus other inferred from the GeoIP
 database.
@@ -940,8 +940,8 @@ to the question, or an m-dash if there is no assignee.
 ManageAnswerContactView
 -----------------------
 
-That view is used by a user to register himself or any team he
-administrates as an answer contact for the project.
+That view is used by a user to register themselves or any team they
+administer as an answer contact for the project.
 
 Jeff Waugh is an administrator for the Ubuntu Team. Thus he can register
 himself or the Ubuntu Team as answer contact for ubuntu:
@@ -1003,7 +1003,7 @@ can only subscribe himself:
     You have been added as an answer contact for Ubuntu.
 
 The same view is used to remove answer contact registrations. The user
-can only remove his own registration.
+can only remove their own registration.
 
     >>> request = LaunchpadTestRequest(
     ...     method='POST', form={

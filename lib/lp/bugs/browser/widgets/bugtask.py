@@ -263,10 +263,10 @@ class BugTaskAssigneeWidget(Widget):
         return context.userCanUnassign(user) or context.assignee is None
 
     def showPersonChooserWidget(self):
-        """Should the person chooser widget bw shown?
+        """Should the person chooser widget be shown?
 
         The person chooser is shown only if the user can assign at least
-        one other person or team in addition to himself.
+        one other person or team in addition to themselves.
         """
         user = getUtility(ILaunchBag).user
         context = self.context.context

@@ -152,8 +152,8 @@ Verify that the key was imported with the "can encrypt" flag set:
 == Claim a sign-only GPG key ==
 
 Here, Sample Person wants to claim a GPG key that can only sign
-content. He can't verify his key by decrypting content on demand, but
-he can verify it by signing content. Launchpad sends him an email
+content. They can't verify their key by decrypting content on demand, but
+they can verify it by signing content. Launchpad sends them an email
 token. The email step ensures that an attacker who knows Sample
 Person's Launchpad password can't associate arbitrary GPG keys with
 their Launchpad account.
@@ -168,7 +168,7 @@ their Launchpad account.
     confirm the key 1024D/17B05A8F is yours, follow
     the link inside.
 
-Sample Person checks his email.
+Sample Person checks their email.
 
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_msg)
@@ -183,7 +183,7 @@ ability to decrypt text with this key.
     False
 
 The email does contain some information about the key, and a token URL
-Sample Person should visit to verify his ownership of the key.
+Sample Person should visit to verify their ownership of the key.
 
     >>> print body
     <BLANKLINE>
@@ -214,11 +214,11 @@ token to a fixed value:
     >>> logintoken = LoginToken.selectOneBy(
     ...     _token=hashlib.sha256(token_value).hexdigest())
     >>> logintoken.date_created = datetime.datetime(
-    ...     2005,04,01, 12,00,00, tzinfo=pytz.timezone('UTC'))
+    ...     2005, 4, 1, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> logintoken.sync()
 
-Back to Sample User. He visits the token URL and is asked to sign some
-text to prove he owns the key.
+Back to Sample User. They visit the token URL and is asked to sign some
+text to prove they own the key.
 
     >>> browser.open(token_url)
     >>> browser.title
@@ -232,7 +232,7 @@ Let's look at the text.
     Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
     Launchpad user name12.  2005-04-01 12:00:00 UTC
 
-If he refuses to sign the text, he gets an error message.
+If they refuse to sign the text, they get an error message.
 
     >>> browser.getControl('Continue').click()
     >>> browser.title
@@ -241,7 +241,7 @@ If he refuses to sign the text, he gets an error message.
     There is 1 error.
     Required input is missing.
 
-If he signs a different text, he gets an error message.
+If they sign a different text, they get an error message.
 
     >>> login(ANONYMOUS)
     >>> key = import_secret_test_key('sign.only@canonical.com.sec')
@@ -256,7 +256,7 @@ If he signs a different text, he gets an error message.
     There is 1 error.
     The signed content does not match the message found in the email.
 
-If he signs the text with a different key, he gets an error
+If they sign the text with a different key, they get an error
 message. The following text was signed with the key DFD20543:
 
     >>> signed_content = """
@@ -280,7 +280,7 @@ message. The following text was signed with the key DFD20543:
     The key used to sign the content (A419AE861E88BC9E04B9C26FBA2B9389DFD20543)
     is not the key you were registering
 
-If he signs the text correctly, he is redirected to his home page.
+If they sign the text correctly, they are redirected to their home page.
 
     >>> login(ANONYMOUS)
     >>> good = gpghandler.signContent(
@@ -302,8 +302,8 @@ Now that the key has been validated, the login token is consumed:
     >>> consumed_token.date_consumed is not None
     True
 
-Now Sample Person's sign-only key is associated with his account. He
-verifies this:
+Now Sample Person's sign-only key is associated with their account. They
+verify this:
 
     >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
 
@@ -311,7 +311,7 @@ verifies this:
     >>> browser.getControl(name='DEACTIVATE_GPGKEY').displayOptions
     [...'1024D/17B05A8F (sign only)']
 
-On a mad whim he decides to de-activate the key he just imported.
+On a mad whim they decide to de-activate the key they just imported.
 
     >>> browser.getControl(name="DEACTIVATE_GPGKEY").displayValue = [
     ...     '1024D/17B05A8F (sign only)']
@@ -320,7 +320,7 @@ On a mad whim he decides to de-activate the key he just imported.
     >>> print_feedback_messages(browser.contents)
     Deactivated key(s): 1024D/17B05A8F
 
-Coming to his senses, he asks for a re-validation of the key.
+Coming to their senses, they ask for a re-validation of the key.
 
     >>> browser.getControl(name="REACTIVATE_GPGKEY").value = ['3']
     >>> browser.getControl('Reactivate Key').click()
@@ -329,7 +329,7 @@ Coming to his senses, he asks for a re-validation of the key.
     A message has been sent to test@canonical.com with instructions
     to reactivate these key(s): 1024D/17B05A8F
 
-He opens the page and checks that the key is displayed as pending
+They open the page and checks that the key is displayed as pending
 revalidation.
 
     >>> browser.reload()
@@ -419,7 +419,7 @@ appear in the same order.
     >>> print browser.url
     http://launchpad.dev/~name12/+codesofconduct
 
-And now Sample Person's Codes of Conduct page shows that he's signed it.
+And now Sample Person's Codes of Conduct page shows that they've signed it.
 
     >>> browser.open('http://launchpad.dev/~name12/+codesofconduct')
     >>> print extract_text(find_main_content(browser.contents))
@@ -434,7 +434,7 @@ And now Sample Person's Codes of Conduct page shows that he's signed it.
     ...
 
 
-Now Sample Person will deactivate his key...
+Now Sample Person will deactivate their key...
 
     >>> browser = setupBrowserFreshLogin(name12)
     >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
@@ -447,7 +447,7 @@ Now Sample Person will deactivate his key...
     ...1024D/DFD20543...
 
 
-... but he forgot to select the checkbox of the key he wants to remove.
+... but they forgot to select the checkbox of the key they want to remove.
 
     >>> browser.getControl('Deactivate Key').click()
     >>> for tag in find_main_content(browser.contents)('p', 'error message'):
@@ -455,7 +455,7 @@ Now Sample Person will deactivate his key...
     No key(s) selected for deactivation.
 
 
-Now he selects the checkbox and deactivates it.
+Now they select the checkbox and deactivate it.
 
     >>> browser.getControl('1024D/DFD20543').selected = True
     >>> browser.getControl('Deactivate Key').click()
@@ -477,7 +477,7 @@ Sample Person already has a deactivated key.
     ...1024D/DFD20543...
 
 
-Now he'll request his key to be reactivated.
+Now they'll request their key to be reactivated.
 
     >>> browser.getControl('Reactivate Key').click()
     >>> soup = find_main_content(browser.contents)

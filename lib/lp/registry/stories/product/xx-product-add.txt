@@ -1,8 +1,8 @@
 Adding projects
 ===============
 
-Sample Person decides to register her new project, which she can do either
-from the Launchpad home page or the projects home page.
+Sample Person decides to register their new project, which they can do
+either from the Launchpad home page or the projects home page.
 
     >>> user_browser.open('http://launchpad.dev')
     >>> user_browser.getLink('Register a project').click()
@@ -36,14 +36,14 @@ project registration.
 Project basics
 --------------
 
-Sample Person doesn't want Ubuntu CDs, she wants to register her new project.
-This is done in two steps.  First, Sample Person provides some basic
-information about her project, such as its name, final URL component, title,
-and summary.
+Sample Person doesn't want Ubuntu CDs, they want to register their new
+project.  This is done in two steps.  First, Sample Person provides some
+basic information about their project, such as its name, final URL
+component, title, and summary.
 
     >>> user_browser.getControl('Name').value = 'Aardvark Center'
 
-She makes some mistakes though, entering illegal characters for the URL, and
+They make some mistakes though, entering illegal characters for the URL, and
 forgetting to enter a title or summary.
 
     >>> user_browser.getControl('URL').value = 'aard vark'
@@ -61,8 +61,8 @@ forgetting to enter a title or summary.
     Required input is missing.
     A short paragraph to introduce the project's work.
 
-Realizing her mistake, Sample Person fills out the project's basic information
-correctly this time.
+Realizing their mistake, Sample Person fills out the project's basic
+information correctly this time.
 
     >>> user_browser.getControl('URL').value = 'aardvark'
     >>> user_browser.getControl('Summary').value = (
@@ -89,7 +89,7 @@ modify the project's URL.
     aardvark
 
 Sample Person is given the opportunity though to change the summary.
-She can also add a longer description.
+They can also add a longer description.
 
     >>> user_browser.getControl('Summary').value = (
     ...     'Control pesky aardvarkian fnords')
@@ -128,8 +128,8 @@ Turning over maintainership
 ---------------------------
 
 Sample Person wants to create a project in Launchpad for a project
-that exists elsewhere as an upstream.  She wants it to exist in
-Launchpad so she can file a bug, for instance, but she is not
+that exists elsewhere as an upstream.  They want it to exist in
+Launchpad so they can file a bug, for instance, but they are not
 interested in being the project maintainer for the long run.
 
     >>> user_browser.open('http://launchpad.dev')
@@ -162,7 +162,7 @@ Registry Admins.
 Search results
 --------------
 
-Sample Person has another project she wants to register.  It is similar to
+Sample Person has another project they want to register.  It is similar to
 Firefox.
 
     >>> user_browser.open('http://launchpad.dev')
@@ -179,7 +179,7 @@ Firefox.
 A search is performed using the terms in the URL, title, and summary.  The
 Firefox project is discovered.
 
-Instead of registering her new project, Sample Person decides to participate
+Instead of registering their new project, Sample Person decides to participate
 in the Mozilla Project.
 
     >>> user_browser.getLink('The Mozilla Project').click()

@@ -265,7 +265,7 @@ class TeamMembership(SQLBase):
         # case with our script to expire team memberships.
         flush_database_updates()
 
-        # When a member proposes himself, a more detailed notification is
+        # When a member proposes themselves, a more detailed notification is
         # sent to the team admins by a subscriber of JoinTeamEvent; that's
         # why we don't send anything here.
         if ((self.person != self.last_changed_by or self.status != proposed)

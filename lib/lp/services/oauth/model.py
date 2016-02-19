@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,13 +17,15 @@ from datetime import (
     )
 import hashlib
 import re
+from storm.locals import (
+    Bool,
+    DateTime,
+    Int,
+    Reference,
+    Unicode,
+    )
 
 import pytz
-from sqlobject import (
-    BoolCol,
-    ForeignKey,
-    StringCol,
-    )
 from zope.interface import implementer
 
 from lp.registry.interfaces.distribution import IDistribution
@@ -33,11 +35,9 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.enumcol import EnumCol
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import IMasterStore
-from lp.services.database.sqlbase import SQLBase
-from lp.services.librarian.model import LibraryFileAlias
+from lp.services.database.stormbase import StormBase
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,
@@ -62,32 +62,47 @@ class OAuthValidationError(Exception):
 class OAuthBase:
     """Base class for all OAuth database classes."""
 
-    @staticmethod
-    def _get_store():
-        """See `SQLBase`.
+    @classmethod
+    def _getStore(cls):
+        """Return the correct store for this class.
 
         We want all OAuth classes to be retrieved from the master flavour.  If
         they are retrieved from the slave, there will be problems in the
         authorization exchange, since it will be done across applications that
         won't share the session cookies.
         """
-        return IMasterStore(LibraryFileAlias)
+        return IMasterStore(cls)
 
-    getStore = _get_store
+
+def sha256_digest(data):
+    """Return the SHA-256 hash of some data.
+
+    The returned string is always Unicode, to satisfy Storm.  In Python 3,
+    this is straightforward because hexdigest() returns that anyway, but in
+    Python 2 we must decode.
+    """
+    digest = hashlib.sha256(data).hexdigest()
+    if isinstance(digest, bytes):
+        digest = digest.decode('ASCII')
+    return digest
 
 
 @implementer(IOAuthConsumer)
-class OAuthConsumer(OAuthBase, SQLBase):
+class OAuthConsumer(OAuthBase, StormBase):
     """See `IOAuthConsumer`."""
 
-    date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
-    disabled = BoolCol(notNull=True, default=False)
-    key = StringCol(notNull=True)
-    _secret = StringCol(dbName="secret", notNull=False, default='')
+    __storm_table__ = 'OAuthConsumer'
+
+    id = Int(primary=True)
+    date_created = DateTime(tzinfo=pytz.UTC, allow_none=False, default=UTC_NOW)
+    disabled = Bool(allow_none=False, default=False)
+    key = Unicode(allow_none=False)
+    _secret = Unicode(name='secret', allow_none=True, default=u'')
 
     def __init__(self, key, secret):
-        secret = hashlib.sha256(secret).hexdigest()
-        super(OAuthConsumer, self).__init__(key=key, _secret=secret)
+        super(OAuthConsumer, self).__init__()
+        self.key = key
+        self._secret = sha256_digest(secret)
 
     # This regular expression singles out a consumer key that
     # represents any and all apps running on a specific computer. The
@@ -148,74 +163,90 @@ class OAuthConsumer(OAuthBase, SQLBase):
 
     def isSecretValid(self, secret):
         """See `IOAuthConsumer`."""
-        return hashlib.sha256(secret).hexdigest() == self._secret
+        return sha256_digest(secret) == self._secret
 
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
-        return (
-            OAuthRequestToken(consumer=self, key=key, secret=secret), secret)
+        token = OAuthRequestToken(consumer=self, key=key, secret=secret)
+        OAuthRequestToken._getStore().add(token)
+        return token, secret
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""
-        return OAuthAccessToken.selectOneBy(key=key, consumer=self)
+        return OAuthAccessToken._getStore().find(
+            OAuthAccessToken,
+            OAuthAccessToken.key == key,
+            OAuthAccessToken.consumer == self).one()
 
     def getRequestToken(self, key):
         """See `IOAuthConsumer`."""
-        return OAuthRequestToken.selectOneBy(key=key, consumer=self)
+        return OAuthRequestToken._getStore().find(
+            OAuthRequestToken,
+            OAuthRequestToken.key == key,
+            OAuthRequestToken.consumer == self).one()
 
 
 @implementer(IOAuthConsumerSet)
 class OAuthConsumerSet:
     """See `IOAuthConsumerSet`."""
 
-    def new(self, key, secret=''):
+    def new(self, key, secret=u''):
         """See `IOAuthConsumerSet`."""
         assert self.getByKey(key) is None, (
             "The key '%s' is already in use by another consumer." % key)
-        return OAuthConsumer(key=key, secret=secret)
+        consumer = OAuthConsumer(key=key, secret=secret)
+        OAuthConsumer._getStore().add(consumer)
+        return consumer
 
     def getByKey(self, key):
         """See `IOAuthConsumerSet`."""
-        return OAuthConsumer.selectOneBy(key=key)
+        return OAuthConsumer._getStore().find(
+            OAuthConsumer, OAuthConsumer.key == key).one()
 
 
 @implementer(IOAuthAccessToken)
-class OAuthAccessToken(OAuthBase, SQLBase):
+class OAuthAccessToken(OAuthBase, StormBase):
     """See `IOAuthAccessToken`."""
 
-    consumer = ForeignKey(
-        dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
-    person = ForeignKey(
-        dbName='person', foreignKey='Person', notNull=False, default=None)
-    date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
-    date_expires = UtcDateTimeCol(notNull=False, default=None)
-    key = StringCol(notNull=True)
-    _secret = StringCol(dbName="secret", notNull=False, default='')
+    __storm_table__ = 'OAuthAccessToken'
 
-    permission = EnumCol(enum=AccessLevel, notNull=True)
+    id = Int(primary=True)
+    consumer_id = Int(name='consumer', allow_none=False)
+    consumer = Reference(consumer_id, 'OAuthConsumer.id')
+    person_id = Int(name='person', allow_none=False)
+    person = Reference(person_id, 'Person.id')
+    date_created = DateTime(tzinfo=pytz.UTC, allow_none=False, default=UTC_NOW)
+    date_expires = DateTime(tzinfo=pytz.UTC, allow_none=True, default=None)
+    key = Unicode(allow_none=False)
+    _secret = Unicode(name='secret', allow_none=True, default=u'')
 
-    product = ForeignKey(
-        dbName='product', foreignKey='Product', notNull=False, default=None)
-    projectgroup = ForeignKey(
-        dbName='project', foreignKey='ProjectGroup', notNull=False,
-        default=None)
-    sourcepackagename = ForeignKey(
-        dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
-    distribution = ForeignKey(
-        dbName='distribution', foreignKey='Distribution',
-        notNull=False, default=None)
+    permission = DBEnum(enum=AccessLevel, allow_none=False)
 
-    def __init__(self, consumer, permission, key, secret='', person=None,
+    product_id = Int(name='product', allow_none=True, default=None)
+    product = Reference(product_id, 'Product.id')
+    projectgroup_id = Int(name='project', allow_none=True, default=None)
+    projectgroup = Reference(projectgroup_id, 'ProjectGroup.id')
+    sourcepackagename_id = Int(
+        name='sourcepackagename', allow_none=True, default=None)
+    sourcepackagename = Reference(sourcepackagename_id, 'SourcePackageName.id')
+    distribution_id = Int(name='distribution', allow_none=True, default=None)
+    distribution = Reference(distribution_id, 'Distribution.id')
+
+    def __init__(self, consumer, permission, key, secret=u'', person=None,
                  date_expires=None, product=None, projectgroup=None,
                  distribution=None, sourcepackagename=None):
-        secret = hashlib.sha256(secret).hexdigest()
-        super(OAuthAccessToken, self).__init__(
-            consumer=consumer, permission=permission, key=key,
-            _secret=secret, person=person, date_expires=date_expires,
-            product=product, projectgroup=projectgroup,
-            distribution=distribution, sourcepackagename=sourcepackagename)
+        super(OAuthAccessToken, self).__init__()
+        self.consumer = consumer
+        self.permission = permission
+        self.key = key
+        self._secret = sha256_digest(secret)
+        self.person = person
+        self.date_expires = date_expires
+        self.product = product
+        self.projectgroup = projectgroup
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
 
     @property
     def context(self):
@@ -235,51 +266,57 @@ class OAuthAccessToken(OAuthBase, SQLBase):
 
     @property
     def is_expired(self):
-        now = datetime.now(pytz.timezone('UTC'))
+        now = datetime.now(pytz.UTC)
         return self.date_expires is not None and self.date_expires <= now
 
     def isSecretValid(self, secret):
-        """See `IOAuthConsumer`."""
-        return hashlib.sha256(secret).hexdigest() == self._secret
+        """See `IOAuthToken`."""
+        return sha256_digest(secret) == self._secret
 
 
 @implementer(IOAuthRequestToken)
-class OAuthRequestToken(OAuthBase, SQLBase):
+class OAuthRequestToken(OAuthBase, StormBase):
     """See `IOAuthRequestToken`."""
 
-    consumer = ForeignKey(
-        dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
-    person = ForeignKey(
-        dbName='person', foreignKey='Person', notNull=False, default=None)
-    date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
-    date_expires = UtcDateTimeCol(notNull=False, default=None)
-    key = StringCol(notNull=True)
-    _secret = StringCol(dbName="secret", notNull=False, default='')
+    __storm_table__ = 'OAuthRequestToken'
 
-    permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
-    date_reviewed = UtcDateTimeCol(default=None, notNull=False)
+    id = Int(primary=True)
+    consumer_id = Int(name='consumer', allow_none=False)
+    consumer = Reference(consumer_id, 'OAuthConsumer.id')
+    person_id = Int(name='person', allow_none=True, default=None)
+    person = Reference(person_id, 'Person.id')
+    date_created = DateTime(tzinfo=pytz.UTC, allow_none=False, default=UTC_NOW)
+    date_expires = DateTime(tzinfo=pytz.UTC, allow_none=True, default=None)
+    key = Unicode(allow_none=False)
+    _secret = Unicode(name='secret', allow_none=True, default=u'')
 
-    product = ForeignKey(
-        dbName='product', foreignKey='Product', notNull=False, default=None)
-    projectgroup = ForeignKey(
-        dbName='project', foreignKey='ProjectGroup', notNull=False,
-        default=None)
-    sourcepackagename = ForeignKey(
-        dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
-    distribution = ForeignKey(
-        dbName='distribution', foreignKey='Distribution',
-        notNull=False, default=None)
+    permission = DBEnum(enum=OAuthPermission, allow_none=True, default=None)
+    date_reviewed = DateTime(tzinfo=pytz.UTC, allow_none=True, default=None)
 
-    def __init__(self, consumer, key, secret='', permission=None, person=None,
+    product_id = Int(name='product', allow_none=True, default=None)
+    product = Reference(product_id, 'Product.id')
+    projectgroup_id = Int(name='project', allow_none=True, default=None)
+    projectgroup = Reference(projectgroup_id, 'ProjectGroup.id')
+    sourcepackagename_id = Int(
+        name='sourcepackagename', allow_none=True, default=None)
+    sourcepackagename = Reference(sourcepackagename_id, 'SourcePackageName.id')
+    distribution_id = Int(name='distribution', allow_none=True, default=None)
+    distribution = Reference(distribution_id, 'Distribution.id')
+
+    def __init__(self, consumer, key, secret=u'', permission=None, person=None,
                  date_expires=None, product=None, projectgroup=None,
                  distribution=None, sourcepackagename=None):
-        secret = hashlib.sha256(secret).hexdigest()
-        super(OAuthRequestToken, self).__init__(
-            consumer=consumer, permission=permission, key=key,
-            _secret=secret, person=person, date_expires=date_expires,
-            product=product, projectgroup=projectgroup,
-            distribution=distribution, sourcepackagename=sourcepackagename)
+        super(OAuthRequestToken, self).__init__()
+        self.consumer = consumer
+        self.permission = permission
+        self.key = key
+        self._secret = sha256_digest(secret)
+        self.person = person
+        self.date_expires = date_expires
+        self.product = product
+        self.projectgroup = projectgroup
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
 
     @property
     def context(self):
@@ -299,13 +336,13 @@ class OAuthRequestToken(OAuthBase, SQLBase):
 
     @property
     def is_expired(self):
-        now = datetime.now(pytz.timezone('UTC'))
+        now = datetime.now(pytz.UTC)
         expires = self.date_created + timedelta(hours=REQUEST_TOKEN_VALIDITY)
         return expires <= now
 
     def isSecretValid(self, secret):
-        """See `IOAuthConsumer`."""
-        return hashlib.sha256(secret).hexdigest() == self._secret
+        """See `IOAuthToken`."""
+        return sha256_digest(secret) == self._secret
 
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
@@ -316,7 +353,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             raise OAuthValidationError(
                 'This request token has expired and can no longer be '
                 'reviewed.')
-        self.date_reviewed = datetime.now(pytz.timezone('UTC'))
+        self.date_reviewed = datetime.now(pytz.UTC)
         self.date_expires = date_expires
         self.person = user
         self.permission = permission
@@ -354,6 +391,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             date_expires=self.date_expires, product=self.product,
             projectgroup=self.projectgroup, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
+        OAuthAccessToken._getStore().add(access_token)
 
         # We want to notify the user that this oauth token has been generated
         # for them for security reasons.
@@ -361,7 +399,7 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             "OAuth token generated in Launchpad",
             "A new OAuth token consumer was enabled in Launchpad.")
 
-        self.destroySelf()
+        self._getStore().remove(self)
         return access_token, secret
 
     @property
@@ -376,7 +414,8 @@ class OAuthRequestTokenSet:
 
     def getByKey(self, key):
         """See `IOAuthRequestTokenSet`."""
-        return OAuthRequestToken.selectOneBy(key=key)
+        return OAuthRequestToken._getStore().find(
+            OAuthRequestToken, OAuthRequestToken.key == key).one()
 
 
 def create_token_key_and_secret(table):

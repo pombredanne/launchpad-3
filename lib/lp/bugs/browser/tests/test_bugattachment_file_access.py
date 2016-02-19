@@ -98,8 +98,8 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file_unauthorized(self):
-        # If a user cannot access the bug attachment itself, he can neither
-        # access the restricted Librarian file.
+        # If a user cannot access the bug attachment itself, they cannot
+        # access the restricted Librarian file either.
         lfa_with_parent = getMultiAdapter(
             (self.bugattachment.libraryfile, self.bugattachment),
             ILibraryFileAliasWithParent)

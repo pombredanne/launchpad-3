@@ -275,7 +275,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
             ensure_directory_exists(os.path.dirname(contents_dest))
             os.rename(current_contents, last_contents)
             os.rename(new_contents, contents_dest)
-            os.chmod(contents_dest, 0664)
+            os.chmod(contents_dest, 0o664)
         else:
             self.logger.debug(
                 "Skipping unmodified Contents file for %s/%s.", suite, arch)

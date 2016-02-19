@@ -51,7 +51,7 @@ valid subscription for it.
     This person does not have a valid subscription for the target archive
 
 In order to allow access for the test user, the agent has to subscribe
-him first.
+them first.
 
     >>> response = agent_webservice.named_post(cp3a['self_link'],
     ...   'newSubscription', subscriber=joe['self_link'])

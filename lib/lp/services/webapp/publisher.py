@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -821,7 +821,7 @@ def get_raw_form_value_from_current_request(field, field_name):
     assert isinstance(request, WebServiceClientRequest)
     # Zope wrongly encodes any form element that doesn't look like a file,
     # so re-fetch the file content if it has been encoded.
-    if request and request.form.has_key(field_name) and isinstance(
+    if request and field_name in request.form and isinstance(
         request.form[field_name], unicode):
         request._environ['wsgi.input'].seek(0)
         fs = FieldStorage(fp=request._body_instream, environ=request._environ)

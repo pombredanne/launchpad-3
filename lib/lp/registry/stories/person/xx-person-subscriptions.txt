@@ -54,8 +54,8 @@ The bug subscriptions table also includes an unsubscribe link, if the user has
 permission to remove the subscription, for bugs to which the person or team is
 subscribed.
 
-Webster can see and manage his direct bug subscriptions using the page too.
-He chooses to view the bug about Scofflaw.
+Webster can see and manage their direct bug subscriptions using the page too.
+They choose to view the bug about Scofflaw.
 
     >>> login('foo.bar@canonical.com')
     >>> subscriber_browser = setupBrowser(
@@ -71,8 +71,8 @@ He chooses to view the bug about Scofflaw.
     >>> "unsubscribe me from this bug" in page_text
     True
 
-After viewing the +subscribe page Webster decides that he still wants to be
-subscribed to the bug.  He clicks cancel which takes him back to his
+After viewing the +subscribe page Webster decides that they still want to be
+subscribed to the bug.  They click cancel which takes them back to their
 +subscription page.
 
     >>> cancel_link = subscriber_browser.getLink('Cancel')
@@ -80,7 +80,7 @@ subscribed to the bug.  He clicks cancel which takes him back to his
     >>> print subscriber_browser.title
     Subscriptions : Bugs : Webster
 
-He chooses to unsubscribe from the bug about Affluenza.
+They choose to unsubscribe from the bug about Affluenza.
 
     >>> subscriber_browser.getLink(url='/affluenza/+bug/%s/+subscribe'
     ...     % bugB.id).click()
@@ -90,8 +90,8 @@ He chooses to unsubscribe from the bug about Affluenza.
     >>> print subscriber_browser.title
     Subscriptions : Bugs : Webster
 
-Webster can see that the bug about Affluenza is no longer listed in his direct
-bug subscriptions.
+Webster can see that the bug about Affluenza is no longer listed in their
+direct bug subscriptions.
 
     >>> subscriber_browser.open(
     ...     'http://bugs.launchpad.dev/~webster/+subscriptions')
@@ -103,8 +103,8 @@ bug subscriptions.
     Word needs more popularity
     Scofflaw
 
-Webster adds a bug subscription for a team, team America, of which he is a
-member.
+Webster adds a bug subscription for a team, team America, of which they are
+a member.
 
     >>> login('foo.bar@canonical.com')
     >>> team = factory.makeTeam(name='america')
@@ -114,7 +114,7 @@ member.
     >>> subscriptionC = bugC.subscribe(team, subscriber)
     >>> logout()
 
-Webster chooses to review the subscriptions for his team America.
+Webster chooses to review the subscriptions for their team America.
 
     >>> subscriber_browser.open(
     ...     'http://bugs.launchpad.dev/~america/+subscriptions')

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Miscellaneous functions for publisher."""
@@ -17,7 +17,15 @@ import os
 import stat
 import tempfile
 
-from lp.soyuz.enums import ArchivePurpose
+try:
+    import lzma
+except ImportError:
+    from backports import lzma
+
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    IndexCompressionType,
+    )
 from lp.soyuz.interfaces.archive import default_name_by_purpose
 
 
@@ -38,21 +46,27 @@ def get_ppa_reference(ppa):
 
 class PlainTempFile:
 
+    # Enumerated identifier.
+    compression_type = IndexCompressionType.UNCOMPRESSED
     # Filename suffix.
     suffix = ''
     # File path built on initialization.
     path = None
 
-    def __init__(self, temp_root, filename):
+    def __init__(self, temp_root, filename, auto_open=True):
+        self.temp_root = temp_root
         self.filename = filename + self.suffix
 
-        fd, self.path = tempfile.mkstemp(
-            dir=temp_root, prefix='%s_' % filename)
-
-        self._fd = self._buildFile(fd)
+        if auto_open:
+            self.open()
 
     def _buildFile(self, fd):
         return os.fdopen(fd, 'wb')
+
+    def open(self):
+        fd, self.path = tempfile.mkstemp(
+            dir=self.temp_root, prefix='%s_' % self.filename)
+        self._fd = self._buildFile(fd)
 
     def write(self, content):
         self._fd.write(content)
@@ -67,6 +81,7 @@ class PlainTempFile:
 
 
 class GzipTempFile(PlainTempFile):
+    compression_type = IndexCompressionType.GZIP
     suffix = '.gz'
 
     def _buildFile(self, fd):
@@ -74,6 +89,7 @@ class GzipTempFile(PlainTempFile):
 
 
 class Bzip2TempFile(PlainTempFile):
+    compression_type = IndexCompressionType.BZIP2
     suffix = '.bz2'
 
     def _buildFile(self, fd):
@@ -81,14 +97,23 @@ class Bzip2TempFile(PlainTempFile):
         return bz2.BZ2File(self.path, mode='wb')
 
 
+class XZTempFile(PlainTempFile):
+    compression_type = IndexCompressionType.XZ
+    suffix = '.xz'
+
+    def _buildFile(self, fd):
+        os.close(fd)
+        return lzma.LZMAFile(self.path, mode='wb', format=lzma.FORMAT_XZ)
+
+
 class RepositoryIndexFile:
     """Facilitates the publication of repository index files.
 
     It allows callsites to publish index files in different medias
-    (plain, gzip and bzip2) transparently and atomically.
+    (plain, gzip, bzip2, and xz) transparently and atomically.
     """
 
-    def __init__(self, path, temp_root):
+    def __init__(self, path, temp_root, compressors):
         """Store repositories destinations and filename.
 
         The given 'temp_root' needs to exist; on the other hand, the
@@ -101,11 +126,14 @@ class RepositoryIndexFile:
         self.root, filename = os.path.split(path)
         assert os.path.exists(temp_root), 'Temporary root does not exist.'
 
-        self.index_files = (
-            PlainTempFile(temp_root, filename),
-            GzipTempFile(temp_root, filename),
-            Bzip2TempFile(temp_root, filename),
-            )
+        self.index_files = []
+        self.old_index_files = []
+        for cls in (PlainTempFile, GzipTempFile, Bzip2TempFile, XZTempFile):
+            if cls.compression_type in compressors:
+                self.index_files.append(cls(temp_root, filename))
+            else:
+                self.old_index_files.append(
+                    cls(temp_root, filename, auto_open=False))
 
     def write(self, content):
         """Write contents to all target medias."""
@@ -138,3 +166,10 @@ class RepositoryIndexFile:
             mode = stat.S_IMODE(os.stat(root_path).st_mode)
             os.chmod(root_path,
                      mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
+
+        # Remove files that may have been created by older versions of this
+        # code.
+        for index_file in self.old_index_files:
+            root_path = os.path.join(self.root, index_file.filename)
+            if os.path.exists(root_path):
+                os.remove(root_path)

@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test RecipeBuildBehaviour."""
@@ -29,11 +29,13 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestHandleStatusMixin,
     TestVerifySuccessfulBuildMixin,
     )
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.code.model.recipebuilder import RecipeBuildBehaviour
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -54,7 +56,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None,
-                archive=None):
+                archive=None, git=False):
         """Create a sample `ISourcePackageRecipeBuild`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
@@ -70,9 +72,15 @@ class TestRecipeBuilder(TestCaseWithFactory):
                 name="joe", displayname="Joe User")
         if recipe_owner is None:
             recipe_owner = recipe_registrant
-        somebranch = self.factory.makeBranch(
-            owner=recipe_owner, name="pkg",
-            product=self.factory.makeProduct("someapp"))
+        if git:
+            [somebranch] = self.factory.makeGitRefs(
+                owner=recipe_owner, name=u"pkg",
+                target=self.factory.makeProduct("someapp"),
+                paths=[u"refs/heads/packaging"])
+        else:
+            somebranch = self.factory.makeBranch(
+                owner=recipe_owner, name="pkg",
+                product=self.factory.makeProduct("someapp"))
         recipe = self.factory.makeSourcePackageRecipe(
             recipe_registrant, recipe_owner, distroseries, u"recept",
             u"Recipe description", branches=[somebranch])
@@ -250,6 +258,29 @@ class TestRecipeBuilder(TestCaseWithFactory):
         expected_archives = get_sources_list_for_building(
             job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
+
+    def test_extraBuildArgs_git(self):
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
+        job = self.makeJob(git=True)
+        distroarchseries = job.build.distroseries.architectures[0]
+        expected_archives = get_sources_list_for_building(
+            job.build, distroarchseries, None)
+        self.assertEqual({
+            'archive_private': False,
+            'arch_tag': 'i386',
+            'author_email': u'requester@ubuntu.com',
+            'suite': u'mydistro',
+            'author_name': u'Joe User',
+            'archive_purpose': 'PPA',
+            'ogrecomponent': 'universe',
+            'recipe_text':
+                '# git-build-recipe format 0.4 deb-version '
+                '{debupstream}-0~{revtime}\n'
+                'lp:~joe/someapp/+git/pkg packaging\n',
+            'archives': expected_archives,
+            'distroseries_name': job.build.distroseries.name,
+            'git': True,
+            }, job._extraBuildArgs(distroarchseries))
 
     def test_getByID(self):
         job = self.makeJob()

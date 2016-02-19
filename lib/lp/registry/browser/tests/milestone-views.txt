@@ -721,8 +721,8 @@ milestone.
     >>> [subscription for subscription in owner.structural_subscriptions]
     []
 
-No Privileges Person cannot access this view because he is neither the
-project owner or series driver..
+No Privileges Person cannot access this view because they are neither the
+project owner or series driver.
 
     >>> milestone = firefox_1_0.newMilestone('1.0.12')
     >>> ignored = login_person(no_priv)

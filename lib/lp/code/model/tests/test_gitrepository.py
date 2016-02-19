@@ -72,6 +72,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositoryView,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
@@ -454,12 +455,14 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
 
     def test_destroySelf_with_SourcePackageRecipe(self):
         # If repository is a base_git_repository in a recipe, it is deleted.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         recipe = self.factory.makeSourcePackageRecipe(
             branches=self.factory.makeGitRefs(owner=self.user))
         recipe.base_git_repository.destroySelf(break_references=True)
 
     def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
         # If repository is referred to by a recipe, it is deleted.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         [ref1] = self.factory.makeGitRefs(owner=self.user)
         [ref2] = self.factory.makeGitRefs(owner=self.user)
         self.factory.makeSourcePackageRecipe(branches=[ref1, ref2])
@@ -698,6 +701,7 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
     def test_deletionRequirements_with_SourcePackageRecipe(self):
         # Recipes are listed as deletion requirements.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         recipe = self.factory.makeSourcePackageRecipe(
             branches=self.factory.makeGitRefs())
         self.assertEqual(
@@ -720,7 +724,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         # When a GitRepository receives an object modified event, the last
         # modified date is set to UTC_NOW.
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 02, 04, 17, 42, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 2, 4, 17, 42, 0, tzinfo=pytz.UTC))
         notify(ObjectModifiedEvent(
             removeSecurityProxy(repository), repository,
             [IGitRepository["name"]], user=repository.owner))
@@ -729,7 +733,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_create_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
             ref.path: {
@@ -743,7 +747,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_update_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
             u"refs/heads/new": {
@@ -757,7 +761,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_remove_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         repository.removeRefs(set([ref.path]))
         self.assertSqlAttributeEqualsDate(
@@ -1844,6 +1848,10 @@ class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
 class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestGitRepositoryMarkRecipesStale, self).setUp()
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
 
     def test_base_repository_recipe(self):
         # On ref changes, recipes where this ref is the base become stale.

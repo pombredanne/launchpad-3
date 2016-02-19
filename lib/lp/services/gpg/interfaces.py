@@ -2,35 +2,54 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'GPG_DATABASE_READONLY_FEATURE_FLAG',
     'GPGKeyAlgorithm',
     'GPGKeyDoesNotExistOnServer',
     'GPGKeyExpired',
-    'GPGKeyRevoked',
     'GPGKeyNotFoundError',
+    'GPGKeyRevoked',
     'GPGKeyTemporarilyNotFoundError',
+    'GPGReadOnly',
     'GPGUploadFailure',
     'GPGVerificationError',
     'IGPGHandler',
-    'IPymeSignature',
     'IPymeKey',
+    'IPymeSignature',
     'IPymeUserId',
     'MoreThanOneGPGKeyFound',
     'SecretGPGKeyImportDetected',
-    'valid_keyid',
     'valid_fingerprint',
+    'valid_keyid',
     ]
 
-
+import httplib
 import re
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
     )
+from zope.security.interfaces import (
+    Forbidden,
+    )
+
+
+@error_status(httplib.FORBIDDEN)
+class GPGReadOnly(Forbidden):
+    """GPG Service is in read-only mode."""
+
+    def __init__(self):
+        super(GPGReadOnly, self).__init__(
+            "The GPG key storage facilities of Launchpad are currently "
+            "read-only. Please try again later.")
+
+
+GPG_DATABASE_READONLY_FEATURE_FLAG = u"gpg.database_read_only"
 
 
 def valid_fingerprint(fingerprint):
@@ -286,7 +305,7 @@ class IGPGHandler(Interface):
             signing the content.
         :param password: optional password to the key identified by
             key_fingerprint, the default value is '',
-        :param mode: optional he type of GPG signature to produce, the
+        :param mode: optional type of GPG signature to produce, the
             default mode is gpgme.SIG_MODE_CLEAR (clearsigned signatures)
 
         :return: The ASCII-armored signature for the content.

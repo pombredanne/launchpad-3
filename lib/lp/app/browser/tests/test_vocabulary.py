@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test vocabulary adapters."""
@@ -138,8 +138,7 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
     def test_PersonPickerEntrySourceAdapter_user(self):
         # The person picker provides more information for users.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
-        creation_date = datetime(
-            2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
+        creation_date = datetime(2005, 1, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
         removeSecurityProxy(person).datecreated = creation_date
         getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
         getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
@@ -535,8 +534,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             name='xpting-team',
             membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
-        creation_date = datetime(
-            2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
+        creation_date = datetime(2005, 1, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
         removeSecurityProxy(person).datecreated = creation_date
         TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)

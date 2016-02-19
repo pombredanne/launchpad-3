@@ -99,8 +99,8 @@ not been set.
     >>> print extract_text(find_tag_by_id(content, 'branch-details'))
     No revision control details recorded for Mozilla Firefox trunk series.
 
-The driver sees that he can link a branch to this series, and there is
-an explanation where he can push the branch.
+The driver sees that they can link a branch to this series, and there is
+an explanation where they can push the branch.
 
     >>> print extract_text(find_tag_by_id(driver_content, 'branch-details'))
     You haven't yet told Launchpad where your source code is ...

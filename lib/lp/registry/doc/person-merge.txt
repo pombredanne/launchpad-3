@@ -214,7 +214,7 @@ merged persons from lists etc.
     >>> results.get_one()[0] is None
     True
 
-An email is sent to the user informing him that he should review his
+An email is sent to the user informing them that they should review their
 email and mailing list subscription settings.
 
     >>> from lp.registry.interfaces.personnotification import (

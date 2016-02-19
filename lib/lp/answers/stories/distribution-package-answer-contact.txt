@@ -32,8 +32,8 @@ and another one listing those of the distribution.
     ...     anon_browser.contents,
     ...     'Answer contacts for evolution in Ubuntu')
 
-To register himself as answer contact, the user clicks on the
-'Set answer contact' link. He needs to login to access that function.
+To register themselves as answer contact, the user clicks on the
+'Set answer contact' link. They need to login to access that function.
 
     >>> anon_browser.getLink('Set answer contact').click()
     Traceback (most recent call last):
@@ -49,8 +49,8 @@ To register himself as answer contact, the user clicks on the
     Answer contact for evolution package...
 
 On this page, the user can choose to become an answer contact by
-clicking a checkbox. All the teams, he's a member of are also displayed
-and he can register these teams as well.
+clicking a checkbox. All the teams they're a member of are also displayed,
+and they can register these teams as well.
 
     >>> browser.getControl(
     ...     "I want to be an answer contact for evolution").selected
@@ -62,7 +62,7 @@ and he can register these teams as well.
     False
     >>> browser.getControl("Landscape Developers").selected = True
 
-To save his choices, the user clicks on the 'Continue' button and
+To save their choices, the user clicks on the 'Continue' button and
 a message is displayed to confirm the changes:
 
     >>> browser.getControl('Continue').click()

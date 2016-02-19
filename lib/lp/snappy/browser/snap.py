@@ -36,6 +36,8 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -70,8 +72,10 @@ from lp.snappy.interfaces.snap import (
     ISnapSet,
     NoSuchSnap,
     SNAP_FEATURE_FLAG,
+    SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapFeatureDisabled,
+    SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.soyuz.browser.archive import EnableProcessorsMixin
@@ -153,7 +157,7 @@ class SnapView(LaunchpadView):
     def person_picker(self):
         field = copy_field(
             ISnap['owner'],
-            vocabularyName='UserTeamsParticipationPlusSelfSimpleDisplay')
+            vocabularyName='AllUserTeamsParticipationPlusSelfSimpleDisplay')
         return InlinePersonEditPickerWidget(
             self.context, field, format_link(self.context.owner),
             header='Change owner', step_title='Select a new owner')
@@ -280,6 +284,7 @@ class ISnapEditSchema(Interface):
     use_template(ISnap, include=[
         'owner',
         'name',
+        'private',
         'require_virtualized',
         ])
     distro_series = Choice(
@@ -305,7 +310,15 @@ class SnapAddView(LaunchpadFormView):
         """See `LaunchpadView`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
+
         super(SnapAddView, self).initialize()
+
+        # Once initialized, if the private_snap flag is disabled, it
+        # prevents snap creation for private contexts.
+        if not getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG):
+            if (IInformationType.providedBy(self.context) and
+                self.context.information_type in PRIVATE_INFORMATION_TYPES):
+                raise SnapPrivateFeatureDisabled
 
     @property
     def cancel_url(self):
@@ -328,9 +341,11 @@ class SnapAddView(LaunchpadFormView):
             kwargs = {'git_ref': self.context}
         else:
             kwargs = {'branch': self.context}
+        private = not getUtility(
+            ISnapSet).isValidPrivacy(False, data['owner'], **kwargs)
         snap = getUtility(ISnapSet).new(
             self.user, data['owner'], data['distro_series'], data['name'],
-            **kwargs)
+            private=private, **kwargs)
         self.next_url = canonical_url(snap)
 
     def validate(self, data):
@@ -411,7 +426,20 @@ class SnapAdminView(BaseSnapEditView):
 
     page_title = 'Administer'
 
-    field_names = ['require_virtualized']
+    field_names = ['private', 'require_virtualized']
+
+    def validate(self, data):
+        super(SnapAdminView, self).validate(data)
+        private = data.get('private', None)
+        if private is not None:
+            if not getUtility(ISnapSet).isValidPrivacy(
+                    private, self.context.owner, self.context.branch,
+                    self.context.git_ref):
+                self.setFieldError(
+                    'private',
+                    u'This snap contains private information and cannot '
+                    u'be public.'
+                )
 
 
 class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):

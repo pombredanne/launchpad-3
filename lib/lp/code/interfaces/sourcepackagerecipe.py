@@ -8,6 +8,7 @@ __metaclass__ = type
 
 
 __all__ = [
+    'GIT_RECIPES_FEATURE_FLAG',
     'IRecipeBranchSource',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
@@ -66,6 +67,9 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.soyuz.interfaces.archive import IArchive
+
+
+GIT_RECIPES_FEATURE_FLAG = u'code.git.recipes.enabled'
 
 
 MINIMAL_RECIPE_TEXT_BZR = dedent(u'''\
@@ -139,6 +143,12 @@ class ISourcePackageRecipeView(Interface):
             title=_("The person who created this recipe."),
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
+
+    def getRecipeText(validate=False):
+        """Return the text of this recipe.
+
+        :param validate: If True, check that the recipe text can be parsed.
+        """
 
     recipe_text = exported(Text(readonly=True))
 

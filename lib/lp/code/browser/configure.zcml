@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -800,6 +800,9 @@
         <browser:page
             name="++repository-management"
             template="../templates/gitrepository-management.pt"/>
+        <browser:page
+            name="++repository-recipes"
+            template="../templates/gitrepository-recipes.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
@@ -884,11 +887,14 @@
             name="++ref-commits"
             template="../templates/gitref-commits.pt"/>
         <browser:page
+            name="++ref-management"
+            template="../templates/gitref-management.pt"/>
+        <browser:page
             name="++ref-pending-merges"
             template="../templates/gitref-pending-merges.pt"/>
         <browser:page
-            name="++ref-management"
-            template="../templates/gitref-management.pt"/>
+            name="++ref-recipes"
+            template="../templates/gitref-recipes.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitref.IGitRef"
@@ -1213,6 +1219,18 @@
             name="+new-recipe"
             template="../templates/sourcepackagerecipe-new.pt"/>
         <browser:page
+            for="lp.code.interfaces.gitrepository.IGitRepository"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-recipe"
+            template="../templates/sourcepackagerecipe-new.pt"/>
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-recipe"
+            template="../templates/sourcepackagerecipe-new.pt"/>
+        <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
             permission="launchpad.Edit"
@@ -1227,6 +1245,18 @@
 
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
+            class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
+            permission="zope.Public"
+            name="+recipes"
+            template="../templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
+            for="lp.code.interfaces.gitrepository.IGitRepository"
+            class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
+            permission="zope.Public"
+            name="+recipes"
+            template="../templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
             class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
             permission="zope.Public"
             name="+recipes"

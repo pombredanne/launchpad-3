@@ -41,8 +41,10 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
+    GitRecipesFeatureDisabled,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
+    GIT_RECIPES_FEATURE_FLAG,
     IRecipeBranchSource,
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
@@ -68,6 +70,7 @@ from lp.services.database.interfaces import (
     IStore,
     )
 from lp.services.database.stormexpr import Greatest
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -184,9 +187,9 @@ class SourcePackageRecipe(Storm):
         parsed = getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text)
         self._recipe_data.setRecipe(parsed)
 
-    @property
-    def recipe_text(self):
-        recipe_text = self.builder_recipe.get_recipe_text()
+    def getRecipeText(self, validate=False):
+        """See `ISourcePackageRecipe`."""
+        recipe_text = self.builder_recipe.get_recipe_text(validate=validate)
         # For git-based recipes, mangle the header line to say
         # "git-build-recipe" to reduce confusion; bzr-builder's recipe
         # parser will always round-trip this to "bzr-builder".
@@ -194,6 +197,10 @@ class SourcePackageRecipe(Storm):
             recipe_text = re.sub(
                 r"^(#\s*)bzr-builder", r"\1git-build-recipe", recipe_text)
         return recipe_text
+
+    @property
+    def recipe_text(self):
+        return self.getRecipeText()
 
     def updateSeries(self, distroseries):
         if distroseries != self.distroseries:
@@ -223,6 +230,15 @@ class SourcePackageRecipe(Storm):
         sprecipe.date_created = date_created
         sprecipe.date_last_modified = date_created
         store.add(sprecipe)
+        # We can only do this feature flag check at the end, because we need
+        # to have constructed the SourcePackageRecipeData in order to know
+        # whether it refers to a Git repository and then we need the
+        # SourcePackageRecipe to respect DB constraints before doing
+        # anything else.  The transaction will be aborted either way if the
+        # check fails.
+        if (sprecipe.base_git_repository is not None and
+                not getFeatureFlag(GIT_RECIPES_FEATURE_FLAG)):
+            raise GitRecipesFeatureDisabled
         return sprecipe
 
     @staticmethod

@@ -26,7 +26,7 @@ class TestLoginToken(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_sendMergeRequestEmail(self):
-        # sendMergeRequestEmail() sends an email to the user informing him/her
+        # sendMergeRequestEmail() sends an email to the user informing them
         # of the request.
 
         user1 = self.factory.makePerson(name="requester")

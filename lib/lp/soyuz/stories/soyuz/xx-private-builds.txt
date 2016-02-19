@@ -44,7 +44,7 @@ We'll make a private archive and add a new build to it to demonstrate this.
     >>> private_build_id = private_build.id
 
 We'll also make name12 a member of the launchpad-buildd-admins team, so we
-can use him to see builds from a buildd-admin perspective.
+can use them to see builds from a buildd-admin perspective.
 
     >>> name12 = getUtility(IPersonSet).getByName("name12")
     >>> buildd_admins = getUtility(

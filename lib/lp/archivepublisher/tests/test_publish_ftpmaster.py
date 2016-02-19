@@ -320,7 +320,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script_file = file(script_path, "w")
         script_file.write(script_code)
         script_file.close()
-        os.chmod(script_path, 0755)
+        os.chmod(script_path, 0o755)
 
     def test_script_runs_successfully(self):
         self.prepareUbuntu()
@@ -1309,5 +1309,5 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.listSuitesNeedingIndexes(series))
         sources = os.path.join(
             getPubConfig(series.main_archive).distsroot,
-            series.name, "main", "source", "Sources")
+            series.name, "main", "source", "Sources.gz")
         self.assertTrue(file_exists(sources))
