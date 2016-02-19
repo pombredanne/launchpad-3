@@ -352,3 +352,24 @@ class GPGClientTests(TestCase):
             lambda: client.disableKeyForOwner(self.get_random_owner_id_string(), ''),
             raises(ValueError("Invalid fingerprint: ''."))
         )
+
+    def test_can_get_key_by_fingerprint(self):
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+
+        key = client.getKeyByFingerprint(fingerprint)
+        self.assertThat(
+            key, ContainsDict({'owner': Equals(user),
+                               'fingerprint': Equals(fingerprint)}))
+
+    def test_get_missing_key_by_fingerprint(self):
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        self.assertIsNone(client.getKeyByFingerprint(fingerprint))
+
+    def test_get_key_with_bad_fingerprint_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(lambda: client.getKeyByFingerprint('bad fingerprint'),
+                        raises(ValueError))

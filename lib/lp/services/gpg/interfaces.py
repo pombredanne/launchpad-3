@@ -3,6 +3,7 @@
 
 __all__ = [
     'GPG_DATABASE_READONLY_FEATURE_FLAG',
+    'GPG_USE_GPGSERVICE_FEATURE_FLAG',
     'GPGKeyAlgorithm',
     'GPGKeyDoesNotExistOnServer',
     'GPGKeyExpired',
@@ -50,6 +51,7 @@ class GPGReadOnly(Forbidden):
 
 
 GPG_DATABASE_READONLY_FEATURE_FLAG = u"gpg.database_read_only"
+GPG_USE_GPGSERVICE_FEATURE_FLAG = u"gpg.use_gpgservice"
 
 
 def valid_fingerprint(fingerprint):
@@ -457,6 +459,12 @@ class IGPGClient(Interface):
         :raises ValueError: if the fingerprint isn't valid.
         :raises GPGServiceException: If we get an error from the gpgservice.
         :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
+
+    def getKeyByFingerprint(fingerprint):
+        """Get a GPG key by it's fingerprint.
+
+        :raises ValueError: if the fingerprint isn't valid.
         """
 
     def registerWriteHook(hook_callable):

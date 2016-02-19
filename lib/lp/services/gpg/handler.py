@@ -687,6 +687,17 @@ class GPGClient:
         else:
             self.raise_for_error(resp)
 
+    def getKeyByFingerprint(self, fingerprint):
+        fingerprint = sanitize_fingerprint_or_raise(fingerprint)
+        path = '/keys/%s' % fingerprint
+        resp = self._request('get', path)
+        if resp.status_code == http_codes['OK']:
+            return resp.json()
+        elif resp.status_code == http_codes['NOT_FOUND']:
+            return None
+        else:
+            self.raise_for_error(resp)
+
     def registerWriteHook(self, hook_callable):
         """See IGPGClient."""
         if not callable(hook_callable):
