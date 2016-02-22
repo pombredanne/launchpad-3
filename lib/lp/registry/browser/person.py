@@ -210,8 +210,10 @@ from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPG_DATABASE_READONLY_FEATURE_FLAG,
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyNotFoundError,
     GPGReadOnly,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -2565,6 +2567,8 @@ class PersonGPGView(LaunchpadView):
             self.key_already_imported = True
             return
 
+        # Launchpad talks to the keyserver directly to check if the key has been
+        # uploaded to the key server.
         try:
             key = gpghandler.retrieveKey(self.fingerprint)
         except GPGKeyNotFoundError:
@@ -2589,7 +2593,6 @@ class PersonGPGView(LaunchpadView):
             key_ids = [key_ids]
 
         gpgkeyset = getUtility(IGPGKeySet)
-
         deactivated_keys = []
         for key_id in key_ids:
             gpgkey = gpgkeyset.get(key_id)
@@ -2599,7 +2602,7 @@ class PersonGPGView(LaunchpadView):
                 self.error_message = structured(
                     "Cannot deactivate someone else's key")
                 return
-            gpgkey.active = False
+            gpgkeyset.deactivate(gpgkey)
             deactivated_keys.append(gpgkey.displayname)
 
         flush_database_updates()
