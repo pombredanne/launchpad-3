@@ -386,7 +386,8 @@
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.InternalScriptsOnly"
-            set_attributes="distribution signing_key"/>
+            set_attributes="distribution signing_key signing_key_owner
+                            _signing_key_fingerprint"/>
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
