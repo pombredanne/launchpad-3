@@ -73,6 +73,12 @@ class IGPGKeySet(Interface):
             reactivated an existing key.
         """
 
+    def deactivate(key):
+        """Deactivate a key.
+
+        :param key: An IGPGKey instance.
+        """
+
     def get(key_id, default=None):
         """Return the GPGKey object for the given id.
 

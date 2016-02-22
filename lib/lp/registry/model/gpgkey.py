@@ -23,10 +23,14 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
+    IGPGClient,
     IGPGHandler,
     )
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
 @implementer(IGPGKey)
@@ -87,6 +91,15 @@ class GPGKeySet:
             ownerID, keyid, fingerprint, keysize, algorithm,
             can_encrypt=can_encrypt)
         return lp_key, True
+
+    def deactivate(self, key):
+        key.active = False
+        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            openid_identifier = key.owner.account.openid_identifiers.order_by(
+                OpenIdIdentifier.identifier).first()
+            client.disableKeyForOwner(openid_identifier.identifier,
+                                      key.fingerprint)
 
     def get(self, key_id, default=None):
         """See `IGPGKeySet`"""
