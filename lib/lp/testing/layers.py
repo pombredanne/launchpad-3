@@ -1173,7 +1173,7 @@ class GPGServiceLayer(BaseLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        gpg_client = getUtility(IGPGClient)
+        gpg_client = removeSecurityProxy(getUtility(IGPGClient))
         gpg_client.registerWriteHook(cls._on_gpgservice_write)
         cls.service_fixture = GPGKeyServiceFixture(BaseLayer.config_fixture)
         cls.service_fixture.setUp()
@@ -1332,7 +1332,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         disconnect_stores()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer, GPGServiceLayer):
     """Provides the Launchpad Zope3 application server environment."""
 
     @classmethod
@@ -1496,7 +1496,7 @@ class LaunchpadTestSetup(PgTestSetup):
     host = 'localhost'
 
 
-class LaunchpadZopelessLayer(LaunchpadScriptLayer):
+class LaunchpadZopelessLayer(LaunchpadScriptLayer, GPGServiceLayer):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
     """
