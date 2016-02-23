@@ -94,20 +94,16 @@ class GPGKeySet:
                 can_encrypt=can_encrypt)
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            openid_identifier = lp_key.owner.account.openid_identifiers.order_by(
-                OpenIdIdentifier.identifier).first()
-            client.addKeyForOwner(openid_identifier.identifier,
-                                  key.fingerprint)
+            openid_identifier = client.getOwnerIdForPerson(lp_key.owner)
+            client.addKeyForOwner(openid_identifier, key.fingerprint)
         return lp_key, is_new
 
     def deactivate(self, key):
         key.active = False
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            openid_identifier = key.owner.account.openid_identifiers.order_by(
-                OpenIdIdentifier.identifier).first()
-            client.disableKeyForOwner(openid_identifier.identifier,
-                                      key.fingerprint)
+            openid_identifier = client.getOwnerIdForPerson(lp_key.owner)
+            client.disableKeyForOwner(openid_identifier, key.fingerprint)
 
     def get(self, key_id, default=None):
         """See `IGPGKeySet`"""
