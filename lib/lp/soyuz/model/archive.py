@@ -2538,8 +2538,9 @@ class ArchiveSet:
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
             purpose=purpose, publish=publish, signing_key=signing_key,
-            signing_key_owner=signing_key.owner,
-            _signing_key_fingerprint=signing_key.fingerprint,
+            signing_key_owner=signing_key.owner if signing_key else None,
+            _signing_key_fingerprint=(
+                signing_key.fingerprint if signing_key else None),
             require_virtualized=require_virtualized)
 
         # Upon creation archives are enabled by default.
