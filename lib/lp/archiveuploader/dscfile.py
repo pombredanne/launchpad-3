@@ -669,6 +669,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             homepage=encoded.get('Homepage'),
             dsc=encoded_raw_content,
             dscsigningkey=self.signingkey,
+            signing_key_owner=(
+                self.signingkey.owner if self.signingkey else None),
+            signing_key_fingerprint=(
+                self.signingkey.fingerprint if self.signingkey else None),
             dsc_maintainer_rfc822=encoded['Maintainer'],
             dsc_format=encoded['Format'],
             dsc_binaries=encoded['Binary'],
