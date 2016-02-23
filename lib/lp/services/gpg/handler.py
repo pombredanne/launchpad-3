@@ -675,7 +675,7 @@ class GPGClient:
         resp = self._request('post', path, data)
         if resp.status_code == http_codes['CREATED']:
             self._notify_writes()
-        else:
+        elif resp.status_code != http_codes['OK']:
             self.raise_for_error(resp)
 
     def disableKeyForOwner(self, owner_id, fingerprint):
