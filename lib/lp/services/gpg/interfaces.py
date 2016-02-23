@@ -482,3 +482,15 @@ class IGPGClient(Interface):
 
         :raises ValueError: if hook_callable was not registered.
         """
+
+    def addKeyForTest(owner_id, key):
+        """Add a key to the gpgservice without checking the keyserver.
+
+        This method is to be used for TESTING purposes only. The running
+        gpgservice instance must have its test methods configured - something
+        that should not be done in production. If this requirement is not met
+        a RuntimeError will be raised.
+
+        :param key: An IGPGKey instance.
+
+        """

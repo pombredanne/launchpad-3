@@ -710,6 +710,24 @@ class GPGClient:
             raise ValueError("%r not registered.")
         self.write_hooks.remove(hook_callable)
 
+    def addKeyForTest(self, owner_id, key):
+        """See IGPGClient."""
+        document = {'keys': [{
+            'owner': owner_id,
+            'id': key.keyid,
+            'fingerprint': key.fingerprint,
+            'size': key.keysize,
+            'algorithm': key.algorithm.name,
+            'enabled': key.active,
+            'can_encrypt': key.can_encrypt}]}
+        path = '/test/add_keys'
+        resp = self._request('post', path, document)
+        if resp.status_code == http_codes['NOT_FOUND']:
+            raise RuntimeError(
+                "gpgservice was not configured with test endpoints enabled.")
+        elif resp.status_code != http_codes['OK']:
+            self.raise_for_error(resp)
+
     def _notify_writes(self):
         errors = []
         for hook in self.write_hooks:
