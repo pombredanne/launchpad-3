@@ -1350,7 +1350,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive, changesfile=changes_file_alias,
-            signing_key=signing_key, package_copy_job=package_copy_job)
+            signing_key=signing_key,
+            signing_key_owner=signing_key.owner if signing_key else None,
+            signing_key_fingerprint=(
+                signing_key.fingerprint if signing_key else None),
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""
