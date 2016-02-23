@@ -79,18 +79,26 @@ class GPGKeySet:
         fingerprint = key.fingerprint
         lp_key = self.getByFingerprint(fingerprint)
         if lp_key:
+            is_new = False
             # Then the key already exists, so let's reactivate it.
             lp_key.active = True
             lp_key.can_encrypt = can_encrypt
-            return lp_key, False
-        ownerID = requester.id
-        keyid = key.keyid
-        keysize = key.keysize
-        algorithm = GPGKeyAlgorithm.items[key.algorithm]
-        lp_key = self.new(
-            ownerID, keyid, fingerprint, keysize, algorithm,
-            can_encrypt=can_encrypt)
-        return lp_key, True
+        else:
+            is_new = True
+            ownerID = requester.id
+            keyid = key.keyid
+            keysize = key.keysize
+            algorithm = GPGKeyAlgorithm.items[key.algorithm]
+            lp_key = self.new(
+                ownerID, keyid, fingerprint, keysize, algorithm,
+                can_encrypt=can_encrypt)
+        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            openid_identifier = lp_key.owner.account.openid_identifiers.order_by(
+                OpenIdIdentifier.identifier).first()
+            client.addKeyForOwner(openid_identifier.identifier,
+                                  key.fingerprint)
+        return lp_key, is_new
 
     def deactivate(self, key):
         key.active = False
