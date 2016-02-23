@@ -73,6 +73,7 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import PersonSettings
 from lp.registry.model.teammembership import TeamMembership
@@ -1389,6 +1390,15 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # retained.
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
+
+    def test_SignedCodeOfConductKeyMigrator(self):
+        coc = SignedCodeOfConduct.get(1)
+        self.assertIs(None, coc.signing_key_fingerprint)
+        with FeatureFixture({'gpg.migrator.SignedCodeOfConduct': 'on'}):
+            self.runHourly()
+        self.assertEqual(
+            'ABCDEF0123456789ABCDDCBA0000111112345678',
+            coc.signing_key_fingerprint)
 
     def test_PersonSettingsENFPopulator(self):
         switch_dbuser('testadmin')

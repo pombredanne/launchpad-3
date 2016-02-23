@@ -69,6 +69,7 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import (
     Person,
@@ -1461,6 +1462,41 @@ class PersonSettingsENFPopulator(BulkPruner):
         transaction.commit()
 
 
+class SignedCodeOfConductKeyMigrator(TunableLoop):
+    """Populate the signing_key_fingerprint column of SignedCodeOfConduct."""
+
+    maximum_chunk_size = 5000
+    klass = SignedCodeOfConduct
+
+    def __init__(self, log, abort_time=None):
+        super(SignedCodeOfConductKeyMigrator, self).__init__(
+            log, abort_time)
+        state = load_garbo_job_state(self.__class__.__name__) or {}
+        self.start_at = state.get('next_id', 1)
+        self.store = IMasterStore(self.klass)
+
+    def findObjects(self):
+        return self.store.find(
+            self.klass,
+            self.klass.id >= self.start_at).order_by(
+                self.klass.id)
+
+    def isDone(self):
+        return (
+            not getFeatureFlag('gpg.migrator.%s' % self.klass.__name__)
+            or self.findObjects().is_empty())
+
+    def __call__(self, chunk_size):
+        objs = list(self.findObjects()[:chunk_size])
+        for obj in objs:
+            obj.signing_key_fingerprint = (
+                obj.signingkey.fingerprint if obj.signingkey else None)
+        self.start_at = objs[-1].id + 1
+        save_garbo_job_state(
+            self.__class__.__name__, {'next_id': self.start_at})
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1714,6 +1750,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         RevisionCachePruner,
         UnusedSessionPruner,
+        SignedCodeOfConductKeyMigrator,
         ]
     experimental_tunable_loops = []
 
