@@ -52,6 +52,7 @@ from lp.services.gpg.interfaces import (
     SecretGPGKeyImportDetected,
     valid_fingerprint,
     )
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
     TimeoutError,
@@ -727,6 +728,11 @@ class GPGClient:
                 "gpgservice was not configured with test endpoints enabled.")
         elif resp.status_code != http_codes['OK']:
             self.raise_for_error(resp)
+
+    def getOwnerIdForKey(self, lp_key):
+        """See IGPGClient."""
+        return lp_key.owner.account.openid_identifiers.order_by(
+            OpenIdIdentifier.identifier).first().identifier
 
     def _notify_writes(self):
         errors = []

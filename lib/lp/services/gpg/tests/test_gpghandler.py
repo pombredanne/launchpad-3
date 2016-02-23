@@ -15,7 +15,6 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
@@ -393,3 +392,12 @@ class GPGClientTests(TestCase):
         self.assertThat(
             key, ContainsDict({'owner': Equals(user),
                                'fingerprint': Equals(gpgkey.fingerprint)}))
+
+    def test_can_get_openid_identifier(self):
+        client = getUtility(IGPGClient)
+        person = self.factory.makePerson()
+        gpgkey = self.factory.makeGPGKey(person)
+        identifier = client.getOwnerIdForKey(gpgkey)
+        expected = person.account.openid_identifiers.order_by(
+            OpenIdIdentifier.identifier).first().identifier
+        self.assertEqual(expected, identifier)
