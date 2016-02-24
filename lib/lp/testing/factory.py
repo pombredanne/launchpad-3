@@ -230,7 +230,9 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
     IGPGHandler,
     )
@@ -585,7 +587,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
         fingerprint = key_id + 'A' * 32
-        return getUtility(IGPGKeySet).new(
+        key = getUtility(IGPGKeySet).new(
             owner.id,
             keyid=key_id,
             fingerprint=fingerprint,
@@ -593,6 +595,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             algorithm=GPGKeyAlgorithm.R,
             active=True,
             can_encrypt=False)
+        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            openid_identifier = client.getOwnerIdForKey(key)
+            client.addKeyForTest(openid_identifier, key)
+        return key
 
     def makePerson(
         self, email=None, name=None, displayname=None, account_status=None,

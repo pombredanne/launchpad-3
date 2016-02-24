@@ -27,11 +27,12 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
     IGPGHandler,
     )
-
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -64,13 +65,17 @@ def import_public_key(email_addr):
             return
 
     # Insert the key into the database.
-    getUtility(IGPGKeySet).new(
+    key = getUtility(IGPGKeySet).new(
         ownerID=personset.getByEmail(email_addr).id,
         keyid=key.keyid,
         fingerprint=key.fingerprint,
         keysize=key.keysize,
         algorithm=GPGKeyAlgorithm.items[key.algorithm],
         active=(not key.revoked))
+    if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+        client = getUtility(IGPGClient)
+        openid_identifier = client.getOwnerIdForKey(key)
+        client.addKeyForTest(openid_identifier, key)
 
 
 def iter_test_key_emails():

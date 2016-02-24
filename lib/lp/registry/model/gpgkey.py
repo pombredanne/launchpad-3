@@ -73,10 +73,6 @@ class GPGKeySet:
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, active=active,
                       can_encrypt=can_encrypt)
-        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
-            client = getUtility(IGPGClient)
-            openid_identifier = client.getOwnerIdForKey(key)
-            client.addKeyForTest(openid_identifier, key)
         return key
 
     def activate(self, requester, key, can_encrypt):
