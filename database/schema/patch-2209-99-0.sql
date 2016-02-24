@@ -21,6 +21,12 @@ ALTER TABLE revision
     ADD CONSTRAINT valid_signing_key_fingerprint
         CHECK (valid_fingerprint(signing_key_fingerprint));
 
+-- Already has "owner".
+ALTER TABLE signedcodeofconduct
+    ADD COLUMN signing_key_fingerprint text,
+    ADD CONSTRAINT valid_signing_key_fingerprint
+        CHECK (valid_fingerprint(signing_key_fingerprint));
+
 ALTER TABLE sourcepackagerelease
     ADD COLUMN signing_key_owner integer REFERENCES Person,
     ADD COLUMN signing_key_fingerprint text,
