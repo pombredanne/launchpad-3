@@ -587,7 +587,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
         fingerprint = key_id + 'A' * 32
-        key = getUtility(IGPGKeySet).new(
+        keyset = getUtility(IGPGKeySet)
+        key = keyset.new(
             owner.id,
             keyid=key_id,
             fingerprint=fingerprint,
@@ -597,7 +598,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             can_encrypt=False)
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            openid_identifier = client.getOwnerIdForKey(key)
+            openid_identifier = keyset.getOwnerIdForKey(key)
             client.addKeyForTest(openid_identifier, key)
         return key
 

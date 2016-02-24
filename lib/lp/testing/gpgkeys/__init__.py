@@ -65,7 +65,8 @@ def import_public_key(email_addr):
             return
 
     # Insert the key into the database.
-    key = getUtility(IGPGKeySet).new(
+    keyset = getUtility(IGPGKeySet)
+    key = keyset.new(
         ownerID=personset.getByEmail(email_addr).id,
         keyid=key.keyid,
         fingerprint=key.fingerprint,
@@ -74,7 +75,7 @@ def import_public_key(email_addr):
         active=(not key.revoked))
     if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
         client = getUtility(IGPGClient)
-        openid_identifier = client.getOwnerIdForKey(key)
+        openid_identifier = keyset.getOwnerIdForKey(key)
         client.addKeyForTest(openid_identifier, key)
 
 

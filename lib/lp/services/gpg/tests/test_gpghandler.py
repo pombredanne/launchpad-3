@@ -51,10 +51,9 @@ from lp.testing.gpgkeys import (
 from lp.testing.gpgservice import GPGKeyServiceFixture
 from lp.testing.keyserver import KeyServerTac
 from lp.testing.layers import (
-    DatabaseLayer,
     GPGServiceLayer,
     LaunchpadFunctionalLayer,
-    ZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 
 
@@ -214,7 +213,7 @@ class TestImportKeyRing(TestCase):
             removeSecurityProxy(self.gpg_handler)._getPubKey, fingerprint)
 
 
-class GPGServiceZopelessLayer(ZopelessLayer, GPGServiceLayer, DatabaseLayer):
+class GPGServiceZopelessLayer(ZopelessDatabaseLayer, GPGServiceLayer):
     """A layer specifically for running the IGPGClient utility tests."""
 
     @classmethod
@@ -396,9 +395,10 @@ class GPGClientTests(TestCase):
 
     def test_can_get_openid_identifier(self):
         client = getUtility(IGPGClient)
+        keyset = getUtility(IGPGKeySet)
         person = self.factory.makePerson()
         gpgkey = self.factory.makeGPGKey(person)
-        identifier = client.getOwnerIdForKey(gpgkey)
+        identifier = keyset.getOwnerIdForKey(gpgkey)
         expected = person.account.openid_identifiers.order_by(
             OpenIdIdentifier.identifier).first().identifier
         self.assertEqual(expected, identifier)

@@ -729,11 +729,6 @@ class GPGClient:
         elif resp.status_code != http_codes['OK']:
             self.raise_for_error(resp)
 
-    def getOwnerIdForKey(self, lp_key):
-        """See IGPGClient."""
-        return lp_key.owner.account.openid_identifiers.order_by(
-            OpenIdIdentifier.identifier).first().identifier
-
     def _notify_writes(self):
         errors = []
         for hook in self.write_hooks:

@@ -494,6 +494,3 @@ class IGPGClient(Interface):
         :param key: An IGPGKey instance.
 
         """
-
-    def getOwnerIdForKey(key):
-        """Given an IGPGKey instance, retrieve its owner id."""

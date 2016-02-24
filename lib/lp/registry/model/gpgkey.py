@@ -95,7 +95,7 @@ class GPGKeySet:
                 can_encrypt=can_encrypt)
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            openid_identifier = client.getOwnerIdForKey(lp_key)
+            openid_identifier = self.getOwnerIdForKey(lp_key)
             client.addKeyForOwner(openid_identifier, key.fingerprint)
         return lp_key, is_new
 
@@ -103,7 +103,7 @@ class GPGKeySet:
         key.active = False
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            openid_identifier = client.getOwnerIdForKey(key)
+            openid_identifier = self.getOwnerIdForKey(key)
             client.disableKeyForOwner(openid_identifier, key.fingerprint)
 
     def get(self, key_id, default=None):
@@ -146,3 +146,8 @@ class GPGKeySet:
             query += ' AND owner=%s' % sqlvalues(ownerid)
 
         return GPGKey.select(query, orderBy='id')
+
+        def getOwnerIdForKey(self, lp_key):
+            """See IGPGKeySet."""
+            return lp_key.owner.account.openid_identifiers.order_by(
+                OpenIdIdentifier.identifier).first().identifier
