@@ -29,6 +29,7 @@ from lp.services.gpg.interfaces import (
     IGPGHandler,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
