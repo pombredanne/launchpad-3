@@ -129,7 +129,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1391,6 +1394,41 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
 
+    def test_ArchiveKeyMigrator(self):
+        with dbuser('testadmin'):
+            key = self.factory.makeGPGKey(self.factory.makePerson())
+            a1 = self.factory.makeArchive()
+            a2 = self.factory.makeArchive()
+            removeSecurityProxy(a2).signing_key = key
+        self.assertIs(None, a1._signing_key_fingerprint)
+        self.assertIs(None, a1.signing_key_owner)
+        self.assertIs(None, a2._signing_key_fingerprint)
+        self.assertIs(None, a2.signing_key_owner)
+        with FeatureFixture({'gpg.migrator.Archive': 'on'}):
+            self.runHourly()
+        self.assertIs(None, a1._signing_key_fingerprint)
+        self.assertIs(None, a1.signing_key_owner)
+        self.assertEqual(key.fingerprint, a2._signing_key_fingerprint)
+        self.assertEqual(key.owner, a2.signing_key_owner)
+
+    def test_PackageUploadKeyMigrator(self):
+        with dbuser('testadmin'):
+            key = self.factory.makeGPGKey(self.factory.makePerson())
+            pu1 = self.factory.makePackageUpload()
+            pu2 = self.factory.makePackageUpload(signing_key=key)
+            npu2 = removeSecurityProxy(pu2)
+            npu2.signing_key_fingerprint = npu2.signing_key_owner = None
+        self.assertIs(None, pu1.signing_key_fingerprint)
+        self.assertIs(None, pu1.signing_key_owner)
+        self.assertIs(None, pu2.signing_key_fingerprint)
+        self.assertIs(None, pu2.signing_key_owner)
+        with FeatureFixture({'gpg.migrator.PackageUpload': 'on'}):
+            self.runHourly()
+        self.assertIs(None, pu1.signing_key_fingerprint)
+        self.assertIs(None, pu1.signing_key_owner)
+        self.assertEqual(key.fingerprint, pu2.signing_key_fingerprint)
+        self.assertEqual(key.owner, pu2.signing_key_owner)
+
     def test_SignedCodeOfConductKeyMigrator(self):
         coc = SignedCodeOfConduct.get(1)
         self.assertIs(None, coc.signing_key_fingerprint)
@@ -1399,6 +1437,23 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(
             'ABCDEF0123456789ABCDDCBA0000111112345678',
             coc.signing_key_fingerprint)
+
+    def test_SourcePackageReleaseKeyMigrator(self):
+        with dbuser('testadmin'):
+            key = self.factory.makeGPGKey(self.factory.makePerson())
+            spr1 = self.factory.makeSourcePackageRelease()
+            spr2 = self.factory.makeSourcePackageRelease()
+            removeSecurityProxy(spr2).dscsigningkey = key
+        self.assertIs(None, spr1.signing_key_fingerprint)
+        self.assertIs(None, spr1.signing_key_owner)
+        self.assertIs(None, spr2.signing_key_fingerprint)
+        self.assertIs(None, spr2.signing_key_owner)
+        with FeatureFixture({'gpg.migrator.SourcePackageRelease': 'on'}):
+            self.runHourly()
+        self.assertIs(None, spr1.signing_key_fingerprint)
+        self.assertIs(None, spr1.signing_key_owner)
+        self.assertEqual(key.fingerprint, spr2.signing_key_fingerprint)
+        self.assertEqual(key.owner, spr2.signing_key_owner)
 
     def test_PersonSettingsENFPopulator(self):
         switch_dbuser('testadmin')
