@@ -483,7 +483,8 @@ class IGPGClient(Interface):
         :raises ValueError: if hook_callable was not registered.
         """
 
-    def addKeyForTest(owner_id, key):
+    def addKeyForTest(owner_id, keyid, fingerprint, keysize, algorithm, enabled,
+                      can_encrypt):
         """Add a key to the gpgservice without checking the keyserver.
 
         This method is to be used for TESTING purposes only. The running
@@ -491,6 +492,12 @@ class IGPGClient(Interface):
         that should not be done in production. If this requirement is not met
         a RuntimeError will be raised.
 
-        :param key: An IGPGKey instance.
-
+        :param owner_id: A string representing the owner, as returned by
+                         IGPGKeySet.getOwnerIdForPerson
+        :param keyid: A string describing the short-form gpg key id.
+        :param fingerprint: A string containing the full GPG fingerprint.
+        :param keysize: An integer, containing the keysize.
+        :param algorithm: The key algorithm code, a single letter.
+        :param enabled: Whether the key is enabled or not.
+        :param can_encrypt: Whether the key can be used for encryption.
         """

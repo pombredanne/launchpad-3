@@ -598,8 +598,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             can_encrypt=False)
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            openid_identifier = keyset.getOwnerIdForKey(key)
-            client.addKeyForTest(openid_identifier, key)
+            openid_identifier = keyset.getOwnerIdForPerson(owner)
+            client.addKeyForTest(
+                openid_identifier, key.keyid, key.fingerprint, key.keysize,
+                key.algorithm.name, key.active, key.can_encrypt)
         return key
 
     def makePerson(

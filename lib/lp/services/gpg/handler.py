@@ -711,16 +711,17 @@ class GPGClient:
             raise ValueError("%r not registered.")
         self.write_hooks.remove(hook_callable)
 
-    def addKeyForTest(self, owner_id, key):
+    def addKeyForTest(self, owner_id, keyid, fingerprint, keysize, algorithm, enabled,
+                      can_encrypt):
         """See IGPGClient."""
         document = {'keys': [{
             'owner': owner_id,
-            'id': key.keyid,
-            'fingerprint': key.fingerprint,
-            'size': key.keysize,
-            'algorithm': key.algorithm.name,
-            'enabled': key.active,
-            'can_encrypt': key.can_encrypt}]}
+            'id': keyid,
+            'fingerprint': fingerprint,
+            'size': keysize,
+            'algorithm': algorithm,
+            'enabled': enabled,
+            'can_encrypt': can_encrypt}]}
         path = '/test/add_keys'
         resp = self._request('post', path, document)
         if resp.status_code == http_codes['NOT_FOUND']:

@@ -99,5 +99,5 @@ class IGPGKeySet(Interface):
     def getGPGKeysForPeople(people):
         """Return OpenPGP keys for a set of people."""
 
-    def getOwnerIdForKey(key):
-        """Given an IGPGKey instance, retrieve its owner id."""
+    def getOwnerIdForPerson(person):
+        """return an owner id string suitable for sending to gpgservice."""
