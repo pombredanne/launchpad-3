@@ -149,5 +149,4 @@ class GPGKeySet:
 
     def getOwnerIdForPerson(self, owner):
         """See IGPGKeySet."""
-        return owner.account.openid_identifiers.order_by(
-            OpenIdIdentifier.identifier).first().identifier
+        return owner.openid_identity_url
