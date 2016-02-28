@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -120,11 +120,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         principal's scope, the original access level is returned.  Otherwise
         the access level is READ_PUBLIC.
         """
-        if principal.scope is None:
+        if principal.scope_url is None:
             return principal.access_level
         else:
             container = nearest_adapter(object, ILaunchpadContainer)
-            if container.isWithin(principal.scope):
+            if container.isWithin(principal.scope_url):
                 return principal.access_level
             else:
                 return AccessLevel.READ_PUBLIC
