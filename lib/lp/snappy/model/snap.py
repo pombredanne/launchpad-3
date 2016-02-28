@@ -65,7 +65,6 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.sqlbase import quote
 from lp.services.database.stormexpr import (
     Greatest,
     NullsLast,
@@ -364,8 +363,8 @@ class Snap(Storm, WebhookTargetMixin):
             USING SnapBuild
             WHERE
                 SnapFile.snapbuild = SnapBuild.id AND
-                SnapBuild.snap = %s
-            """ % quote(self.id))
+                SnapBuild.snap = ?
+            """, (self.id,))
         store.find(SnapBuild, SnapBuild.snap == self).remove()
         getUtility(IWebhookSet).delete(self.webhooks)
         store.remove(self)
