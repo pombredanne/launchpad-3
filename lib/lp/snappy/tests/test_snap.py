@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap packages."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import timedelta
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
@@ -391,6 +392,16 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
         self.assertFalse(getUtility(ISnapSet).exists(owner, u"condemned"))
         self.assertIsNone(getUtility(ISnapBuildSet).getByID(build_id))
         self.assertIsNone(IMasterStore(SnapFile).get(SnapFile, snapfile_id))
+
+    def test_related_webhooks_deleted(self):
+        owner = self.factory.makePerson()
+        snap = self.factory.makeSnap(registrant=owner, owner=owner)
+        webhook = self.factory.makeWebhook(target=snap)
+        with person_logged_in(snap.owner):
+            webhook.ping()
+            snap.destroySelf()
+            transaction.commit()
+            self.assertRaises(LostObjectError, getattr, webhook, "target")
 
 
 class TestSnapSet(TestCaseWithFactory):

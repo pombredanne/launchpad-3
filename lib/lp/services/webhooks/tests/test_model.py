@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.registry.enums import BranchSharingPolicy
 from lp.services.database.interfaces import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.services.webhooks.interfaces import (
     IWebhook,
@@ -26,6 +27,7 @@ from lp.services.webhooks.model import (
     WebhookJob,
     WebhookSet,
     )
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
@@ -204,6 +206,45 @@ class TestWebhookSetBase:
         login_person(target.owner)
         self.assertTrue(WebhookSet._checkVisibility(target, target.owner))
 
+    def test_trigger(self):
+        owner = self.factory.makePerson()
+        target1 = self.makeTarget(owner=owner)
+        target2 = self.makeTarget(owner=owner)
+        hook1a = self.factory.makeWebhook(
+            target=target1, event_types=[])
+        hook1b = self.factory.makeWebhook(
+            target=target1, event_types=[self.event_type])
+        hook2a = self.factory.makeWebhook(
+            target=target2, event_types=[self.event_type])
+        hook2b = self.factory.makeWebhook(
+            target=target2, event_types=[self.event_type], active=False)
+
+        # Only webhooks subscribed to the relevant target and event type
+        # are triggered.
+        getUtility(IWebhookSet).trigger(
+            target1, self.event_type, {'some': 'payload'})
+        with admin_logged_in():
+            self.assertThat(list(hook1a.deliveries), HasLength(0))
+            self.assertThat(list(hook1b.deliveries), HasLength(1))
+            self.assertThat(list(hook2a.deliveries), HasLength(0))
+            self.assertThat(list(hook2b.deliveries), HasLength(0))
+            delivery = hook1b.deliveries.one()
+            self.assertEqual(delivery.payload, {'some': 'payload'})
+
+        # Disabled webhooks aren't triggered.
+        getUtility(IWebhookSet).trigger(
+            target2, self.event_type, {'other': 'payload'})
+        with admin_logged_in():
+            self.assertThat(list(hook1a.deliveries), HasLength(0))
+            self.assertThat(list(hook1b.deliveries), HasLength(1))
+            self.assertThat(list(hook2a.deliveries), HasLength(1))
+            self.assertThat(list(hook2b.deliveries), HasLength(0))
+            delivery = hook2a.deliveries.one()
+            self.assertEqual(delivery.payload, {'other': 'payload'})
+
+
+class TestWebhookSetMergeProposalBase(TestWebhookSetBase):
+
     def test__checkVisibility_private_artifact(self):
         owner = self.factory.makePerson()
         target = self.makeTarget(
@@ -247,42 +288,6 @@ class TestWebhookSetBase:
             WebhookSet._checkVisibility(mp1, mp1.merge_target.owner))
         self.assertFalse(
             WebhookSet._checkVisibility(mp2, mp2.merge_target.owner))
-
-    def test_trigger(self):
-        owner = self.factory.makePerson()
-        target1 = self.makeTarget(owner=owner)
-        target2 = self.makeTarget(owner=owner)
-        hook1a = self.factory.makeWebhook(
-            target=target1, event_types=[])
-        hook1b = self.factory.makeWebhook(
-            target=target1, event_types=[self.event_type])
-        hook2a = self.factory.makeWebhook(
-            target=target2, event_types=[self.event_type])
-        hook2b = self.factory.makeWebhook(
-            target=target2, event_types=[self.event_type], active=False)
-
-        # Only webhooks subscribed to the relevant target and event type
-        # are triggered.
-        getUtility(IWebhookSet).trigger(
-            target1, self.event_type, {'some': 'payload'})
-        with admin_logged_in():
-            self.assertThat(list(hook1a.deliveries), HasLength(0))
-            self.assertThat(list(hook1b.deliveries), HasLength(1))
-            self.assertThat(list(hook2a.deliveries), HasLength(0))
-            self.assertThat(list(hook2b.deliveries), HasLength(0))
-            delivery = hook1b.deliveries.one()
-            self.assertEqual(delivery.payload, {'some': 'payload'})
-
-        # Disabled webhooks aren't triggered.
-        getUtility(IWebhookSet).trigger(
-            target2, self.event_type, {'other': 'payload'})
-        with admin_logged_in():
-            self.assertThat(list(hook1a.deliveries), HasLength(0))
-            self.assertThat(list(hook1b.deliveries), HasLength(1))
-            self.assertThat(list(hook2a.deliveries), HasLength(1))
-            self.assertThat(list(hook2b.deliveries), HasLength(0))
-            delivery = hook2a.deliveries.one()
-            self.assertEqual(delivery.payload, {'other': 'payload'})
 
     def test_trigger_skips_invisible(self):
         # No webhooks are dispatched if the visibility check fails.
@@ -344,7 +349,8 @@ class TestWebhookSetBase:
             self.assertEqual(delivery.payload, {'some': 'payload'})
 
 
-class TestWebhookSetGitRepository(TestWebhookSetBase, TestCaseWithFactory):
+class TestWebhookSetGitRepository(
+    TestWebhookSetMergeProposalBase, TestCaseWithFactory):
 
     event_type = 'git:push:0.1'
 
@@ -366,7 +372,8 @@ class TestWebhookSetGitRepository(TestWebhookSetBase, TestCaseWithFactory):
                 reviewer=reviewer)
 
 
-class TestWebhookSetBranch(TestWebhookSetBase, TestCaseWithFactory):
+class TestWebhookSetBranch(
+    TestWebhookSetMergeProposalBase, TestCaseWithFactory):
 
     event_type = 'bzr:push:0.1'
 
@@ -384,3 +391,14 @@ class TestWebhookSetBranch(TestWebhookSetBase, TestCaseWithFactory):
             return self.factory.makeBranchMergeProposal(
                 registrant=owner, target_branch=target, source_branch=source,
                 reviewer=reviewer)
+
+
+class TestWebhookSetSnap(TestWebhookSetBase, TestCaseWithFactory):
+
+    event_type = 'snap:build:0.1'
+
+    def makeTarget(self, owner=None, **kwargs):
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: 'true'}))
+        if owner is None:
+            owner = self.factory.makePerson()
+        return self.factory.makeSnap(registrant=owner, owner=owner, **kwargs)
