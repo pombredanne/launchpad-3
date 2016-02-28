@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BadSnapSearchContext',
-    'CannotDeleteSnap',
     'CannotModifySnapProcessor',
     'DuplicateSnapName',
     'ISnap',
@@ -195,11 +194,6 @@ class SnapPrivacyMismatch(Exception):
     def __init__(self):
         super(SnapPrivacyMismatch, self).__init__(
             "Snap contains private information and cannot be public.")
-
-
-@error_status(httplib.BAD_REQUEST)
-class CannotDeleteSnap(Exception):
-    """This snap package cannot be deleted."""
 
 
 class BadSnapSearchContext(Exception):
