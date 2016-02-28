@@ -65,6 +65,7 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.sqlbase import quote
 from lp.services.database.stormexpr import (
     Greatest,
     NullsLast,
@@ -73,7 +74,6 @@ from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
-    CannotDeleteSnap,
     CannotModifySnapProcessor,
     DuplicateSnapName,
     ISnap,
@@ -349,10 +349,18 @@ class Snap(Storm):
 
     def destroySelf(self):
         """See `ISnap`."""
-        if not self.builds.is_empty():
-            raise CannotDeleteSnap("Cannot delete a snap package with builds.")
         store = IStore(Snap)
         store.find(SnapArch, SnapArch.snap == self).remove()
+        # XXX cjwatson 2016-02-27 bug=322972: Requires manual SQL due to
+        # lack of support for DELETE FROM ... USING ... in Storm.
+        store.execute("""
+            DELETE FROM SnapFile
+            USING SnapBuild
+            WHERE
+                SnapFile.snapbuild = SnapBuild.id AND
+                SnapBuild.snap = %s
+            """ % quote(self.id))
+        store.find(SnapBuild, SnapBuild.snap == self).remove()
         store.remove(self)
 
 

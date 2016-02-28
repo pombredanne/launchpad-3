@@ -507,10 +507,6 @@ class SnapDeleteView(BaseSnapEditView):
 
     field_names = []
 
-    @property
-    def has_builds(self):
-        return not self.context.builds.is_empty()
-
     @action('Delete snap package', name='delete')
     def delete_action(self, action, data):
         owner = self.context.owner
