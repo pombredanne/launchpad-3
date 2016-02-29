@@ -173,7 +173,7 @@ has a signing key:
     >>> from lp.registry.interfaces.gpg import IGPGKeySet
     >>> login('foo.bar@canonical.com')
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> a_key = getUtility(IGPGKeySet).get(1)
+    >>> a_key = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
     >>> removeSecurityProxy(mark_private_ppa).signing_key = a_key
     >>> logout()
 
