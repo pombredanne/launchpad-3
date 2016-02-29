@@ -157,13 +157,6 @@ class GPGKeySet:
             openid_identifier = self.getOwnerIdForPerson(key.owner)
             client.disableKeyForOwner(openid_identifier, key.fingerprint)
 
-    def get(self, key_id, default=None):
-        """See `IGPGKeySet`"""
-        try:
-            return GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return default
-
     def getByFingerprint(self, fingerprint, default=None):
         """See `IGPGKeySet`"""
         result = GPGKey.selectOneBy(fingerprint=fingerprint)
