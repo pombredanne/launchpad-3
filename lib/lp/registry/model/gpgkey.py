@@ -30,6 +30,7 @@ from lp.services.gpg.interfaces import (
     IGPGClient,
     IGPGHandler,
     )
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
@@ -149,4 +150,4 @@ class GPGKeySet:
 
     def getOwnerIdForPerson(self, owner):
         """See IGPGKeySet."""
-        return owner.openid_identity_url
+        return IOpenIDPersistentIdentity(owner).openid_identity_url
