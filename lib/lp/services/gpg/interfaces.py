@@ -3,6 +3,7 @@
 
 __all__ = [
     'GPG_DATABASE_READONLY_FEATURE_FLAG',
+    'GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG',
     'GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG',
     'GPGKeyAlgorithm',
     'GPGKeyDoesNotExistOnServer',
@@ -52,6 +53,7 @@ class GPGReadOnly(Forbidden):
 
 GPG_DATABASE_READONLY_FEATURE_FLAG = u"gpg.database_read_only"
 GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG = u"gpg.write_to_gpgservice"
+GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG = u"gpg.read_from_gpgservice"
 
 
 def valid_fingerprint(fingerprint):
