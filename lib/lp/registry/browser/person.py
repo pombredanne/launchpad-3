@@ -2645,12 +2645,14 @@ class PersonGPGView(LaunchpadView):
             key_fingerprints = [key_fingerprints]
 
         gpghandler = getUtility(IGPGHandler)
+        keyset = getUtility(IGPGKeySet)
 
         for key_fingerprint in key_fingerprints:
+            gpgkey = keyset.getByFingerprint(key_fingerprint)
             try:
-                key = gpghandler.retrieveKey(key_fingerprint)
+                key = gpghandler.retrieveKey(gpgkey.fingerprint)
             except GPGKeyNotFoundError:
-                notfound.append(key_fingerprint)
+                notfound.append(gpgkey.fingerprint)
             else:
                 found.append(key.displayname)
                 self._validateGPG(key)
