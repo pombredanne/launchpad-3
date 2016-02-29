@@ -88,13 +88,6 @@ class GPGKeySet:
             can_encrypt=can_encrypt)
         return lp_key, True
 
-    def get(self, key_id, default=None):
-        """See `IGPGKeySet`"""
-        try:
-            return GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return default
-
     def getByFingerprint(self, fingerprint, default=None):
         """See `IGPGKeySet`"""
         result = GPGKey.selectOneBy(fingerprint=fingerprint)
