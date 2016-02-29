@@ -395,11 +395,3 @@ class GPGClientTests(TestCase):
         self.assertThat(
             key, ContainsDict({'owner': Equals(user),
                                'fingerprint': Equals(gpgkey.fingerprint)}))
-
-    def test_can_get_openid_identifier(self):
-        keyset = getUtility(IGPGKeySet)
-        person = self.factory.makePerson()
-        identifier = keyset.getOwnerIdForPerson(person)
-        expected = person.account.openid_identifiers.order_by(
-            OpenIdIdentifier.identifier).first().identifier
-        self.assertEqual(expected, identifier)

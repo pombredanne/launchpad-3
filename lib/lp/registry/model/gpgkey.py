@@ -30,6 +30,7 @@ from lp.services.gpg.interfaces import (
     IGPGClient,
     IGPGHandler,
     )
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
@@ -61,6 +62,56 @@ class GPGKey(SQLBase):
     @property
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
+
+
+@implementer(IGPGKey)
+class GPGServiceKey:
+
+    def __init__(self, key_data):
+        self._key_data = key_data
+
+    @property
+    def keysize(self):
+        return self._key_data['size']
+
+    @property
+    def algorithm(self):
+        return GPGKeyAlgorithm[self._key_data['algorithm']]
+
+    @property
+    def keyid(self):
+        return self._key_data['id']
+
+    @property
+    def fingerprint(self):
+        return self._key_data['fingerprint']
+
+    @property
+    def active(self):
+        return self._key_data['enabled']
+
+    @property
+    def displayname(self):
+        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
+
+    @property
+    def keyserverURL(self):
+        return getUtility(
+            IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
+
+    @property
+    def can_encrypt(self):
+        return self._key_data['can_encrypt']
+
+    @property
+    def owner(self):
+        return getUtility(IPersonSet).getByOpenIDIdentifier(
+            self._key_data['owner'])
+
+    @property
+    def ownerID(self):
+        return self.owner.id
+
 
 
 @implementer(IGPGKeySet)
@@ -149,4 +200,4 @@ class GPGKeySet:
 
     def getOwnerIdForPerson(self, owner):
         """See IGPGKeySet."""
-        return owner.openid_identity_url
+        return IOpenIDPersistentIdentity(owner).openid_identity_url
