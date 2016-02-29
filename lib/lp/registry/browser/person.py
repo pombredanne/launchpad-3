@@ -2577,22 +2577,22 @@ class PersonGPGView(LaunchpadView):
             self.key_ok = True
 
     def deactivate_gpg(self):
-        key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
+        key_fingerprints = self.request.form.get('DEACTIVATE_GPGKEY')
 
-        if key_ids is None:
+        if key_fingerprints is None:
             self.error_message = structured(
                 'No key(s) selected for deactivation.')
             return
 
         # verify if we have multiple entries to deactive
-        if not isinstance(key_ids, list):
-            key_ids = [key_ids]
+        if not isinstance(key_fingerprints, list):
+            key_fingerprints = [key_fingerprints]
 
         gpgkeyset = getUtility(IGPGKeySet)
 
         deactivated_keys = []
-        for key_id in key_ids:
-            gpgkey = gpgkeyset.get(key_id)
+        for key_fingerprint in key_fingerprints:
+            gpgkey = gpgkeyset.getByFingerprint(key_fingerprint)
             if gpgkey is None:
                 continue
             if gpgkey.owner != self.user:
@@ -2631,9 +2631,9 @@ class PersonGPGView(LaunchpadView):
             ", ".join(cancelled_fingerprints))
 
     def reactivate_gpg(self):
-        key_ids = self.request.form.get('REACTIVATE_GPGKEY')
+        key_fingerprints = self.request.form.get('REACTIVATE_GPGKEY')
 
-        if key_ids is None:
+        if key_fingerprints is None:
             self.error_message = structured(
                 'No key(s) selected for reactivation.')
             return
@@ -2641,18 +2641,16 @@ class PersonGPGView(LaunchpadView):
         found = []
         notfound = []
         # Verify if we have multiple entries to activate.
-        if not isinstance(key_ids, list):
-            key_ids = [key_ids]
+        if not isinstance(key_fingerprints, list):
+            key_fingerprints = [key_fingerprints]
 
         gpghandler = getUtility(IGPGHandler)
-        keyset = getUtility(IGPGKeySet)
 
-        for key_id in key_ids:
-            gpgkey = keyset.get(key_id)
+        for key_fingerprint in key_fingerprints:
             try:
-                key = gpghandler.retrieveKey(gpgkey.fingerprint)
+                key = gpghandler.retrieveKey(key_fingerprint)
             except GPGKeyNotFoundError:
-                notfound.append(gpgkey.fingerprint)
+                notfound.append(key_fingerprint)
             else:
                 found.append(key.displayname)
                 self._validateGPG(key)

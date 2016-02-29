@@ -50,7 +50,8 @@ class TestPPAKeyGenerator(TestCase):
         key_generator.txn = txn
 
         def fake_key_generation(archive):
-            a_key = getUtility(IGPGKeySet).get(1)
+            a_key = getUtility(IGPGKeySet).getByFingerprint(
+                'ABCDEF0123456789ABCDDCBA0000111112345678')
             archive.signing_key = a_key
 
         key_generator.generateKey = fake_key_generation
@@ -68,7 +69,8 @@ class TestPPAKeyGenerator(TestCase):
     def testPPAAlreadyHasSigningKey(self):
         """Raises an error if the specified PPA already has a signing_key."""
         cprov = getUtility(IPersonSet).getByName('cprov')
-        a_key = getUtility(IGPGKeySet).get(1)
+        a_key = getUtility(IGPGKeySet).getByFingerprint(
+            'ABCDEF0123456789ABCDDCBA0000111112345678')
         cprov.archive.signing_key = a_key
 
         key_generator = self._getKeyGenerator(
