@@ -73,10 +73,19 @@ class IGPGKeySet(Interface):
             reactivated an existing key.
         """
 
+    def deactivate(key):
+        """Deactivate a key.
+
+        :param key: An IGPGKey instance.
+        """
+
     def getByFingerprint(fingerprint, default=None):
         """Return UNIQUE result for a given Key fingerprint including
         inactive ones.
         """
+
+    def getOwnerIdForPerson(person):
+        """return an owner id string suitable for sending to gpgservice."""
 
     def getGPGKeysForPerson(person, active=True):
         """Return OpenGPG keys for a person.

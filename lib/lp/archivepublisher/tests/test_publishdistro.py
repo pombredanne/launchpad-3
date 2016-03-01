@@ -24,6 +24,8 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
+from lp.services.gpg.interfaces import GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -389,6 +391,21 @@ class TestPublishDistro(TestNativePublishingBase):
             "%s/hoary-test/main/binary-i386/Packages.gz" %
             self.config.distsroot)
         self.assertNotExists(index_path)
+
+
+class TestPublishDistroWithGPGService(TestPublishDistro):
+    """A copy of the TestPublishDistro tests, but with the gpgservice feature
+    flag enabled.
+
+    Once gpgservice is the default and launchpad no longer manages it's own gpg
+    key storage, these tests can be removed.
+
+    """
+
+    def setUp(self):
+        super(TestPublishDistroWithGPGService, self).setUp()
+        self.useFixture(FeatureFixture(
+            {GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG: True}))
 
 
 class FakeArchive:
