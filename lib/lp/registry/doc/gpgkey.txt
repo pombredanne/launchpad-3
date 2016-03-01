@@ -9,7 +9,7 @@ Launchpad models GPG keys in a GPGKey class.
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
     >>> gpgkeyset = getUtility(IGPGKeySet)
-    >>> keys = gpgkeyset.getGPGKeys(ownerid=foobar.id)
+    >>> keys = gpgkeyset.getGPGKeysForPerson(foobar)
     >>> [key.keyid for key in keys]
     [u'12345678']
 

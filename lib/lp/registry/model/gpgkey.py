@@ -95,26 +95,6 @@ class GPGKeySet:
             return default
         return result
 
-    def getGPGKeys(self, ownerid=None, active=True):
-        """See `IGPGKeySet`"""
-        if active is False:
-            query = """
-                active = false
-                AND fingerprint NOT IN
-                    (SELECT fingerprint FROM LoginToken
-                     WHERE fingerprint IS NOT NULL
-                           AND requester = %s
-                           AND date_consumed is NULL
-                    )
-                """ % sqlvalues(ownerid)
-        else:
-            query = 'active=true'
-
-        if ownerid:
-            query += ' AND owner=%s' % sqlvalues(ownerid)
-
-        return GPGKey.select(query, orderBy='id')
-
     def getGPGKeysForPerson(self, owner, active=True):
         if active is False:
             query = """
