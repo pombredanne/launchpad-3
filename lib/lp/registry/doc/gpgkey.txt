@@ -31,12 +31,3 @@ As is pulling it based on the key ID:
     ...     'DEADBEEF12345678DEADBEEF12345678DEADBEEF')
     >>> key.owner.name
     u'name12'
-
-There's also a convenience method for fetching multiple GPG keys at
-once:
-
-    >>> keys = gpgkeyset.getGPGKeysForPeople([foobar, name12])
-    >>> [(key.owner.name, key.keyid) for key in keys]
-    [(u'name12', u'DEADBEED'),
-     (u'name12', u'DEADBEEF'),
-     (u'name16', u'12345678')]

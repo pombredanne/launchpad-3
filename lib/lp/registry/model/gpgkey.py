@@ -95,13 +95,6 @@ class GPGKeySet:
             return default
         return result
 
-    def getGPGKeysForPeople(self, people):
-        """See `IGPGKeySet`"""
-        return GPGKey.select("""
-            GPGKey.owner IN %s AND
-            GPGKey.active = True
-            """ % sqlvalues([person.id for person in people]))
-
     def getGPGKeys(self, ownerid=None, active=True):
         """See `IGPGKeySet`"""
         if active is False:
