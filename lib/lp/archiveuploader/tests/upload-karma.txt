@@ -51,7 +51,7 @@ Poke the queue entry so it looks like Foo Bar (name16) uploaded it:
     >>> from lp.registry.interfaces.gpg import IGPGKeySet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).getByName('name16')
-    >>> key = getUtility(IGPGKeySet).getGPGKeysForPeople([name16])[0]
+    >>> key = getUtility(IGPGKeySet).getGPGKeysForPerson(name16)[0]
     >>> removeSecurityProxy(foo_src.queue_root).signing_key = key
     >>> transaction.commit()
     >>> foo_src.queue_root.acceptFromQueue()

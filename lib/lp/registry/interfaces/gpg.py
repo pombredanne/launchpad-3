@@ -86,3 +86,6 @@ class IGPGKeySet(Interface):
 
     def getGPGKeysForPeople(people):
         """Return OpenPGP keys for a set of people."""
+
+    def getGPGKeysForPerson(person, active=True):
+        """Return OpenGPG keys for a person."""

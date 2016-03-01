@@ -121,3 +121,21 @@ class GPGKeySet:
             query += ' AND owner=%s' % sqlvalues(ownerid)
 
         return GPGKey.select(query, orderBy='id')
+
+    def getGPGKeysForPerson(self, owner, active=True):
+        if active is False:
+            query = """
+                active = false
+                AND fingerprint NOT IN
+                    (SELECT fingerprint FROM LoginToken
+                     WHERE fingerprint IS NOT NULL
+                           AND requester = %s
+                           AND date_consumed is NULL
+                    )
+                """ % sqlvalues(owner.id)
+        else:
+            query = 'active=true'
+
+        query += ' AND owner=%s' % sqlvalues(owner.id)
+
+        return GPGKey.select(query, orderBy='id')
