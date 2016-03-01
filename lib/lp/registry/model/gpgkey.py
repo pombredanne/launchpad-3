@@ -191,7 +191,7 @@ class GPGKeySet:
 
             query += ' AND owner=%s' % sqlvalues(owner.id)
 
-            return GPGKey.select(query, orderBy='id')
+            return list(GPGKey.select(query, orderBy='id'))
 
     def getOwnerIdForPerson(self, owner):
         """See IGPGKeySet."""

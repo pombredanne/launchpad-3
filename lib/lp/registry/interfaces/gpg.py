@@ -88,4 +88,7 @@ class IGPGKeySet(Interface):
         """return an owner id string suitable for sending to gpgservice."""
 
     def getGPGKeysForPerson(person, active=True):
-        """Return OpenGPG keys for a person."""
+        """Return OpenGPG keys for a person.
+
+        :returns: a list of IGPGKey instances.
+        """
