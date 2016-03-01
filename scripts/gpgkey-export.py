@@ -28,13 +28,12 @@ class GPGKeyExportScript(LaunchpadScript):
         output = sys.stdout
         if self.options.output is not None:
             output = open(self.options.output, 'wb')
-
-        output.write('[')
-        output.write(','.join(get_keys_as_json()))
-        output.write(']')
+        json.dump(get_keys_as_json(), output)
         output.write('\n')
+        
 
 def get_keys_as_json():
+    keys = []
     keyset = getUtility(IGPGKeySet)
     for gpg_key in IStore(GPGKey).find(GPGKey):
         key_data = {
@@ -46,7 +45,9 @@ def get_keys_as_json():
             'enabled': gpg_key.active,
             'can_encrypt': gpg_key.can_encrypt,
         }
-        yield json.dumps(key_data)
+        keys.append(key_data)
+    return keys
+
 
 if __name__ == '__main__':
     GPGKeyExportScript("gpgkey-export").run()
