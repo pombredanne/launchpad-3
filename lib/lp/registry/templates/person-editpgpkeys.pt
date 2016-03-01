@@ -91,7 +91,7 @@
     <p>In both cases, you need to use your OpenPGP key. Here you can tell Launchpad which keys you want to use.
        (<a href="/+help-registry/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
 
-    <form tal:condition="context/gpg_keys/count"
+    <form tal:condition="context/gpg_keys"
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
