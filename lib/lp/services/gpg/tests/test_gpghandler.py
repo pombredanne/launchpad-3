@@ -16,6 +16,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
@@ -254,7 +255,9 @@ class GPGClientTests(TestCase):
 
     def test_get_key_for_user_with_sampledata(self):
         client = getUtility(IGPGClient)
-        data = client.getKeysForOwner('name16_oid')
+        person = getUtility(IPersonSet).getByName('name16')
+        openid_id = getUtility(IGPGKeySet).getOwnerIdForPerson(person)
+        data = client.getKeysForOwner(openid_id)
         self.assertThat(data, ContainsDict({'keys': HasLength(1)}))
 
     def test_get_key_for_unknown_user(self):

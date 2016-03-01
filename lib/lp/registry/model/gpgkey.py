@@ -18,6 +18,7 @@ from lp.registry.interfaces.gpg import (
     IGPGKey,
     IGPGKeySet,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import (
     SQLBase,
@@ -70,6 +71,7 @@ class GPGServiceKey:
 
     def __init__(self, key_data):
         self._key_data = key_data
+        self.active = key_data['enabled']
 
     @property
     def keysize(self):
@@ -77,7 +79,7 @@ class GPGServiceKey:
 
     @property
     def algorithm(self):
-        return GPGKeyAlgorithm[self._key_data['algorithm']]
+        return GPGKeyAlgorithm.items[self._key_data['algorithm']]
 
     @property
     def keyid(self):
@@ -86,10 +88,6 @@ class GPGServiceKey:
     @property
     def fingerprint(self):
         return self._key_data['fingerprint']
-
-    @property
-    def active(self):
-        return self._key_data['enabled']
 
     @property
     def displayname(self):
@@ -174,7 +172,7 @@ class GPGKeySet:
             client = getUtility(IGPGClient)
             owner_id = self.getOwnerIdForPerson(owner)
             keys = client.getKeysForOwner(owner_id)['keys']
-            return [GPGServiceKey(d) for d in keys if d['active'] == active]
+            return [GPGServiceKey(d) for d in keys if d['enabled'] == active]
         else:
             if active is False:
                 query = """

@@ -99,7 +99,7 @@ class GPGKeyServiceFixture(Fixture):
         test_data = {
             'keys': [
                 {
-                    'owner': 'name16_oid',
+                    'owner': config.launchpad.openid_provider_root + '+id/name16_oid',
                     'id': '12345678',
                     'fingerprint': 'ABCDEF0123456789ABCDDCBA0000111112345678',
                     'size': 1024,
