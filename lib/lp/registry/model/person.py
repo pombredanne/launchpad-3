@@ -2759,13 +2759,13 @@ class Person(
     def inactive_gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
+        return gpgkeyset.getGPGKeysForPerson(self, active=False)
 
     @property
     def gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGPGKeys(ownerid=self.id)
+        return gpgkeyset.getGPGKeysForPerson(self)
 
     def hasMaintainedPackages(self):
         """See `IPerson`."""
