@@ -2765,7 +2765,7 @@ class Person(
     def gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGPGKeysForperson(self)
+        return gpgkeyset.getGPGKeysForPerson(self)
 
     def hasMaintainedPackages(self):
         """See `IPerson`."""
