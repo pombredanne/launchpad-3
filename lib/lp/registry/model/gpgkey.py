@@ -26,6 +26,7 @@ from lp.services.database.sqlbase import (
 from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
     GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
+    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
     IGPGClient,
     IGPGHandler,
@@ -159,28 +160,38 @@ class GPGKeySet:
 
     def getByFingerprint(self, fingerprint, default=None):
         """See `IGPGKeySet`"""
-        result = GPGKey.selectOneBy(fingerprint=fingerprint)
-        if result is None:
-            return default
-        return result
+        if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+            key_data = getUtility(IGPGClient).getKeyByFingerprint(fingerprint)
+            return GPGServiceKey(key_data) if key_data else default
+        else:
+            result = GPGKey.selectOneBy(fingerprint=fingerprint)
+            if result is None:
+                return default
+            return result
 
     def getGPGKeysForPerson(self, owner, active=True):
-        if active is False:
-            query = """
-                active = false
-                AND fingerprint NOT IN
-                    (SELECT fingerprint FROM LoginToken
-                     WHERE fingerprint IS NOT NULL
-                           AND requester = %s
-                           AND date_consumed is NULL
-                    )
-                """ % sqlvalues(owner.id)
+        if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            owner_id = self.getOwnerIdForPerson(owner)
+            key_data = client.getKeysForOwner(owner_id)
+            return [GPGServiceKey(d) for d in key_data if d['active'] == active]
         else:
-            query = 'active=true'
+            if active is False:
+                query = """
+                    active = false
+                    AND fingerprint NOT IN
+                        (SELECT fingerprint FROM LoginToken
+                         WHERE fingerprint IS NOT NULL
+                               AND requester = %s
+                               AND date_consumed is NULL
+                        )
+                    """ % sqlvalues(owner.id)
+            else:
+                query = 'active=true'
 
-        query += ' AND owner=%s' % sqlvalues(owner.id)
+            query += ' AND owner=%s' % sqlvalues(owner.id)
 
-        return GPGKey.select(query, orderBy='id')
+            return GPGKey.select(query, orderBy='id')
 
     def getOwnerIdForPerson(self, owner):
         """See IGPGKeySet."""
