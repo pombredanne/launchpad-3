@@ -31,6 +31,7 @@ from storm.locals import (
     And,
     In,
     Int,
+    Or,
     Reference,
     ReferenceSet,
     Select,
@@ -271,11 +272,21 @@ class SourcePackageRecipeData(Storm):
             raise AssertionError(
                 "Unsupported source: %r" % (branch_or_repository,))
         if revspecs is not None:
-            data_clause = And(
-                data_clause, In(SourcePackageRecipeData.revspec, revspecs))
-            insn_clause = And(
-                insn_clause,
-                In(_SourcePackageRecipeDataInstruction.revspec, revspecs))
+            concrete_revspecs = [
+                revspec for revspec in revspecs if revspec is not None]
+            data_revspec_clause = In(
+                SourcePackageRecipeData.revspec, concrete_revspecs)
+            insn_revspec_clause = In(
+                _SourcePackageRecipeDataInstruction.revspec, concrete_revspecs)
+            if None in revspecs:
+                data_revspec_clause = Or(
+                    data_revspec_clause,
+                    SourcePackageRecipeData.revspec == None)
+                insn_revspec_clause = Or(
+                    insn_revspec_clause,
+                    _SourcePackageRecipeDataInstruction.revspec == None)
+            data_clause = And(data_clause, data_revspec_clause)
+            insn_clause = And(insn_clause, insn_revspec_clause)
         return store.find(
             SourcePackageRecipe,
             SourcePackageRecipe.id.is_in(Union(

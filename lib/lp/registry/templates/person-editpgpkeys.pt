@@ -100,7 +100,7 @@
       <div tal:repeat="key context/gpg_keys">
         <label>
           <input type="checkbox" name="DEACTIVATE_GPGKEY"
-                 tal:attributes="value key/id"/>
+                 tal:attributes="value key/fingerprint"/>
           <span tal:replace="key/displayname">KEY</span>
           <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
@@ -144,7 +144,7 @@
       <div tal:repeat="key context/inactive_gpg_keys">
         <label>
         <input type="checkbox" name="REACTIVATE_GPGKEY"
-               tal:attributes="value key/id"/>
+               tal:attributes="value key/fingerprint"/>
           <span tal:replace="key/displayname">KEY</span>
           <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
