@@ -1873,8 +1873,24 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
             {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
 
+    def test_base_repository_default_branch_recipe(self):
+        # On ref changes to the default branch, recipes where this
+        # repository is the base with no explicit revspec become stale.
+        repository = self.factory.makeGitRepository()
+        ref1, ref2 = self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/a", u"refs/heads/b"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/a"
+        recipe = self.factory.makeSourcePackageRecipe(branches=[repository])
+        removeSecurityProxy(recipe).is_stale = False
+        repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+        repository.createOrUpdateRefs(
+            {ref1.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
     def test_instruction_repository_recipe(self):
-        # On ref changes, recipes including this repository become stale.
+        # On ref changes, recipes including this ref become stale.
         [base_ref] = self.factory.makeGitRefs()
         [ref] = self.factory.makeGitRefs()
         recipe = self.factory.makeSourcePackageRecipe(branches=[base_ref, ref])
@@ -1895,6 +1911,24 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         ref1.repository.createOrUpdateRefs(
             {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
+
+    def test_instruction_repository_default_branch_recipe(self):
+        # On ref changes to the default branch, recipes including this
+        # repository with no explicit revspec become stale.
+        [base_ref] = self.factory.makeGitRefs()
+        repository = self.factory.makeGitRepository()
+        ref1, ref2 = self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/a", u"refs/heads/b"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/a"
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_ref, repository])
+        removeSecurityProxy(recipe).is_stale = False
+        repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+        repository.createOrUpdateRefs(
+            {ref1.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
 
     def test_unrelated_repository_recipe(self):
         # On ref changes, unrelated recipes are left alone.

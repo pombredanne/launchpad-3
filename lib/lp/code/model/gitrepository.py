@@ -965,6 +965,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 revspecs.add(path)
                 if path.startswith("refs/heads/"):
                     revspecs.add(path[len("refs/heads/"):])
+                if path == self.default_branch:
+                    revspecs.add(None)
             revspecs = list(revspecs)
         else:
             revspecs = None

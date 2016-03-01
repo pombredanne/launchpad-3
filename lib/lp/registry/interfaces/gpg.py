@@ -84,14 +84,8 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
-    def getGPGKeys(ownerid=None, active=True):
-        """Return OpenPGP keys ordered by id.
-
-        Optionally for a given owner and or a given status.
-        """
-
-    def getGPGKeysForPeople(people):
-        """Return OpenPGP keys for a set of people."""
-
     def getOwnerIdForPerson(person):
         """return an owner id string suitable for sending to gpgservice."""
+
+    def getGPGKeysForPerson(person, active=True):
+        """Return OpenGPG keys for a person."""

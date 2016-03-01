@@ -121,6 +121,7 @@ from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -2912,6 +2913,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         other_branches = branches[1:]
         if IBranch.providedBy(base_branch):
             text = MINIMAL_RECIPE_TEXT_BZR % base_branch.identity
+        elif IGitRepository.providedBy(base_branch):
+            # The UI normally guides people towards using an explicit branch
+            # name, but it's also possible to leave the branch name empty
+            # which is equivalent to the repository's default branch.  This
+            # makes that mode easier to test.
+            text = "%s\n%s\n" % (
+                MINIMAL_RECIPE_TEXT_GIT.splitlines()[0], base_branch.identity)
         elif IGitRef.providedBy(base_branch):
             text = MINIMAL_RECIPE_TEXT_GIT % (
                 base_branch.repository.identity, base_branch.name)
@@ -2919,7 +2927,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             raise AssertionError(
                 "Unsupported base_branch: %r" % (base_branch,))
         for i, branch in enumerate(other_branches):
-            if IBranch.providedBy(branch):
+            if IBranch.providedBy(branch) or IGitRepository.providedBy(branch):
                 text += 'merge dummy-%s %s\n' % (i, branch.identity)
             elif IGitRef.providedBy(branch):
                 text += 'merge dummy-%s %s %s\n' % (
