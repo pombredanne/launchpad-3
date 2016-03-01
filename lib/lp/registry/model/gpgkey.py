@@ -173,8 +173,8 @@ class GPGKeySet:
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
             owner_id = self.getOwnerIdForPerson(owner)
-            key_data = client.getKeysForOwner(owner_id)
-            return [GPGServiceKey(d) for d in key_data if d['active'] == active]
+            keys = client.getKeysForOwner(owner_id)['keys']
+            return [GPGServiceKey(d) for d in keys if d['active'] == active]
         else:
             if active is False:
                 query = """
