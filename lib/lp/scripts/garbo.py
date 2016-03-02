@@ -69,7 +69,6 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import (
     Person,
@@ -125,7 +124,6 @@ from lp.services.webhooks.model import WebhookJob
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -1463,78 +1461,6 @@ class PersonSettingsENFPopulator(BulkPruner):
         transaction.commit()
 
 
-class BaseKeyMigrator(TunableLoop):
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BaseKeyMigrator, self).__init__(
-            log, abort_time)
-        state = load_garbo_job_state(self.__class__.__name__) or {}
-        self.start_at = state.get('next_id', 1)
-        self.store = IMasterStore(self.klass)
-
-    def findObjects(self):
-        return self.store.find(
-            self.klass,
-            self.klass.id >= self.start_at).order_by(
-                self.klass.id)
-
-    def isDone(self):
-        return (
-            not getFeatureFlag('gpg.migrator.%s' % self.klass.__name__)
-            or self.findObjects().is_empty())
-
-    def __call__(self, chunk_size):
-        objs = list(self.findObjects()[:chunk_size])
-        for obj in objs:
-            key = getattr(obj, self.fk_attr, None)
-            if self.fingerprint_attr:
-                setattr(
-                    obj, self.fingerprint_attr,
-                    key.fingerprint if key else None)
-            if self.owner_attr:
-                setattr(
-                    obj, self.owner_attr,
-                    key.owner if key else None)
-        self.start_at = objs[-1].id + 1
-        save_garbo_job_state(
-            self.__class__.__name__, {'next_id': self.start_at})
-        transaction.commit()
-
-
-class ArchiveKeyMigrator(BaseKeyMigrator):
-
-    klass = Archive
-    fk_attr = 'signing_key'
-    fingerprint_attr = '_signing_key_fingerprint'
-    owner_attr = 'signing_key_owner'
-
-
-class PackageUploadKeyMigrator(BaseKeyMigrator):
-
-    klass = PackageUpload
-    fk_attr = 'signing_key'
-    fingerprint_attr = 'signing_key_fingerprint'
-    owner_attr = 'signing_key_owner'
-
-
-class SignedCodeOfConductKeyMigrator(BaseKeyMigrator):
-
-    klass = SignedCodeOfConduct
-    fk_attr = 'signingkey'
-    fingerprint_attr = 'signing_key_fingerprint'
-    owner_attr = None
-
-
-class SourcePackageReleaseKeyMigrator(BaseKeyMigrator):
-
-    klass = SourcePackageRelease
-    fk_attr = 'dscsigningkey'
-    fingerprint_attr = 'signing_key_fingerprint'
-    owner_attr = 'signing_key_owner'
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1783,14 +1709,10 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-hourly'
     tunable_loops = [
-        ArchiveKeyMigrator,
         BugHeatUpdater,
         BugWatchScheduler,
         DuplicateSessionPruner,
-        PackageUploadKeyMigrator,
         RevisionCachePruner,
-        SignedCodeOfConductKeyMigrator,
-        SourcePackageReleaseKeyMigrator,
         UnusedSessionPruner,
         ]
     experimental_tunable_loops = []
