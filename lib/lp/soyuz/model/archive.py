@@ -680,7 +680,6 @@ class Archive(SQLBase):
         def eager_load(rows):
             # \o/ circular imports.
             from lp.registry.model.distroseries import DistroSeries
-            from lp.registry.model.gpgkey import GPGKey
             ids = set(map(attrgetter('distroseriesID'), rows))
             ids.discard(None)
             if ids:
@@ -699,10 +698,14 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
-            ids = set(map(attrgetter('dscsigningkeyID'), releases))
-            ids.discard(None)
-            if ids:
-                list(store.find(GPGKey, GPGKey.id.is_in(ids)))
+            keys = {
+                key.fingerprint: key for key in
+                getUtility(IGPGKeySet).getByFingerprints(
+                    set(map(attrgetter('signing_key_fingerprint'), releases))
+                    - set([None]))}
+            for spr in releases:
+                get_property_cache(spr).dscsigningkey = keys.get(
+                    spr.signing_key_fingerprint)
         return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getSourcesForDeletion(self, name=None, status=None, distroseries=None):
