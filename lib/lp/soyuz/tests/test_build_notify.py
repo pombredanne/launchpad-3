@@ -15,6 +15,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
@@ -83,7 +84,11 @@ class TestBuildNotify(TestCaseWithFactory):
                     self.factory.getUniqueInteger(), status.value),
                 distroseries=self.distroseries, architecturehintlist='any',
                 creator=self.creator, archive=archive)
-            spph.sourcepackagerelease.dscsigningkey = self.gpgkey
+            spph.sourcepackagerelease._dscsigningkey = self.gpgkey
+            spph.sourcepackagerelease.signing_key_fingerprint = (
+                self.gpgkey.fingerprint)
+            spph.sourcepackagerelease.signing_key_owner = (
+                self.gpgkey.owner)
             [build] = spph.createMissingBuilds()
             with person_logged_in(self.admin):
                 build.updateStatus(BuildStatus.BUILDING, builder=self.builder)
@@ -432,7 +437,9 @@ class TestBuildNotify(TestCaseWithFactory):
         build = self.builds[BuildStatus.FAILEDTOBUILD.value]
         spr = build.current_source_publication.sourcepackagerelease
         # Push past the security proxy
-        removeSecurityProxy(spr).dscsigningkey = key
+        removeSecurityProxy(spr).signing_key_owner = key.owner
+        removeSecurityProxy(spr).signing_key_fingerprint = key.fingerprint
+        del get_property_cache(spr).dscsigningkey
         with dbuser(config.builddmaster.dbuser):
             build.notify()
         expected_reasons = [
