@@ -9,6 +9,7 @@ from random import getrandbits
 import StringIO
 
 import transaction
+from zope.app.testing import ztapi
 from zope.component import (
     provideAdapter,
     provideUtility,
@@ -27,12 +28,16 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.interfaces import IStoreSelector
 from lp.services.privacy.interfaces import IObjectPrivacy
-from lp.services.webapp.authentication import LaunchpadPrincipal
+from lp.services.webapp.authentication import (
+    LaunchpadPrincipal,
+    PlacelessAuthUtility,
+    )
 from lp.services.webapp.authorization import (
     available_with_permission,
     check_permission,
     iter_authorization,
     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY,
     LaunchpadSecurityPolicy,
     precache_permission_for_objects,
     )
@@ -40,6 +45,7 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
+    IPlacelessAuthUtility,
     )
 from lp.services.webapp.metazcml import ILaunchpadPermission
 from lp.services.webapp.servers import (
@@ -369,6 +375,55 @@ class TestCheckPermissionCaching(TestCase):
         # After committing a transaction, the policy calls
         # checkUnauthenticated again rather than finding a value in the cache.
         policy.checkPermission(permission, obj)
+        self.assertEqual(
+            ['checkUnauthenticated', 'checkUnauthenticated'],
+            checker_factory.calls)
+
+    def test_checkUnauthenticatedPermission_cache_unauthenticated(self):
+        # checkUnauthenticatedPermission caches the result of
+        # checkUnauthenticated for a particular object and permission.
+        # We set a principal to ensure that it is not used even if set.
+        provideUtility(PlacelessAuthUtility(), IPlacelessAuthUtility)
+        zope.testing.cleanup.addCleanUp(
+            ztapi.unprovideUtility, (IPlacelessAuthUtility,))
+        principal = FakeLaunchpadPrincipal()
+        request = self.makeRequest()
+        request.setPrincipal(principal)
+        policy = LaunchpadSecurityPolicy(request)
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
+        # When we call checkUnauthenticatedPermission for the first time,
+        # the security policy calls the checker.
+        policy.checkUnauthenticatedPermission(permission, obj)
+        self.assertEqual(['checkUnauthenticated'], checker_factory.calls)
+        # A subsequent identical call does not call the checker.
+        policy.checkUnauthenticatedPermission(permission, obj)
+        self.assertEqual(['checkUnauthenticated'], checker_factory.calls)
+        # The result is stored in the correct cache.
+        cache = request.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY]
+        self.assertEqual({obj: {permission: False}}, dict(cache))
+
+    def test_checkUnauthenticatedPermission_commit_clears_cache(self):
+        # Committing a transaction clears the cache.
+        # We set a principal to ensure that it is not used even if set.
+        provideUtility(PlacelessAuthUtility(), IPlacelessAuthUtility)
+        zope.testing.cleanup.addCleanUp(
+            ztapi.unprovideUtility, (IPlacelessAuthUtility,))
+        principal = FakeLaunchpadPrincipal()
+        request = self.makeRequest()
+        request.setPrincipal(principal)
+        policy = LaunchpadSecurityPolicy(request)
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
+        # When we call checkUnauthenticatedPermission before setting the
+        # principal, the security policy calls checkUnauthenticated on the
+        # checker.
+        policy.checkUnauthenticatedPermission(permission, obj)
+        self.assertEqual(['checkUnauthenticated'], checker_factory.calls)
+        transaction.commit()
+        # After committing a transaction, the policy calls
+        # checkUnauthenticated again rather than finding a value in the cache.
+        policy.checkUnauthenticatedPermission(permission, obj)
         self.assertEqual(
             ['checkUnauthenticated', 'checkUnauthenticated'],
             checker_factory.calls)
