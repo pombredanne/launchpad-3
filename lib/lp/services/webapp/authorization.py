@@ -11,6 +11,7 @@ __all__ = [
     'LaunchpadPermissiveSecurityPolicy',
     'LaunchpadSecurityPolicy',
     'LAUNCHPAD_SECURITY_POLICY_CACHE_KEY',
+    'LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY',
     'precache_permission_for_objects',
     ]
 
@@ -59,11 +60,14 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
+    IPlacelessAuthUtility,
     )
 from lp.services.webapp.metazcml import ILaunchpadPermission
 
 
 LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
+LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY = (
+    'launchpad.security_policy_cache.unauthenticated')
 
 
 @provider(ISecurityPolicy)
@@ -129,18 +133,13 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             else:
                 return AccessLevel.READ_PUBLIC
 
-    @block_implicit_flushes
-    def checkPermission(self, permission, object):
+    def _baseCheckPermission(self, permission, object, cache_key,
+                             principal=None):
         """Check the permission, object, user against the launchpad
         authorization policy.
 
         If the object is a view, then consider the object to be the view's
         context.
-
-        If we are running in read-only mode, all permission checks are
-        failed except for launchpad.View requests, which are checked
-        as normal. All other permissions are used to protect write
-        operations.
 
         Workflow:
         - If the principal is not None and its access level is not what is
@@ -191,13 +190,13 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             participation = participations[0]
             if IApplicationRequest.providedBy(participation):
                 participation_cache = participation.annotations.setdefault(
-                    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
-                    weakref.WeakKeyDictionary())
+                    cache_key, weakref.WeakKeyDictionary())
                 object_cache = participation_cache.setdefault(
                     objecttoauthorize, {})
                 if permission in object_cache:
                     return object_cache[permission]
-            principal = removeAllProxies(participation.principal)
+            if principal is None:
+                principal = removeAllProxies(participation.principal)
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
@@ -238,6 +237,28 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             object_cache[permission] = result
 
         return result
+
+    @block_implicit_flushes
+    def checkPermission(self, permission, object):
+        """Check the permission, object, user against the launchpad
+        authorization policy.
+        """
+        return self._baseCheckPermission(
+            permission, object, LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
+
+    @block_implicit_flushes
+    def checkUnauthenticatedPermission(self, permission, object):
+        """Check the permission and object against the Launchpad
+        authorization policy for an unauthenticated principal.
+
+        This is similar to `checkPermission`, but can be used to check the
+        baseline permissions that are available even without authentication.
+        """
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.unauthenticatedPrincipal()
+        return self._baseCheckPermission(
+            permission, object, LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY,
+            principal=principal)
 
 
 def iter_authorization(objecttoauthorize, permission, principal, cache,
@@ -351,6 +372,8 @@ def clear_cache():
             # all classes that implement IApplicationRequest.
             if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in p.annotations:
                 del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+            if LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY in p.annotations:
+                del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY]
 
 
 class LaunchpadPermissiveSecurityPolicy(PermissiveSecurityPolicy):
