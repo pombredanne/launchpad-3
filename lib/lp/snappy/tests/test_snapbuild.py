@@ -52,6 +52,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -238,10 +239,16 @@ class TestSnapBuild(TestCaseWithFactory):
                 canonical_url(self.build.snap, force_local_path=True)),
             "status": Equals("Successfully built"),
             }
+        delivery = hook.deliveries.one()
         self.assertThat(
-            hook.deliveries.one(), MatchesStructure(
+            delivery, MatchesStructure(
                 event_type=Equals("snap:build:0.1"),
                 payload=MatchesDict(expected_payload)))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
 
     def test_notify_fullybuilt(self):
         # notify does not send mail when a SnapBuild completes normally.
