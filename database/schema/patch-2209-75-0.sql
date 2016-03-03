@@ -33,4 +33,4 @@ ALTER TABLE sourcepackagerelease
     ADD CONSTRAINT valid_signing_key_fingerprint
         CHECK (valid_fingerprint(signing_key_fingerprint));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 75, 0);
