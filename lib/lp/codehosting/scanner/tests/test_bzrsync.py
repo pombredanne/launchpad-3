@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import datetime
@@ -774,6 +774,11 @@ class TestTriggerWebhooks(BzrSyncTestCase):
                     "old": Equals({"revision_id": old_revid}),
                     "new": Equals({"revision_id": new_revid}),
                     })))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
 
 
 class TestRevisionProperty(BzrSyncTestCase):

@@ -556,7 +556,7 @@ for more information).
 
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> a_key = getUtility(IGPGKeySet).get(1)
+    >>> a_key = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
     >>> removeSecurityProxy(no_priv.archive).signing_key = a_key
     >>> logout()
 

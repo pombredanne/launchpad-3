@@ -89,13 +89,6 @@ class GPGKeySet:
             can_encrypt=can_encrypt)
         return lp_key, True
 
-    def get(self, key_id, default=None):
-        """See `IGPGKeySet`"""
-        try:
-            return GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return default
-
     def getByFingerprint(self, fingerprint, default=None):
         """See `IGPGKeySet`"""
         result = GPGKey.selectOneBy(fingerprint=fingerprint)
@@ -108,15 +101,7 @@ class GPGKeySet:
         return IStore(GPGKey).find(
             GPGKey, GPGKey.fingerprint.is_in(fingerprints))
 
-    def getGPGKeysForPeople(self, people):
-        """See `IGPGKeySet`"""
-        return GPGKey.select("""
-            GPGKey.owner IN %s AND
-            GPGKey.active = True
-            """ % sqlvalues([person.id for person in people]))
-
-    def getGPGKeys(self, ownerid=None, active=True):
-        """See `IGPGKeySet`"""
+    def getGPGKeysForPerson(self, owner, active=True):
         if active is False:
             query = """
                 active = false
@@ -126,11 +111,10 @@ class GPGKeySet:
                            AND requester = %s
                            AND date_consumed is NULL
                     )
-                """ % sqlvalues(ownerid)
+                """ % sqlvalues(owner.id)
         else:
             query = 'active=true'
 
-        if ownerid:
-            query += ' AND owner=%s' % sqlvalues(ownerid)
+        query += ' AND owner=%s' % sqlvalues(owner.id)
 
-        return GPGKey.select(query, orderBy='id')
+        return list(GPGKey.select(query, orderBy='id'))

@@ -249,8 +249,11 @@ class GitRefMixin:
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData,
             )
+        revspecs = set([self.path, self.name])
+        if self.path == self.repository.default_branch:
+            revspecs.add(None)
         recipes = SourcePackageRecipeData.findRecipes(
-            self.repository, revspecs=list(set([self.path, self.name])))
+            self.repository, revspecs=list(revspecs))
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
