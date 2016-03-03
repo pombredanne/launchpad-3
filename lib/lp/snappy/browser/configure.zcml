@@ -71,7 +71,7 @@
             class="lp.snappy.browser.snap.SnapDeleteView"
             permission="launchpad.Edit"
             name="+delete"
-            template="../templates/snap-delete.pt" />
+            template="../../app/templates/generic-edit.pt" />
         <adapter
             provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.snappy.interfaces.snap.ISnap"
