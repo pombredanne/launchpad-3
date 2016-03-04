@@ -75,6 +75,7 @@
         class="lp.soyuz.model.sourcepackagerelease.SourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"/>
+        <allow attributes="signing_key_fingerprint signing_key_owner" />
         <!-- changelog needs to be updated when unembargoing -->
         <require
             permission="launchpad.Edit"
@@ -143,6 +144,8 @@
                 changesfile
                 changes_file_url
                 signing_key
+                signing_key_fingerprint
+                signing_key_owner
                 archive
                 sources
                 sourceFileUrls
@@ -386,7 +389,9 @@
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.InternalScriptsOnly"
-            set_attributes="distribution signing_key"/>
+            attributes="signing_key_owner"
+            set_attributes="distribution signing_key_owner
+                            signing_key_fingerprint"/>
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"

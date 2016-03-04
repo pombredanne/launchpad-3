@@ -87,6 +87,9 @@ class IGPGKeySet(Interface):
     def getOwnerIdForPerson(person):
         """return an owner id string suitable for sending to gpgservice."""
 
+    def getByFingerprints(fingerprints):
+        """Get multiple OpenPGP keys by their fingerprints."""
+
     def getGPGKeysForPerson(person, active=True):
         """Return OpenGPG keys for a person.
 

@@ -22,7 +22,10 @@ source publications can be retrieved.
     >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
     >>> for pub in ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
-    ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
+    ...     pub.sourcepackagerelease.signing_key_owner = (
+    ...         fake_signer.owner)
+    ...     pub.sourcepackagerelease.signing_key_fingerprint = (
+    ...         fake_signer.fingerprint)
     >>> transaction.commit()
     >>> logout()
 

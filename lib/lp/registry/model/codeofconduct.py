@@ -19,6 +19,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+from storm.properties import Unicode
 from zope.component import getUtility
 from zope.interface import implementer
 
@@ -48,6 +49,7 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
 
 
@@ -179,8 +181,7 @@ class SignedCodeOfConduct(SQLBase):
 
     signedcode = StringCol(dbName='signedcode', notNull=False, default=None)
 
-    signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
-                            notNull=False, default=None)
+    signing_key_fingerprint = Unicode()
 
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
                                  default=UTC_NOW)
@@ -192,6 +193,12 @@ class SignedCodeOfConduct(SQLBase):
                              default=None)
 
     active = BoolCol(dbName='active', notNull=True, default=False)
+
+    @cachedproperty
+    def signingkey(self):
+        if self.signing_key_fingerprint is not None:
+            return getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint)
 
     @property
     def displayname(self):
@@ -305,8 +312,10 @@ class SignedCodeOfConductSet:
                     'space differences are acceptable).')
 
         # Store the signature
-        signed = SignedCodeOfConduct(owner=user, signingkey=gpg,
-                                     signedcode=signedcode, active=True)
+        signed = SignedCodeOfConduct(
+            owner=user,
+            signing_key_fingerprint=gpg.fingerprint if gpg else None,
+            signedcode=signedcode, active=True)
 
         # Send Advertisement Email
         subject = 'Your Code of Conduct signature has been acknowledged'

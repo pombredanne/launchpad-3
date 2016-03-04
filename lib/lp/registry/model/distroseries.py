@@ -1164,8 +1164,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog,
             changelog_entry=changelog_entry, dsc=dsc,
-            dscsigningkey=dscsigningkey, section=section, copyright=copyright,
-            upload_archive=archive,
+            signing_key_owner=dscsigningkey.owner if dscsigningkey else None,
+            signing_key_fingerprint=(
+                dscsigningkey.fingerprint if dscsigningkey else None),
+            section=section, copyright=copyright, upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
@@ -1350,7 +1352,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive, changesfile=changes_file_alias,
-            signing_key=signing_key, package_copy_job=package_copy_job)
+            signing_key_owner=signing_key.owner if signing_key else None,
+            signing_key_fingerprint=(
+                signing_key.fingerprint if signing_key else None),
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""

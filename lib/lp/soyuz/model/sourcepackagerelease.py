@@ -30,14 +30,17 @@ from storm.locals import (
     Desc,
     Int,
     Reference,
+    Unicode,
     )
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
@@ -88,7 +91,9 @@ class SourcePackageRelease(SQLBase):
     maintainer = ForeignKey(
         dbName='maintainer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+    signing_key_owner_id = Int(name="signing_key_owner")
+    signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
+    signing_key_fingerprint = Unicode()
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
@@ -167,6 +172,15 @@ class SourcePackageRelease(SQLBase):
         store.execute(
             "UPDATE sourcepackagerelease SET copyright=%s WHERE id=%s",
             (content, self.id))
+
+    @cachedproperty
+    def dscsigningkey(self):
+        if self.signing_key_fingerprint is not None:
+            # Stripping proxy as some tests expect this former FK to
+            # hold an unsecured object. self is always proxied by things
+            # that hold it, so no issue here.
+            return removeSecurityProxy(getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint))
 
     @property
     def user_defined_fields(self):
@@ -360,8 +374,8 @@ class SourcePackageRelease(SQLBase):
         """See `ISourcePackageRelease`"""
         if self.source_package_recipe_build is not None:
             return self.source_package_recipe_build.requester
-        if self.dscsigningkey is not None:
-            return self.dscsigningkey.owner
+        if self.signing_key_owner is not None:
+            return self.signing_key_owner
         return None
 
     @property

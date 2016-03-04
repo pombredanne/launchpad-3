@@ -106,6 +106,9 @@ class ArchiveSigningKey:
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
         self.archive.signing_key, _ = getUtility(IGPGKeySet).activate(
             key_owner, pub_key, pub_key.can_encrypt)
+        self.archive.signing_key_owner = key.owner
+        self.archive.signing_key_fingerprint = key.fingerprint
+        del get_property_cache(self.archive).signing_key
 
     def signRepository(self, suite):
         """See `IArchiveSigningKey`."""

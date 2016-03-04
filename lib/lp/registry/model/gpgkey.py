@@ -20,6 +20,7 @@ from lp.registry.interfaces.gpg import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -166,6 +167,19 @@ class GPGKeySet:
             if result is None:
                 return default
             return result
+
+    def getByFingerprints(self, fingerprints):
+        """See `IGPGKeySet`"""
+        if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            fingerprints = []
+            for fingerprint in fingerprints:
+                key_data = client.getKeyByFingerprint(fingerprint)
+                fingerprints.append(GPGServiceKey(key_data))
+            return fingerprints
+        else:
+            return IStore(GPGKey).find(
+                GPGKey, GPGKey.fingerprint.is_in(fingerprints))
 
     def getGPGKeysForPerson(self, owner, active=True):
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):

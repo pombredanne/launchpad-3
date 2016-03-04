@@ -73,6 +73,7 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import PersonSettings
 from lp.registry.model.teammembership import TeamMembership
@@ -128,7 +129,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,

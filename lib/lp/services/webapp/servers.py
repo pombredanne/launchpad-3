@@ -79,6 +79,7 @@ from lp.services.webapp.authentication import (
     )
 from lp.services.webapp.authorization import (
     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY,
     )
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
@@ -674,6 +675,8 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def clearSecurityPolicyCache(self):
         if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
             del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+        if LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY in self.annotations:
+            del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY]
 
     def beforeCompletion(self, transaction):
         """See `ISynchronizer`."""
