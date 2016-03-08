@@ -469,6 +469,13 @@ class IGPGClient(Interface):
         :raises ValueError: if the fingerprint isn't valid.
         """
 
+    def getKeysByFingerprints(fingerprints):
+        """Bulk retrieve GPG keys by a list of fingerprints.
+
+        :param fingerprints: A list of fingerprints to retrieve.
+        :returns: A list of keys that were found.
+        """
+
     def registerWriteHook(hook_callable):
         """Register a write hook.
 

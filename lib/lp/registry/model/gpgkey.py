@@ -129,7 +129,11 @@ class GPGKeySet:
     def activate(self, requester, key, can_encrypt):
         """See `IGPGKeySet`."""
         fingerprint = key.fingerprint
-        lp_key = self.getByFingerprint(fingerprint)
+        # XXX: This is a little ugly - we can't use getByFingerprint here since
+        # if the READ_FROM_GPGSERVICE FF is set we'll get a GPGServiceKey object
+        # instead of a GPGKey object, and we need to change the database
+        # representation in all cases.
+        lp_key = GPGKey.selectOneBy(fingerprint=fingerprint)
         if lp_key:
             is_new = False
             # Then the key already exists, so let's reactivate it.
@@ -145,7 +149,16 @@ class GPGKeySet:
                 ownerID, keyid, fingerprint, keysize, algorithm,
                 can_encrypt=can_encrypt)
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            # XXX: Further to the comment above, if WRITE_TO_GPGSERVICE FF is
+            # set then we need to duplicate the block above bur reading from
+            # the gpgservice.
             client = getUtility(IGPGClient)
+            if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+                lp_key = self.getByFingerprint(key.fingerprint)
+                is_new = lp_key is None
+                # TODO: make addKeyForOwner return the newly added key?
+                client.addKeyForOwner(self.getOwnerIdForPerson(requester), key.fingerprint)
+                lp_key = self.getByFingerprint(key.fingerprint)
             openid_identifier = self.getOwnerIdForPerson(lp_key.owner)
             client.addKeyForOwner(openid_identifier, key.fingerprint)
         return lp_key, is_new
@@ -172,11 +185,7 @@ class GPGKeySet:
         """See `IGPGKeySet`"""
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            fingerprints = []
-            for fingerprint in fingerprints:
-                key_data = client.getKeyByFingerprint(fingerprint)
-                fingerprints.append(GPGServiceKey(key_data))
-            return fingerprints
+            return client.getKeysByFingerprints(fingerprints)
         else:
             return IStore(GPGKey).find(
                 GPGKey, GPGKey.fingerprint.is_in(fingerprints))
