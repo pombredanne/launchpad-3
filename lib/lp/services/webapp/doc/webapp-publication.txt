@@ -1090,8 +1090,8 @@ token.
     Guilherme Salgado
     >>> principal.access_level
     <DBItem AccessLevel.WRITE_PUBLIC...
-    >>> principal.scope.name
-    u'firefox'
+    >>> principal.scope_url
+    u'/firefox'
 
 If the token is expired or doesn't exist, an Unauthorized exception is
 raised, though.

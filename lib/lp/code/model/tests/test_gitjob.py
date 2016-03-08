@@ -39,6 +39,7 @@ from lp.code.model.gitjob import (
     GitRefScanJob,
     ReclaimGitRepositorySpaceJob,
     )
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
@@ -217,6 +218,11 @@ class TestGitRefScanJob(TestCaseWithFactory):
                             'old': None,
                             'new': {'commit_sha1': sha1('refs/tags/2.0')}},
                     })})))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
 
     def test_merge_detection_triggers_webhooks(self):
         self.useFixture(FeatureFixture(
@@ -258,6 +264,11 @@ class TestGitRefScanJob(TestCaseWithFactory):
                         {'queue_status': Equals('Work in progress')}),
                     'new': ContainsDict({'queue_status': Equals('Merged')}),
                     })))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
 
     def test_composeWebhookPayload(self):
         repository = self.factory.makeGitRepository()
