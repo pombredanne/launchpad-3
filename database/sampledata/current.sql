@@ -3744,7 +3744,8 @@ ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
 ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
-
+INSERT INTO featureflag (scope, priority, flag, value) VALUES ('default', 2, 'gpg.read_from_gpgservice', 'true');
+INSERT INTO featureflag (scope, priority, flag, value) VALUES ('default', 2, 'gpg.write_to_gpgservice', 'true');
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
 
@@ -11356,5 +11357,3 @@ INSERT INTO xref (from_type, from_id, from_id_int, to_type, to_id, to_id_int, cr
 
 
 ALTER TABLE xref ENABLE TRIGGER ALL;
-
-

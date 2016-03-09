@@ -176,7 +176,7 @@ class LaunchpadLoginSource:
     """
 
     def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE,
-                     scope=None):
+                     scope_url=None):
         """Return an `ILaunchpadPrincipal` for the account with the given id.
 
         Return None if there is no account with the given id.
@@ -184,9 +184,9 @@ class LaunchpadLoginSource:
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
 
-        Similarly, when a `scope` is given, the principal's capabilities will
-        apply only to things within that scope.  For everything else that is
-        not private, the principal will have only read access.
+        Similarly, when a `scope_url` is given, the principal's capabilities
+        will apply only to things within that scope.  For everything else
+        that is not private, the principal will have only read access.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -198,14 +198,14 @@ class LaunchpadLoginSource:
         except LookupError:
             return None
 
-        return self._principalForAccount(account, access_level, scope)
+        return self._principalForAccount(account, access_level, scope_url)
 
     def getPrincipals(self, name):
         raise NotImplementedError
 
     def getPrincipalByLogin(self, login,
                             access_level=AccessLevel.WRITE_PRIVATE,
-                            scope=None):
+                            scope_url=None):
         """Return a principal based on the account with the email address
         signified by "login".
 
@@ -214,9 +214,9 @@ class LaunchpadLoginSource:
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
 
-        Similarly, when a `scope` is given, the principal's capabilities will
-        apply only to things within that scope.  For everything else that is
-        not private, the principal will have only read access.
+        Similarly, when a `scope_url` is given, the principal's capabilities
+        will apply only to things within that scope.  For everything else
+        that is not private, the principal will have only read access.
 
 
         Note that we currently need to be able to retrieve principals for
@@ -227,9 +227,10 @@ class LaunchpadLoginSource:
         person = getUtility(IPersonSet).getByEmail(login, filter_status=False)
         if person is None or person.account is None:
             return None
-        return self._principalForAccount(person.account, access_level, scope)
+        return self._principalForAccount(
+            person.account, access_level, scope_url)
 
-    def _principalForAccount(self, account, access_level, scope):
+    def _principalForAccount(self, account, access_level, scope_url):
         """Return a LaunchpadPrincipal for the given account.
 
         The LaunchpadPrincipal will also have the given access level and
@@ -239,7 +240,7 @@ class LaunchpadLoginSource:
         principal = LaunchpadPrincipal(
             naked_account.id, naked_account.displayname,
             naked_account.displayname, account,
-            access_level=access_level, scope=scope)
+            access_level=access_level, scope_url=scope_url)
         principal.__parent__ = self
         return principal
 
@@ -254,12 +255,12 @@ loginSource.__parent__ = authService
 class LaunchpadPrincipal:
 
     def __init__(self, id, title, description, account,
-                 access_level=AccessLevel.WRITE_PRIVATE, scope=None):
+                 access_level=AccessLevel.WRITE_PRIVATE, scope_url=None):
         self.id = unicode(id)
         self.title = title
         self.description = description
         self.access_level = access_level
-        self.scope = scope
+        self.scope_url = scope_url
         self.account = account
         self.person = IPerson(account, None)
 

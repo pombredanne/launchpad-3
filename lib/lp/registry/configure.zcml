@@ -613,7 +613,7 @@
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="lp.services.webapp.interfaces.ILaunchpadContainer"
-        factory="lp.registry.publisher.LaunchpadDistributionSourcePackageContainer"/>
+        factory="lp.services.webapp.publisher.LaunchpadContainer"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"

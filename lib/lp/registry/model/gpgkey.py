@@ -149,18 +149,16 @@ class GPGKeySet:
                 ownerID, keyid, fingerprint, keysize, algorithm,
                 can_encrypt=can_encrypt)
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
-            # XXX: Further to the comment above, if WRITE_TO_GPGSERVICE FF is
-            # set then we need to duplicate the block above bur reading from
-            # the gpgservice.
+            # XXX: Further to the comment above, if READ_FROM_GPGSERVICE FF is
+            # set then we need to duplicate the block above but reading from
+            # the gpgservice instead of the database:
             client = getUtility(IGPGClient)
             if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
                 lp_key = self.getByFingerprint(key.fingerprint)
                 is_new = lp_key is None
-                # TODO: make addKeyForOwner return the newly added key?
-                client.addKeyForOwner(self.getOwnerIdForPerson(requester), key.fingerprint)
-                lp_key = self.getByFingerprint(key.fingerprint)
-            openid_identifier = self.getOwnerIdForPerson(lp_key.owner)
-            client.addKeyForOwner(openid_identifier, key.fingerprint)
+            # TODO: make addKeyForOwner return the newly added key?
+            client.addKeyForOwner(self.getOwnerIdForPerson(requester), key.fingerprint)
+            lp_key = self.getByFingerprint(key.fingerprint)
         return lp_key, is_new
 
     def deactivate(self, key):
@@ -180,15 +178,6 @@ class GPGKeySet:
             if result is None:
                 return default
             return result
-
-    def getByFingerprints(self, fingerprints):
-        """See `IGPGKeySet`"""
-        if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
-            client = getUtility(IGPGClient)
-            return client.getKeysByFingerprints(fingerprints)
-        else:
-            return IStore(GPGKey).find(
-                GPGKey, GPGKey.fingerprint.is_in(fingerprints))
 
     def getGPGKeysForPerson(self, owner, active=True):
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
