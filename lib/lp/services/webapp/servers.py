@@ -79,6 +79,7 @@ from lp.services.webapp.authentication import (
     )
 from lp.services.webapp.authorization import (
     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY,
     )
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
@@ -101,7 +102,10 @@ from lp.services.webapp.notifications import (
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.publication import LaunchpadBrowserPublication
-from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.publisher import (
+    canonical_url,
+    RedirectionView,
+    )
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -674,6 +678,8 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def clearSecurityPolicyCache(self):
         if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
             del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+        if LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY in self.annotations:
+            del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY]
 
     def beforeCompletion(self, transaction):
         """See `ISynchronizer`."""
@@ -1331,9 +1337,13 @@ class WebServicePublication(WebServicePublicationMixin,
             # Everything is fine, let's return the principal.
             pass
         alsoProvides(request, IOAuthSignedRequest)
+        if token.context is not None:
+            scope_url = canonical_url(token.context, force_local_path=True)
+        else:
+            scope_url = None
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
             token.person.account.id, access_level=token.permission,
-            scope=token.context)
+            scope_url=scope_url)
 
         return principal
 

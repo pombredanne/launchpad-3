@@ -595,14 +595,18 @@ class TestSnapDeleteView(BrowserTestCase):
         self.assertRaises(NotFound, browser.open, snap_url)
 
     def test_delete_snap_with_builds(self):
-        # A snap package with builds cannot be deleted.
+        # A snap package with builds can be deleted.
+        self.useFixture(FakeLogger())
         snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
-        self.factory.makeSnapBuild(snap=snap)
+        build = self.factory.makeSnapBuild(snap=snap)
+        self.factory.makeSnapFile(snapbuild=build)
+        snap_url = canonical_url(snap)
+        owner_url = canonical_url(self.person)
         browser = self.getViewBrowser(snap, user=self.person)
         browser.getLink("Delete snap package").click()
-        self.assertIn("This snap package cannot be deleted", browser.contents)
-        self.assertRaises(
-            LookupError, browser.getControl, "Delete snap package")
+        browser.getControl("Delete snap package").click()
+        self.assertEqual(owner_url, browser.url)
+        self.assertRaises(NotFound, browser.open, snap_url)
 
 
 class TestSnapView(BrowserTestCase):

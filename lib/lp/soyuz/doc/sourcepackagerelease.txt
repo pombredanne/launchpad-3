@@ -127,7 +127,7 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_name = getUtility(ISourcePackageNameSet)['pmount']
   >>> arg_comp = getUtility(IComponentSet)['universe']
   >>> arg_sect = getUtility(ISectionSet)['web']
-  >>> arg_key = getUtility(IGPGKeySet).get(1)
+  >>> arg_key = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
@@ -331,4 +331,3 @@ published_archives shows the superseded/deleted publications still:
     ...     print archive.displayname
     Primary Archive for Ubuntu Linux
     PPA named pppa for Celso Providelo
-

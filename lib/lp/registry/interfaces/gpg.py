@@ -79,25 +79,13 @@ class IGPGKeySet(Interface):
         :param key: An IGPGKey instance.
         """
 
-    def get(key_id, default=None):
-        """Return the GPGKey object for the given id.
-
-        Return the given default if there's no object with the given id.
-        """
-
     def getByFingerprint(fingerprint, default=None):
         """Return UNIQUE result for a given Key fingerprint including
         inactive ones.
         """
 
-    def getGPGKeys(ownerid=None, active=True):
-        """Return OpenPGP keys ordered by id.
+    def getGPGKeysForPerson(person, active=True):
+        """Return OpenGPG keys for a person.
 
-        Optionally for a given owner and or a given status.
+        :returns: a list of IGPGKey instances.
         """
-
-    def getGPGKeysForPeople(people):
-        """Return OpenPGP keys for a set of people."""
-
-    def getOwnerIdForPerson(person):
-        """return an owner id string suitable for sending to gpgservice."""

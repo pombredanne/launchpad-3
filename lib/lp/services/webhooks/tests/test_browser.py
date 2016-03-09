@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Webhook views."""
@@ -17,6 +17,7 @@ import transaction
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
+from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     login_person,
     record_two_runs,
@@ -59,6 +60,9 @@ class GitRepositoryTestHelpers:
     def makeTarget(self):
         return self.factory.makeGitRepository()
 
+    def getTraversalStack(self, obj):
+        return [obj.target, obj]
+
 
 class BranchTestHelpers:
 
@@ -70,6 +74,28 @@ class BranchTestHelpers:
 
     def makeTarget(self):
         return self.factory.makeBranch()
+
+    def getTraversalStack(self, obj):
+        return [obj.target, obj]
+
+
+class SnapTestHelpers:
+
+    event_type = "snap:build:0.1"
+    expected_event_types = [
+        ("snap:build:0.1", "Snap build"),
+        ]
+
+    def makeTarget(self):
+        self.useFixture(FeatureFixture({
+            SNAP_FEATURE_FLAG: 'true',
+            'webhooks.new.enabled': 'true',
+            }))
+        owner = self.factory.makePerson()
+        return self.factory.makeSnap(registrant=owner, owner=owner)
+
+    def getTraversalStack(self, obj):
+        return [obj]
 
 
 class WebhookTargetViewTestHelpers:
@@ -84,8 +110,8 @@ class WebhookTargetViewTestHelpers:
     def makeView(self, name, **kwargs):
         view = create_view(self.target, name, principal=self.owner, **kwargs)
         # To test the breadcrumbs we need a correct traversal stack.
-        view.request.traversed_objects = [
-            self.target.target, self.target, view]
+        view.request.traversed_objects = (
+            self.getTraversalStack(self.target) + [view])
         view.initialize()
         return view
 
@@ -158,6 +184,12 @@ class TestWebhooksViewGitRepository(
 
 class TestWebhooksViewBranch(
     TestWebhooksViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhooksViewSnap(
+    TestWebhooksViewBase, SnapTestHelpers, TestCaseWithFactory):
 
     pass
 
@@ -254,6 +286,12 @@ class TestWebhookAddViewBranch(
     pass
 
 
+class TestWebhookAddViewSnap(
+    TestWebhookAddViewBase, SnapTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
 class WebhookViewTestHelpers:
 
     def setUp(self):
@@ -268,8 +306,8 @@ class WebhookViewTestHelpers:
     def makeView(self, name, **kwargs):
         view = create_view(self.webhook, name, principal=self.owner, **kwargs)
         # To test the breadcrumbs we need a correct traversal stack.
-        view.request.traversed_objects = [
-            self.target.target, self.target, self.webhook, view]
+        view.request.traversed_objects = (
+            self.getTraversalStack(self.target) + [self.webhook, view])
         view.initialize()
         return view
 
@@ -350,6 +388,12 @@ class TestWebhookViewBranch(
     pass
 
 
+class TestWebhookViewSnap(
+    TestWebhookViewBase, SnapTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
 class TestWebhookDeleteViewBase(WebhookViewTestHelpers):
 
     layer = DatabaseFunctionalLayer
@@ -392,5 +436,11 @@ class TestWebhookDeleteViewGitRepository(
 
 class TestWebhookDeleteViewBranch(
     TestWebhookDeleteViewBase, BranchTestHelpers, TestCaseWithFactory):
+
+    pass
+
+
+class TestWebhookDeleteViewSnap(
+    TestWebhookDeleteViewBase, SnapTestHelpers, TestCaseWithFactory):
 
     pass

@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -22,6 +22,8 @@ from storm.locals import (
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
+from zope.component.interfaces import ObjectEvent
+from zope.event import notify
 from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
@@ -59,12 +61,18 @@ from lp.snappy.interfaces.snap import (
 from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
     ISnapBuildSet,
+    ISnapBuildStatusChangedEvent,
     ISnapFile,
     )
 from lp.snappy.mail.snapbuild import SnapBuildMailer
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+
+@implementer(ISnapBuildStatusChangedEvent)
+class SnapBuildStatusChangedEvent(ObjectEvent):
+    """See `ISnapBuildStatusChangedEvent`."""
 
 
 @implementer(ISnapFile)
@@ -299,6 +307,16 @@ class SnapBuild(PackageBuildMixin, Storm):
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
         return not self.getFiles().is_empty()
+
+    def updateStatus(self, status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None,
+                     force_invalid_transition=False):
+        """See `IBuildFarmJob`."""
+        super(SnapBuild, self).updateStatus(
+            status, builder=builder, slave_status=slave_status,
+            date_started=date_started, date_finished=date_finished,
+            force_invalid_transition=force_invalid_transition)
+        notify(SnapBuildStatusChangedEvent(self))
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
