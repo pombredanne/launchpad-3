@@ -157,6 +157,7 @@ class GPGKeySet:
                 lp_key = self.getByFingerprint(key.fingerprint)
                 is_new = lp_key is None
             # TODO: make addKeyForOwner return the newly added key?
+            # TODO: Can we assume that getOwnerIdForPerson won't return None here?
             client.addKeyForOwner(self.getOwnerIdForPerson(requester), key.fingerprint)
             lp_key = self.getByFingerprint(key.fingerprint)
         return lp_key, is_new
@@ -183,6 +184,8 @@ class GPGKeySet:
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
             owner_id = self.getOwnerIdForPerson(owner)
+            if owner_id is None:
+                return []
             keys = client.getKeysForOwner(owner_id)['keys']
             return [GPGServiceKey(d) for d in keys if d['enabled'] == active]
         else:
