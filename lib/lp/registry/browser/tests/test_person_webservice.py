@@ -27,7 +27,10 @@ from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     LaunchpadWebServiceCaller,
@@ -72,7 +75,7 @@ class TestPersonEmailSecurity(TestCaseWithFactory):
 
 class TestPersonAccountStatus(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_account_status_history_restricted(self):
         person = self.factory.makePerson()
