@@ -70,7 +70,10 @@ class ArchiveSigningKey:
         if self.archive != default_ppa:
             if default_ppa.signing_key is None:
                 IArchiveSigningKey(default_ppa).generateSigningKey()
-            self.archive.signing_key = default_ppa.signing_key
+            key = default_ppa.signing_key
+            self.archive.signing_key = key
+            self.archive.signing_key_owner = key.owner
+            self.archive._signing_key_fingerprint = key.fingerprint
             return
 
         key_displayname = (
@@ -105,9 +108,12 @@ class ArchiveSigningKey:
 
         algorithm = GPGKeyAlgorithm.items[pub_key.algorithm]
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
-        self.archive.signing_key = getUtility(IGPGKeySet).new(
+        key = getUtility(IGPGKeySet).new(
             key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
             algorithm, active=True, can_encrypt=pub_key.can_encrypt)
+        self.archive.signing_key = key
+        self.archive.signing_key_owner = key.owner
+        self.archive._signing_key_fingerprint = key.fingerprint
 
     def signRepository(self, suite):
         """See `IArchiveSigningKey`."""
