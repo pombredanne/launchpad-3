@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugs' custom publication."""
@@ -55,12 +55,8 @@ def bugs_request_publication_factory():
 
 class LaunchpadBugContainer(LaunchpadContainer):
 
-    def isWithin(self, scope):
-        """Is this bug within the given scope?
-
-        A bug is in the scope of any of its bugtasks' targets.
-        """
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`."""
+        # A bug is within any of its bugtasks' targets.
         for bugtask in self.context.bugtasks:
-            if ILaunchpadContainer(bugtask.target).isWithin(scope):
-                return True
-        return False
+            yield ILaunchpadContainer(bugtask.target)
