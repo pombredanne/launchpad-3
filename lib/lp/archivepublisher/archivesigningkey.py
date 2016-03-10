@@ -70,7 +70,10 @@ class ArchiveSigningKey:
         if self.archive != default_ppa:
             if default_ppa.signing_key is None:
                 IArchiveSigningKey(default_ppa).generateSigningKey()
-            self.archive.signing_key = default_ppa.signing_key
+            key = default_ppa.signing_key
+            self.archive.signing_key = key
+            self.archive.signing_key_owner = key.owner
+            self.archive._signing_key_fingerprint = key.fingerprint
             return
 
         key_displayname = (

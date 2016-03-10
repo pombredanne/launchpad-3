@@ -186,6 +186,9 @@ class PackageUpload(SQLBase):
 
     signing_key = ForeignKey(
         foreignKey='GPGKey', dbName='signing_key', notNull=False)
+    signing_key_owner_id = Int(name="signing_key_owner")
+    signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
+    signing_key_fingerprint = Unicode()
 
     package_copy_job_id = Int(name='package_copy_job', allow_none=True)
     package_copy_job = Reference(package_copy_job_id, 'PackageCopyJob.id')
