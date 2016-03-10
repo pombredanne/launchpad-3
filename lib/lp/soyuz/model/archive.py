@@ -23,21 +23,22 @@ from sqlobject import (
     IntCol,
     StringCol,
     )
+from storm.base import Storm
 from storm.expr import (
     And,
+    Count,
     Desc,
+    Join,
     Not,
     Or,
     Select,
     Sum,
     )
-from storm.locals import (
-    Count,
+from storm.properties import (
     Int,
-    Join,
-    Reference,
-    Storm,
+    Unicode,
     )
+from storm.references import Reference
 from storm.store import Store
 from zope.component import (
     getAdapter,
@@ -339,6 +340,9 @@ class Archive(SQLBase):
 
     signing_key = ForeignKey(
         foreignKey='GPGKey', dbName='signing_key', notNull=False)
+    signing_key_owner_id = Int(name="signing_key_owner")
+    signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
+    _signing_key_fingerprint = Unicode(name="signing_key_fingerprint")
 
     relative_build_score = IntCol(
         dbName='relative_build_score', notNull=True, default=0)
@@ -2534,6 +2538,9 @@ class ArchiveSet:
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
             purpose=purpose, publish=publish, signing_key=signing_key,
+            signing_key_owner=signing_key.owner if signing_key else None,
+            _signing_key_fingerprint=(
+                signing_key.fingerprint if signing_key else None),
             require_virtualized=require_virtualized)
 
         # Upon creation archives are enabled by default.

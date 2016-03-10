@@ -19,6 +19,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+from storm.properties import Unicode
 from zope.component import getUtility
 from zope.interface import implementer
 
@@ -181,6 +182,7 @@ class SignedCodeOfConduct(SQLBase):
 
     signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
                             notNull=False, default=None)
+    signing_key_fingerprint = Unicode()
 
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
                                  default=UTC_NOW)
@@ -305,8 +307,10 @@ class SignedCodeOfConductSet:
                     'space differences are acceptable).')
 
         # Store the signature
-        signed = SignedCodeOfConduct(owner=user, signingkey=gpg,
-                                     signedcode=signedcode, active=True)
+        signed = SignedCodeOfConduct(
+            owner=user, signingkey=gpg,
+            signing_key_fingerprint=gpg.fingerprint if gpg else None,
+            signedcode=signedcode, active=True)
 
         # Send Advertisement Email
         subject = 'Your Code of Conduct signature has been acknowledged'

@@ -30,6 +30,7 @@ from storm.locals import (
     Desc,
     Int,
     Reference,
+    Unicode,
     )
 from storm.store import Store
 from zope.component import getUtility
@@ -89,6 +90,9 @@ class SourcePackageRelease(SQLBase):
         dbName='maintainer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+    signing_key_owner_id = Int(name="signing_key_owner")
+    signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
+    signing_key_fingerprint = Unicode()
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,

@@ -616,6 +616,8 @@ class SourcePackageHandler:
             sourcepackagename=name.id,
             maintainer=maintainer.id,
             dscsigningkey=key,
+            signing_key_owner=key.owner if key else None,
+            signing_key_fingerprint=key.fingerprint if key else None,
             urgency=ChangesFile.urgency_map[src.urgency],
             dateuploaded=src.date_uploaded,
             dsc=src.dsc,
