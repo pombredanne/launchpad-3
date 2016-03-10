@@ -122,7 +122,7 @@ access level specified will be valid only for things in that scope.
     >>> private_bug = getUtility(IBugSet).get(14)
     >>> logout()
     >>> principal.access_level = AccessLevel.WRITE_PRIVATE
-    >>> principal.scope = firefox
+    >>> principal.scope_url = '/firefox'
     >>> setupInteraction(principal)
     >>> check_permission('launchpad.Edit', firefox)
     True
@@ -146,7 +146,7 @@ But it won't be able to view private stuff that is not within its scope
 If the scope is a ProjectGroup or Distribution, then the access level will
 be used for anything which is part of that ProjectGroup/Distribution.
 
-    >>> principal.scope = mozilla
+    >>> principal.scope_url = '/mozilla'
     >>> setupInteraction(principal)
     >>> check_permission('launchpad.Edit', mozilla)
     True
@@ -157,7 +157,7 @@ be used for anything which is part of that ProjectGroup/Distribution.
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')
-    >>> principal.scope = ubuntu
+    >>> principal.scope_url = '/ubuntu'
     >>> setupInteraction(principal)
     >>> check_permission('launchpad.Edit', ubuntu)
     True
@@ -175,7 +175,7 @@ A bug task whose target is Firefox is said to be within firefox (which
 in turn is within Mozilla), so the user's access level will apply to
 that bug task as well.
 
-    >>> principal.scope = mozilla
+    >>> principal.scope_url = '/mozilla'
     >>> setupInteraction(principal)
     >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> bug_task = firefox.searchTasks(
@@ -185,7 +185,7 @@ that bug task as well.
 
 If no scope is specified, the access level will be used for everything.
 
-    >>> principal.scope = None
+    >>> principal.scope_url = None
     >>> setupInteraction(principal)
     >>> check_permission('launchpad.Edit', ubuntu)
     True
