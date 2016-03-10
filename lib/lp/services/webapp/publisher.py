@@ -77,6 +77,7 @@ from lp.services.features import (
     defaultFlagValue,
     getFeatureFlag,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.utils import obfuscate_structure
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
@@ -844,13 +845,36 @@ class LaunchpadContainer:
     def __init__(self, context):
         self.context = context
 
-    def isWithin(self, scope):
-        """Is this object within the given scope?
+    @cachedproperty
+    def _context_url(self):
+        try:
+            return canonical_url(self.context, force_local_path=True)
+        except NoCanonicalUrl:
+            return None
 
-        By default all objects are only within itself.  More specific adapters
-        must override this and implement the logic they want.
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`.
+
+        By default, we only consider the parent of this object in the
+        canonical URL iteration.  Adapters for objects with more complex
+        parentage rules must override this method.
         """
-        return self.context == scope
+        # Circular import.
+        from lp.services.webapp.canonicalurl import nearest_adapter
+        urldata = ICanonicalUrlData(self.context, None)
+        if urldata is not None and urldata.inside is not None:
+            container = nearest_adapter(urldata.inside, ILaunchpadContainer)
+            yield container
+
+    def isWithin(self, scope_url):
+        """See `ILaunchpadContainer`."""
+        if self._context_url is None:
+            return False
+        if self._context_url == scope_url:
+            return True
+        return any(
+            parent.isWithin(scope_url)
+            for parent in self.getParentContainers())
 
 
 @implementer(IBrowserPublisher)

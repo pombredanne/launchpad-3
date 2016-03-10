@@ -23,4 +23,4 @@ CREATE INDEX revision__signing_key_owner__idx
 CREATE INDEX sourcepackagerelease__signing_key_owner__idx
     ON sourcepackagerelease(signing_key_owner);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 75, 1);

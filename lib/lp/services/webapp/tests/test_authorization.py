@@ -1,10 +1,11 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `lp.services.webapp.authorization`."""
 
 __metaclass__ = type
 
+from itertools import count
 from random import getrandbits
 import StringIO
 
@@ -43,11 +44,13 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.interfaces import (
     AccessLevel,
+    ICanonicalUrlData,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
     IPlacelessAuthUtility,
     )
 from lp.services.webapp.metazcml import ILaunchpadPermission
+from lp.services.webapp.publisher import LaunchpadContainer
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
@@ -188,7 +191,7 @@ class FakePerson:
 class FakeLaunchpadPrincipal:
     """A minimal principal implementing `ILaunchpadPrincipal`"""
     person = FakePerson()
-    scope = None
+    scope_url = None
     access_level = ''
 
 
@@ -440,12 +443,13 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         self.security = LaunchpadSecurityPolicy()
         provideAdapter(
             adapt_loneobject_to_container, [ILoneObject], ILaunchpadContainer)
+        provideAdapter(LoneObjectURL, [ILoneObject], ICanonicalUrlData)
         self.addCleanup(zope.testing.cleanup.cleanUp)
 
     def test_no_scope(self):
         """Principal's access level is used when no scope is given."""
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
-        self.principal.scope = None
+        self.principal.scope_url = None
         self.failUnlessEqual(
             self.security._getPrincipalsAccessLevel(
                 self.principal, LoneObject()),
@@ -455,7 +459,7 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         """Principal's access level is used when object is within scope."""
         obj = LoneObject()
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
-        self.principal.scope = obj
+        self.principal.scope_url = '/+loneobject/%d' % obj.id
         self.failUnlessEqual(
             self.security._getPrincipalsAccessLevel(self.principal, obj),
             self.principal.access_level)
@@ -464,7 +468,7 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         """READ_PUBLIC is used when object is /not/ within scope."""
         obj = LoneObject()
         obj2 = LoneObject()  # This is out of obj's scope.
-        self.principal.scope = obj
+        self.principal.scope_url = '/+loneobject/%d' % obj.id
 
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
         self.failUnlessEqual(
@@ -486,11 +490,31 @@ class ILoneObject(Interface):
     """A marker interface for objects that only contain themselves."""
 
 
-@implementer(ILoneObject, ILaunchpadContainer)
-class LoneObject:
+@implementer(ILoneObject)
+class LoneObject(LaunchpadContainer):
 
-    def isWithin(self, context):
-        return self == context
+    _id_counter = count(1)
+
+    def __init__(self):
+        super(LoneObject, self).__init__(self)
+        self.id = LoneObject._id_counter.next()
+
+    def getParentContainers(self):
+        return []
+
+
+@implementer(ICanonicalUrlData)
+class LoneObjectURL:
+
+    rootsite = None
+    inside = None
+
+    def __init__(self, loneobject):
+        self.loneobject = loneobject
+
+    @property
+    def path(self):
+        return '+loneobject/%d' % self.loneobject.id
 
 
 def adapt_loneobject_to_container(loneobj):
