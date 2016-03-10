@@ -235,6 +235,7 @@ from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
     GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
