@@ -42,7 +42,10 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import clear_property_cache
+from lp.services.propertycache import (
+    clear_property_cache,
+    get_property_cache,
+    )
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -3456,7 +3459,11 @@ class TestSigningKeyPropagation(TestCaseWithFactory):
             owner=person, purpose=ArchivePurpose.PPA, name="ppa")
         self.assertEqual(ppa, person.archive)
         self.factory.makeGPGKey(person)
-        removeSecurityProxy(person.archive).signing_key = person.gpg_keys[0]
+        key = person.gpg_keys[0]
+        removeSecurityProxy(person.archive).signing_key_owner = key.owner
+        removeSecurityProxy(person.archive).signing_key_fingerprint = (
+            key.fingerprint)
+        del get_property_cache(person.archive).signing_key
         ppa_with_key = self.factory.makeArchive(
             owner=person, purpose=ArchivePurpose.PPA)
         self.assertEqual(person.gpg_keys[0], ppa_with_key.signing_key)

@@ -246,7 +246,9 @@ class TestPublishDistro(TestNativePublishingBase):
         self.addCleanup(tac.tearDown)
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
         IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
-        name16.archive.signing_key = cprov.archive.signing_key
+        name16.archive.signing_key_owner = cprov.archive.signing_key_owner
+        name16.archive.signing_key_fingerprint = (
+            cprov.archive.signing_key_fingerprint)
 
         self.layer.txn.commit()
 

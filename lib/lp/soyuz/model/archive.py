@@ -77,6 +77,7 @@ from lp.registry.enums import (
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
@@ -338,11 +339,11 @@ class Archive(SQLBase):
 
     date_created = UtcDateTimeCol(dbName='date_created')
 
-    signing_key = ForeignKey(
+    _signing_key = ForeignKey(
         foreignKey='GPGKey', dbName='signing_key', notNull=False)
     signing_key_owner_id = Int(name="signing_key_owner")
     signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
-    _signing_key_fingerprint = Unicode(name="signing_key_fingerprint")
+    signing_key_fingerprint = Unicode()
 
     relative_build_score = IntCol(
         dbName='relative_build_score', notNull=True, default=0)
@@ -390,6 +391,13 @@ class Archive(SQLBase):
     def title(self):
         """See `IArchive`."""
         return self.displayname
+
+    @cachedproperty
+    def signing_key(self):
+        """See `IArchive`."""
+        if self.signing_key_fingerprint is not None:
+            return getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint)
 
     @property
     def is_ppa(self):
@@ -517,13 +525,6 @@ class Archive(SQLBase):
                 "archive_url unknown for purpose: %s" % self.purpose)
         return urlappend(
             db_pubconf.base_url, self.distribution.name + postfix)
-
-    @property
-    def signing_key_fingerprint(self):
-        if self.signing_key is not None:
-            return self.signing_key.fingerprint
-
-        return None
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
@@ -679,7 +680,6 @@ class Archive(SQLBase):
         def eager_load(rows):
             # \o/ circular imports.
             from lp.registry.model.distroseries import DistroSeries
-            from lp.registry.model.gpgkey import GPGKey
             ids = set(map(attrgetter('distroseriesID'), rows))
             ids.discard(None)
             if ids:
@@ -698,10 +698,14 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
-            ids = set(map(attrgetter('dscsigningkeyID'), releases))
-            ids.discard(None)
-            if ids:
-                list(store.find(GPGKey, GPGKey.id.is_in(ids)))
+            keys = {
+                key.fingerprint: key for key in
+                getUtility(IGPGKeySet).getByFingerprints(
+                    set(map(attrgetter('signing_key_fingerprint'), releases))
+                    - set([None]))}
+            for spr in releases:
+                get_property_cache(spr).dscsigningkey = keys.get(
+                    spr.signing_key_fingerprint)
         return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getSourcesForDeletion(self, name=None, status=None, distroseries=None):
@@ -2537,9 +2541,9 @@ class ArchiveSet:
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
-            purpose=purpose, publish=publish, signing_key=signing_key,
+            purpose=purpose, publish=publish, _signing_key=signing_key,
             signing_key_owner=signing_key.owner if signing_key else None,
-            _signing_key_fingerprint=(
+            signing_key_fingerprint=(
                 signing_key.fingerprint if signing_key else None),
             require_virtualized=require_virtualized)
 
@@ -2631,8 +2635,8 @@ class ArchiveSet:
                  SourcePackagePublishingHistory.archive == Archive.id))
         results = IStore(Archive).using(*origin).find(
             Archive,
-            Archive.signing_key == None, Archive.purpose == ArchivePurpose.PPA,
-            Archive._enabled == True)
+            Archive.signing_key_fingerprint == None,
+            Archive.purpose == ArchivePurpose.PPA, Archive._enabled == True)
         results.order_by(Archive.date_created)
         return results.config(distinct=True)
 

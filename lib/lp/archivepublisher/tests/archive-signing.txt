@@ -104,8 +104,8 @@ We will select the only available IGPGKey from the sampledata.
 
 And use it as the Mark's PPA signing key.
 
-    >>> mark.archive.signing_key = a_key
-
+    >>> mark.archive.signing_key_owner = a_key.owner
+    >>> mark.archive.signing_key_fingerprint = a_key.fingerprint
     >>> print mark.archive.signing_key_fingerprint
     ABCDEF0123456789ABCDDCBA0000111112345678
 
@@ -286,8 +286,11 @@ We will reset the signing key of the just created named PPA,
 simulating the situation when a the default PPA and a named-ppas get
 created within the same cycle of the key-generator process.
 
+    >>> from lp.services.propertycache import get_property_cache
     >>> login('foo.bar@canonical.com')
-    >>> named_ppa.signing_key = None
+    >>> named_ppa.signing_key_owner = None
+    >>> named_ppa.signing_key_fingerprint = None
+    >>> del get_property_cache(named_ppa).signing_key
     >>> login(ANONYMOUS)
 
     >>> print named_ppa.signing_key
@@ -312,8 +315,12 @@ Instead of generating a new key, the signing key from the default ppa
 We will reset the signing-keys for both PPA of Celso.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.signing_key = None
-    >>> named_ppa.signing_key = None
+    >>> cprov.archive.signing_key_owner = None
+    >>> cprov.archive.signing_key_fingerprint = None
+    >>> del get_property_cache(cprov.archive).signing_key
+    >>> named_ppa.signing_key_owner = None
+    >>> named_ppa.signing_key_fingerprint = None
+    >>> del get_property_cache(named_ppa).signing_key
     >>> login(ANONYMOUS)
 
     >>> print cprov.archive.signing_key
@@ -365,7 +372,9 @@ for archive which already contains a 'signing_key'.
 Celso's default PPA will uses the testing signing key.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.signing_key = signing_key
+    >>> cprov.archive.signing_key_owner = signing_key.owner
+    >>> cprov.archive.signing_key_fingerprint = signing_key.fingerprint
+    >>> del get_property_cache(cprov.archive).signing_key
     >>> login(ANONYMOUS)
 
 When signing repositores we assert they contain the right format and
@@ -437,7 +446,9 @@ keyserver.
 Finally, if we try to sign a repository for which the archive doesn't
 have a 'signing_key' set,  it raises an error.
 
-    >>> cprov.archive.signing_key = None
+    >>> cprov.archive.signing_key_owner = None
+    >>> cprov.archive.signing_key_fingerprint = None
+    >>> del get_property_cache(cprov.archive).signing_key
 
     >>> archive_signing_key.signRepository(test_suite)
     Traceback (most recent call last):

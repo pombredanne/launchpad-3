@@ -49,6 +49,7 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
 
 
@@ -180,7 +181,7 @@ class SignedCodeOfConduct(SQLBase):
 
     signedcode = StringCol(dbName='signedcode', notNull=False, default=None)
 
-    signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
+    _signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
                             notNull=False, default=None)
     signing_key_fingerprint = Unicode()
 
@@ -194,6 +195,12 @@ class SignedCodeOfConduct(SQLBase):
                              default=None)
 
     active = BoolCol(dbName='active', notNull=True, default=False)
+
+    @cachedproperty
+    def signingkey(self):
+        if self.signing_key_fingerprint is not None:
+            return getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint)
 
     @property
     def displayname(self):
@@ -308,7 +315,7 @@ class SignedCodeOfConductSet:
 
         # Store the signature
         signed = SignedCodeOfConduct(
-            owner=user, signingkey=gpg,
+            owner=user, _signingkey=gpg,
             signing_key_fingerprint=gpg.fingerprint if gpg else None,
             signedcode=signedcode, active=True)
 
