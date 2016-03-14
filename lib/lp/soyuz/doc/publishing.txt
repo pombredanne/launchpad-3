@@ -23,7 +23,9 @@ to make sure verifyObject will work.
     >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
-    >>> spph.sourcepackagerelease.dscsigningkey = fake_signer
+    >>> spph.sourcepackagerelease.signing_key_owner = fake_signer.owner
+    >>> spph.sourcepackagerelease.signing_key_fingerprint = (
+    ...     fake_signer.fingerprint)
 
 Verify if the object follows its interface contracts:
 
@@ -86,7 +88,10 @@ Other properties are shortcuts to the source package's properties:
 
 The signer can also be None for packages that were synced (e.g. from Debian):
 
-    >>> spph.sourcepackagerelease.dscsigningkey = None
+    >>> from lp.services.propertycache import get_property_cache
+    >>> spph.sourcepackagerelease.signing_key_owner = None
+    >>> spph.sourcepackagerelease.signing_key_fingerprint = None
+    >>> del get_property_cache(spph.sourcepackagerelease).dscsigningkey
     >>> print spph.package_signer
     None
 

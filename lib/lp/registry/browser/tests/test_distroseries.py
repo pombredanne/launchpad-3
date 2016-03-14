@@ -941,8 +941,11 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
                             sourcename=spr.sourcepackagename.name,
                             distroseries=derived_series))
                 else:
-                    removeSecurityProxy(spr).dscsigningkey = (
-                        self.factory.makeGPGKey(owner=spr.creator))
+                    key = self.factory.makeGPGKey(owner=spr.creator)
+                    removeSecurityProxy(spr).signing_key_owner = key.owner
+                    removeSecurityProxy(spr).signing_key_fingerprint = (
+                        key.fingerprint)
+                    del get_property_cache(spr).dscsigningkey
 
         def flush_and_render():
             flush_database_caches()
@@ -1357,8 +1360,12 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # each difference row.
         dsd = self.makePackageUpgrade()
         uploader = self.factory.makePerson()
-        removeSecurityProxy(dsd.source_package_release).dscsigningkey = (
-            self.factory.makeGPGKey(uploader))
+        key = self.factory.makeGPGKey(uploader)
+        naked_spr = removeSecurityProxy(
+            dsd.source_package_release.sourcepackagerelease)
+        naked_spr.signing_key_fingerprint = key.fingerprint
+        naked_spr.signing_key_owner = key.owner
+        del get_property_cache(naked_spr).dscsigningkey
         view = self.makeView(dsd.derived_series)
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
@@ -2433,8 +2440,12 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference(
             difference_type=missing_type)
         uploader = self.factory.makePerson()
-        naked_spr = removeSecurityProxy(dsd.parent_source_package_release)
-        naked_spr.dscsigningkey = self.factory.makeGPGKey(uploader)
+        key = self.factory.makeGPGKey(uploader)
+        naked_spr = removeSecurityProxy(
+            dsd.parent_source_package_release.sourcepackagerelease)
+        naked_spr.signing_key_fingerprint = key.fingerprint
+        naked_spr.signing_key_owner = key.owner
+        del get_property_cache(naked_spr).dscsigningkey
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 dsd.derived_series, '+missingpackages',

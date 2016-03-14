@@ -9384,7 +9384,7 @@ ALTER TABLE sharingjob ENABLE TRIGGER ALL;
 
 ALTER TABLE signedcodeofconduct DISABLE TRIGGER ALL;
 
-INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode, recipient, active, admincomment, signing_key_fingerprint) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL, NULL);
+INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode, recipient, active, admincomment, signing_key_fingerprint) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL, 'ABCDEF0123456789ABCDDCBA0000111112345678');
 
 
 ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;

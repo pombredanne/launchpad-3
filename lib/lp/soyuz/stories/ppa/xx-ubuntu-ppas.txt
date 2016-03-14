@@ -557,7 +557,9 @@ for more information).
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> a_key = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
-    >>> removeSecurityProxy(no_priv.archive).signing_key = a_key
+    >>> removeSecurityProxy(no_priv.archive).signing_key_fingerprint = (
+    ...     a_key.fingerprint)
+    >>> removeSecurityProxy(no_priv.archive).signing_key_owner = a_key.owner
     >>> logout()
 
 Now that 'No privileges' PPA has a signing key, a text with the key

@@ -316,7 +316,8 @@ def sign_code_of_conduct(person, log):
     if signedcocset.searchByUser(person_id).count() == 0:
         fake_gpg_key = LaunchpadObjectFactory().makeGPGKey(person)
         Store.of(person).add(SignedCodeOfConduct(
-            owner=person, signingkey=fake_gpg_key,
+            owner=person, signing_key_fingerprint=fake_gpg_key.fingerprint,
+            signing_key_owner=fake_gpg_key.owner,
             signedcode="Normally a signed CoC would go here.", active=True))
 
 
