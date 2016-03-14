@@ -21,7 +21,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer, LaunchpadFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
@@ -129,7 +129,7 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
 class PrivateArtifactsViewTestCase(BrowserTestCase):
     """ Tests that private team archives can be viewed."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Create a test archive."""

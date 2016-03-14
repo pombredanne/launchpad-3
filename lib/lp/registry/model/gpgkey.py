@@ -182,12 +182,13 @@ class GPGKeySet:
 
     def getByFingerprints(self, fingerprints):
         """See `IGPGKeySet`"""
+        fingerprints = list(fingerprints)
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            return client.getKeysByFingerprints(fingerprints)
+            return [GPGServiceKey(key_data) for key_data in client.getKeysByFingerprints(fingerprints)]
         else:
             return IStore(GPGKey).find(
-                GPGKey, GPGKey.fingerprint.is_in(fingerprints))        
+                GPGKey, GPGKey.fingerprint.is_in(fingerprints))
 
     def getGPGKeysForPerson(self, owner, active=True):
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):

@@ -700,6 +700,8 @@ class GPGClient:
             self.raise_for_error(resp)
 
     def getKeysByFingerprints(self, fingerprints):
+        if len(fingerprints) == 1:
+            return [self.getKeyByFingerprint(fingerprints[0])]
         fingerprint = ','.join(
             [sanitize_fingerprint_or_raise(f) for f in fingerprints])
         path = '/keys/%s' % fingerprint
