@@ -1164,6 +1164,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog,
             changelog_entry=changelog_entry, dsc=dsc,
+            _dscsigningkey=dscsigningkey,
             signing_key_owner=dscsigningkey.owner if dscsigningkey else None,
             signing_key_fingerprint=(
                 dscsigningkey.fingerprint if dscsigningkey else None),
@@ -1352,6 +1353,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive, changesfile=changes_file_alias,
+            _signing_key=signing_key,
             signing_key_owner=signing_key.owner if signing_key else None,
             signing_key_fingerprint=(
                 signing_key.fingerprint if signing_key else None),

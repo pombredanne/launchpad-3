@@ -185,6 +185,8 @@ class PackageUpload(SQLBase):
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
+    _signing_key = ForeignKey(
+        foreignKey='GPGKey', dbName='signing_key', notNull=False)
     signing_key_owner_id = Int(name="signing_key_owner")
     signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
     signing_key_fingerprint = Unicode()

@@ -84,6 +84,7 @@ class TestBuildNotify(TestCaseWithFactory):
                     self.factory.getUniqueInteger(), status.value),
                 distroseries=self.distroseries, architecturehintlist='any',
                 creator=self.creator, archive=archive)
+            spph.sourcepackagerelease._dscsigningkey = self.gpgkey
             spph.sourcepackagerelease.signing_key_fingerprint = (
                 self.gpgkey.fingerprint)
             spph.sourcepackagerelease.signing_key_owner = (

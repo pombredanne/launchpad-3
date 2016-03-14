@@ -27,6 +27,7 @@ from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
     IGPGHandler,
     )
+from lp.services.propertycache import get_property_cache
 
 
 @implementer(IArchiveSigningKey)
@@ -71,9 +72,10 @@ class ArchiveSigningKey:
             if default_ppa.signing_key is None:
                 IArchiveSigningKey(default_ppa).generateSigningKey()
             key = default_ppa.signing_key
-            self.archive.signing_key = key
+            self.archive._signing_key = key
             self.archive.signing_key_owner = key.owner
-            self.archive._signing_key_fingerprint = key.fingerprint
+            self.archive.signing_key_fingerprint = key.fingerprint
+            del get_property_cache(self.archive).signing_key
             return
 
         key_displayname = (
@@ -107,8 +109,9 @@ class ArchiveSigningKey:
         gpghandler.uploadPublicKey(pub_key.fingerprint)
 
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
-        self.archive.signing_key, _ = getUtility(IGPGKeySet).activate(
+        key, _ = getUtility(IGPGKeySet).activate(
             key_owner, pub_key, pub_key.can_encrypt)
+        self.archive._signing_key = key
         self.archive.signing_key_owner = key.owner
         self.archive.signing_key_fingerprint = key.fingerprint
         del get_property_cache(self.archive).signing_key

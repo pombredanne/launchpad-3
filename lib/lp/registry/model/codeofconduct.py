@@ -181,6 +181,8 @@ class SignedCodeOfConduct(SQLBase):
 
     signedcode = StringCol(dbName='signedcode', notNull=False, default=None)
 
+    _signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
+                            notNull=False, default=None)
     signing_key_fingerprint = Unicode()
 
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
@@ -313,7 +315,7 @@ class SignedCodeOfConductSet:
 
         # Store the signature
         signed = SignedCodeOfConduct(
-            owner=user,
+            owner=user, _signingkey=gpg,
             signing_key_fingerprint=gpg.fingerprint if gpg else None,
             signedcode=signedcode, active=True)
 

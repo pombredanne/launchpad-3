@@ -339,6 +339,8 @@ class Archive(SQLBase):
 
     date_created = UtcDateTimeCol(dbName='date_created')
 
+    _signing_key = ForeignKey(
+        foreignKey='GPGKey', dbName='signing_key', notNull=False)
     signing_key_owner_id = Int(name="signing_key_owner")
     signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
     signing_key_fingerprint = Unicode()
@@ -2539,7 +2541,7 @@ class ArchiveSet:
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
-            purpose=purpose, publish=publish,
+            purpose=purpose, publish=publish, _signing_key=signing_key,
             signing_key_owner=signing_key.owner if signing_key else None,
             signing_key_fingerprint=(
                 signing_key.fingerprint if signing_key else None),
