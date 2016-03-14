@@ -70,7 +70,8 @@ class SignCodeOfConductTestCase(TestCaseWithFactory):
     def sign_coc(self, user, gpg_key):
         """Return a SignedCodeOfConduct using dummy text."""
         signed_coc = SignedCodeOfConduct(
-            owner=user, signingkey=gpg_key,
+            owner=user, signing_key_fingerprint=gpg_key.fingerprint,
+            signing_key_owner=gpg_key.owner,
             signedcode="Dummy CoC signed text.", active=True)
         return signed_coc
 

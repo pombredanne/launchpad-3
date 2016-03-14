@@ -46,6 +46,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient
@@ -184,7 +185,7 @@ class PackageUpload(SQLBase):
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
-    signing_key = ForeignKey(
+    _signing_key = ForeignKey(
         foreignKey='GPGKey', dbName='signing_key', notNull=False)
     signing_key_owner_id = Int(name="signing_key_owner")
     signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
@@ -290,6 +291,12 @@ class PackageUpload(SQLBase):
                 "customformat": file.customformat.title,
                 })
         return properties
+
+    @cachedproperty
+    def signing_key(self):
+        if self.signing_key_fingerprint is not None:
+            return getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint)
 
     @property
     def copy_source_archive(self):
