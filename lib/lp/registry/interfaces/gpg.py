@@ -78,6 +78,9 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
+    def getByFingerprints(fingerprints):
+        """Get multiple OpenPGP keys by their fingerprints."""
+
     def getGPGKeysForPerson(person, active=True):
         """Return OpenGPG keys for a person.
 

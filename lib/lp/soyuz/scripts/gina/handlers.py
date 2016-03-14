@@ -615,7 +615,7 @@ class SourcePackageHandler:
             component=componentID,
             sourcepackagename=name.id,
             maintainer=maintainer.id,
-            dscsigningkey=key,
+            _dscsigningkey=key,
             signing_key_owner=key.owner if key else None,
             signing_key_fingerprint=key.fingerprint if key else None,
             urgency=ChangesFile.urgency_map[src.urgency],
