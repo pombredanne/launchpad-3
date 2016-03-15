@@ -28,6 +28,7 @@ __all__ = [
     'FunctionalLayer',
     'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
+    'GPGServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
@@ -98,6 +99,7 @@ from zope.security.management import (
     endInteraction,
     getSecurityPolicy,
     )
+from zope.security.proxy import removeSecurityProxy
 from zope.server.logger.pythonlogger import PythonLogger
 
 from lp.services import pidfile
@@ -116,6 +118,7 @@ from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
+from lp.services.gpg.interfaces import IGPGClient
 from lp.services.job.tests import celery_worker
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
@@ -147,6 +150,7 @@ from lp.testing import (
     logout,
     reset_logging,
     )
+from lp.testing.gpgservice import GPGKeyServiceFixture
 from lp.testing.pgsql import PgTestSetup
 from lp.testing.smtpd import SMTPController
 
@@ -1159,6 +1163,45 @@ class ZopelessLayer(BaseLayer):
                 "This test removed the LaunchpadPermissiveSecurityPolicy and "
                 "didn't restore it.")
         logout()
+
+
+class GPGServiceLayer(BaseLayer):
+
+    service_fixture = None
+    gpgservice_needs_reset = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        gpg_client = getUtility(IGPGClient)
+        gpg_client.registerWriteHook(cls._on_gpgservice_write)
+        cls.service_fixture = GPGKeyServiceFixture(BaseLayer.config_fixture)
+        cls.service_fixture.setUp()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        gpg_client = removeSecurityProxy(getUtility(IGPGClient))
+        gpg_client.unregisterWriteHook(cls._on_gpgservice_write)
+        cls.service_fixture.cleanUp()
+        cls.service_fixture = None
+        logout()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        if cls.gpgservice_needs_reset:
+            cls.service_fixture.reset_service_database()
+            cls.gpgservice_needs_reset = False
+
+    @classmethod
+    def _on_gpgservice_write(cls):
+        cls.gpgservice_needs_reset = True
 
 
 class TwistedLayer(BaseLayer):
