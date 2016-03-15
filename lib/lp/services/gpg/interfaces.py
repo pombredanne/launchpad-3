@@ -10,8 +10,10 @@ __all__ = [
     'GPGKeyRevoked',
     'GPGKeyTemporarilyNotFoundError',
     'GPGReadOnly',
+    'GPGServiceException',
     'GPGUploadFailure',
     'GPGVerificationError',
+    'IGPGClient',
     'IGPGHandler',
     'IPymeKey',
     'IPymeSignature',
@@ -34,9 +36,7 @@ from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.security.interfaces import (
-    Forbidden,
-    )
+from zope.security.interfaces import Forbidden
 
 
 @error_status(httplib.FORBIDDEN)
@@ -421,3 +421,56 @@ class IPymeUserId(Interface):
     name = Attribute("The name portion of this user ID")
     email = Attribute("The email portion of this user ID")
     comment = Attribute("The comment portion of this user ID")
+
+
+class GPGServiceException(Exception):
+
+    """Raised when we get an error from the gpgservice.
+
+    More specific errors for commonly encountered errors may be added once we
+    actually integrate gpgservice with the rest of launchpad.
+    """
+
+
+class IGPGClient(Interface):
+
+    """A client for querying a gpgservice instance."""
+
+    def getKeysForOwner(owner_id):
+        """Get a list of keys for a given owner.
+
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
+
+    def addKeyForOwner(owner_id, fingerprint):
+        """Add a GPG key.
+
+        :raises ValueError: if the fingerprint isn't valid.
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
+
+    def disableKeyForOwner(owner_id, fingerprint):
+        """Disable a GPG key.
+
+        :raises ValueError: if the fingerprint isn't valid.
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
+
+    def registerWriteHook(hook_callable):
+        """Register a write hook.
+
+        The hook_callable will be called with no arguments whenever an operation
+        is performed that modifies the GPG database.
+
+        :raises TypeError: if hook_callable is not a callable.
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        """
+
+    def unregisterWriteHook(hook_callable):
+        """Deregister a write hook that was registered with register_write_hook.
+
+        :raises ValueError: if hook_callable was not registered.
+        """

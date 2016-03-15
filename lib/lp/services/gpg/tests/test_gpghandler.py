@@ -2,15 +2,25 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
+import random
+import string
 import subprocess
 
 import gpgme
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    HasLength,
+    raises,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyTemporarilyNotFoundError,
+    GPGServiceException,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.log.logger import BufferLogger
@@ -24,6 +34,7 @@ from lp.testing import (
     logout,
     TestCase,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import (
     import_secret_test_key,
     iter_test_key_emails,
@@ -31,7 +42,11 @@ from lp.testing.gpgkeys import (
     test_pubkey_from_email,
     )
 from lp.testing.keyserver import KeyServerTac
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    GPGServiceLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessLayer,
+    )
 
 
 class TestGPGHandler(TestCase):
@@ -219,3 +234,149 @@ class TestGPGHandler(TestCase):
                 line for line in status if line.startswith(validsig_prefix)]
             validsig_tokens = validsig_line[len(validsig_prefix):].split()
             self.assertEqual(gpgme.MD_SHA512, int(validsig_tokens[7]))
+
+
+class GPGServiceZopelessLayer(ZopelessLayer, GPGServiceLayer):
+    """A layer specifically for running the IGPGClient utility tests."""
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
+
+
+class GPGClientTests(TestCase):
+
+    layer = GPGServiceZopelessLayer
+
+    def test_can_get_utility(self):
+        client = getUtility(IGPGClient)
+        self.assertIsNot(None, client)
+
+    def get_random_owner_id_string(self):
+        """Get a random string that's representative of the owner id scheme."""
+        candidates = string.ascii_lowercase + string.digits
+        openid_id = ''.join((random.choice(candidates) for i in range(6)))
+        return 'http://testopenid.dev/+id/' + openid_id
+
+    def test_get_key_for_user_with_sampledata(self):
+        client = getUtility(IGPGClient)
+        data = client.getKeysForOwner('name16_oid')
+        self.assertThat(data, ContainsDict({'keys': HasLength(1)}))
+
+    def test_get_key_for_unknown_user(self):
+        client = getUtility(IGPGClient)
+        user = self.get_random_owner_id_string()
+        data = client.getKeysForOwner(user)
+        self.assertThat(data, ContainsDict({'keys': HasLength(0)}))
+
+    def test_register_non_callable_raises_TypeError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.registerWriteHook("not a callable"),
+            raises(TypeError))
+
+    def test_unregister_with_unregistered_hook_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.unregisterWriteHook("not registered"),
+            raises(ValueError))
+
+    def test_can_unregister_registered_write_hook(self):
+        client = getUtility(IGPGClient)
+        hook = FakeMethod()
+        client.registerWriteHook(hook)
+        client.unregisterWriteHook(hook)
+
+        self.assertThat(
+            lambda: client.unregisterWriteHook(hook),
+            raises(ValueError))
+
+    def test_can_add_new_fingerprint_for_user(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+        data = client.getKeysForOwner(user)
+        self.assertThat(data, ContainsDict({'keys': HasLength(1)}))
+        keys = data['keys']
+        self.assertThat(
+            keys[0],
+            ContainsDict({
+                'fingerprint': Equals(fingerprint),
+                'enabled': Equals(True)
+            }))
+
+    def test_adding_fingerprint_notifies_writes(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        hook = FakeMethod()
+        client.registerWriteHook(hook)
+        self.addCleanup(client.unregisterWriteHook, hook)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+
+        self.assertThat(hook.call_count, Equals(1))
+
+    def test_adding_invalid_fingerprint_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.addKeyForOwner(self.get_random_owner_id_string(), ''),
+            raises(ValueError("Invalid fingerprint: ''.")))
+
+    def test_adding_duplicate_fingerprint_raises_GPGServiceException(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user_one = self.get_random_owner_id_string()
+        user_two = self.get_random_owner_id_string()
+        client.addKeyForOwner(user_one, fingerprint)
+        self.assertThat(
+            lambda: client.addKeyForOwner(user_two, fingerprint),
+            raises(GPGServiceException("Error: Fingerprint already in database.")))
+
+    def test_disabling_active_key(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+        client.disableKeyForOwner(user, fingerprint)
+        data = client.getKeysForOwner(user)
+
+        self.assertThat(data, ContainsDict({'keys': HasLength(1)}))
+        keys = data['keys']
+        self.assertThat(keys[0], ContainsDict({'enabled': Equals(False)}))
+
+    def test_disabling_key_notifies_writes(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+
+        hook = FakeMethod()
+        client.registerWriteHook(hook)
+        self.addCleanup(client.unregisterWriteHook, hook)
+        client.disableKeyForOwner(user, fingerprint)
+        self.assertThat(hook.call_count, Equals(1))
+
+    def test_disabling_invalid_fingerprint_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.disableKeyForOwner(self.get_random_owner_id_string(), ''),
+            raises(ValueError("Invalid fingerprint: ''."))
+        )

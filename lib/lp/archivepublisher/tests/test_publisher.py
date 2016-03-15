@@ -22,7 +22,10 @@ try:
     import lzma
 except ImportError:
     from backports import lzma
-from testtools.matchers import ContainsAll
+from testtools.matchers import (
+    ContainsAll,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -1863,7 +1866,7 @@ class TestPublisher(TestPublisherBase):
                     release, os.path.join('main', 'dep11', name), f.read())
 
     def testReleaseFileTimestamps(self):
-        # The timestamps of Release and all its entries match.
+        # The timestamps of Release and all its core entries match.
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -1878,15 +1881,32 @@ class TestPublisher(TestPublisherBase):
         sources = suite_path('main', 'source', 'Sources.gz')
         sources_timestamp = os.stat(sources).st_mtime - 60
         os.utime(sources, (sources_timestamp, sources_timestamp))
+        dep11_path = suite_path('main', 'dep11')
+        dep11_names = ('Components-amd64.yml.gz', 'Components-i386.yml.gz',
+                       'icons-64x64.tar.gz', 'icons-128x128.tar.gz')
+        os.makedirs(dep11_path)
+        now = time.time()
+        for name in dep11_names:
+            with gzip.GzipFile(os.path.join(dep11_path, name), 'wb') as f:
+                f.write(name)
+            os.utime(os.path.join(dep11_path, name), (now - 60, now - 60))
 
         publisher.D_writeReleaseFiles(False)
 
         release = self.parseRelease(suite_path('Release'))
         paths = ['Release'] + [entry['name'] for entry in release['md5sum']]
         timestamps = set(
-            os.stat(suite_path(path)).st_mtime
-            for path in paths if os.path.exists(suite_path(path)))
+            os.stat(suite_path(path)).st_mtime for path in paths
+            if '/dep11/' not in path and os.path.exists(suite_path(path)))
         self.assertEqual(1, len(timestamps))
+
+        # Non-core files preserve their original timestamps.
+        # (Due to https://bugs.python.org/issue12904, there is some loss of
+        # accuracy in the test.)
+        for name in dep11_names:
+            self.assertThat(
+                os.stat(os.path.join(dep11_path, name)).st_mtime,
+                LessThan(now - 59))
 
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
