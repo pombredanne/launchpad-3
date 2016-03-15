@@ -64,3 +64,13 @@ class LaunchpadBranchContainer(LaunchpadContainer):
             self.context.target.context, ILaunchpadContainer)
         if adapter is not None:
             yield adapter
+
+
+class LaunchpadGitRepositoryContainer(LaunchpadContainer):
+
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`."""
+        # A repository is within its target.
+        adapter = queryAdapter(self.context.target, ILaunchpadContainer)
+        if adapter is not None:
+            yield adapter
