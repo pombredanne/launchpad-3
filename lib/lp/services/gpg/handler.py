@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -85,15 +85,18 @@ class GPGHandler:
         """
         self.home = tempfile.mkdtemp(prefix='gpg-')
         confpath = os.path.join(self.home, 'gpg.conf')
-        conf = open(confpath, 'w')
         # set needed GPG options, 'auto-key-retrieve' is necessary for
         # automatically retrieve from the keyserver unknown key when
         # verifying signatures and 'no-auto-check-trustdb' avoid wasting
         # time verifying the local keyring consistence.
-        conf.write('keyserver hkp://%s\n'
-                   'keyserver-options auto-key-retrieve\n'
-                   'no-auto-check-trustdb\n' % config.gpghandler.host)
-        conf.close()
+        with open(confpath, 'w') as conf:
+            conf.write('keyserver hkp://%s\n' % config.gpghandler.host)
+            conf.write('keyserver-options auto-key-retrieve\n')
+            conf.write('no-auto-check-trustdb\n')
+            # Prefer a SHA-2 hash where possible, otherwise GPG will fall
+            # back to a hash it can use.
+            conf.write(
+                'personal-digest-preferences SHA512 SHA384 SHA256 SHA224\n')
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
 
