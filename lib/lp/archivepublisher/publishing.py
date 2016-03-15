@@ -838,15 +838,24 @@ class Publisher(object):
             self.archive.getComponentsForSeries(distroseries)]
         all_architectures = [
             a.architecturetag for a in distroseries.enabled_architectures]
-        all_files = set()
+        # Core files are those that are normally updated when a suite
+        # changes, and which therefore receive special treatment with
+        # caching headers on mirrors.
+        core_files = set()
+        # Extra files are updated occasionally from other sources.  They are
+        # still checksummed and indexed, but they do not receive special
+        # treatment with caching headers on mirrors.  We must not play any
+        # special games with timestamps here, as it will interfere with the
+        # "staging" mechanism used to update these files.
+        extra_files = set()
         for component in all_components:
             self._writeSuiteSource(
-                distroseries, pocket, component, all_files)
+                distroseries, pocket, component, core_files)
             for architecture in all_architectures:
                 self._writeSuiteArch(
-                    distroseries, pocket, component, architecture, all_files)
+                    distroseries, pocket, component, architecture, core_files)
             self._writeSuiteI18n(
-                distroseries, pocket, component, all_files)
+                distroseries, pocket, component, core_files)
             dep11_dir = os.path.join(
                 self._config.distsroot, suite, component, "dep11")
             try:
@@ -855,15 +864,16 @@ class Publisher(object):
                             dep11_file.startswith("icons-")):
                         dep11_path = os.path.join(
                             component, "dep11", dep11_file)
-                        all_files.add(remove_suffix(dep11_path))
-                        all_files.add(dep11_path)
+                        extra_files.add(remove_suffix(dep11_path))
+                        extra_files.add(dep11_path)
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
         for architecture in all_architectures:
             for contents_path in get_suffixed_indices(
                     'Contents-' + architecture):
-                all_files.add(contents_path)
+                extra_files.add(contents_path)
+        all_files = core_files | extra_files
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)
@@ -898,20 +908,20 @@ class Publisher(object):
             release_file.setdefault("SHA256", []).append(hashes["sha256"])
 
         self._writeReleaseFile(suite, release_file)
-        all_files.add("Release")
+        core_files.add("Release")
 
         if self.archive.signing_key is not None:
             # Sign the repository.
             IArchiveSigningKey(self.archive).signRepository(suite)
-            all_files.add("Release.gpg")
-            all_files.add("InRelease")
+            core_files.add("Release.gpg")
+            core_files.add("InRelease")
         else:
             # Skip signature if the archive signing key is undefined.
             self.log.debug("No signing key available, skipping signature.")
 
         # Make sure all the timestamps match, to make it easier to insert
         # caching headers on mirrors.
-        self._syncTimestamps(suite, all_files)
+        self._syncTimestamps(suite, core_files)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                 file_stub, arch_name, arch_path,
