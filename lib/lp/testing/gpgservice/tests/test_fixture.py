@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import
 
+import base64
 import json
 import httplib
 
@@ -46,7 +47,9 @@ class GPGServiceFixtureTests(TestCase):
     def test_fixture_can_create_test_data(self):
         fixture = self.useFixture(GPGKeyServiceFixture())
         conn = httplib.HTTPConnection(fixture.bind_address)
-        conn.request('GET', '/users/name16_oid/keys')
+        conn.request(
+            'GET',
+            '/users/%s/keys' % base64.b64encode('name16_oid', altchars='-_'))
         resp = conn.getresponse()
         self.assertEqual(200, resp.status)
         data = json.loads(resp.read())
