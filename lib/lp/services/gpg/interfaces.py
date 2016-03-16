@@ -462,7 +462,7 @@ class IGPGClient(Interface):
         """
 
     def getKeyByFingerprint(fingerprint):
-        """Get a GPG key by it's fingerprint.
+        """Get a GPG key by its fingerprint.
 
         :raises ValueError: if the fingerprint isn't valid.
         """
