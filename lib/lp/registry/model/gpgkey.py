@@ -71,11 +71,10 @@ class GPGKeySet:
     def new(self, ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=False):
         """See `IGPGKeySet`"""
-        key = GPGKey(owner=ownerID, keyid=keyid,
+        return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, active=active,
                       can_encrypt=can_encrypt)
-        return key
 
     def activate(self, requester, key, can_encrypt):
         """See `IGPGKeySet`."""
