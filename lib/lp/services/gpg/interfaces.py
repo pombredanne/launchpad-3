@@ -29,6 +29,7 @@ __all__ = [
 import httplib
 import re
 
+from gpgservice_client import GPGServiceException
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -425,15 +426,6 @@ class IPymeUserId(Interface):
     name = Attribute("The name portion of this user ID")
     email = Attribute("The email portion of this user ID")
     comment = Attribute("The comment portion of this user ID")
-
-
-class GPGServiceException(Exception):
-
-    """Raised when we get an error from the gpgservice.
-
-    More specific errors for commonly encountered errors may be added once we
-    actually integrate gpgservice with the rest of launchpad.
-    """
 
 
 class IGPGClient(Interface):
