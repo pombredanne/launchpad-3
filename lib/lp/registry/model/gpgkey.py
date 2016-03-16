@@ -120,11 +120,10 @@ class GPGKeySet:
     def new(self, ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=False):
         """See `IGPGKeySet`"""
-        key = GPGKey(owner=ownerID, keyid=keyid,
+        return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, active=active,
                       can_encrypt=can_encrypt)
-        return key
 
     def activate(self, requester, key, can_encrypt):
         """See `IGPGKeySet`."""
@@ -218,4 +217,6 @@ class GPGKeySet:
 
     def getOwnerIdForPerson(self, owner):
         """See IGPGKeySet."""
-        return IOpenIDPersistentIdentity(owner).openid_identity_url
+        url = IOpenIDPersistentIdentity(owner).openid_identity_url
+        assert url is not None
+        return url
