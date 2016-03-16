@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Librarian interfaces."""
@@ -171,9 +171,9 @@ class ILibraryFileAliasSet(Interface):
     def __getitem__(key):
         """Lookup an ILibraryFileAlias by id."""
 
-    def findBySHA1(sha1):
-        """Return all LibraryFileAlias whose content's sha1 match the given
-        sha1.
+    def findBySHA256(sha256):
+        """Return all LibraryFileAlias whose content's sha256 match the
+        given sha256.
         """
 
 

@@ -816,6 +816,10 @@
         interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit"
         set_schema="lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
   </class>
+  <adapter
+      for="lp.code.interfaces.gitrepository.IGitRepository"
+      provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+      factory="lp.code.publisher.LaunchpadGitRepositoryContainer"/>
   <subscriber
       for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrepository.git_repository_modified"/>

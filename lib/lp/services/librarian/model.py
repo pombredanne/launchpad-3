@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -262,12 +262,12 @@ class LibraryFileAliasSet(object):
         """See ILibraryFileAliasSet.__getitem__"""
         return LibraryFileAlias.get(key)
 
-    def findBySHA1(self, sha1):
+    def findBySHA256(self, sha256):
         """See ILibraryFileAliasSet."""
         return LibraryFileAlias.select("""
             content = LibraryFileContent.id
-            AND LibraryFileContent.sha1 = '%s'
-            """ % sha1, clauseTables=['LibraryFileContent'])
+            AND LibraryFileContent.sha256 = '%s'
+            """ % sha256, clauseTables=['LibraryFileContent'])
 
 
 @implementer(ILibraryFileDownloadCount)
