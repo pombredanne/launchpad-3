@@ -141,7 +141,7 @@ class LibraryFileAliasResource(resource.Resource):
             return resource.ErrorPage(
                 503, 'Database unavailable',
                 'A required database is unavailable.\n'
-                'See http://identi.ca/launchpadstatus '
+                'See https://twitter.com/launchpadstatus '
                 'for maintenance and outage notifications.')
         else:
             return fourOhFour

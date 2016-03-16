@@ -120,3 +120,20 @@ But it's not within anything other than its target.
     None
     >>> ILaunchpadContainer(junk).isWithin('/firefox')
     False
+
+
+== Git repositories ==
+
+A Git repository is within its target.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> firefox_git = factory.makeGitRepository(target=firefox)
+    >>> ILaunchpadContainer(firefox_git).isWithin('/firefox')
+    True
+    >>> ILaunchpadContainer(firefox_git).isWithin('/mozilla')
+    True
+
+But it's not within anything other than its target.
+
+    >>> ILaunchpadContainer(firefox_git).isWithin('/ubuntu/+source/evolution')
+    False

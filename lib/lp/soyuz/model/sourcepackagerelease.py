@@ -91,7 +91,6 @@ class SourcePackageRelease(SQLBase):
     maintainer = ForeignKey(
         dbName='maintainer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    _dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     signing_key_owner_id = Int(name="signing_key_owner")
     signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
     signing_key_fingerprint = Unicode()

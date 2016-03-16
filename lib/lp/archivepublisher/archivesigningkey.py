@@ -72,7 +72,6 @@ class ArchiveSigningKey:
             if default_ppa.signing_key is None:
                 IArchiveSigningKey(default_ppa).generateSigningKey()
             key = default_ppa.signing_key
-            self.archive._signing_key = key
             self.archive.signing_key_owner = key.owner
             self.archive.signing_key_fingerprint = key.fingerprint
             del get_property_cache(self.archive).signing_key
@@ -111,7 +110,6 @@ class ArchiveSigningKey:
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
         key, _ = getUtility(IGPGKeySet).activate(
             key_owner, pub_key, pub_key.can_encrypt)
-        self.archive._signing_key = key
         self.archive.signing_key_owner = key.owner
         self.archive.signing_key_fingerprint = key.fingerprint
         del get_property_cache(self.archive).signing_key

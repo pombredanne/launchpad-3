@@ -47,8 +47,9 @@ class GPGServiceFixtureTests(TestCase):
     def test_fixture_can_create_test_data(self):
         fixture = self.useFixture(GPGKeyServiceFixture())
         conn = httplib.HTTPConnection(fixture.bind_address)
-        user = base64.b64encode('name16_oid', altchars='-_')
-        conn.request('GET', '/users/%s/keys' % user)
+        conn.request(
+            'GET',
+            '/users/%s/keys' % base64.b64encode('name16_oid', altchars='-_'))
         resp = conn.getresponse()
         self.assertEqual(200, resp.status)
         data = json.loads(resp.read())

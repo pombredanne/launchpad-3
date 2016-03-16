@@ -331,6 +331,7 @@ class GPGClientTests(TestCase):
             raises(GPGServiceException("Error: Fingerprint already in database.")))
 
     def test_disabling_active_key(self):
+        self.useFixture(KeyServerTac())
         client = getUtility(IGPGClient)
         fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
         user = self.get_random_owner_id_string()
@@ -343,6 +344,7 @@ class GPGClientTests(TestCase):
         self.assertThat(keys[0], ContainsDict({'enabled': Equals(False)}))
 
     def test_disabling_key_notifies_writes(self):
+        self.useFixture(KeyServerTac())
         client = getUtility(IGPGClient)
         fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
         user = self.get_random_owner_id_string()
