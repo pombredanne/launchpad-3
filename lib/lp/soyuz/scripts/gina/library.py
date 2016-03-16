@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Library access methods to gina."""
@@ -44,11 +44,11 @@ def getLibraryAlias(root, filename):
 def checkLibraryForFile(path, filename):
     fullpath = os.path.join(path, filename)
     assert os.path.exists(fullpath)
-    digester = hashlib.sha1()
+    digester = hashlib.sha256()
     openfile = open(fullpath, "r")
     for chunk in iter(lambda: openfile.read(1024 * 4), ''):
         digester.update(chunk)
     digest = digester.hexdigest()
     openfile.close()
     librarian = getUtility(ILibraryFileAliasSet)
-    return not librarian.findBySHA1(digest).is_empty()
+    return not librarian.findBySHA256(digest).is_empty()
