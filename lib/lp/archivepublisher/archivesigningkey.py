@@ -72,7 +72,6 @@ class ArchiveSigningKey:
             if default_ppa.signing_key is None:
                 IArchiveSigningKey(default_ppa).generateSigningKey()
             key = default_ppa.signing_key
-            self.archive._signing_key = key
             self.archive.signing_key_owner = key.owner
             self.archive.signing_key_fingerprint = key.fingerprint
             del get_property_cache(self.archive).signing_key
@@ -113,7 +112,6 @@ class ArchiveSigningKey:
         key = getUtility(IGPGKeySet).new(
             key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
             algorithm, active=True, can_encrypt=pub_key.can_encrypt)
-        self.archive._signing_key = key
         self.archive.signing_key_owner = key.owner
         self.archive.signing_key_fingerprint = key.fingerprint
         del get_property_cache(self.archive).signing_key
