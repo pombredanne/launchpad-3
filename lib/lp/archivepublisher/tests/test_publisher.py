@@ -7,6 +7,10 @@ __metaclass__ = type
 
 import bz2
 import crypt
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from functools import partial
 import gzip
 import hashlib
@@ -22,9 +26,17 @@ try:
     import lzma
 except ImportError:
     from backports import lzma
+import pytz
 from testtools.matchers import (
     ContainsAll,
+    DirContains,
+    Equals,
+    FileContains,
     LessThan,
+    Matcher,
+    MatchesSetwise,
+    Not,
+    PathExists,
     )
 import transaction
 from zope.component import getUtility
@@ -36,6 +48,8 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
 from lp.archivepublisher.publishing import (
+    ByHash,
+    ByHashes,
     getPublisher,
     I18nIndex,
     Publisher,
@@ -58,6 +72,7 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
+from lp.services.osutils import open_for_writing
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -68,12 +83,16 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import KeyServerTac
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 RELEASE = PackagePublishingPocket.RELEASE
@@ -421,6 +440,223 @@ class TestPublisherSeries(TestNativePublishingBase):
         self.assertEqual(1, publications.count())
         self.assertEqual(
             'i386', publications[0].distroarchseries.architecturetag)
+
+
+class ByHashHasContents(Matcher):
+    """Matches if a by-hash directory has exactly the specified contents."""
+
+    def __init__(self, contents):
+        self.contents = contents
+
+    def match(self, by_hash_path):
+        mismatch = DirContains(["MD5Sum", "SHA1", "SHA256"]).match(
+            by_hash_path)
+        if mismatch is not None:
+            return mismatch
+        for hashname, hashattr in (
+                ("MD5Sum", "md5"), ("SHA1", "sha1"), ("SHA256", "sha256")):
+            digests = {
+                getattr(hashlib, hashattr)(content).hexdigest(): content
+                for content in self.contents}
+            path = os.path.join(by_hash_path, hashname)
+            mismatch = DirContains(digests.keys()).match(path)
+            if mismatch is not None:
+                return mismatch
+            for digest, content in digests.items():
+                mismatch = FileContains(content).match(
+                    os.path.join(path, digest))
+                if mismatch is not None:
+                    return mismatch
+
+
+class ByHashesHaveContents(Matcher):
+    """Matches if only these by-hash directories exist with proper contents."""
+
+    def __init__(self, path_contents):
+        self.path_contents = path_contents
+
+    def match(self, root):
+        children = set()
+        for dirpath, dirnames, _ in os.walk(root):
+            if "by-hash" in dirnames:
+                children.add(os.path.relpath(dirpath, root))
+        mismatch = MatchesSetwise(
+            *(Equals(path) for path in self.path_contents)).match(children)
+        if mismatch is not None:
+            return mismatch
+        for path, contents in self.path_contents.items():
+            by_hash_path = os.path.join(root, path, "by-hash")
+            mismatch = ByHashHasContents(contents).match(by_hash_path)
+            if mismatch is not None:
+                return mismatch
+
+
+class TestByHash(TestCaseWithFactory):
+    """Unit tests for details of handling a single by-hash directory tree."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_add(self):
+        root = self.makeTemporaryDirectory()
+        contents = ["abc\n", "def\n"]
+        lfas = [
+            self.factory.makeLibraryFileAlias(content=content)
+            for content in contents]
+        transaction.commit()
+        by_hash = ByHash(root, "dists/foo/main/source")
+        for lfa in lfas:
+            by_hash.add(lfa)
+        by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
+        self.assertThat(by_hash_path, ByHashHasContents(contents))
+
+    def test_add_copy_from_path(self):
+        root = self.makeTemporaryDirectory()
+        content = "abc\n"
+        sources_path = "dists/foo/main/source/Sources"
+        with open_for_writing(
+                os.path.join(root, sources_path), "w") as sources:
+            sources.write(content)
+        lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
+        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash.add(lfa, copy_from_path=sources_path)
+        by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
+        self.assertThat(by_hash_path, ByHashHasContents([content]))
+
+    def test_add_existing(self):
+        root = self.makeTemporaryDirectory()
+        content = "abc\n"
+        lfa = self.factory.makeLibraryFileAlias(content=content)
+        by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
+        for hashname, hashattr in (
+                ("MD5Sum", "md5"), ("SHA1", "sha1"), ("SHA256", "sha256")):
+            digest = getattr(hashlib, hashattr)(content).hexdigest()
+            with open_for_writing(
+                    os.path.join(by_hash_path, hashname, digest), "w") as f:
+                f.write(content)
+        by_hash = ByHash(root, "dists/foo/main/source")
+        self.assertThat(by_hash_path, ByHashHasContents([content]))
+        by_hash.add(lfa)
+        self.assertThat(by_hash_path, ByHashHasContents([content]))
+
+    def test_exists(self):
+        root = self.makeTemporaryDirectory()
+        content = "abc\n"
+        with open_for_writing(os.path.join(root, "abc"), "w") as f:
+            f.write(content)
+        lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
+        by_hash = ByHash(root, "")
+        md5 = hashlib.md5(content).hexdigest()
+        sha1 = hashlib.sha1(content).hexdigest()
+        sha256 = hashlib.sha256(content).hexdigest()
+        self.assertFalse(by_hash.exists("MD5Sum", md5))
+        self.assertFalse(by_hash.exists("SHA1", sha1))
+        self.assertFalse(by_hash.exists("SHA256", sha256))
+        by_hash.add(lfa, copy_from_path="abc")
+        self.assertTrue(by_hash.exists("MD5Sum", md5))
+        self.assertTrue(by_hash.exists("SHA1", sha1))
+        self.assertTrue(by_hash.exists("SHA256", sha256))
+
+    def test_prune(self):
+        root = self.makeTemporaryDirectory()
+        content = "abc\n"
+        sources_path = "dists/foo/main/source/Sources"
+        with open_for_writing(os.path.join(root, sources_path), "w") as f:
+            f.write(content)
+        lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
+        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash.add(lfa, copy_from_path=sources_path)
+        by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
+        with open_for_writing(os.path.join(by_hash_path, "MD5Sum/0"), "w"):
+            pass
+        self.assertThat(by_hash_path, Not(ByHashHasContents([content])))
+        by_hash.prune()
+        self.assertThat(by_hash_path, ByHashHasContents([content]))
+
+    def test_prune_empty(self):
+        root = self.makeTemporaryDirectory()
+        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
+        with open_for_writing(os.path.join(by_hash_path, "MD5Sum/0"), "w"):
+            pass
+        self.assertThat(by_hash_path, PathExists())
+        by_hash.prune()
+        self.assertThat(by_hash_path, Not(PathExists()))
+
+
+class TestByHashes(TestCaseWithFactory):
+    """Unit tests for details of handling a set of by-hash directory trees."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_add(self):
+        root = self.makeTemporaryDirectory()
+        self.assertThat(root, ByHashesHaveContents({}))
+        path_contents = {
+            "dists/foo/main/source": {"Sources": "abc\n"},
+            "dists/foo/main/binary-amd64": {
+                "Packages.gz": "def\n", "Packages.xz": "ghi\n"},
+            }
+        by_hashes = ByHashes(root)
+        for dirpath, contents in path_contents.items():
+            for name, content in contents.items():
+                path = os.path.join(dirpath, name)
+                with open_for_writing(os.path.join(root, path), "w") as f:
+                    f.write(content)
+                lfa = self.factory.makeLibraryFileAlias(
+                    content=content, db_only=True)
+                by_hashes.add(path, lfa, copy_from_path=path)
+        self.assertThat(root, ByHashesHaveContents({
+            path: contents.values()
+            for path, contents in path_contents.items()}))
+
+    def test_exists(self):
+        root = self.makeTemporaryDirectory()
+        content = "abc\n"
+        sources_path = "dists/foo/main/source/Sources"
+        with open_for_writing(os.path.join(root, sources_path), "w") as f:
+            f.write(content)
+        lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
+        by_hashes = ByHashes(root)
+        md5 = hashlib.md5(content).hexdigest()
+        sha1 = hashlib.sha1(content).hexdigest()
+        sha256 = hashlib.sha256(content).hexdigest()
+        self.assertFalse(by_hashes.exists(sources_path, "MD5Sum", md5))
+        self.assertFalse(by_hashes.exists(sources_path, "SHA1", sha1))
+        self.assertFalse(by_hashes.exists(sources_path, "SHA256", sha256))
+        by_hashes.add(sources_path, lfa, copy_from_path=sources_path)
+        self.assertTrue(by_hashes.exists(sources_path, "MD5Sum", md5))
+        self.assertTrue(by_hashes.exists(sources_path, "SHA1", sha1))
+        self.assertTrue(by_hashes.exists(sources_path, "SHA256", sha256))
+
+    def test_prune(self):
+        root = self.makeTemporaryDirectory()
+        path_contents = {
+            "dists/foo/main/source": {"Sources": "abc\n"},
+            "dists/foo/main/binary-amd64": {
+                "Packages.gz": "def\n", "Packages.xz": "ghi\n"},
+            }
+        by_hashes = ByHashes(root)
+        for dirpath, contents in path_contents.items():
+            for name, content in contents.items():
+                path = os.path.join(dirpath, name)
+                with open_for_writing(os.path.join(root, path), "w") as f:
+                    f.write(content)
+                lfa = self.factory.makeLibraryFileAlias(
+                    content=content, db_only=True)
+                by_hashes.add(path, lfa, copy_from_path=path)
+        strays = [
+            "dists/foo/main/source/by-hash/MD5Sum/0",
+            "dists/foo/main/binary-amd64/by-hash/MD5Sum/0",
+            ]
+        for stray in strays:
+            with open_for_writing(os.path.join(root, stray), "w"):
+                pass
+        matcher = ByHashesHaveContents({
+            path: contents.values()
+            for path, contents in path_contents.items()})
+        self.assertThat(root, Not(matcher))
+        by_hashes.prune()
+        self.assertThat(root, matcher)
 
 
 class TestPublisher(TestPublisherBase):
@@ -1557,6 +1793,34 @@ class TestPublisher(TestPublisherBase):
         # are marked as dirty.
         self.checkDirtyPockets(publisher, expected=allowed_suites)
 
+    def testDirtyingPocketsWithReapableArchiveFiles(self):
+        """Pockets are dirty if they contain reapable archive files."""
+        allowed_suites = []
+        publisher = getPublisher(
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
+        publisher.A2_markPocketsWithDeletionsDirty()
+        self.checkDirtyPockets(publisher, expected=[])
+
+        lfa = self.factory.makeLibraryFileAlias()
+        getUtility(IArchiveFileSet).new(
+            self.ubuntutest.main_archive, u"stray", u"foo", lfa)
+        publisher.A2_markPocketsWithDeletionsDirty()
+        self.checkDirtyPockets(publisher, expected=[])
+
+        archive_file = getUtility(IArchiveFileSet).new(
+            self.ubuntutest.main_archive, u"release:breezy-autotest", u"foo",
+            lfa)
+        publisher.A2_markPocketsWithDeletionsDirty()
+        self.checkDirtyPockets(publisher, expected=[])
+
+        removeSecurityProxy(archive_file).scheduled_deletion_date = (
+            datetime.now(pytz.UTC) - timedelta(days=1))
+        publisher.A2_markPocketsWithDeletionsDirty()
+        expected_dirty_pockets = [
+            ('breezy-autotest', PackagePublishingPocket.RELEASE),
+            ]
+        self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
+
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -1907,6 +2171,160 @@ class TestPublisher(TestPublisherBase):
             self.assertThat(
                 os.stat(os.path.join(dep11_path, name)).st_mtime,
                 LessThan(now - 59))
+
+    def testUpdateByHashDisabled(self):
+        # The publisher does not create by-hash directories if it is
+        # disabled in the series configuration.
+        self.assertFalse(self.breezy_autotest.publish_by_hash)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'), Not(PathExists()))
+        release = self.parseRelease(suite_path('Release'))
+        self.assertNotIn('Acquire-By-Hash', release)
+
+    def testUpdateByHashInitial(self):
+        # An initial publisher run populates by-hash directories and leaves
+        # no archive files scheduled for deletion.
+        self.breezy_autotest.publish_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        contents = []
+        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                contents.append(f.read())
+
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(contents))
+
+        archive_files = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive)
+        self.assertNotEqual([], archive_files)
+        self.assertEqual([], [
+            archive_file for archive_file in archive_files
+            if archive_file.scheduled_deletion_date is not None])
+
+    def testUpdateByHashSubsequent(self):
+        # A subsequent publisher run updates by-hash directories where
+        # necessary, and marks inactive index files for later deletion.
+        self.breezy_autotest.publish_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        main_contents = []
+        universe_contents = []
+        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                main_contents.append(f.read())
+            with open(suite_path('universe', 'source', name), 'rb') as f:
+                universe_contents.append(f.read())
+
+        self.getPubSource(sourcename='baz', filecontent='Source: baz\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                main_contents.append(f.read())
+
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+        self.assertThat(
+            suite_path('universe', 'source', 'by-hash'),
+            ByHashHasContents(universe_contents))
+
+        archive_files = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive)
+        self.assertContentEqual(
+            ['dists/breezy-autotest/main/source/Sources.bz2',
+             'dists/breezy-autotest/main/source/Sources.gz'],
+            [archive_file.path for archive_file in archive_files
+             if archive_file.scheduled_deletion_date is not None])
+
+    def testUpdateByHashPrune(self):
+        # The publisher prunes files from by-hash that were superseded more
+        # than a day ago.
+        self.breezy_autotest.publish_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        main_contents = set()
+        for sourcename in ('foo', 'bar'):
+            self.getPubSource(
+                sourcename=sourcename, filecontent='Source: %s\n' % sourcename)
+            publisher.A_publish(False)
+            publisher.C_doFTPArchive(False)
+            publisher.D_writeReleaseFiles(False)
+            for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+                with open(suite_path('main', 'source', name), 'rb') as f:
+                    main_contents.add(f.read())
+        transaction.commit()
+
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+        old_archive_files = []
+        for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive):
+            if ('main/source' in archive_file.path and
+                    archive_file.scheduled_deletion_date is not None):
+                old_archive_files.append(archive_file)
+        self.assertEqual(2, len(old_archive_files))
+
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
+            now + timedelta(hours=12))
+        removeSecurityProxy(old_archive_files[1]).scheduled_deletion_date = (
+            now - timedelta(hours=12))
+        old_archive_files[1].library_file.open()
+        try:
+            main_contents.remove(old_archive_files[1].library_file.read())
+        finally:
+            old_archive_files[1].library_file.close()
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            Not(ByHashHasContents(main_contents)))
+
+        publisher.D_writeReleaseFiles(True)
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
 
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""

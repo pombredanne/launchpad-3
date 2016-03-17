@@ -10,6 +10,7 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
+from collections import OrderedDict
 from difflib import unified_diff
 import re
 from StringIO import StringIO
@@ -224,19 +225,37 @@ def filenameToContentType(fname):
 
     >>> filenameToContentType('test.tgz')
     'application/octet-stream'
+
+    Build logs
+    >>> filenameToContentType('buildlog.txt.gz')
+    'text/plain'
+
+    Various compressed files
+
+    >>> filenameToContentType('Packages.gz')
+    'application/x-gzip'
+    >>> filenameToContentType('Packages.bz2')
+    'application/x-bzip2'
+    >>> filenameToContentType('Packages.xz')
+    'application/x-xz'
     """
-    ftmap = {".dsc": "text/plain",
-             ".changes": "text/plain",
-             ".deb": "application/x-debian-package",
-             ".udeb": "application/x-debian-package",
-             ".txt": "text/plain",
-             # For the build master logs
-             ".txt.gz": "text/plain",
-             # For live filesystem builds
-             ".manifest": "text/plain",
-             ".manifest-remove": "text/plain",
-             ".size": "text/plain",
-             }
+    ftmap = OrderedDict([
+        (".dsc", "text/plain"),
+        (".changes", "text/plain"),
+        (".deb", "application/x-debian-package"),
+        (".udeb", "application/x-debian-package"),
+        (".txt", "text/plain"),
+        # For the build master logs
+        (".txt.gz", "text/plain"),
+        # For live filesystem builds
+        (".manifest", "text/plain"),
+        (".manifest-remove", "text/plain"),
+        (".size", "text/plain"),
+        # Compressed files
+        (".gz", "application/x-gzip"),
+        (".bz2", "application/x-bzip2"),
+        (".xz", "application/x-xz"),
+        ])
     for ending in ftmap:
         if fname.endswith(ending):
             return ftmap[ending]
