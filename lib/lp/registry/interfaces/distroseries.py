@@ -387,6 +387,13 @@ class IDistroSeriesPublic(
             A list of compression types to use for published index files
             (Packages, Sources, etc.).""")))
 
+    publish_by_hash = exported(Bool(
+        title=_("Publish by-hash directories"), required=True,
+        description=_("""
+            Publish archive index files in by-hash directories so that apt
+            can retrieve them based on their hash, avoiding race conditions
+            between InRelease and other files during mirror updates.""")))
+
     inherit_overrides_from_parents = Bool(
         title=_("Inherit overrides from parents"),
         readonly=False, required=True)

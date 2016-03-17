@@ -83,6 +83,7 @@ For distroseries we publish a subset of its attributes.
     official_bug_tags: []
     owner_link: u'http://.../~ubuntu-team'
     parent_series_link: u'http://.../ubuntu/warty'
+    publish_by_hash: False
     registrant_link: u'http://.../~mark'
     resource_type_link: ...
     self_link: u'http://.../ubuntu/hoary'

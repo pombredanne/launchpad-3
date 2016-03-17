@@ -375,6 +375,9 @@ class InitializeDistroSeries:
         self.distroseries.include_long_descriptions = any(
             parent.include_long_descriptions
                 for parent in self.derivation_parents)
+        self.distroseries.publish_by_hash = any(
+            parent.publish_by_hash
+                for parent in self.derivation_parents)
 
     def _copy_architectures(self):
         das_filter = ' AND distroseries IN %s ' % (

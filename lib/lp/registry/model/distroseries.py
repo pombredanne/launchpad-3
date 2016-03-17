@@ -276,6 +276,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 "index_compressors": [
                     compressor.title
                     for compressor in DEFAULT_INDEX_COMPRESSORS],
+                "publish_by_hash": False,
                 }
         super(DistroSeries, self).__init__(*args, **kwargs)
 
@@ -840,6 +841,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         assert isinstance(value, list)
         self.publishing_options["index_compressors"] = [
             compressor.title for compressor in value]
+
+    @property
+    def publish_by_hash(self):
+        return self.publishing_options.get("publish_by_hash", False)
+
+    @publish_by_hash.setter
+    def publish_by_hash(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["publish_by_hash"] = value
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""
