@@ -364,6 +364,7 @@ class GPGClientTests(TestCase):
         )
 
     def test_can_get_key_by_fingerprint(self):
+        self.useFixture(KeyServerTac())
         client = getUtility(IGPGClient)
         fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
         user = self.get_random_owner_id_string()
