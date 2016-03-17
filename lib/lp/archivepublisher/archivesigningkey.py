@@ -107,11 +107,9 @@ class ArchiveSigningKey:
         pub_key = gpghandler.retrieveKey(secret_key.fingerprint)
         gpghandler.uploadPublicKey(pub_key.fingerprint)
 
-        algorithm = GPGKeyAlgorithm.items[pub_key.algorithm]
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
-        key = getUtility(IGPGKeySet).new(
-            key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
-            algorithm, active=True, can_encrypt=pub_key.can_encrypt)
+        key, _ = getUtility(IGPGKeySet).activate(
+            key_owner, pub_key, pub_key.can_encrypt)
         self.archive.signing_key_owner = key.owner
         self.archive.signing_key_fingerprint = key.fingerprint
         del get_property_cache(self.archive).signing_key

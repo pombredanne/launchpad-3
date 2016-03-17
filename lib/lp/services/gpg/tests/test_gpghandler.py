@@ -15,12 +15,14 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
 from lp.services.gpg.handler import GPGClient
 from lp.services.gpg.interfaces import (
+    GPGKeyAlgorithm,
     GPGKeyDoesNotExistOnServer,
     GPGKeyTemporarilyNotFoundError,
     GPGServiceException,
@@ -28,6 +30,7 @@ from lp.services.gpg.interfaces import (
     IGPGHandler,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -38,6 +41,7 @@ from lp.testing import (
     logout,
     TestCase,
     )
+from lp.testing.factory import BareLaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import (
     import_secret_test_key,
@@ -50,7 +54,7 @@ from lp.testing.keyserver import KeyServerTac
 from lp.testing.layers import (
     GPGServiceLayer,
     LaunchpadFunctionalLayer,
-    ZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 
 
@@ -210,7 +214,7 @@ class TestImportKeyRing(TestCase):
             removeSecurityProxy(self.gpg_handler)._getPubKey, fingerprint)
 
 
-class GPGServiceZopelessLayer(ZopelessLayer, GPGServiceLayer):
+class GPGServiceZopelessLayer(ZopelessDatabaseLayer, GPGServiceLayer):
     """A layer specifically for running the IGPGClient utility tests."""
 
     @classmethod
@@ -233,6 +237,10 @@ class GPGServiceZopelessLayer(ZopelessLayer, GPGServiceLayer):
 class GPGClientTests(TestCase):
 
     layer = GPGServiceZopelessLayer
+
+    def setUp(self):
+        super(GPGClientTests, self).setUp()
+        self.factory = BareLaunchpadObjectFactory()
 
     def test_can_get_utility(self):
         client = getUtility(IGPGClient)
@@ -354,3 +362,39 @@ class GPGClientTests(TestCase):
             lambda: client.disableKeyForOwner(self.get_random_owner_id_string(), ''),
             raises(ValueError("Invalid fingerprint: ''."))
         )
+
+    def test_can_get_key_by_fingerprint(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+
+        key = client.getKeyByFingerprint(fingerprint)
+        self.assertThat(
+            key, ContainsDict({'owner': Equals(user),
+                               'fingerprint': Equals(fingerprint)}))
+
+    def test_get_missing_key_by_fingerprint(self):
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        self.assertIsNone(client.getKeyByFingerprint(fingerprint))
+
+    def test_get_key_with_bad_fingerprint_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(lambda: client.getKeyByFingerprint('bad fingerprint'),
+                        raises(ValueError))
+
+    def test_can_add_IGPGKey_to_test_enabled_gpgservice(self):
+        client = getUtility(IGPGClient)
+        person = self.factory.makePerson()
+        gpgkey = self.factory.makeGPGKey(person)
+        user = self.get_random_owner_id_string()
+        client.addKeyForTest(user, gpgkey.keyid, gpgkey.fingerprint,
+                             gpgkey.keysize, gpgkey.algorithm.name,
+                             gpgkey.active, gpgkey.can_encrypt)
+
+        key = client.getKeyByFingerprint(gpgkey.fingerprint)
+        self.assertThat(
+            key, ContainsDict({'owner': Equals(user),
+                               'fingerprint': Equals(gpgkey.fingerprint)}))
