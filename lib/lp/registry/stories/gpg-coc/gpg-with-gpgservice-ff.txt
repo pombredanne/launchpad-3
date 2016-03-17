@@ -7,9 +7,13 @@ XXX: This file was copied from 'xx-gpg-coc.txt'. The only difference is that we
      tests will be deleted.
 
     >>> from lp.services.features.testing import FeatureFixture
-    >>> from lp.services.gpg.interfaces import GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG
+    >>> from lp.services.gpg.interfaces import (
+    ...   GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
+    ...   GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
+    ...   )
     >>> feature_fixture = FeatureFixture(
-    ...   {GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG: True})
+    ...   {GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG: True,
+    ...   GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True})
     >>> feature_fixture.setUp()
 
 == Setup ==

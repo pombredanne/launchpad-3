@@ -21,13 +21,13 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
 class TestCanonicalUrl(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_canonical_url(self):
         # The canonical URL of a GPG key is ???
@@ -41,7 +41,7 @@ class TestCanonicalUrl(TestCaseWithFactory):
 
 class TestPersonGPGView(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_edit_pgp_keys_login_redirect(self):
         """+editpgpkeys should redirect to force you to re-authenticate."""

@@ -23,6 +23,7 @@ from lp.services.config.fixture import (
     )
 from lp.services.database.constants import THIRTY_DAYS_AGO
 from lp.services.database.interfaces import IMasterStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.handler import GPGClient
 from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
@@ -390,14 +391,14 @@ class GPGClientTests(TestCase):
                         raises(ValueError))
 
     def test_can_add_IGPGKey_to_test_enabled_gpgservice(self):
+        self.useFixture(
+            FeatureFixture({'gpg.write_to_gpgservice': True}))
         client = getUtility(IGPGClient)
         person = self.factory.makePerson()
+        # With the feature flag enabled, the following creates a
+        # gpg key on the gpgservice.
         gpgkey = self.factory.makeGPGKey(person)
-        user = self.get_random_owner_id_string()
-        client.addKeyForTest(user, gpgkey.keyid, gpgkey.fingerprint,
-                             gpgkey.keysize, gpgkey.algorithm.name,
-                             gpgkey.active, gpgkey.can_encrypt)
-
+        user = getUtility(IGPGKeySet).getOwnerIdForPerson(person)
         key = client.getKeyByFingerprint(gpgkey.fingerprint)
         self.assertThat(
             key, ContainsDict({'owner': Equals(user),

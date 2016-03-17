@@ -19,6 +19,7 @@ from lp.registry.interfaces.gpg import (
     IGPGKeySet,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
@@ -153,19 +154,35 @@ class GPGKeySet:
             # the gpgservice instead of the database:
             client = getUtility(IGPGClient)
             if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
-                lp_key = self.getByFingerprint(key.fingerprint)
-                is_new = lp_key is None
-            # TODO: Can we assume that getOwnerIdForPerson won't return None here?
-            lp_key = GPGServiceKey(
-                client.addKeyForOwner(
-                    self.getOwnerIdForPerson(requester), key.fingerprint))
+                # Users with more than one openid identifier may be re-activating
+                # a key that was previously deactivated with their non-default
+                # openid identifier. If that's the case, use the same openid
+                # identifier rather than the default one:
+                key_data = client.getKeyByFingerprint(fingerprint)
+                if key_data:
+                    is_new = False
+                    owner_id = key_data['owner']
+                else:
+                    is_new = True
+                    owner_id = self.getOwnerIdForPerson(requester)
+            gpgservice_key = GPGServiceKey(client.addKeyForOwner(owner_id, key.fingerprint))
+            if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+                lp_key = gpgservice_key
         return lp_key, is_new
 
     def deactivate(self, key):
         key.active = False
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            # Users with more than one openid identifier may be deactivating
+            # a key that is associated with their non-default openid identifier.
+            # If that's the case, use the same openid identifier rather than
+            # the default one:
             client = getUtility(IGPGClient)
-            openid_identifier = self.getOwnerIdForPerson(key.owner)
+            key_data = client.getKeyByFingerprint(key.fingerprint)
+            if key_data:
+                openid_identifier = key_data['owner']
+            else:
+                openid_identifier = self.getOwnerIdForPerson(key.owner)
             client.disableKeyForOwner(openid_identifier, key.fingerprint)
 
     def getByFingerprint(self, fingerprint, default=None):
@@ -186,17 +203,21 @@ class GPGKeySet:
             client = getUtility(IGPGClient)
             return [GPGServiceKey(key_data) for key_data in client.getKeysByFingerprints(fingerprints)]
         else:
-            return IStore(GPGKey).find(
-                GPGKey, GPGKey.fingerprint.is_in(fingerprints))
+            return list(IStore(GPGKey).find(
+                GPGKey, GPGKey.fingerprint.is_in(fingerprints)))
 
     def getGPGKeysForPerson(self, owner, active=True):
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            owner_id = self.getOwnerIdForPerson(owner)
-            if owner_id is None:
+            owner_ids = self._getAllOwnerIdsForPerson(owner)
+            if not owner_ids:
                 return []
-            keys = client.getKeysForOwner(owner_id)['keys']
-            return [GPGServiceKey(d) for d in keys if d['enabled'] == active]
+            gpg_keys = []
+            for owner_id in owner_ids:
+                key_data = client.getKeysForOwner(owner_id)['keys']
+                gpg_keys.extend(
+                    [GPGServiceKey(d) for d in key_data if d['enabled'] == active])
+            return gpg_keys
         else:
             if active is False:
                 query = """
@@ -210,9 +231,7 @@ class GPGKeySet:
                     """ % sqlvalues(owner.id)
             else:
                 query = 'active=true'
-
             query += ' AND owner=%s' % sqlvalues(owner.id)
-
             return list(GPGKey.select(query, orderBy='id'))
 
     def getOwnerIdForPerson(self, owner):
@@ -220,3 +239,9 @@ class GPGKeySet:
         url = IOpenIDPersistentIdentity(owner).openid_identity_url
         assert url is not None
         return url
+
+    def _getAllOwnerIdsForPerson(self, owner):
+        identifiers = IStore(OpenIdIdentifier).find(
+            OpenIdIdentifier, account=owner.account)
+        openid_provider_root = config.launchpad.openid_provider_root
+        return [openid_provider_root + '+id/' + i.identifier.encode('ascii') for i in identifiers]
