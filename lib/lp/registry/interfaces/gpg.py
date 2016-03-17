@@ -73,6 +73,12 @@ class IGPGKeySet(Interface):
             reactivated an existing key.
         """
 
+    def deactivate(key):
+        """Deactivate a key.
+
+        :param key: An IGPGKey instance.
+        """
+
     def getByFingerprint(fingerprint, default=None):
         """Return UNIQUE result for a given Key fingerprint including
         inactive ones.
