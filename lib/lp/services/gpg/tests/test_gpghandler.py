@@ -21,6 +21,8 @@ from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
+from lp.services.database.constants import THIRTY_DAYS_AGO
+from lp.services.database.interfaces import IMasterStore
 from lp.services.gpg.handler import GPGClient
 from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
@@ -400,3 +402,28 @@ class GPGClientTests(TestCase):
         self.assertThat(
             key, ContainsDict({'owner': Equals(user),
                                'fingerprint': Equals(gpgkey.fingerprint)}))
+
+    def makePersonWithMultipleGPGKeysInDifferentOpenids(self):
+        """Make a person with multiple GPG keys owned by
+        different openid identifiers. This happens as a result
+        of an account merge.
+
+        :returns: an IPerson instance with two keys under
+                  different openid identifiers.
+        """
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        # Create a second openid identifier from 30 days ago.
+        # This simulates the account merge:
+        identifier = OpenIdIdentifier()
+        identifier.account = person.account
+        identifier.identifier = u'openid_identifier'
+        identifier.date_created = THIRTY_DAYS_AGO
+        IMasterStore(OpenIdIdentifier).add(identifier)
+        self.factory.makeGPGKey(person)
+        return person
+
+    def test_can_retrieve_keys_for_all_openid_identifiers(self):
+        person = self.makePersonWithMultipleGPGKeysInDifferentOpenids()
+        keys = getUtility(IGPGKeySet).getGPGKeysForPerson(person)
+        self.assertThat(keys, HasLength(2))
