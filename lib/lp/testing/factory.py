@@ -289,6 +289,7 @@ from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
     IArchiveSet,
     )
+from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -2877,6 +2878,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         permission_set = getUtility(IArchivePermissionSet)
         permission_set.newQueueAdmin(archive, person, 'main')
         return person
+
+    def makeArchiveFile(self, archive=None, container=None, path=None,
+                        library_file=None):
+        if archive is None:
+            archive = self.makeArchive()
+        if container is None:
+            container = self.getUniqueUnicode()
+        if path is None:
+            path = self.getUniqueUnicode()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
+        return getUtility(IArchiveFileSet).new(
+            archive=archive, container=container, path=path,
+            library_file=library_file)
 
     def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
