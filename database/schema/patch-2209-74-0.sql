@@ -24,5 +24,9 @@ CREATE INDEX archivefile__archive__container__idx
 CREATE INDEX archivefile__archive__scheduled_deletion_date__container__idx
     ON ArchiveFile (archive, scheduled_deletion_date, container)
     WHERE scheduled_deletion_date IS NOT NULL;
+CREATE INDEX archivefile__archive__path__idx
+    ON ArchiveFile (archive, path);
+CREATE INDEX archivefile__library_file__idx
+    ON ArchiveFile (library_file);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 74, 0);
