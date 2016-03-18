@@ -2176,6 +2176,7 @@ class TestPublisher(TestPublisherBase):
         # The publisher does not create by-hash directories if it is
         # disabled in the series configuration.
         self.assertFalse(self.breezy_autotest.publish_by_hash)
+        self.assertFalse(self.breezy_autotest.advertise_by_hash)
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -2193,10 +2194,33 @@ class TestPublisher(TestPublisherBase):
         release = self.parseRelease(suite_path('Release'))
         self.assertNotIn('Acquire-By-Hash', release)
 
+    def testUpdateByHashUnadvertised(self):
+        # If the series configuration sets publish_by_hash but not
+        # advertise_by_hash, then by-hash directories are created but not
+        # advertised in Release.  This is useful for testing.
+        self.breezy_autotest.publish_by_hash = True
+        self.assertFalse(self.breezy_autotest.advertise_by_hash)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        self.assertThat(suite_path('main', 'source', 'by-hash'), PathExists())
+        release = self.parseRelease(suite_path('Release'))
+        self.assertNotIn('Acquire-By-Hash', release)
+
     def testUpdateByHashInitial(self):
         # An initial publisher run populates by-hash directories and leaves
         # no archive files scheduled for deletion.
         self.breezy_autotest.publish_by_hash = True
+        self.breezy_autotest.advertise_by_hash = True
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -2229,6 +2253,7 @@ class TestPublisher(TestPublisherBase):
         # A subsequent publisher run updates by-hash directories where
         # necessary, and marks inactive index files for later deletion.
         self.breezy_autotest.publish_by_hash = True
+        self.breezy_autotest.advertise_by_hash = True
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -2278,6 +2303,7 @@ class TestPublisher(TestPublisherBase):
         # The publisher prunes files from by-hash that were superseded more
         # than a day ago.
         self.breezy_autotest.publish_by_hash = True
+        self.breezy_autotest.advertise_by_hash = True
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)

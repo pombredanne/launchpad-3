@@ -393,6 +393,16 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertTrue(
             naked_distroseries.publishing_options["publish_by_hash"])
 
+    def test_advertise_by_hash(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.advertise_by_hash)
+        with admin_logged_in():
+            distroseries.advertise_by_hash = True
+        self.assertTrue(distroseries.advertise_by_hash)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["advertise_by_hash"])
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 

@@ -67,14 +67,14 @@ class IArchiveFileSet(Interface):
         :param library_file: The `ILibraryFileAlias` embodying the new file.
         """
 
-    def newFromFile(archive, container, root, path, size, content_type):
+    def newFromFile(archive, container, path, fileobj, size, content_type):
         """Create a new `IArchiveFile` from a file on the file system.
 
         :param archive: The `IArchive` containing the new file.
         :param container: An identifier for the component that manages this
             file.
-        :param root: The path to the root of the archive.
         :param path: The path to the new file within its archive.
+        :param fileobj: A file-like object to read the data from.
         :param size: The size of the file in bytes.
         :param content_type: The MIME type of the file.
         """

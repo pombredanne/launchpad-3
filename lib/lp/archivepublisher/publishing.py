@@ -959,9 +959,11 @@ class Publisher(object):
             full_path = os.path.join(self._config.archiveroot, path)
             if (os.path.exists(full_path) and
                     not by_hashes.exists(path, "SHA256", sha256)):
-                archive_file = archive_file_set.newFromFile(
-                    self.archive, container, self._config.archiveroot, path,
-                    size, filenameToContentType(path))
+                with open(os.path.join(
+                        self._config.archiveroot, path), "rb") as fileobj:
+                    archive_file = archive_file_set.newFromFile(
+                        self.archive, container, path, fileobj,
+                        size, filenameToContentType(path))
                 by_hashes.add(
                     path, archive_file.library_file, copy_from_path=path)
 
@@ -1082,7 +1084,8 @@ class Publisher(object):
 
         if distroseries.publish_by_hash:
             self._updateByHash(suite, release_file)
-            release_file["Acquire-By-Hash"] = "yes"
+            if distroseries.advertise_by_hash:
+                release_file["Acquire-By-Hash"] = "yes"
 
         self._writeReleaseFile(suite, release_file)
         core_files.add("Release")

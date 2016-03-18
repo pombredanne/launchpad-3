@@ -45,8 +45,9 @@ class TestArchiveFile(TestCaseWithFactory):
         with open_for_writing(os.path.join(root, "dists/foo"), "w") as f:
             f.write("abc\n")
         archive = self.factory.makeArchive()
-        archive_file = getUtility(IArchiveFileSet).newFromFile(
-            archive, "foo", root, "dists/foo", 4, "text/plain")
+        with open(os.path.join(root, "dists/foo"), "rb") as f:
+            archive_file = getUtility(IArchiveFileSet).newFromFile(
+                archive, "foo", "dists/foo", f, 4, "text/plain")
         transaction.commit()
         self.assertEqual(archive, archive_file.archive)
         self.assertEqual("foo", archive_file.container)
