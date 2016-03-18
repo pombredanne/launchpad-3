@@ -75,7 +75,7 @@ class TestPersonEmailSecurity(TestCaseWithFactory):
 
 class TestPersonAccountStatus(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_account_status_history_restricted(self):
         person = self.factory.makePerson()
