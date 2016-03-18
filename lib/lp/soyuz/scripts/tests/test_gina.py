@@ -1,13 +1,16 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
 import hashlib
 import os
+import shutil
+import subprocess
 import tempfile
 from textwrap import dedent
 from unittest import TestLoader
 
+import apt_pkg
 from fixtures import EnvironmentVariableFixture
 import transaction
 
@@ -23,6 +26,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina import ExecutionError
 from lp.soyuz.scripts.gina.archive import (
     ArchiveComponentItems,
+    ArchiveFilesystemInfo,
     PackagesMap,
     )
 from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
@@ -39,7 +43,10 @@ from lp.soyuz.scripts.gina.packages import (
     SourcePackageData,
     )
 from lp.soyuz.scripts.gina.runner import import_sourcepackages
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
@@ -162,6 +169,60 @@ class TestGina(TestCaseWithFactory):
         self.assertPublishingStates(
             pubs, [PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.DELETED, PackagePublishingStatus.DELETED])
+
+
+class TestArchiveFilesystemInfo(TestCase):
+
+    def test_gzip(self):
+        archive_root = self.useTempDir()
+        sampledata_root = os.path.join(
+            os.path.dirname(__file__), "gina_test_archive")
+        sampledata_component_dir = os.path.join(
+            sampledata_root, "dists", "breezy", "main")
+        component_dir = os.path.join(archive_root, "dists", "breezy", "main")
+        os.makedirs(os.path.join(component_dir, "source"))
+        shutil.copy(
+            os.path.join(sampledata_component_dir, "source", "Sources.gz"),
+            os.path.join(component_dir, "source", "Sources.gz"))
+        os.makedirs(os.path.join(component_dir, "binary-i386"))
+        shutil.copy(
+            os.path.join(
+                sampledata_component_dir, "binary-i386", "Packages.gz"),
+            os.path.join(component_dir, "binary-i386", "Packages.gz"))
+
+        archive_info = ArchiveFilesystemInfo(
+            archive_root, "breezy", "main", "i386")
+        sources = apt_pkg.TagFile(archive_info.srcfile)
+        self.assertEqual("archive-copier", next(sources)["Package"])
+        binaries = apt_pkg.TagFile(archive_info.binfile)
+        self.assertEqual("python-pam", next(binaries)["Package"])
+
+    def test_xz(self):
+        archive_root = self.useTempDir()
+        sampledata_root = os.path.join(
+            os.path.dirname(__file__), "gina_test_archive")
+        sampledata_component_dir = os.path.join(
+            sampledata_root, "dists", "breezy", "main")
+        component_dir = os.path.join(archive_root, "dists", "breezy", "main")
+        os.makedirs(os.path.join(component_dir, "source"))
+        shutil.copy(
+            os.path.join(sampledata_component_dir, "source", "Sources"),
+            os.path.join(component_dir, "source", "Sources"))
+        subprocess.check_call(
+            ["xz", os.path.join(component_dir, "source", "Sources")])
+        os.makedirs(os.path.join(component_dir, "binary-i386"))
+        shutil.copy(
+            os.path.join(sampledata_component_dir, "binary-i386", "Packages"),
+            os.path.join(component_dir, "binary-i386", "Packages"))
+        subprocess.check_call(
+            ["xz", os.path.join(component_dir, "binary-i386", "Packages")])
+
+        archive_info = ArchiveFilesystemInfo(
+            archive_root, "breezy", "main", "i386")
+        sources = apt_pkg.TagFile(archive_info.srcfile)
+        self.assertEqual("archive-copier", next(sources)["Package"])
+        binaries = apt_pkg.TagFile(archive_info.binfile)
+        self.assertEqual("python-pam", next(binaries)["Package"])
 
 
 class TestSourcePackageData(TestCaseWithFactory):
