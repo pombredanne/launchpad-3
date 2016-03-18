@@ -157,19 +157,17 @@ class GPGKeySet:
             # the gpgservice instead of the database:
             client = getUtility(IGPGClient)
             owner_id = self.getOwnerIdForPerson(requester)
-            if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
-                # Users with more than one openid identifier may be re-activating
-                # a key that was previously deactivated with their non-default
-                # openid identifier. If that's the case, use the same openid
-                # identifier rather than the default one:
-                key_data = client.getKeyByFingerprint(fingerprint)
-                if key_data:
-                    is_new = False
-                    owner_id = key_data['owner']
-                else:
-                    is_new = True
+            # Users with more than one openid identifier may be re-activating
+            # a key that was previously deactivated with their non-default
+            # openid identifier. If that's the case, use the same openid
+            # identifier rather than the default one - this happens even if the
+            # read FF is not set:
+            key_data = client.getKeyByFingerprint(fingerprint)
+            if key_data:
+                owner_id = key_data['owner']
             gpgservice_key = GPGServiceKey(client.addKeyForOwner(owner_id, key.fingerprint))
             if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+                is_new == key_data is not None
                 lp_key = gpgservice_key
         return lp_key, is_new
 
