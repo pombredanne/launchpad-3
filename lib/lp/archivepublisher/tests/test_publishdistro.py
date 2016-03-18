@@ -11,6 +11,10 @@ import shutil
 import subprocess
 import sys
 
+from testtools.matchers import (
+    Not,
+    PathExists,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -394,6 +398,44 @@ class TestPublishDistro(TestNativePublishingBase):
             self.config.distsroot)
         self.assertNotExists(index_path)
 
+    def testCarefulRelease(self):
+        """publish-distro can be asked to just rewrite Release files."""
+        archive = self.factory.makeArchive(distribution=self.ubuntutest)
+        pub_source = self.getPubSource(filecontent='foo', archive=archive)
+
+        self.setUpRequireSigningKeys()
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        IArchiveSigningKey(archive).setSigningKey(key_path)
+
+        self.layer.txn.commit()
+
+        self.runPublishDistro(['--ppa'])
+
+        pub_source.sync()
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
+
+        dists_path = getPubConfig(archive).distsroot
+        hoary_inrelease_path = os.path.join(
+            dists_path, 'hoary-test', 'InRelease')
+        breezy_inrelease_path = os.path.join(
+            dists_path, 'breezy-autotest', 'InRelease')
+        self.assertThat(hoary_inrelease_path, Not(PathExists()))
+        os.unlink(breezy_inrelease_path)
+
+        self.runPublishDistro(['--ppa', '--careful-release'])
+        self.assertThat(hoary_inrelease_path, Not(PathExists()))
+        self.assertThat(breezy_inrelease_path, Not(PathExists()))
+
+        self.runPublishDistro(
+            ['--ppa', '--careful-release', '--include-non-pending'])
+        # hoary-test never had indexes created, so is untouched.
+        self.assertThat(hoary_inrelease_path, Not(PathExists()))
+        # breezy-autotest has its Release files rewritten.
+        self.assertThat(breezy_inrelease_path, PathExists())
+
 
 class TestPublishDistroWithGPGService(TestPublishDistro):
     """A copy of the TestPublishDistro tests, but with the gpgservice feature
@@ -703,7 +745,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
 
     def test_getPPAs_gets_pending_distro_PPAs_if_careful(self):
         # In careful mode, getPPAs includes PPAs for the distribution
-        # that are pending pulication.
+        # that are pending publication.
         distro = self.makeDistro()
         script = self.makeScript(distro, ['--careful'])
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
@@ -712,15 +754,23 @@ class TestPublishDistroMethods(TestCaseWithFactory):
 
     def test_getPPAs_gets_nonpending_distro_PPAs_if_careful(self):
         # In careful mode, getPPAs includes PPAs for the distribution
-        # that are not pending pulication.
+        # that are not pending publication.
         distro = self.makeDistro()
         script = self.makeScript(distro, ['--careful'])
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
         self.assertContentEqual([ppa], script.getPPAs(distro))
 
+    def test_getPPAs_gets_nonpending_distro_PPAs_if_requested(self):
+        # In --include-non-pending mode, getPPAs includes PPAs for the
+        # distribution that are not pending publication.
+        distro = self.makeDistro()
+        script = self.makeScript(distro, ['--include-non-pending'])
+        ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
+        self.assertContentEqual([ppa], script.getPPAs(distro))
+
     def test_getPPAs_gets_pending_distro_PPAs_if_not_careful(self):
         # In non-careful mode, getPPAs includes PPAs that are pending
-        # pulication.
+        # publication.
         distro = self.makeDistro()
         script = self.makeScript(distro)
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
@@ -729,7 +779,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
 
     def test_getPPAs_ignores_nonpending_distro_PPAs_if_not_careful(self):
         # In non-careful mode, getPPAs does not include PPAs that are
-        # not pending pulication.
+        # not pending publication.
         distro = self.makeDistro()
         script = self.makeScript(distro)
         self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
