@@ -48,7 +48,7 @@ class GPGServiceFixtureTests(TestCase):
         fixture = self.useFixture(GPGKeyServiceFixture())
         conn = httplib.HTTPConnection(fixture.bind_address)
         user = base64.b64encode(
-        config.launchpad.openid_provider_root + '+id/name16_oid', altchars='-_')
+            config.launchpad.openid_provider_root + '+id/name16_oid', altchars='-_')
         conn.request('GET', '/users/%s/keys' % user)
         resp = conn.getresponse()
         self.assertEqual(200, resp.status)
