@@ -85,11 +85,11 @@ class ArchiveFileSet:
         return archive_file
 
     @classmethod
-    def newFromFile(cls, archive, container, root, path, size, content_type):
-        with open(os.path.join(root, path), "rb") as f:
-            library_file = getUtility(ILibraryFileAliasSet).create(
-                os.path.basename(path), size, f, content_type,
-                restricted=archive.private)
+    def newFromFile(cls, archive, container, path, fileobj, size,
+                    content_type):
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            os.path.basename(path), size, fileobj, content_type,
+            restricted=archive.private)
         return cls.new(archive, container, path, library_file)
 
     @staticmethod
