@@ -1,28 +1,22 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import os
 import random
 import string
+import subprocess
 
+import gpgme
 from testtools.matchers import (
-    Contains,
     ContainsDict,
     Equals,
     HasLength,
-    Not,
     raises,
     )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.services.config.fixture import (
-    ConfigFixture,
-    ConfigUseFixture,
-    )
-from lp.services.gpg.handler import GPGClient
 from lp.services.gpg.interfaces import (
-    GPGKeyAlgorithm,
     GPGKeyDoesNotExistOnServer,
     GPGKeyTemporarilyNotFoundError,
     GPGServiceException,
@@ -30,7 +24,6 @@ from lp.services.gpg.interfaces import (
     IGPGHandler,
     )
 from lp.services.log.logger import BufferLogger
-from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -49,7 +42,6 @@ from lp.testing.gpgkeys import (
     test_keyrings,
     test_pubkey_from_email,
     )
-from lp.testing.gpgservice import GPGKeyServiceFixture
 from lp.testing.keyserver import KeyServerTac
 from lp.testing.layers import (
     GPGServiceLayer,
@@ -58,13 +50,13 @@ from lp.testing.layers import (
     )
 
 
-class TestImportKeyRing(TestCase):
-    """Tests for keyring imports"""
+class TestGPGHandler(TestCase):
+    """Unit tests for the GPG handler."""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Get a gpghandler and login"""
-        super(TestImportKeyRing, self).setUp()
+        super(TestGPGHandler, self).setUp()
         login(ANONYMOUS)
         self.gpg_handler = getUtility(IGPGHandler)
         self.gpg_handler.resetLocalState()
@@ -75,7 +67,7 @@ class TestImportKeyRing(TestCase):
         # This should be a zope test cleanup thing per SteveA.
         self.gpg_handler.resetLocalState()
         logout()
-        super(TestImportKeyRing, self).tearDown()
+        super(TestGPGHandler, self).tearDown()
 
     def populateKeyring(self):
         for email in iter_test_key_emails():
@@ -212,6 +204,37 @@ class TestImportKeyRing(TestCase):
         self.assertRaises(
             GPGKeyDoesNotExistOnServer,
             removeSecurityProxy(self.gpg_handler)._getPubKey, fingerprint)
+
+    def test_signContent_uses_sha512_digests(self):
+        secret_keys = [
+            ("ppa-sample@canonical.com.sec", ""),       # 1024R
+            ("ppa-sample-4096@canonical.com.sec", ""),  # 4096R
+            ]
+        for key_name, password in secret_keys:
+            self.gpg_handler.resetLocalState()
+            secret_key = import_secret_test_key(key_name)
+            content = "abc\n"
+            signed_content = self.gpg_handler.signContent(
+                content, secret_key.fingerprint, password)
+            signature = self.gpg_handler.getVerifiedSignature(signed_content)
+            self.assertEqual(content, signature.plain_data)
+            self.assertEqual(secret_key.fingerprint, signature.fingerprint)
+            # pygpgme doesn't tell us the hash algorithm used for a verified
+            # signature, so we have to do this by hand.  Sending --status-fd
+            # output to stdout is a bit dodgy, but at least with --quiet
+            # it's OK for test purposes and it simplifies subprocess
+            # plumbing.
+            with open(os.devnull, "w") as devnull:
+                gpg_proc = subprocess.Popen(
+                    ["gpg", "--quiet", "--status-fd", "1", "--verify"],
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=devnull, universal_newlines=True)
+            status = gpg_proc.communicate(signed_content)[0].splitlines()
+            validsig_prefix = "[GNUPG:] VALIDSIG "
+            [validsig_line] = [
+                line for line in status if line.startswith(validsig_prefix)]
+            validsig_tokens = validsig_line[len(validsig_prefix):].split()
+            self.assertEqual(gpgme.MD_SHA512, int(validsig_tokens[7]))
 
 
 class GPGServiceZopelessLayer(ZopelessDatabaseLayer, GPGServiceLayer):
