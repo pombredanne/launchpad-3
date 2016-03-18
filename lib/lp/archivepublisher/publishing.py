@@ -35,6 +35,11 @@ from debian.deb822 import (
     )
 from storm.expr import Desc
 from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    implementer,
+    Interface,
+    )
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -243,25 +248,57 @@ class I18nIndex(_multivalued):
         return max(len(str(item['size'])) for item in self[key])
 
 
+class IArchiveHash(Interface):
+    """Represents a hash algorithm used for index files."""
+
+    hash_factory = Attribute("A hashlib class suitable for this algorithm.")
+    deb822_name = Attribute(
+        "Algorithm name expected by debian.deb822.Release.")
+    apt_name = Attribute(
+        "Algorithm name used by apt in Release files and by-hash "
+        "subdirectories.")
+    lfc_name = Attribute(
+        "LibraryFileContent attribute name corresponding to this algorithm.")
+
+
+@implementer(IArchiveHash)
+class MD5ArchiveHash:
+    hash_factory = hashlib.md5
+    deb822_name = "md5sum"
+    apt_name = "MD5Sum"
+    lfc_name = "md5"
+
+
+@implementer(IArchiveHash)
+class SHA1ArchiveHash:
+    hash_factory = hashlib.sha1
+    deb822_name = "sha1"
+    apt_name = "SHA1"
+    lfc_name = "sha1"
+
+
+@implementer(IArchiveHash)
+class SHA256ArchiveHash:
+    hash_factory = hashlib.sha256
+    deb822_name = "sha256"
+    apt_name = "SHA256"
+    lfc_name = "sha256"
+
+
+archive_hashes = [
+    MD5ArchiveHash(),
+    SHA1ArchiveHash(),
+    SHA256ArchiveHash(),
+    ]
+
+
 class ByHash:
     """Represents a single by-hash directory tree."""
-
-    # Subdirectory names expected by apt.
-    supported_hashes = ("MD5Sum", "SHA1", "SHA256")
 
     def __init__(self, root, key):
         self.root = root
         self.path = os.path.join(root, key, "by-hash")
         self.known_digests = defaultdict(set)
-
-    @staticmethod
-    def getHashFromLFA(lfa, name):
-        attr = {
-            "MD5Sum": "md5",
-            "SHA1": "sha1",
-            "SHA256": "sha256",
-            }[name]
-        return getattr(lfa.content, attr)
 
     def add(self, lfa, copy_from_path=None):
         """Ensure that by-hash entries for a single file exist.
@@ -272,10 +309,11 @@ class ByHash:
             for newly-added files to avoid needing to commit the transaction
             before calling this method.
         """
-        for hashname in self.supported_hashes:
-            digest = self.getHashFromLFA(lfa, hashname)
-            digest_path = os.path.join(self.path, hashname, digest)
-            self.known_digests[hashname].add(digest)
+        for archive_hash in archive_hashes:
+            digest = getattr(lfa.content, archive_hash.lfc_name)
+            digest_path = os.path.join(
+                self.path, archive_hash.apt_name, digest)
+            self.known_digests[archive_hash.apt_name].add(digest)
             if not os.path.exists(digest_path):
                 with open_for_writing(digest_path, "wb") as outfile:
                     if copy_from_path is not None:
@@ -296,11 +334,11 @@ class ByHash:
     def prune(self):
         """Remove all by-hash entries that we have not been told to add."""
         if any(self.known_digests.values()):
-            for hashname in self.supported_hashes:
-                hash_path = os.path.join(self.path, hashname)
+            for archive_hash in archive_hashes:
+                hash_path = os.path.join(self.path, archive_hash.apt_name)
                 if os.path.exists(hash_path):
                     for digest in list(os.listdir(hash_path)):
-                        if not self.exists(hashname, digest):
+                        if not self.exists(archive_hash.apt_name, digest):
                             os.unlink(os.path.join(hash_path, digest))
         elif os.path.exists(self.path):
             shutil.rmtree(self.path)
@@ -1078,9 +1116,9 @@ class Publisher(object):
             hashes = self._readIndexFileHashes(suite, filename)
             if hashes is None:
                 continue
-            release_file.setdefault("MD5Sum", []).append(hashes["md5sum"])
-            release_file.setdefault("SHA1", []).append(hashes["sha1"])
-            release_file.setdefault("SHA256", []).append(hashes["sha256"])
+            for archive_hash in archive_hashes:
+                release_file.setdefault(archive_hash.apt_name, []).append(
+                    hashes[archive_hash.deb822_name])
 
         if distroseries.publish_by_hash:
             self._updateByHash(suite, release_file)
@@ -1225,10 +1263,8 @@ class Publisher(object):
                 return None
 
         hashes = {
-            "md5sum": hashlib.md5(),
-            "sha1": hashlib.sha1(),
-            "sha256": hashlib.sha256(),
-            }
+            archive_hash.deb822_name: archive_hash.hash_factory()
+            for archive_hash in archive_hashes}
         size = 0
         with open_func(full_name) as in_file:
             for chunk in iter(lambda: in_file.read(256 * 1024), ""):
