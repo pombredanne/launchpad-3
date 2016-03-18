@@ -24,7 +24,7 @@
     </class>
 
     <securedutility
-        class="lp.services.gpg.handler.GPGClientImpl"
+        class="lp.services.gpg.handler.LPGPGClient"
         provides="lp.services.gpg.interfaces.IGPGClient">
         <allow interface="lp.services.gpg.interfaces.IGPGClient" />
     </securedutility>

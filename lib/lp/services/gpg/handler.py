@@ -640,7 +640,7 @@ def sanitize_fingerprint(fingerprint):
 
 
 @implementer(IGPGClient)
-class GPGClientImpl(GPGClient):
+class LPGPGClient(GPGClient):
     """See IGPGClient."""
 
     def get_endpoint(self):
