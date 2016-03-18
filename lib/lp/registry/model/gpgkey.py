@@ -183,10 +183,11 @@ class GPGKeySet:
             # the default one:
             client = getUtility(IGPGClient)
             key_data = client.getKeyByFingerprint(key.fingerprint)
-            if key_data:
-                openid_identifier = key_data['owner']
-            else:
-                openid_identifier = self.getOwnerIdForPerson(key.owner)
+            if not key_data:
+                # We get here if we're asked to deactivate a key that was never
+                # activated. This should probably never happen.
+                return
+            openid_identifier = key_data['owner']
             client.disableKeyForOwner(openid_identifier, key.fingerprint)
 
     def getByFingerprint(self, fingerprint, default=None):
