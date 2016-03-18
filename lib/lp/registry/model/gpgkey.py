@@ -219,9 +219,9 @@ class GPGKeySet:
                 return []
             gpg_keys = []
             for owner_id in owner_ids:
-                key_data = client.getKeysForOwner(owner_id)['keys']
+                key_data_list = client.getKeysForOwner(owner_id)['keys']
                 gpg_keys.extend(
-                    [GPGServiceKey(d) for d in key_data if d['enabled'] == active])
+                    [GPGServiceKey(d) for d in key_data_list if d['enabled'] == active])
             return gpg_keys
         else:
             if active is False:
