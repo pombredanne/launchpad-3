@@ -40,6 +40,7 @@ from lp.soyuz.scripts.gina.handlers import (
     )
 from lp.soyuz.scripts.gina.packages import (
     BinaryPackageData,
+    MissingRequiredArguments,
     SourcePackageData,
     )
 from lp.soyuz.scripts.gina.runner import import_sourcepackages
@@ -348,6 +349,28 @@ class TestSourcePackageData(TestCaseWithFactory):
                 tempfile.tempdir = None
         self.assertEqual([], os.listdir(unpack_tmpdir))
 
+    def test_checksum_fields(self):
+        # We only need one of Files or Checksums-*.
+        base_dsc_contents = {
+            "Package": "foo",
+            "Binary": "foo",
+            "Version": "1.0-1",
+            "Maintainer": "Foo Bar <foo@canonical.com>",
+            "Section": "misc",
+            "Architecture": "all",
+            "Directory": "pool/main/f/foo",
+            "Component": "main",
+            }
+        for field in (
+                "Files", "Checksums-Sha1", "Checksums-Sha256",
+                "Checksums-Sha512"):
+            dsc_contents = dict(base_dsc_contents)
+            dsc_contents[field] = "xxx 000 foo_1.0-1.dsc"
+            sp_data = SourcePackageData(**dsc_contents)
+            self.assertEqual(["foo_1.0-1.dsc"], sp_data.files)
+        self.assertRaises(
+            MissingRequiredArguments, SourcePackageData, **base_dsc_contents)
+
 
 class TestSourcePackageHandler(TestCaseWithFactory):
 
@@ -411,6 +434,33 @@ class TestSourcePackagePublisher(TestCaseWithFactory):
 
         [spph] = series.main_archive.getPublishedSources()
         self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
+
+
+class TestBinaryPackageData(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_checksum_fields(self):
+        # We only need one of MD5sum or SHA*.
+        base_deb_contents = {
+            "Package": "foo",
+            "Installed-Size": "0",
+            "Maintainer": "Foo Bar <foo@canonical.com>",
+            "Section": "misc",
+            "Architecture": "all",
+            "Version": "1.0-1",
+            "Filename": "pool/main/f/foo/foo_1.0-1_all.deb",
+            "Component": "main",
+            "Size": "0",
+            "Description": "",
+            "Priority": "extra",
+            }
+        for field in ("MD5sum", "SHA1", "SHA256", "SHA512"):
+            deb_contents = dict(base_deb_contents)
+            deb_contents[field] = "0"
+            BinaryPackageData(**deb_contents)
+        self.assertRaises(
+            MissingRequiredArguments, BinaryPackageData, **base_deb_contents)
 
 
 class TestBinaryPackageHandler(TestCaseWithFactory):
