@@ -60,6 +60,7 @@ For distroseries we publish a subset of its attributes.
     active: True
     active_milestones_collection_link:
         u'http://.../ubuntu/hoary/active_milestones'
+    advertise_by_hash: False
     all_milestones_collection_link: u'http://.../ubuntu/hoary/all_milestones'
     architectures_collection_link: u'http://.../ubuntu/hoary/architectures'
     bug_reported_acknowledgement: None
