@@ -24,10 +24,15 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
+    IGPGClient,
     IGPGHandler,
     )
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
 @implementer(IGPGKey)
@@ -76,18 +81,31 @@ class GPGKeySet:
         fingerprint = key.fingerprint
         lp_key = self.getByFingerprint(fingerprint)
         if lp_key:
+            is_new = False
             # Then the key already exists, so let's reactivate it.
             lp_key.active = True
             lp_key.can_encrypt = can_encrypt
-            return lp_key, False
-        ownerID = requester.id
-        keyid = key.keyid
-        keysize = key.keysize
-        algorithm = GPGKeyAlgorithm.items[key.algorithm]
-        lp_key = self.new(
-            ownerID, keyid, fingerprint, keysize, algorithm,
-            can_encrypt=can_encrypt)
-        return lp_key, True
+        else:
+            is_new = True
+            ownerID = requester.id
+            keyid = key.keyid
+            keysize = key.keysize
+            algorithm = GPGKeyAlgorithm.items[key.algorithm]
+            lp_key = self.new(
+                ownerID, keyid, fingerprint, keysize, algorithm,
+                can_encrypt=can_encrypt)
+        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            openid_identifier = self.getOwnerIdForPerson(lp_key.owner)
+            client.addKeyForOwner(openid_identifier, key.fingerprint)
+        return lp_key, is_new
+
+    def deactivate(self, key):
+        key.active = False
+        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            openid_identifier = self.getOwnerIdForPerson(key.owner)
+            client.disableKeyForOwner(openid_identifier, key.fingerprint)
 
     def getByFingerprint(self, fingerprint, default=None):
         """See `IGPGKeySet`"""
@@ -118,3 +136,9 @@ class GPGKeySet:
         query += ' AND owner=%s' % sqlvalues(owner.id)
 
         return list(GPGKey.select(query, orderBy='id'))
+
+    def getOwnerIdForPerson(self, owner):
+        """See IGPGKeySet."""
+        url = IOpenIDPersistentIdentity(owner).openid_identity_url
+        assert url is not None
+        return url

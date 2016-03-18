@@ -51,6 +51,7 @@ from lp.services.gpg.interfaces import (
     SecretGPGKeyImportDetected,
     valid_fingerprint,
     )
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
     TimeoutError,
@@ -676,7 +677,8 @@ class GPGClient:
         resp = self._request('post', path, data)
         if resp.status_code == http_codes['CREATED']:
             self._notify_writes()
-        else:
+        # status 200 (OK) is returned if the key was already enabled:
+        elif resp.status_code != http_codes['OK']:
             self.raise_for_error(resp)
 
     def disableKeyForOwner(self, owner_id, fingerprint):
@@ -686,6 +688,17 @@ class GPGClient:
         resp = self._request('delete', path)
         if resp.status_code == http_codes['OK']:
             self._notify_writes()
+        else:
+            self.raise_for_error(resp)
+
+    def getKeyByFingerprint(self, fingerprint):
+        fingerprint = sanitize_fingerprint_or_raise(fingerprint)
+        path = '/keys/%s' % fingerprint
+        resp = self._request('get', path)
+        if resp.status_code == http_codes['OK']:
+            return resp.json()
+        elif resp.status_code == http_codes['NOT_FOUND']:
+            return None
         else:
             self.raise_for_error(resp)
 
@@ -700,6 +713,25 @@ class GPGClient:
         if hook_callable not in self.write_hooks:
             raise ValueError("%r not registered.")
         self.write_hooks.remove(hook_callable)
+
+    def addKeyForTest(self, owner_id, keyid, fingerprint, keysize, algorithm, enabled,
+                      can_encrypt):
+        """See IGPGClient."""
+        document = {'keys': [{
+            'owner': owner_id,
+            'id': keyid,
+            'fingerprint': fingerprint,
+            'size': keysize,
+            'algorithm': algorithm,
+            'enabled': enabled,
+            'can_encrypt': can_encrypt}]}
+        path = '/test/add_keys'
+        resp = self._request('post', path, document)
+        if resp.status_code == http_codes['NOT_FOUND']:
+            raise RuntimeError(
+                "gpgservice was not configured with test endpoints enabled.")
+        elif resp.status_code != http_codes['OK']:
+            self.raise_for_error(resp)
 
     def _notify_writes(self):
         errors = []
