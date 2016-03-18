@@ -171,7 +171,10 @@ class GPGKeySet:
         return lp_key, is_new
 
     def deactivate(self, key):
-        key.active = False
+        # key could be a GPGServiceKey, which doesn't allow us to set it's
+        # active attribute. Retrieve it by fingerprint:
+        lp_key = GPGKey.selectOneBy(fingerprint=key.fingerprint)
+        lp_key.active = False
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
             # Users with more than one openid identifier may be deactivating
             # a key that is associated with their non-default openid identifier.
