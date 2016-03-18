@@ -73,7 +73,10 @@ class GPGServiceKey:
 
     def __init__(self, key_data):
         self._key_data = key_data
-        self.active = key_data['enabled']
+
+    @property
+    def active(self):
+        return self._key_data['enabled']
 
     @property
     def keysize(self):
