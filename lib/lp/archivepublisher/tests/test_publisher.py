@@ -2300,7 +2300,7 @@ class TestPublisher(TestPublisherBase):
              if archive_file.scheduled_deletion_date is not None])
 
     def testUpdateByHashPrune(self):
-        # The publisher prunes files from by-hash that were superseded more
+        # The publisher prunes files from by-hash that were condemned more
         # than a day ago.
         self.breezy_autotest.publish_by_hash = True
         self.breezy_autotest.advertise_by_hash = True

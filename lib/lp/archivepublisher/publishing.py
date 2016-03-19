@@ -332,7 +332,10 @@ class ByHash:
         return digest in self.known_digests[hashname]
 
     def prune(self):
-        """Remove all by-hash entries that we have not been told to add."""
+        """Remove all by-hash entries that we have not been told to add.
+
+        This also removes the by-hash directory itself if no entries remain.
+        """
         if any(self.known_digests.values()):
             for archive_hash in archive_hashes:
                 hash_path = os.path.join(self.path, archive_hash.apt_name)
@@ -945,7 +948,14 @@ class Publisher(object):
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
     def _updateByHash(self, suite, release_data):
-        """Update by-hash files for a suite."""
+        """Update by-hash files for a suite.
+
+        This takes Release file data which references a set of on-disk
+        files, injects any newly-modified files from that set into the
+        librarian and the ArchiveFile table, and updates the on-disk by-hash
+        directories to be in sync with ArchiveFile.  Any on-disk by-hash
+        entries that ceased to be current sufficiently long ago are removed.
+        """
         archive_file_set = getUtility(IArchiveFileSet)
         by_hashes = ByHashes(self._config.archiveroot)
         suite_dir = os.path.relpath(
@@ -953,9 +963,10 @@ class Publisher(object):
             self._config.archiveroot)
         container = "release:%s" % suite
 
-        # Remove any condemned files from the database.  We ensure that we
-        # know about all the relevant by-hash directory trees before doing
-        # any removals so that we can prune them properly later.
+        # Remove any condemned files from the database whose stay of
+        # execution has elapsed.  We ensure that we know about all the
+        # relevant by-hash directory trees before doing any removals so that
+        # we can prune them properly later.
         for archive_file in archive_file_set.getByArchive(
                 self.archive, container=container):
             by_hashes.getChild(archive_file.path)
@@ -976,17 +987,17 @@ class Publisher(object):
             if archive_file.scheduled_deletion_date is None:
                 current_files[archive_file.path] = archive_file
 
-        # Supersede any database records that do not correspond to active
+        # Condemn any database records that do not correspond to active
         # index files.
-        superseded_files = set()
+        condemned_files = set()
         for archive_file in archive_files:
             path = archive_file.path
             if (path not in active_files or
                 not by_hashes.exists(
                     path, "SHA256", active_files[path][1])):
-                superseded_files.add(archive_file)
+                condemned_files.add(archive_file)
         archive_file_set.scheduleDeletion(
-            superseded_files, timedelta(days=BY_HASH_STAY_OF_EXECUTION))
+            condemned_files, timedelta(days=BY_HASH_STAY_OF_EXECUTION))
 
         # Ensure that all the active index files are in by-hash and have
         # corresponding database entries.
