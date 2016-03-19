@@ -76,7 +76,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.client import LibrarianClient
-from lp.services.osutils import open_for_writing
+from lp.services.osutils import ensure_directory_exists
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -315,17 +315,17 @@ class ByHash:
                 self.path, archive_hash.apt_name, digest)
             self.known_digests[archive_hash.apt_name].add(digest)
             if not os.path.exists(digest_path):
-                with open_for_writing(digest_path, "wb") as outfile:
-                    if copy_from_path is not None:
-                        infile = open(
-                            os.path.join(self.root, copy_from_path), "rb")
-                    else:
+                ensure_directory_exists(os.path.dirname(digest_path))
+                if copy_from_path is not None:
+                    os.link(
+                        os.path.join(self.root, copy_from_path), digest_path)
+                else:
+                    with open(digest_path, "wb") as outfile:
                         lfa.open()
-                        infile = lfa
-                    try:
-                        shutil.copyfileobj(infile, outfile, 4 * 1024 * 1024)
-                    finally:
-                        infile.close()
+                        try:
+                            shutil.copyfileobj(lfa, outfile, 4 * 1024 * 1024)
+                        finally:
+                            lfa.close()
 
     def exists(self, hashname, digest):
         """Do we know about a file with this digest?"""
