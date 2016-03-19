@@ -354,17 +354,22 @@ class ByHashes:
         self.root = root
         self.children = {}
 
-    def getChild(self, path):
+    def registerChild(self, path):
+        """Register a single by-hash directory.
+
+        Only directories that have been registered here will be pruned by
+        the `prune` method.
+        """
         key = os.path.dirname(path)
         if key not in self.children:
             self.children[key] = ByHash(self.root, key)
         return self.children[key]
 
     def add(self, path, lfa, copy_from_path=None):
-        self.getChild(path).add(lfa, copy_from_path=copy_from_path)
+        self.registerChild(path).add(lfa, copy_from_path=copy_from_path)
 
     def exists(self, path, hashname, digest):
-        return self.getChild(path).exists(hashname, digest)
+        return self.registerChild(path).exists(hashname, digest)
 
     def prune(self):
         for child in self.children.values():
@@ -969,7 +974,7 @@ class Publisher(object):
         # we can prune them properly later.
         for archive_file in archive_file_set.getByArchive(
                 self.archive, container=container):
-            by_hashes.getChild(archive_file.path)
+            by_hashes.registerChild(archive_file.path)
         archive_file_set.reap(self.archive, container=container)
 
         # Gather information.
