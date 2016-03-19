@@ -972,35 +972,33 @@ class Publisher(object):
         # execution has elapsed.  We ensure that we know about all the
         # relevant by-hash directory trees before doing any removals so that
         # we can prune them properly later.
-        for archive_file in archive_file_set.getByArchive(
+        for db_file in archive_file_set.getByArchive(
                 self.archive, container=container):
-            by_hashes.registerChild(archive_file.path)
+            by_hashes.registerChild(db_file.path)
         archive_file_set.reap(self.archive, container=container)
 
-        # Gather information.
-        archive_files = archive_file_set.getByArchive(
-            self.archive, container=container, eager_load=True)
-        active_files = {}
-        for active_entry in release_data["SHA256"]:
-            path = os.path.join(suite_dir, active_entry["name"])
-            active_files[path] = (active_entry["size"], active_entry["sha256"])
+        # Gather information on entries in the current Release file.
+        current_files = {}
+        for current_entry in release_data["SHA256"]:
+            path = os.path.join(suite_dir, current_entry["name"])
+            current_files[path] = (
+                current_entry["size"], current_entry["sha256"])
 
         # Ensure that all files recorded in the database are in by-hash.
-        current_files = {}
-        for archive_file in archive_files:
-            by_hashes.add(archive_file.path, archive_file.library_file)
-            if archive_file.scheduled_deletion_date is None:
-                current_files[archive_file.path] = archive_file
+        db_files = archive_file_set.getByArchive(
+            self.archive, container=container, eager_load=True)
+        for db_file in db_files:
+            by_hashes.add(db_file.path, db_file.library_file)
 
         # Condemn any database records that do not correspond to active
         # index files.
         condemned_files = set()
-        for archive_file in archive_files:
-            path = archive_file.path
-            if (path not in active_files or
+        for db_file in db_files:
+            path = db_file.path
+            if (path not in current_files or
                 not by_hashes.exists(
-                    path, "SHA256", active_files[path][1])):
-                condemned_files.add(archive_file)
+                    path, "SHA256", current_files[path][1])):
+                condemned_files.add(db_file)
         archive_file_set.scheduleDeletion(
             condemned_files, timedelta(days=BY_HASH_STAY_OF_EXECUTION))
 
@@ -1009,17 +1007,16 @@ class Publisher(object):
         # XXX cjwatson 2016-03-15: This should possibly use bulk creation,
         # although we can only avoid about a third of the queries since the
         # librarian client has no bulk upload methods.
-        for path, (size, sha256) in active_files.items():
+        for path, (size, sha256) in current_files.items():
             full_path = os.path.join(self._config.archiveroot, path)
             if (os.path.exists(full_path) and
                     not by_hashes.exists(path, "SHA256", sha256)):
                 with open(os.path.join(
                         self._config.archiveroot, path), "rb") as fileobj:
-                    archive_file = archive_file_set.newFromFile(
+                    db_file = archive_file_set.newFromFile(
                         self.archive, container, path, fileobj,
                         size, filenameToContentType(path))
-                by_hashes.add(
-                    path, archive_file.library_file, copy_from_path=path)
+                by_hashes.add(path, db_file.library_file, copy_from_path=path)
 
         # Finally, remove any files from disk that aren't recorded in the
         # database and aren't active.
