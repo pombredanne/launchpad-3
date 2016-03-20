@@ -428,3 +428,26 @@ class GPGClientTests(TestCase):
         person = self.makePersonWithMultipleGPGKeysInDifferentOpenids()
         keys = getUtility(IGPGKeySet).getGPGKeysForPerson(person)
         self.assertThat(keys, HasLength(2))
+
+    def test_can_deactivate_all_keys_with_multiple_openid_identifiers(self):
+        person = self.makePersonWithMultipleGPGKeysInDifferentOpenids()
+        keyset = getUtility(IGPGKeySet)
+        key_one, key_two = keyset.getGPGKeysForPerson(person)
+        keyset.deactivate(key_one)
+        keyset.deactivate(key_two)
+        key_one, key_two = keyset.getGPGKeysForPerson(person, active=False)
+
+        self.assertFalse(key_one.active)
+        self.assertFalse(key_two.active)
+
+    def test_can_reactivate_all_keys_with_multiple_openid_identifiers(self):
+        person = self.makePersonWithMultipleGPGKeysInDifferentOpenids()
+        keyset = getUtility(IGPGKeySet)
+        for k in keyset.getGPGKeysForPerson(person):
+            keyset.deactivate(k)
+        for k in keyset.getGPGKeysForPerson(person, active=False):
+            keyset.activate(person, k, k.can_encrypt)
+        key_one, key_two = keyset.getGPGKeysForPerson(person)
+
+        self.assertTrue(key_one.active)
+        self.assertTrue(key_two.active)

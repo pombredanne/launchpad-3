@@ -40,12 +40,6 @@ special = {
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
-    'gpgkey.txt': LayeredDocFileSuite(
-        '../doc/gpgkey.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer,
-        stdout_logging_level=logging.WARNING,
-        ),
     'person-karma.txt': LayeredDocFileSuite(
         '../doc/person-karma.txt',
         setUp=setUp, tearDown=peopleKarmaTearDown,
