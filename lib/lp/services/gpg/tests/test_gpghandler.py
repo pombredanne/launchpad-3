@@ -451,3 +451,16 @@ class GPGClientTests(TestCase):
 
         self.assertTrue(key_one.active)
         self.assertTrue(key_two.active)
+
+    def test_cannot_reactivate_someone_elses_key(self):
+        person1 = self.factory.makePerson()
+        key = self.factory.makeGPGKey(person1)
+        person2 = self.factory.makePerson()
+
+        keyset = getUtility(IGPGKeySet)
+        keyset.deactivate(key)
+        self.assertRaises(
+            AssertionError,
+            keyset.activate,
+            person2, key, key.can_encrypt
+        )

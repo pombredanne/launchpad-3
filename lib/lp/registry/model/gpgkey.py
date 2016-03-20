@@ -131,6 +131,7 @@ class GPGKeySet:
 
     def activate(self, requester, key, can_encrypt):
         """See `IGPGKeySet`."""
+        assert key.owner == requester
         fingerprint = key.fingerprint
         # XXX: This is a little ugly - we can't use getByFingerprint here since
         # if the READ_FROM_GPGSERVICE FF is set we'll get a GPGServiceKey object
@@ -165,6 +166,8 @@ class GPGKeySet:
             key_data = client.getKeyByFingerprint(fingerprint)
             if key_data:
                 owner_id = key_data['owner']
+            allowed_owner_ids = self._getAllOwnerIdsForPerson(requester)
+            assert owner_id in allowed_owner_ids
             gpgservice_key = GPGServiceKey(client.addKeyForOwner(owner_id, key.fingerprint))
             if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
                 is_new == key_data is not None
