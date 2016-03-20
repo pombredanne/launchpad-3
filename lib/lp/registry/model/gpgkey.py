@@ -116,6 +116,9 @@ class GPGServiceKey:
     def ownerID(self):
         return self.owner.id
 
+    def __eq__(self, other):
+        return self.fingerprint == other.fingerprint
+
 
 
 @implementer(IGPGKeySet)

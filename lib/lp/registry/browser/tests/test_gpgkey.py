@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from testtools.matchers import (
+    Contains,
     Equals,
     HasLength,
     Not,
@@ -20,9 +21,12 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.interfaces import (
     GPG_DATABASE_READONLY_FEATURE_FLAG,
     GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
     GPGReadOnly,
     )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
@@ -124,3 +128,50 @@ class GPGKeySetTests(TestCaseWithFactory):
 
         self.assertThat(retrieved_key.owner.name, Equals(person.name))
         self.assertThat(retrieved_key.fingerprint, Equals(key.fingerprint))
+
+    def test_getGPGKeysForPerson_retrieves_active_keys(self):
+        keyset = getUtility(IGPGKeySet)
+        person = self.factory.makePerson()
+        key = self.factory.makeGPGKey(person)
+
+        keys = keyset.getGPGKeysForPerson(person)
+
+        self.assertThat(keys, HasLength(1))
+        self.assertThat(keys, Contains(key))
+
+    def test_getGPGKeysForPerson_retrieves_inactive_keys(self):
+        keyset = getUtility(IGPGKeySet)
+        person = self.factory.makePerson()
+        key = self.factory.makeGPGKey(person)
+        keyset.deactivate(key)
+
+        active_keys = keyset.getGPGKeysForPerson(person)
+        inactive_keys = keyset.getGPGKeysForPerson(person, active=False)
+
+        self.assertThat(active_keys, HasLength(0))
+        self.assertThat(inactive_keys, HasLength(1))
+        self.assertThat(inactive_keys, Contains(key))
+
+    def test_getGPGKeysForPerson_excludes_keys_with_logintoken(self):
+        keyset = getUtility(IGPGKeySet)
+        email = 'foo@bar.com'
+        person = self.factory.makePerson(email)
+        key = self.factory.makeGPGKey(person)
+        keyset.deactivate(key)
+        getUtility(ILoginTokenSet).new(
+            person, email, email, LoginTokenType.VALIDATEGPG, key.fingerprint)
+
+        inactive_keys = keyset.getGPGKeysForPerson(person, active=False)
+        self.assertThat(inactive_keys, HasLength(0))
+
+
+class GPGKeySetWithGPGServiceTests(GPGKeySetTests):
+
+    """A copy of GPGKeySetTests, but with gpgservice used."""
+
+    def setUp(self):
+        super(GPGKeySetWithGPGServiceTests, self).setUp()
+        self.useFixture(FeatureFixture({
+            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
+            GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG: True,
+        }))
