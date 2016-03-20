@@ -18,6 +18,7 @@ __all__ = [
 
 from collections import defaultdict
 import os
+import shutil
 import tempfile
 
 import apt_pkg
@@ -91,14 +92,18 @@ class ArchiveFilesystemInfo:
             self.difile = os.fdopen(difd)
 
     def openTagFile(self, prefix):
-        for suffix in (".xz", ".gz"):
+        for suffix in (".xz", ".bz2", ".gz", ""):
             if os.path.exists(prefix + suffix):
                 # Extract index.
                 fd, tagfile = tempfile.mkstemp()
                 if suffix == ".xz":
                     call("xz -dc %s > %s" % (prefix + suffix, tagfile))
+                elif suffix == ".bz2":
+                    call("bzip2 -dc %s > %s" % (prefix + suffix, tagfile))
                 elif suffix == ".gz":
                     call("gzip -dc %s > %s" % (prefix + suffix, tagfile))
+                elif suffix == "":
+                    shutil.copy(prefix + suffix, tagfile)
                 else:
                     raise AssertionError("Unknown suffix '%s'" % suffix)
                 return os.fdopen(fd), tagfile

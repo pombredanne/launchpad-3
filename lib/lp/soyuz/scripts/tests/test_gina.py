@@ -174,31 +174,7 @@ class TestGina(TestCaseWithFactory):
 
 class TestArchiveFilesystemInfo(TestCase):
 
-    def test_gzip(self):
-        archive_root = self.useTempDir()
-        sampledata_root = os.path.join(
-            os.path.dirname(__file__), "gina_test_archive")
-        sampledata_component_dir = os.path.join(
-            sampledata_root, "dists", "breezy", "main")
-        component_dir = os.path.join(archive_root, "dists", "breezy", "main")
-        os.makedirs(os.path.join(component_dir, "source"))
-        shutil.copy(
-            os.path.join(sampledata_component_dir, "source", "Sources.gz"),
-            os.path.join(component_dir, "source", "Sources.gz"))
-        os.makedirs(os.path.join(component_dir, "binary-i386"))
-        shutil.copy(
-            os.path.join(
-                sampledata_component_dir, "binary-i386", "Packages.gz"),
-            os.path.join(component_dir, "binary-i386", "Packages.gz"))
-
-        archive_info = ArchiveFilesystemInfo(
-            archive_root, "breezy", "main", "i386")
-        sources = apt_pkg.TagFile(archive_info.srcfile)
-        self.assertEqual("archive-copier", next(sources)["Package"])
-        binaries = apt_pkg.TagFile(archive_info.binfile)
-        self.assertEqual("python-pam", next(binaries)["Package"])
-
-    def test_xz(self):
+    def assertCompressionTypeWorks(self, compressor_func):
         archive_root = self.useTempDir()
         sampledata_root = os.path.join(
             os.path.dirname(__file__), "gina_test_archive")
@@ -209,14 +185,12 @@ class TestArchiveFilesystemInfo(TestCase):
         shutil.copy(
             os.path.join(sampledata_component_dir, "source", "Sources"),
             os.path.join(component_dir, "source", "Sources"))
-        subprocess.check_call(
-            ["xz", os.path.join(component_dir, "source", "Sources")])
+        compressor_func(os.path.join(component_dir, "source", "Sources"))
         os.makedirs(os.path.join(component_dir, "binary-i386"))
         shutil.copy(
             os.path.join(sampledata_component_dir, "binary-i386", "Packages"),
             os.path.join(component_dir, "binary-i386", "Packages"))
-        subprocess.check_call(
-            ["xz", os.path.join(component_dir, "binary-i386", "Packages")])
+        compressor_func(os.path.join(component_dir, "binary-i386", "Packages"))
 
         archive_info = ArchiveFilesystemInfo(
             archive_root, "breezy", "main", "i386")
@@ -224,6 +198,21 @@ class TestArchiveFilesystemInfo(TestCase):
         self.assertEqual("archive-copier", next(sources)["Package"])
         binaries = apt_pkg.TagFile(archive_info.binfile)
         self.assertEqual("python-pam", next(binaries)["Package"])
+
+    def test_uncompressed(self):
+        self.assertCompressionTypeWorks(lambda path: None)
+
+    def test_gzip(self):
+        self.assertCompressionTypeWorks(
+            lambda path: subprocess.check_call(["gzip", path]))
+
+    def test_bzip2(self):
+        self.assertCompressionTypeWorks(
+            lambda path: subprocess.check_call(["bzip2", path]))
+
+    def test_xz(self):
+        self.assertCompressionTypeWorks(
+            lambda path: subprocess.check_call(["xz", path]))
 
 
 class TestSourcePackageData(TestCaseWithFactory):
