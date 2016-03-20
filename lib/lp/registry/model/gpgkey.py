@@ -36,6 +36,7 @@ from lp.services.gpg.interfaces import (
     )
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 
 
 @implementer(IGPGKey)
@@ -228,6 +229,10 @@ class GPGKeySet:
                 key_data_list = client.getKeysForOwner(owner_id)['keys']
                 gpg_keys.extend(
                     [GPGServiceKey(d) for d in key_data_list if d['enabled'] == active])
+            if active is False:
+                login_tokens = getUtility(ILoginTokenSet).getPendingGPGKeys(owner.id)
+                token_fingerprints = [t.fingerprint for t in login_tokens]
+                return [k for k in gpg_keys if k.fingerprint not in token_fingerprints]
             return gpg_keys
         else:
             if active is False:
