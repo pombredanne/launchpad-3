@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -251,6 +251,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "Build-Conflicts-Indep",
         "Checksums-Sha1",
         "Checksums-Sha256",
+        "Checksums-Sha512",
         "Format",
         "Homepage",
         "Standards-Version",
