@@ -349,7 +349,7 @@ class ByHash:
                     os.rmdir(hash_path)
                 else:
                     prune_directory = False
-        if prune_directory:
+        if prune_directory and os.path.exists(self.path):
             os.rmdir(self.path)
 
 
@@ -652,15 +652,7 @@ class Publisher(object):
             *conditions).config(distinct=True).order_by(
                 DistroSeries.id, BinaryPackagePublishingHistory.pocket)
 
-        archive_file_suites = []
-        for container in getUtility(IArchiveFileSet).getContainersToReap(
-                self.archive, container_prefix=u"release:"):
-            distroseries, pocket = self.distro.getDistroSeriesAndPocket(
-                container[len(u"release:"):])
-            archive_file_suites.append((distroseries, pocket))
-
-        for distroseries, pocket in chain(
-                source_suites, binary_suites, archive_file_suites):
+        for distroseries, pocket in chain(source_suites, binary_suites):
             if self.isDirty(distroseries, pocket):
                 continue
             if (cannot_modify_suite(self.archive, distroseries, pocket)
@@ -725,10 +717,20 @@ class Publisher(object):
         Otherwise we include only pockets flagged as true in dirty_pockets.
         """
         self.log.debug("* Step D: Generating Release files.")
+
+        archive_file_suites = set()
+        for container in getUtility(IArchiveFileSet).getContainersToReap(
+                self.archive, container_prefix=u"release:"):
+            distroseries, pocket = self.distro.getDistroSeriesAndPocket(
+                container[len(u"release:"):])
+            archive_file_suites.add((distroseries, pocket))
+        self.release_files_needed.update(archive_file_suites)
+
         for distroseries in self.distro:
             for pocket in self.archive.getPockets():
                 if not is_careful:
-                    if not self.isDirty(distroseries, pocket):
+                    if (not self.isDirty(distroseries, pocket) and
+                            (distroseries, pocket) not in archive_file_suites):
                         self.log.debug("Skipping release files for %s/%s" %
                                        (distroseries.name, pocket.name))
                         continue

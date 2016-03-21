@@ -1793,34 +1793,6 @@ class TestPublisher(TestPublisherBase):
         # are marked as dirty.
         self.checkDirtyPockets(publisher, expected=allowed_suites)
 
-    def testDirtyingPocketsWithReapableArchiveFiles(self):
-        """Pockets are dirty if they contain reapable archive files."""
-        allowed_suites = []
-        publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger)
-        publisher.A2_markPocketsWithDeletionsDirty()
-        self.checkDirtyPockets(publisher, expected=[])
-
-        lfa = self.factory.makeLibraryFileAlias()
-        getUtility(IArchiveFileSet).new(
-            self.ubuntutest.main_archive, u"stray", u"foo", lfa)
-        publisher.A2_markPocketsWithDeletionsDirty()
-        self.checkDirtyPockets(publisher, expected=[])
-
-        archive_file = getUtility(IArchiveFileSet).new(
-            self.ubuntutest.main_archive, u"release:breezy-autotest", u"foo",
-            lfa)
-        publisher.A2_markPocketsWithDeletionsDirty()
-        self.checkDirtyPockets(publisher, expected=[])
-
-        removeSecurityProxy(archive_file).scheduled_deletion_date = (
-            datetime.now(pytz.UTC) - timedelta(days=1))
-        publisher.A2_markPocketsWithDeletionsDirty()
-        expected_dirty_pockets = [
-            ('breezy-autotest', PackagePublishingPocket.RELEASE),
-            ]
-        self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
-
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -2321,6 +2293,10 @@ class TestPublisher(TestPublisherBase):
                 with open(suite_path('main', 'source', name), 'rb') as f:
                     main_contents.add(f.read())
         transaction.commit()
+        # Undo any previous determination that breezy-autotest is dirty, so
+        # that we can use that to check that future runs don't force index
+        # regeneration.
+        publisher.dirty_pockets = set()
 
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
@@ -2347,7 +2323,10 @@ class TestPublisher(TestPublisherBase):
             suite_path('main', 'source', 'by-hash'),
             Not(ByHashHasContents(main_contents)))
 
-        publisher.D_writeReleaseFiles(True)
+        publisher.A2_markPocketsWithDeletionsDirty()
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        self.assertEqual(set(), publisher.dirty_pockets)
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
