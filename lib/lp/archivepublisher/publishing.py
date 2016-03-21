@@ -336,15 +336,22 @@ class ByHash:
 
         This also removes the by-hash directory itself if no entries remain.
         """
-        if any(self.known_digests.values()):
-            for archive_hash in archive_hashes:
-                hash_path = os.path.join(self.path, archive_hash.apt_name)
-                if os.path.exists(hash_path):
-                    for digest in list(os.listdir(hash_path)):
-                        if not self.exists(archive_hash.apt_name, digest):
-                            os.unlink(os.path.join(hash_path, digest))
-        elif os.path.exists(self.path):
-            shutil.rmtree(self.path)
+        prune_directory = True
+        for archive_hash in archive_hashes:
+            hash_path = os.path.join(self.path, archive_hash.apt_name)
+            if os.path.exists(hash_path):
+                prune_hash_directory = True
+                for digest in list(os.listdir(hash_path)):
+                    if not self.exists(archive_hash.apt_name, digest):
+                        os.unlink(os.path.join(hash_path, digest))
+                    else:
+                        prune_hash_directory = False
+                if prune_hash_directory:
+                    os.rmdir(hash_path)
+                else:
+                    prune_directory = False
+        if prune_directory:
+            os.rmdir(self.path)
 
 
 class ByHashes:
