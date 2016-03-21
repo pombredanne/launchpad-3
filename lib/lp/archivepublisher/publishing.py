@@ -41,7 +41,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import getPubConfig
@@ -656,12 +655,9 @@ class Publisher(object):
         archive_file_suites = []
         for container in getUtility(IArchiveFileSet).getContainersToReap(
                 self.archive, container_prefix=u"release:"):
-            try:
-                distroseries, pocket = self.distro.getDistroSeriesAndPocket(
-                    container[len(u"release:"):])
-                archive_file_suites.append((distroseries, pocket))
-            except NotFoundError:
-                pass
+            distroseries, pocket = self.distro.getDistroSeriesAndPocket(
+                container[len(u"release:"):])
+            archive_file_suites.append((distroseries, pocket))
 
         for distroseries, pocket in chain(
                 source_suites, binary_suites, archive_file_suites):
