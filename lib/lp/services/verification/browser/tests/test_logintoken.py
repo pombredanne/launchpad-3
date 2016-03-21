@@ -21,12 +21,14 @@ from lp.services.verification.browser.logintoken import (
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.testing import (
-    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.deprecated import LaunchpadFormHarness
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -37,7 +39,7 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
     token to be consumed (so it can't be used again) when the user hits
     Cancel.
     """
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -82,7 +84,7 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
 
 class LoginTokenReadOnlyTests(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_continue_action_failed_with_gpg_database_in_ro_mode(self):
         self.useFixture(FeatureFixture({

@@ -775,10 +775,10 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
     gpg_keys = exported(
-        CollectionField(
+        doNotSnapshot(CollectionField(
             title=_("List of valid OpenPGP keys ordered by ID"),
             readonly=False, required=False,
-            value_type=Reference(schema=IGPGKey)))
+            value_type=Reference(schema=IGPGKey))))
     pending_gpg_keys = CollectionField(
         title=_("Set of fingerprints pending confirmation"),
         readonly=False, required=False,
