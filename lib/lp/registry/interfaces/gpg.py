@@ -39,7 +39,6 @@ class IGPGKey(IHasOwner):
 
     export_as_webservice_entry('gpg_key')
 
-    id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
@@ -83,6 +82,9 @@ class IGPGKeySet(Interface):
         """Return UNIQUE result for a given Key fingerprint including
         inactive ones.
         """
+
+    def getOwnerIdForPerson(person):
+        """return an owner id string suitable for sending to gpgservice."""
 
     def getByFingerprints(fingerprints):
         """Get multiple OpenPGP keys by their fingerprints."""

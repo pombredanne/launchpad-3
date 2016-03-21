@@ -3,6 +3,7 @@
 
 __all__ = [
     'GPG_DATABASE_READONLY_FEATURE_FLAG',
+    'GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG',
     'GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG',
     'GPGKeyAlgorithm',
     'GPGKeyDoesNotExistOnServer',
@@ -28,6 +29,7 @@ __all__ = [
 import httplib
 import re
 
+from gpgservice_client import GPGServiceException
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -52,6 +54,7 @@ class GPGReadOnly(Forbidden):
 
 GPG_DATABASE_READONLY_FEATURE_FLAG = u"gpg.database_read_only"
 GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG = u"gpg.write_to_gpgservice"
+GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG = u"gpg.read_from_gpgservice"
 
 
 def valid_fingerprint(fingerprint):
@@ -425,15 +428,6 @@ class IPymeUserId(Interface):
     comment = Attribute("The comment portion of this user ID")
 
 
-class GPGServiceException(Exception):
-
-    """Raised when we get an error from the gpgservice.
-
-    More specific errors for commonly encountered errors may be added once we
-    actually integrate gpgservice with the rest of launchpad.
-    """
-
-
 class IGPGClient(Interface):
 
     """A client for querying a gpgservice instance."""
@@ -465,6 +459,13 @@ class IGPGClient(Interface):
         """Get a GPG key by its fingerprint.
 
         :raises ValueError: if the fingerprint isn't valid.
+        """
+
+    def getKeysByFingerprints(fingerprints):
+        """Bulk retrieve GPG keys by a list of fingerprints.
+
+        :param fingerprints: A list of fingerprints to retrieve.
+        :returns: A list of keys that were found.
         """
 
     def registerWriteHook(hook_callable):
