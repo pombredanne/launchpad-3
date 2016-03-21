@@ -39,7 +39,6 @@ class IGPGKey(IHasOwner):
 
     export_as_webservice_entry('gpg_key')
 
-    id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
