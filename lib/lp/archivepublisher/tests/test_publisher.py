@@ -538,7 +538,7 @@ class TestByHash(TestCaseWithFactory):
         by_hash.add(lfa)
         self.assertThat(by_hash_path, ByHashHasContents([content]))
 
-    def test_exists(self):
+    def test_known(self):
         root = self.makeTemporaryDirectory()
         content = "abc\n"
         with open_for_writing(os.path.join(root, "abc"), "w") as f:
@@ -548,13 +548,13 @@ class TestByHash(TestCaseWithFactory):
         md5 = hashlib.md5(content).hexdigest()
         sha1 = hashlib.sha1(content).hexdigest()
         sha256 = hashlib.sha256(content).hexdigest()
-        self.assertFalse(by_hash.exists("MD5Sum", md5))
-        self.assertFalse(by_hash.exists("SHA1", sha1))
-        self.assertFalse(by_hash.exists("SHA256", sha256))
+        self.assertFalse(by_hash.known("MD5Sum", md5))
+        self.assertFalse(by_hash.known("SHA1", sha1))
+        self.assertFalse(by_hash.known("SHA256", sha256))
         by_hash.add(lfa, copy_from_path="abc")
-        self.assertTrue(by_hash.exists("MD5Sum", md5))
-        self.assertTrue(by_hash.exists("SHA1", sha1))
-        self.assertTrue(by_hash.exists("SHA256", sha256))
+        self.assertTrue(by_hash.known("MD5Sum", md5))
+        self.assertTrue(by_hash.known("SHA1", sha1))
+        self.assertTrue(by_hash.known("SHA256", sha256))
 
     def test_prune(self):
         root = self.makeTemporaryDirectory()
@@ -609,7 +609,7 @@ class TestByHashes(TestCaseWithFactory):
             path: contents.values()
             for path, contents in path_contents.items()}))
 
-    def test_exists(self):
+    def test_known(self):
         root = self.makeTemporaryDirectory()
         content = "abc\n"
         sources_path = "dists/foo/main/source/Sources"
@@ -620,13 +620,13 @@ class TestByHashes(TestCaseWithFactory):
         md5 = hashlib.md5(content).hexdigest()
         sha1 = hashlib.sha1(content).hexdigest()
         sha256 = hashlib.sha256(content).hexdigest()
-        self.assertFalse(by_hashes.exists(sources_path, "MD5Sum", md5))
-        self.assertFalse(by_hashes.exists(sources_path, "SHA1", sha1))
-        self.assertFalse(by_hashes.exists(sources_path, "SHA256", sha256))
+        self.assertFalse(by_hashes.known(sources_path, "MD5Sum", md5))
+        self.assertFalse(by_hashes.known(sources_path, "SHA1", sha1))
+        self.assertFalse(by_hashes.known(sources_path, "SHA256", sha256))
         by_hashes.add(sources_path, lfa, copy_from_path=sources_path)
-        self.assertTrue(by_hashes.exists(sources_path, "MD5Sum", md5))
-        self.assertTrue(by_hashes.exists(sources_path, "SHA1", sha1))
-        self.assertTrue(by_hashes.exists(sources_path, "SHA256", sha256))
+        self.assertTrue(by_hashes.known(sources_path, "MD5Sum", md5))
+        self.assertTrue(by_hashes.known(sources_path, "SHA1", sha1))
+        self.assertTrue(by_hashes.known(sources_path, "SHA256", sha256))
 
     def test_prune(self):
         root = self.makeTemporaryDirectory()

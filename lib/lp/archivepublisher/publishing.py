@@ -326,7 +326,7 @@ class ByHash:
                         finally:
                             lfa.close()
 
-    def exists(self, hashname, digest):
+    def known(self, hashname, digest):
         """Do we know about a file with this digest?"""
         return digest in self.known_digests[hashname]
 
@@ -341,7 +341,7 @@ class ByHash:
             if os.path.exists(hash_path):
                 prune_hash_directory = True
                 for digest in list(os.listdir(hash_path)):
-                    if not self.exists(archive_hash.apt_name, digest):
+                    if not self.known(archive_hash.apt_name, digest):
                         os.unlink(os.path.join(hash_path, digest))
                     else:
                         prune_hash_directory = False
@@ -374,8 +374,8 @@ class ByHashes:
     def add(self, path, lfa, copy_from_path=None):
         self.registerChild(path).add(lfa, copy_from_path=copy_from_path)
 
-    def exists(self, path, hashname, digest):
-        return self.registerChild(path).exists(hashname, digest)
+    def known(self, path, hashname, digest):
+        return self.registerChild(path).known(hashname, digest)
 
     def prune(self):
         for child in self.children.values():
@@ -1015,7 +1015,7 @@ class Publisher(object):
         for db_file in db_files:
             path = db_file.path
             if (path not in current_files or
-                not by_hashes.exists(
+                not by_hashes.known(
                     path, "SHA256", current_files[path][1])):
                 condemned_files.add(db_file)
         archive_file_set.scheduleDeletion(
@@ -1029,7 +1029,7 @@ class Publisher(object):
         for path, (size, sha256) in current_files.items():
             full_path = os.path.join(self._config.archiveroot, path)
             if (os.path.exists(full_path) and
-                    not by_hashes.exists(path, "SHA256", sha256)):
+                    not by_hashes.known(path, "SHA256", sha256)):
                 with open(os.path.join(
                         self._config.archiveroot, path), "rb") as fileobj:
                     db_file = archive_file_set.newFromFile(
