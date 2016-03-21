@@ -135,7 +135,6 @@ class GPGKeySet:
 
     def activate(self, requester, key, can_encrypt):
         """See `IGPGKeySet`."""
-        assert key.owner == requester
         fingerprint = key.fingerprint
         # XXX: This is a little ugly - we can't use getByFingerprint here since
         # if the READ_FROM_GPGSERVICE FF is set we'll get a GPGServiceKey object
@@ -143,6 +142,7 @@ class GPGKeySet:
         # representation in all cases.
         lp_key = GPGKey.selectOneBy(fingerprint=fingerprint)
         if lp_key:
+            assert lp_key.owner == requester
             is_new = False
             # Then the key already exists, so let's reactivate it.
             lp_key.active = True
