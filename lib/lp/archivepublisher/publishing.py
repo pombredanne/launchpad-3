@@ -1030,8 +1030,7 @@ class Publisher(object):
             full_path = os.path.join(self._config.archiveroot, path)
             if (os.path.exists(full_path) and
                     not by_hashes.known(path, "SHA256", sha256)):
-                with open(os.path.join(
-                        self._config.archiveroot, path), "rb") as fileobj:
+                with open(full_path, "rb") as fileobj:
                     db_file = archive_file_set.newFromFile(
                         self.archive, container, path, fileobj,
                         size, filenameToContentType(path))
