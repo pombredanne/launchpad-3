@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher script class."""
@@ -65,6 +65,18 @@ class PublishDistro(PublisherScript):
             "-A", "--careful-apt", action="store_true", dest="careful_apt",
             default=False,
             help="Make index generation (e.g. apt-ftparchive) careful.")
+
+        self.parser.add_option(
+            "--careful-release", action="store_true", dest="careful_release",
+            default=False,
+            help="Make the Release file generation process careful.")
+
+        self.parser.add_option(
+            "--include-non-pending", action="store_true",
+            dest="include_non_pending", default=False,
+            help=(
+                "When publishing PPAs, also include those that do not have "
+                "pending publications."))
 
         self.parser.add_option(
             '-s', '--suite', metavar='SUITE', dest='suite', action='append',
@@ -153,6 +165,7 @@ class PublishDistro(PublisherScript):
             ('Publishing', self.options.careful_publishing),
             ('Domination', self.options.careful_domination),
             (indexing_engine, self.options.careful_apt),
+            ('Release', self.options.careful_release),
             ]
         for name, option in log_items:
             self.logOption(name, self.describeCare(option))
@@ -207,7 +220,8 @@ class PublishDistro(PublisherScript):
 
     def getPPAs(self, distribution):
         """Find private package archives for the selected distribution."""
-        if self.isCareful(self.options.careful_publishing):
+        if (self.isCareful(self.options.careful_publishing) or
+                self.options.include_non_pending):
             return distribution.getAllPPAs()
         else:
             return distribution.getPendingPublicationPPAs()
@@ -274,7 +288,8 @@ class PublishDistro(PublisherScript):
             publisher.C_writeIndexes(careful_indexing)
         self.txn.commit()
 
-        publisher.D_writeReleaseFiles(careful_indexing)
+        publisher.D_writeReleaseFiles(self.isCareful(
+            self.options.careful_apt or self.options.careful_release))
         # The caller will commit this last step.
 
         publisher.createSeriesAliases()

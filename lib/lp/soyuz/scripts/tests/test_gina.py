@@ -1,13 +1,16 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
 import hashlib
 import os
+import shutil
+import subprocess
 import tempfile
 from textwrap import dedent
 from unittest import TestLoader
 
+import apt_pkg
 from fixtures import EnvironmentVariableFixture
 import transaction
 
@@ -23,6 +26,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina import ExecutionError
 from lp.soyuz.scripts.gina.archive import (
     ArchiveComponentItems,
+    ArchiveFilesystemInfo,
     PackagesMap,
     )
 from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
@@ -36,10 +40,14 @@ from lp.soyuz.scripts.gina.handlers import (
     )
 from lp.soyuz.scripts.gina.packages import (
     BinaryPackageData,
+    MissingRequiredArguments,
     SourcePackageData,
     )
 from lp.soyuz.scripts.gina.runner import import_sourcepackages
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
@@ -162,6 +170,49 @@ class TestGina(TestCaseWithFactory):
         self.assertPublishingStates(
             pubs, [PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.DELETED, PackagePublishingStatus.DELETED])
+
+
+class TestArchiveFilesystemInfo(TestCase):
+
+    def assertCompressionTypeWorks(self, compressor_func):
+        archive_root = self.useTempDir()
+        sampledata_root = os.path.join(
+            os.path.dirname(__file__), "gina_test_archive")
+        sampledata_component_dir = os.path.join(
+            sampledata_root, "dists", "breezy", "main")
+        component_dir = os.path.join(archive_root, "dists", "breezy", "main")
+        os.makedirs(os.path.join(component_dir, "source"))
+        shutil.copy(
+            os.path.join(sampledata_component_dir, "source", "Sources"),
+            os.path.join(component_dir, "source", "Sources"))
+        compressor_func(os.path.join(component_dir, "source", "Sources"))
+        os.makedirs(os.path.join(component_dir, "binary-i386"))
+        shutil.copy(
+            os.path.join(sampledata_component_dir, "binary-i386", "Packages"),
+            os.path.join(component_dir, "binary-i386", "Packages"))
+        compressor_func(os.path.join(component_dir, "binary-i386", "Packages"))
+
+        archive_info = ArchiveFilesystemInfo(
+            archive_root, "breezy", "main", "i386")
+        sources = apt_pkg.TagFile(archive_info.srcfile)
+        self.assertEqual("archive-copier", next(sources)["Package"])
+        binaries = apt_pkg.TagFile(archive_info.binfile)
+        self.assertEqual("python-pam", next(binaries)["Package"])
+
+    def test_uncompressed(self):
+        self.assertCompressionTypeWorks(lambda path: None)
+
+    def test_gzip(self):
+        self.assertCompressionTypeWorks(
+            lambda path: subprocess.check_call(["gzip", path]))
+
+    def test_bzip2(self):
+        self.assertCompressionTypeWorks(
+            lambda path: subprocess.check_call(["bzip2", path]))
+
+    def test_xz(self):
+        self.assertCompressionTypeWorks(
+            lambda path: subprocess.check_call(["xz", path]))
 
 
 class TestSourcePackageData(TestCaseWithFactory):
@@ -287,6 +338,28 @@ class TestSourcePackageData(TestCaseWithFactory):
                 tempfile.tempdir = None
         self.assertEqual([], os.listdir(unpack_tmpdir))
 
+    def test_checksum_fields(self):
+        # We only need one of Files or Checksums-*.
+        base_dsc_contents = {
+            "Package": "foo",
+            "Binary": "foo",
+            "Version": "1.0-1",
+            "Maintainer": "Foo Bar <foo@canonical.com>",
+            "Section": "misc",
+            "Architecture": "all",
+            "Directory": "pool/main/f/foo",
+            "Component": "main",
+            }
+        for field in (
+                "Files", "Checksums-Sha1", "Checksums-Sha256",
+                "Checksums-Sha512"):
+            dsc_contents = dict(base_dsc_contents)
+            dsc_contents[field] = "xxx 000 foo_1.0-1.dsc"
+            sp_data = SourcePackageData(**dsc_contents)
+            self.assertEqual(["foo_1.0-1.dsc"], sp_data.files)
+        self.assertRaises(
+            MissingRequiredArguments, SourcePackageData, **base_dsc_contents)
+
 
 class TestSourcePackageHandler(TestCaseWithFactory):
 
@@ -350,6 +423,33 @@ class TestSourcePackagePublisher(TestCaseWithFactory):
 
         [spph] = series.main_archive.getPublishedSources()
         self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
+
+
+class TestBinaryPackageData(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_checksum_fields(self):
+        # We only need one of MD5sum or SHA*.
+        base_deb_contents = {
+            "Package": "foo",
+            "Installed-Size": "0",
+            "Maintainer": "Foo Bar <foo@canonical.com>",
+            "Section": "misc",
+            "Architecture": "all",
+            "Version": "1.0-1",
+            "Filename": "pool/main/f/foo/foo_1.0-1_all.deb",
+            "Component": "main",
+            "Size": "0",
+            "Description": "",
+            "Priority": "extra",
+            }
+        for field in ("MD5sum", "SHA1", "SHA256", "SHA512"):
+            deb_contents = dict(base_deb_contents)
+            deb_contents[field] = "0"
+            BinaryPackageData(**deb_contents)
+        self.assertRaises(
+            MissingRequiredArguments, BinaryPackageData, **base_deb_contents)
 
 
 class TestBinaryPackageHandler(TestCaseWithFactory):

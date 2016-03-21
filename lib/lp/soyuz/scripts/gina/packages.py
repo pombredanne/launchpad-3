@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package information classes.
@@ -225,8 +225,14 @@ class AbstractPackageData:
                                       (self.package, self.version))
 
         absent = object()
-        missing = [attr for attr in self._required if
-                   getattr(self, attr, absent) is absent]
+        missing = []
+        for attr in self._required:
+            if isinstance(attr, tuple):
+                if all(getattr(self, oneattr, absent) is absent
+                       for oneattr in attr):
+                    missing.append(attr)
+            elif getattr(self, attr, absent) is absent:
+                missing.append(attr)
         if missing:
             raise MissingRequiredArguments(missing)
 
@@ -249,14 +255,26 @@ class AbstractPackageData:
         self.date_uploaded = UTC_NOW
         return True
 
-    def set_field(self, key, value):
-        """Record an arbitrary control field."""
-        lowkey = key.lower()
+    def is_field_known(self, lowfield):
+        """Is this field a known one?"""
         # _known_fields contains the fields that archiveuploader recognises
         # from a raw .dsc or .*deb; _required contains a few extra fields
         # that are added to Sources and Packages index files.  If a field is
         # in neither, it counts as user-defined.
-        if lowkey in self._known_fields or lowkey in self._required:
+        if lowfield in self._known_fields:
+            return True
+        for required in self._required:
+            if isinstance(required, tuple):
+                if lowfield in required:
+                    return True
+            elif lowfield == required:
+                return True
+        return False
+
+    def set_field(self, key, value):
+        """Record an arbitrary control field."""
+        lowkey = key.lower()
+        if self.is_field_known(lowkey):
             setattr(self, lowkey.replace("-", "_"), value)
         else:
             if self._user_defined is None:
@@ -294,7 +312,7 @@ class SourcePackageData(AbstractPackageData):
         'section',
         'architecture',
         'directory',
-        'files',
+        ('files', 'checksums-sha1', 'checksums-sha256', 'checksums-sha512'),
         'component',
         ]
 
@@ -326,11 +344,12 @@ class SourcePackageData(AbstractPackageData):
                 except UnicodeDecodeError:
                     raise DisplayNameDecodingError(
                         "Could not decode name %s" % displayname)
-            elif k == 'Files':
-                self.files = []
-                files = v.split("\n")
-                for f in files:
-                    self.files.append(stripseq(f.split(" ")))
+            elif k == 'Files' or k.startswith('Checksums-'):
+                if not hasattr(self, 'files'):
+                    self.files = []
+                    files = v.split("\n")
+                    for f in files:
+                        self.files.append(stripseq(f.split(" "))[-1])
             else:
                 self.set_field(k, v)
 
@@ -413,7 +432,7 @@ class BinaryPackageData(AbstractPackageData):
         'filename',
         'component',
         'size',
-        'md5sum',
+        ('md5sum', 'sha1', 'sha256', 'sha512'),
         'description',
         'summary',
         'priority',
