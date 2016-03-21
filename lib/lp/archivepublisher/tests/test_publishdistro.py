@@ -906,7 +906,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             "--disable-domination": [
                 "A2_markPocketsWithDeletionsDirty", "B_dominate",
                 ],
-            "--disable-apt": ["C_doFTPArchive"],
+            "--disable-apt": ["C_doFTPArchive", "createSeriesAliases"],
             "--disable-release": ["D_writeReleaseFiles"],
             }
         for option in possible_options:
