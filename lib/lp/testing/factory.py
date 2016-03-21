@@ -606,9 +606,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             client.addKeyForTest(
                 openid_identifier, key.keyid, key.fingerprint, key.keysize,
                 key.algorithm.name, key.active, key.can_encrypt)
-            # Sadly client.addKeyForTest does not return the key that was added:
+            # Sadly client.addKeyForTest does not return the key that
+            # was added:
             if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
-                return GPGServiceKey(client.getKeyByFingerprint(key.fingerprint))
+                return GPGServiceKey(
+                    client.getKeyByFingerprint(key.fingerprint))
         return key
 
     def makePerson(
