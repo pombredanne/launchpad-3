@@ -173,7 +173,7 @@ class GPGKeySet:
             gpgservice_key = GPGServiceKey(
                 client.addKeyForOwner(owner_id, key.fingerprint))
             if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
-                is_new == key_data is not None
+                is_new = key_data is None
                 lp_key = gpgservice_key
         return lp_key, is_new
 
