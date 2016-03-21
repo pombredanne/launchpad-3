@@ -422,6 +422,23 @@
             interface="lp.soyuz.interfaces.archive.IArchiveSet"/>
     </securedutility>
 
+    <!-- ArchiveFile -->
+
+    <class class="lp.soyuz.model.archivefile.ArchiveFile">
+        <allow interface="lp.soyuz.interfaces.archivefile.IArchiveFile"/>
+    </class>
+
+    <!-- ArchiveFileSet -->
+
+    <class class="lp.soyuz.model.archivefile.ArchiveFileSet">
+        <allow interface="lp.soyuz.interfaces.archivefile.IArchiveFileSet"/>
+    </class>
+    <securedutility
+        class="lp.soyuz.model.archivefile.ArchiveFileSet"
+        provides="lp.soyuz.interfaces.archivefile.IArchiveFileSet">
+        <allow interface="lp.soyuz.interfaces.archivefile.IArchiveFileSet"/>
+    </securedutility>
+
     <!-- ArchiveJob -->
 
     <class class="lp.soyuz.model.archivejob.ArchiveJob">

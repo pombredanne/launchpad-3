@@ -318,6 +318,8 @@
                 backports_not_automatic
                 include_long_descriptions
                 index_compressors
+                publish_by_hash
+                advertise_by_hash
                 inherit_overrides_from_parents"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
