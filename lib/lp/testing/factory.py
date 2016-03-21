@@ -178,6 +178,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -233,8 +234,10 @@ from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
+    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
     GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -604,6 +607,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             client.addKeyForTest(
                 openid_identifier, key.keyid, key.fingerprint, key.keysize,
                 key.algorithm.name, key.active, key.can_encrypt)
+            # Sadly client.addKeyForTest does not return the key that
+            # was added:
+            if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+                return GPGServiceKey(
+                    client.getKeyByFingerprint(key.fingerprint))
         return key
 
     def makePerson(

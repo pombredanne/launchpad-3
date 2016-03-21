@@ -36,8 +36,8 @@ class GPGKeyServiceFixture(Fixture):
 
     def setUp(self):
         super(GPGKeyServiceFixture, self).setUp()
-        # Write service config to a file on disk. This file gets deleted when the
-        # fixture ends.
+        # Write service config to a file on disk. This file gets deleted
+        # when the fixture ends.
         service_config = _get_default_service_config()
         self._config_file = NamedTemporaryFile()
         self.addCleanup(self._config_file.close)
@@ -94,12 +94,15 @@ class GPGKeyServiceFixture(Fixture):
         raise RuntimeError("Service not responding: %r" % errors)
 
     def reset_service_database(self):
-        """Reset the gpgservice instance database to the launchpad sampledata."""
+        """Reset the gpgservice instance database to the launchpad sampledata.
+        """
         conn = httplib.HTTPConnection(self.bind_address)
         test_data = {
             'keys': [
                 {
-                    'owner': 'name16_oid',
+                    'owner':
+                        config.launchpad.openid_provider_root
+                        + '+id/name16_oid',
                     'id': '12345678',
                     'fingerprint': 'ABCDEF0123456789ABCDDCBA0000111112345678',
                     'size': 1024,

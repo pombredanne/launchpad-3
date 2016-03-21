@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
@@ -83,14 +83,7 @@ from lp.soyuz.scripts.gina.packages import (
 
 def check_not_in_librarian(files, archive_root, directory):
     to_upload = []
-    if not isinstance(files, list):
-        # A little bit of ugliness. The source package's files attribute
-        # returns a three-tuple with md5sum, size and name. The binary
-        # package, on the other hand, only really provides a filename.
-        # This is tested through the two codepaths, so it should be safe.
-        files = [(None, files)]
-    for i in files:
-        fname = i[-1]
+    for fname in files:
         path = os.path.join(archive_root, directory)
         if not os.path.exists(os.path.join(path, fname)):
             # XXX kiko 2005-10-22: Untested
@@ -781,7 +774,7 @@ class BinaryPackageHandler:
     def createBinaryPackage(self, bin, srcpkg, distroarchseries, archtag):
         """Create a new binarypackage."""
         fdir, fname = os.path.split(bin.filename)
-        to_upload = check_not_in_librarian(fname, bin.archive_root, fdir)
+        to_upload = check_not_in_librarian([fname], bin.archive_root, fdir)
         fname, path = to_upload[0]
 
         componentID = self.distro_handler.getComponentByName(bin.component).id

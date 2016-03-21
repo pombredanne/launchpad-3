@@ -733,6 +733,20 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
+                else:
+                    if not self.isAllowed(distroseries, pocket):
+                        continue
+                    # If we were asked for careful Release file generation
+                    # but not careful indexing, then we may not have the raw
+                    # material needed to generate Release files for all
+                    # suites.  Only force those suites that already have
+                    # Release files.
+                    release_path = os.path.join(
+                        self._config.distsroot, distroseries.getSuite(pocket),
+                        "Release")
+                    if file_exists(release_path):
+                        self.release_files_needed.add(
+                            (distroseries.name, pocket))
                 self._writeSuite(distroseries, pocket)
 
     def _allIndexFiles(self, distroseries):
