@@ -347,7 +347,8 @@ class GPGClientTests(TestCase):
     def test_adding_invalid_fingerprint_raises_ValueError(self):
         client = getUtility(IGPGClient)
         self.assertThat(
-            lambda: client.addKeyForOwner(self.get_random_owner_id_string(), ''),
+            lambda: client.addKeyForOwner(
+                self.get_random_owner_id_string(), ''),
             raises(ValueError("Invalid fingerprint: ''.")))
 
     def test_adding_duplicate_fingerprint_raises_GPGServiceException(self):
@@ -359,7 +360,8 @@ class GPGClientTests(TestCase):
         client.addKeyForOwner(user_one, fingerprint)
         self.assertThat(
             lambda: client.addKeyForOwner(user_two, fingerprint),
-            raises(GPGServiceException("Error: Fingerprint already in database.")))
+            raises(GPGServiceException(
+                "Error: Fingerprint already in database.")))
 
     def test_disabling_active_key(self):
         self.useFixture(KeyServerTac())
@@ -390,7 +392,8 @@ class GPGClientTests(TestCase):
     def test_disabling_invalid_fingerprint_raises_ValueError(self):
         client = getUtility(IGPGClient)
         self.assertThat(
-            lambda: client.disableKeyForOwner(self.get_random_owner_id_string(), ''),
+            lambda: client.disableKeyForOwner(
+                self.get_random_owner_id_string(), ''),
             raises(ValueError("Invalid fingerprint: ''."))
         )
 

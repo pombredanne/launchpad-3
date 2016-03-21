@@ -8,7 +8,6 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     IntCol,
-    SQLObjectNotFound,
     StringCol,
     )
 from zope.component import getUtility
@@ -121,7 +120,6 @@ class GPGServiceKey:
         return self.fingerprint == other.fingerprint
 
 
-
 @implementer(IGPGKeySet)
 class GPGKeySet:
 
@@ -136,10 +134,10 @@ class GPGKeySet:
     def activate(self, requester, key, can_encrypt):
         """See `IGPGKeySet`."""
         fingerprint = key.fingerprint
-        # XXX: This is a little ugly - we can't use getByFingerprint here since
-        # if the READ_FROM_GPGSERVICE FF is set we'll get a GPGServiceKey object
-        # instead of a GPGKey object, and we need to change the database
-        # representation in all cases.
+        # XXX: This is a little ugly - we can't use getByFingerprint
+        # here since if the READ_FROM_GPGSERVICE FF is set we'll get a
+        # GPGServiceKey object instead of a GPGKey object, and we need
+        # to change the database representation in all cases.
         lp_key = GPGKey.selectOneBy(fingerprint=fingerprint)
         if lp_key:
             assert lp_key.owner == requester
@@ -172,7 +170,8 @@ class GPGKeySet:
                 owner_id = key_data['owner']
             allowed_owner_ids = self._getAllOwnerIdsForPerson(requester)
             assert owner_id in allowed_owner_ids
-            gpgservice_key = GPGServiceKey(client.addKeyForOwner(owner_id, key.fingerprint))
+            gpgservice_key = GPGServiceKey(
+                client.addKeyForOwner(owner_id, key.fingerprint))
             if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
                 is_new == key_data is not None
                 lp_key = gpgservice_key
@@ -184,10 +183,10 @@ class GPGKeySet:
         lp_key = GPGKey.selectOneBy(fingerprint=key.fingerprint)
         lp_key.active = False
         if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
-            # Users with more than one openid identifier may be deactivating
-            # a key that is associated with their non-default openid identifier.
-            # If that's the case, use the same openid identifier rather than
-            # the default one:
+            # Users with more than one openid identifier may be
+            # deactivating a key that is associated with their
+            # non-default openid identifier.  If that's the case, use
+            # the same openid identifier rather than the default one:
             client = getUtility(IGPGClient)
             key_data = client.getKeyByFingerprint(key.fingerprint)
             if not key_data:
@@ -213,7 +212,9 @@ class GPGKeySet:
         fingerprints = list(fingerprints)
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            return [GPGServiceKey(key_data) for key_data in client.getKeysByFingerprints(fingerprints)]
+            return [
+                GPGServiceKey(key_data)
+                for key_data in client.getKeysByFingerprints(fingerprints)]
         else:
             return list(IStore(GPGKey).find(
                 GPGKey, GPGKey.fingerprint.is_in(fingerprints)))
@@ -227,12 +228,16 @@ class GPGKeySet:
             gpg_keys = []
             for owner_id in owner_ids:
                 key_data_list = client.getKeysForOwner(owner_id)['keys']
-                gpg_keys.extend(
-                    [GPGServiceKey(d) for d in key_data_list if d['enabled'] == active])
+                gpg_keys.extend([
+                    GPGServiceKey(d) for d in key_data_list
+                    if d['enabled'] == active])
             if active is False:
-                login_tokens = getUtility(ILoginTokenSet).getPendingGPGKeys(owner.id)
+                login_tokens = getUtility(ILoginTokenSet).getPendingGPGKeys(
+                    owner.id)
                 token_fingerprints = [t.fingerprint for t in login_tokens]
-                return [k for k in gpg_keys if k.fingerprint not in token_fingerprints]
+                return [
+                    k for k in gpg_keys
+                    if k.fingerprint not in token_fingerprints]
             return gpg_keys
         else:
             if active is False:
@@ -260,4 +265,6 @@ class GPGKeySet:
         identifiers = IStore(OpenIdIdentifier).find(
             OpenIdIdentifier, account=owner.account)
         openid_provider_root = config.launchpad.openid_provider_root
-        return [openid_provider_root + '+id/' + i.identifier.encode('ascii') for i in identifiers]
+        return [
+            openid_provider_root + '+id/' + i.identifier.encode('ascii')
+            for i in identifiers]

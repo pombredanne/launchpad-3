@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 import atexit
-import base64
 import httplib
 import os
 import shutil
@@ -22,13 +21,10 @@ import sys
 import tempfile
 import urllib
 import urllib2
-from urlparse import urljoin
 
 import gpgme
 from gpgservice_client import GPGClient
 from lazr.restful.utils import get_current_browser_request
-import requests
-from requests.status_codes import codes as http_codes
 from zope.interface import implementer
 
 from lp.app.validators.email import valid_email
@@ -40,7 +36,6 @@ from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     GPGKeyRevoked,
     GPGKeyTemporarilyNotFoundError,
-    GPGServiceException,
     GPGUploadFailure,
     GPGVerificationError,
     IGPGClient,
@@ -52,7 +47,6 @@ from lp.services.gpg.interfaces import (
     SecretGPGKeyImportDetected,
     valid_fingerprint,
     )
-from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
     TimeoutError,
