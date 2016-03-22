@@ -2221,10 +2221,10 @@ class TestPublisher(TestPublisherBase):
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
-        contents = []
+        contents = set()
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
             with open(suite_path('main', 'source', name), 'rb') as f:
-                contents.append(f.read())
+                contents.add(f.read())
 
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
@@ -2254,13 +2254,13 @@ class TestPublisher(TestPublisherBase):
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
-        main_contents = []
-        universe_contents = []
+        main_contents = set()
+        universe_contents = set()
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
             with open(suite_path('main', 'source', name), 'rb') as f:
-                main_contents.append(f.read())
+                main_contents.add(f.read())
             with open(suite_path('universe', 'source', name), 'rb') as f:
-                universe_contents.append(f.read())
+                universe_contents.add(f.read())
 
         self.getPubSource(sourcename='baz', filecontent='Source: baz\n')
 
@@ -2270,7 +2270,7 @@ class TestPublisher(TestPublisherBase):
 
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
             with open(suite_path('main', 'source', name), 'rb') as f:
-                main_contents.append(f.read())
+                main_contents.add(f.read())
 
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
