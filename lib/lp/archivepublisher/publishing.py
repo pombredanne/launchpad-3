@@ -1009,19 +1009,22 @@ class Publisher(object):
         for db_file in db_files:
             by_hashes.add(db_file.path, db_file.library_file)
 
-        # Condemn any database records that do not correspond to active
+        # Condemn any database records that do not correspond to current
         # index files.
         condemned_files = set()
         for db_file in db_files:
-            path = db_file.path
-            if (path not in current_files or
-                not by_hashes.known(
-                    path, "SHA256", current_files[path][1])):
-                condemned_files.add(db_file)
+            if db_file.scheduled_deletion_date is None:
+                path = db_file.path
+                if path in current_files:
+                    current_sha256 = current_files[path][1]
+                else:
+                    current_sha256 = None
+                if db_file.library_file.content.sha256 != current_sha256:
+                    condemned_files.add(db_file)
         archive_file_set.scheduleDeletion(
             condemned_files, timedelta(days=BY_HASH_STAY_OF_EXECUTION))
 
-        # Ensure that all the active index files are in by-hash and have
+        # Ensure that all the current index files are in by-hash and have
         # corresponding database entries.
         # XXX cjwatson 2016-03-15: This should possibly use bulk creation,
         # although we can only avoid about a third of the queries since the
