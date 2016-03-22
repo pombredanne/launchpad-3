@@ -1253,6 +1253,22 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             1 + old_num_pending_archives, new_num_pending_archives)
 
+    def testPendingArchiveWithReapableFiles(self):
+        # getPendingPublicationPPAs returns archives that have reapable
+        # ArchiveFiles.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        archive = self.factory.makeArchive()
+        self.assertNotIn(archive, ubuntu.getPendingPublicationPPAs())
+        archive_file = self.factory.makeArchiveFile(archive=archive)
+        self.assertNotIn(archive, ubuntu.getPendingPublicationPPAs())
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(archive_file).scheduled_deletion_date = (
+            now + timedelta(hours=12))
+        self.assertNotIn(archive, ubuntu.getPendingPublicationPPAs())
+        removeSecurityProxy(archive_file).scheduled_deletion_date = (
+            now - timedelta(hours=12))
+        self.assertIn(archive, ubuntu.getPendingPublicationPPAs())
+
     def _checkCompressedFiles(self, archive_publisher, base_file_path,
                               suffixes):
         """Assert that the various compressed versions of a file are equal.
