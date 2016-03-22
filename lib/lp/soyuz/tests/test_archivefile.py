@@ -19,6 +19,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.osutils import open_for_writing
 from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.testing import TestCaseWithFactory
@@ -95,6 +96,29 @@ class TestArchiveFile(TestCaseWithFactory):
             tomorrow - archive_files[1].scheduled_deletion_date,
             LessThan(timedelta(minutes=5)))
         self.assertIsNone(archive_files[2].scheduled_deletion_date)
+
+    def test_unscheduleDeletion(self):
+        archives = [self.factory.makeArchive() for _ in range(2)]
+        lfas = [
+            self.factory.makeLibraryFileAlias(db_only=True) for _ in range(3)]
+        archive_files = []
+        for archive in archives:
+            for container in ("foo", "bar"):
+                archive_files.extend([
+                    self.factory.makeArchiveFile(
+                        archive=archive, container=container, library_file=lfa)
+                    for lfa in lfas])
+        now = datetime.now(pytz.UTC)
+        for archive_file in archive_files:
+            removeSecurityProxy(archive_file).scheduled_deletion_date = now
+        getUtility(IArchiveFileSet).unscheduleDeletion(
+            archive=archives[0], container="foo",
+            sha256_checksums=[lfas[0].content.sha256, lfas[1].content.sha256])
+        flush_database_caches()
+        self.assertContentEqual(
+            [archive_files[0], archive_files[1]],
+            [archive_file for archive_file in archive_files
+             if archive_file.scheduled_deletion_date is None])
 
     def test_getContainersToReap(self):
         archive = self.factory.makeArchive()

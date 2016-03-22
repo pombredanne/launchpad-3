@@ -15,6 +15,7 @@ import os.path
 
 import pytz
 from storm.locals import (
+    And,
     DateTime,
     Int,
     Reference,
@@ -31,6 +32,7 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.stormexpr import BulkUpdate
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -89,7 +91,7 @@ class ArchiveFileSet:
                     content_type):
         library_file = getUtility(ILibraryFileAliasSet).create(
             os.path.basename(path), size, fileobj, content_type,
-            restricted=archive.private)
+            restricted=archive.private, allow_zero_length=True)
         return cls.new(archive, container, path, library_file)
 
     @staticmethod
@@ -119,6 +121,22 @@ class ArchiveFileSet:
         rows = IMasterStore(ArchiveFile).find(
             ArchiveFile, ArchiveFile.id.is_in(archive_file_ids))
         rows.set(scheduled_deletion_date=UTC_NOW + stay_of_execution)
+
+    @staticmethod
+    def unscheduleDeletion(archive, container=None, sha256_checksums=set()):
+        """See `IArchiveFileSet`."""
+        clauses = [
+            ArchiveFile.archive == archive,
+            ArchiveFile.library_file == LibraryFileAlias.id,
+            LibraryFileAlias.content == LibraryFileContent.id,
+            LibraryFileContent.sha256.is_in(sha256_checksums),
+            ]
+        if container is not None:
+            clauses.append(ArchiveFile.container == container)
+        IMasterStore(ArchiveFile).execute(BulkUpdate(
+            {ArchiveFile.scheduled_deletion_date: None},
+            table=ArchiveFile, values=[LibraryFileAlias, LibraryFileContent],
+            where=And(*clauses)))
 
     @staticmethod
     def getContainersToReap(archive, container_prefix=None):

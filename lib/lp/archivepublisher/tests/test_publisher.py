@@ -14,6 +14,7 @@ from datetime import (
 from functools import partial
 import gzip
 import hashlib
+from operator import attrgetter
 import os
 import shutil
 import stat
@@ -32,9 +33,12 @@ from testtools.matchers import (
     DirContains,
     Equals,
     FileContains,
+    Is,
     LessThan,
     Matcher,
+    MatchesListwise,
     MatchesSetwise,
+    MatchesStructure,
     Not,
     PathExists,
     )
@@ -2286,6 +2290,78 @@ class TestPublisher(TestPublisherBase):
              'dists/breezy-autotest/main/source/Sources.gz'],
             [archive_file.path for archive_file in archive_files
              if archive_file.scheduled_deletion_date is not None])
+
+    def testUpdateByHashReprieve(self):
+        # If a newly-modified index file is identical to a
+        # previously-condemned one, then it is reprieved and not pruned.
+        self.breezy_autotest.publish_by_hash = True
+        # Enable uncompressed index files to avoid relying on stable output
+        # from compressors in this test.
+        self.breezy_autotest.index_compressors = [
+            IndexCompressionType.UNCOMPRESSED]
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Publish empty index files.
+        publisher.markPocketDirty(
+            self.breezy_autotest, PackagePublishingPocket.RELEASE)
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        main_contents = set()
+        for name in ('Release', 'Sources'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                main_contents.add(f.read())
+
+        # Add a source package so that Sources is non-empty.
+        pub_source = self.getPubSource(filecontent='Source: foo\n')
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        transaction.commit()
+        with open(suite_path('main', 'source', 'Sources'), 'rb') as f:
+            main_contents.add(f.read())
+        self.assertEqual(3, len(main_contents))
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+
+        # Make the empty Sources file ready to prune.
+        old_archive_files = []
+        for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive):
+            if ('main/source' in archive_file.path and
+                    archive_file.scheduled_deletion_date is not None):
+                old_archive_files.append(archive_file)
+        self.assertEqual(1, len(old_archive_files))
+        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
+            datetime.now(pytz.UTC) - timedelta(hours=1))
+
+        # Delete the source package so that Sources is empty again.  The
+        # empty file is reprieved and the non-empty one is condemned.
+        pub_source.requestDeletion(self.ubuntutest.owner)
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        transaction.commit()
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+        archive_files = [
+            archive_file
+            for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive)
+            if archive_file.path == 'dists/breezy-autotest/main/source/Sources'
+            ]
+        self.assertThat(
+            sorted(archive_files, key=attrgetter('id')),
+            MatchesListwise([
+                MatchesStructure(scheduled_deletion_date=Is(None)),
+                MatchesStructure(scheduled_deletion_date=Not(Is(None))),
+                ]))
 
     def testUpdateByHashPrune(self):
         # The publisher prunes files from by-hash that were condemned more

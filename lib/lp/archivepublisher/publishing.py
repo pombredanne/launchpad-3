@@ -987,6 +987,18 @@ class Publisher(object):
             self._config.archiveroot)
         container = "release:%s" % suite
 
+        # Gather information on entries in the current Release file, and
+        # make sure nothing there is condemned.
+        current_files = {}
+        for current_entry in release_data["SHA256"]:
+            path = os.path.join(suite_dir, current_entry["name"])
+            current_files[path] = (
+                current_entry["size"], current_entry["sha256"])
+        archive_file_set.unscheduleDeletion(
+            self.archive, container=container,
+            sha256_checksums=set(
+                sha256 for _, sha256 in current_files.values()))
+
         # Remove any condemned files from the database whose stay of
         # execution has elapsed.  We ensure that we know about all the
         # relevant by-hash directory trees before doing any removals so that
@@ -995,13 +1007,6 @@ class Publisher(object):
                 self.archive, container=container):
             by_hashes.registerChild(db_file.path)
         archive_file_set.reap(self.archive, container=container)
-
-        # Gather information on entries in the current Release file.
-        current_files = {}
-        for current_entry in release_data["SHA256"]:
-            path = os.path.join(suite_dir, current_entry["name"])
-            current_files[path] = (
-                current_entry["size"], current_entry["sha256"])
 
         # Ensure that all files recorded in the database are in by-hash.
         db_files = archive_file_set.getByArchive(

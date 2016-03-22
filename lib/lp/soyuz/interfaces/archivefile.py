@@ -96,6 +96,21 @@ class IArchiveFileSet(Interface):
             this amount of time in the future.
         """
 
+    def unscheduleDeletion(archive, container=None, sha256_checksums=set()):
+        """Unschedule these archive files for deletion.
+
+        This is useful in the case when the new content of a file is
+        identical to a version that was previously condemned.  This method's
+        signature does not match that of `scheduleDeletion`; this is more
+        convenient because in such cases we normally do not yet have
+        `ArchiveFile` rows in hand.
+
+        :param archive: Operate on files in this `IArchive`.
+        :param container: Operate only on files with this container.
+        :param sha256_checksums: Operate only on files with any of these
+            checksums.
+        """
+
     def getContainersToReap(archive, container_prefix=None):
         """Return containers in this archive with files that should be reaped.
 
