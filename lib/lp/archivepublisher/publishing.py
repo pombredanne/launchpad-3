@@ -1021,8 +1021,9 @@ class Publisher(object):
                     current_sha256 = None
                 if db_file.library_file.content.sha256 != current_sha256:
                     condemned_files.add(db_file)
-        archive_file_set.scheduleDeletion(
-            condemned_files, timedelta(days=BY_HASH_STAY_OF_EXECUTION))
+        if condemned_files:
+            archive_file_set.scheduleDeletion(
+                condemned_files, timedelta(days=BY_HASH_STAY_OF_EXECUTION))
 
         # Ensure that all the current index files are in by-hash and have
         # corresponding database entries.
