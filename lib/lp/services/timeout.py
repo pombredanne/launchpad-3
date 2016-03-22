@@ -35,10 +35,7 @@ from requests.packages.urllib3.connectionpool import (
     HTTPSConnectionPool,
     )
 from requests.packages.urllib3.exceptions import ClosedPoolError
-from requests.packages.urllib3.poolmanager import (
-    PoolManager,
-    SSL_KEYWORDS,
-    )
+from requests.packages.urllib3.poolmanager import PoolManager
 
 
 default_timeout_function = None
@@ -224,7 +221,8 @@ class CleanablePoolManager(PoolManager):
         pool_cls = cleanable_pool_classes_by_scheme[scheme]
         if scheme == 'http':
             kwargs = self.connection_pool_kw.copy()
-            for kw in SSL_KEYWORDS:
+            for kw in ('key_file', 'cert_file', 'cert_reqs', 'ca_certs',
+                       'ssl_version'):
                 kwargs.pop(kw, None)
 
         return pool_cls(host, port, **kwargs)
