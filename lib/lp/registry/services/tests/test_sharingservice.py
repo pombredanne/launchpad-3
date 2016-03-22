@@ -23,10 +23,7 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepository,
-    )
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -76,7 +73,6 @@ class TestSharingService(TestCaseWithFactory):
         self.service = getUtility(IService, 'sharing')
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
-            GIT_FEATURE_FLAG: 'on',
         }))
 
     def _makeGranteeData(self, grantee, policy_permissions,
@@ -252,7 +248,7 @@ class TestSharingService(TestCaseWithFactory):
         # proprietary.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED,
+            information_type=InformationType.PROPRIETARY,
             owner=owner,
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         with person_logged_in(owner):
@@ -1165,9 +1161,7 @@ class TestSharingService(TestCaseWithFactory):
         self._assert_revokeTeamAccessGrants(
             product, None, [branch], None, None)
 
-    # XXX cjwatson 2015-02-05: Enable this once GitRepositorySubscription is
-    # implemented.
-    def disabled_test_revokeTeamAccessGrantsGitRepositories(self):
+    def test_revokeTeamAccessGrantsGitRepositories(self):
         # Users with launchpad.Edit can delete all access for a grantee.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
@@ -1896,18 +1890,6 @@ class TestSharingService(TestCaseWithFactory):
             self.service.checkPillarAccess(
                 [product], InformationType.USERDATA, right_person))
 
-    def test_checkPillarArtifactAccess_respects_teams(self):
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            information_type=InformationType.PROPRIETARY, owner=owner)
-        user = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            membership_policy=TeamMembershipPolicy.MODERATED, members=[user])
-        with person_logged_in(owner):
-            bug = self.factory.makeBug(target=product)
-            bug.subscribe(team, owner)
-        self.assertTrue(self.service.checkPillarArtifactAccess(product, user))
-
     def test_checkPillarAccess_no_policy(self):
         # checkPillarAccess returns False if there's no policy.
         self.assertFalse(
@@ -1949,7 +1931,6 @@ class ApiTestMixin:
 
     def setUp(self):
         super(ApiTestMixin, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.owner = self.factory.makePerson(name='thundercat')
         self.pillar = self.factory.makeProduct(
             owner=self.owner, specification_sharing_policy=(

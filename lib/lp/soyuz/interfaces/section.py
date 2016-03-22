@@ -53,4 +53,3 @@ class ISectionSet(Interface):
 
     def new(name):
         """Create a new section."""
-

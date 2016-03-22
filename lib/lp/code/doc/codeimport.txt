@@ -100,6 +100,8 @@ three members of the vcs-imports team.
     New code import: widget/trunk-cvs
     >>> print message['X-Launchpad-Message-Rationale']
     Operator @vcs-imports
+    >>> print message['X-Launchpad-Message-For']
+    vcs-imports
     >>> print message.get_payload(decode=True)
     A new CVS code import has been requested by Code Import Person:
         http://code.launchpad.dev/~import-person/widget/trunk-cvs

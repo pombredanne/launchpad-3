@@ -52,7 +52,7 @@ from storm.locals import (
 from storm.zope.interfaces import IZStorm
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import dbconfig
@@ -156,10 +156,10 @@ class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
         return table.__str__()
 
 
+@implementer(ISQLBase)
 class SQLBase(storm.sqlobject.SQLObjectBase):
     """Base class emulating SQLObject for legacy database classes.
     """
-    implements(ISQLBase)
     _style = LaunchpadStyle()
 
     # Silence warnings in linter script, which complains about all

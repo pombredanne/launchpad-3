@@ -325,7 +325,7 @@ Same for the 'Ubuntu components' field:
 The user can modify this aspect by selecting a different option and
 clicking on 'Save'.
 
-He will see a notification containing a summary of what was changed.
+They will see a notification containing a summary of what was changed.
 
     >>> admin_browser.getControl(
     ...     "Proposed (default dependencies and proposed updates"
@@ -373,7 +373,7 @@ Now we see a PPA configured to depend only on RELEASE pocket.
 
 In order to make the PPA use the default dependencies again the user
 can simply select this pre-defined option and the form will restore
-the default dependencies for him.
+the default dependencies for them.
 
     >>> admin_browser.getControl(
     ...     "Default (security dependencies and recommended updates"

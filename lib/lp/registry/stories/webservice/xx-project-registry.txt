@@ -24,6 +24,7 @@ It is possible to get a batched list of all the project groups.
     >>> for project_group in project_group_entries:
     ...   print project_group['display_name']
     Apache
+    ...
     GNOME
     ...
     The Mozilla Project
@@ -46,6 +47,7 @@ the project groups.
     >>> for project_group in project_group_entries:
     ...   print project_group['display_name']
     Apache
+    ...
     GNOME
     ...
     The Mozilla Project
@@ -196,6 +198,7 @@ Projects are available at their canonical URL on the API virtual host.
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     translation_focus_link: None
+    vcs: None
     web_link: u'http://launchpad.../firefox'
     wiki_url: None
 
@@ -1137,4 +1140,4 @@ through the API.
     Mega Money Maker
 
     >>> print mmm['commercial_subscription_link']
-    http://.../mega-money-maker/+commercialsubscription/3
+    http://.../mega-money-maker/+commercialsubscription/...

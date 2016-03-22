@@ -26,10 +26,10 @@ IMailHandler. The name of the utility is the domain that's handled.
 Let's create some utilities which keep track of which mails they
 handle, and register them for some domains:
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.mail.interfaces import IMailHandler
-    >>> class MockHandler:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class MockHandler:
     ...     def __init__(self, allow_unknown_users=False):
     ...         self.allow_unknown_users = allow_unknown_users
     ...         self.handledMails = []
@@ -121,8 +121,9 @@ So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an OOPS was recorded with
 a link to the original message.
 
-    >>> from lp.services.mail import stub
-    >>> print stub.test_emails[-1][2]
+    >>> from lp.testing.mail_helpers import pop_notifications
+    >>> print str(pop_notifications()[-1])
+    From ...
     Content-Type: multipart/mixed...
     ...
     To: Sample Person <test@canonical.com>
@@ -140,8 +141,6 @@ a link to the original message.
     Subject: Signed Email
     ...
 
-    >>> stub.test_emails = []
-
 ---------------------------------------------
 Mail from Persons not registered in Launchpad
 ---------------------------------------------
@@ -156,7 +155,7 @@ most of the time reject the email:
     >>> msgid not in foo_handler.handledMails
     True
 
-    >>> stub.test_emails = []
+    >>> _ = pop_notifications()
 
 However, bar_handler specifies that it can handle such emails:
 
@@ -171,7 +170,7 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
     >>> msgid in bar_handler.handledMails
     True
 
-    >>> stub.test_emails = []
+    >>> _ = pop_notifications()
 
 ---------------------------------------------------------
 Mail from Persons with with an inactive Launchpad account
@@ -234,8 +233,8 @@ attempting to process incoming mail.
 
     >>> class TestOopsException(Exception):
     ...     pass
-    >>> class OopsHandler:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class OopsHandler:
     ...     def process(self, mail, to_addr, filealias):
     ...         raise TestOopsException()
     >>> mail_handlers.add('oops.com', OopsHandler())
@@ -260,7 +259,8 @@ And submit an email to the handler.
 An exception is raised, an OOPS is recorded, and an email is sent back
 to the user, citing the OOPS ID, with the original message attached.
 
-    >>> print stub.test_emails[-1][2]
+    >>> print str(pop_notifications()[-1])
+    From ...
     Content-Type: multipart/mixed...
     ...
     To: Foo Bar <foo.bar@canonical.com>
@@ -279,14 +279,12 @@ to the user, citing the OOPS ID, with the original message attached.
     Subject: doesn't matter
     ...
 
-    >>> stub.test_emails = []
-
 Unauthorized exceptions, which are ignored for the purpose of OOPS
 reporting in the web interface, are not ignored in the email interface.
 
     >>> from twisted.cred.error import Unauthorized
-    >>> class UnauthorizedOopsHandler:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class UnauthorizedOopsHandler:
     ...     def process(self, mail, to_addr, filealias):
     ...         raise Unauthorized()
     >>> mail_handlers.add('unauthorized.com', UnauthorizedOopsHandler())
@@ -305,7 +303,8 @@ reporting in the web interface, are not ignored in the email interface.
     ...
     Unauthorized
 
-    >>> print stub.test_emails[-1][2]
+    >>> print str(pop_notifications()[-1])
+    From ...
     Content-Type: multipart/mixed...
     ...
     To: Foo Bar <foo.bar@canonical.com>
@@ -324,8 +323,6 @@ reporting in the web interface, are not ignored in the email interface.
     Subject: doesn't matter
     ...
 
-    >>> stub.test_emails = []
-
 -------------
 DB exceptions
 -------------
@@ -337,8 +334,8 @@ be printed, and the mail should be deleted from the queue.
 Let's create and register a handler which raises a SQL error:
 
     >>> from lp.services.database.sqlbase import cursor
-    >>> class DBExceptionRaiser:
-    ...     implements(IMailHandler)
+    >>> @implementer(IMailHandler)
+    ... class DBExceptionRaiser:
     ...     def process(self, mail, to_addr, filealias):
     ...         cur = cursor()
     ...         cur.execute('SELECT 1/0')
@@ -382,6 +379,7 @@ The second mail we sent got handled despite the exception:
 There is only one mail left in the mail box - the one sent back to
 the user reporting the error:
 
+    >>> from lp.services.mail import stub
     >>> len(stub.test_emails)
     1
 
@@ -412,7 +410,7 @@ logged.
     2
 
     >>> LibrarianLayer.reveal()
-    >>> stub.test_emails = []
+    >>> _ = pop_notifications()
 
 ----------------
 Handling bounces
@@ -425,7 +423,6 @@ simply drop the emails.
 
 Emails with an empty Return-Path header should be dropped:
 
-    >>> stub.test_emails = []
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
     >>> msg['Return-Path'] = '<>'
@@ -437,8 +434,8 @@ Emails with an empty Return-Path header should be dropped:
 Since this happens way too often, as we seem to get more spam than
 legitimate email, an email is not sent about it to the errors-list.
 
-    >>> len(stub.test_emails)
-    0
+    >>> pop_notifications()
+    []
 
 If the content type is multipart/report, it's most likely a DSN
 (RFC 3464), so those get dropped as well. Normally a DSN should have an
@@ -455,8 +452,8 @@ empty Return-Path, but there are some broken mailers out there.
     >>> msgid in foo_handler.handledMails
     False
 
-    >>> len(stub.test_emails)
-    0
+    >>> pop_notifications()
+    []
 
 Email with the Precedence header are probably from an auto-responder or
 another robot. We also drop those.
@@ -470,8 +467,8 @@ another robot. We also drop those.
     >>> msgid in foo_handler.handledMails
     False
 
-    >>> len(stub.test_emails)
-    0
+    >>> pop_notifications()
+    []
 
 
 .. Doctest cleanup

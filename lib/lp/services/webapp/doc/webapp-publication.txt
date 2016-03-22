@@ -395,6 +395,12 @@ and then only when the MIME type is text/xml.
     PublicXMLRPCPublication
 
     >>> print_request_and_publication(
+    ...     'xmlrpc.launchpad.dev', method='POST',
+    ...     mime_type='text/xml; charset=utf-8')
+    PublicXMLRPCRequest
+    PublicXMLRPCPublication
+
+    >>> print_request_and_publication(
     ...     'xmlrpc.launchpad.dev', method='GET')
     ProtocolErrorRequest
     ProtocolErrorPublication: status=405
@@ -426,6 +432,12 @@ Try a normal request:
     >>> print_request_and_publication(
     ...     'xmlrpc-private.launchpad.dev', port=private_port, method='POST',
     ...     mime_type='text/xml')
+    PrivateXMLRPCRequest
+    PrivateXMLRPCPublication
+
+    >>> print_request_and_publication(
+    ...     'xmlrpc-private.launchpad.dev', port=private_port, method='POST',
+    ...     mime_type='text/xml; charset=utf-8')
     PrivateXMLRPCRequest
     PrivateXMLRPCPublication
 
@@ -583,7 +595,7 @@ This is an identifier of the form ContextName:ViewName.
 
 Originally, this variable isn't set.
 
-    >>> request._orig_env.has_key('launchpad.pageid')
+    >>> 'launchpad.pageid' in request._orig_env
     False
 
 It is set during the callObject() hook. The pageid is made of the
@@ -625,7 +637,7 @@ For traversal we start counting the ticks during the beforeTraversal()
 hook and stop the count in afterTraversal().  The tick count is then
 available as launchpad.traversalticks in the WSGI environment.
 
-    >>> request._orig_env.has_key('launchpad.traversalticks')
+    >>> 'launchpad.traversalticks' in request._orig_env
     False
     >>> publication.beforeTraversal(request)
     >>> tickcount.difference(
@@ -640,7 +652,7 @@ For publication we start counting the ticks during the callObject()
 hook and stop the count in afterCall().  The tick count is then
 available as launchpad.publicationticks in the WSGI environment.
 
-    >>> request._orig_env.has_key('launchpad.publicationticks')
+    >>> 'launchpad.publicationticks' in request._orig_env
     False
     >>> publication.callObject(request, TestView(TestContext(), request))
     u'Result'
@@ -675,9 +687,9 @@ there's nothing to store.
     >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
-    >>> request._orig_env.has_key('launchpad.traversalticks')
+    >>> 'launchpad.traversalticks' in request._orig_env
     False
-    >>> request._orig_env.has_key('launchpad.publicationticks')
+    >>> 'launchpad.publicationticks' in request._orig_env
     False
     >>> clear_request_started()
 
@@ -689,7 +701,7 @@ the ticks for the traversal and not for the publication.
     ...     None, request, exc_info, retry_allowed=False)
     >>> request._orig_env['launchpad.traversalticks'] < 200
     True
-    >>> request._orig_env.has_key('launchpad.publicationticks')
+    >>> 'launchpad.publicationticks' in request._orig_env
     False
     >>> clear_request_started()
 
@@ -732,9 +744,9 @@ variables from there.
     ...
     Retry: foo
 
-    >>> request._orig_env.has_key('launchpad.publicationticks')
+    >>> 'launchpad.publicationticks' in request._orig_env
     False
-    >>> request._orig_env.has_key('launchpad.traversalticks')
+    >>> 'launchpad.traversalticks' in request._orig_env
     False
 
     >>> request, publication = get_request_and_publication()
@@ -754,9 +766,9 @@ variables from there.
     ...
     Retry: foo DisconnectionError
 
-    >>> request._orig_env.has_key('launchpad.publicationticks')
+    >>> 'launchpad.publicationticks' in request._orig_env
     False
-    >>> request._orig_env.has_key('launchpad.traversalticks')
+    >>> 'launchpad.traversalticks' in request._orig_env
     False
 
 Of course, any request can only be retried a certain number of times and
@@ -1055,13 +1067,13 @@ token.
     >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey(u'foobar123451432')
     >>> token, _ = consumer.newRequestToken()
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
     >>> access_token, access_secret = token.createAccessToken()
     >>> form = dict(
-    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_consumer_key=u'foobar123451432',
     ...     oauth_token=access_token.key,
     ...     oauth_version='1.0',
     ...     oauth_signature_method='PLAINTEXT',
@@ -1078,8 +1090,8 @@ token.
     Guilherme Salgado
     >>> principal.access_level
     <DBItem AccessLevel.WRITE_PUBLIC...
-    >>> principal.scope.name
-    u'firefox'
+    >>> principal.scope_url
+    u'/firefox'
 
 If the token is expired or doesn't exist, an Unauthorized exception is
 raised, though.

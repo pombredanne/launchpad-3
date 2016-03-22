@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the generate_ppa_htaccess.py script. """
@@ -33,7 +33,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
-from lp.services.mail import stub
 from lp.services.osutils import (
     ensure_directory_exists,
     remove_if_exists,
@@ -267,7 +266,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
-        # Now remove someone from team1, he will lose his token but
+        # Now remove someone from team1. They will lose their token but
         # everyone else keeps theirs.
         with lp_dbuser():
             team1_person.leave(team1)
@@ -281,12 +280,10 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             self.assertNotDeactivated(tokens[person])
 
         # Ensure that a cancellation email was sent.
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 1, "Expected 1 email, got %s" % num_emails)
+        self.assertEmailQueueLength(1)
 
-        # Promiscuous_person now leaves team1, but does not lose his
-        # token because he's also in team2. No other tokens are
+        # Promiscuous_person now leaves team1, but does not lose their
+        # token because they're also in team2. No other tokens are
         # affected.
         with lp_dbuser():
             promiscuous_person.leave(team1)
@@ -298,9 +295,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             self.assertNotDeactivated(tokens[person])
 
         # Ensure that a cancellation email was not sent.
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 0, "Expected no emails, got %s" % num_emails)
+        self.assertEmailQueueLength(0)
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
@@ -315,11 +310,11 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         for person in persons2:
             self.assertDeactivated(tokens[person])
 
-        # promiscuous_person also loses the token because he's not in
+        # promiscuous_person also loses the token because they're not in
         # either team now.
         self.assertDeactivated(tokens[promiscuous_person])
 
-        # lonely_person still has his token, he's not in any teams.
+        # lonely_person still has their token; they're not in any teams.
         self.assertNotDeactivated(tokens[lonely_person])
 
     def setupDummyTokens(self):
@@ -486,10 +481,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         script.sendCancellationEmail(tokens[0])
 
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 1, "Expected 1 email, got %s" % num_emails)
-
         [email] = pop_notifications()
         self.assertEqual(
             email['Subject'],
@@ -537,9 +528,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         script.sendCancellationEmail(token)
 
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 0, "Expected 0 emails, got %s" % num_emails)
+        self.assertEmailQueueLength(0)
 
     def test_getTimeToSyncFrom(self):
         # Sync from 1s before previous start to catch anything made during the

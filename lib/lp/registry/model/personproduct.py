@@ -9,8 +9,8 @@ __all__ = [
     ]
 
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.code.model.hasbranches import HasMergeProposalsMixin
@@ -20,11 +20,9 @@ from lp.registry.interfaces.personproduct import (
     )
 
 
+@implementer(IPersonProduct)
+@provider(IPersonProductFactory)
 class PersonProduct(HasMergeProposalsMixin):
-
-    implements(IPersonProduct)
-
-    classProvides(IPersonProductFactory)
 
     def __init__(self, person, product):
         self.person = person

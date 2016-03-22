@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComments."""
@@ -110,14 +110,14 @@ class TestCodeReviewCommentInlineComments(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
-class TestCodeReviewCommentHtml(BrowserTestCase):
+class TestCodeReviewCommentHtmlMixin:
 
     layer = DatabaseFunctionalLayer
 
     def test_comment_page_has_meta_description(self):
         # The CodeReviewDisplayComment class provides IComment.
         with person_logged_in(self.factory.makePerson()):
-            comment = self.factory.makeCodeReviewComment()
+            comment = self.makeCodeReviewComment()
 
         display_comment = CodeReviewDisplayComment(comment)
         browser = self.getViewBrowser(display_comment)
@@ -131,14 +131,14 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
 
     def test_long_comments_not_truncated(self):
         """Long comments displayed by themselves are not truncated."""
-        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        comment = self.makeCodeReviewComment(body='x y' * 2000)
         browser = self.getViewBrowser(comment)
         body = Tag('Body text', 'p', text='x y' * 2000)
         self.assertThat(browser.contents, HTMLContains(body))
 
     def test_excessive_comments_redirect_to_download(self):
         """View for excessive comments redirects to download page."""
-        comment = self.factory.makeCodeReviewComment(body='x ' * 5001)
+        comment = self.makeCodeReviewComment(body='x ' * 5001)
         view_url = canonical_url(comment)
         download_url = canonical_url(comment, view_name='+download')
         browser = self.getUserBrowser(view_url)
@@ -148,7 +148,7 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
 
     def test_short_comment_no_download_link(self):
         """Long comments displayed by themselves are not truncated."""
-        comment = self.factory.makeCodeReviewComment(body='x ' * 5000)
+        comment = self.makeCodeReviewComment(body='x ' * 5000)
         download_url = canonical_url(comment, view_name='+download')
         browser = self.getViewBrowser(comment)
         body = Tag(
@@ -158,7 +158,7 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
 
     def test_download_view(self):
         """The download view has the expected contents and header."""
-        comment = self.factory.makeCodeReviewComment(body=u'\u1234')
+        comment = self.makeCodeReviewComment(body=u'\u1234')
         browser = self.getViewBrowser(comment, view_name='+download')
         contents = u'\u1234'.encode('utf-8')
         self.assertEqual(contents, browser.contents)
@@ -168,3 +168,24 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
             '%d' % len(contents), browser.headers['Content-length'])
         disposition = 'attachment; filename="comment-%d.txt"' % comment.id
         self.assertEqual(disposition, browser.headers['Content-disposition'])
+
+    def test_parent_comment_in_reply(self):
+        """The reply view has the expected contents from the parent comment."""
+        contents = u'test-comment'.encode('utf-8')
+        comment = self.makeCodeReviewComment(body=contents)
+        browser = self.getViewBrowser(comment, view_name='+reply')
+        self.assertIn(contents, browser.contents)
+
+
+class TestCodeReviewCommentHtmlBzr(
+    TestCodeReviewCommentHtmlMixin, BrowserTestCase):
+
+    def makeCodeReviewComment(self, **kwargs):
+        return self.factory.makeCodeReviewComment(**kwargs)
+
+
+class TestCodeReviewCommentHtmlGit(
+    TestCodeReviewCommentHtmlMixin, BrowserTestCase):
+
+    def makeCodeReviewComment(self, **kwargs):
+        return self.factory.makeCodeReviewComment(git=True, **kwargs)

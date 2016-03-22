@@ -13,7 +13,7 @@ from testtools.matchers import (
     Is,
     )
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.management import setSecurityPolicy
 
 from lp.services.config import config
@@ -40,8 +40,8 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 
+@implementer(IMailHandler)
 class FakeHandler:
-    implements(IMailHandler)
 
     def __init__(self, allow_unknown_users=True):
         self.allow_unknown_users = allow_unknown_users

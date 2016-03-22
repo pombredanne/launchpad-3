@@ -55,7 +55,8 @@ And for every distribution we publish most of its attributes.
     summary: u'Ubuntu is a new approach to Linux Distribution...'
     supports_mirrors: True
     supports_ppas: True
-    title: u'Ubuntu Linux'
+    title: u'Ubuntu'
+    vcs: None
     web_link: u'http://launchpad.../ubuntu'
 
 

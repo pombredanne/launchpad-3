@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.authserver.interfaces import (
@@ -22,10 +22,9 @@ from lp.services.webapp import LaunchpadXMLRPCView
 from lp.xmlrpc import faults
 
 
+@implementer(IAuthServer)
 class AuthServerAPIView(LaunchpadXMLRPCView):
     """See `IAuthServer`."""
-
-    implements(IAuthServer)
 
     def getUserAndSSHKeys(self, name):
         """See `IAuthServer.getUserAndSSHKeys`."""
@@ -40,10 +39,8 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
             }
 
 
+@implementer(IAuthServerApplication)
 class AuthServerApplication:
     """AuthServer End-Point."""
-    implements(IAuthServerApplication)
 
     title = "Auth Server"
-
-

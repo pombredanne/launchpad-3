@@ -18,7 +18,7 @@ import tempfile
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -35,9 +35,9 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.model.approver import TranslationBuildApprover
 
 
+@implementer(IBuildFarmJobBehaviour)
 class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `TranslationTemplateBuildJob`s to slaves."""
-    implements(IBuildFarmJobBehaviour)
 
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'

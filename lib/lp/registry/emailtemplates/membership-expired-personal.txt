@@ -1,6 +1,6 @@
-Hello %(recipient_name)s,
+Hello %(recipient)s,
 
-Your membership in the %(team_name)s team has expired.
+Your membership in the %(team)s team has expired.
 <%(team_url)s>
 
 Regards,

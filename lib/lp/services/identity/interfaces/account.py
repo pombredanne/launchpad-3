@@ -144,21 +144,21 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
     OWNER_CREATED_LAUNCHPAD = DBItem(8, """
-        Created by the owner himself, coming from Launchpad.
+        Created by the owner themselves, coming from Launchpad.
 
         Somebody was navigating through Launchpad and at some point decided to
         create an account.
         """)
 
     OWNER_CREATED_SHIPIT = DBItem(9, """
-        Created by the owner himself, coming from Shipit.
+        Created by the owner themselves, coming from Shipit.
 
         Somebody went to one of the shipit sites to request Ubuntu CDs and was
         directed to Launchpad to create an account.
         """)
 
     OWNER_CREATED_UBUNTU_WIKI = DBItem(10, """
-        Created by the owner himself, coming from the Ubuntu wiki.
+        Created by the owner themselves, coming from the Ubuntu wiki.
 
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
@@ -168,18 +168,18 @@ class AccountCreationRationale(DBEnumeratedType):
         Created by a user to represent a person which does not use Launchpad.
 
         A user wanted to reference a person which is not a Launchpad user, so
-        he created this "placeholder" profile.
+        they created this "placeholder" profile.
         """)
 
     OWNER_CREATED_UBUNTU_SHOP = DBItem(12, """
-        Created by the owner himself, coming from the Ubuntu Shop.
+        Created by the owner themselves, coming from the Ubuntu Shop.
 
         Somebody went to the Ubuntu Shop and was directed to Launchpad to
         create an account.
         """)
 
     OWNER_CREATED_UNKNOWN_TRUSTROOT = DBItem(13, """
-        Created by the owner himself, coming from unknown OpenID consumer.
+        Created by the owner themselves, coming from unknown OpenID consumer.
 
         Somebody went to an OpenID consumer we don't know about and was
         directed to Launchpad to create an account.

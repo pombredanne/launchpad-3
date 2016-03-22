@@ -11,13 +11,13 @@ import transaction
 from lp.code.model.tests.test_branchmergeproposaljobs import (
     make_runnable_incremental_diff_job,
     )
+from lp.code.model.tests.test_diff import DiffTestCase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.scripts.tests import run_script
-from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessAppServerLayer
 
 
-class TestMergeProposalJobScript(TestCaseWithFactory):
+class TestMergeProposalJobScript(DiffTestCase):
 
     layer = ZopelessAppServerLayer
 

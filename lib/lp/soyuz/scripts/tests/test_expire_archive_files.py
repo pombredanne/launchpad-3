@@ -14,7 +14,6 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
-from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.scripts.expire_archive_files import ArchiveExpirer
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -241,11 +240,23 @@ class TestPPAExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
         self.archive2 = self.factory.makeArchive()
 
     def testBlacklistingWorks(self):
-        """Test that blacklisted PPAs are not expired."""
+        """Test that blacklisted PPA owners are not expired."""
         source, binary = self._setUpExpirablePublications(
             archive=self.archive)
         script = self.getScript()
         script.blacklist = [self.archive.owner.name, ]
+        switch_dbuser(self.dbuser)
+        script.main()
+        self.assertSourceNotExpired(source)
+        self.assertBinaryNotExpired(binary)
+
+    def testBlacklistingArchivesWorks(self):
+        """Test that blacklisted individual PPAs are not expired."""
+        source, binary = self._setUpExpirablePublications(
+            archive=self.archive)
+        script = self.getScript()
+        script.blacklist = [
+            '%s/%s' % (self.archive.owner.name, self.archive.name)]
         switch_dbuser(self.dbuser)
         script.main()
         self.assertSourceNotExpired(source)

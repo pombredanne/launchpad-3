@@ -65,4 +65,3 @@ class IDistroArchSeriesBinaryPackage(Interface):
         version, or None if there has never been a release with that
         version, in this architecture series.
         """
-

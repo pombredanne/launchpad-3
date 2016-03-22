@@ -10,7 +10,6 @@ __all__ = [
     'FilteredDistroArchSeriesVocabulary',
     'PackageReleaseVocabulary',
     'PPAVocabulary',
-    'ProcessorVocabulary',
     ]
 
 from storm.locals import (
@@ -18,7 +17,7 @@ from storm.locals import (
     Or,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -29,7 +28,6 @@ from lp.services.database.stormexpr import fti_search
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
-    NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
 from lp.soyuz.enums import ArchivePurpose
@@ -40,7 +38,6 @@ from lp.soyuz.model.archive import (
     )
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.processor import Processor
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -85,9 +82,8 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
             obj, obj.id, obj.name + " " + obj.version)
 
 
+@implementer(IHugeVocabulary)
 class PPAVocabulary(SQLObjectVocabularyBase):
-
-    implements(IHugeVocabulary)
 
     _table = Archive
     _orderBy = ['Person.name, Archive.name']
@@ -152,10 +148,3 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             search_clause)
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
-
-
-class ProcessorVocabulary(NamedSQLObjectVocabulary):
-
-    displayname = 'Select a processor'
-    _table = Processor
-    _orderBy = 'name'

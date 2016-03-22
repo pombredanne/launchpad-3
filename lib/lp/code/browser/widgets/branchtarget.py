@@ -21,7 +21,7 @@ from zope.formlib.widget import (
     InputWidget,
     renderElement,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 
 from lp.app.errors import UnexpectedFormData
@@ -35,10 +35,9 @@ from lp.services.webapp.interfaces import (
     )
 
 
+@implementer(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 class BranchTargetWidget(BrowserWidget, InputWidget):
     """Widget for selecting a personal (+junk) or product branch target."""
-
-    implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 
     template = ViewPageTemplateFile('templates/branch-target.pt')
     default_option = "product"

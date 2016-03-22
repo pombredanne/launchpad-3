@@ -1,12 +1,18 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Questions."""
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
+import pytz
 from simplejson import dumps
 import transaction
 from zope.security.proxy import removeSecurityProxy
@@ -21,12 +27,15 @@ from lp.answers.errors import (
     QuestionTargetError,
     )
 from lp.testing import (
+    admin_logged_in,
     celebrity_logged_in,
     launchpadlib_for,
     logout,
     person_logged_in,
+    record_two_runs,
     TestCase,
     TestCaseWithFactory,
+    time_counter,
     ws_object,
     )
 from lp.testing.layers import (
@@ -34,7 +43,11 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
-from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 from lp.testing.views import create_webservice_error_view
 
 
@@ -243,3 +256,41 @@ class TestQuestionWebServiceSubscription(TestCaseWithFactory):
 
         # Check the results.
         self.assertFalse(db_question.isSubscribed(db_person))
+
+
+class TestQuestionSetWebService(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_searchQuestions(self):
+        date_gen = time_counter(
+            datetime(2015, 1, 1, tzinfo=pytz.UTC), timedelta(days=1))
+        created = [
+            self.factory.makeQuestion(title="foo", datecreated=next(date_gen))
+            for i in range(10)]
+        webservice = webservice_for_person(self.factory.makePerson())
+        collection = webservice.named_get(
+            '/questions', 'searchQuestions', search_text='foo',
+            sort='oldest first', api_version='devel').jsonBody()
+        # The first few matching questions are returned.
+        self.assertEqual(
+            [q.id for q in created[:5]],
+            [int(q['self_link'].rsplit('/', 1)[-1])
+             for q in collection['entries']])
+
+    def test_searchQuestions_query_count(self):
+        webservice = webservice_for_person(self.factory.makePerson())
+
+        def create_question():
+            with admin_logged_in():
+                self.factory.makeQuestion(title="foobar")
+
+        def search_questions():
+            webservice.named_get(
+                '/questions', 'searchQuestions', search_text='foobar',
+                api_version='devel').jsonBody()
+
+        search_questions()
+        recorder1, recorder2 = record_two_runs(
+            search_questions, create_question, 2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

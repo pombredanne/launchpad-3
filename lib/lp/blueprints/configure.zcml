@@ -189,18 +189,12 @@
         set_attributes="priority direction_approved"/>
     <require
         permission="launchpad.LimitedView"
-        attributes="bugs
-                    bug_links"/>
+        attributes="bugs"/>
     <require
         permission="launchpad.AnyAllowedPerson"
         attributes="linkBug
                     unlinkBug
                     setWorkItems"/>
-  </class>
-
-  <class class="lp.blueprints.model.specificationbug.SpecificationBug">
-    <allow interface="lp.blueprints.interfaces.specificationbug.ISpecificationBug"/>
-    <allow interface="lazr.restful.interfaces.IJSONPublishable"/>
   </class>
 
   <subscriber

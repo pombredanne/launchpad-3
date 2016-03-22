@@ -10,7 +10,7 @@ from storm.expr import (
     Max,
     Sum,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
@@ -23,9 +23,9 @@ from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 
 
+@implementer(IPOFilesByPOTemplates)
 class POFilesByPOTemplates(object):
     """See `IPOFilesByPOTemplates`."""
-    implements(IPOFilesByPOTemplates)
 
     def __init__(self, templates_collection, language):
         self.templates_collection = templates_collection
@@ -75,9 +75,9 @@ class POFilesByPOTemplates(object):
         return bool(self.templates_collection.select(POTemplate).any())
 
 
+@implementer(ITranslatedLanguage)
 class TranslatedLanguageMixin(object):
     """See `ITranslatedLanguage`."""
-    implements(ITranslatedLanguage)
 
     language = None
     parent = None

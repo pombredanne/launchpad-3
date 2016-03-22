@@ -10,17 +10,16 @@
 
 <metal:side fill-slot="side">
 
-  <div tal:define="menu context/menu:branches"
-       tal:condition="view/show_action_menu"
-       class="first portlet">
-  </div>
-
   <tal:summary replace="structure context/@@+codesummary"/>
 
 </metal:side>
 
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
+
+  <span class="see-all" tal:condition="view/show_git_link">
+    <a tal:attributes="href context/fmt:url:code/+git">View Git repositories</a>
+  </span>
 
   <p id="junk-branch-directions" tal:condition="view/show_junk_directions">
     You can push (upload) personal branches

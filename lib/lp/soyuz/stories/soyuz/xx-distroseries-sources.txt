@@ -78,7 +78,7 @@ We can see 'mozilla-firefox' is published once in pocket RELEASE:
     Release
     The package versions that were published when the distribution release
     was made.
-    mozilla-firefox 0.9
+    mozilla-firefox 0.9 (main)
 
 The user can also download the files for the "currentrelease" (last
 published version) if they are available:
@@ -118,12 +118,12 @@ Move back to the SourcePackage page to continue the tests:
   ...     'http://launchpad.dev/ubuntu/breezy-autotest/+source/'
   ...     'commercialpackage')
 
-PackageRelationships, 'builddepends', 'builddependsindep',
-'build_conflicts' and 'build_conflicts_indep' for the source in
-question are provided in this page.
+PackageRelationships, 'builddepends', 'builddependsindep', 'builddependsarch',
+'build_conflicts', 'build_conflicts_indep', and 'build_conflicts_arch' for the
+source in question are provided in this page.
 
-Even when the relationshipt section is empty they are presented,
-keeping the page format contant.
+Even when the relationship section is empty they are presented,
+keeping the page format constant.
 
   >>> depends_section = find_tag_by_id(browser.contents, 'depends')
   >>> parse_relationship_section(str(depends_section))
@@ -133,6 +133,10 @@ keeping the page format contant.
   >>> parse_relationship_section(str(dependsindep_section))
   EMPTY SECTION
 
+  >>> dependsarch_section = find_tag_by_id(browser.contents, 'dependsarch')
+  >>> parse_relationship_section(str(dependsarch_section))
+  EMPTY SECTION
+
   >>> conflicts_section = find_tag_by_id(browser.contents, 'conflicts')
   >>> parse_relationship_section(str(conflicts_section))
   EMPTY SECTION
@@ -140,6 +144,11 @@ keeping the page format contant.
   >>> conflictsindep_section = find_tag_by_id(
   ...     browser.contents, 'conflictsindep')
   >>> parse_relationship_section(str(conflictsindep_section))
+  EMPTY SECTION
+
+  >>> conflictsarch_section = find_tag_by_id(
+  ...     browser.contents, 'conflictsarch')
+  >>> parse_relationship_section(str(conflictsarch_section))
   EMPTY SECTION
 
 Let's inspect a page with non-empty relationships.
@@ -163,6 +172,10 @@ Let's inspect a page with non-empty relationships.
   LINK: "pmount" -> http://launchpad.dev/ubuntu/warty/+package/pmount
   TEXT: "postgresql-client (&gt;= 7.4)"
 
+  >>> dependsarch_section = find_tag_by_id(browser.contents, 'dependsarch')
+  >>> parse_relationship_section(str(dependsarch_section))
+  EMPTY SECTION
+
   >>> conflicts_section = find_tag_by_id(browser.contents, 'conflicts')
   >>> parse_relationship_section(str(conflicts_section))
   TEXT: "gcc-4.0"
@@ -173,6 +186,11 @@ Let's inspect a page with non-empty relationships.
   >>> parse_relationship_section(str(conflictsindep_section))
   TEXT: "gcc-4.0-base"
   LINK: "pmount" -> http://launchpad.dev/ubuntu/warty/+package/pmount
+
+  >>> conflictsarch_section = find_tag_by_id(
+  ...     browser.contents, 'conflictsarch')
+  >>> parse_relationship_section(str(conflictsarch_section))
+  EMPTY SECTION
 
 
 The '+changelog' page provides an aggregation of the changelogs for

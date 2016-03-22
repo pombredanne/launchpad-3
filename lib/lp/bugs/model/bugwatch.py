@@ -36,7 +36,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 
@@ -117,9 +117,9 @@ class BugWatchDeletionError(Exception):
     """Raised when someone attempts to delete a linked watch."""
 
 
+@implementer(IBugWatch)
 class BugWatch(SQLBase):
     """See `IBugWatch`."""
-    implements(IBugWatch)
     _table = 'BugWatch'
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     bugtracker = ForeignKey(dbName='bugtracker',
@@ -379,10 +379,9 @@ class BugWatch(SQLBase):
         self.remotestatus = None
 
 
+@implementer(IBugWatchSet)
 class BugWatchSet:
     """A set for BugWatch"""
-
-    implements(IBugWatchSet)
 
     def __init__(self, bug=None):
         self.bugtracker_parse_functions = {
@@ -743,10 +742,9 @@ class BugWatchSet:
              for bug_watch_id in set(get_bug_watch_ids(references))])
 
 
+@implementer(IBugWatchActivity)
 class BugWatchActivity(StormBase):
     """See `IBugWatchActivity`."""
-
-    implements(IBugWatchActivity)
 
     __storm_table__ = 'BugWatchActivity'
 

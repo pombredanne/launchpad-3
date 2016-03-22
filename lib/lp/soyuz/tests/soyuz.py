@@ -15,10 +15,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.testing.sampledata import (
     BUILDD_ADMIN_USERNAME,
     UBUNTU_DISTRIBUTION_NAME,
@@ -83,31 +80,6 @@ class SoyuzTestHelper:
                 distroseries=distroseries,
                 component=sourcepackagerelease.component,
                 section=sourcepackagerelease.section,
-                status=status,
-                archive=archive,
-                pocket=pocket)
-            # Flush the object changes into DB do guarantee stable database
-            # ID order as expected in the callsites.
-            sample_pub.append(pub)
-        return sample_pub
-
-    def createPublishingForDistroArchSeries(self, binarypackagerelease,
-                                            distroarchseries):
-        """Return a list of `BinaryPackagePublishingHistory`.
-
-        The publishing records are created according to the given
-        `BinaryPackageRelease` and `DistroArchSeries` for all
-        (status, archive, pocket) returned from `sample_publishing_data`.
-        """
-        sample_pub = []
-        for status, archive, pocket in self.sample_publishing_data:
-            pub = BinaryPackagePublishingHistory(
-                binarypackagerelease=binarypackagerelease,
-                binarypackagename=binarypackagerelease.binarypackagename,
-                distroarchseries=distroarchseries,
-                component=binarypackagerelease.component,
-                section=binarypackagerelease.section,
-                priority=binarypackagerelease.priority,
                 status=status,
                 archive=archive,
                 pocket=pocket)

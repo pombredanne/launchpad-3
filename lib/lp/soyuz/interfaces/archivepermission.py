@@ -201,7 +201,7 @@ class IArchivePermissionSet(Interface):
 
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to find out which
-            components he has access to.
+            components they have access to.
 
         :return: `ArchivePermission` records for all the components that
             'person' is allowed to upload to.
@@ -212,7 +212,7 @@ class IArchivePermissionSet(Interface):
 
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to find out which
-            packages he has access to.
+            packages they have access to.
 
         :return: `ArchivePermission` records for all the packages that
             'person' is allowed to upload to.
@@ -235,7 +235,7 @@ class IArchivePermissionSet(Interface):
 
         :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to find out which
-            package sets he has access to.
+            package sets they have access to.
 
         :return: `ArchivePermission` records for all the package sets that
             'person' is allowed to upload to.
@@ -254,7 +254,7 @@ class IArchivePermissionSet(Interface):
         :param sourcepackagename: the source package name; can be
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
-            package sets he has access to.
+            package sets they have access to.
 
         :raises SourceNotFound: if a source package with the given
             name could not be found.
@@ -291,7 +291,7 @@ class IArchivePermissionSet(Interface):
         Return True if there exists a permission that combines
             * the given `archive`
             * a package set that includes the given source package name
-            * the given person or a team he is a member of
+            * the given person or a team they are a member of
 
         If the source package name is included by *any* package set with
         an explicit permission then only such explicit permissions will
@@ -301,7 +301,7 @@ class IArchivePermissionSet(Interface):
         :param sourcepackagename: the source package name; can be
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
-            package sets he has access to.
+            package sets they have access to.
         :param distroseries: The `IDistroSeries` for which to check
             permissions.
 
@@ -342,7 +342,7 @@ class IArchivePermissionSet(Interface):
 
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to find out which
-            pockets he has access to.
+            pockets they have access to.
 
         :return: `ArchivePermission` records for all the pockets that
             'person' is allowed to upload to.
@@ -365,7 +365,7 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check, or
             an iterable of `IArchive`s.
         :param person: An `IPerson` for whom you want to find out which
-            components he has access to.
+            components they have access to.
 
         :return: `ArchivePermission` records for all the components that
             'person' is allowed to administer the queue for.
@@ -388,7 +388,7 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check, or
             an iterable of `IArchive`s.
         :param person: An `IPerson` for whom you want to find out which
-            pockets he has access to.
+            pockets they have access to.
 
         :return: `ArchivePermission` records for all the pockets that
             'person' is allowed to administer the queue for.

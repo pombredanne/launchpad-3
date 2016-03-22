@@ -19,7 +19,7 @@ __all__ = [
     ]
 
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.declarations import (
     accessor_for,
     export_as_webservice_entry,
@@ -33,7 +33,7 @@ from lazr.restful.fields import (
     )
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -145,7 +145,7 @@ class IMessageSet(Interface):
             a UnknownSender error if they cannot be found.
         :param filealias: The `LibraryFileAlias` of the raw email if it has
             already been uploaded to the Librarian.
-        :param parsed_message: An email.Message.Message instance. If given,
+        :param parsed_message: An email.message.Message instance. If given,
             it is used internally instead of building one from the raw
             email_message. This is purely an optimization step, significant
             in many places because the emails we are handling may contain huge
@@ -198,10 +198,10 @@ class IIndexedMessage(Interface):
                               "of messages in its context."))
 
 
+@delegate_to(IMessage)
+@implementer(IIndexedMessage)
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
-    delegates(IMessage)
-    implements(IIndexedMessage)
 
     def __init__(self, context, inside, index, parent=None):
         self.context = context
@@ -283,7 +283,7 @@ class IDirectEmailAuthorization(Interface):
         """Record that the message was sent.
 
         :param message: The email message that was sent.
-        :type message: `email.Message.Message`
+        :type message: `email.message.Message`
         """
 
 

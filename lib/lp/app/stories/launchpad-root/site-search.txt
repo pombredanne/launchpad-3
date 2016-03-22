@@ -5,8 +5,6 @@ Launchpad features a site-wide search that combines Google's site-
 specific search with Launchpad's prominent objects (projects, bugs,
 teams, etc.).
 
-    >>> from lp.services.encoding import ascii_smash
-
     # Our very helpful function for printing all the page results.
 
     >>> def print_search_results(contents=None):
@@ -14,7 +12,7 @@ teams, etc.).
     ...         contents = anon_browser.contents
     ...     tag = find_tag_by_id(contents, 'search-results')
     ...     if tag:
-    ...         print ascii_smash(extract_text(tag))
+    ...         print extract_text(tag)
 
     # Another helper to make searching convenient.
 
@@ -54,8 +52,8 @@ get an explanation of the search function.
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'no-search'))
     Enter a term or many terms to find matching pages...
 
-When the user searches for specific item, such as a project name, he
-sees a result for that exact match in Launchpad.
+When the user searches for specific item, such as a project name, they
+see a result for that exact match in Launchpad.
 
     >>> search_for('firefox')
     >>> print anon_browser.title
@@ -96,12 +94,12 @@ states that the page is showing 1 through 20 of 25 total results.
     >>> print_search_results()
     1 &rarr; 20 of 25 pages matching "bug"...
     Launchpad Bugs...
-    Bugs in Ubuntu Linux...
+    Bugs in Ubuntu...
     Bugs related to Sample Person...
     Bug #1 in Mozilla Firefox: ...Firefox does not support SVG...
     ...
 
-He can see there really are only twenty matches in the page.
+They can see there really are only twenty matches in the page.
 
     >>> first_page_results = list(
     ...     find_tags_by_class(anon_browser.contents, 'pagematch'))
@@ -187,7 +185,7 @@ searches for 'ubuntu' and sees it listed..
     Registry Administrators
     on 2006-10-16
 
-The user enters the number 1, and he sees a bug and a question in the
+The user enters the number 1, and they see a bug and a question in the
 "Exact matches" section.
 
     >>> search_for('1')
@@ -301,7 +299,7 @@ Searching from any page
 -----------------------
 
 Most pages have the global search form in them. Any user can enter terms
-in the page he is viewing and submit the form to see the results.
+in the page they are viewing and submit the form to see the results.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print anon_browser.title

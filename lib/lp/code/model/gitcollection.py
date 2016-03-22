@@ -8,18 +8,28 @@ __all__ = [
     'GenericGitCollection',
     ]
 
+from functools import partial
+from operator import attrgetter
+
 from lazr.uri import (
     InvalidURIError,
     URI,
     )
 from storm.expr import (
+    And,
     Count,
+    Desc,
     In,
     Join,
+    LeftJoin,
     Select,
+    SQL,
+    With,
     )
+from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -31,13 +41,19 @@ from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitrepository import (
     user_has_special_git_repository_access,
     )
+from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.gitrepository import (
-    GitRepository,
     get_git_repository_privacy_filter,
+    GitRepository,
     )
+from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
+from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -45,12 +61,12 @@ from lp.services.database.interfaces import IStore
 from lp.services.propertycache import get_property_cache
 
 
+@implementer(IGitCollection)
 class GenericGitCollection:
     """See `IGitCollection`."""
 
-    implements(IGitCollection)
-
-    def __init__(self, store=None, filter_expressions=None, tables=None):
+    def __init__(self, store=None, filter_expressions=None, tables=None,
+                 asymmetric_filter_expressions=None, asymmetric_tables=None):
         """Construct a `GenericGitCollection`.
 
         :param store: The store to look in for repositories. If not
@@ -62,6 +78,10 @@ class GenericGitCollection:
         :param tables: A dict of Storm tables to the Join expression.  If an
             expression in filter_expressions refers to a table, then that
             table *must* be in this list.
+        :param asymmetric_filter_expressions: As per filter_expressions but
+            only applies to one side of reflexive joins.
+        :param asymmetric_tables: As per tables, for
+            asymmetric_filter_expressions.
         """
         self._store = store
         if filter_expressions is None:
@@ -70,6 +90,13 @@ class GenericGitCollection:
         if tables is None:
             tables = {}
         self._tables = tables
+        if asymmetric_filter_expressions is None:
+            asymmetric_filter_expressions = []
+        self._asymmetric_filter_expressions = list(
+            asymmetric_filter_expressions)
+        if asymmetric_tables is None:
+            asymmetric_tables = {}
+        self._asymmetric_tables = asymmetric_tables
         self._user = None
 
     def count(self):
@@ -101,8 +128,13 @@ class GenericGitCollection:
         else:
             return self._store
 
-    def _filterBy(self, expressions, table=None, join=None):
-        """Return a subset of this collection, filtered by 'expressions'."""
+    def _filterBy(self, expressions, table=None, join=None, symmetric=True):
+        """Return a subset of this collection, filtered by 'expressions'.
+
+        :param symmetric: If True, this filter will apply to both sides of
+            merge proposal lookups and any other lookups that join
+            GitRepository back onto GitRepository.
+        """
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
         # See http://paste.ubuntu.com/118711/ for one way to do that.
@@ -111,10 +143,23 @@ class GenericGitCollection:
         if expressions is None:
             expressions = []
         tables = self._tables.copy()
+        asymmetric_tables = self._asymmetric_tables.copy()
+        if symmetric:
+            if table is not None:
+                tables[table] = join
+            symmetric_expr = self._filter_expressions + expressions
+            asymmetric_expr = list(self._asymmetric_filter_expressions)
+        else:
+            if table is not None:
+                asymmetric_tables[table] = join
+            symmetric_expr = list(self._filter_expressions)
+            asymmetric_expr = (
+                self._asymmetric_filter_expressions + expressions)
         if table is not None:
             tables[table] = join
         return self.__class__(
-            self.store, self._filter_expressions + expressions, tables)
+            self.store, symmetric_expr, tables,
+            asymmetric_expr, asymmetric_tables)
 
     def _getRepositorySelect(self, columns=(GitRepository.id,)):
         """Return a Storm 'Select' for columns in this collection."""
@@ -125,17 +170,44 @@ class GenericGitCollection:
     def _getRepositoryExpressions(self):
         """Return the where expressions for this collection."""
         return (self._filter_expressions +
+            self._asymmetric_filter_expressions +
             self._getRepositoryVisibilityExpression())
 
-    def _getRepositoryVisibilityExpression(self):
+    def _getRepositoryVisibilityExpression(self, repository_class=None):
         """Return the where clauses for visibility."""
         return []
 
-    def getRepositories(self, find_expr=GitRepository, eager_load=False):
+    @staticmethod
+    def preloadVisibleRepositories(repositories, user=None):
+        """Preload visibility for the given list of repositories."""
+        if len(repositories) == 0:
+            return
+        expressions = [
+            GitRepository.id.is_in(map(attrgetter("id"), repositories))]
+        if user is None:
+            collection = AnonymousGitCollection(filter_expressions=expressions)
+        else:
+            collection = VisibleGitCollection(
+                user=user, filter_expressions=expressions)
+        return list(collection.getRepositories())
+
+    @staticmethod
+    def preloadDataForRepositories(repositories):
+        """Preload repositories' cached associated targets."""
+        load_related(Distribution, repositories, ['distribution_id'])
+        load_related(SourcePackageName, repositories, ['sourcepackagename_id'])
+        load_related(Product, repositories, ['project_id'])
+
+    def getRepositories(self, find_expr=GitRepository, eager_load=False,
+                        order_by_date=False):
         """See `IGitCollection`."""
-        tables = [GitRepository] + list(set(self._tables.values()))
+        all_tables = set(
+            self._tables.values() + self._asymmetric_tables.values())
+        tables = [GitRepository] + list(all_tables)
         expressions = self._getRepositoryExpressions()
         resultset = self.store.using(*tables).find(find_expr, *expressions)
+        if order_by_date:
+            resultset.order_by(Desc(GitRepository.date_last_modified))
 
         def do_eager_load(rows):
             repository_ids = set(repository.id for repository in rows)
@@ -163,6 +235,160 @@ class GenericGitCollection:
         """See `IGitCollection`."""
         return self.getRepositories(
             find_expr=GitRepository.id).get_plain_result_set()
+
+    def getMergeProposals(self, statuses=None, target_repository=None,
+                          target_path=None, prerequisite_repository=None,
+                          prerequisite_path=None, merged_revision_ids=None,
+                          eager_load=False):
+        """See `IGitCollection`."""
+        if merged_revision_ids is not None and not merged_revision_ids:
+            # We have an empty revision list, so we can shortcut.
+            return EmptyResultSet()
+        elif (self._asymmetric_filter_expressions or
+            target_repository is not None or
+            target_path is not None or
+            prerequisite_repository is not None or
+            prerequisite_path is not None or
+            merged_revision_ids is not None):
+            return self._naiveGetMergeProposals(
+                statuses, target_repository, target_path,
+                prerequisite_repository, prerequisite_path,
+                merged_revision_ids, eager_load=eager_load)
+        else:
+            # When examining merge proposals in a scope, this is a moderately
+            # effective set of constrained queries.  It is not effective when
+            # unscoped or when tight constraints on repositories are present.
+            return self._scopedGetMergeProposals(
+                statuses, eager_load=eager_load)
+
+    def _naiveGetMergeProposals(self, statuses=None, target_repository=None,
+                                target_path=None, prerequisite_repository=None,
+                                prerequisite_path=None,
+                                merged_revision_ids=None, eager_load=False):
+        Target = ClassAlias(GitRepository, "target")
+        extra_tables = list(set(
+            self._tables.values() + self._asymmetric_tables.values()))
+        tables = [GitRepository] + extra_tables + [
+            Join(BranchMergeProposal, And(
+                GitRepository.id ==
+                    BranchMergeProposal.source_git_repositoryID,
+                *(self._filter_expressions +
+                  self._asymmetric_filter_expressions))),
+            Join(Target,
+                Target.id == BranchMergeProposal.target_git_repositoryID),
+            ]
+        expressions = self._getRepositoryVisibilityExpression()
+        expressions.extend(self._getRepositoryVisibilityExpression(Target))
+        if target_repository is not None:
+            expressions.append(
+                BranchMergeProposal.target_git_repository == target_repository)
+        if target_path is not None:
+            expressions.append(
+                BranchMergeProposal.target_git_path == target_path)
+        if prerequisite_repository is not None:
+            expressions.append(
+                BranchMergeProposal.prerequisite_git_repository ==
+                    prerequisite_repository)
+        if prerequisite_path is not None:
+            expressions.append(
+                BranchMergeProposal.prerequisite_git_path == prerequisite_path)
+        if merged_revision_ids is not None:
+            expressions.append(
+                BranchMergeProposal.merged_revision_id.is_in(
+                    merged_revision_ids))
+        if statuses is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        resultset = self.store.using(*tables).find(
+            BranchMergeProposal, *expressions)
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
+
+    def _scopedGetMergeProposals(self, statuses, eager_load=False):
+        expressions = (
+            self._filter_expressions
+            + self._getRepositoryVisibilityExpression())
+        with_expr = With(
+            "candidate_repositories",
+            Select(
+                GitRepository.id,
+                tables=[GitRepository] + self._tables.values(),
+                where=And(*expressions) if expressions else True))
+        expressions = [SQL("""
+            source_git_repository IN
+                (SELECT id FROM candidate_repositories) AND
+            target_git_repository IN
+                (SELECT id FROM candidate_repositories)""")]
+        tables = [BranchMergeProposal]
+        if self._asymmetric_filter_expressions:
+            # Need to filter on GitRepository beyond the with constraints.
+            expressions += self._asymmetric_filter_expressions
+            expressions.append(
+                BranchMergeProposal.source_git_repositoryID ==
+                    GitRepository.id)
+            tables.append(GitRepository)
+            tables.extend(self._asymmetric_tables.values())
+        if statuses is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        resultset = self.store.with_(with_expr).using(*tables).find(
+            BranchMergeProposal, *expressions)
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
+
+    def getMergeProposalsForPerson(self, person, status=None,
+                                   eager_load=False):
+        """See `IGitCollection`."""
+        # We want to limit the proposals to those where the source repository
+        # is limited by the defined collection.
+        owned = self.ownedBy(person).getMergeProposals(status)
+        reviewing = self.getMergeProposalsForReviewer(person, status)
+        resultset = owned.union(reviewing)
+
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
+
+    def getMergeProposalsForReviewer(self, reviewer, status=None):
+        """See `IGitCollection`."""
+        tables = [
+            BranchMergeProposal,
+            Join(CodeReviewVoteReference,
+                 CodeReviewVoteReference.branch_merge_proposalID == \
+                 BranchMergeProposal.id),
+            LeftJoin(CodeReviewComment,
+                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+
+        expressions = [
+            CodeReviewVoteReference.reviewer == reviewer,
+            BranchMergeProposal.source_git_repositoryID.is_in(
+                self._getRepositorySelect())]
+        visibility = self._getRepositoryVisibilityExpression()
+        if visibility:
+            expressions.append(
+                BranchMergeProposal.target_git_repositoryID.is_in(
+                    Select(GitRepository.id, visibility)))
+        if status is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(status))
+        proposals = self.store.using(*tables).find(
+            BranchMergeProposal, *expressions)
+        # Apply sorting here as we can't do it in the browser code.  We need to
+        # think carefully about the best places to do this, but not here nor
+        # now.
+        proposals.order_by(Desc(CodeReviewComment.vote))
+        return proposals
 
     def getTeamsWithRepositories(self, person):
         """See `IGitCollection`."""
@@ -220,18 +446,20 @@ class GenericGitCollection:
 
     def ownedBy(self, person):
         """See `IGitCollection`."""
-        return self._filterBy([GitRepository.owner == person])
+        return self._filterBy([GitRepository.owner == person], symmetric=False)
 
     def ownedByTeamMember(self, person):
         """See `IGitCollection`."""
         subquery = Select(
             TeamParticipation.teamID,
             where=TeamParticipation.personID == person.id)
-        return self._filterBy([In(GitRepository.owner_id, subquery)])
+        return self._filterBy(
+            [In(GitRepository.owner_id, subquery)], symmetric=False)
 
     def registeredBy(self, person):
         """See `IGitCollection`."""
-        return self._filterBy([GitRepository.registrant == person])
+        return self._filterBy(
+            [GitRepository.registrant == person], symmetric=False)
 
     def _getExactMatch(self, term):
         # Look up the repository by its URL, which handles both shortcuts
@@ -267,6 +495,28 @@ class GenericGitCollection:
         return collection.getRepositories(eager_load=False).order_by(
             GitRepository.name, GitRepository.id)
 
+    def subscribedBy(self, person):
+        """See `IGitCollection`."""
+        return self._filterBy(
+            [GitSubscription.person == person],
+            table=GitSubscription,
+            join=Join(GitSubscription,
+                      GitSubscription.repository == GitRepository.id),
+            symmetric=False)
+
+    def targetedBy(self, person, since=None):
+        """See `IGitCollection`."""
+        clauses = [BranchMergeProposal.registrant == person]
+        if since is not None:
+            clauses.append(BranchMergeProposal.date_created >= since)
+        return self._filterBy(
+            clauses,
+            table=BranchMergeProposal,
+            join=Join(
+                BranchMergeProposal,
+                BranchMergeProposal.target_git_repository == GitRepository.id),
+            symmetric=False)
+
     def visibleByUser(self, person):
         """See `IGitCollection`."""
         if (person == LAUNCHPAD_SERVICES or
@@ -274,33 +524,46 @@ class GenericGitCollection:
             return self
         if person is None:
             return AnonymousGitCollection(
-                self._store, self._filter_expressions, self._tables)
+                self._store, self._filter_expressions, self._tables,
+                self._asymmetric_filter_expressions, self._asymmetric_tables)
         return VisibleGitCollection(
-            person, self._store, self._filter_expressions, self._tables)
+            person, self._store, self._filter_expressions, self._tables,
+            self._asymmetric_filter_expressions, self._asymmetric_tables)
 
     def withIds(self, *repository_ids):
         """See `IGitCollection`."""
-        return self._filterBy([GitRepository.id.is_in(repository_ids)])
+        return self._filterBy(
+            [GitRepository.id.is_in(repository_ids)], symmetric=False)
 
 
 class AnonymousGitCollection(GenericGitCollection):
     """Repository collection that only shows public repositories."""
 
-    def _getRepositoryVisibilityExpression(self):
+    def _getRepositoryVisibilityExpression(self,
+                                           repository_class=GitRepository):
         """Return the where clauses for visibility."""
-        return get_git_repository_privacy_filter(None)
+        return get_git_repository_privacy_filter(
+            None, repository_class=repository_class)
 
 
 class VisibleGitCollection(GenericGitCollection):
     """A repository collection that has special logic for visibility."""
 
-    def __init__(self, user, store=None, filter_expressions=None, tables=None):
+    def __init__(self, user, store=None, filter_expressions=None, tables=None,
+                 asymmetric_filter_expressions=None, asymmetric_tables=None):
         super(VisibleGitCollection, self).__init__(
-            store=store, filter_expressions=filter_expressions, tables=tables)
+            store=store, filter_expressions=filter_expressions, tables=tables,
+            asymmetric_filter_expressions=asymmetric_filter_expressions,
+            asymmetric_tables=asymmetric_tables)
         self._user = user
 
-    def _filterBy(self, expressions, table=None, join=None):
-        """Return a subset of this collection, filtered by 'expressions'."""
+    def _filterBy(self, expressions, table=None, join=None, symmetric=True):
+        """Return a subset of this collection, filtered by 'expressions'.
+
+        :param symmetric: If True this filter will apply to both sides of
+            merge proposal lookups and any other lookups that join
+            GitRepository back onto GitRepository.
+        """
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
         # See http://paste.ubuntu.com/118711/ for one way to do that.
@@ -309,14 +572,30 @@ class VisibleGitCollection(GenericGitCollection):
         if expressions is None:
             expressions = []
         tables = self._tables.copy()
-        if table is not None:
-            tables[table] = join
+        asymmetric_tables = self._asymmetric_tables.copy()
+        if symmetric:
+            if table is not None:
+                tables[table] = join
+            symmetric_expr = self._filter_expressions + expressions
+            asymmetric_expr = list(self._asymmetric_filter_expressions)
+        else:
+            if table is not None:
+                asymmetric_tables[table] = join
+            symmetric_expr = list(self._filter_expressions)
+            asymmetric_expr = self._asymmetric_filter_expressions + expressions
         return self.__class__(
-            self._user, self.store, self._filter_expressions + expressions)
+            self._user, self.store, symmetric_expr, tables,
+            asymmetric_expr, asymmetric_tables)
 
-    def _getRepositoryVisibilityExpression(self):
-        """Return the where clauses for visibility."""
-        return get_git_repository_privacy_filter(self._user)
+    def _getRepositoryVisibilityExpression(self,
+                                           repository_class=GitRepository):
+        """Return the where clauses for visibility.
+
+        :param repository_class: The GitRepository class to use - permits
+            using ClassAliases.
+        """
+        return get_git_repository_privacy_filter(
+            self._user, repository_class=repository_class)
 
     def visibleByUser(self, person):
         """See `IGitCollection`."""

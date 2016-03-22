@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
@@ -13,7 +13,7 @@ from lp.code.model.branchjob import BranchScanJob
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import (
-    celeryd,
+    celery_worker,
     drain_celery_queues,
     monitor_celery,
     )
@@ -133,17 +133,17 @@ class TestRunMissingJobs(TestCaseWithFactory):
         result_queue_name = request.task_id.replace('-', '')
         # Paranoia check: This test intends to prove that a Celery
         # result queue for the task created above will _not_ be created.
-        # This would also happen when "with celeryd()" would do nothing.
+        # This would also happen when "with celery_worker()" would do nothing.
         # So let's be sure that a task is queued...
         # Give the system some time to deliver the message
         self.assertQueueSize(self.RunMissingReady.app, [job_queue_name], 1)
-        # Wait at most 60 seconds for celeryd to start and process
+        # Wait at most 60 seconds for "celery worker" to start and process
         # the task.
-        with celeryd(job_queue_name):
+        with celery_worker(job_queue_name):
             # Due to FIFO ordering, this will only return after
             # RunMissingReady has finished.
             noop.apply_async(queue=job_queue_name).wait(60)
-        # But now the message has been consumed by celeryd.
+        # But now the message has been consumed by "celery worker".
         self.assertQueueSize(self.RunMissingReady.app, [job_queue_name], 0)
         # No result queue was created for the task.
         try:

@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Bool,
     DateTime,
@@ -21,7 +20,8 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.errors import NoSuchDistroSeries
@@ -47,11 +47,15 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.stormexpr import Greatest
+from lp.services.database.stormexpr import (
+    Greatest,
+    NullsLast,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import (
+    CannotDeleteLiveFS,
     DuplicateLiveFSName,
     ILiveFS,
     ILiveFSSet,
@@ -76,15 +80,14 @@ def livefs_modified(livefs, event):
     This method is registered as a subscriber to `IObjectModifiedEvent`
     events on live filesystems.
     """
-    livefs.date_last_modified = UTC_NOW
+    removeSecurityProxy(livefs).date_last_modified = UTC_NOW
 
 
+@implementer(ILiveFS, IHasOwner)
 class LiveFS(Storm):
     """See `ILiveFS`."""
 
     __storm_table__ = 'LiveFS'
-
-    implements(ILiveFS, IHasOwner)
 
     id = Int(primary=True)
 
@@ -124,7 +127,7 @@ class LiveFS(Storm):
         self.date_last_modified = date_created
 
     def requestBuild(self, requester, archive, distro_arch_series, pocket,
-                     unique_key=None, metadata_override=None):
+                     unique_key=None, metadata_override=None, version=None):
         """See `ILiveFS`."""
         if not requester.inTeam(self.owner):
             raise LiveFSNotOwner(
@@ -149,7 +152,8 @@ class LiveFS(Storm):
 
         build = getUtility(ILiveFSBuildSet).new(
             requester, self, archive, distro_arch_series, pocket,
-            unique_key=unique_key, metadata_override=metadata_override)
+            unique_key=unique_key, metadata_override=metadata_override,
+            version=version)
         build.queueBuild()
         return build
 
@@ -173,9 +177,9 @@ class LiveFS(Storm):
     def builds(self):
         """See `ILiveFS`."""
         order_by = (
-            Desc(Greatest(
+            NullsLast(Desc(Greatest(
                 LiveFSBuild.date_started,
-                LiveFSBuild.date_finished)),
+                LiveFSBuild.date_finished))),
             Desc(LiveFSBuild.date_created),
             Desc(LiveFSBuild.id))
         return self._getBuilds(None, order_by)
@@ -195,9 +199,9 @@ class LiveFS(Storm):
         """See `ILiveFS`."""
         filter_term = (Not(LiveFSBuild.status.is_in(self._pending_states)))
         order_by = (
-            Desc(Greatest(
+            NullsLast(Desc(Greatest(
                 LiveFSBuild.date_started,
-                LiveFSBuild.date_finished)),
+                LiveFSBuild.date_finished))),
             Desc(LiveFSBuild.id))
         return self._getBuilds(filter_term, order_by)
 
@@ -210,11 +214,17 @@ class LiveFS(Storm):
         order_by = Desc(LiveFSBuild.id)
         return self._getBuilds(filter_term, order_by)
 
+    def destroySelf(self):
+        """See `ILiveFS`."""
+        if not self.builds.is_empty():
+            raise CannotDeleteLiveFS(
+                "Cannot delete a live filesystem with builds.")
+        IStore(LiveFS).remove(self)
 
+
+@implementer(ILiveFSSet)
 class LiveFSSet:
     """See `ILiveFSSet`."""
-
-    implements(ILiveFSSet)
 
     def new(self, registrant, owner, distro_series, name, metadata,
             require_virtualized=True, date_created=DEFAULT):
@@ -229,16 +239,14 @@ class LiveFSSet:
                     "%s cannot create live filesystems owned by %s." %
                     (registrant.displayname, owner.displayname))
 
+        if self.exists(owner, distro_series, name):
+            raise DuplicateLiveFSName
+
         store = IMasterStore(LiveFS)
         livefs = LiveFS(
             registrant, owner, distro_series, name, metadata,
             require_virtualized, date_created)
         store.add(livefs)
-
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicateLiveFSName
 
         return livefs
 

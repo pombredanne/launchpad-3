@@ -166,7 +166,7 @@ div.beta img {
     }
 
 pre.changelog,
-table.diff td.line-no,
+table.diff td.line-no, table.diff td.ss-line-no,
 table.diff td.text,
 .comment-text,
 .bug-activity {

@@ -29,7 +29,7 @@
 
 
   If a non-member (Sample Person) guesses the voting URL and tries to vote,
-  he won't be allowed.
+  they won't be allowed.
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes2/+vote HTTP/1.1

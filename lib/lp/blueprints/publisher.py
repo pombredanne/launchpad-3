@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
     IDefaultBrowserLayer,
@@ -26,8 +26,8 @@ from lp.services.webapp.servers import (
     )
 
 
+@implementer(IFacet)
 class SpecificationsFacet:
-    implements(IFacet)
 
     name = "specifications"
     rootsite = "blueprints"
@@ -39,9 +39,9 @@ class BlueprintsLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Blueprints layer."""
 
 
+@implementer(BlueprintsLayer)
 class BlueprintsBrowserRequest(LaunchpadBrowserRequest):
     """Instances of BlueprintsBrowserRequest provide `BlueprintsLayer`."""
-    implements(BlueprintsLayer)
 
 
 def blueprints_request_publication_factory():

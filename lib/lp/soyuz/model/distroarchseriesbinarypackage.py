@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from storm.locals import Desc
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.services.database.interfaces import IStore
@@ -27,6 +27,7 @@ from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
+@implementer(IDistroArchSeriesBinaryPackage)
 class DistroArchSeriesBinaryPackage:
     """A Binary Package in the context of a Distro Arch Series.
 
@@ -34,8 +35,6 @@ class DistroArchSeriesBinaryPackage:
     database. Instead, they are synthesized based on information from
     the publishing and binarypackagerelease tables.
     """
-
-    implements(IDistroArchSeriesBinaryPackage)
 
     def __init__(self, distroarchseries, binarypackagename):
         self.distroarchseries = distroarchseries

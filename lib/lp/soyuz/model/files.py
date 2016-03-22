@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.database.enumcol import EnumCol
@@ -21,9 +21,9 @@ from lp.soyuz.interfaces.files import (
     )
 
 
+@implementer(IBinaryPackageFile)
 class BinaryPackageFile(SQLBase):
     """See IBinaryPackageFile """
-    implements(IBinaryPackageFile)
     _table = 'BinaryPackageFile'
 
     binarypackagerelease = ForeignKey(dbName='binarypackagerelease',
@@ -46,10 +46,9 @@ class SourceFileMixin:
             )
 
 
+@implementer(ISourcePackageReleaseFile)
 class SourcePackageReleaseFile(SourceFileMixin, SQLBase):
     """See ISourcePackageFile"""
-
-    implements(ISourcePackageReleaseFile)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')

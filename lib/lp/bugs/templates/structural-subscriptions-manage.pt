@@ -12,7 +12,7 @@
     <p>
       You are unable to subscribe to bug reports about <span
         tal:replace="context/title">this item</span> as it generates
-      a high amount of bug activity which results in more e-mails than
+      a high amount of bug activity which results in more emails than
       most users can handle.
     </p>
     <p>
@@ -23,14 +23,13 @@
     </tal:no_permissions>
     <tal:has_permissions condition="view/userCanAlter|nothing">
     <p>
-      You can choose to receive an e-mail every time someone reports or
+      You can choose to receive an email every time someone reports or
       changes a public bug associated with 
       <span tal:replace="context/title">this item</span>.
     </p>
     <p>
       <strong>Important:</strong> subscribing here may mean you receive a
-      great deal of e-mail. You can return here to unsubscribe at any 
-      time.
+      great deal of email. You can return here to unsubscribe at any time.
     </p>
     <div metal:use-macro="context/@@launchpad_form/form" />
   </tal:has_permissions>

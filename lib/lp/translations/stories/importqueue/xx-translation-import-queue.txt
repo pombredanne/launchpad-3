@@ -97,9 +97,11 @@ to where we can edit imports.
   True
   >>> 'Mozilla Firefox 1.0 series' in browser.contents
   True
-  >>> browser.getLink(url='+imports/3')
-  <Link text='Change this entry' url='http://translations.launchpad.dev/+imports/3'>
-  >>> browser.getControl(name='field.status_3').displayValue
+  >>> link = browser.getLink('Change this entry', index=2)
+  >>> link
+  <Link text='Change this entry' url='http://translations.launchpad.dev/+imports/...'>
+  >>> qid = int(link.url.rsplit('/', 1)[-1])
+  >>> browser.getControl(name='field.status_%d' % qid).displayValue
   ['Needs Review']
 
 Now, we attach a new file to an already existing translation resource.
@@ -137,7 +139,7 @@ the last entry.
 Open the edit form for the third entry.
 
   >>> browser.open('http://translations.launchpad.dev/+imports')
-  >>> browser.getLink(url='imports/3').click()
+  >>> browser.getLink(url='imports/%d' % qid).click()
 
 And provide information for this IPOTemplate to be newly created. Invalid
 names for the template are rejected.
@@ -148,7 +150,7 @@ names for the template are rejected.
   >>> browser.getControl('Translation domain').value = 'pkgconf-mozilla'
   >>> browser.getControl('Approve').click()
   >>> print browser.url
-  http://translations.launchpad.dev/+imports/3/+index
+  http://translations.launchpad.dev/+imports/.../+index
   >>> message = find_tags_by_class(browser.contents, 'message')[1]
   >>> print message.string
   Please specify a valid name...
@@ -168,12 +170,13 @@ header properly.  This seems similar to #98437 but the fix proposed
 there doesn't help.
 
   >>> browser.open('http://translations.launchpad.dev/+imports')
-  >>> browser.getLink(url='imports/4').click()
+  >>> browser.getLink(url='imports/%d' % (qid + 1)).click()
 
 And provide information for this IPOFile to be newly created.
 
   >>> browser.getControl('File Type').value = ['PO']
-  >>> browser.getControl(name='field.potemplate').value = ['11']
+  >>> browser.getControl(name='field.potemplate').displayValue = [
+  ...     'pkgconf-mozilla']
   >>> browser.getControl('Language').value = ['es']
   >>> browser.getControl('Approve').click()
   >>> print browser.url
@@ -247,7 +250,7 @@ But Jordi, a Rosetta expert, will be allowed to remove it.
   ...Foo Bar...
   ...Template "evolution-2.2-test" in Evolution trunk...
 
-Foo Bar Person is a launchpad admin and he's allowed to remove an entry.
+Foo Bar Person is a launchpad admin and they're allowed to remove an entry.
 
   >>> admin_browser.open('http://translations.launchpad.dev/+imports')
   >>> admin_browser.getControl(name='field.status_2').value = ['DELETED']
@@ -268,9 +271,10 @@ And finally, we make sure that the importer is also allowed to remove their
 own imports.
 
   >>> ff_owner_browser.open('http://translations.launchpad.dev/+imports')
-  >>> ff_owner_browser.getControl(name='field.status_4').value
+  >>> status = ff_owner_browser.getControl(name='field.status_%d' % (qid + 1))
+  >>> status.value
   ['APPROVED']
-  >>> ff_owner_browser.getControl(name='field.status_4').value = ['DELETED']
+  >>> status.value = ['DELETED']
   >>> ff_owner_browser.getControl('Change status').click()
 
 The entry now appears deleted.
@@ -278,7 +282,7 @@ The entry now appears deleted.
   >>> print find_main_content(ff_owner_browser.contents)
   <...po/es.po...
   ...Mozilla Firefox 1.0 series...
-  ...field.status_4...
+  ...field.status_...
   ...selected="selected" value="DELETED"...
   ...Sample Person...
   ...Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0...

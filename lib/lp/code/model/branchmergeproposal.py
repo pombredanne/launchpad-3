@@ -10,8 +10,12 @@ __all__ = [
     'is_valid_transition',
     ]
 
-from email.Utils import make_msgid
+from email.utils import make_msgid
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -23,15 +27,22 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
+    Not,
     Or,
     Select,
     SQL,
     )
-from storm.locals import Reference
-from storm.store import Store
+from storm.locals import (
+    Int,
+    Reference,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.code.enums import (
@@ -51,11 +62,8 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    BranchMergeProposalStatusChangeEvent,
-    NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
-from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
@@ -67,6 +75,7 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewinlinecomment import (
     ICodeReviewInlineCommentSet,
     )
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -85,7 +94,10 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.person import Person
 from lp.services.config import config
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -99,7 +111,6 @@ from lp.services.database.interfaces import (
 from lp.services.database.sqlbase import (
     quote,
     SQLBase,
-    sqlvalues,
     )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -123,7 +134,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         return True
     if from_state in FINAL_STATES and next_state not in FINAL_STATES:
         dupes = BranchMergeProposalGetter.activeProposalsForBranches(
-            proposal.source_branch, proposal.target_branch)
+            proposal.merge_source, proposal.merge_target)
         if not dupes.is_empty():
             return False
 
@@ -138,24 +149,22 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         superseded,
     ] = BranchMergeProposalStatus.items
 
-    # Transitioning to code approved, rejected, failed or queued from
-    # work in progress, needs review or merge failed needs the
-    # user to be a valid reviewer, other states are fine.
-    valid_reviewer = proposal.target_branch.isPersonTrustedReviewer(user)
-    reviewed_ok_states = (code_approved, queued, merge_failed)
+    # Transitioning to code approved, rejected, or failed from work in
+    # progress or needs review needs the user to be a valid reviewer, other
+    # states are fine.
+    valid_reviewer = proposal.merge_target.isPersonTrustedReviewer(user)
+    reviewed_ok_states = (code_approved, )
+    obsolete_states = (merge_failed, queued)
     if not valid_reviewer:
-        # Non reviewers cannot reject proposals [XXX: what about their own?]
+        # We cannot transition to obsolete states, and we no longer know how
+        # to transition away from them either.
+        if next_state in obsolete_states or from_state in obsolete_states:
+            return False
+        # Non-reviewers cannot reject proposals [XXX: what about their own?]
         if next_state == rejected:
             return False
-        # Non-reviewers can toggle within the reviewed ok states
-        # (approved/queued/failed): they can dequeue something they spot an
-        # environmental issue with (queued or failed to approved). Retry
-        # things that had an environmental issue (failed or approved to
-        # queued) and note things as failing (approved and queued to failed).
-        # This is perhaps more generous than needed, but its not clearly wrong
-        # - a key concern is to prevent non reviewers putting things in the
-        # queue that haven't been approved (and thus moved to approved or one
-        # of the workflow states that approved leads to).
+        # Non-reviewers cannot approve proposals, but can otherwise move
+        # things around relatively freely.
         elif (next_state in reviewed_ok_states and
               from_state not in reviewed_ok_states):
             return False
@@ -165,10 +174,9 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         return True
 
 
+@implementer(IBranchMergeProposal, IHasBranchTarget)
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
-
-    implements(IBranchMergeProposal, IBranchNavigationMenu, IHasBranchTarget)
 
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
@@ -178,13 +186,110 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=True)
 
     source_branch = ForeignKey(
-        dbName='source_branch', foreignKey='Branch', notNull=True)
+        dbName='source_branch', foreignKey='Branch', notNull=False)
+    source_git_repositoryID = Int(
+        name='source_git_repository', allow_none=True)
+    source_git_repository = Reference(
+        source_git_repositoryID, 'GitRepository.id')
+    source_git_path = StringCol(
+        dbName='source_git_path', default=None, notNull=False)
+    source_git_commit_sha1 = StringCol(
+        dbName='source_git_commit_sha1', default=None, notNull=False)
 
     target_branch = ForeignKey(
-        dbName='target_branch', foreignKey='Branch', notNull=True)
+        dbName='target_branch', foreignKey='Branch', notNull=False)
+    target_git_repositoryID = Int(
+        name='target_git_repository', allow_none=True)
+    target_git_repository = Reference(
+        target_git_repositoryID, 'GitRepository.id')
+    target_git_path = StringCol(
+        dbName='target_git_path', default=None, notNull=False)
+    target_git_commit_sha1 = StringCol(
+        dbName='target_git_commit_sha1', default=None, notNull=False)
 
     prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
+    prerequisite_git_repositoryID = Int(
+        name='dependent_git_repository', allow_none=True)
+    prerequisite_git_repository = Reference(
+        prerequisite_git_repositoryID, 'GitRepository.id')
+    prerequisite_git_path = StringCol(
+        dbName='dependent_git_path', default=None, notNull=False)
+    prerequisite_git_commit_sha1 = StringCol(
+        dbName='dependent_git_commit_sha1', default=None, notNull=False)
+
+    @property
+    def source_git_ref(self):
+        from lp.code.model.gitref import GitRefFrozen
+        if self.source_git_repository is None:
+            return None
+        return GitRefFrozen(
+            self.source_git_repository, self.source_git_path,
+            self.source_git_commit_sha1)
+
+    @source_git_ref.setter
+    def source_git_ref(self, value):
+        self.source_git_repository = value.repository
+        self.source_git_path = value.path
+        self.source_git_commit_sha1 = value.commit_sha1
+
+    @property
+    def target_git_ref(self):
+        from lp.code.model.gitref import GitRefFrozen
+        if self.target_git_repository is None:
+            return None
+        return GitRefFrozen(
+            self.target_git_repository, self.target_git_path,
+            self.target_git_commit_sha1)
+
+    @target_git_ref.setter
+    def target_git_ref(self, value):
+        self.target_git_repository = value.repository
+        self.target_git_path = value.path
+        self.target_git_commit_sha1 = value.commit_sha1
+
+    @property
+    def prerequisite_git_ref(self):
+        from lp.code.model.gitref import GitRefFrozen
+        if self.prerequisite_git_repository is None:
+            return None
+        return GitRefFrozen(
+            self.prerequisite_git_repository, self.prerequisite_git_path,
+            self.prerequisite_git_commit_sha1)
+
+    @prerequisite_git_ref.setter
+    def prerequisite_git_ref(self, value):
+        self.prerequisite_git_repository = value.repository
+        self.prerequisite_git_path = value.path
+        self.prerequisite_git_commit_sha1 = value.commit_sha1
+
+    @property
+    def merge_source(self):
+        if self.source_branch is not None:
+            return self.source_branch
+        else:
+            return self.source_git_ref
+
+    @property
+    def merge_target(self):
+        if self.target_branch is not None:
+            return self.target_branch
+        else:
+            return self.target_git_ref
+
+    @property
+    def merge_prerequisite(self):
+        if self.prerequisite_branch is not None:
+            return self.prerequisite_branch
+        else:
+            return self.prerequisite_git_ref
+
+    @property
+    def parent(self):
+        if self.source_branch is not None:
+            return self.source_branch
+        else:
+            return self.source_git_repository
 
     description = StringCol(default=None)
 
@@ -196,14 +301,15 @@ class BranchMergeProposal(SQLBase):
 
     @property
     def private(self):
-        return (
-            (self.source_branch.information_type
-             in PRIVATE_INFORMATION_TYPES) or
-            (self.target_branch.information_type
-             in PRIVATE_INFORMATION_TYPES) or
-            (self.prerequisite_branch is not None and
-             (self.prerequisite_branch.information_type in
-              PRIVATE_INFORMATION_TYPES)))
+        objects = [
+            self.merge_source,
+            self.merge_target,
+            self.merge_prerequisite,
+            ]
+        return any(
+            obj is not None and
+            obj.information_type in PRIVATE_INFORMATION_TYPES
+            for obj in objects)
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -234,15 +340,17 @@ class BranchMergeProposal(SQLBase):
 
     commit_message = StringCol(default=None)
 
-    queue_position = IntCol(default=None)
-
-    queuer = ForeignKey(
-        dbName='queuer', foreignKey='Person', notNull=False,
-        default=None)
-    queued_revision_id = StringCol(default=None)
-
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)
+    merged_revision_id = StringCol(default=None)
+
+    @property
+    def merged_revision(self):
+        """Return the merged revision identifier."""
+        if self.target_branch is not None:
+            return self.merged_revno
+        else:
+            return self.merged_revision_id
 
     merge_reporter = ForeignKey(
         dbName='merge_reporter', foreignKey='Person',
@@ -254,6 +362,10 @@ class BranchMergeProposal(SQLBase):
 
         Implies that these would be fixed, in the target, by the merge.
         """
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement once Git refs have linked
+            # bug tasks.
+            return []
         source_tasks = self.source_branch.getLinkedBugTasks(user)
         target_tasks = self.target_branch.getLinkedBugTasks(user)
         return [bugtask
@@ -276,7 +388,9 @@ class BranchMergeProposal(SQLBase):
     @property
     def target(self):
         """See `IHasBranchTarget`."""
-        return self.source_branch.target
+        # XXX cjwatson 2015-04-12: This is not an IBranchTarget for Git,
+        # although it has similar semantics.
+        return self.merge_source.target
 
     root_message_id = StringCol(default=None)
 
@@ -284,8 +398,9 @@ class BranchMergeProposal(SQLBase):
     def title(self):
         """See `IBranchMergeProposal`."""
         return "[Merge] %(source)s into %(target)s" % {
-            'source': self.source_branch.bzr_identity,
-            'target': self.target_branch.bzr_identity}
+            'source': self.merge_source.identity,
+            'target': self.merge_target.identity,
+            }
 
     @property
     def all_comments(self):
@@ -325,8 +440,6 @@ class BranchMergeProposal(SQLBase):
     def preview_diff(self):
         return self._preview_diffs.last()
 
-    date_queued = UtcDateTimeCol(notNull=False, default=None)
-
     votes = SQLMultipleJoin(
         'CodeReviewVoteReference', joinColumn='branch_merge_proposal')
 
@@ -334,26 +447,26 @@ class BranchMergeProposal(SQLBase):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
         branch_identity_cache = {
-            self.source_branch: self.source_branch.bzr_identity,
-            self.target_branch: self.target_branch.bzr_identity,
+            self.merge_source: self.merge_source.identity,
+            self.merge_target: self.merge_target.identity,
             }
-        branches = [self.source_branch, self.target_branch]
-        if self.prerequisite_branch is not None:
-            branches.append(self.prerequisite_branch)
+        branches = [self.merge_source, self.merge_target]
+        if self.merge_prerequisite is not None:
+            branches.append(self.merge_prerequisite)
         for branch in branches:
             branch_recipients = branch.getNotificationRecipients()
             for recipient in branch_recipients:
                 # If the recipient cannot see either of the branches, skip
                 # them.
-                if (not self.source_branch.visibleByUser(recipient) or
-                    not self.target_branch.visibleByUser(recipient)):
+                if (not self.merge_source.visibleByUser(recipient) or
+                    not self.merge_target.visibleByUser(recipient)):
                     continue
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
-                    subscription, recipient, rationale, self,
+                    subscription, branch, recipient, rationale, self,
                     branch_identity_cache=branch_identity_cache)
         # Add in all the individuals that have been asked for a review,
         # or who have reviewed.  These people get added to the recipients
@@ -375,8 +488,8 @@ class BranchMergeProposal(SQLBase):
             recipients[self.registrant] = RecipientReason.forRegistrant(
                 self, branch_identity_cache=branch_identity_cache)
         # If the owner of the source branch is getting emails, override the
-        # rationale to say they are the owner of the souce branch.
-        source_owner = self.source_branch.owner
+        # rationale to say they are the owner of the source branch.
+        source_owner = self.merge_source.owner
         if source_owner in recipients:
             reason = RecipientReason.forSourceOwner(
                 self, branch_identity_cache=branch_identity_cache)
@@ -411,9 +524,6 @@ class BranchMergeProposal(SQLBase):
         # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
         # would be better as a dict mapping.
         # See bug #281060.
-        if (self.queue_status == BranchMergeProposalStatus.QUEUED and
-            status != BranchMergeProposalStatus.QUEUED):
-            self.dequeue()
         if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
@@ -422,12 +532,8 @@ class BranchMergeProposal(SQLBase):
             self.approveBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
-        elif status == BranchMergeProposalStatus.QUEUED:
-            self.enqueue(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
-        elif status == BranchMergeProposalStatus.MERGE_FAILED:
-            self._transitionToState(status, user=user)
         else:
             raise AssertionError('Unexpected queue status: %s' % status)
 
@@ -460,10 +566,8 @@ class BranchMergeProposal(SQLBase):
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
-            # Clear out any reviewed or queued values.
+            # Clear out any reviewed values.
             self._mark_unreviewed()
-            self.queuer = None
-            self.queued_revision_id = None
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
@@ -475,8 +579,7 @@ class BranchMergeProposal(SQLBase):
                         _date_reviewed=None):
         """Set the proposal to next_state."""
         # Check the reviewer can review the code for the target branch.
-        old_state = self.queue_status
-        if not self.target_branch.isPersonTrustedReviewer(reviewer):
+        if not self.merge_target.isPersonTrustedReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
         self._transitionToState(next_state, reviewer)
@@ -487,8 +590,6 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = _date_reviewed
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
-        notify(BranchMergeProposalStatusChangeEvent(
-                self, reviewer, old_state, next_state))
 
     def approveBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
@@ -502,107 +603,52 @@ class BranchMergeProposal(SQLBase):
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id,
             _date_reviewed)
 
-    def enqueue(self, queuer, revision_id):
-        """See `IBranchMergeProposal`."""
-        if self.queue_status != BranchMergeProposalStatus.CODE_APPROVED:
-            self.approveBranch(queuer, revision_id)
-
-        last_entry = BranchMergeProposal.selectOne("""
-            BranchMergeProposal.queue_position = (
-                SELECT coalesce(MAX(queue_position), 0)
-                FROM BranchMergeProposal)
-            """)
-
-        # The queue_position will wrap if we ever get to
-        # two billion queue entries where the queue has
-        # never become empty.  Perhaps sometime in the future
-        # we may want to (maybe) consider keeping track of
-        # the maximum value here.  I doubt that it'll ever be
-        # a problem -- thumper.
-        if last_entry is None:
-            position = 1
-        else:
-            position = last_entry.queue_position + 1
-
-        self.queue_status = BranchMergeProposalStatus.QUEUED
-        self.queue_position = position
-        self.queuer = queuer
-        self.queued_revision_id = revision_id or self.reviewed_revision_id
-        self.date_queued = UTC_NOW
-        self.syncUpdate()
-
-    def dequeue(self):
-        """See `IBranchMergeProposal`."""
-        if self.queue_status != BranchMergeProposalStatus.QUEUED:
-            raise BadStateTransition(
-                'Invalid state transition for merge proposal: %s -> %s'
-                % (self.queue_state.title,
-                   BranchMergeProposalStatus.QUEUED.title))
-        self.queue_status = BranchMergeProposalStatus.CODE_APPROVED
-        # Clear out the queued values.
-        self.queuer = None
-        self.queued_revision_id = None
-        self.date_queued = None
-        # Remove from the queue.
-        self.queue_position = None
-
-    def moveToFrontOfQueue(self):
-        """See `IBranchMergeProposal`."""
-        if self.queue_status != BranchMergeProposalStatus.QUEUED:
-            return
-        first_entry = BranchMergeProposal.selectOne("""
-            BranchMergeProposal.queue_position = (
-                SELECT MIN(queue_position)
-                FROM BranchMergeProposal)
-            """)
-
-        self.queue_position = first_entry.queue_position - 1
-        self.syncUpdate()
-
-    def markAsMerged(self, merged_revno=None, date_merged=None,
-                     merge_reporter=None):
+    def markAsMerged(self, merged_revno=None, merged_revision_id=None,
+                     date_merged=None, merge_reporter=None):
         """See `IBranchMergeProposal`."""
         old_state = self.queue_status
         self._transitionToState(
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
+        self.merged_revision_id = merged_revision_id
         self.merge_reporter = merge_reporter
-        # Remove from the queue.
-        self.queue_position = None
 
         # The reviewer of a merged proposal is assumed to have approved, if
         # they rejected it remove the review metadata to avoid confusion.
         if old_state == BranchMergeProposalStatus.REJECTED:
             self._mark_unreviewed()
 
-        if merged_revno is not None:
+        if self.target_branch is not None and merged_revno is not None:
             branch_revision = Store.of(self).find(
                 BranchRevision,
                 BranchRevision.branch == self.target_branch,
                 BranchRevision.sequence == merged_revno).one()
             if branch_revision is not None:
                 date_merged = branch_revision.revision.revision_date
+        # XXX cjwatson 2015-04-12: Handle the Git case.
 
         if date_merged is None:
             date_merged = UTC_NOW
         self.date_merged = date_merged
 
-    def resubmit(self, registrant, source_branch=None, target_branch=None,
-                 prerequisite_branch=DEFAULT, description=None,
-                 break_link=False):
+    def resubmit(self, registrant, merge_source=None, merge_target=None,
+                 merge_prerequisite=DEFAULT, commit_message=None,
+                 description=None, break_link=False):
         """See `IBranchMergeProposal`."""
-        if source_branch is None:
-            source_branch = self.source_branch
-        if target_branch is None:
-            target_branch = self.target_branch
+        if merge_source is None:
+            merge_source = self.merge_source
+        if merge_target is None:
+            merge_target = self.merge_target
         # DEFAULT instead of None, because None is a valid value.
         proposals = BranchMergeProposalGetter.activeProposalsForBranches(
-            source_branch, target_branch)
+            merge_source, merge_target)
         for proposal in proposals:
             if proposal is not self:
                 raise BranchMergeProposalExists(proposal)
-        if prerequisite_branch is DEFAULT:
-            prerequisite_branch = self.prerequisite_branch
+        if merge_prerequisite is DEFAULT:
+            merge_prerequisite = self.merge_prerequisite
+        if commit_message is None:
+            commit_message = self.commit_message
         if description is None:
             description = self.description
         # You can transition from REJECTED to SUPERSEDED, but
@@ -615,10 +661,11 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         review_requests = list(set(
             (vote.reviewer, vote.review_type) for vote in self.votes))
-        proposal = source_branch.addLandingTarget(
+        proposal = merge_source.addLandingTarget(
             registrant=registrant,
-            target_branch=target_branch,
-            prerequisite_branch=prerequisite_branch,
+            merge_target=merge_target,
+            merge_prerequisite=merge_prerequisite,
+            commit_message=commit_message,
             description=description,
             needs_review=True, review_requests=review_requests)
         if not break_link:
@@ -677,6 +724,9 @@ class BranchMergeProposal(SQLBase):
         the reviewer if the branch is private and the reviewer is an open
         team.
         """
+        if self.source_branch is None:
+            # This only applies to Bazaar, which has stacked branches.
+            return
         source = self.source_branch
         if (not source.visibleByUser(reviewer) and
             self._acceptable_to_give_visibility(source, reviewer)):
@@ -711,6 +761,7 @@ class BranchMergeProposal(SQLBase):
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
+        notify(ObjectDeletedEvent(self))
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
@@ -734,6 +785,10 @@ class BranchMergeProposal(SQLBase):
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement for Git somehow, perhaps by
+            # calling turnip via memcached.
+            return []
         store = Store.of(self)
         source = SQL("""source AS (SELECT BranchRevision.branch,
             BranchRevision.revision, Branchrevision.sequence FROM
@@ -884,8 +939,7 @@ class BranchMergeProposal(SQLBase):
             vote_reference.review_type = review_type
             vote_reference.comment = code_review_message
         if _notify_listeners:
-            notify(NewCodeReviewCommentEvent(
-                    code_review_message, original_email))
+            notify(ObjectCreatedEvent(code_review_message))
         return code_review_message
 
     def getInlineComments(self, previewdiff_id):
@@ -931,6 +985,9 @@ class BranchMergeProposal(SQLBase):
 
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
         """See `IBranchMergeProposal`."""
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement for Git.
+            return
         if diff is None:
             source_branch = self.source_branch.getBzrBranch()
             ignore_branches = [self.target_branch.getBzrBranch()]
@@ -974,6 +1031,9 @@ class BranchMergeProposal(SQLBase):
         return None
 
     def _getNewerRevisions(self):
+        if self.source_branch is None:
+            # XXX cjwatson 2015-04-16: Implement for Git.
+            return EmptyResultSet()
         start_date = self.date_review_requested
         if start_date is None:
             start_date = self.date_created
@@ -1013,25 +1073,47 @@ class BranchMergeProposal(SQLBase):
         # Circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchcollection import GenericBranchCollection
+        from lp.code.model.gitcollection import GenericGitCollection
+        from lp.code.model.gitref import GitRef
+        from lp.code.model.gitrepository import GitRepository
 
         ids = set()
         source_branch_ids = set()
+        git_ref_keys = set()
         person_ids = set()
         for mp in branch_merge_proposals:
             ids.add(mp.id)
-            source_branch_ids.add(mp.source_branchID)
+            if mp.source_branchID is not None:
+                source_branch_ids.add(mp.source_branchID)
+            if mp.source_git_repositoryID is not None:
+                git_ref_keys.add(
+                    (mp.source_git_repositoryID, mp.source_git_path))
+                git_ref_keys.add(
+                    (mp.target_git_repositoryID, mp.target_git_path))
+                if mp.prerequisite_git_repositoryID is not None:
+                    git_ref_keys.add(
+                        (mp.prerequisite_git_repositoryID,
+                         mp.prerequisite_git_path))
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
+        git_repository_ids = set(
+            repository_id for repository_id, _ in git_ref_keys)
 
         branches = load_related(
             Branch, branch_merge_proposals, (
                 "target_branchID", "prerequisite_branchID",
                 "source_branchID"))
+        repositories = load_related(
+            GitRepository, branch_merge_proposals, (
+                "target_git_repositoryID", "prerequisite_git_repositoryID",
+                "source_git_repositoryID"))
+        load(GitRef, git_ref_keys)
         # The stacked on branches are used to check branch visibility.
         GenericBranchCollection.preloadVisibleStackedOnBranches(
             branches, user)
+        GenericGitCollection.preloadVisibleRepositories(repositories, user)
 
-        if len(branches) == 0:
+        if len(branches) == 0 and len(repositories) == 0:
             return
 
         # Pre-load PreviewDiffs and Diffs.
@@ -1046,23 +1128,30 @@ class BranchMergeProposal(SQLBase):
             cache = get_property_cache(previewdiff.branch_merge_proposal)
             cache.preview_diff = previewdiff
 
-        # Add source branch owners' to the list of pre-loaded persons.
+        # Add source branch/repository owners' to the list of pre-loaded
+        # persons.  We need the target repository owner as well; unlike
+        # branches, repository unique names aren't trigger-maintained.
         person_ids.update(
             branch.ownerID for branch in branches
             if branch.id in source_branch_ids)
+        person_ids.update(
+            repository.owner_id for repository in repositories
+            if repository.id in git_repository_ids)
 
         # Pre-load Person and ValidPersonCache.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
 
-        # Pre-load branches' data.
-        GenericBranchCollection.preloadDataForBranches(branches)
+        # Pre-load branches'/repositories' data.
+        if branches:
+            GenericBranchCollection.preloadDataForBranches(branches)
+        if repositories:
+            GenericGitCollection.preloadDataForRepositories(repositories)
 
 
+@implementer(IBranchMergeProposalGetter)
 class BranchMergeProposalGetter:
     """See `IBranchMergeProposalGetter`."""
-
-    implements(IBranchMergeProposalGetter)
 
     @staticmethod
     def get(id):
@@ -1171,9 +1260,18 @@ class BranchMergeProposalGetter:
         return result
 
     @staticmethod
-    def activeProposalsForBranches(source_branch, target_branch):
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.source_branch = %s AND
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-                """ % sqlvalues(source_branch, target_branch, FINAL_STATES))
+    def activeProposalsForBranches(source, target):
+        clauses = [Not(BranchMergeProposal.queue_status.is_in(FINAL_STATES))]
+        if IGitRef.providedBy(source):
+            clauses.extend([
+                BranchMergeProposal.source_git_repository == source.repository,
+                BranchMergeProposal.source_git_path == source.path,
+                BranchMergeProposal.target_git_repository == target.repository,
+                BranchMergeProposal.target_git_path == target.path,
+                ])
+        else:
+            clauses.extend([
+                BranchMergeProposal.source_branch == source,
+                BranchMergeProposal.target_branch == target,
+                ])
+        return IStore(BranchMergeProposal).find(BranchMergeProposal, *clauses)

@@ -1,0 +1,39 @@
+<tal:root
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    omit-tag="">
+
+  <div metal:define-macro="push-instructions-bzr" id="push-instructions-bzr" class="scm-tip">
+    <h3>Push a new branch</h3>
+    <p>You can push a Bazaar branch directly to Launchpad with the command:</p>
+    <p>
+      <code class="command command-block">
+        bzr push lp:<tal:project replace="context/name"/>
+      </code>
+    </p>
+  </div>
+
+  <div metal:define-macro="push-instructions-git" id="push-instructions-git" class="scm-tip">
+    <h3>Push a new repository</h3>
+    <p>You can add a remote for your Git repository with the
+    command:</p>
+    <p>
+      <code class="command command-block">
+        git remote add origin <tal:project replace="modules/lp.services.config/config/codehosting/git_ssh_root"/><tal:project replace="context/name"/><br />
+    </code></p>
+    <p>&hellip; and push the Git branch to Launchpad with:</p>
+    <p>
+      <code class="command command-block">
+        git push origin master
+      </code>
+    </p>
+  </div>
+
+  <div metal:define-macro="no-keys" tal:condition="not:view/user/sshkeys">
+    <p class="infobox">To authenticate with the Launchpad branch upload service, you need to
+    <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+    register an SSH key</a>.</p>
+  </div>
+
+</tal:root>

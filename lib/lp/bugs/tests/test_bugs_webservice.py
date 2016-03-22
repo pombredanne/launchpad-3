@@ -42,9 +42,9 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -210,7 +210,7 @@ class TestBugScaling(TestCaseWithFactory):
         self.factory.makeBugAttachment(self.bug)
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         url = '/bugs/%d/attachments?ws.size=75' % self.bug.id
@@ -245,7 +245,7 @@ class TestBugScaling(TestCaseWithFactory):
         self.factory.makeBugComment(bug)
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         url = '/bugs/%d/messages?ws.size=75' % bug.id

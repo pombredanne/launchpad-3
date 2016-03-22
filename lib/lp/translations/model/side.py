@@ -9,7 +9,7 @@ __all__ = [
     'TranslationSideTraitsSet',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.side import (
@@ -19,9 +19,9 @@ from lp.translations.interfaces.side import (
     )
 
 
+@implementer(ITranslationSideTraits)
 class TranslationSideTraits:
     """See `ITranslationSideTraits`."""
-    implements(ITranslationSideTraits)
 
     def __init__(self, side, flag_name, displayname):
         self.side = side
@@ -44,9 +44,9 @@ class TranslationSideTraits:
         setattr(naked_tm, self.flag_name, value)
 
 
+@implementer(ITranslationSideTraitsSet)
 class TranslationSideTraitsSet:
     """See `ITranslationSideTraitsSet`."""
-    implements(ITranslationSideTraitsSet)
 
     def __init__(self):
         upstream = TranslationSideTraits(

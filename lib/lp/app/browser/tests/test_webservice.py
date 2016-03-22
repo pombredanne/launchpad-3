@@ -153,6 +153,12 @@ class TestMissingQuestions(BaseMissingObjectWebService, TestCaseWithFactory):
     object_type = 'questions'
 
 
+class TestMissingSnaps(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice snaps requests."""
+
+    object_type = '+snaps'
+
+
 class TestMissingTemporaryBlobs(
     BaseMissingObjectWebService, TestCaseWithFactory):
     """Test NotFound for webservice temporary_blobs requests."""

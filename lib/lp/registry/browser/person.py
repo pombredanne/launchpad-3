@@ -68,7 +68,7 @@ from textwrap import dedent
 import urllib
 
 from lazr.config import as_timedelta
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
 from lazr.restful.utils import smartquote
@@ -77,7 +77,7 @@ import pytz
 from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     queryMultiAdapter,
     )
@@ -90,7 +90,7 @@ from zope.formlib.widgets import (
     )
 from zope.interface import (
     classImplements,
-    implements,
+    implementer,
     Interface,
     )
 from zope.interface.exceptions import Invalid
@@ -205,10 +205,15 @@ from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
+    GPG_DATABASE_READONLY_FEATURE_FLAG,
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyNotFoundError,
+    GPGReadOnly,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -274,6 +279,8 @@ from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.browser.hassnaps import HasSnapsMenuMixin
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
@@ -284,8 +291,9 @@ from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class PersonBreadcrumb(DisplaynameBreadcrumb):
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
+    pass
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -364,6 +372,17 @@ class BranchTraversalMixin:
             return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
+    @stepthrough('+git')
+    def traverse_personal_gitrepo(self, name):
+        # XXX wgrant 2015-06-12: traverse() handles traversal for
+        # non-personal repos, and works for personal repos except that
+        # the +git view is matched first. A stepto would clobber the
+        # view, but stepthroughs match before views and only for
+        # multi-segment paths, so this is a workable hack.
+        _, _, repository, _ = getUtility(IGitTraverser).traverse(
+            iter(['+git', name]), owner=self.context)
+        return repository
+
     def traverse(self, pillar_name):
         try:
             # Look for a Git repository.  We must be careful not to consume
@@ -375,11 +394,15 @@ class BranchTraversalMixin:
             num_segments = len(segments)
             iter_segments = iter(segments)
             traverser = getUtility(IGitTraverser)
-            _, target, repository = traverser.traverse(
+            _, target, repository, trailing = traverser.traverse(
                 iter_segments, owner=self.context)
             if repository is None:
                 raise NotFoundError
-            for i in range(num_segments - len(list(iter_segments))):
+            # Subtract one because the pillar has already been traversed.
+            num_traversed = num_segments - len(list(iter_segments)) - 1
+            if trailing:
+                num_traversed -= 1
+            for _ in range(num_traversed):
                 self.request.stepstogo.consume()
 
             if IProduct.providedBy(target):
@@ -580,11 +603,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         """Traverse to this person's recipes."""
         return self.context.getRecipe(name)
 
-    @stepthrough('+merge-queues')
-    def traverse_merge_queue(self, name):
-        """Traverse to this person's merge queues."""
-        return self.context.getMergeQueue(name)
-
     @stepthrough('+livefs')
     def traverse_livefs(self, distribution_name):
         """Traverse to this person's live filesystem images."""
@@ -607,6 +625,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             return self.redirectSubTree(canonical_url(livefs))
 
         return livefs
+
+    @stepthrough('+snap')
+    def traverse_snap(self, name):
+        """Traverse to this person's snap packages."""
+        return getUtility(ISnapSet).getByName(self.context, name)
 
 
 class PersonSetNavigation(Navigation):
@@ -739,6 +762,12 @@ class PersonMenuMixin(CommonMenuLinks):
         text = 'Change details'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def password(self):
+        target = config.launchpad.openid_provider_root
+        text = 'Change password'
+        return Link(target, text, icon='edit')
+
     @enabled_with_permission('launchpad.Moderate')
     def administer(self):
         target = '+review'
@@ -753,7 +782,7 @@ class PersonMenuMixin(CommonMenuLinks):
 
 
 class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
-                         HasRecipesMenuMixin):
+                         HasRecipesMenuMixin, HasSnapsMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -784,6 +813,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'oauth_tokens',
         'related_software_summary',
         'view_recipes',
+        'view_snaps',
         'subscriptions',
         'structural_subscriptions',
         ]
@@ -818,7 +848,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'Change e-mail settings'
+        text = 'Change email settings'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -949,7 +979,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     def email_settings(self):
         target = '+editemails'
-        text = 'E-mail Settings'
+        text = 'Email Settings'
         return Link(target, text)
 
     @enabled_with_permission('launchpad.Special')
@@ -971,10 +1001,9 @@ class PersonSetActionNavigationMenu(RegistryCollectionActionMenuBase):
              'request_merge', 'admin_merge_people', 'admin_merge_teams']
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class PeopleSearchView(LaunchpadView):
     """Search for people and teams on the /people page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'People and teams in Launchpad'
 
@@ -1116,7 +1145,7 @@ class BeginTeamClaimView(LaunchpadFormView):
 
 
 class RedirectToEditLanguagesView(LaunchpadView):
-    """Redirect the logged in user to his +editlanguages page.
+    """Redirect the logged in user to their +editlanguages page.
 
     This view should always be registered with a launchpad.AnyPerson
     permission, to make sure the user is logged in. It exists so that
@@ -1129,6 +1158,7 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
+@delegate_to(IPerson, context='person')
 class PersonWithKeysAndPreferredEmail:
     """A decorated person that includes GPG keys and preferred emails."""
 
@@ -1138,7 +1168,6 @@ class PersonWithKeysAndPreferredEmail:
     gpgkeys = None
     sshkeys = None
     preferredemail = None
-    delegates(IPerson, 'person')
 
     def __init__(self, person):
         self.person = person
@@ -1217,7 +1246,7 @@ class PersonAdministerView(PersonRenameFormMixin):
     schema = IPerson
     label = "Review person"
     field_names = [
-        'name', 'displayname',
+        'name', 'display_name',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
@@ -1890,7 +1919,7 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
-        A person is said to be a team participant when he's a member
+        A person is said to be a team participant when they're a member
         of that team, either directly or indirectly via another team
         membership.
         """
@@ -2042,8 +2071,13 @@ class PersonParticipationView(LaunchpadView):
             # When showing the path, it's unnecessary to show the team in
             # question at the beginning of the path, or the user at the
             # end of the path.
-            via = ", ".join(
-                [via_team.displayname for via_team in via[1:-1]])
+            via_names = []
+            for via_team in via[1:-1]:
+                if check_permission('launchpad.LimitedView', via_team):
+                    via_names.append(via_team.displayname)
+                else:
+                    via_names.append('[private team]')
+            via = ", ".join(via_names)
 
         if membership is None:
             # Membership is via an indirect team so sane defaults exist.
@@ -2394,9 +2428,8 @@ class PersonEditJabberIDsView(LaunchpadFormView):
             jabberset.new(self.context, jabberid)
 
 
+@implementer(IPersonEditMenu)
 class PersonEditSSHKeysView(LaunchpadView):
-
-    implements(IPersonEditMenu)
 
     info_message = None
     error_message = None
@@ -2463,6 +2496,7 @@ class PersonEditSSHKeysView(LaunchpadView):
         self.info_message = structured('Key "%s" removed', comment)
 
 
+@implementer(IPersonEditMenu)
 class PersonGPGView(LaunchpadView):
     """View for the GPG-related actions for a Person
 
@@ -2470,8 +2504,6 @@ class PersonGPGView(LaunchpadView):
     it. Also supports removing the token generated for validation (in
     the case you want to give up on importing the key).
     """
-
-    implements(IPersonEditMenu)
 
     key = None
     fingerprint = None
@@ -2504,14 +2536,16 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
+        if self.request.method != "POST":
+            return ''
+        if getFeatureFlag(GPG_DATABASE_READONLY_FEATURE_FLAG):
+            raise GPGReadOnly()
         permitted_actions = [
             'claim_gpg',
             'deactivate_gpg',
             'remove_gpgtoken',
             'reactivate_gpg',
             ]
-        if self.request.method != "POST":
-            return ''
         action = self.request.form.get('action')
         if action not in permitted_actions:
             raise UnexpectedFormData("Action not permitted: %s" % action)
@@ -2533,6 +2567,8 @@ class PersonGPGView(LaunchpadView):
             self.key_already_imported = True
             return
 
+        # Launchpad talks to the keyserver directly to check if the key has been
+        # uploaded to the key server.
         try:
             key = gpghandler.retrieveKey(self.fingerprint)
         except GPGKeyNotFoundError:
@@ -2545,29 +2581,28 @@ class PersonGPGView(LaunchpadView):
             self.key_ok = True
 
     def deactivate_gpg(self):
-        key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
+        key_fingerprints = self.request.form.get('DEACTIVATE_GPGKEY')
 
-        if key_ids is None:
+        if key_fingerprints is None:
             self.error_message = structured(
                 'No key(s) selected for deactivation.')
             return
 
         # verify if we have multiple entries to deactive
-        if not isinstance(key_ids, list):
-            key_ids = [key_ids]
+        if not isinstance(key_fingerprints, list):
+            key_fingerprints = [key_fingerprints]
 
         gpgkeyset = getUtility(IGPGKeySet)
-
         deactivated_keys = []
-        for key_id in key_ids:
-            gpgkey = gpgkeyset.get(key_id)
+        for key_fingerprint in key_fingerprints:
+            gpgkey = gpgkeyset.getByFingerprint(key_fingerprint)
             if gpgkey is None:
                 continue
             if gpgkey.owner != self.user:
                 self.error_message = structured(
                     "Cannot deactivate someone else's key")
                 return
-            gpgkey.active = False
+            gpgkeyset.deactivate(gpgkey)
             deactivated_keys.append(gpgkey.displayname)
 
         flush_database_updates()
@@ -2599,9 +2634,9 @@ class PersonGPGView(LaunchpadView):
             ", ".join(cancelled_fingerprints))
 
     def reactivate_gpg(self):
-        key_ids = self.request.form.get('REACTIVATE_GPGKEY')
+        key_fingerprints = self.request.form.get('REACTIVATE_GPGKEY')
 
-        if key_ids is None:
+        if key_fingerprints is None:
             self.error_message = structured(
                 'No key(s) selected for reactivation.')
             return
@@ -2609,14 +2644,14 @@ class PersonGPGView(LaunchpadView):
         found = []
         notfound = []
         # Verify if we have multiple entries to activate.
-        if not isinstance(key_ids, list):
-            key_ids = [key_ids]
+        if not isinstance(key_fingerprints, list):
+            key_fingerprints = [key_fingerprints]
 
         gpghandler = getUtility(IGPGHandler)
         keyset = getUtility(IGPGKeySet)
 
-        for key_id in key_ids:
-            gpgkey = keyset.get(key_id)
+        for key_fingerprint in key_fingerprints:
+            gpgkey = keyset.getByFingerprint(key_fingerprint)
             try:
                 key = gpghandler.retrieveKey(gpgkey.fingerprint)
             except GPGKeyNotFoundError:
@@ -2683,20 +2718,20 @@ class BasePersonEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
+@implementer(IPersonEditMenu)
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot', 'description',
+    field_names = ['display_name', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
-                   'selfgenerated_bugnotifications']
+                   'selfgenerated_bugnotifications',
+                   'expanded_notification_footers']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-
-    implements(IPersonEditMenu)
 
     label = 'Change your personal details'
     page_title = label
 
-    # Will contain an hidden input when the user is renaming his
+    # Will contain an hidden input when the user is renaming their
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
 
@@ -2750,6 +2785,7 @@ class PersonBrandingView(BrandingChangeView):
     schema = IPerson
 
 
+@implementer(IPersonEditMenu)
 class PersonEditEmailsView(LaunchpadFormView):
     """A view for editing a person's email settings.
 
@@ -2758,8 +2794,6 @@ class PersonEditEmailsView(LaunchpadFormView):
     emails.
     """
 
-    implements(IPersonEditMenu)
-
     schema = IEmailAddress
 
     custom_widget('VALIDATED_SELECTED', LaunchpadRadioWidget,
@@ -2767,7 +2801,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
 
-    label = 'Change your e-mail settings'
+    label = 'Change your email settings'
 
     def initialize(self):
         require_fresh_login(self.request, self.context, '+editemails')
@@ -2981,7 +3015,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
-            "An e-mail message was sent to '%s' with "
+            "An email message was sent to '%s' with "
             "instructions on how to confirm that "
             "it belongs to you." % email)
         self.next_url = self.action_url
@@ -3085,10 +3119,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.next_url = self.action_url
 
 
+@implementer(IPersonEditMenu)
 class PersonEditMailingListsView(LaunchpadFormView):
     """A view for editing a person's mailing list subscriptions."""
-
-    implements(IPersonEditMenu)
 
     schema = IEmailAddress
 
@@ -3141,7 +3174,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.
 
-        This is 'Preferred address' if the user is subscribed using her
+        This is 'Preferred address' if the user is subscribed using their
         preferred address and 'Don't subscribe' if the user is not
         subscribed at all. Otherwise it's the EmailAddress under
         which the user is subscribed to this mailing list.
@@ -3254,7 +3287,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
                 else:
                     if new_value == "Preferred address":
                         # If the user is subscribed but not under any
-                        # particular address, her current preferred
+                        # particular address, their current preferred
                         # address will always be used.
                         new_value = None
                     subscription = mailing_list.getSubscription(self.context)
@@ -3549,23 +3582,22 @@ class BaseWithStats:
         self.needs_building = needs_building
 
 
+@implementer(ISourcePackageRelease)
+@delegate_to(ISourcePackageRelease)
 class SourcePackageReleaseWithStats(BaseWithStats):
     """An ISourcePackageRelease, with extra stats added."""
-
-    implements(ISourcePackageRelease)
-    delegates(ISourcePackageRelease)
+    pass
 
 
+@implementer(ISourcePackagePublishingHistory)
+@delegate_to(ISourcePackagePublishingHistory)
 class SourcePackagePublishingHistoryWithStats(BaseWithStats):
     """An ISourcePackagePublishingHistory, with extra stats added."""
 
-    implements(ISourcePackagePublishingHistory)
-    delegates(ISourcePackagePublishingHistory)
 
-
+@implementer(IPersonRelatedSoftwareMenu)
 class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-packages."""
-    implements(IPersonRelatedSoftwareMenu)
     _max_results_key = 'summary_list_size'
 
     @property
@@ -4027,9 +4059,9 @@ class IEmailToPerson(Interface):
             raise Invalid('You must provide a subject and a message.')
 
 
+@implementer(INotificationRecipientSet)
 class ContactViaWebNotificationRecipientSet:
     """A set of notification recipients and rationales from ContactViaWeb."""
-    implements(INotificationRecipientSet)
 
     # Primary reason enumerations.
     TO_USER = object()
@@ -4040,8 +4072,8 @@ class ContactViaWebNotificationRecipientSet:
         """Initialize the state based on the context and the user.
 
         The recipients are determined by the relationship between the user
-        and the context that he is contacting: another user, himself, his
-        team, another team.
+        and the context that they are contacting: another user, themselves,
+        their team, another team.
 
         :param user: The person doing the contacting.
         :type user: an `IPerson`.
@@ -4305,7 +4337,7 @@ class EmailToPersonView(LaunchpadFormView):
             return
         try:
             send_direct_contact_email(
-                sender_email, self.recipients, subject, message)
+                sender_email, self.recipients, self.context, subject, message)
         except QuotaReachedError as error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
@@ -4383,16 +4415,16 @@ class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
     usedfor = IPersonIndexMenu
     facet = 'overview'
     title = 'Change person'
-    links = ('edit', 'administer', 'administer_account', 'branding')
+    links = ('edit', 'administer', 'administer_account', 'branding',
+             'password')
 
 
 classImplements(PersonIndexView, IPersonIndexMenu)
 
 
+@adapter(IPerson, IWebServiceClientRequest)
+@implementer(Interface)
 class PersonXHTMLRepresentation:
-    adapts(IPerson, IWebServiceClientRequest)
-    implements(Interface)
-
     def __init__(self, person, request):
         self.person = person
         self.request = request

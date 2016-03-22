@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test debian-installer custom uploads.
@@ -34,8 +34,8 @@ class TestDebianInstaller(TestCase):
         self.temp_dir = self.makeTemporaryDirectory()
         self.pubconf = FakeConfig(self.temp_dir)
         self.suite = "distroseries"
-        # CustomUpload.installFiles requires a umask of 022.
-        old_umask = os.umask(022)
+        # CustomUpload.installFiles requires a umask of 0o022.
+        old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
 
     def openArchive(self):
@@ -82,10 +82,10 @@ class TestDebianInstaller(TestCase):
         self.assertRaises(CustomUploadAlreadyExists, self.process)
 
     def test_bad_umask(self):
-        # The umask must be 022 to avoid incorrect permissions.
+        # The umask must be 0o022 to avoid incorrect permissions.
         self.openArchive()
         self.addFile("dir/file", "foo")
-        os.umask(002)  # cleanup already handled by setUp
+        os.umask(0o002)  # cleanup already handled by setUp
         self.assertRaises(CustomUploadBadUmask, self.process)
 
     def test_current_symlink(self):
@@ -133,18 +133,18 @@ class TestDebianInstaller(TestCase):
                 self.getInstallerPath(link_to_dir_path))))
 
     def test_top_level_permissions(self):
-        # Top-level directories are set to mode 0755 (see bug 107068).
+        # Top-level directories are set to mode 0o755 (see bug 107068).
         self.openArchive()
         self.addFile("hello", "world")
         self.process()
         installer_path = self.getInstallerPath()
-        self.assertEqual(0755, os.stat(installer_path).st_mode & 0777)
+        self.assertEqual(0o755, os.stat(installer_path).st_mode & 0o777)
         self.assertEqual(
-            0755,
-            os.stat(os.path.join(installer_path, os.pardir)).st_mode & 0777)
+            0o755,
+            os.stat(os.path.join(installer_path, os.pardir)).st_mode & 0o777)
 
     def test_extracted_permissions(self):
-        # Extracted files and directories are set to 0644/0755.
+        # Extracted files and directories are set to 0o644/0o755.
         self.openArchive()
         directory = ("images/netboot/ubuntu-installer/i386/"
                      "pxelinux.cfg.serial-9600")
@@ -152,9 +152,9 @@ class TestDebianInstaller(TestCase):
         self.addFile(filename, "hey")
         self.process()
         self.assertEqual(
-            0644, os.stat(self.getInstallerPath(filename)).st_mode & 0777)
+            0o644, os.stat(self.getInstallerPath(filename)).st_mode & 0o777)
         self.assertEqual(
-            0755, os.stat(self.getInstallerPath(directory)).st_mode & 0777)
+            0o755, os.stat(self.getInstallerPath(directory)).st_mode & 0o777)
 
     def test_getSeriesKey_extracts_architecture(self):
         # getSeriesKey extracts the architecture from an upload's filename.

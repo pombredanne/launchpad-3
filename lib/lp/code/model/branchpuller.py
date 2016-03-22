@@ -9,7 +9,7 @@ __all__ = []
 
 from datetime import timedelta
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchpuller import IBranchPuller
@@ -18,10 +18,9 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 
 
+@implementer(IBranchPuller)
 class BranchPuller:
     """See `IBranchPuller`."""
-
-    implements(IBranchPuller)
 
     MAXIMUM_MIRROR_FAILURES = 5
     MIRROR_TIME_INCREMENT = timedelta(hours=6)

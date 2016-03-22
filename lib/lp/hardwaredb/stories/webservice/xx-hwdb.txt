@@ -179,7 +179,7 @@ call returns a reference to a HWDeviceClass record.
     >>> pprint_entry(class_info)
     main_class: 12
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/...'
     sub_class: 3
 
 A second call of this method returns the same record.
@@ -188,7 +188,7 @@ A second call of this method returns the same record.
     ...     '/+hwdb/+device/2', 'getOrCreateDeviceClass', {}, main_class=12,
     ...     sub_class=3).jsonBody()
     >>> print class_info['self_link']
-    http://api.launchpad.dev/beta/+hwdb/+deviceclass/1
+    http://api.launchpad.dev/beta/+hwdb/+deviceclass/...
 
 The property device.classes returns the collection of all classes
 assigned to the device.
@@ -198,7 +198,7 @@ assigned to the device.
     ...     pprint_entry(entry)
     main_class: 12
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/...'
     sub_class: 3
 
 We can delete existing class data by calling deviceclass.delete().
@@ -247,66 +247,66 @@ name, package_name, variant and license.
     >>> drivers = webservice.get('/+hwdb?ws.op=drivers&ws.size=15').jsonBody()
     >>> for entry in drivers['entries']:
     ...     pprint_entry(entry)
-    id: 1
+    id: ...
     license: None
     name: u'ehci_hcd'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/1'
-    id: 2
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'usb'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
-    id: 3
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'usb-storage'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/3'
-    id: 4
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'sd'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/4'
-    id: 5
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'hub'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/5'
-    id: 6
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'ahci'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/6'
-    id: 7
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'sr'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/7'
-    id: 8
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'nv'
     package_name: u'xorg'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/8'
-    id: 9
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'usb'
     package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
-    id: 10
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'foo'
     package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/10'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
 
 If we specify a package name, only drivers from this package are
 returned.
@@ -315,12 +315,12 @@ returned.
     ...     '/+hwdb?ws.op=drivers&package_name=xorg').jsonBody()
     >>> [nv_xorg_driver] = drivers['entries']
     >>> pprint_entry(nv_xorg_driver)
-    id: 8
+    id: ...
     license: None
     name: u'nv'
     package_name: u'xorg'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/8'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
 
 If we specify an empty package name, those drivers are returned where
 a package_name is not recorded.
@@ -329,18 +329,18 @@ a package_name is not recorded.
     ...     '/+hwdb?ws.op=drivers&package_name=').jsonBody()
     >>> for entry in drivers['entries']:
     ...     pprint_entry(entry)
-    id: 9
+    id: ...
     license: None
     name: u'usb'
     package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
-    id: 10
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'foo'
     package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/10'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
 
 If the parameter name is specified but no package_name, all drivers with
 the given name are returned.
@@ -349,18 +349,18 @@ the given name are returned.
     ...     '/+hwdb?ws.op=drivers&name=usb').jsonBody()
     >>> for entry in drivers['entries']:
     ...     pprint_entry(entry)
-    id: 2
+    id: ...
     license: None
     name: u'usb'
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
-    id: 9
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
+    id: ...
     license: None
     name: u'usb'
     package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
-    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/...'
 
 If package_name and name are specified, those records are returned that
 match both values.

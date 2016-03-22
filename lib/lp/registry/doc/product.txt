@@ -183,8 +183,8 @@ IProductSet will also tell us which products can be translated:
 
     >>> for product in productset.getTranslatables():
     ...    print product.name
-    alsa-utils
     evolution
+    alsa-utils
 
 Only active products are listed as translatables.
 
@@ -305,7 +305,7 @@ We can create new products with the createProduct() method:
     >>> product = productset.createProduct(
     ...     owner=owner,
     ...     name='test-product',
-    ...     displayname='Test Product',
+    ...     display_name='Test Product',
     ...     title='Test Product',
     ...     summary='A test product',
     ...     description='A description of the test product',
@@ -519,6 +519,26 @@ Only active products are returned.
     gnome-terminal
     iso-codes
     landscape
+
+
+Products with Git repositories
+------------------------------
+
+Products are considered to officially support Launchpad as a location for
+their code if they have a default Git repository.
+
+    >>> from lp.code.interfaces.gitrepository import IGitRepositorySet
+    >>> firefox.development_focus.branch = None
+    >>> print firefox.official_codehosting
+    False
+    >>> print firefox.codehosting_usage.name
+    UNKNOWN
+    >>> getUtility(IGitRepositorySet).setDefaultRepository(
+    ...     firefox, factory.makeGitRepository(target=firefox))
+    >>> print firefox.official_codehosting
+    True
+    >>> print firefox.codehosting_usage.name
+    LAUNCHPAD
 
 
 Primary translatable

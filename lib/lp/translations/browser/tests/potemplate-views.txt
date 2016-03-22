@@ -64,7 +64,9 @@ As we can see, we have now three entries in our queue.
 Get it and check that some attributes are set as they should. For instance,
 the entry should be linked with the IPOTemplate we are using.
 
-    >>> entry = translationimportqueue.get(3)
+    >>> from lp.translations.enums import RosettaImportStatus
+    >>> entry = translationimportqueue.getAllEntries(
+    ...     import_status=RosettaImportStatus.NEEDS_REVIEW)[-1]
     >>> entry.potemplate == potemplate
     True
 
@@ -93,7 +95,8 @@ As we can see, we have now another entry in our queue.
 Get it and check that some attributes are set as they should. For instance,
 the entry should be linked with the IPOTemplate we are using.
 
-    >>> entry = translationimportqueue.get(4)
+    >>> entry = translationimportqueue.getAllEntries(
+    ...     import_status=RosettaImportStatus.NEEDS_REVIEW)[-1]
     >>> entry.potemplate == potemplate
     True
 

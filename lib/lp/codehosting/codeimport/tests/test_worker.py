@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -1046,7 +1046,7 @@ class PullingImportWorkerTests:
         worker = self.makeImportWorker(
             self.factory.makeCodeImportSourceDetails(
                 rcstype=self.rcstype, url="file:///local/path"),
-            opener_policy=CodeImportBranchOpenPolicy())
+            opener_policy=CodeImportBranchOpenPolicy("bzr"))
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
 
@@ -1282,7 +1282,7 @@ class CodeImportBranchOpenPolicyTests(TestCase):
 
     def setUp(self):
         super(CodeImportBranchOpenPolicyTests, self).setUp()
-        self.policy = CodeImportBranchOpenPolicy()
+        self.policy = CodeImportBranchOpenPolicy("bzr")
 
     def test_follows_references(self):
         self.assertEquals(True, self.policy.shouldFollowReferences())
@@ -1303,8 +1303,16 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertGoodUrl("http://svn.example/branches/trunk")
         self.assertGoodUrl("http://user:password@svn.example/branches/trunk")
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
-        self.assertGoodUrl("git://git.example.com/repo")
         self.assertGoodUrl("bzr://bzr.example.com/somebzrurl/")
+        self.assertBadUrl("bzr://bazaar.launchpad.dev/example")
+
+    def test_checkOneURL_git(self):
+        self.policy = CodeImportBranchOpenPolicy("git")
+        self.assertBadUrl("/etc/passwd")
+        self.assertBadUrl("file:///etc/passwd")
+        self.assertBadUrl("unknown-scheme://devpad/")
+        self.assertGoodUrl("git://git.example.com/repo")
+        self.assertGoodUrl("git://git.launchpad.dev/example")
 
 
 class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):

@@ -73,23 +73,24 @@ portlet.
      Change details
      (http://launchpad.dev/fooix/+edit)
     >>> print_involvement_portlet(owner_browser)
-    Configure bug tracker
+    Code
+    http://launchpad.dev/fooix/+configure-code
+    Bugs
     http://launchpad.dev/fooix/+configure-bugtracker
-    Configure support tracker
-    http://launchpad.dev/fooix/+configure-answers
-    Configure translations
+    Translations
     http://launchpad.dev/fooix/+configure-translations
-    Configure project branch
-    http://launchpad.dev/fooix/trunk/+setbranch
+    Answers
+    http://launchpad.dev/fooix/+configure-answers
 
 The owner can specify the development focus branch from the overview page.
 
-    >>> owner_browser.getLink(url='+setbranch').click()
+    >>> owner_browser.getLink(url='+configure-code').click()
+    >>> owner_browser.getControl('Bazaar', index=0).click()
     >>> owner_browser.getControl(name='field.branch_location').value = (
     ...     '~eric/fooix/trunk')
     >>> owner_browser.getControl('Update').click()
     >>> print_feedback_messages(owner_browser.contents)
-    Series code location updated.
+    Project settings updated.
 
 The owner is taken back to the project page.
 

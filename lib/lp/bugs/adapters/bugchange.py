@@ -46,7 +46,7 @@ __all__ = [
 
 from textwrap import dedent
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.bugs.enums import BugNotificationLevel
@@ -138,10 +138,9 @@ def get_bug_changes(bug_delta):
                         new_value=field_delta['new'])
 
 
+@implementer(IBugChange)
 class BugChangeBase:
     """An abstract base class for Bug[Task]Changes."""
-
-    implements(IBugChange)
 
     # Most changes will be at METADATA level.
     change_level = BugNotificationLevel.METADATA

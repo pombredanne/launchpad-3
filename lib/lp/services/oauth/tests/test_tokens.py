@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """OAuth is a mechanism for allowing a user's desktop or a third-party
@@ -18,7 +18,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.features.testing import FeatureFixture
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,
@@ -68,7 +67,7 @@ class TestConsumerSet(TestOAuth):
 
     def test_new(self):
         consumer = self.consumers.new(
-            self.factory.getUniqueString("oauthconsumerkey"))
+            self.factory.getUniqueUnicode(u"oauthconsumerkey"))
         verifyObject(IOAuthConsumer, consumer)
 
     def test_new_wont_create_duplicate_consumer(self):
@@ -81,8 +80,8 @@ class TestConsumerSet(TestOAuth):
 
     def test_getByKey_returns_none_for_nonexistent_consumer(self):
         # There is no consumer called "oauthconsumerkey-nonexistent".
-        nonexistent_key = self.factory.getUniqueString(
-            "oauthconsumerkey-nonexistent")
+        nonexistent_key = self.factory.getUniqueUnicode(
+            u"oauthconsumerkey-nonexistent")
         self.assertEqual(self.consumers.getByKey(nonexistent_key), None)
 
 
@@ -99,7 +98,7 @@ class TestRequestTokenSet(TestOAuth):
         self.assertEquals(token, self.tokens.getByKey(token.key))
 
     def test_getByKey_returns_none_for_unused_key(self):
-        self.assertEquals(None, self.tokens.getByKey("no-such-token"))
+        self.assertEquals(None, self.tokens.getByKey(u"no-such-token"))
 
 
 class TestRequestTokens(TestOAuth):
@@ -148,7 +147,7 @@ class TestRequestTokens(TestOAuth):
 
     def test_getRequestToken_for_nonexistent_key_returns_none(self):
         self.assertEquals(
-            None, self.consumer.getRequestToken("no-such-token"))
+            None, self.consumer.getRequestToken(u"no-such-token"))
 
     def test_isSecretValid(self):
         token, secret = self.consumer.newRequestToken()
@@ -363,7 +362,7 @@ class TestAccessTokens(TestOAuth):
         request_token.review(self.person, OAuthPermission.WRITE_PRIVATE)
         token, secret = request_token.createAccessToken()
         self.assertTrue(token.isSecretValid(secret))
-        self.assertFalse(token.isSecretValid(secret + 'a'))
+        self.assertFalse(token.isSecretValid(secret + u'a'))
 
     def test_get_access_tokens_for_person(self):
         """It's possible to get a person's access tokens."""

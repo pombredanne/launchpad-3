@@ -194,7 +194,7 @@ The page has an appropriate title and main heading.
     iceweasel package : Ubuntu
 
     >>> print_location(user_browser.contents)
-    Hierarchy: Ubuntu Linux > iceweasel package
+    Hierarchy: Ubuntu > iceweasel package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/iceweasel
@@ -264,7 +264,6 @@ There's also a section on the page that gives some package information:
     Package information
     Maintainer: Foo Bar
     Urgency:* Low Urgency
-    Component:* main
     Architectures:* any
     Latest upload: 1.0
     *actual publishing details may vary in this distribution, these are just
@@ -391,7 +390,7 @@ from the index page.
     Change log : foobar package : Ubuntu
 
     >>> print_location(browser.contents)
-    Hierarchy: Ubuntu Linux > foobar package
+    Hierarchy: Ubuntu > foobar package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
     * Code - http://code.launchpad.dev/ubuntu/+source/foobar
@@ -582,7 +581,7 @@ source package hierarchy.
     Publishing history : alsa-utils package : Ubuntu
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > alsa-utils package
+    Hierarchy: Ubuntu > alsa-utils package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils

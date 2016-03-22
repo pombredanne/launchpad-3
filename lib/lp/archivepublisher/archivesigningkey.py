@@ -14,7 +14,7 @@ import os
 
 import gpgme
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
@@ -27,12 +27,12 @@ from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
     IGPGHandler,
     )
+from lp.services.propertycache import get_property_cache
 
 
+@implementer(IArchiveSigningKey)
 class ArchiveSigningKey:
     """`IArchive` adapter for manipulating its GPG key."""
-
-    implements(IArchiveSigningKey)
 
     def __init__(self, archive):
         self.archive = archive
@@ -71,7 +71,10 @@ class ArchiveSigningKey:
         if self.archive != default_ppa:
             if default_ppa.signing_key is None:
                 IArchiveSigningKey(default_ppa).generateSigningKey()
-            self.archive.signing_key = default_ppa.signing_key
+            key = default_ppa.signing_key
+            self.archive.signing_key_owner = key.owner
+            self.archive.signing_key_fingerprint = key.fingerprint
+            del get_property_cache(self.archive).signing_key
             return
 
         key_displayname = (
@@ -104,11 +107,12 @@ class ArchiveSigningKey:
         pub_key = gpghandler.retrieveKey(secret_key.fingerprint)
         gpghandler.uploadPublicKey(pub_key.fingerprint)
 
-        algorithm = GPGKeyAlgorithm.items[pub_key.algorithm]
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
-        self.archive.signing_key = getUtility(IGPGKeySet).new(
-            key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
-            algorithm, active=True, can_encrypt=pub_key.can_encrypt)
+        key, _ = getUtility(IGPGKeySet).activate(
+            key_owner, pub_key, pub_key.can_encrypt)
+        self.archive.signing_key_owner = key.owner
+        self.archive.signing_key_fingerprint = key.fingerprint
+        del get_property_cache(self.archive).signing_key
 
     def signRepository(self, suite):
         """See `IArchiveSigningKey`."""
@@ -136,3 +140,12 @@ class ArchiveSigningKey:
             os.path.join(suite_path, 'Release.gpg'), 'w')
         release_signature_file.write(signature)
         release_signature_file.close()
+
+        inline_release = gpghandler.signContent(
+            release_file_content, secret_key.fingerprint,
+            mode=gpgme.SIG_MODE_CLEAR)
+
+        inline_release_file = open(
+            os.path.join(suite_path, 'InRelease'), 'w')
+        inline_release_file.write(inline_release)
+        inline_release_file.close()

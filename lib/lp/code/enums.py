@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/code modules."""
@@ -20,9 +20,9 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'GitObjectType',
     'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
-    'UICreatableBranchType',
     ]
 
 from lazr.enum import (
@@ -110,9 +110,35 @@ class BranchType(DBEnumeratedType):
         """)
 
 
-class UICreatableBranchType(EnumeratedType):
-    """The types of branches that can be created through the web UI."""
-    use_template(BranchType, exclude='IMPORTED')
+class GitObjectType(DBEnumeratedType):
+    """Git Object Type
+
+    Keep these in sync with the concrete GIT_OBJ_* enum values in libgit2.
+    """
+
+    COMMIT = DBItem(1, """
+        Commit
+
+        A commit object.
+        """)
+
+    TREE = DBItem(2, """
+        Tree
+
+        A tree (directory listing) object.
+        """)
+
+    BLOB = DBItem(3, """
+        Blob
+
+        A file revision object.
+        """)
+
+    TAG = DBItem(4, """
+        Tag
+
+        An annotated tag object.
+        """)
 
 
 class BranchLifecycleStatusFilter(EnumeratedType):

@@ -14,7 +14,7 @@ from zope.formlib.widget import (
     SimpleInputWidget,
     )
 from zope.formlib.widgets import FileWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import (
     Bytes,
     Choice,
@@ -43,13 +43,12 @@ class LaunchpadFileWidget(FileWidget):
         return contents
 
 
+@implementer(IAlwaysSubmittedWidget)
 class ImageChangeWidget(SimpleInputWidget):
     """Widget for changing an existing image.
 
     This widget should be used only on edit forms.
     """
-
-    implements(IAlwaysSubmittedWidget)
 
     EDIT_STYLE = 'editview'
     ADD_STYLE = 'addview'
@@ -168,61 +167,3 @@ class ImageChangeWidget(SimpleInputWidget):
             return self._image_file_alias
         elif action == "delete":
             return None
-
-
-class GotchiTiedWithHeadingWidget(ImageChangeWidget):
-    """Widget for adding an image which also returns a copy of the uploaded
-    image.
-
-    If the uploaded image's width is bigger than resized_image_width or its
-    height is bigger than resized_image_height, the copy image will be scaled
-    down, otherwise the copy image will be the same as the original one.
-    """
-
-    resized_image_width = float(64)
-    resized_image_height = float(64)
-
-    def getInputValue(self):
-        retval = ImageChangeWidget.getInputValue(self)
-        if retval is None or retval is KEEP_SAME_IMAGE:
-            # This is just for consistency, so that our callsites can always
-            # unpack the value we return.
-            return (retval, retval)
-
-        file_alias_orig = retval
-        import PIL.Image
-        self._image.seek(0)
-        original_content = StringIO(self._image.read())
-        image = PIL.Image.open(original_content)
-        width, height = image.size
-        if (width <= self.resized_image_width and
-            height <= self.resized_image_height):
-            # No resize needed.
-            content = original_content
-        else:
-            # Get the new (width, height), keeping the original scale.
-            if width > height:
-                new_width = self.resized_image_width
-                new_height = (self.resized_image_height / width) * height
-            else:
-                new_height = self.resized_image_height
-                new_width = (self.resized_image_width / height) * width
-
-            new_image = image.resize(
-                (int(new_width), int(new_height)), PIL.Image.ANTIALIAS)
-            content = StringIO()
-            format = None
-            for key, mime in PIL.Image.MIME.items():
-                if mime == file_alias_orig.mimetype:
-                    format = key
-                    break
-            assert format is not None, (
-                "No format found for mimetype '%s'" % file_alias_orig.mimetype)
-            new_image.save(content, format=format)
-
-        content.seek(0)
-        file_alias_small = getUtility(ILibraryFileAliasSet).create(
-            name=file_alias_orig.filename, size=content.len,
-            file=content, contentType=file_alias_orig.mimetype)
-        return file_alias_orig, file_alias_small
-

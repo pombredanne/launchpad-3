@@ -35,11 +35,16 @@ class LibrarianFeedSwift(LaunchpadCronScript):
         self.parser.add_option(
             "--start-since", action="store", dest='start_since',
             default=None, metavar="INTERVAL",
-            help="Migrate files starting from INTERVAL (PostgreSQL syntax)")
+            help="Migrate files older than INTERVAL (PostgreSQL syntax)")
         self.parser.add_option(
             "-e", "--end", action="store", type=int, default=None,
             dest="end", metavar="CONTENT_ID",
             help="Migrate files up to and including CONTENT_ID")
+        self.parser.add_option(
+            "--end-at", action="store", dest='end_at',
+            default=None, metavar="INTERVAL",
+            help="Don't migrate files older than INTERVAL "
+                 "(PostgreSQL syntax)")
 
     def main(self):
         if self.options.rename and self.options.remove:
@@ -57,6 +62,13 @@ class LibrarianFeedSwift(LaunchpadCronScript):
                 WHERE datecreated < current_timestamp at time zone 'UTC'
                     - CAST(%s AS INTERVAL)
                 """, (unicode(self.options.start_since),)).get_one()[0]
+
+        if self.options.end_at:
+            self.options.end = ISlaveStore(LibraryFileContent).execute("""
+                SELECT MAX(id) FROM LibraryFileContent
+                WHERE datecreated < current_timestamp at time zone 'UTC'
+                    - CAST(%s AS INTERVAL)
+                """, (unicode(self.options.end_at),)).get_one()[0]
 
         if self.options.ids and (self.options.start or self.options.end):
             self.parser.error(

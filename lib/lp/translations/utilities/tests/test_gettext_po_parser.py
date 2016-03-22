@@ -19,6 +19,7 @@ msgstr ""
 "Content-Type: text/plain; charset=ASCII\\n"
 '''
 
+
 class POBasicTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -418,9 +419,9 @@ class POBasicTestCase(unittest.TestCase):
         for n in range(1, foos):
             msgidn = "foo%d" % n
             self.assertEqual(
-                messages[n-1].msgid_singular, msgidn, "incorrect msgid")
+                messages[n - 1].msgid_singular, msgidn, "incorrect msgid")
             self.assertEqual(
-                messages[n-1].translations[
+                messages[n - 1].translations[
                     TranslationConstants.SINGULAR_FORM],
                 "bar", "incorrect msgstr")
 

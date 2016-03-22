@@ -14,7 +14,6 @@ __all__ = [
     'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
-    'ProtocolVersionMismatch',
     ]
 
 from lazr.restful.declarations import (
@@ -59,13 +58,13 @@ from lp.buildmaster.enums import (
     BuilderCleanStatus,
     BuilderResetProtocol,
     )
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
     Title,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildDaemonError(Exception):
@@ -83,10 +82,6 @@ class CannotFetchFile(BuildDaemonError):
         super(CannotFetchFile, self).__init__()
         self.file_url = file_url
         self.error_information = error_information
-
-
-class ProtocolVersionMismatch(BuildDaemonError):
-    """The build slave had a protocol version. This is a serious error."""
 
 
 class CannotResumeHost(BuildDaemonError):

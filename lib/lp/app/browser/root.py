@@ -34,6 +34,7 @@ from lp.app.validators.name import sanitize_name
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import IBugSet
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -112,6 +113,11 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def branch_count(self):
         """The total branch count of public branches in all of Launchpad."""
         return getUtility(IAllBranches).visibleByUser(None).count()
+
+    @property
+    def gitrepository_count(self):
+        """The total Git repository count in all of Launchpad."""
+        return getUtility(IAllGitRepositories).visibleByUser(None).count()
 
     @property
     def bug_count(self):

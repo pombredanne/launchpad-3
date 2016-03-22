@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -85,12 +85,6 @@ flag_info = sorted([
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
-     '',
-     '',
-     ''),
-    ('code.branchmergequeue',
-     'boolean',
-     'Enables merge queue pages and lists them on branch pages.',
      '',
      '',
      ''),
@@ -227,12 +221,12 @@ flag_info = sorted([
      'disabled',
      'PPA Separate Long Descriptions',
      ''),
-    ('code.git.enabled',
+    ('code.git.recipes.enabled',
      'boolean',
-     'If true, support for creating Git repositories is enabled.',
+     'If true, allow creation of new Git-based recipes.',
      'disabled',
-     '',
-     ''),
+     'Git recipes',
+     'https://help.launchpad.net/Packaging/SourceBuilds'),
     ])
 
 # The set of all flag names that are documented.

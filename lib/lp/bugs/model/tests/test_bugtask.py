@@ -118,9 +118,6 @@ from lp.testing.matchers import HasQueryCount
 BugData = namedtuple("BugData", ['owner', 'distro', 'distro_release',
 'source_package', 'bug', 'generic_task', 'series_task', ])
 
-ConjoinedData = namedtuple("ConjoinedData", ['alsa_utils', 'generic_task',
-    'devel_focus_task'])
-
 
 class TestBugTaskAdaptation(TestCase):
     """Verify bugtask adaptation."""
@@ -603,7 +600,7 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
         self.assertEqual(sorted(bug_ids), [1, 4, 5, 6])
         apgs.revoke([(policy, mr_no_privs)])
 
-        # Privacy and Priviledged Users
+        # Privacy and Privileged Users
         # Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
         # when it was marked private:
         login("mark@example.com")
@@ -614,8 +611,8 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
             BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
         # Privacy and Team Awareness
-        # No Privileges Person can't see the private bug, because he's not a
-        # subscriber:
+        # No Privileges Person can't see the private bug, because they're
+        # not a subscriber:
         no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         params = BugTaskSearchParams(
             status=any(BugTaskStatus.NEW, BugTaskStatus.CONFIRMED),
@@ -1043,7 +1040,7 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.series_bugtask.userCanSetAnyAssignee(
                 self.series_driver_member))
         if self.supervisor_member is not None:
-            # But he cannot assign anybody to bug tasks of the main target...
+            # But they cannot assign anybody to bug tasks of the main target...
             self.assertFalse(
                 self.target_bugtask.userCanSetAnyAssignee(
                     self.series_driver_member))
@@ -1211,95 +1208,6 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
             self.firefox_upstream.target.bug_supervisor)
         flush_database_updates()
 
-    def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):
-        """Assert the bugtask is pending a bug watch elsewhere.
-
-        Pending a bugwatch elsewhere means that at least one of the bugtask's
-        related task's target isn't using Malone, and that
-        related_bugtask.bugwatch is None.
-        """
-        non_malone_using_bugtasks = [
-            related_task for related_task in bugtask.related_tasks
-            if not related_task.pillar.official_malone]
-        pending_bugwatch_bugtasks = [
-            related_bugtask for related_bugtask in non_malone_using_bugtasks
-            if related_bugtask.bugwatch is None]
-        self.assert_(
-            len(pending_bugwatch_bugtasks) > 0,
-            'Bugtask %s on %s has no related bug watches elsewhere.' % (
-                bugtask.id, bugtask.target.displayname))
-
-    def assertBugTaskIsResolvedUpstream(self, bugtask):
-        """Make sure at least one of the related upstream tasks is resolved.
-
-        "Resolved", for our purposes, means either that one of the related
-        tasks is an upstream task in FIXCOMMITTED or FIXRELEASED state, or
-        it is a task with a bugwatch, and in FIXCOMMITTED, FIXRELEASED, or
-        INVALID state.
-        """
-        resolved_upstream_states = [
-            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
-        resolved_bugwatch_states = [
-            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED,
-            BugTaskStatus.INVALID]
-
-        # Helper functions for the list comprehension below.
-        def _is_resolved_upstream_task(bugtask):
-            return (
-                bugtask.product is not None and
-                bugtask.status in resolved_upstream_states)
-
-        def _is_resolved_bugwatch_task(bugtask):
-            return (
-                bugtask.bugwatch and bugtask.status in
-                resolved_bugwatch_states)
-
-        resolved_related_tasks = [
-            related_task for related_task in bugtask.related_tasks
-            if (_is_resolved_upstream_task(related_task) or
-                _is_resolved_bugwatch_task(related_task))]
-
-        self.assert_(len(resolved_related_tasks) > 0)
-        self.assert_(
-            len(resolved_related_tasks) > 0,
-            'Bugtask %s on %s has no resolved related tasks.' % (
-                bugtask.id, bugtask.target.displayname))
-
-    def assertBugTaskIsOpenUpstream(self, bugtask):
-        """Make sure at least one of the related upstream tasks is open.
-
-        "Open", for our purposes, means either that one of the related
-        tasks is an upstream task or a task with a bugwatch which has
-        one of the states listed in open_states.
-        """
-        open_states = [
-            BugTaskStatus.NEW,
-            BugTaskStatus.INCOMPLETE,
-            BugTaskStatus.CONFIRMED,
-            BugTaskStatus.INPROGRESS,
-            BugTaskStatus.UNKNOWN]
-
-        # Helper functions for the list comprehension below.
-        def _is_open_upstream_task(bugtask):
-            return (
-                bugtask.product is not None and
-                bugtask.status in open_states)
-
-        def _is_open_bugwatch_task(bugtask):
-            return (
-                bugtask.bugwatch and bugtask.status in
-                open_states)
-
-        open_related_tasks = [
-            related_task for related_task in bugtask.related_tasks
-            if (_is_open_upstream_task(related_task) or
-                _is_open_bugwatch_task(related_task))]
-
-        self.assert_(
-            len(open_related_tasks) > 0,
-            'Bugtask %s on %s has no open related tasks.' % (
-                bugtask.id, bugtask.target.displayname))
-
     def _hasUpstreamTask(self, bug):
         """Does this bug have an upstream task associated with it?
 
@@ -1309,16 +1217,6 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
             if bugtask.product is not None:
                 return True
         return False
-
-    def assertShouldBeShownOnNoUpstreamTaskSearch(self, bugtask):
-        """Should the bugtask be shown in the search no upstream task search?
-
-        Returns True if yes, otherwise False.
-        """
-        self.assert_(
-            not self._hasUpstreamTask(bugtask.bug),
-            'Bugtask %s on %s has upstream tasks.' % (
-                bugtask.id, bugtask.target.displayname))
 
 
 class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
@@ -3221,7 +3119,7 @@ class TestTargetNameCache(TestCase):
                          u'Mozilla Thunderbird')
 
         thunderbird.name = 'thunderbird-ng'
-        thunderbird.displayname = 'Mozilla Thunderbird NG'
+        thunderbird.display_name = 'Mozilla Thunderbird NG'
 
         # XXX Guilherme Salgado 2005-11-07 bug=3989:
         # This flush_database_updates() shouldn't be needed because we
@@ -3299,7 +3197,7 @@ class TestTargetNameCache(TestCase):
         # The updating of targetnamecaches is usually done by the cronjob,
         # however it can also be invoked directly.
         thunderbird.name = 'thunderbird'
-        thunderbird.displayname = 'Mozilla Thunderbird'
+        thunderbird.display_name = 'Mozilla Thunderbird'
         transaction.commit()
 
         self.assertEqual(upstream_task.bugtargetdisplayname,

@@ -8,7 +8,7 @@ __metaclass__ = type
 from StringIO import StringIO
 import urllib2
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.externalbugtracker.base import (
     BugTrackerConnectError,
@@ -29,16 +29,19 @@ from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import ZopelessLayer
 
 
+@implementer(ISupportsBackLinking)
 class BackLinkingExternalBugTracker(ExternalBugTracker):
-    implements(ISupportsBackLinking)
+    pass
 
 
+@implementer(ISupportsCommentImport)
 class CommentImportingExternalBugTracker(ExternalBugTracker):
-    implements(ISupportsCommentImport)
+    pass
 
 
+@implementer(ISupportsCommentPushing)
 class CommentPushingExternalBugTracker(ExternalBugTracker):
-    implements(ISupportsCommentPushing)
+    pass
 
 
 class TestCheckwatchesConfig(TestCase):
@@ -158,8 +161,10 @@ class TestExternalBugTracker(TestCase):
         # When posting, a 404 is converted to a BugTrackerConnectError.
         base_url = "http://example.com/"
         bugtracker = ExternalBugTracker(base_url)
+
         def raise404(request, data, timeout=None):
             raise urllib2.HTTPError('url', 404, 'Not Found', None, None)
+
         with monkey_patch(urllib2, urlopen=raise404):
             self.assertRaises(
                 BugTrackerConnectError,
@@ -170,9 +175,11 @@ class TestExternalBugTracker(TestCase):
         base_host = 'example.com'
         base_url = 'http://%s/' % base_host
         bugtracker = ExternalBugTracker(base_url)
+
         def assert_headers(request, data, timeout=None):
             self.assertContentEqual(
                 [('User-agent', LP_USER_AGENT), ('Host', base_host)],
                 request.header_items())
+
         with monkey_patch(urllib2, urlopen=assert_headers):
             bugtracker._post('some-url', {'post-data': 'here'})

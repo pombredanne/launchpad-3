@@ -58,7 +58,7 @@ convertToQuestion()
 
 Sample Person recognises that this bug is a question while reviewing the
 bugtarget's bugs, and choose to make it into a question. The UI would
-pass Sample Person as the Person changing the status. He may provide a
+pass Sample Person as the Person changing the status. They may provide a
 message about why the report is a question.
 
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -164,7 +164,7 @@ just the question created from the bug.
     >>> bug.title
     u'Print is broken'
 
-    >>> [bug_link.question.title for bug_link in question.bug_links]
+    >>> [bug.title for bug in question.bugs]
     [u'Print is broken']
 
     >>> [question.title for question in bug.questions]

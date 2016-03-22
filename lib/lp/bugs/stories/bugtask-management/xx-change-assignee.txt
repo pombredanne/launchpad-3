@@ -61,10 +61,8 @@ the user will be warned too.
     >>> print extract_text(
     ...     first_tag_by_class(admin_browser.contents, 'warning message'))
     Celso Providelo
-    did not previously have any assigned bugs in
-    Jokosher Audio Editor.
-    If this bug was assigned by mistake,
-    you may change the assignment.
+    did not previously have any assigned bugs in Jokosher.
+    If this bug was assigned by mistake, you may change the assignment.
 
 When assigning a bug to oneself, though, the warning message is suppreseed.
 
@@ -143,7 +141,7 @@ Once no_priv is a member of a team, the option is shown.
     >>> user_browser.getControl("Save Changes", index=0).click()
     >>> print_errors(user_browser.contents)
 
-But if he tries to set other persons or teams, he gets an error message.
+But if they try to set other persons or teams, they get an error message.
 
     >>> user_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
     >>> assignee_control = user_browser.getControl(

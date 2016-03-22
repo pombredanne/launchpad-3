@@ -14,21 +14,24 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
 from lp.code.errors import (
     GitRepositoryCreationException,
-    GitRepositoryCreationForbidden,
     GitRepositoryCreationFault,
+    GitRepositoryCreationForbidden,
     GitRepositoryExists,
+    GitTargetError,
     InvalidNamespace,
     )
-from lp.code.githosting import GitHostingClient
 from lp.code.interfaces.codehosting import LAUNCHPAD_ANONYMOUS
 from lp.code.interfaces.gitapi import IGitAPI
+from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import (
     IGitLookup,
     IGitTraverser,
@@ -49,7 +52,6 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.config import config
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.errorlog import ScriptRequest
@@ -57,26 +59,29 @@ from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
 
 
+@implementer(IGitAPI)
 class GitAPI(LaunchpadXMLRPCView):
     """See `IGitAPI`."""
 
-    implements(IGitAPI)
-
     def __init__(self, *args, **kwargs):
         super(GitAPI, self).__init__(*args, **kwargs)
-        self.hosting_client = GitHostingClient(
-            config.codehosting.internal_git_api_endpoint)
+        self.repository_set = getUtility(IGitRepositorySet)
 
     def _performLookup(self, path):
-        repository = getUtility(IGitLookup).getByPath(path)
+        repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
         try:
             hosting_path = repository.getInternalPath()
         except Unauthorized:
-            raise faults.PermissionDenied()
+            return None
         writable = check_permission("launchpad.Edit", repository)
-        return {"path": hosting_path, "writable": writable}
+        return {
+            "path": hosting_path,
+            "writable": writable,
+            "trailing": extra_path,
+            "private": repository.private,
+            }
 
     def _getGitNamespaceExtras(self, path, requester):
         """Get the namespace, repository name, and callback for the path.
@@ -105,25 +110,26 @@ class GitAPI(LaunchpadXMLRPCView):
         # split_git_unique_name should have left us without a repository name.
         assert repository is None
         if owner is None:
-            repository_owner = requester
+            if not get_git_namespace(target, None).allow_push_to_set_default:
+                raise GitRepositoryCreationForbidden(
+                    "Cannot automatically set the default repository for this "
+                    "target; push to a named repository instead.")
+            repository_owner = target.owner
         else:
             repository_owner = owner
         namespace = get_git_namespace(target, repository_owner)
         if repository_name is None and not namespace.has_defaults:
             raise InvalidNamespace(path)
-        if owner is None and not namespace.allow_push_to_set_default:
-            raise GitRepositoryCreationForbidden(
-                "Cannot automatically set the default repository for this "
-                "target; push to a named repository instead.")
         if repository_name is None:
             def default_func(new_repository):
-                repository_set = getUtility(IGitRepositorySet)
                 if owner is None:
-                    repository_set.setDefaultRepository(
+                    self.repository_set.setDefaultRepository(
                         target, new_repository)
-                else:
-                    repository_set.setDefaultRepositoryForOwner(
-                        owner, target, new_repository)
+                if (owner is not None or
+                    self.repository_set.getDefaultRepositoryForOwner(
+                        repository_owner, target) is None):
+                    self.repository_set.setDefaultRepositoryForOwner(
+                        repository_owner, target, new_repository, requester)
 
             repository_name = namespace.findUnusedName(target.name)
             return namespace, repository_name, default_func
@@ -141,7 +147,7 @@ class GitAPI(LaunchpadXMLRPCView):
         getUtility(IErrorReportingUtility).raising(sys.exc_info(), request)
         raise faults.OopsOccurred("creating a Git repository", request.oopsid)
 
-    def _createRepository(self, requester, path):
+    def _createRepository(self, requester, path, clone_from=None):
         try:
             namespace, repository_name, default_func = (
                 self._getGitNamespaceExtras(path, requester))
@@ -191,9 +197,26 @@ class GitAPI(LaunchpadXMLRPCView):
             Store.of(repository).flush()
             assert repository.id is not None
 
+            # If repository has target_default, clone from default.
+            target_path = None
+            try:
+                default = self.repository_set.getDefaultRepository(
+                    repository.target)
+                if default is not None and default.visibleByUser(requester):
+                    target_path = default.getInternalPath()
+                else:
+                    default = self.repository_set.getDefaultRepositoryForOwner(
+                        repository.owner, repository.target)
+                    if (default is not None and
+                            default.visibleByUser(requester)):
+                        target_path = default.getInternalPath()
+            except GitTargetError:
+                pass  # Ignore Personal repositories.
+
             hosting_path = repository.getInternalPath()
             try:
-                self.hosting_client.create(hosting_path)
+                getUtility(IGitHostingClient).create(
+                    hosting_path, clone_from=target_path)
             except GitRepositoryCreationFault as e:
                 # The hosting service failed.  Log an OOPS for investigation.
                 self._reportError(path, e, hosting_path=hosting_path)
@@ -213,22 +236,39 @@ class GitAPI(LaunchpadXMLRPCView):
                 self._createRepository(requester, path)
                 result = self._performLookup(path)
             if result is None:
-                raise faults.PathTranslationError(path)
+                raise faults.GitRepositoryNotFound(path)
             if permission != "read" and not result["writable"]:
                 raise faults.PermissionDenied()
             return result
-        except faults.PermissionDenied:
-            # Turn "permission denied" for anonymous HTTP requests into
-            # "authorisation required", so that the user-agent has a chance
-            # to try HTTP basic auth.
+        except (faults.PermissionDenied, faults.GitRepositoryNotFound):
+            # Turn lookup errors for anonymous HTTP requests into
+            # "authorisation required", so that the user-agent has a
+            # chance to try HTTP basic auth.
             if can_authenticate and requester is None:
                 raise faults.Unauthorized()
-            raise
+            else:
+                raise
 
     def translatePath(self, path, permission, requester_id, can_authenticate):
         """See `IGitAPI`."""
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
+        if isinstance(path, str):
+            path = path.decode('utf-8')
         return run_with_login(
             requester_id, self._translatePath,
             path.strip("/"), permission, can_authenticate)
+
+    def notify(self, translated_path):
+        """See `IGitAPI`."""
+        repository = getUtility(IGitLookup).getByHostingPath(translated_path)
+        if repository is None:
+            return faults.NotFound(
+                "No repository found for '%s'." % translated_path)
+        getUtility(IGitRefScanJobSource).create(
+            removeSecurityProxy(repository))
+
+    def authenticateWithPassword(self, username, password):
+        """See `IGitAPI`."""
+        # Password authentication isn't supported yet.
+        return faults.Unauthorized()

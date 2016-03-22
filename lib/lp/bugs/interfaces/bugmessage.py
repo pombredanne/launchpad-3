@@ -104,7 +104,7 @@ class IBugMessageAddForm(Interface):
         required=False, default=False)
     attachment_description = Title(title=u'Description', required=False)
     email_me = Bool(
-        title=u"E-mail me about changes to this bug report",
+        title=u"Email me about changes to this bug report",
         required=False, default=False)
     bugwatch_id = Int(
         title=(u"Synchronize this comment with a remote bug "

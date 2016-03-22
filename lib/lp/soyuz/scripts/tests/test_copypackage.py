@@ -1,13 +1,10 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import datetime
-from textwrap import (
-    dedent,
-    fill,
-    )
+from textwrap import dedent
 
 import pytz
 from testtools.content import text_content
@@ -26,6 +23,7 @@ from lp.bugs.interfaces.bug import (
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
@@ -670,16 +668,18 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
             "explicit unembargo option.")
         self.assertCanCopyBinaries(unembargo=True)
 
-    def test_cannot_copy_ddebs_to_primary_archives(self):
-        # The primary archive cannot (yet) cope with DDEBs, see bug
-        # 724237 and anything tagged "ddebs".
+    def test_can_copy_ddebs_to_primary_archives(self):
+        # Copying DDEBs to a primary archive is allowed even if it has
+        # build_debug_symbols disabled.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.archive = self.test_publisher.ubuntutest.main_archive
+        self.assertFalse(self.archive.build_debug_symbols)
         self.series = self.test_publisher.breezy_autotest
-        self.source = self.test_publisher.getPubSource(archive=ppa)
+        self.source = self.test_publisher.getPubSource(
+            sourcename="with-ddebs", archive=ppa)
         self.test_publisher.getPubBinaries(
             pub_source=self.source, with_debug=True)
-        self.assertCannotCopyBinaries('Cannot copy DDEBs to a primary archive')
+        self.assertCanCopyBinaries()
 
     def test_cannot_copy_source_twice(self):
         # checkCopy refuses to copy the same source twice.  Duplicates are
@@ -1020,6 +1020,11 @@ class BaseDoCopyTests:
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(BaseDoCopyTests, self).setUp()
+        for arch in ('i386', 'hppa'):
+            self.factory.makeProcessor(name='my_%s' % arch)
+
     def createNobby(self, archs):
         """Create a new 'nobby' series with the given architecture tags.
 
@@ -1028,9 +1033,9 @@ class BaseDoCopyTests:
         nobby = self.factory.makeDistroSeries(
             distribution=self.test_publisher.ubuntutest, name='nobby')
         for arch in archs:
-            processor = self.factory.makeProcessor(name='my_%s' % arch)
             self.factory.makeDistroArchSeries(
-                distroseries=nobby, architecturetag=arch, processor=processor)
+                distroseries=nobby, architecturetag=arch,
+                processor=getUtility(IProcessorSet).getByName('my_%s' % arch))
         nobby.nominatedarchindep = nobby[archs[0]]
         self.test_publisher.addFakeChroots(nobby)
         return nobby
@@ -1051,7 +1056,7 @@ class BaseDoCopyTests:
         source = self.test_publisher.getPubSource(
             archive=archive, architecturehintlist='any')
         [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
-            pub_source=source)
+            archive=source.archive, pub_source=source)
 
         # Now make a new distroseries with two architectures, one of
         # which is disabled.
@@ -1092,7 +1097,7 @@ class BaseDoCopyTests:
         self.assertCopied(copies, nobby, ('i386',))
 
 
-class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
+class TestDoDirectCopy(BaseDoCopyTests, TestCaseWithFactory):
 
     def setUp(self):
         super(TestDoDirectCopy, self).setUp()
@@ -1253,6 +1258,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False,
             purpose=ArchivePurpose.PRIMARY)
+        target_archive.setProcessors(getUtility(IProcessorSet).getAll())
         target_archive.build_debug_symbols = True
         existing_source = self.test_publisher.getPubSource(
             archive=target_archive, version='1.0-1', distroseries=nobby,
@@ -1281,6 +1287,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def _setup_archive(self, version="1.0-2", use_nobby=False, **kwargs):
         archive = self.test_publisher.ubuntutest.main_archive
+        archive.setProcessors(getUtility(IProcessorSet).getAll())
         nobby = self.createNobby(('i386', 'hppa'))
         source = self.test_publisher.getPubSource(
             archive=archive, version=version, architecturehintlist='any',
@@ -1416,24 +1423,20 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [notification] = pop_notifications()
         self.assertEqual(
             target_archive.reference, notification['X-Launchpad-Archive'])
-        body = notification.get_payload()[0].get_payload()
-        expected = (dedent("""\
+        body = notification.get_payload(decode=True)
+        expected = dedent("""\
             Accepted:
              OK: foo_1.0-2.dsc
                  -> Component: main Section: base
 
-            foo (1.0-2) unstable; urgency=3Dlow
+            foo (1.0-2) unstable; urgency=low
 
               * 1.0-2.
 
-            --
+            %s
             http://launchpad.dev/~archiver/+archive/ubuntutest/ppa
-            """) +
-            # Slight contortion to avoid a long line.
-            fill(dedent("""\
-            You are receiving this email because you are the uploader of the
-            above PPA package.
-            """), 72) + "\n")
+            You are receiving this email because you made this upload.
+            """ % "-- ")
         self.assertEqual(expected, body)
 
     def test_copy_generates_notification(self):
@@ -1471,8 +1474,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # Spurious newlines are a pain and don't really affect the end
         # results so stripping is the easiest route here.
         expected_text.strip()
-        body = mail.get_payload()[0].get_payload()
-        self.assertEqual(expected_text, body)
+        body = announcement.get_payload()[0].get_payload()
         self.assertEqual(expected_text, body)
 
     def test_sponsored_copy_notification(self):
@@ -1586,6 +1588,23 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             [source], target_archive, nobby, source.pocket, False,
             person=target_archive.owner, check_permissions=False,
             send_email=False)
+        self.assertEqual([], pop_notifications())
+
+    def test_duplicate_copy_does_not_generate_notification(self):
+        # If there is nothing to copy because the packages in question are
+        # already in the destination, then no notification is generated.
+        nobby, archive, source = self._setup_archive()
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        self.assertNotEqual([], do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=True))
+        self.assertNotEqual([], pop_notifications())
+        self.assertEqual([], do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=True))
         self.assertEqual([], pop_notifications())
 
     def test_copying_unsupported_arch_with_override(self):
@@ -1767,7 +1786,9 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         # If the destination distroseries supports more architectures than
         # the source distroseries, then the copier propagates
         # architecture-independent binaries to the new architectures.
-        new_series, _ = self.makeSeriesWithExtraArchitecture()
+        new_series, new_das = self.makeSeriesWithExtraArchitecture()
+        self.primary.setProcessors(
+            self.primary.processors + [new_das.processor])
         source = self.test_publisher.getPubSource(
             archive=self.primary, status=PackagePublishingStatus.PUBLISHED,
             architecturehintlist="all")
@@ -1799,6 +1820,8 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         # they were built, the copier creates builds for the new
         # architectures.
         new_series, new_das = self.makeSeriesWithExtraArchitecture()
+        self.primary.setProcessors(
+            self.primary.processors + [new_das.processor])
         source = self.test_publisher.getPubSource(
             archive=self.primary, status=PackagePublishingStatus.PUBLISHED,
             architecturehintlist="any")

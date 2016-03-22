@@ -16,7 +16,7 @@ import time
 from zope.browserresource.file import setCacheControl
 from zope.contenttype import guess_content_type
 from zope.datetime import rfc1123_date
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
@@ -38,6 +38,7 @@ class File:
         self.lmh = rfc1123_date(self.lmt)
 
 
+@implementer(IBrowserPublisher)
 class ExportedFolder:
     """View that gives access to the files in a folder.
 
@@ -50,8 +51,6 @@ class ExportedFolder:
     By default, subdirectories are not exported. Set export_subdirectories
     to True to change this.
     """
-
-    implements(IBrowserPublisher)
 
     rev_part_re = re.compile('rev\d+$')
 
@@ -134,7 +133,6 @@ class ExportedImageFolder(ExportedFolder):
     It supports serving image files without their extension (e.g. "image1.gif"
     can be served as "image1".
     """
-
 
     # The extensions we consider.
     image_extensions = ('.png', '.gif')

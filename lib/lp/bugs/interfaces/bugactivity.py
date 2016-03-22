@@ -47,7 +47,7 @@ class IBugActivity(Interface):
     person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
-        "e-mail address.")))
+        "email address.")))
 
     whatchanged = exported(
         TextLine(title=_('What Changed'),

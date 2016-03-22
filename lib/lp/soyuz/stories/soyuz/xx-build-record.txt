@@ -251,7 +251,7 @@ Administrators can retry failed builds using the 'retry' icon in the
     uploadlog (7 bytes)
 
     >>> print admin_browser.getLink('Retry this build').url
-    http://launchpad.dev/ubuntutest/+source/testing/1.0/+build/31/+retry
+    http://launchpad.dev/ubuntutest/+source/testing/1.0/+build/.../+retry
 
 By clicking on the 'Retry this build' link, administrators are informed of
 the consequences of this action.
@@ -334,7 +334,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     testing_1.0_all.changes (15 bytes)
 
     >>> print anon_browser.getLink('testing_1.0_all.changes').url
-    http://.../+build/31/+files/testing_1.0_all.changes
+    http://.../+build/.../+files/testing_1.0_all.changes
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))
@@ -361,7 +361,7 @@ On the other hand, users interested in testing the resulting binaries
 already have access to them.
 
     >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
-    http://.../+build/31/+files/testing-bin_1.0_all.deb
+    http://.../+build/.../+files/testing-bin_1.0_all.deb
 
 Again, note that the files are `ProxiedLibrarianFile` objects as well.
 
@@ -386,7 +386,7 @@ Binary upload can also be awaiting approval in UNAPPROVED queue
     LinkNotFoundError
 
     >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
-    http://.../+build/31/+files/testing-bin_1.0_all.deb
+    http://.../+build/.../+files/testing-bin_1.0_all.deb
 
 When new binaries are accepted by an archive administrator (See
 xx-queue-pages.txt) this condition is presented in the build page.
@@ -410,7 +410,7 @@ xx-queue-pages.txt) this condition is presented in the build page.
     LinkNotFoundError
 
     >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
-    http://.../+build/31/+files/testing-bin_1.0_all.deb
+    http://.../+build/.../+files/testing-bin_1.0_all.deb
 
 Once the accepted binary upload is processed by the backend, the
 binary reference finally becomes a link to its corresponding page.
@@ -527,20 +527,24 @@ If the source package was created from a recipe build, link to it.
     ...     owner=cprov, product=product, name='mybranch')
     >>> recipe = factory.makeSourcePackageRecipe(
     ...     owner=cprov, name=u'myrecipe', branches=[branch])
+    >>> distroseries = factory.makeDistroSeries(
+    ...     distribution=cprov.archive.distribution, name='shiny')
+    >>> removeSecurityProxy(distroseries).nominatedarchindep = (
+    ...     factory.makeDistroArchSeries(distroseries=distroseries))
     >>> ppa_source.sourcepackagerelease.source_package_recipe_build = (
     ...  factory.makeSourcePackageRecipeBuild(recipe=recipe,
-    ...  archive=cprov.archive))
+    ...  archive=cprov.archive, distroseries=distroseries))
     >>> logout()
     >>> anon_browser.open(ppa_build_url)
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'details'))
     Build details
     ...
     Source package recipe build:
-    ~cprov/product/mybranch recipe build [~cprov/ubuntu/ppa]
+    ~cprov/product/mybranch recipe build in ubuntu shiny [~cprov/ubuntu/ppa]
     ...
 
     >>> print anon_browser.getLink('~cprov/product/mybranch recipe build').url
-    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+recipebuild/1
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+recipebuild/...
 
 Finally, the 'Build files' section is identical for PPA builds.
 

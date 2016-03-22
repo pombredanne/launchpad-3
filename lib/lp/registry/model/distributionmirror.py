@@ -32,7 +32,7 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.diskpool import poolify
@@ -106,10 +106,9 @@ from lp.soyuz.model.publishing import (
     )
 
 
+@implementer(IDistributionMirror)
 class DistributionMirror(SQLBase):
     """See IDistributionMirror"""
-
-    implements(IDistributionMirror)
     _table = 'DistributionMirror'
     _defaultOrder = ('-speed', 'name', 'id')
 
@@ -123,8 +122,8 @@ class DistributionMirror(SQLBase):
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(
         alternateID=True, notNull=True)
-    displayname = StringCol(
-        notNull=False, default=None)
+    display_name = StringCol(
+        dbName='displayname', notNull=False, default=None)
     description = StringCol(
         notNull=False, default=None)
     http_base_url = StringCol(
@@ -174,18 +173,16 @@ class DistributionMirror(SQLBase):
             distribution_mirror=self, orderBy='-date_created')
 
     @property
-    def title(self):
-        """See IDistributionMirror"""
-        if self.displayname:
-            return self.displayname
-        else:
-            return self.name.capitalize()
+    def displayname(self):
+        return self.display_name
 
     @property
-    def has_ftp_or_rsync_base_url(self):
+    def title(self):
         """See IDistributionMirror"""
-        return (self.ftp_base_url is not None
-                or self.rsync_base_url is not None)
+        if self.display_name:
+            return self.display_name
+        else:
+            return self.name.capitalize()
 
     @cachedproperty
     def arch_mirror_freshness(self):
@@ -574,10 +571,9 @@ class DistributionMirror(SQLBase):
         return paths
 
 
+@implementer(IDistributionMirrorSet)
 class DistributionMirrorSet:
     """See IDistributionMirrorSet"""
-
-    implements(IDistributionMirrorSet)
 
     def __getitem__(self, mirror_id):
         """See IDistributionMirrorSet"""
@@ -781,10 +777,9 @@ class _MirrorSeriesMixIn:
         return urls
 
 
+@implementer(IMirrorCDImageDistroSeries)
 class MirrorCDImageDistroSeries(SQLBase):
     """See IMirrorCDImageDistroSeries"""
-
-    implements(IMirrorCDImageDistroSeries)
     _table = 'MirrorCDImageDistroSeries'
     _defaultOrder = 'id'
 
@@ -796,10 +791,9 @@ class MirrorCDImageDistroSeries(SQLBase):
     flavour = StringCol(notNull=True)
 
 
+@implementer(IMirrorDistroArchSeries)
 class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroArchSeries"""
-
-    implements(IMirrorDistroArchSeries)
     _table = 'MirrorDistroArchSeries'
     _defaultOrder = [
         'distroarchseries', 'component', 'pocket', 'freshness', 'id']
@@ -868,10 +862,9 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
         return urlappend(base_url, full_path)
 
 
+@implementer(IMirrorDistroSeriesSource)
 class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroSeriesSource"""
-
-    implements(IMirrorDistroSeriesSource)
     _table = 'MirrorDistroSeriesSource'
     _defaultOrder = ['distroseries', 'component', 'pocket', 'freshness', 'id']
 
@@ -925,10 +918,9 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
         return urlappend(base_url, full_path)
 
 
+@implementer(IMirrorProbeRecord)
 class MirrorProbeRecord(SQLBase):
     """See IMirrorProbeRecord"""
-
-    implements(IMirrorProbeRecord)
     _table = 'MirrorProbeRecord'
     _defaultOrder = 'id'
 

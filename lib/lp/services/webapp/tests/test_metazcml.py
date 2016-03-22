@@ -12,7 +12,7 @@ from lp.testing.fakemethod import FakeMethod
 class TestCallDirective(TestCase):
 
     def test_call(self):
-        directive = """ 
+        directive = """
             <call callable="%(this)s.callable" />
             """ % dict(this=this)
         xmlconfig.string(zcml_configure % directive)

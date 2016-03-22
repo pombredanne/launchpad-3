@@ -158,6 +158,14 @@ class IBranchLookup(Interface):
             paths are not handled for shortcut paths.
         """
 
+    def getByPath(path):
+        """Find the branch associated with a path.
+
+        As with `getByLPPath`, but returns None instead of raising any of
+        the documented exceptions, and returns only the `IBranch` on success
+        and not any extra path.
+        """
+
 
 def path_lookups(path):
     if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):

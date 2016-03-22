@@ -214,7 +214,7 @@ mistake.
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebrities = getUtility(ILaunchpadCelebrities)
 
-    >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
+    >>> test_date = datetime(2009, 5, 1, 19, 34, 24, tzinfo=UTC)
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='rabbit', date_created=test_date)

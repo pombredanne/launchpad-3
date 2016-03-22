@@ -13,7 +13,7 @@ import datetime
 
 from sqlobject import StringCol
 from storm.locals import ReferenceSet
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -41,10 +41,9 @@ class AccountStatusEnumCol(EnumCol):
         super(AccountStatusEnumCol, self).__set__(obj, value)
 
 
+@implementer(IAccount)
 class Account(SQLBase):
     """An Account."""
-
-    implements(IAccount)
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -89,9 +88,9 @@ class Account(SQLBase):
         self.setStatus(AccountStatus.ACTIVE, None, comment)
 
 
+@implementer(IAccountSet)
 class AccountSet:
     """See `IAccountSet`."""
-    implements(IAccountSet)
 
     def new(self, rationale, displayname, openid_identifier=None):
         """See `IAccountSet`."""

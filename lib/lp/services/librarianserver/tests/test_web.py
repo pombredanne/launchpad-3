@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
 from datetime import datetime
 import hashlib
 import httplib
+import os
 import unittest
 from urllib2 import (
     HTTPError,
@@ -15,6 +16,8 @@ from urlparse import urlparse
 from lazr.uri import URI
 import pytz
 from storm.expr import SQL
+import testtools
+from testtools.matchers import EndsWith
 import transaction
 from zope.component import getUtility
 
@@ -35,6 +38,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     TimeLimitedToken,
     )
+from lp.services.librarianserver.storage import LibrarianStorage
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -48,7 +52,7 @@ def uri_path_replace(url, old, new):
     return str(parsed.replace(path=parsed.path.replace(old, new)))
 
 
-class LibrarianWebTestCase(unittest.TestCase):
+class LibrarianWebTestCase(testtools.TestCase):
     """Test the librarian's web interface."""
     layer = LaunchpadFunctionalLayer
     dbuser = 'librarian'
@@ -71,7 +75,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         for count in range(10):
             # Upload a file.  This should work without any exceptions being
             # thrown.
-            sampleData = 'x' + ('blah' * (count%5))
+            sampleData = 'x' + ('blah' * (count % 5))
             fileAlias = client.addFile('sample', len(sampleData),
                                                  StringIO(sampleData),
                                                  contentType='text/plain')
@@ -117,7 +121,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         fileObj = urlopen(url)
         mimetype = fileObj.headers['content-type']
         encoding = fileObj.headers['content-encoding']
-        self.failUnless(mimetype == "text/plain",
+        self.failUnless(mimetype == "text/plain; charset=utf-8",
                         "Wrong mimetype. %s != 'text/plain'." % mimetype)
         self.failUnless(encoding == "gzip",
                         "Wrong encoding. %s != 'gzip'." % encoding)
@@ -177,7 +181,7 @@ class LibrarianWebTestCase(unittest.TestCase):
 
         # Change the aliasid and assert we get a 404
         self.failUnless(str(aid) in url)
-        bad_id_url = uri_path_replace(url, str(aid), str(aid+1))
+        bad_id_url = uri_path_replace(url, str(aid), str(aid + 1))
         self.require404(bad_id_url)
 
         # Change the filename and assert we get a 404
@@ -219,7 +223,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         file_alias = IMasterStore(LibraryFileAlias).get(
             LibraryFileAlias, file_alias_id)
         file_alias.date_created = datetime(
-            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+            2001, 1, 30, 13, 45, 59, tzinfo=pytz.utc)
 
         # Commit so the file is available from the Librarian.
         self.commit()
@@ -237,13 +241,47 @@ class LibrarianWebTestCase(unittest.TestCase):
         self.failUnlessEqual(
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
 
-    def get_restricted_file_and_public_url(self):
+    def test_missing_storage(self):
+        # When a file exists in the DB but is missing from disk, a 404
+        # is just confusing. It's an internal error, so 500 instead.
+        client = LibrarianClient()
+
+        # Upload a file so we can retrieve it.
+        sample_data = 'blah'
+        file_alias_id = client.addFile(
+            'sample', len(sample_data), StringIO(sample_data),
+            contentType='text/plain')
+        url = client.getURLForAlias(file_alias_id)
+
+        # Change the date_created to a known value that doesn't match
+        # the disk timestamp. The timestamp on disk cannot be trusted.
+        file_alias = IMasterStore(LibraryFileAlias).get(
+            LibraryFileAlias, file_alias_id)
+
+        # Commit so the file is available from the Librarian.
+        self.commit()
+
+        # Fetch the file via HTTP.
+        urlopen(url)
+
+        # Delete the on-disk file.
+        storage = LibrarianStorage(config.librarian_server.root, None)
+        os.remove(storage._fileLocation(file_alias.contentID))
+
+        # The URL now 500s, since the DB says it should exist.
+        exception = self.assertRaises(HTTPError, urlopen, url)
+        self.assertEqual(500, exception.code)
+        self.assertIn('Server', exception.info())
+        self.assertNotIn('Last-Modified', exception.info())
+        self.assertNotIn('Cache-Control', exception.info())
+
+    def get_restricted_file_and_public_url(self, filename='sample'):
         # Use a regular LibrarianClient to ensure we speak to the
         # nonrestricted port on the librarian which is where secured
         # restricted files are served from.
         client = LibrarianClient()
         fileAlias = client.addFile(
-            'sample', 12, StringIO('a'*12), contentType='text/plain')
+            filename, 12, StringIO('a' * 12), contentType='text/plain')
         # Note: We're deliberately using the wrong url here: we should be
         # passing secure=True to getURLForAlias, but to use the returned URL
         # we would need a wildcard DNS facility patched into urlopen; instead
@@ -253,9 +291,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         url = client.getURLForAlias(fileAlias)
         # Now that we have a url which talks to the public librarian, make the
         # file restricted.
-        IMasterStore(LibraryFileAlias).find(LibraryFileAlias,
-            LibraryFileAlias.id==fileAlias).set(
-            LibraryFileAlias.restricted==True)
+        IMasterStore(LibraryFileAlias).find(
+            LibraryFileAlias, LibraryFileAlias.id == fileAlias).set(
+                restricted=True)
         self.commit()
         return fileAlias, url
 
@@ -263,9 +301,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         # IFF there is a .restricted. in the host, then the library file alias
         # in the subdomain must match that in the path.
         client = LibrarianClient()
-        fileAlias = client.addFile('sample', 12, StringIO('a'*12),
+        fileAlias = client.addFile('sample', 12, StringIO('a' * 12),
             contentType='text/plain')
-        fileAlias2 = client.addFile('sample', 12, StringIO('b'*12),
+        fileAlias2 = client.addFile('sample', 12, StringIO('b' * 12),
             contentType='text/plain')
         self.commit()
         url = client.getURLForAlias(fileAlias)
@@ -329,7 +367,31 @@ class LibrarianWebTestCase(unittest.TestCase):
         # Now we should be able to access the file.
         fileObj = urlopen(url)
         try:
-            self.assertEqual("a"*12, fileObj.read())
+            self.assertEqual("a" * 12, fileObj.read())
+        finally:
+            fileObj.close()
+
+    def test_restricted_with_token_encoding(self):
+        fileAlias, url = self.get_restricted_file_and_public_url('foo~%')
+        self.assertThat(url, EndsWith('/foo~%25'))
+
+        # We have the base url for a restricted file; grant access to it
+        # for a short time.
+        token = TimeLimitedToken.allocate(url)
+
+        # Now we should be able to access the file.
+        fileObj = urlopen(url + "?token=%s" % token)
+        try:
+            self.assertEqual("a" * 12, fileObj.read())
+        finally:
+            fileObj.close()
+
+        # The token is valid even if the filename is encoded differently.
+        mangled_url = url.replace('~', '%7E')
+        self.assertNotEqual(mangled_url, url)
+        fileObj = urlopen(mangled_url + "?token=%s" % token)
+        try:
+            self.assertEqual("a" * 12, fileObj.read())
         finally:
             fileObj.close()
 
@@ -357,7 +419,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         file_alias = IMasterStore(LibraryFileAlias).get(
             LibraryFileAlias, fileAlias)
         file_alias.date_created = datetime(
-            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+            2001, 1, 30, 13, 45, 59, tzinfo=pytz.utc)
         # Commit the update.
         self.commit()
         # Fetch the file via HTTP, recording the interesting headers
@@ -384,6 +446,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(LibrarianZopelessWebTestCase, self).setUp()
         switch_dbuser(config.librarian.dbuser)
 
     def commit(self):
@@ -409,6 +472,7 @@ class DeletedContentTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(DeletedContentTestCase, self).setUp()
         switch_dbuser(config.librarian.dbuser)
 
     def test_deletedContentNotFound(self):

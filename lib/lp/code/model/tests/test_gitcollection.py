@@ -5,6 +5,17 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from operator import attrgetter
+
+import pytz
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -12,15 +23,18 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
-from lp.code.interfaces.gitrepository import (
-    GIT_FEATURE_FLAG,
-    IGitRepositorySet,
-    )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.gitcollection import GenericGitCollection
 from lp.code.model.gitrepository import GitRepository
 from lp.registry.enums import PersonVisibility
@@ -30,14 +44,16 @@ from lp.registry.model.persondistributionsourcepackage import (
     )
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.interfaces import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 
@@ -90,7 +106,6 @@ class TestGenericGitCollection(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGenericGitCollection, self).setUp()
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.store = IStore(GitRepository)
 
     def test_provides_gitcollection(self):
@@ -174,7 +189,6 @@ class TestGitCollectionFilters(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.all_repositories = getUtility(IAllGitRepositories)
 
     def test_order_by_repository_name(self):
@@ -388,6 +402,300 @@ class TestGitCollectionFilters(TestCaseWithFactory):
         collection = self.all_repositories.registeredBy(registrant)
         self.assertEqual([repository], list(collection.getRepositories()))
 
+    def test_subscribedBy(self):
+        # 'subscribedBy' returns a new collection that only has repositories
+        # that the given user is subscribed to.
+        repository = self.factory.makeGitRepository()
+        subscriber = self.factory.makePerson()
+        repository.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
+        collection = self.all_repositories.subscribedBy(subscriber)
+        self.assertEqual([repository], list(collection.getRepositories()))
+
+    def test_targetedBy(self):
+        # Only repositories that are merge targets are returned.
+        [target_ref] = self.factory.makeGitRefs()
+        registrant = self.factory.makePerson()
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_ref, registrant=registrant)
+        # And another not registered by registrant.
+        self.factory.makeBranchMergeProposalForGit()
+        collection = self.all_repositories.targetedBy(registrant)
+        self.assertEqual(
+            [target_ref.repository], list(collection.getRepositories()))
+
+    def test_targetedBy_since(self):
+        # Ignore proposals created before 'since'.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        date_created = self.factory.getUniqueDate()
+        removeSecurityProxy(bmp).date_created = date_created
+        registrant = bmp.registrant
+        repositories = self.all_repositories.targetedBy(
+            registrant, since=date_created)
+        self.assertEqual(
+            [bmp.target_git_repository], list(repositories.getRepositories()))
+        since = self.factory.getUniqueDate()
+        repositories = self.all_repositories.targetedBy(
+            registrant, since=since)
+        self.assertEqual([], list(repositories.getRepositories()))
+
+
+class TestBranchMergeProposals(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.all_repositories = getUtility(IAllGitRepositories)
+
+    def test_empty_branch_merge_proposals(self):
+        proposals = self.all_repositories.getMergeProposals()
+        self.assertEqual([], list(proposals))
+
+    def test_empty_revisions_shortcut(self):
+        # If you explicitly pass an empty collection of revision numbers,
+        # the method shortcuts and gives you an empty result set.  In this
+        # way, merged_revnos=None (the default) has a very different behaviour
+        # than merged_revnos=[]: the first is no restriction, while the second
+        # excludes everything.
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals(
+            merged_revision_ids=[])
+        self.assertEqual([], list(proposals))
+        self.assertIsInstance(proposals, EmptyResultSet)
+
+    def test_some_branch_merge_proposals(self):
+        mp = self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals()
+        self.assertEqual([mp], list(proposals))
+
+    def test_just_owned_branch_merge_proposals(self):
+        # If the collection only includes branches owned by a person, the
+        # getMergeProposals() will only return merge proposals for source
+        # branches that are owned by that person.
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        [ref1] = self.factory.makeGitRefs(target=project, owner=person)
+        [ref2] = self.factory.makeGitRefs(target=project, owner=person)
+        [ref3] = self.factory.makeGitRefs(target=project)
+        self.factory.makeGitRefs(target=project)
+        [target] = self.factory.makeGitRefs(target=project)
+        mp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target, source_ref=ref1)
+        mp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target, source_ref=ref2)
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target, source_ref=ref3)
+        collection = self.all_repositories.ownedBy(person)
+        proposals = collection.getMergeProposals()
+        self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
+
+    def test_preloading_for_previewdiff(self):
+        project = self.factory.makeProduct()
+        [target] = self.factory.makeGitRefs(target=project)
+        owner = self.factory.makePerson()
+        [ref1] = self.factory.makeGitRefs(target=project, owner=owner)
+        [ref2] = self.factory.makeGitRefs(target=project, owner=owner)
+        bmp1 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target, source_ref=ref1)
+        bmp2 = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target, source_ref=ref2)
+        old_date = datetime.now(pytz.UTC) - timedelta(hours=1)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp1, date_created=old_date)
+        previewdiff1 = self.factory.makePreviewDiff(merge_proposal=bmp1)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp2, date_created=old_date)
+        previewdiff2 = self.factory.makePreviewDiff(merge_proposal=bmp2)
+        Store.of(bmp1).flush()
+        Store.of(bmp1).invalidate()
+        collection = self.all_repositories.ownedBy(owner)
+        [pre_bmp1, pre_bmp2] = sorted(
+            collection.getMergeProposals(eager_load=True),
+            key=attrgetter('id'))
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(
+                removeSecurityProxy(pre_bmp1.preview_diff).id, previewdiff1.id)
+            self.assertEqual(
+                removeSecurityProxy(pre_bmp2.preview_diff).id, previewdiff2.id)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    def test_merge_proposals_in_project(self):
+        mp1 = self.factory.makeBranchMergeProposalForGit()
+        self.factory.makeBranchMergeProposalForGit()
+        project = mp1.source_git_ref.target
+        collection = self.all_repositories.inProject(project)
+        proposals = collection.getMergeProposals()
+        self.assertEqual([mp1], list(proposals))
+
+    def test_target_branch_private(self):
+        # The target branch must be in the branch collection, as must the
+        # source branch.
+        registrant = self.factory.makePerson()
+        mp1 = self.factory.makeBranchMergeProposalForGit(registrant=registrant)
+        naked_repository = removeSecurityProxy(mp1.target_git_repository)
+        naked_repository.transitionToInformationType(
+            InformationType.USERDATA, registrant, verify_policy=False)
+        collection = self.all_repositories.visibleByUser(None)
+        proposals = collection.getMergeProposals()
+        self.assertEqual([], list(proposals))
+
+    def test_status_restriction(self):
+        mp1 = self.factory.makeBranchMergeProposalForGit(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        mp2 = self.factory.makeBranchMergeProposalForGit(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        self.factory.makeBranchMergeProposalForGit(
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        proposals = self.all_repositories.getMergeProposals(
+            [BranchMergeProposalStatus.WORK_IN_PROGRESS,
+             BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
+
+    def test_status_restriction_with_project_filter(self):
+        # getMergeProposals returns the merge proposals with a particular
+        # status that are _inside_ the repository collection.  mp1 is in the
+        # product with NEEDS_REVIEW, mp2 is outside of the project and mp3
+        # has an excluded status.
+        mp1 = self.factory.makeBranchMergeProposalForGit(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        self.factory.makeBranchMergeProposalForGit(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        project = mp1.source_git_ref.target
+        [ref1] = self.factory.makeGitRefs(target=project)
+        [ref2] = self.factory.makeGitRefs(target=project)
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=ref1, source_ref=ref2,
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        collection = self.all_repositories.inProject(project)
+        proposals = collection.getMergeProposals(
+            [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([mp1], list(proposals))
+
+    def test_specifying_target_repository(self):
+        # If the target_repository is specified but not the target_path,
+        # only merge proposals where that repository is the target are
+        # returned.
+        [ref1, ref2] = self.factory.makeGitRefs(
+            paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
+        mp1 = self.factory.makeBranchMergeProposalForGit(target_ref=ref1)
+        mp2 = self.factory.makeBranchMergeProposalForGit(target_ref=ref2)
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals(
+            target_repository=mp1.target_git_repository)
+        self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
+
+    def test_specifying_target_ref(self):
+        # If the target_repository and target_path are specified, only merge
+        # proposals where that ref is the target are returned.
+        mp1 = self.factory.makeBranchMergeProposalForGit()
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals(
+            target_repository=mp1.target_git_repository,
+            target_path=mp1.target_git_path)
+        self.assertEqual([mp1], list(proposals))
+
+    def test_specifying_prerequisite_repository(self):
+        # If the prerequisite_repository is specified but not the
+        # prerequisite_path, only merge proposals where that repository is
+        # the prerequisite are returned.
+        [ref1, ref2] = self.factory.makeGitRefs(
+            paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
+        mp1 = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref1)
+        mp2 = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref2)
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals(
+            prerequisite_repository=ref1.repository)
+        self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
+
+    def test_specifying_prerequisite_ref(self):
+        # If the prerequisite_repository and prerequisite_path are
+        # specified, only merge proposals where that ref is the prerequisite
+        # are returned.
+        [prerequisite] = self.factory.makeGitRefs()
+        mp1 = self.factory.makeBranchMergeProposalForGit(
+            prerequisite_ref=prerequisite)
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposals(
+            prerequisite_repository=prerequisite.repository,
+            prerequisite_path=prerequisite.path)
+        self.assertEqual([mp1], list(proposals))
+
+
+class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
+    """Tests for IGitCollection.getProposalsForReviewer()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use the admin user as we don't care about who can and can't call
+        # nominate reviewer in this test.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        self.all_repositories = getUtility(IAllGitRepositories)
+
+    def test_getProposalsForReviewer(self):
+        reviewer = self.factory.makePerson()
+        proposal = self.factory.makeBranchMergeProposalForGit()
+        proposal.nominateReviewer(reviewer, reviewer)
+        self.factory.makeBranchMergeProposalForGit()
+        proposals = self.all_repositories.getMergeProposalsForReviewer(
+            reviewer)
+        self.assertEqual([proposal], list(proposals))
+
+    def test_getProposalsForReviewer_filter_status(self):
+        reviewer = self.factory.makePerson()
+        proposal1 = self.factory.makeBranchMergeProposalForGit(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        proposal1.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposalForGit(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal2.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_repositories.getMergeProposalsForReviewer(
+            reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([proposal1], list(proposals))
+
+    def test_getProposalsForReviewer_anonymous(self):
+        # Don't include proposals if the target branch is private for
+        # anonymous views.
+        reviewer = self.factory.makePerson()
+        [target_ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        proposal = self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_ref)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_repositories.visibleByUser(
+            None).getMergeProposalsForReviewer(reviewer)
+        self.assertEqual([], list(proposals))
+
+    def test_getProposalsForReviewer_anonymous_source_private(self):
+        # Don't include proposals if the source branch is private for
+        # anonymous views.
+        reviewer = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        [source_ref] = self.factory.makeGitRefs(
+            target=project, information_type=InformationType.USERDATA)
+        [target_ref] = self.factory.makeGitRefs(target=project)
+        proposal = self.factory.makeBranchMergeProposalForGit(
+            source_ref=source_ref, target_ref=target_ref)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_repositories.visibleByUser(
+            None).getMergeProposalsForReviewer(reviewer)
+        self.assertEqual([], list(proposals))
+
+    def test_getProposalsForReviewer_for_product(self):
+        reviewer = self.factory.makePerson()
+        proposal = self.factory.makeBranchMergeProposalForGit()
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposalForGit()
+        proposal2.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_repositories.inProject(
+            proposal.merge_source.target).getMergeProposalsForReviewer(
+            reviewer)
+        self.assertEqual([proposal], list(proposals))
+
 
 class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
 
@@ -395,7 +703,6 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.public_repository = self.factory.makeGitRepository(name=u'public')
         self.private_repository = self.factory.makeGitRepository(
             name=u'private', information_type=InformationType.USERDATA)
@@ -457,6 +764,40 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
             sorted(self.all_repositories.getRepositories()),
             sorted(repositories.getRepositories()))
 
+    def test_subscribers_can_see_repositories(self):
+        # A person subscribed to a repository can see it, even if it's
+        # private.
+        subscriber = self.factory.makePerson()
+        removeSecurityProxy(self.private_repository).subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
+        repositories = self.all_repositories.visibleByUser(subscriber)
+        self.assertEqual(
+            sorted([self.public_repository, self.private_repository]),
+            sorted(repositories.getRepositories()))
+
+    def test_subscribed_team_members_can_see_repositories(self):
+        # A person in a team that is subscribed to a repository can see that
+        # repository, even if it's private.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED,
+            owner=team_owner)
+        # Subscribe the team.
+        removeSecurityProxy(self.private_repository).subscribe(
+            team, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            team_owner)
+        # Members of the team can see the private repository that the team
+        # is subscribed to.
+        repositories = self.all_repositories.visibleByUser(team_owner)
+        self.assertEqual(
+            sorted([self.public_repository, self.private_repository]),
+            sorted(repositories.getRepositories()))
+
     def test_private_teams_see_own_private_personal_repositories(self):
         # Private teams are given an access grant to see their private
         # personal repositories.
@@ -473,9 +814,7 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
             # they are the owner.  We want to unsubscribe them so that they
             # lose access conferred via subscription and rely instead on the
             # APG.
-            # XXX cjwatson 2015-02-05: Uncomment this once
-            # GitRepositorySubscriptions exist.
-            #personal_repository.unsubscribe(team, team_owner, True)
+            personal_repository.unsubscribe(team, team_owner, True)
             # Make another personal repository the team can't see.
             other_person = self.factory.makePerson()
             self.factory.makeGitRepository(
@@ -494,7 +833,6 @@ class TestSearch(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.collection = getUtility(IAllGitRepositories)
 
     def test_exact_match_unique_name(self):
@@ -637,7 +975,6 @@ class TestGetTeamsWithRepositories(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.all_repositories = getUtility(IAllGitRepositories)
 
     def test_no_teams(self):
@@ -684,7 +1021,6 @@ class TestGitCollectionOwnerCounts(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         self.all_repositories = getUtility(IAllGitRepositories)
 
     def test_no_repositories(self):

@@ -32,7 +32,7 @@ from urlparse import (
 
 from lazr.restful.utils import get_current_browser_request
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import (
     config,
@@ -53,9 +53,12 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 
 def url_path_quote(filename):
     """Quote `filename` for use in a URL."""
-    # XXX RobertCollins 2004-09-21: Perhaps filenames with / in them
-    # should be disallowed?
-    return urllib.quote(filename).replace('/', '%2F')
+    # RFC 3986 says ~ should not be generated escaped, but urllib.quote
+    # predates it. Additionally, + is safe to use unescaped in paths and is
+    # frequently used in Debian versions, so leave it alone.
+    #
+    # This needs to match Library.getAlias' TimeLimitedToken handling.
+    return urllib.quote(filename, safe='/~+')
 
 
 def get_libraryfilealias_download_path(aliasID, filename):
@@ -502,9 +505,9 @@ class FileDownloadClient:
                     raise
 
 
+@implementer(ILibrarianClient)
 class LibrarianClient(FileUploadClient, FileDownloadClient):
     """See `ILibrarianClient`."""
-    implements(ILibrarianClient)
 
     restricted = False
 
@@ -529,9 +532,9 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
             )
 
 
+@implementer(IRestrictedLibrarianClient)
 class RestrictedLibrarianClient(LibrarianClient):
     """See `IRestrictedLibrarianClient`."""
-    implements(IRestrictedLibrarianClient)
 
     restricted = True
 

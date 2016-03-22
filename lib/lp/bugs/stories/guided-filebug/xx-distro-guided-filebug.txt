@@ -41,7 +41,7 @@ back...
     # zope.testbrowser truncates document content after goBack().
     >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
     >>> user_browser.getControl("Summary", index=0).value = (
-    ...     "Thunderbird crashes when opening large e-mails")
+    ...     "Thunderbird crashes when opening large emails")
     >>> user_browser.getControl("Continue").click()
 
 ...and continue filing our bug.

@@ -12,7 +12,7 @@ from testtools.matchers import Not
 
 from lp.app.enums import (
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PILLAR_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.registry.interfaces.series import SeriesStatus
@@ -132,7 +132,7 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
     def test_launchpad_not_listed_for_proprietary(self):
         product = self.factory.makeProduct()
         with person_logged_in(product.owner):
-            for info_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+            for info_type in PILLAR_INFORMATION_TYPES:
                 product.information_type = info_type
                 view = create_initialized_view(
                     product, '+configure-translations')

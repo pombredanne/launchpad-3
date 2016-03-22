@@ -8,7 +8,7 @@ you're not already subscribed.
     >>> browser.getControl("Status").value = ["Confirmed"]
     >>> browser.getControl("Comment on this change (optional)").value = "test"
     >>> browser.getControl(
-    ...     "E-mail me about changes to this bug report").selected = True
+    ...     "Email me about changes to this bug report").selected = True
 
     >>> browser.getControl("Save Changes").click()
 
@@ -21,7 +21,7 @@ If you're already subscribed, the checkbox is not shown.
     >>> browser.open(
     ...     "http://launchpad.dev/firefox/+bug/5/+editstatus")
 
-    >>> browser.getControl("E-mail me about changes to this bug report")
+    >>> browser.getControl("Email me about changes to this bug report")
     Traceback (most recent call last):
       ...
     LookupError: ...

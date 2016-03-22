@@ -10,7 +10,7 @@ and/or revoked from that user's +oauth-tokens page.
     # Create a desktop integration token.
     >>> login('salgado@ubuntu.com')
     >>> consumer = factory.makeOAuthConsumer(
-    ...     "System-wide: Ubuntu (mycomputer)")
+    ...     u"System-wide: Ubuntu (mycomputer)")
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> desktop_token, _ = factory.makeOAuthAccessToken(
     ...     consumer, salgado, OAuthPermission.DESKTOP_INTEGRATION)
@@ -18,7 +18,7 @@ and/or revoked from that user's +oauth-tokens page.
     # Create a request token, authorize it for READ_PRIVATE access,
     # but don't exchange it for an access token.
     >>> consumer = factory.makeOAuthConsumer(
-    ...     "Example consumer for READ_PRIVATE")
+    ...     u"Example consumer for READ_PRIVATE")
     >>> request_token = factory.makeOAuthRequestToken()
     >>> request_token.review(salgado, OAuthPermission.READ_PRIVATE)
     >>> logout()
@@ -112,7 +112,7 @@ include that.
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
     >>> login('salgado@ubuntu.com')
     >>> token, _ = getUtility(IOAuthConsumerSet).getByKey(
-    ...     'launchpad-library').newRequestToken()
+    ...     u'launchpad-library').newRequestToken()
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC,
     ...              context=getUtility(IProductSet)['firefox'])
     >>> access_token, _ = token.createAccessToken()

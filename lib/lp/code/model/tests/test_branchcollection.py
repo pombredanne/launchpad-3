@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
@@ -1052,6 +1052,17 @@ class TestBranchMergeProposals(TestCaseWithFactory):
             target_branch=mp1.target_branch)
         self.assertEqual([mp1], list(proposals))
 
+    def test_specifying_prerequisite_branch(self):
+        # If the prerequisite_branch is specified, only merge proposals
+        # where that branch is the prerequisite are returned.
+        prerequisite = self.factory.makeProductBranch()
+        mp1 = self.factory.makeBranchMergeProposal(
+            prerequisite_branch=prerequisite)
+        self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(
+            prerequisite_branch=prerequisite)
+        self.assertEqual([mp1], list(proposals))
+
 
 class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
     """Tests for IBranchCollection.getProposalsForReviewer()."""
@@ -1165,7 +1176,7 @@ class TestSearch(TestCaseWithFactory):
         # branch with that URL, then you get a single result with that branch.
         branch = self.factory.makeAnyBranch()
         self.factory.makeAnyBranch()
-        search_results = self.collection.search(branch.codebrowse_url())
+        search_results = self.collection.search(branch.getCodebrowseUrl())
         self.assertEqual([branch], list(search_results))
 
     def test_exact_match_with_lp_colon_url(self):
@@ -1224,7 +1235,8 @@ class TestSearch(TestCaseWithFactory):
         # queries. Rather bravely, we refuse to explode in this case.
         branch = self.factory.makeAnyBranch()
         self.factory.makeAnyBranch()
-        search_results = self.collection.search(branch.codebrowse_url() + '/')
+        search_results = self.collection.search(
+            branch.getCodebrowseUrl() + '/')
         self.assertEqual([branch], list(search_results))
 
     def test_match_exact_branch_name(self):

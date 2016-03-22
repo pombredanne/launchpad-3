@@ -18,7 +18,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugAlsoAffectsDistribution, self).setUp()
-        self.distribution = self.factory.makeDistribution()
+        self.distribution = self.factory.makeDistribution(displayname='Distro')
         removeSecurityProxy(self.distribution).official_malone = True
 
     def openBugPage(self, bug):

@@ -54,7 +54,7 @@ class IGitCollection(Interface):
             collection.
         """
 
-    def getRepositories(eager_load=False):
+    def getRepositories(eager_load=False, order_by_date=False):
         """Return a result set of all repositories in this collection.
 
         The returned result set will also join across the specified tables
@@ -64,10 +64,55 @@ class IGitCollection(Interface):
 
         :param eager_load: If True trigger eager loading of all the related
             objects in the collection.
+        :param order_by_date: If True, order results by descending
+            modification date.
         """
 
     def getRepositoryIds():
         """Return a result set of all repository ids in this collection."""
+
+    # XXX cjwatson 2015-04-16: Add something like for_repositories or
+    # for_refs once we know exactly what we need.
+    def getMergeProposals(statuses=None, target_repository=None,
+                          target_path=None, prerequisite_repository=None,
+                          prerequisite_path=None, eager_load=False):
+        """Return a result set of merge proposals for the repositories in
+        this collection.
+
+        :param statuses: If specified, only return merge proposals with these
+            statuses. If not, return all merge proposals.
+        :param target_repository: If specified, only return merge proposals
+            that target the specified repository.
+        :param target_path: If specified, only return merge proposals that
+            target the specified path.
+        :param prerequisite_repository: If specified, only return merge
+            proposals that require a reference in the specified repository to
+            be merged first.
+        :param prerequisite_path: If specified, only return merge proposals
+            that require a reference with the specified path to be merged
+            first.
+        :param eager_load: If True, preloads all the related information for
+            merge proposals like PreviewDiffs and GitRepositories.
+        """
+
+    def getMergeProposalsForPerson(person, status=None):
+        """Proposals for `person`.
+
+        Return the proposals for repositories owned by `person` or where
+        `person` is reviewing or been asked to review.
+        """
+
+    def getMergeProposalsForReviewer(reviewer, status=None):
+        """Return a result set of merge proposals for the given reviewer.
+
+        That is, all merge proposals that 'reviewer' has voted on or has
+        been invited to vote on.
+
+        :param reviewer: An `IPerson` who is a reviewer.
+        :param status: An iterable of queue_status of the proposals to
+            return.  If None is specified, all the proposals of all possible
+            states are returned.
+        """
 
     def getTeamsWithRepositories(person):
         """Return the teams that person is a member of that have
@@ -111,6 +156,19 @@ class IGitCollection(Interface):
 
         :param term: A string.
         :return: A `ResultSet` of repositories that matched.
+        """
+
+    def subscribedBy(person):
+        """Restrict the collection to repositories subscribed to by
+        'person'."""
+
+    def targetedBy(person, since=None):
+        """Restrict the collection to repositories targeted by person.
+
+        A repository is targeted by a person if that person has registered a
+        merge proposal with a reference in that repository as the target.
+
+        :param since: If supplied, ignore merge proposals before this date.
         """
 
     def visibleByUser(person):

@@ -45,7 +45,7 @@ Its application bar has enabled entries for Code, Bugs and Answers, and
 they all point to the `DistributionSourcePackage` (parent) url.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Test > testing-dspr package
+    Hierarchy: ubuntutest > testing-dspr package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
     * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
@@ -105,8 +105,6 @@ uploaded to.
     Breezy Badger Autotest
     Original maintainer:
     Maintainer
-    Component:
-    main
     Architectures:
     all
     Section:
@@ -227,7 +225,7 @@ are available.
     View changes file
 
     >>> print anon_browser.getLink('0.9 to 1.0').url
-    http://.../101/testing-dspr_0.9_1.0.diff.gz
+    http://.../.../testing-dspr_0.9_1.0.diff.gz
 
 Finally, the 'Binary packages' section lists all binary packages
 produced by this source. Each binary links to its specific

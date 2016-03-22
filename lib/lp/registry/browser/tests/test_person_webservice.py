@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from storm.store import Store
-from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -16,6 +15,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
@@ -23,6 +23,7 @@ from lp.testing import (
     launchpadlib_for,
     login,
     logout,
+    person_logged_in,
     record_two_runs,
     TestCaseWithFactory,
     )
@@ -177,7 +178,31 @@ class PersonWebServiceTests(TestCaseWithFactory):
         get_members()
         recorder1, recorder2 = record_two_runs(
             get_members, create_member, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_many_ppas(self):
+        # POSTing to a person with many PPAs doesn't OOPS.
+        with admin_logged_in():
+            team = self.factory.makeTeam()
+            owner = team.teamowner
+        new_member = self.factory.makePerson()
+        ws = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PUBLIC)
+        real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
+        snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
+        try:
+            with person_logged_in(owner):
+                for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
+                    self.factory.makeArchive(owner=team)
+                team_url = api_url(team)
+                new_member_url = api_url(new_member)
+            response = ws.named_post(
+                team_url, 'addMember', person=new_member_url,
+                status='Approved')
+            self.assertEqual(200, response.status)
+            self.assertEqual([True, 'Approved'], response.jsonBody())
+        finally:
+            snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
 
 
 class PersonSetWebServiceTests(TestCaseWithFactory):
@@ -232,7 +257,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         find_teams()
         recorder1, recorder2 = record_two_runs(
             find_teams, create_match, 2)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_findPerson(self):
         # The search can be restricted to people.

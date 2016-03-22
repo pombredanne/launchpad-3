@@ -396,13 +396,13 @@ If the remote server time is unknown, we will refuse to import any
 comments from it. Bug watches will still be updated, but a warning is
 logged saying that comments won't be imported.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     ISupportsCommentImport,
     ...     )
-    >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
+    >>> @implementer(ISupportsCommentImport)
+    ... class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     baseurl = 'http://whatever.com'
-    ...     implements(ISupportsCommentImport)
     ...     sync_comments = True
 
     >>> checkwatches_master = CheckwatchesMaster(
@@ -518,7 +518,7 @@ passed to getModifiedRemoteBugs(). Only the bugs that have been modified
 will then be passed on to initializeRemoteBugDB().
 
     >>> some_time_ago = datetime(
-    ...     2007, 03, 17, 16, 00, tzinfo=pytz.timezone('UTC'))
+    ...     2007, 3, 17, 16, 0, tzinfo=pytz.timezone('UTC'))
     >>> for bug_watch in bug_watches:
     ...     bug_watch.lastchecked = some_time_ago
     >>> transaction.commit()

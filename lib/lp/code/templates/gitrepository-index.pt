@@ -9,6 +9,10 @@
 
 <metal:block fill-slot="head_epilogue">
   <style type="text/css">
+    #merge-summary, #recipe-summary {
+      margin-top: .5em;
+      margin-bottom: .1em;
+    }
     #clone-url dt {
       font-weight: strong;
     }
@@ -18,19 +22,20 @@
 <body>
 
 <metal:side fill-slot="side">
+  <div tal:replace="structure context/@@+portlet-privacy" />
   <div tal:replace="structure context/@@+global-actions" />
+  <tal:subscribers replace="structure context/@@+portlet-subscribers" />
 </metal:side>
 
 <tal:registering metal:fill-slot="registering">
-  Created by
-    <tal:registrant replace="structure context/registrant/fmt:link" />
-  on
-    <tal:created-on replace="structure context/date_created/fmt:date" />
-  and last modified on
-    <tal:last-modified replace="structure context/date_last_modified/fmt:date" />
+  Owned by <tal:owner replace="structure context/owner/fmt:link" />
 </tal:registering>
 
 <div metal:fill-slot="main">
+
+  <div id="repository-description" tal:condition="context/description"
+       class="summary"
+       tal:content="structure context/description/fmt:text-to-html" />
 
   <div class="yui-g first">
     <div id="repository-management" class="portlet">
@@ -40,10 +45,32 @@
   </div>
 
   <div class="yui-g">
-    <div id="repository-info" class="portlet">
-      <h2>Repository information</h2>
-      <tal:repository-info
-          replace="structure context/@@++repository-information" />
+    <div id="repository-relations" class="portlet">
+      <tal:repository-recipes
+           replace="structure context/@@++repository-recipes" />
+      <div metal:use-macro="context/@@+snap-macros/related-snaps">
+        <metal:context-type fill-slot="context_type">repository</metal:context-type>
+      </div>
+    </div>
+  </div>
+
+  <div class="yui-g">
+    <div id="repository-branches" class="portlet"
+         tal:define="branches view/branches">
+      <h2>Branches</h2>
+      <tal:repository-branches replace="structure branches/@@+ref-listing" />
+    </div>
+  </div>
+
+  <div class="yui-g" tal:condition="context/pending_writes">
+    <div class="portlet">
+      <div id="repository-pending-writes" class="pending-update">
+        <h3>Updating repository...</h3>
+        <p>
+          Launchpad is processing new changes to this repository which will
+          be available shortly. Reload to see the changes.
+        </p>
+      </div>
     </div>
   </div>
 

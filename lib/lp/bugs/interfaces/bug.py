@@ -285,7 +285,6 @@ class IBugView(Interface):
             value_type=Reference(schema=ICve),
             readonly=True))
     has_cves = Bool(title=u"True if the bug has cve entries.")
-    cve_links = Attribute('Links between this bug and CVE entries.')
     duplicates = exported(doNotSnapshot(
         CollectionField(
             title=_("MultiJoin of bugs which are dupes of this one."),
@@ -399,9 +398,6 @@ class IBugView(Interface):
             messages too. If False the parent attribute will be *forced* to
             None to prevent lazy evaluation triggering database lookups.
         """
-
-    def hasBranch(branch):
-        """Is this branch linked to this bug?"""
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -813,16 +809,16 @@ class IBugEdit(Interface):
         file_alias.restricted.
         """
 
-    @call_with(user=REQUEST_USER, return_cve=False)
+    @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def linkCVE(cve, user, return_cve=True):
+    def linkCVE(cve, user, check_permissions=True):
         """Ensure that this CVE is linked to this bug."""
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def unlinkCVE(cve, user):
+    def unlinkCVE(cve, user, check_permissions=True):
         """Ensure that any links between this bug and the given CVE are
         removed.
         """
@@ -1000,14 +996,15 @@ class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
-    linked_branches = exported(
+    linked_bugbranches = exported(
         CollectionField(
             title=_("Branches associated with this bug, usually "
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
-            readonly=True))
+            readonly=True),
+        exported_as='linked_branches')
 
-    @accessor_for(linked_branches)
+    @accessor_for(linked_bugbranches)
     @call_with(user=REQUEST_USER)
     @export_read_operation()
     @operation_for_version('beta')
@@ -1159,13 +1156,6 @@ class IBugSet(Interface):
         """Get a specific bug by its ID or nickname
 
         If it can't be found, NotFoundError will be raised.
-        """
-
-    def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs for the BugWatch and bug tracker.
-
-        Find one or None bugs in Launchpad that have a BugWatch matching
-        the given bug tracker and remote bug id.
         """
 
     def createBug(bug_params, notify_event=True):

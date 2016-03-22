@@ -22,11 +22,11 @@ from storm.expr import (
     Select,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     queryMultiAdapter,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
@@ -83,14 +83,13 @@ def adapt(obj, interface):
         return None
 
 
+@implementer(ILinkedBranchTraversable)
 class RootTraversable:
     """Root traversable for linked branch objects.
 
     Corresponds to '/' in the path. From here, you can traverse to a
     distribution or a product.
     """
-
-    implements(ILinkedBranchTraversable)
 
     def traverse(self, name, segments):
         """See `ITraversable`.
@@ -101,7 +100,8 @@ class RootTraversable:
         if not valid_name(name):
             raise InvalidProductName(name)
         pillar = getUtility(IPillarNameSet).getByName(name)
-        if pillar is None:
+        if (pillar is None
+                or not check_permission('launchpad.LimitedView', pillar)):
             # Actually, the pillar is no such *anything*. The user might be
             # trying to refer to a project group, a distribution or a
             # project. We raise a NoSuchProduct error since that's what we
@@ -120,14 +120,13 @@ class _BaseTraversable:
         self.context = context
 
 
+@adapter(IProduct)
+@implementer(ILinkedBranchTraversable)
 class ProductTraversable(_BaseTraversable):
     """Linked branch traversable for products.
 
     From here, you can traverse to a product series.
     """
-
-    adapts(IProduct)
-    implements(ILinkedBranchTraversable)
 
     def traverse(self, name, segments):
         """See `ITraversable`.
@@ -142,14 +141,13 @@ class ProductTraversable(_BaseTraversable):
         return series
 
 
+@adapter(IDistribution)
+@implementer(ILinkedBranchTraversable)
 class DistributionTraversable(_BaseTraversable):
     """Linked branch traversable for distributions.
 
     From here, you can traverse to a distribution series.
     """
-
-    adapts(IDistribution)
-    implements(ILinkedBranchTraversable)
 
     def traverse(self, name, segments):
         """See `ITraversable`."""
@@ -165,14 +163,13 @@ class DistributionTraversable(_BaseTraversable):
             return sourcepackage
 
 
+@adapter(IDistroSeries, DBItem)
+@implementer(ILinkedBranchTraversable)
 class DistroSeriesTraversable:
     """Linked branch traversable for distribution series.
 
     From here, you can traverse to a source package.
     """
-
-    adapts(IDistroSeries, DBItem)
-    implements(ILinkedBranchTraversable)
 
     def __init__(self, distroseries, pocket):
         self.distroseries = distroseries
@@ -186,10 +183,9 @@ class DistroSeriesTraversable:
         return sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
+@implementer(ILinkedBranchTraverser)
 class LinkedBranchTraverser:
     """Utility for traversing to objects that can have linked branches."""
-
-    implements(ILinkedBranchTraverser)
 
     def traverse(self, path):
         """See `ILinkedBranchTraverser`."""
@@ -204,10 +200,9 @@ class LinkedBranchTraverser:
         return context
 
 
+@implementer(IBranchLookup)
 class BranchLookup:
     """Utility for looking up branches."""
-
-    implements(IBranchLookup)
 
     def get(self, branch_id, default=None):
         """See `IBranchLookup`."""
@@ -253,14 +248,7 @@ class BranchLookup:
         if uri.scheme == 'lp':
             if not self._uriHostAllowed(uri):
                 return None
-            try:
-                return self.getByLPPath(uri.path.lstrip('/'))[0]
-            except (
-                CannotHaveLinkedBranch, InvalidNamespace, InvalidProductName,
-                NoSuchBranch, NoSuchPerson, NoSuchProduct,
-                NoSuchProductSeries, NoSuchDistroSeries,
-                NoSuchSourcePackageName, NoLinkedBranch):
-                return None
+            return self.getByPath(uri.path.lstrip('/'))
 
         return Branch.selectOneBy(url=url)
 
@@ -390,6 +378,16 @@ class BranchLookup:
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]
         return branch, suffix
+
+    def getByPath(self, path):
+        """See `IBranchLookup`."""
+        try:
+            return self.getByLPPath(path)[0]
+        except (
+            CannotHaveLinkedBranch, InvalidNamespace, InvalidProductName,
+            NoSuchBranch, NoSuchPerson, NoSuchProduct, NoSuchProductSeries,
+            NoSuchDistroSeries, NoSuchSourcePackageName, NoLinkedBranch):
+            return None
 
     def _getLinkedBranchAndPath(self, provided):
         """Get the linked branch for 'provided', and the bzr_path.

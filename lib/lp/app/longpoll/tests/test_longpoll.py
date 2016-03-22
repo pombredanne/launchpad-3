@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 
@@ -35,18 +35,16 @@ class IFakeObject(Interface):
     ident = Attribute("ident")
 
 
+@implementer(IFakeObject)
 class FakeObject:
-
-    implements(IFakeObject)
 
     def __init__(self, ident):
         self.ident = ident
 
 
+@adapter(IFakeObject)
+@implementer(ILongPollEvent)
 class FakeEvent:
-
-    adapts(IFakeObject)
-    implements(ILongPollEvent)
 
     def __init__(self, source):
         self.source = source

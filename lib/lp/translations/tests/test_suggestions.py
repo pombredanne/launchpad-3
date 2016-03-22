@@ -102,7 +102,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         text = "error message 936"
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        translation = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, current_other=False, potmsgset=barmsg)
 
         transaction.commit()
@@ -111,8 +111,10 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         self.assertEquals(len(used_suggestions), 1)
-        used_suggestions = foomsg.getExternallySuggestedOrUsedTranslationMessages(
-            used_languages=[self.nl], suggested_languages=[self.nl])[self.nl].used
+        used_suggestions = (
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[self.nl],
+                suggested_languages=[self.nl])[self.nl].used)
         self.assertEquals(len(used_suggestions), 1)
 
         # Override the config option to disable global suggestions.
@@ -189,8 +191,10 @@ class TestTranslationSuggestions(TestCaseWithFactory):
             self.nl)
         self.assertEquals(len(suggestions), 1)
         self.assertEquals(suggestions[0], suggestion1)
-        suggestions = oof_potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-            suggested_languages=[self.nl], used_languages=[self.nl])[self.nl].used
+        suggestions = (
+            oof_potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[self.nl],
+                used_languages=[self.nl])[self.nl].used)
         self.assertEquals(len(suggestions), 1)
         self.assertEquals(suggestions[0], suggestion1)
 
@@ -201,11 +205,11 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         translated_in_ubuntu = "Ubuntu translation."
         translated_upstream = "Upstream translation."
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
-        suggestion1 = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
             translations={0: translated_in_ubuntu},
             current_other=False)
-        suggestion2 = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
             translations={0: translated_upstream},
             current_other=True)

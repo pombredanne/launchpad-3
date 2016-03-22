@@ -124,7 +124,7 @@ class TestProcessWithTimeout(ProcessTestsMixin, TestCase):
         self.protocol.transport.exited = True
 
         # Without catching the ProcessExitedAlready this will blow up.
-        self.clock.advance(self.TIMEOUT+1)
+        self.clock.advance(self.TIMEOUT + 1)
 
         # At this point, processEnded is yet to be called so the
         # Deferred has not fired.  Ideally it would be nice to test for
@@ -238,7 +238,7 @@ class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
         # is not called until any deferred returned by the first one fires.
         deferred = defer.Deferred()
         calls = []
-        self.protocol.runNotification(lambda : deferred)
+        self.protocol.runNotification(lambda: deferred)
         self.protocol.runNotification(calls.append, 'called')
         self.assertEqual(calls, [])
         deferred.callback(None)
@@ -251,7 +251,7 @@ class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
         # in the mean time are not run.
         deferred = defer.Deferred()
         calls = []
-        self.protocol.runNotification(lambda : deferred)
+        self.protocol.runNotification(lambda: deferred)
         self.protocol.runNotification(calls.append, 'called')
         self.assertEqual(calls, [])
         deferred.errback(makeFailure(RuntimeError))
@@ -263,7 +263,7 @@ class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
         # Don't fire the termination deferred until all notifications are
         # complete, even if the process has died.
         deferred = defer.Deferred()
-        self.protocol.runNotification(lambda : deferred)
+        self.protocol.runNotification(lambda: deferred)
         self.simulateProcessExit()
         notificaion_pending = True
         self.termination_deferred.addCallback(
@@ -277,7 +277,7 @@ class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
         # notification subsequently fails, the notification's failure is
         # passed on to the termination deferred.
         deferred = defer.Deferred()
-        self.protocol.runNotification(lambda : deferred)
+        self.protocol.runNotification(lambda: deferred)
         self.simulateProcessExit()
         deferred.errback(makeFailure(RuntimeError))
         return assert_fails_with(
@@ -290,7 +290,7 @@ class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
         # fails, the ProcessTerminated is still passed on to the
         # termination deferred.
         deferred = defer.Deferred()
-        self.protocol.runNotification(lambda : deferred)
+        self.protocol.runNotification(lambda: deferred)
         self.simulateProcessExit(clean=False)
         runtime_error_failure = makeFailure(RuntimeError)
         deferred.errback(runtime_error_failure)
@@ -305,7 +305,7 @@ class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
         # notification subsequently fails, the first failure "wins" and is
         # passed on to the termination deferred.
         deferred = defer.Deferred()
-        self.protocol.runNotification(lambda : deferred)
+        self.protocol.runNotification(lambda: deferred)
         self.protocol.unexpectedError(makeFailure(TypeError))
         runtime_error_failure = makeFailure(RuntimeError)
         deferred.errback(runtime_error_failure)
@@ -345,7 +345,7 @@ class TestProcessMonitorProtocolWithTimeout(ProcessTestsMixin, TestCase):
     def test_processExitingResetsTimeout(self):
         # When the process exits, the timeout is reset.
         deferred = defer.Deferred()
-        self.protocol.runNotification(lambda : deferred)
+        self.protocol.runNotification(lambda: deferred)
         self.clock.advance(self.timeout - 1)
         self.simulateProcessExit()
         self.clock.advance(2)
@@ -368,8 +368,10 @@ class TestRunProcessWithTimeout(TestCase):
         # On success, i.e process succeeded before the specified timeout,
         # callback is fired with 'None'.
         d = run_process_with_timeout(('true',))
+
         def check_success_result(result):
             self.assertEquals(result, None, "Success result is not None.")
+
         d.addCallback(check_success_result)
         return d
 

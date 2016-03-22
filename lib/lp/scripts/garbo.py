@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -70,7 +70,10 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.person import Person
+from lp.registry.model.person import (
+    Person,
+    PersonSettings,
+    )
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamMembership
 from lp.services.config import config
@@ -116,6 +119,8 @@ from lp.services.scripts.base import (
     )
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webhooks.interfaces import IWebhookJobSource
+from lp.services.webhooks.model import WebhookJob
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -1092,6 +1097,45 @@ class BranchJobPruner(BulkPruner):
         """
 
 
+class GitJobPruner(BulkPruner):
+    """Prune `GitJob`s that are in a final state and more than a month old.
+
+    When a GitJob is completed, it gets set to a final state.  These jobs
+    should be pruned from the database after a month.
+    """
+    target_table_class = Job
+    ids_to_prune_query = """
+        SELECT DISTINCT Job.id
+        FROM Job, GitJob
+        WHERE
+            Job.id = GitJob.job
+            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
+        """
+
+
+class WebhookJobPruner(TunableLoop):
+    """Prune `WebhookJobs` that finished more than a month ago."""
+
+    maximum_chunk_size = 5000
+
+    @property
+    def old_jobs(self):
+        return IMasterStore(WebhookJob).using(WebhookJob, Job).find(
+            (WebhookJob.job_id,),
+            Job.id == WebhookJob.job_id,
+            Job.date_finished < SQL(
+                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '30 days'::interval"))
+
+    def __call__(self, chunksize):
+        getUtility(IWebhookJobSource).deleteByIDs(
+            list(self.old_jobs[:int(chunksize)].values(WebhookJob.job_id)))
+        transaction.commit()
+
+    def isDone(self):
+        return self.old_jobs.is_empty()
+
+
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -1346,6 +1390,32 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class ProductVCSPopulator(TunableLoop):
+    """Populates product.vcs from product.inferred_vcs if not set."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(ProductVCSPopulator, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Product)
+
+    def findProducts(self):
+        return self.store.find(
+            Product, Product.id >= self.start_at).order_by(Product.id)
+
+    def isDone(self):
+        return self.findProducts().is_empty()
+
+    def __call__(self, chunk_size):
+        products = list(self.findProducts()[:chunk_size])
+        for product in products:
+            if not product.vcs:
+                product.vcs = product.inferred_vcs
+        self.start_at = products[-1].id + 1
+        transaction.commit()
+
+
 class LiveFSFilePruner(BulkPruner):
     """A BulkPruner to remove old `LiveFSFile`s.
 
@@ -1366,6 +1436,29 @@ class LiveFSFilePruner(BulkPruner):
                 - CAST('1 day' AS interval)
             AND LibraryFileAlias.mimetype != 'text/plain'
         """
+
+
+class PersonSettingsENFPopulator(BulkPruner):
+    """Populates PersonSettings.expanded_notification_footers."""
+
+    target_table_class = PersonSettings
+    ids_to_prune_query = """
+        SELECT person
+        FROM PersonSettings
+        WHERE expanded_notification_footers IS NULL
+        """
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        result = self.store.execute("""
+            UPDATE PersonSettings
+            SET expanded_notification_footers = FALSE
+            WHERE person IN (
+                SELECT * FROM
+                cursor_fetch('%s', %d) AS f(person integer))
+            """ % (self.cursor_name, chunk_size))
+        self._num_removed = result.rowcount
+        transaction.commit()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
@@ -1594,12 +1687,12 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-frequently'
     tunable_loops = [
-        BugSummaryJournalRollup,
-        OpenIDConsumerNoncePruner,
-        OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
-        VoucherRedeemer,
+        BugSummaryJournalRollup,
+        OpenIDConsumerAssociationPruner,
+        OpenIDConsumerNoncePruner,
         PopulateLatestPersonSourcePackageReleaseCache,
+        VoucherRedeemer,
         ]
     experimental_tunable_loops = []
 
@@ -1616,11 +1709,11 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-hourly'
     tunable_loops = [
-        RevisionCachePruner,
-        BugWatchScheduler,
-        UnusedSessionPruner,
-        DuplicateSessionPruner,
         BugHeatUpdater,
+        BugWatchScheduler,
+        DuplicateSessionPruner,
+        RevisionCachePruner,
+        UnusedSessionPruner,
         ]
     experimental_tunable_loops = []
 
@@ -1645,21 +1738,25 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugWatchActivityPruner,
         CodeImportEventPruner,
         CodeImportResultPruner,
+        DiffPruner,
+        GitJobPruner,
         HWSubmissionEmailLinker,
         LiveFSFilePruner,
         LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
+        PersonSettingsENFPopulator,
+        POTranslationPruner,
+        PreviewDiffPruner,
+        ProductVCSPopulator,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         TeamMembershipPruner,
-        POTranslationPruner,
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
-        PreviewDiffPruner,
-        DiffPruner,
+        WebhookJobPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

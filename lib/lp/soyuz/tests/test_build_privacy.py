@@ -25,11 +25,10 @@ class TestBuildPrivacy(TestCaseWithFactory):
         super(TestBuildPrivacy, self).setUp()
         # Add everything we need to create builds.
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        processor = self.factory.makeProcessor()
+        processor = self.factory.makeProcessor(supports_virtualized=True)
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processor=processor,
-            supports_virtualized=True)
+            distroseries=distroseries, processor=processor)
         with person_logged_in(self.admin):
             publisher = SoyuzTestPublisher()
             publisher.prepareBreezyAutotest()

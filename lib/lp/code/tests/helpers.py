@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -107,7 +107,7 @@ def make_erics_fooix_project(factory):
     proposed = factory.makeProductBranch(
         owner=fred, product=fooix, name='proposed')
     bmp = proposed.addLandingTarget(
-        registrant=fred, target_branch=trunk, needs_review=True,
+        registrant=fred, merge_target=trunk, needs_review=True,
         review_requests=[(eric, 'code')])
     # And fake a diff.
     naked_bmp = removeSecurityProxy(bmp)
@@ -117,7 +117,7 @@ def make_erics_fooix_project(factory):
     naked_bmp.target_branch.last_scanned_id = preview.target_revision_id
     preview.diff_lines_count = 47
     preview.added_lines_count = 7
-    preview.remvoed_lines_count = 13
+    preview.removed_lines_count = 13
     preview.diffstat = {'file1': (3, 8), 'file2': (4, 5)}
     return {
         'eric': eric, 'fooix': fooix, 'trunk': trunk, 'feature': feature,
@@ -186,59 +186,6 @@ def make_package_branches(factory, series, sourcepackagename, branch_count,
         official.append(branch)
 
     return series, branches, official
-
-
-def make_mint_distro_with_branches(factory):
-    """This method makes a distro called mint with many branches.
-
-    The mint distro has the following series and status:
-        wild - experimental
-        dev - development
-        stable - current
-        old - supported
-        very-old - supported
-        ancient - supported
-        mouldy - supported
-        dead - obsolete
-
-    The mint distro has a team: mint-team, which has Albert, Bob, and Charlie
-    as members.
-
-    There are four different source packages:
-        twisted, zope, bzr, python
-    """
-    albert, bob, charlie = [
-        factory.makePerson(name=name, email=("%s@mint.example.com" % name))
-        for name in ('albert', 'bob', 'charlie')]
-    mint_team = factory.makeTeam(owner=albert, name="mint-team")
-    mint_team.addMember(bob, albert)
-    mint_team.addMember(charlie, albert)
-    mint = factory.makeDistribution(
-        name='mint', displayname='Mint', owner=albert, members=mint_team)
-    series = [
-        ("wild", "5.5", SeriesStatus.EXPERIMENTAL),
-        ("dev", "4.0", SeriesStatus.DEVELOPMENT),
-        ("stable", "3.0", SeriesStatus.CURRENT),
-        ("old", "2.0", SeriesStatus.SUPPORTED),
-        ("very-old", "1.5", SeriesStatus.SUPPORTED),
-        ("ancient", "1.0", SeriesStatus.SUPPORTED),
-        ("mouldy", "0.6", SeriesStatus.SUPPORTED),
-        ("dead", "0.1", SeriesStatus.OBSOLETE),
-        ]
-    for name, version, status in series:
-        factory.makeDistroSeries(
-            distribution=mint, version=version, status=status, name=name)
-
-    for pkg_index, name in enumerate(['twisted', 'zope', 'bzr', 'python']):
-        for series_index, series in enumerate(mint.series):
-            # Over the series and source packages, we want to have different
-            # combinations of official and branch counts.
-            # Make the more recent series have most official branches.
-            official_count = 6 - series_index
-            branch_count = official_count + pkg_index
-            make_package_branches(
-                factory, series, name, branch_count, official_count,
-                owner=mint_team, registrant=albert)
 
 
 def make_official_package_branch(factory, owner=None):

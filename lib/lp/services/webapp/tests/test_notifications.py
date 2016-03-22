@@ -10,7 +10,7 @@ import unittest
 
 from zope.app.testing import placelesssetup
 from zope.component import provideAdapter
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.http import IHTTPApplicationResponse
@@ -27,8 +27,8 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.notifications import NotificationResponse
 
 
+@implementer(ISession)
 class MockSession(dict):
-    implements(ISession)
 
     def __getitem__(self, key):
         try:
@@ -38,8 +38,8 @@ class MockSession(dict):
             return super(MockSession, self).__getitem__(key)
 
 
+@implementer(ISessionData)
 class MockSessionData(dict):
-    implements(ISessionData)
 
     lastAccessTime = 0
 
@@ -47,8 +47,8 @@ class MockSessionData(dict):
         return self
 
 
+@implementer(IHTTPApplicationResponse)
 class MockHTTPApplicationResponse:
-    implements(IHTTPApplicationResponse)
 
     def redirect(self, location, status=None, trusted=False):
         """Just report the redirection to the doctest"""
@@ -100,4 +100,3 @@ def test_suite():
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')
-

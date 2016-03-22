@@ -14,10 +14,9 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.enums import CodeReviewVote
-from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment,
@@ -60,15 +59,9 @@ def quote_text_as_email(text, width=80):
     return '\n'.join(result)
 
 
+@implementer(ICodeReviewComment, ICodeReviewCommentDeletion, IHasBranchTarget)
 class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
-
-    implements(
-        IBranchNavigationMenu,
-        ICodeReviewComment,
-        ICodeReviewCommentDeletion,
-        IHasBranchTarget,
-        )
 
     _table = 'CodeReviewMessage'
 
@@ -97,8 +90,8 @@ class CodeReviewComment(SQLBase):
     @property
     def title(self):
         return ('Comment on proposed merge of %(source)s into %(target)s' %
-            {'source': self.branch_merge_proposal.source_branch.displayname,
-             'target': self.branch_merge_proposal.target_branch.displayname,
+            {'source': self.branch_merge_proposal.merge_source.display_name,
+             'target': self.branch_merge_proposal.merge_target.display_name,
             })
 
     @property
@@ -131,4 +124,3 @@ class CodeReviewComment(SQLBase):
         if self.message.raw is None:
             return None
         return signed_message_from_string(self.message.raw.read())
-

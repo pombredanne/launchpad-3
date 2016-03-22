@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.daemons.tachandler"""
@@ -26,7 +26,11 @@ from lp.services.daemons.tachandler import (
     TacException,
     TacTestSetup,
     )
-from lp.services.osutils import get_pid_from_file
+from lp.services.osutils import (
+    get_pid_from_file,
+    override_environ,
+    )
+from lp.testing.layers import DatabaseLayer
 
 
 class SimpleTac(TacTestSetup):
@@ -70,6 +74,8 @@ class IsRunning(Matcher):
 class TacTestSetupTestCase(testtools.TestCase):
     """Some tests for the error handling of TacTestSetup."""
 
+    layer = DatabaseLayer
+
     def test_okay(self):
         """TacTestSetup sets up and runs a simple service."""
         tempdir = self.useFixture(TempDir()).path
@@ -80,6 +86,21 @@ class TacTestSetupTestCase(testtools.TestCase):
             with fixture:
                 self.assertThat(fixture, IsRunning())
             self.assertThat(fixture, Not(IsRunning()))
+
+        # No warnings are emitted.
+        self.assertEqual([], warnings_log)
+
+    def test_debug_sql(self):
+        """TacTestSetup works even under LP_DEBUG_SQL=1."""
+        tempdir = self.useFixture(TempDir()).path
+        fixture = SimpleTac("okay", tempdir)
+
+        # Fire up the fixture, capturing warnings.
+        with override_environ(LP_DEBUG_SQL="1"):
+            with warnings.catch_warnings(record=True) as warnings_log:
+                with fixture:
+                    self.assertThat(fixture, IsRunning())
+                self.assertThat(fixture, Not(IsRunning()))
 
         # No warnings are emitted.
         self.assertEqual([], warnings_log)

@@ -4,15 +4,15 @@ Objects which provide that interface can only be changed by the owner
 itself or a Launchpad admin.
 
     # First we define a class which only provides IHasOwner.
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.role import (
     ...     IHasOwner,
     ...     IPersonRoles,
     ...     )
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> class FooObject:
-    ...     implements(IHasOwner)
+    >>> @implementer(IHasOwner)
+    ... class FooObject:
     ...     owner = salgado
 
 Salgado is the owner of any FooObject we create, so he can edit it.

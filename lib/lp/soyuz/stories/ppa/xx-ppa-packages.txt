@@ -137,7 +137,7 @@ published, this will be indicated to the viewer:
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_ppa = cprov.archive
     >>> pmount_i386_pub = cprov_ppa.getAllPublishedBinaries(
-    ...     name='pmount', version='0.1-1')[1]
+    ...     name=u'pmount', version='0.1-1')[1]
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
     >>> from lp.soyuz.enums import PackagePublishingStatus

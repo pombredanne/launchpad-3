@@ -36,8 +36,8 @@ from zope.schema import (
 from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.services.librarian.interfaces import ILibraryFileAlias
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 class InconsistentBuildFarmJobError(Exception):
@@ -226,6 +226,13 @@ class IBuildFarmJob(Interface):
                 'Debian-like dependency line that must be satisfied before '
                 'attempting to build this request.')),
         as_of="beta")
+
+    # Only really used by IBinaryPackageBuild, but
+    # get_sources_list_for_building looks up this attribute for all build
+    # types.
+    external_dependencies = Attribute(
+        "Newline-separated list of repositories to be used to retrieve any "
+        "external build-dependencies when performing this build.")
 
 
 class ISpecificBuildFarmJobSource(Interface):

@@ -34,6 +34,7 @@ class IPackageRelationship(Interface):
     url = Attribute("URL to where this token should link to. It can be None, "
                     "in this case no link should be rendered.")
 
+
 class IPackageRelationshipSet(Interface):
     """IPackageRelationShip aggregator."""
 

@@ -88,7 +88,7 @@ because BugWatch.remotebug is a NOT NULL field).
 By contrast, if the message ID is known it is recorded in the remotebug
 field.
 
-    >>> from email.Utils import make_msgid
+    >>> from email.utils import make_msgid
     >>> message_id = make_msgid('launchpad')
     >>> bug_watch = example_bug.addWatch(bugtracker=email_tracker,
     ...     remotebug=message_id,

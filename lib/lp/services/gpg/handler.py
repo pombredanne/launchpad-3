@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,8 +23,9 @@ import urllib
 import urllib2
 
 import gpgme
+from gpgservice_client import GPGClient
 from lazr.restful.utils import get_current_browser_request
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.validators.email import valid_email
 from lp.services.config import config
@@ -37,6 +38,7 @@ from lp.services.gpg.interfaces import (
     GPGKeyTemporarilyNotFoundError,
     GPGUploadFailure,
     GPGVerificationError,
+    IGPGClient,
     IGPGHandler,
     IPymeKey,
     IPymeSignature,
@@ -64,10 +66,9 @@ signing_only_param = """
 """
 
 
+@implementer(IGPGHandler)
 class GPGHandler:
     """See IGPGHandler."""
-
-    implements(IGPGHandler)
 
     def __init__(self):
         """Initialize environment variable."""
@@ -86,15 +87,18 @@ class GPGHandler:
         """
         self.home = tempfile.mkdtemp(prefix='gpg-')
         confpath = os.path.join(self.home, 'gpg.conf')
-        conf = open(confpath, 'w')
         # set needed GPG options, 'auto-key-retrieve' is necessary for
         # automatically retrieve from the keyserver unknown key when
         # verifying signatures and 'no-auto-check-trustdb' avoid wasting
         # time verifying the local keyring consistence.
-        conf.write('keyserver hkp://%s\n'
-                   'keyserver-options auto-key-retrieve\n'
-                   'no-auto-check-trustdb\n' % config.gpghandler.host)
-        conf.close()
+        with open(confpath, 'w') as conf:
+            conf.write('keyserver hkp://%s\n' % config.gpghandler.host)
+            conf.write('keyserver-options auto-key-retrieve\n')
+            conf.write('no-auto-check-trustdb\n')
+            # Prefer a SHA-2 hash where possible, otherwise GPG will fall
+            # back to a hash it can use.
+            conf.write(
+                'personal-digest-preferences SHA512 SHA384 SHA256 SHA224\n')
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
 
@@ -107,15 +111,7 @@ class GPGHandler:
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
-        # remove whitespaces, truncate to max of 40 (as per v4 keys) and
-        # convert to upper case
-        fingerprint = fingerprint.replace(' ', '')
-        fingerprint = fingerprint[:40].upper()
-
-        if not valid_fingerprint(fingerprint):
-            return None
-
-        return fingerprint
+        return sanitize_fingerprint(fingerprint)
 
     def resetLocalState(self):
         """See IGPGHandler."""
@@ -454,23 +450,32 @@ class GPGHandler:
 
         conn.close()
 
-    def uploadPublicKey(self, fingerprint):
+    def uploadPublicKey(self, fingerprint, logger=None):
         """See IGPGHandler"""
+        if not config.gpghandler.upload_keys:
+            if logger is not None:
+                logger.info(
+                    "Not submitting key to keyserver "
+                    "(disabled in configuration).")
+            return
+
         pub_key = self.retrieveKey(fingerprint)
         self._submitKey(pub_key.export())
 
     def getURLForKeyInServer(self, fingerprint, action='index', public=False):
         """See IGPGHandler"""
         params = {
-            'search': '0x%s' % fingerprint,
             'op': action,
+            'search': '0x%s' % fingerprint,
+            'fingerprint': 'on',
             }
         if public:
             host = config.gpghandler.public_host
         else:
             host = config.gpghandler.host
-        return 'http://%s:%s/pks/lookup?%s' % (host, config.gpghandler.port,
-                                               urllib.urlencode(params))
+        return 'http://%s:%s/pks/lookup?%s' % (
+            host, config.gpghandler.port,
+            urllib.urlencode(sorted(params.items())))
 
     def _getPubKey(self, fingerprint):
         """See IGPGHandler for further information."""
@@ -512,9 +517,9 @@ class GPGHandler:
         return urlfetch(url)
 
 
+@implementer(IPymeSignature)
 class PymeSignature(object):
     """See IPymeSignature."""
-    implements(IPymeSignature)
 
     def __init__(self, fingerprint=None, plain_data=None, timestamp=None):
         """Initialized a signature container."""
@@ -523,9 +528,9 @@ class PymeSignature(object):
         self.timestamp = timestamp
 
 
+@implementer(IPymeKey)
 class PymeKey:
     """See IPymeKey."""
-    implements(IPymeKey)
 
     fingerprint = None
     exists_in_local_keyring = False
@@ -599,9 +604,9 @@ class PymeKey:
         return keydata.getvalue()
 
 
+@implementer(IPymeUserId)
 class PymeUserId:
     """See IPymeUserId"""
-    implements(IPymeUserId)
 
     def __init__(self, uid):
         self.revoked = uid.revoked
@@ -611,3 +616,31 @@ class PymeUserId:
         self.name = uid.name
         self.email = uid.email
         self.comment = uid.comment
+
+
+def sanitize_fingerprint(fingerprint):
+    """Sanitize a GPG fingerprint.
+
+    This is the ultimate implementation of IGPGHandler.sanitizeFingerprint, and
+    is also used by the IGPGClient implementation.
+    """
+    # remove whitespaces, truncate to max of 40 (as per v4 keys) and
+    # convert to upper case
+    fingerprint = fingerprint.replace(' ', '')
+    fingerprint = fingerprint[:40].upper()
+
+    if not valid_fingerprint(fingerprint):
+        return None
+
+    return fingerprint
+
+
+@implementer(IGPGClient)
+class LPGPGClient(GPGClient):
+    """See IGPGClient."""
+
+    def get_endpoint(self):
+        return "http://{}".format(config.gpgservice.api_endpoint)
+
+    def get_timeout(self):
+        return 30.0

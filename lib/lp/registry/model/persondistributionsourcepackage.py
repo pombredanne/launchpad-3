@@ -9,8 +9,8 @@ __all__ = [
     ]
 
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.registry.interfaces.persondistributionsourcepackage import (
@@ -19,11 +19,9 @@ from lp.registry.interfaces.persondistributionsourcepackage import (
     )
 
 
+@implementer(IPersonDistributionSourcePackage)
+@provider(IPersonDistributionSourcePackageFactory)
 class PersonDistributionSourcePackage:
-
-    implements(IPersonDistributionSourcePackage)
-
-    classProvides(IPersonDistributionSourcePackageFactory)
 
     def __init__(self, person, distro_source_package):
         self.person = person

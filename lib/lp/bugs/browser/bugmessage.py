@@ -28,13 +28,11 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
     schema = IBugMessageAddForm
     initial_focus_widget = None
 
+    page_title = "Add a comment or attachment"
+
     @property
     def label(self):
         return 'Add a comment or attachment to bug #%d' % self.context.bug.id
-
-    @property
-    def page_title(self):
-        return self.label
 
     @property
     def initial_values(self):
@@ -110,7 +108,7 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
             # If the patch flag is not consistent with the result of
             # the guess made in attachmentTypeConsistentWithContentType(),
             # we use the guessed type and lead the user to a page
-            # where he can override the flag value, if Launchpad's
+            # where they can override the flag value, if Launchpad's
             # guess is wrong.
             patch_flag_consistent = (
                 self.attachmentTypeConsistentWithContentType(

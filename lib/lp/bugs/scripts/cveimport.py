@@ -15,7 +15,7 @@ import xml.etree.cElementTree as cElementTree
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.lifecycleevent import ObjectModifiedEvent
 
 from lp.bugs.interfaces.cve import (
@@ -141,10 +141,9 @@ def update_one_cve(cve_node, log):
     return
 
 
+@implementer(ITunableLoop)
 class CveUpdaterTunableLoop(object):
     """An `ITunableLoop` for updating CVEs."""
-
-    implements(ITunableLoop)
 
     total_updated = 0
 

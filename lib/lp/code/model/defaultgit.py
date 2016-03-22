@@ -8,8 +8,8 @@ __metaclass__ = type
 # adapting another object.
 __all__ = []
 
-from zope.component import adapts
-from zope.interface import implements
+from zope.component import adapter
+from zope.interface import implementer
 
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -39,11 +39,10 @@ class BaseDefaultGitRepository:
         return not self == other
 
 
+@adapter(IProduct)
+@implementer(ICanHasDefaultGitRepository)
 class ProjectDefaultGitRepository(BaseDefaultGitRepository):
     """Implement a default Git repository for a project."""
-
-    adapts(IProduct)
-    implements(ICanHasDefaultGitRepository)
 
     sort_order = 0
 
@@ -56,11 +55,10 @@ class ProjectDefaultGitRepository(BaseDefaultGitRepository):
         return self.context.name
 
 
+@adapter(IDistributionSourcePackage)
+@implementer(ICanHasDefaultGitRepository)
 class PackageDefaultGitRepository(BaseDefaultGitRepository):
     """Implement a default Git repository for a distribution source package."""
-
-    adapts(IDistributionSourcePackage)
-    implements(ICanHasDefaultGitRepository)
 
     sort_order = 0
 
@@ -75,11 +73,10 @@ class PackageDefaultGitRepository(BaseDefaultGitRepository):
             self.context.sourcepackagename.name)
 
 
+@adapter(IPersonProduct)
+@implementer(ICanHasDefaultGitRepository)
 class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
     """Implement an owner's default Git repository for a project."""
-
-    adapts(IPersonProduct)
-    implements(ICanHasDefaultGitRepository)
 
     sort_order = 1
 
@@ -92,12 +89,11 @@ class OwnerProjectDefaultGitRepository(BaseDefaultGitRepository):
         return "~%s/%s" % (self.context.person.name, self.context.product.name)
 
 
+@adapter(IPersonDistributionSourcePackage)
+@implementer(ICanHasDefaultGitRepository)
 class OwnerPackageDefaultGitRepository(BaseDefaultGitRepository):
     """Implement an owner's default Git repository for a distribution source
     package."""
-
-    adapts(IPersonDistributionSourcePackage)
-    implements(ICanHasDefaultGitRepository)
 
     sort_order = 1
 

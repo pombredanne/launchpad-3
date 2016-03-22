@@ -27,7 +27,7 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
@@ -82,14 +82,13 @@ from lp.services.webapp.authorization import (
     )
 
 
+@implementer(ISharingService)
 class SharingService:
     """Service providing operations for adding and removing pillar grantees.
 
     Service is accessed via a url of the form
     '/services/sharing?ws.op=...
     """
-
-    implements(ISharingService)
 
     @property
     def name(self):
@@ -239,21 +238,6 @@ class SharingService:
             specifications = load(Specification, specification_ids)
 
         return bugtasks, branches, gitrepositories, specifications
-
-    def checkPillarArtifactAccess(self, pillar, user):
-        """See `ISharingService`."""
-        tables = [
-            AccessPolicyGrantFlat,
-            Join(
-                TeamParticipation,
-                TeamParticipation.teamID == AccessPolicyGrantFlat.grantee_id),
-            Join(
-                AccessPolicy,
-                AccessPolicy.id == AccessPolicyGrantFlat.policy_id)]
-        return not IStore(AccessPolicyGrantFlat).using(*tables).find(
-            AccessPolicyGrantFlat,
-            AccessPolicy.product_id == pillar.id,
-            TeamParticipation.personID == user.id).is_empty()
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBugs(self, pillar, person, user):
@@ -598,10 +582,10 @@ class SharingService:
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         # XXX 2012-03-22 wallyworld bug 961836
-        # We want to use person_sort_key(Person.displayname, Person.name) but
+        # We want to use person_sort_key(Person.display_name, Person.name) but
         # StormRangeFactory doesn't support that yet.
         grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
-            policies).order_by(Person.displayname, Person.name)
+            policies).order_by(Person.display_name, Person.name)
         return grant_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')

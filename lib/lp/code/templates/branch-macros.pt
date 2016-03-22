@@ -65,9 +65,9 @@
         <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
           2007-06-04
         </tal:merged>
-        <tal:have-revno condition="mergeproposal/merged_revno">
-          at revision <tal:revno replace="mergeproposal/merged_revno"/>
-        </tal:have-revno>
+        <tal:have-revision condition="mergeproposal/merged_revision">
+          at revision <tal:revision replace="mergeproposal/merged_revision"/>
+        </tal:have-revision>
       </div>
       </tal:show-status>
       <tal:show-links condition="show_associations|nothing">
@@ -274,8 +274,8 @@
     <div tal:define="merge_proposal python:rev_info['merge_proposal']"
          tal:condition="merge_proposal">
       <dd class="subordinate revision-comment">
-        Merged branch <a tal:attributes="href merge_proposal/fmt:url"
-                    tal:content="merge_proposal/source_branch/displayname">source branch</a>
+        <a tal:attributes="href merge_proposal/fmt:url">Merged</a> branch
+        <a tal:replace="structure merge_proposal/source_branch/fmt:link">source branch</a>
         <tal:linkedbugs
                 define="linked_bugtasks python:rev_info['linked_bugtasks']"
                 condition="linked_bugtasks">

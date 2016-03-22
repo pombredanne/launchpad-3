@@ -1,7 +1,7 @@
 = Editing FAQs =
 
 It is possible to modify the title, keywords and content of an existing
-FAQ. To do this, the user goes to the FAQ that he wants to modify and
+FAQ. To do this, the user goes to the FAQ that they want to modify and
 clicks the 'Edit FAQ' action.
 
 That action is only available to project owners and answer contacts.
@@ -48,8 +48,8 @@ project:
     >>> print browser.title
     Edit FAQ...
 
-The user can change the title, keywords and content fields. He then
-clicks 'Save' to save his changes.
+The user can change the title, keywords and content fields. They then
+click 'Save' to save their changes.
 
     >>> print browser.getControl('Title').value
     How do I install Java?
@@ -66,7 +66,7 @@ clicks 'Save' to save his changes.
 
     >>> browser.getControl('Save').click()
 
-The user can see his changes on the page:
+The user can see their changes on the page:
 
     >>> print browser.url
     http://answers.launchpad.dev/firefox/+faq/7

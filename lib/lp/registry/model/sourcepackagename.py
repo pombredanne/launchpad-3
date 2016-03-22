@@ -13,7 +13,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
@@ -33,8 +33,8 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import ensure_unicode
 
 
+@implementer(ISourcePackageName)
 class SourcePackageName(SQLBase):
-    implements(ISourcePackageName)
     _table = 'SourcePackageName'
 
     name = StringCol(dbName='name', notNull=True, unique=True,
@@ -59,8 +59,8 @@ class SourcePackageName(SQLBase):
     ensure = classmethod(ensure)
 
 
+@implementer(ISourcePackageNameSet)
 class SourcePackageNameSet:
-    implements(ISourcePackageNameSet)
 
     def __getitem__(self, name):
         """See `ISourcePackageNameSet`."""

@@ -294,7 +294,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2015
+      &copy; 2004-2016
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
@@ -312,7 +312,7 @@
 		>Careers</a>
       </tal:careers_link>
       &nbsp;&bull;&nbsp;
-      <a href="http://identi.ca/launchpadstatus"
+      <a href="https://twitter.com/launchpadstatus"
         >System status</a>
       <span id="lp-version">
       &nbsp;&bull;&nbsp;

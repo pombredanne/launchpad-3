@@ -7,17 +7,16 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
@@ -78,16 +77,15 @@ class PackageClonerTests(TestCaseWithFactory):
             distribution=distro, name=distroseries_name)
         das = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="i386",
-            processor=getUtility(IProcessorSet).getByName('386'),
-            supports_virtualized=True)
+            processor=getUtility(IProcessorSet).getByName('386'))
         distroseries.nominatedarchindep = das
         return distroseries
 
-    def getTargetArchive(self, distribution):
+    def getTargetArchive(self, distribution, processors=None):
         """Get a target archive for copying in to."""
         return self.factory.makeArchive(
             name="test-copy-archive", purpose=ArchivePurpose.COPY,
-            distribution=distribution)
+            distribution=distribution, processors=processors)
 
     def createSourcePublication(self, info, distroseries):
         """Create a SourcePackagePublishingHistory based on a PackageInfo."""
@@ -117,7 +115,8 @@ class PackageClonerTests(TestCaseWithFactory):
                         processors=None):
         """Make a copy archive based on a new distribution."""
         distroseries = self.createSourceDistribution(package_infos)
-        copy_archive = self.getTargetArchive(distroseries.distribution)
+        copy_archive = self.getTargetArchive(
+            distroseries.distribution, processors=processors)
         to_component = getUtility(IComponentSet).ensure(component)
         self.copyArchive(
             copy_archive, distroseries, from_pocket=source_pocket,
@@ -365,11 +364,10 @@ class PackageClonerTests(TestCaseWithFactory):
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         distroseries = self.createSourceDistribution([package_info])
-        # Create a DAS for a second processor. 
+        # Create a DAS for a second processor.
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
-            processor=getUtility(IProcessorSet).getByName('amd64'),
-            supports_virtualized=True)
+            processor=getUtility(IProcessorSet).getByName('amd64'))
         # The request builds for only one of the processors, so we
         # expect just one build for each source.
         processors = [getUtility(IProcessorSet).getByName('386')]
@@ -387,7 +385,7 @@ class PackageClonerTests(TestCaseWithFactory):
         amd64 = getUtility(IProcessorSet).getByName('amd64')
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
-            processor=amd64, supports_virtualized=True)
+            processor=amd64)
         # The request builds for both processors, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]
@@ -590,12 +588,6 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [package_infos[1]] + package_infos2)
 
-    def setArchiveArchitectures(self, archive, processors):
-        """Associate the archive with the processors."""
-        aa_set = getUtility(IArchiveArchSet)
-        for processor in processors:
-            aa_set.new(archive, processor)
-
     def testMergeCopyCreatesBuilds(self):
         package_infos = [
             PackageInfo(
@@ -606,7 +598,6 @@ class PackageClonerTests(TestCaseWithFactory):
         processors = [getUtility(IProcessorSet).getByName('386')]
         copy_archive, distroseries = self.makeCopyArchive(
             package_infos, processors=processors)
-        self.setArchiveArchitectures(copy_archive, processors)
         package_infos2 = [
             PackageInfo(
             "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
@@ -648,12 +639,12 @@ class PackageClonerTests(TestCaseWithFactory):
         amd64 = getUtility(IProcessorSet).getByName('amd64')
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
-            processor=amd64, supports_virtualized=True)
+            processor=amd64)
         # The request builds for both processors, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]
-        copy_archive = self.getTargetArchive(distroseries.distribution)
-        self.setArchiveArchitectures(copy_archive, processors)
+        copy_archive = self.getTargetArchive(
+            distroseries.distribution, processors=processors)
         self.copyArchive(
             copy_archive, distroseries, processors=processors)
         package_infos2 = [

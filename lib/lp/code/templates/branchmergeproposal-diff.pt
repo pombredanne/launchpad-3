@@ -6,6 +6,7 @@
        tal:define="attachment view/preview_diff/diff_text">
     <tal:real-diff condition="attachment">
       <div class="boardCommentDetails filename">
+        <div class="editorShortcutTip">[H/L] Next/Prev Comment, [J/K] Next/Prev File, [N/P] Next/Prev Hunk</div>
         <ul class="horizontal">
           <li>
             <a tal:attributes="href view/preview_diff/fmt:url">
@@ -13,10 +14,19 @@
               Download diff
             </a>
           </li>
+          <li tal:condition="not: request/ss|nothing">
+            <a tal:attributes="href string:?ss=1">Side-by-side diff</a>
+          </li>
+          <li tal:condition="request/ss|nothing">
+            <a tal:attributes="href string:?">Unified diff</a>
+          </li>
         </ul>
       </div>
       <div class="attachmentBody">
-        <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
+        <tal:diff condition="not: request/ss|nothing"
+                  replace="structure view/preview_diff_text/fmt:diff" />
+        <tal:ssdiff condition="request/ss|nothing"
+                    replace="structure view/preview_diff_text/fmt:ssdiff" />
         <tal:diff-not-available condition="not: view/diff_available">
             The diff is not available at this time. You can reload the
             page or download it.

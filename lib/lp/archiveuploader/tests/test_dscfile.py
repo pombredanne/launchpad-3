@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dscfile.py"""
@@ -187,6 +187,16 @@ class TestSignableTagFile(TestCaseWithFactory):
             UploadError,
             self.makeSignableTagFile().parseAddress, "invalid@bad-address")
 
+    def test_parseAddress_decodes_utf8(self):
+        name = u'B\u0105r'
+        email = u'bar@example.com'
+        results = self.makeSignableTagFile().parseAddress(
+            '%s <%s>' % (name.encode('utf-8'), email.encode('utf-8')))
+        self.assertEqual(email, results['email'])
+        self.assertEqual(name, results['name'])
+        self.assertEqual(name, results['person'].displayname)
+        self.assertEqual(email, results['person'].guessedemails[0].email)
+
 
 class TestDscFileLibrarian(TestCaseWithFactory):
     """Tests for DscFile that may use the Librarian."""
@@ -209,12 +219,12 @@ class TestDscFileLibrarian(TestCaseWithFactory):
     def test_ReadOnlyCWD(self):
         """Processing a file should work when cwd is read-only."""
         tempdir = self.useTempDir()
-        os.chmod(tempdir, 0555)
+        os.chmod(tempdir, 0o555)
         try:
             dsc_file = self.getDscFile('bar_1.0-1')
             list(dsc_file.verify())
         finally:
-            os.chmod(tempdir, 0755)
+            os.chmod(tempdir, 0o755)
 
 
 class BaseTestSourceFileVerification(TestCase):
@@ -390,7 +400,7 @@ class UnpackedDirTests(TestCase):
         os.mkdir(unpacked_dir)
         bar_path = os.path.join(unpacked_dir, "bar_1.0")
         os.mkdir(bar_path)
-        os.chmod(bar_path, 0600)
-        os.chmod(unpacked_dir, 0600)
+        os.chmod(bar_path, 0o600)
+        os.chmod(unpacked_dir, 0o600)
         cleanup_unpacked_dir(unpacked_dir)
         self.assertFalse(os.path.exists(unpacked_dir))

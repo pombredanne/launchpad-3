@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Master distro publishing script."""
@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import math
 import os
 import shutil
 
@@ -17,7 +18,10 @@ from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
-from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
+from lp.archivepublisher.publishing import (
+    cannot_modify_suite,
+    GLOBAL_PUBLISHER_LOCK,
+    )
 from lp.archivepublisher.scripts.processaccepted import ProcessAccepted
 from lp.archivepublisher.scripts.publishdistro import PublishDistro
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -28,6 +32,7 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.bulk import load_related
+from lp.services.osutils import ensure_directory_exists
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -429,12 +434,14 @@ class PublishFTPMaster(LaunchpadCronScript):
         publish_distro.main()
 
     def publishDistroArchive(self, distribution, archive,
-                             security_suites=None):
+                             security_suites=None, updated_suites=[]):
         """Publish the results for an archive.
 
         :param archive: Archive to publish.
         :param security_suites: An optional list of suites to restrict
             the publishing to.
+        :param updated_suites: An optional list of archive/suite pairs that
+            have been updated out of band and should be republished.
         """
         purpose = archive.purpose
         archive_config = self.configs[distribution][purpose]
@@ -449,6 +456,9 @@ class PublishFTPMaster(LaunchpadCronScript):
         arguments = ['-R', temporary_dists]
         if archive.purpose == ArchivePurpose.PARTNER:
             arguments.append('--partner')
+        for updated_archive, updated_suite in updated_suites:
+            if archive == updated_archive:
+                arguments.extend(['--dirty-suite', updated_suite])
 
         os.rename(get_backup_dists(archive_config), temporary_dists)
         try:
@@ -544,40 +554,67 @@ class PublishFTPMaster(LaunchpadCronScript):
             security_suites=security_suites)
         return True
 
-    def publishDistroUploads(self, distribution):
+    def publishDistroUploads(self, distribution, updated_suites=[]):
         """Publish the distro's complete uploads."""
         self.logger.debug("Full publication.  This may take some time.")
         for archive in get_publishable_archives(distribution):
             if archive.purpose in self.configs[distribution]:
                 # This, for the main archive, is where the script spends
                 # most of its time.
-                self.publishDistroArchive(distribution, archive)
+                self.publishDistroArchive(
+                    distribution, archive, updated_suites=updated_suites)
 
-    def updateContentsFile(self, distribution, suite, arch):
-        """Update a single Contents file if necessary."""
-        config = self.configs[distribution][ArchivePurpose.PRIMARY]
-        backup_dists = get_backup_dists(config)
-        content_dists = os.path.join(
-            config.distroroot, "contents-generation", distribution.name,
-            "dists")
-        contents_filename = "Contents-%s" % arch.architecturetag
-        current_contents = os.path.join(
-            backup_dists, suite, "%s.gz" % contents_filename)
-        new_contents = os.path.join(
-            content_dists, suite, "%s-staged.gz" % contents_filename)
-        if newer_mtime(new_contents, current_contents):
-            self.logger.debug(
-                "Installing new Contents file for %s/%s.", suite,
-                arch.architecturetag)
-            shutil.copy2(new_contents, current_contents)
+    def updateStagedFilesForSuite(self, archive_config, suite):
+        """Install all staged files for a single archive and suite.
 
-    def updateContentsFiles(self, distribution):
-        """Pick up updated Contents files if necessary."""
-        for series in distribution.getNonObsoleteSeries():
-            for pocket in PackagePublishingPocket.items:
-                suite = series.getSuite(pocket)
-                for arch in series.enabled_architectures:
-                    self.updateContentsFile(distribution, suite, arch)
+        :return: True if any files were installed, otherwise False.
+        """
+        backup_top = os.path.join(get_backup_dists(archive_config), suite)
+        staging_top = os.path.join(archive_config.stagingroot, suite)
+        updated = False
+        for staging_dir, _, filenames in os.walk(staging_top):
+            rel_dir = os.path.relpath(staging_dir, staging_top)
+            backup_dir = os.path.join(backup_top, rel_dir)
+            for filename in filenames:
+                new_path = os.path.join(staging_dir, filename)
+                current_path = os.path.join(backup_dir, filename)
+                if newer_mtime(new_path, current_path):
+                    self.logger.debug(
+                        "Updating %s from %s." % (current_path, new_path))
+                    ensure_directory_exists(os.path.dirname(current_path))
+                    # Due to http://bugs.python.org/issue12904, shutil.copy2
+                    # doesn't copy timestamps precisely, and unfortunately
+                    # it rounds down.  If we must lose accuracy, we need to
+                    # round up instead.  This can be removed (and the
+                    # try/except replaced by shutil.move) once Launchpad
+                    # runs on Python >= 3.3.
+                    try:
+                        os.rename(new_path, current_path)
+                    except OSError:
+                        shutil.copy2(new_path, current_path)
+                        st = os.stat(new_path)
+                        os.utime(
+                            current_path,
+                            (math.ceil(st.st_atime), math.ceil(st.st_mtime)))
+                        os.unlink(new_path)
+                    updated = True
+        return updated
+
+    def updateStagedFiles(self, distribution):
+        """Install all staged files for a distribution's archives."""
+        updated_suites = []
+        for archive in get_publishable_archives(distribution):
+            if archive.purpose not in self.configs[distribution]:
+                continue
+            archive_config = self.configs[distribution][archive.purpose]
+            for series in distribution.getNonObsoleteSeries():
+                for pocket in PackagePublishingPocket.items:
+                    suite = series.getSuite(pocket)
+                    if cannot_modify_suite(archive, series, pocket):
+                        continue
+                    if self.updateStagedFilesForSuite(archive_config, suite):
+                        updated_suites.append((archive, suite))
+        return updated_suites
 
     def publish(self, distribution, security_only=False):
         """Do the main publishing work.
@@ -594,8 +631,9 @@ class PublishFTPMaster(LaunchpadCronScript):
             if security_only:
                 has_published = self.publishSecurityUploads(distribution)
             else:
-                self.publishDistroUploads(distribution)
-                self.updateContentsFiles(distribution)
+                updated_suites = self.updateStagedFiles(distribution)
+                self.publishDistroUploads(
+                    distribution, updated_suites=updated_suites)
                 # Let's assume the main archive is always modified
                 has_published = True
 

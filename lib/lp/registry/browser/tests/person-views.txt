@@ -61,7 +61,7 @@ addresses.
     >>> view.visible_email_addresses
     [u'mark@example.com']
 
-As for Sample Person, he has chosen not to disclose his email addresses.
+As for Sample Person, they have chosen not to disclose their email addresses.
 
     >>> login(ANONYMOUS)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
@@ -78,7 +78,7 @@ Anonymous users can't see them because the state is LOGIN_REQUIRED.
     []
 
 No Privileges Person cannot see them either because the state is HIDDEN.
-There is no description for the email addresses because he cannot view
+There is no description for the email addresses because they cannot view
 them.
 
     >>> login('no-priv@canonical.com')
@@ -173,7 +173,7 @@ The PersonView provides a comma separated list of languages that a
 person speaks. The contact details portlet displays the user languages.
 
 English is the default language in Launchpad. If the user has not set
-his preferred languages, English is used.
+their preferred languages, English is used.
 
     >>> sample_person.languages
     []
@@ -183,8 +183,8 @@ his preferred languages, English is used.
     >>> print view.languages
     English
 
-This assumption is visible to the user when he views his own profile
-page, and he can set his preferred languages if he wants to make a
+This assumption is visible to the user when they view their own profile
+page, and they can set their preferred languages if they want to make a
 correction. The list of languages is alphabetized.
 
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -436,8 +436,8 @@ If the PPA is private, only the owner will see the section.
     >>> view.should_show_ppa_section
     False
 
-For a user with no PPAs, nobody will see the section apart from himself.
-This aspect allows him to access the 'Create a new PPA' link.
+For a user with no PPAs, nobody will see the section apart from themselves.
+This aspect allows them to access the 'Create a new PPA' link.
 
     >>> print sample_person.archive
     None
@@ -453,7 +453,7 @@ This aspect allows him to access the 'Create a new PPA' link.
     False
 
 If the person is a member of teams with PPAs but doesn't own any
-himself, the section will still not appear for anyone but people with
+themselves, the section will still not appear for anyone but people with
 lp.edit.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities

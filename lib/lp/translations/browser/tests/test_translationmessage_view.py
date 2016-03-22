@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import with_statement
@@ -329,7 +329,7 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
         view = self._makeView()
         view.request.form['lock_timestamp'] = u'2010-01-01 00:00:00 UTC'
         self.assertEqual(
-            datetime(2010, 01, 01, tzinfo=pytz.utc),
+            datetime(2010, 1, 1, tzinfo=pytz.utc),
             view._extractLockTimestamp())
 
     def test_extractLockTimestamp_returns_None_by_default(self):

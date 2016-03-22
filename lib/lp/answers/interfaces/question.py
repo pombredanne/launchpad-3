@@ -107,7 +107,8 @@ class IQuestion(IHasOwner):
     answer = exported(Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
-            "confirmed by the owner as providing a solution to his problem."),
+            "confirmed by the owner as providing a solution to their "
+            "problem."),
         schema=IQuestionMessage),
         readonly=True, as_of="devel")
     datecreated = exported(Datetime(
@@ -310,7 +311,7 @@ class IQuestion(IHasOwner):
 
     can_confirm_answer = Attribute(
         'Whether the question is in a state for the question owner to '
-        'confirm that an answer solved his problem.')
+        'confirm that an answer solved their problem.')
 
     def confirmAnswer(comment, answer=None, datecreated=None):
         """Confirm that a solution to the question was found.
@@ -526,7 +527,7 @@ class IQuestionAddMessageForm(Interface):
     message = Text(title=_('Message'), required=False)
 
     subscribe_me = Bool(
-        title=_('E-mail me future discussion about this question'),
+        title=_('Email me future discussion about this question'),
         required=False, default=False)
 
 

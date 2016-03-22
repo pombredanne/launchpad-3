@@ -11,4 +11,3 @@ from lp.testing.systemdocs import LayeredDocFileSuite
 def test_suite():
     return LayeredDocFileSuite(
         'test_preferredcharsets.txt')
-

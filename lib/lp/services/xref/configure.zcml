@@ -1,0 +1,13 @@
+<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <securedutility
+        class="lp.services.xref.model.XRefSet"
+        provides="lp.services.xref.interfaces.IXRefSet">
+        <allow interface="lp.services.xref.interfaces.IXRefSet"/>
+    </securedutility>
+
+</configure>

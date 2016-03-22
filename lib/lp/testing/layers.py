@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Layers used by Launchpad tests.
@@ -28,6 +28,7 @@ __all__ = [
     'FunctionalLayer',
     'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
+    'GPGServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
@@ -70,6 +71,7 @@ from unittest import (
     TestResult,
     )
 from urllib import urlopen
+import uuid
 
 from fixtures import (
     Fixture,
@@ -97,6 +99,7 @@ from zope.security.management import (
     endInteraction,
     getSecurityPolicy,
     )
+from zope.security.proxy import removeSecurityProxy
 from zope.server.logger.pythonlogger import PythonLogger
 
 from lp.services import pidfile
@@ -115,7 +118,8 @@ from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
-from lp.services.job.tests import celeryd
+from lp.services.gpg.interfaces import IGPGClient
+from lp.services.job.tests import celery_worker
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
 from lp.services.mail.mailbox import (
@@ -146,6 +150,7 @@ from lp.testing import (
     logout,
     reset_logging,
     )
+from lp.testing.gpgservice import GPGKeyServiceFixture
 from lp.testing.pgsql import PgTestSetup
 from lp.testing.smtpd import SMTPController
 
@@ -329,7 +334,7 @@ class BaseLayer:
         # We can only do unique test allocation and parallelisation if
         # LP_PERSISTENT_TEST_SERVICES is off.
         if not BaseLayer.persist_test_services:
-            test_instance = str(os.getpid())
+            test_instance = '%d_%s' % (os.getpid(), uuid.uuid1().hex)
             os.environ['LP_TEST_INSTANCE'] = test_instance
             cls.fixture.addCleanup(os.environ.pop, 'LP_TEST_INSTANCE', '')
             # Kill any Memcached or Librarian left running from a previous
@@ -469,8 +474,9 @@ class BaseLayer:
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
                         "Test left uncollectable garbage\n"
-                        "%s (referenced from %s)"
-                        % (gc.garbage, gc.get_referrers(*gc.garbage)))
+                        "%s (referenced from %s; referencing %s)"
+                        % (gc.garbage, gc.get_referrers(*gc.garbage),
+                           gc.get_referents(*gc.garbage)))
 
     @classmethod
     @profiled
@@ -719,20 +725,15 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         cls._is_setup = True
-        # Read the sequences we'll need from the test template database.
-        reset_sequences_sql = LaunchpadTestSetup(
-            dbname='launchpad_ftest_template').generateResetSequencesSQL()
         # Allocate a template for this test instance
         if os.environ.get('LP_TEST_INSTANCE'):
             template_name = '_'.join([LaunchpadTestSetup.template,
                 os.environ.get('LP_TEST_INSTANCE')])
-            cls._db_template_fixture = LaunchpadTestSetup(
-                dbname=template_name, reset_sequences_sql=reset_sequences_sql)
+            cls._db_template_fixture = LaunchpadTestSetup(dbname=template_name)
             cls._db_template_fixture.setUp()
         else:
             template_name = LaunchpadTestSetup.template
-        cls._db_fixture = LaunchpadTestSetup(template=template_name,
-            reset_sequences_sql=reset_sequences_sql)
+        cls._db_fixture = LaunchpadTestSetup(template=template_name)
         cls.force_dirty_database()
         # Nuke any existing DB (for persistent-test-services) [though they
         # prevent this !?]
@@ -747,7 +748,7 @@ class DatabaseLayer(BaseLayer):
         # point for addressing that mismatch.
         cls._db_fixture.tearDown()
         # Bring up the db, so that it is available for other layers.
-        cls._ensure_db()
+        cls._db_fixture.setUp()
 
     @classmethod
     @profiled
@@ -771,28 +772,8 @@ class DatabaseLayer(BaseLayer):
         pass
 
     @classmethod
-    def _ensure_db(cls):
-        cls._db_fixture.setUp()
-        # Ensure that the database is connectable. Because we might have
-        # just created it, keep trying for a few seconds incase PostgreSQL
-        # is taking its time getting its house in order.
-        attempts = 60
-        for count in range(0, attempts):
-            try:
-                cls.connect().close()
-            except psycopg2.Error:
-                if count == attempts - 1:
-                    raise
-                time.sleep(0.5)
-            else:
-                break
-
-    @classmethod
     @profiled
     def testTearDown(cls):
-        # Ensure that the database is connectable
-        cls.connect().close()
-
         cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
@@ -804,7 +785,7 @@ class DatabaseLayer(BaseLayer):
         # Reset/bring up the db - makes it available for either the next test,
         # or a subordinate layer which builds on the db. This wastes one setup
         # per db layer teardown per run, but thats tolerable.
-        cls._ensure_db()
+        cls._db_fixture.setUp()
 
     @classmethod
     @profiled
@@ -1184,6 +1165,45 @@ class ZopelessLayer(BaseLayer):
         logout()
 
 
+class GPGServiceLayer(BaseLayer):
+
+    service_fixture = None
+    gpgservice_needs_reset = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        gpg_client = removeSecurityProxy(getUtility(IGPGClient))
+        gpg_client.registerWriteHook(cls._on_gpgservice_write)
+        cls.service_fixture = GPGKeyServiceFixture(BaseLayer.config_fixture)
+        cls.service_fixture.setUp()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        gpg_client = removeSecurityProxy(getUtility(IGPGClient))
+        gpg_client.unregisterWriteHook(cls._on_gpgservice_write)
+        cls.service_fixture.cleanUp()
+        cls.service_fixture = None
+        logout()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        if cls.gpgservice_needs_reset:
+            cls.service_fixture.reset_service_database()
+            cls.gpgservice_needs_reset = False
+
+    @classmethod
+    def _on_gpgservice_write(cls):
+        cls.gpgservice_needs_reset = True
+
+
 class TwistedLayer(BaseLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
@@ -1312,7 +1332,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         disconnect_stores()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer, GPGServiceLayer):
     """Provides the Launchpad Zope3 application server environment."""
 
     @classmethod
@@ -1476,7 +1496,7 @@ class LaunchpadTestSetup(PgTestSetup):
     host = 'localhost'
 
 
-class LaunchpadZopelessLayer(LaunchpadScriptLayer):
+class LaunchpadZopelessLayer(LaunchpadScriptLayer, GPGServiceLayer):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
     """
@@ -1896,55 +1916,55 @@ class AppServerLayer(LaunchpadFunctionalLayer):
 class CeleryJobLayer(AppServerLayer):
     """Layer for tests that run jobs via Celery."""
 
-    celeryd = None
+    celery_worker = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('launchpad_job')
-        cls.celeryd.__enter__()
+        cls.celery_worker = celery_worker('launchpad_job')
+        cls.celery_worker.__enter__()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.celeryd.__exit__(None, None, None)
-        cls.celeryd = None
+        cls.celery_worker.__exit__(None, None, None)
+        cls.celery_worker = None
 
 
 class CeleryBzrsyncdJobLayer(AppServerLayer):
     """Layer for tests that run jobs that read from branches via Celery."""
 
-    celeryd = None
+    celery_worker = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('bzrsyncd_job')
-        cls.celeryd.__enter__()
+        cls.celery_worker = celery_worker('bzrsyncd_job')
+        cls.celery_worker.__enter__()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.celeryd.__exit__(None, None, None)
-        cls.celeryd = None
+        cls.celery_worker.__exit__(None, None, None)
+        cls.celery_worker = None
 
 
 class CeleryBranchWriteJobLayer(AppServerLayer):
     """Layer for tests that run jobs which write to branches via Celery."""
 
-    celeryd = None
+    celery_worker = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('branch_write_job')
-        cls.celeryd.__enter__()
+        cls.celery_worker = celery_worker('branch_write_job')
+        cls.celery_worker.__enter__()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.celeryd.__exit__(None, None, None)
-        cls.celeryd = None
+        cls.celery_worker.__exit__(None, None, None)
+        cls.celery_worker = None
 
 
 class ZopelessAppServerLayer(LaunchpadZopelessLayer):

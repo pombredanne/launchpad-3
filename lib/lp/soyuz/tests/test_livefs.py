@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystems."""
@@ -32,6 +32,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.interfaces.livefs import (
+    CannotDeleteLiveFS,
     ILiveFS,
     ILiveFSSet,
     ILiveFSView,
@@ -83,7 +84,8 @@ class TestLiveFS(TestCaseWithFactory):
     def test_implements_interfaces(self):
         # LiveFS implements ILiveFS.
         livefs = self.factory.makeLiveFS()
-        self.assertProvides(livefs, ILiveFS)
+        with person_logged_in(livefs.owner):
+            self.assertProvides(livefs, ILiveFS)
 
     def test_avoids_problematic_snapshots(self):
         self.assertThat(
@@ -94,14 +96,14 @@ class TestLiveFS(TestCaseWithFactory):
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
         livefs = self.factory.makeLiveFS(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         self.assertEqual(livefs.date_created, livefs.date_last_modified)
 
     def test_modifiedevent_sets_date_last_modified(self):
         # When a LiveFS receives an object modified event, the last modified
         # date is set to UTC_NOW.
         livefs = self.factory.makeLiveFS(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         notify(ObjectModifiedEvent(
             removeSecurityProxy(livefs), livefs, [ILiveFS["name"]]))
         self.assertSqlAttributeEqualsDate(
@@ -191,15 +193,21 @@ class TestLiveFS(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
 
     def test_requestBuild_virtualization(self):
-        # New builds are virtualized if either the livefs or the archive
-        # requires it.
-        distroarchseries = self.factory.makeDistroArchSeries()
-        for livefs_virt, archive_virt, build_virt in (
-                (False, False, False),
-                (False, True, True),
-                (True, False, True),
-                (True, True, True),
+        # New builds are virtualized if any of the processor, livefs or
+        # archive require it.
+        for proc_nonvirt, livefs_virt, archive_virt, build_virt in (
+                (True, False, False, False),
+                (True, False, True, True),
+                (True, True, False, True),
+                (True, True, True, True),
+                (False, False, False, True),
+                (False, False, True, True),
+                (False, True, False, True),
+                (False, True, True, True),
                 ):
+            distroarchseries = self.factory.makeDistroArchSeries(
+                processor=self.factory.makeProcessor(
+                    supports_nonvirtualized=proc_nonvirt))
             livefs = self.factory.makeLiveFS(
                 distroseries=distroarchseries.distroseries,
                 require_virtualized=livefs_virt)
@@ -210,6 +218,23 @@ class TestLiveFS(TestCaseWithFactory):
                 livefs.owner, archive, distroarchseries,
                 PackagePublishingPocket.RELEASE)
             self.assertEqual(build_virt, build.virtualized)
+
+    def test_requestBuild_version(self):
+        # requestBuild may optionally override the version.
+        livefs = self.factory.makeLiveFS()
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=livefs.distro_series)
+        build = livefs.requestBuild(
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE)
+        self.assertEqual(
+            build.date_created.strftime("%Y%m%d-%H%M%S"), build.version)
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.FULLYBUILT)
+        build = livefs.requestBuild(
+            livefs.owner, livefs.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.RELEASE, version=u"20150101")
+        self.assertEqual(u"20150101", build.version)
 
     def test_getBuilds(self):
         # Test the various getBuilds methods.
@@ -226,9 +251,22 @@ class TestLiveFS(TestCaseWithFactory):
         # Change the status of one of the builds and retest.
         builds[0].updateStatus(BuildStatus.BUILDING)
         builds[0].updateStatus(BuildStatus.FULLYBUILT)
-        self.assertEqual(builds[1:] + builds[:1], list(livefs.builds))
+        self.assertEqual(builds, list(livefs.builds))
         self.assertEqual(builds[:1], list(livefs.completed_builds))
         self.assertEqual(builds[1:], list(livefs.pending_builds))
+
+    def test_getBuilds_cancelled_never_started_last(self):
+        # A cancelled build that was never even started sorts to the end.
+        livefs = self.factory.makeLiveFS()
+        fullybuilt = self.factory.makeLiveFSBuild(livefs=livefs)
+        instacancelled = self.factory.makeLiveFSBuild(livefs=livefs)
+        fullybuilt.updateStatus(BuildStatus.BUILDING)
+        fullybuilt.updateStatus(BuildStatus.FULLYBUILT)
+        instacancelled.updateStatus(BuildStatus.CANCELLED)
+        self.assertEqual([fullybuilt, instacancelled], list(livefs.builds))
+        self.assertEqual(
+            [fullybuilt, instacancelled], list(livefs.completed_builds))
+        self.assertEqual([], list(livefs.pending_builds))
 
     def test_getBuilds_privacy(self):
         # The various getBuilds methods exclude builds against invisible
@@ -244,6 +282,35 @@ class TestLiveFS(TestCaseWithFactory):
             self.assertEqual([build], list(livefs.pending_builds))
         self.assertEqual([], list(livefs.builds))
         self.assertEqual([], list(livefs.pending_builds))
+
+    def test_delete_without_builds(self):
+        # A live filesystem with no builds can be deleted.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        livefs = self.factory.makeLiveFS(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            name=u"condemned")
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+        with person_logged_in(livefs.owner):
+            livefs.destroySelf()
+        self.assertFalse(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+
+    def test_delete_with_builds(self):
+        # A live filesystem with builds cannot be deleted.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        livefs = self.factory.makeLiveFS(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            name=u"condemned")
+        self.factory.makeLiveFSBuild(livefs=livefs)
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+        with person_logged_in(livefs.owner):
+            self.assertRaises(CannotDeleteLiveFS, livefs.destroySelf)
+        self.assertTrue(
+            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
 
 
 class TestLiveFSSet(TestCaseWithFactory):
@@ -632,10 +699,11 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 BuildStatus.FULLYBUILT,
                 date_finished=db_livefs.date_created + timedelta(minutes=10))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
-        # Builds that have not yet been started are listed first (since DESC
-        # defaults to NULLS FIRST).
-        self.assertEqual(
-            builds[1:] + builds[:1], self.getCollectionLinks(livefs, "builds"))
+        # Builds that have not yet been started are listed last.  This does
+        # mean that pending builds that have never been started are sorted
+        # to the end, but means that builds that were cancelled before
+        # starting don't pollute the start of the collection forever.
+        self.assertEqual(builds, self.getCollectionLinks(livefs, "builds"))
         self.assertEqual(
             builds[:1], self.getCollectionLinks(livefs, "completed_builds"))
         self.assertEqual(
@@ -649,7 +717,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
                 date_finished=db_livefs.date_created + timedelta(minutes=20))
         livefs = self.webservice.get(livefs["self_link"]).jsonBody()
         self.assertEqual(
-            [builds[2], builds[3], builds[1], builds[0]],
+            [builds[1], builds[0], builds[2], builds[3]],
             self.getCollectionLinks(livefs, "builds"))
         self.assertEqual(
             [builds[1], builds[0]],

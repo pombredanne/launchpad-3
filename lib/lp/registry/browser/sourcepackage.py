@@ -21,7 +21,6 @@ import string
 import urllib
 
 from apt_pkg import (
-    parse_src_depends,
     upstream_version,
     version_compare,
     )
@@ -97,7 +96,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 def get_register_upstream_url(source_package):
-    displayname = string.capwords(source_package.name.replace('-', ' '))
+    display_name = string.capwords(source_package.name.replace('-', ' '))
     distroseries_string = "%s/%s" % (
         source_package.distroseries.distribution.name,
         source_package.distroseries.name)
@@ -111,8 +110,8 @@ def get_register_upstream_url(source_package):
         'field.source_package_name': source_package.sourcepackagename.name,
         'field.distroseries': distroseries_string,
         'field.name': source_package.name,
-        'field.displayname': displayname,
-        'field.title': displayname,
+        'field.display_name': display_name,
+        'field.title': display_name,
         'field.homepageurl': homepage,
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',
@@ -505,12 +504,10 @@ class SourcePackageView(LaunchpadView):
     def _relationship_parser(self, content):
         """Wrap the relationship_builder for SourcePackages.
 
-        Define apt_pkg.parse_src_depends as a relationship 'parser' and
-        IDistroSeries.getBinaryPackage as 'getter'.
+        Define IDistroSeries.getBinaryPackage as a relationship 'getter'.
         """
         getter = self.context.distroseries.getBinaryPackage
-        parser = parse_src_depends
-        return relationship_builder(content, parser=parser, getter=getter)
+        return relationship_builder(content, getter=getter)
 
     @property
     def builddepends(self):
@@ -523,6 +520,12 @@ class SourcePackageView(LaunchpadView):
             self.context.currentrelease.builddependsindep)
 
     @property
+    def builddependsarch(self):
+        return self._relationship_parser(
+            self.context.currentrelease.getUserDefinedField(
+                "Build-Depends-Arch"))
+
+    @property
     def build_conflicts(self):
         return self._relationship_parser(
             self.context.currentrelease.build_conflicts)
@@ -531,6 +534,12 @@ class SourcePackageView(LaunchpadView):
     def build_conflicts_indep(self):
         return self._relationship_parser(
             self.context.currentrelease.build_conflicts_indep)
+
+    @property
+    def build_conflicts_arch(self):
+        return self._relationship_parser(
+            self.context.currentrelease.getUserDefinedField(
+                "Build-Conflicts-Arch"))
 
     def requestCountry(self):
         return ICountry(self.request, None)

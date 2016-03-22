@@ -261,7 +261,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             shared_translation)
 
         # Adding a diverged translation doesn't break getSharedTM.
-        diverged_translation = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
         self.assertEquals(
             self.potmsgset.getSharedTranslation(
@@ -333,7 +333,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # An empty suggestion is never returned.
         self.potmsgset.setSequence(self.stable_potemplate, 1)
         pofile = self.factory.makePOFile('sr', self.stable_potemplate)
-        empty_suggestion = self.factory.makeSuggestion(
+        self.factory.makeSuggestion(
             pofile=pofile, potmsgset=self.potmsgset, translations=[None])
         self.assertContentEqual(
             [],
@@ -369,7 +369,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If there are only suggestions on the external POTMsgSet,
         # no externally used suggestions are returned.
-        external_suggestion = self.factory.makeSuggestion(
+        self.factory.makeSuggestion(
             pofile=external_pofile, potmsgset=external_potmsgset)
 
         transaction.commit()
@@ -475,7 +475,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # A current translation on the external POTMsgSet is not
         # considered an external suggestion.
-        current_translation = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset)
 
         transaction.commit()
@@ -503,7 +503,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If only a current, non-imported translation exists, it's not
         # changed in Ubuntu.
-        current_shared = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
@@ -522,7 +522,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # If there's a current, diverged translation, and an imported
         # non-current one, it's changed in Ubuntu.
-        current_diverged = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
@@ -637,9 +637,6 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         if naked_tm.reviewer is None:
             naked_tm.reviewer = self.factory.makePerson()
         naked_tm.date_reviewed = self.now()
-
-    def _setDateUpdated(self, tm):
-        removeSecurityProxy(tm).date_updated = self.now()
 
     def gen_now(self):
         now = datetime.now(pytz.UTC)
@@ -948,7 +945,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         other_pofile = self.factory.makePOFile(
             self.pofile.language.code, potemplate=other_potemplate)
 
-        message_this = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset)
         self.potmsgset.setSequence(
             other_potemplate, self.factory.getUniqueInteger())
@@ -1196,7 +1193,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         ]
         for sequence, credits_string in enumerate(gnome_credits):
             credits = self.factory.makePOTMsgSet(
-                self.potemplate, credits_string, sequence=sequence+1)
+                self.potemplate, credits_string, sequence=sequence + 1)
             self.assertTrue(credits.is_translation_credit)
             self.assertEqual(TranslationCreditsType.GNOME,
                              credits.translation_credits_type)
@@ -1375,7 +1372,7 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         shared_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translator=owner,
             translations=translation)
-        diverged_message = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translator=owner,
             translations=translation2, diverged=True)
 
@@ -1421,7 +1418,7 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         translation = {0: self.factory.getUniqueString()}
         karma_listener = self._listenForKarma(pofile)
 
-        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+        potmsgset.submitSuggestion(pofile, owner, translation)
 
         self.assertEqual([], karma_listener.karma_events)
 
@@ -1520,7 +1517,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         lock_timestamp = datetime.now(pytz.UTC) - timedelta(minutes=5)
 
         # Meanwhile someone else changes the same message's translation.
-        newer_translation = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
 
         # This raises a translation conflict.
@@ -1564,7 +1561,7 @@ class BaseTestGetCurrentTranslation(object):
         translations = {
             0: self.factory.getUniqueString('translation'), }
         origin = RosettaTranslationOrigin.SCM
-        message = potmsgset.setCurrentTranslation(
+        potmsgset.setCurrentTranslation(
             pofile_other_language, pofile.potemplate.owner,
             translations, origin)
 
@@ -1631,7 +1628,7 @@ class BaseTestGetCurrentTranslation(object):
         translations_diverged = {
             0: self.factory.getUniqueString('diverged'), }
         origin = RosettaTranslationOrigin.SCM
-        shared_message = potmsgset.setCurrentTranslation(
+        potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations_shared, origin)
         diverged_message = potmsgset.submitSuggestion(
             pofile, pofile.potemplate.owner, translations_diverged)
@@ -1936,8 +1933,6 @@ class TestClone(TestCaseWithFactory):
             flagscomment=self.factory.getUniqueString('flagscomment'),
         )
         new_msgset = msgset.clone()
-        naked_msgset = removeSecurityProxy(msgset)
-        naked_new_msgset = removeSecurityProxy(new_msgset)
         self.assertNotEqual(msgset.id, new_msgset.id)
         self.assertEqual(msgset.context, new_msgset.context)
         self.assertEqual(msgset.msgid_singular, new_msgset.msgid_singular)

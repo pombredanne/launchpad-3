@@ -87,11 +87,11 @@ to configure each service.
 
     >>> for link in view.configuration_links:
     ...     print link['link'].name
+    configure_code
     configure_bugtracker
-    configure_answers
     configure_translations
-    set_branch
-
+    configure_answers
+    
 The registration status is determined with the 'configuration_states'
 property.  Notice that blueprints are not included in the
 configuration links nor the completeness computation as the use of
@@ -101,7 +101,7 @@ blueprints is not promoted.
     ...     print key, view.configuration_states[key]
     configure_answers False
     configure_bugtracker False
-    configure_codehosting False
+    configure_code False
     configure_translations False
 
 The percentage of the registration completed can be determined by
@@ -120,7 +120,7 @@ Changing the product's usage is reflected in the view properties.
     ...     print key, view.configuration_states[key]
     configure_answers False
     configure_bugtracker False
-    configure_codehosting False
+    configure_code False
     configure_translations True
 
     >>> print pretty(view.registration_completeness)
@@ -141,13 +141,13 @@ indicator showing whether it has been configured or not.
 
     >>> print find_tag_by_id(rendered, 'configuration_links')
     <table...
+    <a href="http://launchpad.dev/bread/+configure-code"...
+    <span class="sprite no action-icon">...
     <a href="http://launchpad.dev/bread/+configure-bugtracker"...
-    <span class="sprite no action-icon">...
-    <a href="http://launchpad.dev/bread/+configure-answers"...
-    <span class="sprite no action-icon">...
+    <span class="sprite no action-icon">...    
     <a href="http://launchpad.dev/bread/+configure-translations"...
     <span class="sprite yes action-icon">...
-    <a href="http://launchpad.dev/bread/trunk/+setbranch"...
+    <a href="http://launchpad.dev/bread/+configure-answers"...
     <span class="sprite no action-icon">...
     </table>
 

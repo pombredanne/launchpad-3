@@ -46,9 +46,3 @@ class ISpecificationMessageSet(Interface):
 
     def get(specificationmessageid):
         """Retrieve an ISpecificationMessage by its ID."""
-
-    def getBySpecificationAndMessage(specification, message):
-        """Return the corresponding ISpecificationMesssage.
-
-        Return None if no such ISpecificationMesssage exists.
-        """

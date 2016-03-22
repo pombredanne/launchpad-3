@@ -28,10 +28,10 @@ from lp.testing import (
     login_team,
     logout,
     person_logged_in,
+    RequestTimelineCollector,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
@@ -296,7 +296,8 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         self.factory.makeBug(milestone=milestone)
         self.factory.makeBug(
             milestone=milestone, information_type=InformationType.USERDATA)
-        # Remove the APG the product owner has so he can't see the private bug.
+        # Remove the APG the product owner has so they can't see the private
+        # bug.
         ap = getUtility(IAccessPolicySource).find(
             [(milestone.product, InformationType.USERDATA)]).one()
         getUtility(IAccessPolicyGrantSource).revoke(
@@ -443,7 +444,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # Seed the cookie cache and any other cross-request state we may gain
         # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(milestone_url)
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         browser.open(milestone_url)

@@ -625,7 +625,7 @@ can use the getPOFileContributorsByLanguage() method of IDistroSeries.
     --
 
     # We can see that there is another translator that doesn't appear in
-    # previous list because the template he translated is not current.
+    # previous list because the template they translated is not current.
 
     >>> non_current_pofile = POFile.get(31)
     >>> non_current_pofile.potemplate.iscurrent

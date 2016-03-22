@@ -74,17 +74,6 @@
                 <noscript><strong>The information on this page is private.</strong></noscript>
             </div>
           </tal:private-banner>
-        <script type="text/javascript"
-          tal:condition="python: is_lpnet">
-          var _gaq = _gaq || [];
-          _gaq.push(['_setAccount', 'UA-12833497-1']);
-          _gaq.push(['_setDomainName', '.launchpad.net']);
-          _gaq.push(['_setAllowHash', false]);
-          _gaq.push(['_trackPageview']);
-        </script>
-        <script type="text/javascript"
-            tal:condition="python: is_lpnet"
-            tal:attributes="src string:${icingroot}/google-analytics/ga.js"></script>
     <div class="yui-d0">
       <div id="locationbar" class="login-logout">
         <tal:login replace="structure context/@@login_status" />

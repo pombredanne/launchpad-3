@@ -172,16 +172,12 @@ The getBy*Url methods return the corresponding mirrors:
     None
 
     >>> ftp_mirror = mirrorset.getByFtpUrl('ftp://localhost/example-ftp')
-    >>> ftp_mirror.has_ftp_or_rsync_base_url
-    True
 
     >>> print mirrorset.getByFtpUrl('ftp://non-existent-url')
     None
 
     >>> rsync_mirror = mirrorset.getByRsyncUrl(
     ...     'rsync://localhost/example-rsync')
-    >>> rsync_mirror.has_ftp_or_rsync_base_url
-    True
 
     >>> print mirrorset.getByRsyncUrl('rsync://non-existent-url')
     None
@@ -190,7 +186,7 @@ The getBy*Url methods return the corresponding mirrors:
 == Finding the best mirror for a given user ==
 
 In order to be able to guess what would be the best mirror for a given
-user based on his IP address, we provide simple API to find official
+user based on their IP address, we provide simple API to find official
 mirrors of a given content type located on a given country (or any other
 country in its continent if the country doesn't have any).
 
@@ -580,8 +576,8 @@ so we need to skip that upload.
     ...     warty.components[0])
     >>> warty_i386_mirror = removeSecurityProxy(warty_i386_mirror)
     >>> recent_freshness, threshold = warty_i386_mirror.freshness_times[0]
-    >>> start = datetime(2005, 06, 20, tzinfo=utc)
-    >>> end = datetime(2005, 06, 20, tzinfo=utc) + timedelta(hours=0.5)
+    >>> start = datetime(2005, 6, 20, tzinfo=utc)
+    >>> end = datetime(2005, 6, 20, tzinfo=utc) + timedelta(hours=0.5)
     >>> time_interval = (start, end)
     >>> upload = warty_i386_mirror.getLatestPublishingEntry(
     ...     time_interval, deb_only=False)

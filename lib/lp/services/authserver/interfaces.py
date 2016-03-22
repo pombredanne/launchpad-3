@@ -30,4 +30,3 @@ class IAuthServer(Interface):
 
 class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""
-

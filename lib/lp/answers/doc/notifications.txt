@@ -37,7 +37,7 @@ Note that the From address uses the submitter's name with the question's
 email address. Answer's uses real names to help the questioner and the
 answerers communicate. The Reply-To address is the question's address.
 When using the mail client's reply feature, the user should clearly see
-that he is replying to the question and not the user. [sic] Kiko and
+that they are replying to the question and not the user. [sic] Kiko and
 Danilo have a story worth telling.
 
     >>> add_notification = notifications[0]
@@ -71,7 +71,7 @@ notified about the changes as well:
     >>> ubuntu.addAnswerContact(ubuntu_team, ubuntu_team.teamowner)
     True
 
-And assign this question to Foo Bar, so that he will also receive
+And assign this question to Foo Bar, so that they will also receive
 notifications:
 
     >>> login('foo.bar@canonical.com')
@@ -88,8 +88,7 @@ will be sent.
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
 
-    >>> login('no-priv@canonical.com')
-    >>> no_priv = getUtility(ILaunchBag).user
+    >>> login('test@canonical.com')
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> ubuntu_question.title = "Installer doesn't work on a Mac"
@@ -147,6 +146,7 @@ does not include priority.
 Changing the assignee will trigger a notification.
 
     >>> login('foo.bar@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> ubuntu_question.assignee = no_priv
@@ -172,7 +172,7 @@ was made, no notification is sent:
     >>> len(notifications)
     0
 
-After receiving that notification, Foo Bar unassigned himself:
+After receiving that notification, Foo Bar unassigned themselves:
 
     >>> ubuntu_question.assignee = None
 
@@ -197,7 +197,7 @@ has been linked to it:
     ...     comment=ubuntu_question.description)
     >>> bug = ubuntu_question.target.createBug(params)
     >>> ubuntu_question.linkBug(bug)
-    <QuestionBug...>
+    True
 
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
@@ -224,7 +224,7 @@ A notification is also sent when a bug is unlinked from the question:
     >>> unmodified_question = Snapshot(ubuntu_question,
     ...     providing=providedBy(ubuntu_question))
     >>> ubuntu_question.unlinkBug(bug)
-    <QuestionBug...>
+    True
 
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
@@ -298,7 +298,7 @@ extra footer.
     this email or enter your reply at the following page:
     http://.../ubuntu/+question/...
 
-Of course, if the owner unsubscribe from the question, he won't receives
+Of course, if the owner unsubscribes from the question, they won't receive
 a notification.
 
     >>> login('test@canonical.com')

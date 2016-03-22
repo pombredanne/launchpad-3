@@ -8,7 +8,7 @@ __all__ = [
     'QuestionPortletSubscribersWithDetails',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interfaces import IWebServiceClientRequest
 from simplejson import dumps
 from zope.traversing.browser import absoluteURL
@@ -90,9 +90,9 @@ class QuestionPortletSubscribersWithDetails(LaunchpadView):
         return self.subscriber_data_js
 
 
+@delegate_to(IQuestionSubscription, context='subscription')
 class SubscriptionAttrDecorator:
     """A QuestionSubscription with added attributes for HTML/JS."""
-    delegates(IQuestionSubscription, 'subscription')
 
     def __init__(self, subscription):
         self.subscription = subscription

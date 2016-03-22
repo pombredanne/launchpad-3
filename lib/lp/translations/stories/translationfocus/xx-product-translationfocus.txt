@@ -18,7 +18,7 @@ but have no access to the 'Configure translations' menu.
     >>> print extract_text(
     ...     find_tags_by_class(admin_browser.contents,
     ...                        'menu-link-configure_translations')[0])
-    Configure translations
+    Configure Translations
 
     >>> browser.open(fooproject_url)
     >>> print extract_text(

@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sync package jobs."""
@@ -1230,12 +1230,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # do it here.
         emails = pop_notifications(sort_key=operator.itemgetter('To'))
 
-        # We expect an uploader email and an announcement to the changeslist.
-        self.assertEqual(2, len(emails))
-        self.assertIn("requester@example.com", emails[0]['To'])
-        self.assertIn("changes@example.com", emails[1]['To'])
+        # We expect an email to the signer, an email to the uploader, and an
+        # announcement to the changeslist.
+        self.assertEqual(3, len(emails))
+        self.assertIn("foo.bar@canonical.com", emails[0]['To'])
+        self.assertIn("requester@example.com", emails[1]['To'])
+        self.assertIn("changes@example.com", emails[2]['To'])
         self.assertEqual(
-            "Nancy Requester <requester@example.com>", emails[1]['From'])
+            "Nancy Requester <requester@example.com>", emails[2]['From'])
 
     def test_silent(self):
         # Copies into a non-PPA archive normally send emails. They can
@@ -1392,7 +1394,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         copied_sources = target_archive.getPublishedSources(
             name=u"copyme", version="2.8-1")
         self.assertNotEqual(0, copied_sources.count())
-        copied_binaries = target_archive.getAllPublishedBinaries(name="copyme")
+        copied_binaries = target_archive.getAllPublishedBinaries(
+            name=u"copyme")
         self.assertNotEqual(0, copied_binaries.count())
 
         # Check that files were unembargoed.
@@ -1713,13 +1716,20 @@ class TestViaCelery(TestCaseWithFactory):
 
     layer = CeleryJobLayer
 
-    def test_run(self):
-        # A proper test run synchronizes packages.
-        # Turn on Celery handling of PCJs.
+    def setUp(self):
+        super(TestViaCelery, self).setUp()
+        # Turn on Celery handling of PCJs and the resulting notification jobs.
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'PlainPackageCopyJob',
+            'jobs.celery.enabled_classes':
+                'PlainPackageCopyJob PackageUploadNotificationJob',
         }))
 
+    def tearDown(self):
+        super(TestViaCelery, self).tearDown()
+        pop_remote_notifications()
+
+    def test_run(self):
+        # A proper test run synchronizes packages.
         job = create_proper_job(self.factory)
         self.assertEqual("libc", job.package_name)
         self.assertEqual("2.8-1", job.package_version)
@@ -1740,10 +1750,6 @@ class TestViaCelery(TestCaseWithFactory):
     def test_resume_from_queue(self):
         # Accepting a suspended copy from the queue sends it back
         # through celery.
-        self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'PlainPackageCopyJob',
-        }))
-
         source_pub = self.factory.makeSourcePackagePublishingHistory(
             component=u"main", status=PackagePublishingStatus.PUBLISHED)
         target_series = self.factory.makeDistroSeries()

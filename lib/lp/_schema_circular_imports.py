@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -63,12 +63,14 @@ from lp.code.interfaces.branch import (
     IBranchSet,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.gitsubscription import IGitSubscription
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasCodeImports,
@@ -204,7 +206,6 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
-from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     IBinaryPackagePublishingHistoryEdit,
@@ -237,7 +238,8 @@ patch_collection_property(IBranch, 'bug_branches', IBugBranch)
 patch_collection_property(IBranch, 'linked_bugs', IBug)
 patch_collection_property(IBranch, 'dependent_branches', IBranchMergeProposal)
 patch_entry_return_type(IBranch, 'getSubscription', IBranchSubscription)
-patch_collection_property(IBranch, 'landing_candidates', IBranchMergeProposal)
+patch_collection_property(
+    IBranch, '_api_landing_candidates', IBranchMergeProposal)
 patch_collection_property(IBranch, 'landing_targets', IBranchMergeProposal)
 patch_plain_parameter_type(IBranch, 'linkBug', 'bug', IBug)
 patch_plain_parameter_type(
@@ -259,9 +261,9 @@ patch_plain_parameter_type(
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
-    IBranch, '_createMergeProposal', 'target_branch', IBranch)
+    IBranch, '_createMergeProposal', 'merge_target', IBranch)
 patch_plain_parameter_type(
-    IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+    IBranch, '_createMergeProposal', 'merge_prerequisite', IBranch)
 patch_collection_return_type(
     IBranch, 'getMergeProposals', IBranchMergeProposal)
 
@@ -363,6 +365,8 @@ patch_reference_property(
     IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
 patch_reference_property(
+    IBinaryPackagePublishingHistory, 'build', IBinaryPackageBuild)
+patch_reference_property(
     IBinaryPackagePublishingHistory, 'archive', IArchive)
 patch_reference_property(
     ISourcePackagePublishingHistory, 'archive', IArchive)
@@ -381,8 +385,6 @@ patch_entry_return_type(
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
-patch_collection_property(
-    IArchive, 'enabled_restricted_processors', IProcessor)
 patch_collection_return_type(IArchive, 'getAllPermissions', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
@@ -480,8 +482,6 @@ patch_choice_parameter_type(
     IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
-patch_plain_parameter_type(
-    IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)
 
 # IBuildFarmJob
 patch_choice_property(IBuildFarmJob, 'status', BuildStatus)
@@ -556,6 +556,32 @@ patch_reference_property(
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+
+# IGitRef
+patch_reference_property(IGitRef, 'repository', IGitRepository)
+patch_plain_parameter_type(
+    IGitRef, 'createMergeProposal', 'merge_target', IGitRef)
+patch_plain_parameter_type(
+    IGitRef, 'createMergeProposal', 'merge_prerequisite', IGitRef)
+patch_collection_property(IGitRef, 'landing_targets', IBranchMergeProposal)
+patch_collection_property(IGitRef, 'landing_candidates', IBranchMergeProposal)
+patch_collection_property(IGitRef, 'dependent_landings', IBranchMergeProposal)
+patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
+patch_collection_return_type(
+    IGitRef, 'getMergeProposals', IBranchMergeProposal)
+
+# IGitRepository
+patch_collection_property(IGitRepository, 'branches', IGitRef)
+patch_collection_property(IGitRepository, 'refs', IGitRef)
+patch_collection_property(IGitRepository, 'subscriptions', IGitSubscription)
+patch_entry_return_type(IGitRepository, 'subscribe', IGitSubscription)
+patch_entry_return_type(IGitRepository, 'getSubscription', IGitSubscription)
+patch_collection_property(
+    IGitRepository, 'landing_targets', IBranchMergeProposal)
+patch_collection_property(
+    IGitRepository, 'landing_candidates', IBranchMergeProposal)
+patch_collection_property(
+    IGitRepository, 'dependent_landings', IBranchMergeProposal)
 
 # ILiveFSFile
 patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
@@ -776,11 +802,6 @@ patch_entry_explicit_version(IBranchMergeProposal, 'beta')
 patch_operations_explicit_version(
     IBranchMergeProposal, 'beta', "createComment", "getComment",
     "nominateReviewer", "setStatus")
-
-# IBranchMergeQueue
-patch_entry_explicit_version(IBranchMergeQueue, 'beta')
-patch_operations_explicit_version(
-    IBranchMergeQueue, 'beta', "setMergeQueueConfig")
 
 # IBranchSubscription
 patch_entry_explicit_version(IBranchSubscription, 'beta')

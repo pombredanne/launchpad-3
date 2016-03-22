@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
@@ -83,14 +83,7 @@ from lp.soyuz.scripts.gina.packages import (
 
 def check_not_in_librarian(files, archive_root, directory):
     to_upload = []
-    if not isinstance(files, list):
-        # A little bit of ugliness. The source package's files attribute
-        # returns a three-tuple with md5sum, size and name. The binary
-        # package, on the other hand, only really provides a filename.
-        # This is tested through the two codepaths, so it should be safe.
-        files = [(None, files)]
-    for i in files:
-        fname = i[-1]
+    for fname in files:
         path = os.path.join(archive_root, directory)
         if not os.path.exists(os.path.join(path, fname)):
             # XXX kiko 2005-10-22: Untested
@@ -606,13 +599,17 @@ class SourcePackageHandler:
         sectionID = self.distro_handler.ensureSection(src.section).id
         maintainer_line = "%s <%s>" % (displayname, emailaddress)
         name = self.ensureSourcePackageName(src.package)
+        kwargs = {}
+        if src._user_defined:
+            kwargs["user_defined_fields"] = src._user_defined
         spr = SourcePackageRelease(
             section=sectionID,
             creator=maintainer.id,
             component=componentID,
             sourcepackagename=name.id,
             maintainer=maintainer.id,
-            dscsigningkey=key,
+            signing_key_owner=key.owner if key else None,
+            signing_key_fingerprint=key.fingerprint if key else None,
             urgency=ChangesFile.urgency_map[src.urgency],
             dateuploaded=src.date_uploaded,
             dsc=src.dsc,
@@ -630,7 +627,8 @@ class SourcePackageHandler:
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
             dsc_binaries=", ".join(src.binaries),
-            upload_archive=distroseries.main_archive)
+            upload_archive=distroseries.main_archive,
+            **kwargs)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 
@@ -776,7 +774,7 @@ class BinaryPackageHandler:
     def createBinaryPackage(self, bin, srcpkg, distroarchseries, archtag):
         """Create a new binarypackage."""
         fdir, fname = os.path.split(bin.filename)
-        to_upload = check_not_in_librarian(fname, bin.archive_root, fdir)
+        to_upload = check_not_in_librarian([fname], bin.archive_root, fdir)
         fname, path = to_upload[0]
 
         componentID = self.distro_handler.getComponentByName(bin.component).id
@@ -787,6 +785,9 @@ class BinaryPackageHandler:
         build = self.ensureBuild(bin, srcpkg, distroarchseries, archtag)
 
         # Create the binarypackage entry on lp db.
+        kwargs = {}
+        if bin._user_defined:
+            kwargs["user_defined_fields"] = bin._user_defined
         binpkg = BinaryPackageRelease(
             binarypackagename=bin_name.id,
             component=componentID,
@@ -810,7 +811,7 @@ class BinaryPackageHandler:
             essential=bin.essential,
             installedsize=bin.installed_size,
             architecturespecific=architecturespecific,
-            )
+            **kwargs)
         log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))
 

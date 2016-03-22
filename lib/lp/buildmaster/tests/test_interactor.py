@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuilderInteractor features."""
@@ -511,7 +511,7 @@ class TestSlave(TestCase):
             info[2],
             ContainsAll(
                 ('sourcepackagerecipe', 'translation-templates',
-                 'binarypackage', 'debian')))
+                 'binarypackage', 'livefs', 'snap')))
 
     @defer.inlineCallbacks
     def test_initial_status(self):

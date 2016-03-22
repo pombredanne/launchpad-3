@@ -4,6 +4,7 @@
 """Assign karma for bugs domain activity."""
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.cve import ICve
 from lp.bugs.subscribers.bug import get_bug_delta
 from lp.registry.interfaces.person import IPerson
 from lp.services.database.sqlbase import block_implicit_flushes
@@ -81,10 +82,11 @@ def bugwatch_added(bugwatch, event):
 
 
 @block_implicit_flushes
-def cve_added(cve, event):
+def cve_added(bug, event):
     """Assign karma to the user which added :cve:."""
-    _assignKarmaUsingBugContext(
-        IPerson(event.user), cve.bug, 'bugcverefadded')
+    if not ICve.providedBy(event.other_object):
+        return
+    _assignKarmaUsingBugContext(IPerson(event.user), bug, 'bugcverefadded')
 
 
 @block_implicit_flushes
@@ -119,7 +121,10 @@ def bugtask_modified(bugtask, event):
 
 
 @block_implicit_flushes
-def bug_branch_created(bug_branch, event):
+def branch_linked(bug, event):
     """Assign karma to the user who linked the bug to the branch."""
-    bug_branch.branch.target.assignKarma(
-        bug_branch.registrant, 'bugbranchcreated')
+    from lp.code.interfaces.branch import IBranch
+    if not IBranch.providedBy(event.other_object):
+        return
+    event.other_object.target.assignKarma(
+        IPerson(event.user), 'bugbranchcreated')

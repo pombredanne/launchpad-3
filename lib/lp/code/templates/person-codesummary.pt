@@ -14,13 +14,11 @@
         tal:condition="menu/active_reviews/enabled">
       <td tal:content="structure menu/active_reviews/render" />
     </tr>
-    <tr tal:condition="features/code.branchmergequeue" id="mergequeue-counts">
-      <td class="code-count" tal:content="menu/mergequeue_count">5</td>
-      <td tal:condition="menu"
-          tal:content="structure menu/mergequeues/render" />
-    </tr>
     <tr class="code-links" tal:condition="menu/source_package_recipes/enabled">
       <td tal:content="structure menu/source_package_recipes/render" />
+    </tr>
+    <tr class="code-links" tal:condition="menu/snaps/enabled">
+      <td tal:content="structure menu/snaps/render" />
     </tr>
   </table>
 </div>

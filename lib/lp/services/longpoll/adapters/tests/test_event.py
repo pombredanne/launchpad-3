@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
@@ -21,9 +21,8 @@ from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import Contains
 
 
+@implementer(ILongPollEvent)
 class FakeEvent(LongPollEvent):
-
-    implements(ILongPollEvent)
 
     @property
     def event_key(self):

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -36,7 +36,7 @@ from zope.formlib.itemswidgets import MultiDataHelper
 from zope.formlib.widget import SimpleInputWidget
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     )
 from zope.publisher.browser import (
     BrowserRequest,
@@ -79,12 +79,14 @@ from lp.services.webapp.authentication import (
     )
 from lp.services.webapp.authorization import (
     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY,
     )
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
+    IFavicon,
     ILaunchpadBrowserApplicationRequest,
     ILaunchpadProtocolError,
     INotificationRequest,
@@ -100,7 +102,10 @@ from lp.services.webapp.notifications import (
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.publication import LaunchpadBrowserPublication
-from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.publisher import (
+    canonical_url,
+    RedirectionView,
+    )
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -234,13 +239,13 @@ class ApplicationServerSettingRequestFactory:
         return request
 
 
+@implementer(IRequestPublicationFactory)
 class VirtualHostRequestPublicationFactory:
     """An `IRequestPublicationFactory` handling request to a Launchpad vhost.
 
     This factory will accepts requests to a particular Launchpad virtual host
     that matches a particular port and set of HTTP methods.
     """
-    implements(IRequestPublicationFactory)
 
     default_methods = ['GET', 'HEAD', 'POST']
 
@@ -418,7 +423,7 @@ class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
                 environment))
         if request_factory is None:
             mime_type = environment.get('CONTENT_TYPE')
-            if mime_type != 'text/xml':
+            if mime_type.split(';')[0].strip() != 'text/xml':
                 request_factory = ProtocolErrorRequest
                 # 415 - Unsupported Media Type
                 publication_factory = ProtocolErrorPublicationFactory(415)
@@ -559,10 +564,9 @@ class LaunchpadBrowserRequestMixin:
         return url
 
 
+@implementer(IBasicLaunchpadRequest)
 class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
-
-    implements(IBasicLaunchpadRequest)
 
     strict_transport_security = True
 
@@ -634,15 +638,14 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         return get_query_string_params(self)
 
 
+@implementer(
+    ILaunchpadBrowserApplicationRequest, ISynchronizer,
+    lp.layers.LaunchpadLayer)
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
                               NotificationRequest, ErrorReportRequest):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
-
-    implements(
-        ILaunchpadBrowserApplicationRequest, ISynchronizer,
-        lp.layers.LaunchpadLayer)
 
     retry_max_count = 5    # How many times we're willing to retry
 
@@ -675,6 +678,8 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def clearSecurityPolicyCache(self):
         if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
             del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+        if LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY in self.annotations:
+            del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY]
 
     def beforeCompletion(self, transaction):
         """See `ISynchronizer`."""
@@ -694,10 +699,9 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         pass
 
 
+@implementer(IBrowserFormNG)
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
-
-    implements(IBrowserFormNG)
 
     def __init__(self, form):
         """Create a new BrowserFormNG that wraps a dict containing form data.
@@ -805,6 +809,24 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
+    def _validateHeader(self, name, value):
+        name = str(name)
+        if '\n' in name or '\r' in name or ':' in name:
+            raise ValueError('CR, LF and colon are illegal in header names.')
+        value = str(value)
+        if '\n' in value or '\r' in value:
+            raise ValueError('CR and LF are illegal in header values.')
+        return name, value
+
+    def setHeader(self, name, value, literal=False):
+        name, value = self._validateHeader(name, value)
+        super(LaunchpadBrowserResponse, self).setHeader(
+            name, value, literal=literal)
+
+    def addHeader(self, name, value):
+        name, value = self._validateHeader(name, value)
+        super(LaunchpadBrowserResponse, self).addHeader(name, value)
+
     def redirect(self, location, status=None, trusted=True,
                  temporary_if_possible=False):
         """Do a redirect.
@@ -846,6 +868,9 @@ def adaptRequestToResponse(request):
     return request.response
 
 
+@implementer(
+    INotificationRequest, IBasicLaunchpadRequest, IParticipation,
+    lp.layers.LaunchpadLayer)
 class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
                            TestRequest, ErrorReportRequest):
     """Mock request for use in unit and functional tests.
@@ -885,17 +910,21 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
+
+    If force_fresh_login_for_testing is set to True, the
+    ``lp.services.webapp.login.isFreshLogin`` function will always return True.
+    This is useful in tests where you want to avoid needing a fresh login when
+    exercising views such as ``PersonGPGView``
+
     """
-    implements(
-        INotificationRequest, IBasicLaunchpadRequest, IParticipation,
-        lp.layers.LaunchpadLayer)
 
     # These two attributes satisfy IParticipation.
     principal = None
     interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
-                 skin=None, outstream=None, method='GET', **kw):
+                 skin=None, outstream=None, method='GET',
+                 force_fresh_login_for_testing=False, **kw):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
@@ -905,6 +934,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         self.features = get_relevant_feature_controller()
         if self.features is None:
             self.features = NullFeatureController()
+        self.force_fresh_login_for_testing = force_fresh_login_for_testing
 
     @property
     def uuid(self):
@@ -951,6 +981,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         return
 
 
+@implementer(INotificationResponse)
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
     """Mock response for use in unit and functional tests.
 
@@ -965,7 +996,6 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
     >>> request.notifications[0].message
     u'Warning Notification'
     """
-    implements(INotificationResponse)
 
     uuid = 'LaunchpadTestResponse'
 
@@ -1110,9 +1140,10 @@ class FeedsPublication(LaunchpadBrowserPublication):
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
-            # the result is a feed, an image, or a redirection.
+            # the result is a feed, a favicon, an image, or a redirection.
             naked_result = removeSecurityProxy(result)
             if (IFeed.providedBy(result) or
+                IFavicon.providedBy(result) or
                 isinstance(naked_result, LaunchpadImageFolder) or
                 getattr(naked_result, 'status', None) == 301):
                 return result
@@ -1128,9 +1159,9 @@ class FeedsPublication(LaunchpadBrowserPublication):
         return auth_utility.unauthenticatedPrincipal()
 
 
+@implementer(lp.layers.FeedsLayer)
 class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
-    implements(lp.layers.FeedsLayer)
 
     # Feeds is not served over SSL, so don't force SSL.
     strict_transport_security = False
@@ -1138,8 +1169,9 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- testopenid
 
+@implementer(lp.layers.TestOpenIDLayer)
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(lp.layers.TestOpenIDLayer)
+    pass
 
 
 class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
@@ -1237,7 +1269,10 @@ class WebServicePublication(WebServicePublicationMixin,
             return super(WebServicePublication, self).getPrincipal(request)
 
         # Fetch OAuth authorization information from the request.
-        form = get_oauth_authorization(request)
+        try:
+            form = get_oauth_authorization(request)
+        except UnicodeDecodeError:
+            raise TokenException('Invalid UTF-8.')
 
         consumer_key = form.get('oauth_consumer_key')
         consumers = getUtility(IOAuthConsumerSet)
@@ -1253,8 +1288,10 @@ class WebServicePublication(WebServicePublicationMixin,
             # header.
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
-            if consumer_key == '':
-                consumer_key = 'anonymous client'
+            if isinstance(consumer_key, bytes):
+                consumer_key = consumer_key.decode('UTF-8')
+            if consumer_key == u'':
+                consumer_key = u'anonymous client'
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:
@@ -1300,15 +1337,19 @@ class WebServicePublication(WebServicePublicationMixin,
             # Everything is fine, let's return the principal.
             pass
         alsoProvides(request, IOAuthSignedRequest)
+        if token.context is not None:
+            scope_url = canonical_url(token.context, force_local_path=True)
+        else:
+            scope_url = None
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
             token.person.account.id, access_level=token.permission,
-            scope=token.context)
+            scope_url=scope_url)
 
         return principal
 
 
+@implementer(lp.layers.WebServiceLayer)
 class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
-    implements(lp.layers.WebServiceLayer)
 
     def getRootURL(self, rootsite):
         """See IBasicLaunchpadRequest."""
@@ -1492,9 +1533,9 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
             raise ProtocolErrorException(self.status, self.headers)
 
 
+@implementer(ILaunchpadProtocolError)
 class ProtocolErrorException(Exception):
     """An exception for requests that turn out to be protocol errors."""
-    implements(ILaunchpadProtocolError)
 
     def __init__(self, status, headers):
         """Store status and headers for rendering in the HTTP response."""

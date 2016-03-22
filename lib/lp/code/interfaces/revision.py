@@ -81,6 +81,7 @@ class IRevision(Interface):
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
 
+    id = Int(title=_('The database revision author ID'))
     name = TextLine(title=_("Revision Author Name"), required=True)
     name_without_email = Attribute(
         "Revision author name without email address.")

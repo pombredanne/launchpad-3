@@ -10,12 +10,12 @@ __all__ = [
 
 
 from lazr.restful.interfaces import IJSONPublishable
-from zope.interface import implements
+from zope.interface import implementer
 
 
+@implementer(IJSONPublishable)
 class StrJSONSerializer:
     """Simple JSON serializer that simply str() it's context. """
-    implements(IJSONPublishable)
 
     def __init__(self, context):
         self.context = context

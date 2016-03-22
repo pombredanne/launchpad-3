@@ -170,13 +170,12 @@ Foo bar doesn't have any questions written in Spanish.
 But Carlos has one.
 
     # Because not everyone uses a real editor <wink>
-    >>> from lp.services.encoding import ascii_smash
     >>> carlos_raw = personset.getByName('carlos')
     >>> carlos = IQuestionsPerson(carlos_raw)
     >>> for question in carlos.searchQuestions(
     ...         language=(english, spanish)):
-    ...     print ascii_smash(question.title), question.language.code
-    Problema al recompilar kernel con soporte smp (doble-nucleo)    es
+    ...     print question.title, question.language.code
+    Problema al recompilar kernel con soporte smp (doble-núcleo)    es
 
 
 Questions needing attention
@@ -234,7 +233,7 @@ subscribed to...
     ...            for language in foo_bar.getQuestionLanguages()))
     en, pt_BR
 
-...and questions for which he's the answerer...
+...and questions for which they're the answerer...
 
     >>> es_question = getUtility(IQuestionSet).get(12)
     >>> es_question.reject(foo_bar_raw, 'Reject question.')
@@ -270,8 +269,8 @@ Direct subscriptions
 ====================
 
 IQuestionsPerson defines getDirectAnswerQuestionTargets that can be used to
-retrieve a list of IQuestionTargets that a person subscribed himself to as an
-answer contact.
+retrieve a list of IQuestionTargets that a person subscribed themselves to
+as an answer contact.
 
     >>> no_priv_raw = personset.getByName('no-priv')
     >>> no_priv = IQuestionsPerson(no_priv_raw)
@@ -296,7 +295,7 @@ Indirect subscriptions
 
 IQuestionsPerson defines getTeamAnswerQuestionTargets that retrieves a list of
 IQuestionTargets that the person is subscribed to indirectly as an answer
-contact through his team membership.
+contact through their team membership.
 
     >>> landscape_team = personset.getByName("landscape-developers")
     >>> ignored = landscape_team.addMember(no_priv_raw, foo_bar_raw)

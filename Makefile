@@ -54,7 +54,7 @@ BUILDOUT_BIN = \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
-    bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
+    bin/run bin/run-testapp bin/sprite-util bin/start_librarian \
     bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
     bin/watch_jsbuild
 
@@ -176,7 +176,8 @@ $(YUI_DEFAULT_SYMLINK): $(YUI_BUILDS)
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 	-mkdir $@
-	for jsdir in lib/lp/*/javascript; do \
+	-mkdir $@/services
+	for jsdir in lib/lp/*/javascript lib/lp/services/*/javascript; do \
 		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
 		cp -a $$jsdir $@/$$app; \
 	done
@@ -418,12 +419,6 @@ clean: lxc-clean
 realclean: clean
 	$(RM) TAGS tags
 
-zcmldocs:
-	mkdir -p doc/zcml/namespaces.zope.org
-	bin/stxdocs \
-	    -f sourcecode/zope/src/zope/app/zcmlfiles/meta.zcml \
-	    -o doc/zcml/namespaces.zope.org
-
 potemplates: launchpad.pot
 
 # Generate launchpad.pot by extracting message ids from the source
@@ -495,4 +490,4 @@ pydoctor:
 	launchpad.pot pagetests pull_branches pydoctor realclean	\
 	reload-apache run run-testapp runner scan_branches schema	\
 	sprite_css sprite_image start stop sync_branches TAGS tags	\
-	test_build test_inplace zcmldocs $(LP_JS_BUILD)
+	test_build test_inplace $(LP_JS_BUILD)

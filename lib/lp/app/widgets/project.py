@@ -19,7 +19,7 @@ from zope.formlib.widget import (
     InputWidget,
     renderElement,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 
 from lp.app.errors import UnexpectedFormData
@@ -27,10 +27,9 @@ from lp.app.validators import LaunchpadValidationError
 from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 
 
+@implementer(IAlwaysSubmittedWidget, IInputWidget)
 class ProjectScopeWidget(BrowserWidget, InputWidget):
     """Widget for selecting a scope. Either 'All projects' or only one."""
-
-    implements(IAlwaysSubmittedWidget, IInputWidget)
 
     default_option = "all"
     _error = None

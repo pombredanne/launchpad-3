@@ -39,7 +39,6 @@ class KeyServerTac(TacTestSetup):
     def logfile(self):
         return os.path.join(self.root, 'testkeyserver.log')
 
-
     @property
     def url(self):
         """The URL that the web server will be running on."""

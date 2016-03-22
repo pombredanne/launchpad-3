@@ -322,16 +322,16 @@ class TestAcceptRejectQueueUploads(TestCaseWithFactory):
         self.assertStatus(package_upload_id, PackageUploadStatus.NEW)
 
     def test_reject_with_comment(self):
-       login_person(self.proposed_queue_admin)
-       package_upload_id = self.proposed_spr.package_upload.id
-       form = {
-           'Reject': 'Reject',
-           'rejection_comment': 'Because I can.',
-           'QUEUE_ID': [package_upload_id]}
-       request = LaunchpadTestRequest(form=form)
-       request.method = 'POST'
-       self.setupQueueView(request)
-       self.assertStatus(package_upload_id, PackageUploadStatus.REJECTED)
+        login_person(self.proposed_queue_admin)
+        package_upload_id = self.proposed_spr.package_upload.id
+        form = {
+            'Reject': 'Reject',
+            'rejection_comment': 'Because I can.',
+            'QUEUE_ID': [package_upload_id]}
+        request = LaunchpadTestRequest(form=form)
+        request.method = 'POST'
+        self.setupQueueView(request)
+        self.assertStatus(package_upload_id, PackageUploadStatus.REJECTED)
 
 
 class TestQueueItemsView(TestCaseWithFactory):

@@ -4,7 +4,7 @@
 __metaclass__ = type
 __all__ = ['BugMessage', 'BugMessageSet']
 
-from email.Utils import make_msgid
+from email.utils import make_msgid
 
 from sqlobject import (
     ForeignKey,
@@ -12,7 +12,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.interfaces.bugmessage import (
     IBugMessage,
@@ -29,10 +29,9 @@ from lp.services.messages.model.message import (
     )
 
 
+@implementer(IBugMessage)
 class BugMessage(SQLBase):
     """A table linking bugs and messages."""
-
-    implements(IBugMessage)
 
     _table = 'BugMessage'
 
@@ -61,10 +60,9 @@ class BugMessage(SQLBase):
             id(self), self.message, self.index)
 
 
+@implementer(IBugMessageSet)
 class BugMessageSet:
     """See `IBugMessageSet`."""
-
-    implements(IBugMessageSet)
 
     def createMessage(self, subject, bug, owner, content=None):
         """See `IBugMessageSet`."""

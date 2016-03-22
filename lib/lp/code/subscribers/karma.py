@@ -1,7 +1,9 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Assign karma for code domain activity."""
+
+from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 
 from lp.code.enums import BranchMergeProposalStatus
 from lp.registry.interfaces.person import IPerson
@@ -17,19 +19,25 @@ def branch_created(branch, event):
 @block_implicit_flushes
 def branch_merge_proposed(proposal, event):
     """Assign karma to the user who proposed the merge."""
-    proposal.source_branch.target.assignKarma(
-        proposal.registrant, 'branchmergeproposed')
+    if proposal.source_git_repository is not None:
+        target = proposal.source_git_repository.namespace
+    else:
+        target = proposal.source_branch.target
+    target.assignKarma(proposal.registrant, 'branchmergeproposed')
 
 
 @block_implicit_flushes
 def code_review_comment_added(code_review_comment, event):
     """Assign karma to the user who commented on the review."""
     proposal = code_review_comment.branch_merge_proposal
-    target = proposal.source_branch.target
+    if proposal.source_git_repository is not None:
+        target = proposal.source_git_repository.namespace
+    else:
+        target = proposal.source_branch.target
     # If the user is commenting on their own proposal, then they don't
     # count as a reviewer for that proposal.
     user = code_review_comment.message.owner
-    reviewer = user.inTeam(proposal.target_branch.code_reviewer)
+    reviewer = user.inTeam(proposal.merge_target.code_reviewer)
     if reviewer and user != proposal.registrant:
         target.assignKarma(user, 'codereviewreviewercomment')
     else:
@@ -37,23 +45,33 @@ def code_review_comment_added(code_review_comment, event):
 
 
 @block_implicit_flushes
-def branch_merge_status_changed(proposal, event):
-    """Assign karma to the user who approved the merge."""
-    target = proposal.source_branch.target
+def branch_merge_modified(proposal, event):
+    """Assign karma to the user who approved or rejected the merge."""
+    if event.user is None or isinstance(event.user, UnauthenticatedPrincipal):
+        # Some modification events have no associated user context.  In
+        # these cases there's no karma to assign.
+        return
+
+    if proposal.source_git_repository is not None:
+        target = proposal.source_git_repository.namespace
+    else:
+        target = proposal.source_branch.target
     user = IPerson(event.user)
+    old_status = event.object_before_modification.queue_status
+    new_status = proposal.queue_status
 
     in_progress_states = (
         BranchMergeProposalStatus.WORK_IN_PROGRESS,
         BranchMergeProposalStatus.NEEDS_REVIEW)
 
-    if ((event.to_state == BranchMergeProposalStatus.CODE_APPROVED) and
-        (event.from_state in (in_progress_states))):
+    if ((new_status == BranchMergeProposalStatus.CODE_APPROVED) and
+        (old_status in (in_progress_states))):
         if user == proposal.registrant:
             target.assignKarma(user, 'branchmergeapprovedown')
         else:
             target.assignKarma(user, 'branchmergeapproved')
-    elif ((event.to_state == BranchMergeProposalStatus.REJECTED) and
-          (event.from_state in (in_progress_states))):
+    elif ((new_status == BranchMergeProposalStatus.REJECTED) and
+          (old_status in (in_progress_states))):
         if user == proposal.registrant:
             target.assignKarma(user, 'branchmergerejectedown')
         else:

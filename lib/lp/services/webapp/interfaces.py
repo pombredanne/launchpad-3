@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,12 +19,13 @@ from zope.authentication.interfaces import (
 from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.schema import (
     Bool,
+    Bytes,
     Choice,
     Datetime,
     Int,
@@ -40,8 +41,11 @@ from lp import _
 class ILaunchpadContainer(Interface):
     """Marker interface for objects used as the context of something."""
 
-    def isWithin(scope):
-        """Return True if this context is within the given scope."""
+    def getParentContainers():
+        """Return the containers of each parent of this context."""
+
+    def isWithin(scope_url):
+        """Return True if this context is within the given scope URL."""
 
 
 class ILaunchpadRoot(IContainmentRoot):
@@ -275,6 +279,15 @@ class NoCanonicalUrl(TypeError):
             )
 
 
+class IFavicon(Interface):
+    """A favicon."""
+
+    path = TextLine(
+        title=u"The name of the file containing the favicon data.",
+        required=True)
+    data = Bytes(title=u"The favicon data.", required=True)
+
+
 # XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
 # generic thing. The problem lies in the fact that half of this (user, login,
 # time zone, developer) is actually useful inside webapp/, and the other half
@@ -443,16 +456,16 @@ class ILoggedInEvent(Interface):
         'The login id that was used.  For example, an email address.')
 
 
+@implementer(ILoggedInEvent)
 class CookieAuthLoggedInEvent:
-    implements(ILoggedInEvent)
 
     def __init__(self, request, login):
         self.request = request
         self.login = login
 
 
+@implementer(IPrincipalIdentifiedEvent)
 class CookieAuthPrincipalIdentifiedEvent:
-    implements(IPrincipalIdentifiedEvent)
 
     def __init__(self, principal, request, login):
         self.principal = principal
@@ -460,8 +473,8 @@ class CookieAuthPrincipalIdentifiedEvent:
         self.login = login
 
 
+@implementer(ILoggedInEvent, IPrincipalIdentifiedEvent)
 class BasicAuthLoggedInEvent:
-    implements(ILoggedInEvent, IPrincipalIdentifiedEvent)
 
     def __init__(self, request, login, principal):
         # these one from ILoggedInEvent
@@ -476,8 +489,8 @@ class ILoggedOutEvent(Interface):
     """An event which gets sent after someone has logged out via a form."""
 
 
+@implementer(ILoggedOutEvent)
 class LoggedOutEvent:
-    implements(ILoggedOutEvent)
 
     def __init__(self, request):
         self.request = request
@@ -486,12 +499,12 @@ class LoggedOutEvent:
 class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
-    a method to allow the acquisition of a principal using his
+    a method to allow the acquisition of a principal using their
     login name.
     """
 
     def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+        """Return a principal based on their login name."""
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -501,7 +514,7 @@ class IPlacelessLoginSource(IPrincipalSource):
     """
 
     def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+        """Return a principal based on their login name."""
 
     def getPrincipals(name):
         """Not implemented.
@@ -758,10 +771,9 @@ class IFinishReadOnlyRequestEvent(Interface):
     request = Attribute("The active request.")
 
 
+@implementer(IFinishReadOnlyRequestEvent)
 class FinishReadOnlyRequestEvent:
     """An event which gets sent when the publication is ended"""
-
-    implements(IFinishReadOnlyRequestEvent)
 
     def __init__(self, ob, request):
         self.object = ob

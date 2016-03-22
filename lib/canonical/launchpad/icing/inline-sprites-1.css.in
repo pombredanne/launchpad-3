@@ -84,7 +84,11 @@
 .branch {
     background-image: url(/@@/branch.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
-    }
+}
+.gitbranch {
+    background-image: url(/@@/gitbranch.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+}
 .distribution {
     background-image: url(/@@/distribution.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

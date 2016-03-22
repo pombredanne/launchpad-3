@@ -8,7 +8,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.sqlbase import (
     quote,
@@ -17,8 +17,8 @@ from lp.services.database.sqlbase import (
 from lp.translations.interfaces.potranslation import IPOTranslation
 
 
+@implementer(IPOTranslation)
 class POTranslation(SQLBase):
-    implements(IPOTranslation)
 
     _table = 'POTranslation'
 
@@ -62,4 +62,3 @@ class POTranslation(SQLBase):
             return cls(translation=key)
 
     getOrCreateTranslation = classmethod(getOrCreateTranslation)
-

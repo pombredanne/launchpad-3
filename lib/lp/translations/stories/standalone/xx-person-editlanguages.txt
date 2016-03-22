@@ -144,8 +144,8 @@ page.
 
 Team admins may set their team's preferred languages to select the
 which languages they support in the Answer Tracker. Sample Person
-is the admin for Landscape Developers. He decides he wants the team
-to support Spanish questions for Ubuntu, so he sets the team's
+is the admin for Landscape Developers. They decide they want the team
+to support Spanish questions for Ubuntu, so they set the team's
 preferred languages.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
@@ -168,8 +168,8 @@ preferred languages.
 
 Admins can change a user's language settings if needed. Foo Bar, a
 Launchpad Admin has a question from No Privileges Person claiming that
-he cannot add Esperanto to his languages. Foo Bar visits No Privileges
-Person's page to do it himself.
+they cannot add Esperanto to their languages. Foo Bar visits No Privileges
+Person's page to do it themselves.
 
     >>> admin_browser.open('http://launchpad.dev/~no-priv')
     >>> admin_browser.title

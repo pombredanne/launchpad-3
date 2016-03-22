@@ -106,4 +106,3 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
             self.request.response.redirect(self.request.URL)
 
         return self.status_message
-

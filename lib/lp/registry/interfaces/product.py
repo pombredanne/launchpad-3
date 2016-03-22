@@ -72,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.informationtype import IInformationType
@@ -108,6 +109,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -391,6 +393,9 @@ class IProductPublic(Interface):
     def userCanView(user):
         """True if the given user has access to this product."""
 
+    def userCanLimitedView(user):
+        """True if the given user has limited access to this product."""
+
     private = exported(
         Bool(
             title=_("Product is confidential"), required=False,
@@ -404,12 +409,14 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     on bugs, branches or specifications for the product.
     """
 
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_('Display Name'),
             description=_("""The name of the project as it would appear in a
                 paragraph.""")),
         exported_as='display_name')
+
+    displayname = Attribute('Display name (deprecated)')
 
     icon = exported(
         IconImageUpload(
@@ -466,7 +473,8 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     title = exported(
         Title(
             title=_('Title'),
-            description=_("The project title. Should be just a few words.")))
+            description=_("The project title. Should be just a few words."),
+            readonly=True))
 
 
 class IProductView(
@@ -751,6 +759,21 @@ class IProductView(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
+    vcs = exported(
+        Choice(
+            title=_("VCS"),
+            required=False,
+            vocabulary=VCSType,
+            description=_(
+                "Version control system for this project's code.")))
+
+    inferred_vcs = Choice(
+        title=_("Inferred VCS"),
+        readonly=True,
+        vocabulary=VCSType,
+        description=_(
+            "Inferred version control system for this project's code."))
+
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
 
@@ -888,7 +911,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 class IProduct(
     IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
-    IProductLimitedView, IProductPublic, IQuestionTarget,
+    IProductLimitedView, IProductPublic, IFAQTarget, IQuestionTarget,
     ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
     IPillar):
     """A Product.
@@ -965,21 +988,21 @@ class IProductSet(Interface):
 
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
-        displayname='display_name', projectgroup='project_group',
+        projectgroup='project_group',
         homepageurl='home_page_url', screenshotsurl='screenshots_url',
         freshmeatproject='freshmeat_project', wikiurl='wiki_url',
         downloadurl='download_url',
         sourceforgeproject='sourceforge_project',
         programminglang='programming_lang')
     @export_factory_operation(
-        IProduct, ['name', 'displayname', 'title', 'summary', 'description',
+        IProduct, ['name', 'display_name', 'title', 'summary', 'description',
                    'projectgroup', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
                    'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
-    def createProduct(owner, name, displayname, title, summary,
+    def createProduct(owner, name, display_name, title, summary,
                       description=None, projectgroup=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,

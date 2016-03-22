@@ -25,7 +25,7 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -63,6 +63,7 @@ class ArchiveUploadType(EnumeratedType):
     MIXED_ONLY = Item("Mixed only")
 
 
+@implementer(IArchiveUploadPolicy)
 class AbstractUploadPolicy:
     """Encapsulate the policy of an upload to a launchpad archive.
 
@@ -72,7 +73,6 @@ class AbstractUploadPolicy:
     tests themselves and they operate on NascentUpload instances in order
     to verify them.
     """
-    implements(IArchiveUploadPolicy)
 
     name = 'abstract'
     options = None
@@ -88,10 +88,10 @@ class AbstractUploadPolicy:
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
-        # future_time_grace is in seconds. 28800 is 8 hours
-        self.future_time_grace = 8 * HOURS
+        # future_time_grace is in seconds
+        self.future_time_grace = 24 * HOURS
         # The earliest year we accept in a deb's file's mtime
-        self.earliest_year = 1984
+        self.earliest_year = 1975
 
     def validateUploadType(self, upload):
         """Check that the type of the given upload is accepted by this policy.
@@ -239,7 +239,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 "if you need more space." % (
                 new_size / MEGA, self.archive.authorized_size))
         else:
-            # No need to warn user about his PPA's size.
+            # No need to warn user about their PPA's size.
             pass
 
     def policySpecificChecks(self, upload):

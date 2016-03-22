@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -22,7 +22,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
-    'EnableRestrictedProcessorsMixin',
+    'EnableProcessorsMixin',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
     'traverse_named_ppa',
@@ -33,6 +33,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 
 from lazr.restful.utils import smartquote
 import pytz
@@ -40,9 +41,10 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -155,7 +157,6 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -193,6 +194,7 @@ def traverse_named_ppa(person, distro_name, ppa_name):
         return None
 
 
+@implementer(ICanonicalUrlData)
 class DistributionArchiveURL:
     """Dynamic URL declaration for `IDistributionArchive`.
 
@@ -200,7 +202,6 @@ class DistributionArchiveURL:
     IDistribution as /<distro>/+archive/<name>, for example:
     /ubuntu/+archive/partner
     """
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):
@@ -215,9 +216,9 @@ class DistributionArchiveURL:
         return u"+archive/%s" % self.context.name
 
 
+@implementer(ICanonicalUrlData)
 class PPAURL:
     """Dynamic URL declaration for named PPAs."""
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):
@@ -733,10 +734,9 @@ class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
             return "This %s has been disabled." % self.archive_label
 
 
+@implementer(IContextSourceBinder)
 class ArchiveSeriesVocabularyFactory:
     """A factory for generating vocabularies of an archive's series."""
-
-    implements(IContextSourceBinder)
 
     def __call__(self, context):
         """Return a vocabulary created dynamically from the context archive.
@@ -890,13 +890,12 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         return not self.filtered_sources.is_empty()
 
 
+@implementer(IArchiveIndexActionsMenu)
 class ArchiveView(ArchiveSourcePackageListViewBase):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
     """
-
-    implements(IArchiveIndexActionsMenu)
 
     def initialize(self):
         """Redirect if our context is a main archive."""
@@ -1019,9 +1018,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             }
 
 
+@implementer(IArchivePackagesActionMenu)
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
-    implements(IArchivePackagesActionMenu)
 
     @property
     def page_title(self):
@@ -1902,7 +1901,7 @@ class ArchiveActivateView(LaunchpadFormView):
 
         Reorder the fields in a way the make more sense to users and also
         present a checkbox for acknowledging the PPA-ToS if the user is
-        creating his first PPA.
+        creating their first PPA.
         """
         LaunchpadFormView.setUpFields(self)
 
@@ -1993,6 +1992,12 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         # IArchive.enabled is a read-only property that cannot be set
         # directly.
         del(data['enabled'])
+        new_processors = data.get('processors')
+        if new_processors is not None:
+            if set(self.context.processors) != set(new_processors):
+                self.context.setProcessors(
+                    new_processors, check_permissions=True, user=self.user)
+            del data['processors']
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
@@ -2011,9 +2016,46 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
                 "enabled", "Deleted PPAs can't be enabled.")
 
 
-class ArchiveEditView(BaseArchiveEditView):
+class EnableProcessorsMixin:
+    """A mixin that provides processors field support"""
 
-    field_names = ['displayname', 'description', 'enabled', 'publish']
+    def createEnabledProcessors(self, available_processors, description=None):
+        """Creates the 'processors' field."""
+        terms = []
+        disabled = []
+        if check_permission('launchpad.Admin', self.context):
+            can_modify = lambda proc: True
+        else:
+            can_modify = lambda proc: not proc.restricted
+        for processor in sorted(available_processors, key=attrgetter('name')):
+            terms.append(SimpleTerm(
+                processor, token=processor.name,
+                title="%s (%s)" % (processor.title, processor.name)))
+            if not can_modify(processor):
+                disabled.append(processor)
+        old_field = IArchive['processors']
+        widget = CustomWidgetFactory(
+            LabeledMultiCheckBoxWidget, disabled_items=disabled)
+        return form.Fields(
+            List(__name__=old_field.__name__,
+                 title=old_field.title,
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 description=old_field.description if description is None
+                     else description),
+             render_context=self.render_context, custom_widget=widget)
+
+
+class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
+
+    field_names = [
+        'displayname',
+        'description',
+        'enabled',
+        'publish',
+        'build_debug_symbols',
+        'publish_debug_symbols',
+        ]
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
     page_title = 'Change details'
@@ -2022,43 +2064,53 @@ class ArchiveEditView(BaseArchiveEditView):
     def label(self):
         return 'Edit %s' % self.context.displayname
 
+    @property
+    def initial_values(self):
+        return {
+            'processors': self.context.processors,
+            }
 
-class EnableRestrictedProcessorsMixin:
-    """A mixin that provides enabled_restricted_processors field support"""
+    def setUpFields(self):
+        """Override `LaunchpadEditFormView`.
 
-    def createEnabledRestrictedProcessors(self, description=None):
-        """Creates the 'enabled_restricted_processors' field."""
-        terms = []
-        for processor in getUtility(IProcessorSet).getRestricted():
-            terms.append(SimpleTerm(
-                processor, token=processor.name, title=processor.title))
-        old_field = IArchive['enabled_restricted_processors']
-        return form.Fields(
-            List(__name__=old_field.__name__,
-                 title=old_field.title,
-                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
-                 required=False,
-                 description=old_field.description if description is None
-                     else description),
-                 render_context=self.render_context)
+        See `createEnabledProcessors` method.
+        """
+        super(ArchiveEditView, self).setUpFields()
+        self.form_fields += self.createEnabledProcessors(
+            self.context.available_processors,
+            u"The architectures on which the archive can build. Some "
+            u"architectures are restricted and may only be enabled or "
+            u"disabled by administrators.")
+
+    def validate(self, data):
+        if 'processors' in data:
+            available_processors = set(self.context.available_processors)
+            widget = self.widgets['processors']
+            for processor in self.context.processors:
+                if processor not in data['processors']:
+                    if processor not in available_processors:
+                        # This processor is not currently available for
+                        # selection, but is enabled.  Leave it untouched.
+                        data['processors'].append(processor)
+                    elif processor.name in widget.disabled_items:
+                        # This processor is restricted and currently
+                        # enabled.  Leave it untouched.
+                        data['processors'].append(processor)
 
 
-class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
+class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
 
     field_names = [
         'enabled',
         'private',
         'suppress_subscription_notifications',
         'require_virtualized',
-        'build_debug_symbols',
-        'publish_debug_symbols',
         'permit_obsolete_series_uploads',
         'authorized_size',
         'relative_build_score',
         'external_dependencies',
         ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
 
     @property
@@ -2098,21 +2150,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
-
-    @property
-    def initial_values(self):
-        return {
-            'enabled_restricted_processors':
-                self.context.enabled_restricted_processors,
-            }
-
-    def setUpFields(self):
-        """Override `LaunchpadEditFormView`.
-
-        See `createEnabledRestrictedProcessors` method.
-        """
-        super(ArchiveAdminView, self).setUpFields()
-        self.form_fields += self.createEnabledRestrictedProcessors()
 
 
 class ArchiveDeleteView(LaunchpadFormView):

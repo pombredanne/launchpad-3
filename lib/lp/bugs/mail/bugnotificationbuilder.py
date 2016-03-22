@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug notification building code."""
@@ -11,11 +11,13 @@ __all__ = [
     'get_bugmail_from_address',
     ]
 
-from email.MIMEText import MIMEText
-from email.Utils import formatdate
+from email.mime.text import MIMEText
+from email.utils import formatdate
+import re
 import rfc822
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
@@ -25,7 +27,10 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.config import config
 from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
-from lp.services.mail.sendmail import format_address
+from lp.services.mail.sendmail import (
+    append_footer,
+    format_address,
+    )
 
 
 def format_rfc2822_date(date):
@@ -49,8 +54,8 @@ def get_bugmail_from_address(person, bug):
         return format_address(person.displayname, person.preferredemail.email)
 
     # XXX: Bjorn Tillenius 2006-04-05:
-    # The person doesn't have a preferred email set, but he
-    # added a comment (either via the email UI, or because he was
+    # The person doesn't have a preferred email set, but they
+    # added a comment (either via the email UI, or because they were
     # imported as a deaf reporter). It shouldn't be possible to use the
     # email UI if you don't have a preferred email set, but work around
     # it for now by trying hard to find the right email address to use.
@@ -157,12 +162,17 @@ class BugNotificationBuilder:
                     '%s (%s)' % (event_creator.displayname,
                         event_creator.name)))
 
-    def build(self, from_address, to_address, body, subject, email_date,
+        if bug.duplicateof is not None:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Duplicate', str(bug.duplicateof.id)))
+
+    def build(self, from_address, to_person, body, subject, email_date,
               rationale=None, references=None, message_id=None, filters=None):
         """Construct the notification.
 
         :param from_address: The From address of the notification.
-        :param to_address: The To address for the notification.
+        :param to_person: The `IPerson` to use as the To address for the
+            notification.
         :param body: The body text of the notification.
         :type body: unicode
         :param subject: The Subject of the notification.
@@ -172,36 +182,59 @@ class BugNotificationBuilder:
         :param references: A value for the References header.
         :param message_id: A value for the Message-ID header.
 
-        :return: An `email.MIMEText.MIMEText` object.
+        :return: An `email.mime.text.MIMEText` object.
         """
-        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-        message['Date'] = format_rfc2822_date(email_date)
-        message['From'] = from_address
-        message['To'] = to_address
+        headers = [
+            ('Date', format_rfc2822_date(email_date)),
+            ('From', from_address),
+            ('To', str(removeSecurityProxy(to_person).preferredemail.email)),
+            ]
 
         # Add the common headers.
-        for header in self.common_headers:
-            message.add_header(*header)
+        headers.extend(self.common_headers)
 
-        if references is not None:
-            message['References'] = ' '.join(references)
+        if references:
+            headers.append(('References', ' '.join(references)))
         if message_id is not None:
-            message['Message-Id'] = message_id
+            headers.append(('Message-Id', message_id))
 
         subject_prefix = "[Bug %d]" % self.bug.id
         if subject is None:
-            message['Subject'] = subject_prefix
+            headers.append(('Subject', subject_prefix))
         elif subject_prefix in subject:
-            message['Subject'] = subject
+            headers.append(('Subject', subject))
         else:
-            message['Subject'] = "%s %s" % (subject_prefix, subject)
+            headers.append(('Subject', "%s %s" % (subject_prefix, subject)))
 
         if rationale is not None:
-            message.add_header('X-Launchpad-Message-Rationale', rationale)
+            headers.append(('X-Launchpad-Message-Rationale', rationale))
+            # XXX cjwatson 2015-09-11: The ridiculously complicated way that
+            # bug notifications are built means that we no longer have
+            # direct access to the subscriber name at this point.  As a
+            # stopgap, parse it out of the rationale.
+            match = re.search(r'@([^ ]*)', rationale)
+            if match is not None:
+                message_for = match.group(1)
+            else:
+                message_for = removeSecurityProxy(to_person).name
+            headers.append(('X-Launchpad-Message-For', message_for))
 
         if filters is not None:
             for filter in filters:
-                message.add_header(
-                    'X-Launchpad-Subscription', filter)
+                headers.append(('X-Launchpad-Subscription', filter))
 
+        # XXX cjwatson 2015-07-31: This is cloned-and-hacked from
+        # BaseMailer; it would ultimately be better to convert bug
+        # notifications to that framework.
+        if removeSecurityProxy(to_person).expanded_notification_footers:
+            lines = []
+            for key, value in headers:
+                if key.startswith('X-Launchpad-'):
+                    lines.append('%s: %s\n' % (key[2:], value))
+            if lines:
+                body = append_footer(body, ''.join(lines))
+
+        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+        for header in headers:
+            message.add_header(*header)
         return message

@@ -17,7 +17,6 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
-from lp.code.interfaces.gitrepository import GIT_FEATURE_FLAG
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -120,7 +119,6 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
             % (branch.id, requestor.name), repr(job))
 
     def test_repr_gitrepositories(self):
-        self.useFixture(FeatureFixture({GIT_FEATURE_FLAG: u"on"}))
         requestor = self.factory.makePerson()
         gitrepository = self.factory.makeGitRepository()
         job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
@@ -246,7 +244,6 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
     def setUp(self):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
-            GIT_FEATURE_FLAG: 'on',
         }))
         super(RemoveArtifactSubscriptionsJobTestCase, self).setUp()
 
@@ -333,8 +330,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         branch.subscribe(artifact_indirect_grantee,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, owner)
-        # XXX cjwatson 2015-02-05: Fill this in once we have
-        # GitRepositorySubscription.
+        gitrepository.subscribe(artifact_indirect_grantee,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, owner)
         # Subscribing somebody to a specification does not automatically
         # create an artifact grant.
         spec_artifact = self.factory.makeAccessArtifact(specification)
@@ -379,8 +377,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertIn(artifact_team_grantee, subscribers)
         self.assertIn(artifact_indirect_grantee, bug.getDirectSubscribers())
         self.assertIn(artifact_indirect_grantee, branch.subscribers)
-        # XXX cjwatson 2015-02-05: Fill this in once we have
-        # GitRepositorySubscription.
+        self.assertIn(artifact_indirect_grantee, gitrepository.subscribers)
         self.assertIn(artifact_indirect_grantee,
                       removeSecurityProxy(specification).subscribers)
 
@@ -437,7 +434,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
     def _assert_gitrepository_change_unsubscribes(self, change_callback):
 
         def get_pillars(concrete_artifact):
-            return [concrete_artifact.product]
+            return [concrete_artifact.target]
 
         def get_subscribers(concrete_artifact):
             return concrete_artifact.subscribers
@@ -446,14 +443,22 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
                            policy_team_grantee, policy_indirect_grantee,
                            artifact_team_grantee, owner):
             concrete_artifact = gitrepository
-            # XXX cjwatson 2015-02-05: Fill this in once we have
-            # GitRepositorySubscription.
+            gitrepository.subscribe(
+                policy_team_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            gitrepository.subscribe(
+                policy_indirect_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                CodeReviewNotificationLevel.NOEMAIL, owner)
+            gitrepository.subscribe(
+                artifact_team_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                CodeReviewNotificationLevel.NOEMAIL, owner)
             return concrete_artifact, get_pillars, get_subscribers
 
-        # XXX cjwatson 2015-02-05: Uncomment once we have
-        # GitRepositorySubscription.
-        #self._assert_artifact_change_unsubscribes(
-        #    change_callback, configure_test)
+        self._assert_artifact_change_unsubscribes(
+            change_callback, configure_test)
 
     def _assert_specification_change_unsubscribes(self, change_callback):
 

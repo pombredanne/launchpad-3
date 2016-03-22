@@ -11,7 +11,7 @@ __all__ = [
 import socket
 
 from sqlobject import StringCol
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
@@ -21,9 +21,8 @@ from lp.services.scripts.interfaces.scriptactivity import (
     )
 
 
+@implementer(IScriptActivity)
 class ScriptActivity(SQLBase):
-
-    implements(IScriptActivity)
 
     name = StringCol(notNull=True)
     hostname = StringCol(notNull=True)
@@ -31,9 +30,8 @@ class ScriptActivity(SQLBase):
     date_completed = UtcDateTimeCol(notNull=True)
 
 
+@implementer(IScriptActivitySet)
 class ScriptActivitySet:
-
-    implements(IScriptActivitySet)
 
     def recordSuccess(self, name, date_started, date_completed,
                       hostname=None):

@@ -33,7 +33,7 @@ class TestAuditorClient(TestCaseWithFactory):
                 object_to_enterpriseid(pu), object_to_enterpriseid(actor))
         self.assertAction('auditor-send', data)
         result = client.receive(obj=pu)
-        del result[0]['date'] # Ignore the date.
+        del result[0]['date']  # Ignore the date.
         expected = [{
             u'comment': u'', u'details': u'', u'actor': actor,
             u'operation': u'packageupload-accepted', u'object': pu}]
@@ -54,7 +54,7 @@ class TestAuditorClient(TestCaseWithFactory):
             operation=('person-deleted', 'person-undeleted'))
         self.assertEqual(2, len(result))
         for r in result:
-            del r['date'] # Ignore the date.
+            del r['date']  # Ignore the date.
         expected = [
             {u'comment': u'', u'details': u'', u'actor': actor,
             u'operation': u'person-deleted', u'object': actor},

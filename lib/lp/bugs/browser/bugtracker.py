@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BugTrackerAddView',
-    'BugTrackerBreadcrumb',
     'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
     'BugTrackerEditComponentView',
@@ -27,7 +26,7 @@ from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
@@ -550,20 +549,9 @@ class BugTrackerSetBreadcrumb(Breadcrumb):
         return u"Bug trackers"
 
 
-class BugTrackerBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IBugTracker`."""
-
-    rootsite = None
-
-    @property
-    def text(self):
-        return self.context.title
-
-
+@implementer(IRemoteBug)
 class RemoteBug:
     """Represents a bug in a remote bug tracker."""
-
-    implements(IRemoteBug)
 
     def __init__(self, bugtracker, remotebug, bugs):
         self.bugtracker = bugtracker

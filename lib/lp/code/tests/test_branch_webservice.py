@@ -4,6 +4,10 @@
 __metaclass__ = type
 
 from lazr.restfulclient.errors import BadRequest
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    )
 from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -12,22 +16,64 @@ from lp.app.enums import InformationType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
+    admin_logged_in,
     api_url,
     launchpadlib_for,
     login_person,
     logout,
+    record_two_runs,
     run_with_login,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import webservice_for_person
+
+
+class TestBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_landing_candidates_constant_queries(self):
+        target = self.factory.makeProduct()
+        login_person(target.owner)
+        trunk = self.factory.makeBranch(target=target)
+        trunk_url = api_url(trunk)
+        webservice = webservice_for_person(
+            target.owner, permission=OAuthPermission.WRITE_PRIVATE)
+        logout()
+
+        def create_mp():
+            with admin_logged_in():
+                branch = self.factory.makeBranch(
+                    target=target,
+                    stacked_on=self.factory.makeBranch(
+                        target=target,
+                        information_type=InformationType.PRIVATESECURITY),
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposal(
+                    source_branch=branch, target_branch=trunk)
+
+        def list_mps():
+            webservice.get(trunk_url + '/landing_candidates')
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        # Each new MP triggers a query for Person, BranchMergeProposal
+        # and PreviewDiff. Eventually they should be batched, but this
+        # at least ensures the situation doesn't get worse.
+        self.assertThat(
+            recorder2, HasQueryCount(Equals(recorder1.count + (2 * 3))))
 
 
 class TestBranchOperations(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_createMergeProposal_fails_if_reviewers_and_review_types_are_different_sizes(self):
+    def test_createMergeProposal_fails_if_reviewers_and_types_mismatch(self):
 
         source = self.factory.makeBranch(name='rock')
         source_url = api_url(source)
@@ -104,6 +150,7 @@ class TestBranchOperations(TestCaseWithFactory):
         self.assertIsNotNone(renamed_branch)
         self.assertEqual(
             '~barney/myproduct/mybranch', renamed_branch.unique_name)
+
 
 class TestBranchDeletes(TestCaseWithFactory):
 

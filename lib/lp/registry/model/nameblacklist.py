@@ -15,7 +15,7 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
@@ -26,10 +26,9 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 
 
+@implementer(INameBlacklist)
 class NameBlacklist(StormBase):
     """Class for the NameBlacklist table."""
-
-    implements(INameBlacklist)
 
     __storm_table__ = 'NameBlacklist'
 
@@ -40,10 +39,9 @@ class NameBlacklist(StormBase):
     admin = Reference(admin_id, Person.id)
 
 
+@implementer(INameBlacklistSet)
 class NameBlacklistSet:
     """Class for creating and retrieving NameBlacklist objects."""
-
-    implements(INameBlacklistSet)
 
     def getAll(self):
         """See `INameBlacklistSet`."""

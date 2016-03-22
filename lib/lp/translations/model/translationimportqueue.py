@@ -38,7 +38,7 @@ from zope.component import (
     getUtility,
     queryAdapter,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -167,8 +167,8 @@ def compose_approval_conflict_notice(domain, templates_count, sample):
         ) % (templates_count, domain, ';\n'.join(sample_names))
 
 
+@implementer(ITranslationImportQueueEntry)
 class TranslationImportQueueEntry(SQLBase):
-    implements(ITranslationImportQueueEntry)
 
     _table = 'TranslationImportQueueEntry'
 
@@ -901,8 +901,8 @@ def list_distroseries_request_targets(status_condition):
     return list(distroseries)
 
 
+@implementer(ITranslationImportQueue)
 class TranslationImportQueue:
-    implements(ITranslationImportQueue)
 
     def __iter__(self):
         """See ITranslationImportQueue."""

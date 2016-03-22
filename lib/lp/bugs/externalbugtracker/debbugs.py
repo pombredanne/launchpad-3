@@ -11,7 +11,7 @@ __all__ = [
 
 from datetime import datetime
 import email
-from email.Utils import (
+from email.utils import (
     mktime_tz,
     parseaddr,
     parsedate_tz,
@@ -21,7 +21,7 @@ import os.path
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -58,11 +58,10 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
     """The Debian bug database was not found."""
 
 
+@implementer(
+    ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
-
-    implements(
-        ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
     # We don't support different versions of debbugs.
     version = None
@@ -279,7 +278,7 @@ class DebBugs(ExternalBugTracker):
     def _getDateForComment(self, parsed_comment):
         """Return the correct date for a comment.
 
-        :param parsed_comment: An `email.Message.Message` instance
+        :param parsed_comment: An `email.message.Message` instance
             containing a parsed DebBugs comment.
         :return: The correct date to use for the comment contained in
             `parsed_comment`. If a date is specified in a Received

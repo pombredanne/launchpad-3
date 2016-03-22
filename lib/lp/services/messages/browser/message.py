@@ -5,15 +5,15 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.messages.interfaces.message import IIndexedMessage
 from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
+@implementer(ICanonicalUrlData)
 class QuestionMessageCanonicalUrlData:
     """Question messages have a canonical_url within the question."""
-    implements(ICanonicalUrlData)
     rootsite = 'answers'
 
     def __init__(self, question, message):
@@ -21,9 +21,9 @@ class QuestionMessageCanonicalUrlData:
         self.path = "messages/%d" % list(question.messages).index(message)
 
 
+@implementer(ICanonicalUrlData)
 class BugMessageCanonicalUrlData:
     """Bug messages have a canonical_url within the primary bugtask."""
-    implements(ICanonicalUrlData)
     rootsite = 'bugs'
 
     def __init__(self, bug, message):
@@ -31,13 +31,13 @@ class BugMessageCanonicalUrlData:
         self.path = "comments/%d" % list(bug.messages).index(message)
 
 
+@implementer(ICanonicalUrlData)
 class IndexedBugMessageCanonicalUrlData:
     """An optimized bug message canonical_url implementation.
 
     This implementation relies on the message being decorated with
     its index and context.
     """
-    implements(ICanonicalUrlData)
     rootsite = 'bugs'
 
     def __init__(self, message):

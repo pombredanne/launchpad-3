@@ -23,7 +23,7 @@ from lazr.restful.utils import get_current_browser_request
 import simplejson
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.http import IResult
 from zope.security.checker import (
@@ -117,8 +117,8 @@ def login_as_person(person):
     logInPrincipal(request, principal, email)
 
 
+@implementer(IResult)
 class CloseDbResult:
-    implements(IResult)
 
     # This is machinery, not content.  We specify our security checker here
     # directly for clarity.

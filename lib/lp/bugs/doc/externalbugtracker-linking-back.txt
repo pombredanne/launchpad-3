@@ -5,14 +5,14 @@ can tell external bug trackers that we're watching the bug, and make it
 easier to users of the external bug tracker to get more information
 about the bug.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestExternalBugTracker)
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     ISupportsBackLinking)
 
-    >>> class BackLinkingExternalBugTracker(TestExternalBugTracker):
-    ...     implements(ISupportsBackLinking)
+    >>> @implementer(ISupportsBackLinking)
+    ... class BackLinkingExternalBugTracker(TestExternalBugTracker):
     ...
     ...     def __init__(self, baseurl):
     ...         super(BackLinkingExternalBugTracker, self).__init__(baseurl)

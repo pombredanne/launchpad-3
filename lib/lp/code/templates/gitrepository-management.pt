@@ -1,82 +1,12 @@
-<div
+<tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:define="context_menu view/context/menu:context">
+  omit-tag="">
 
-  <dl id="clone-url">
-    <dt>Get this repository:</dt>
-    <dd>
-      <tal:anonymous condition="view/anon_url">
-        <tt class="command">
-          git clone <span class="anon-url" tal:content="view/anon_url" />
-        </tt>
-        <br />
-      </tal:anonymous>
-      <tal:ssh condition="view/ssh_url">
-        <tt class="command">
-          git clone <span class="ssh-url" tal:content="view/ssh_url" />
-        </tt>
-      </tal:ssh>
-    </dd>
-  </dl>
+<tal:repository-management
+    define="kind string:repository;
+            repository context">
+  <div metal:use-macro="context/@@+macros/management" />
+</tal:repository-management>
 
-  <div id="upload-directions">
-    <tal:not-logged-in condition="not:view/user">
-      <tal:individual condition="not:context/owner/is_team">
-          Only
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/displayname">Person</a>
-          can upload to this repository. If you are
-          <tal:branch-owner replace="context/owner/displayname"/>
-          please <a href="+login">log in</a> for upload directions.
-      </tal:individual>
-      <tal:team tal:condition="context/owner/is_team">
-          Members of
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/displayname">Team</a>
-          can upload to this repository. <a href="+login">Log in</a> for
-          directions.
-      </tal:team>
-    </tal:not-logged-in>
-
-    <tal:logged-in condition="view/user">
-      <tal:can-push tal:condition="view/user_can_push">
-        <dl id="push-url">
-          <dt>Update this repository:</dt>
-          <dd>
-            <tt class="command">
-            git push
-            </tt>
-          </dd>
-        </dl>
-        <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
-          To authenticate with the Launchpad Git hosting service, you need to
-          <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-            register a SSH key</a>.
-        </p>
-      </tal:can-push>
-
-      <tal:cannot-push condition="not:view/user_can_push">
-        <div id="push-directions" tal:condition="not:context/owner/is_team">
-          You cannot push to this repository. Only
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/displayname">Person</a>
-          can push to this repository.
-        </div>
-        <div id="push-directions" tal:condition="context/owner/is_team">
-          You cannot push to this repository. Members of
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/displayname">Team</a>
-          can push to this repository.
-        </div>
-      </tal:cannot-push>
-    </tal:logged-in>
-
-  </div>
-
-  <div style="margin-top: 1.5em" tal:define="link context_menu/source">
-    <a tal:replace="structure link/fmt:link" />
-  </div>
-
-</div>
+</tal:root>

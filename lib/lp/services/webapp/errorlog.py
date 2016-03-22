@@ -25,7 +25,7 @@ from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.exceptions.exceptionformatter import format_exception
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
@@ -82,13 +82,13 @@ def _is_sensitive(request, name):
     return True
 
 
+@implementer(IErrorReportEvent)
 class ErrorReportEvent(ObjectEvent):
     """A new error report has been created."""
-    implements(IErrorReportEvent)
 
 
+@implementer(IErrorReport)
 class ErrorReport:
-    implements(IErrorReport)
 
     def __init__(self, id, type, value, time, tb_text, username,
                  url, duration, req_vars, timeline, informational=None,
@@ -289,8 +289,8 @@ def _get_type(report):
     return report.get('type', 'No exception type')
 
 
+@implementer(IErrorReportingUtility)
 class ErrorReportingUtility:
-    implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_offsite_referer = set([
@@ -378,6 +378,9 @@ class ErrorReportingUtility:
         #  - have a missing or offset REFERER header with a type listed in
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
+        #  - look like a deliberate DB outage, to cut down fastdowntime
+        #    noise.
+        self._oops_config.filters.append(self._filter_deliberate_db_outages)
 
     @property
     def oops_prefix(self):
@@ -425,6 +428,17 @@ class ErrorReportingUtility:
                     return True
         return False
 
+    def _filter_deliberate_db_outages(self, report):
+        if _get_type(report) == 'DisconnectionError':
+            message = report.get('value', '')
+            for ok in (
+                    "database does not allow connections",
+                    "pgbouncer database is disabled"):
+                if (message.startswith(ok)
+                        or message.startswith("ERROR:  " + ok)):
+                    return True
+        return False
+
     def _attach_messages(self, report, context):
         """merges self._oops_messages into the report req_vars variable."""
         # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
@@ -469,8 +483,8 @@ class ErrorReportingUtility:
 globalErrorUtility = ErrorReportingUtility()
 
 
+@implementer(IErrorReportRequest)
 class ErrorReportRequest:
-    implements(IErrorReportRequest)
 
     oopsid = None
 

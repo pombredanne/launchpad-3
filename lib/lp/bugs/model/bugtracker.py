@@ -46,7 +46,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -173,6 +173,7 @@ def make_bugtracker_title(uri):
         return base_uri.host + base_uri.path
 
 
+@implementer(IBugTrackerComponent)
 class BugTrackerComponent(StormBase):
     """The software component in the remote bug tracker.
 
@@ -180,7 +181,6 @@ class BugTrackerComponent(StormBase):
     they affect.  This class provides a mapping of this upstream component
     to the corresponding source package in the distro.
     """
-    implements(IBugTrackerComponent)
     __storm_table__ = 'BugTrackerComponent'
 
     id = Int(primary=True)
@@ -227,13 +227,13 @@ class BugTrackerComponent(StormBase):
         """The distribution's source package for this component""")
 
 
+@implementer(IBugTrackerComponentGroup)
 class BugTrackerComponentGroup(StormBase):
     """A collection of components in a remote bug tracker.
 
     Some bug trackers organize sets of components into higher level
     groups, such as Bugzilla's 'product'.
     """
-    implements(IBugTrackerComponentGroup)
     __storm_table__ = 'BugTrackerComponentGroup'
 
     id = Int(primary=True)
@@ -295,6 +295,7 @@ class BugTrackerComponentGroup(StormBase):
         return component
 
 
+@implementer(IBugTracker)
 class BugTracker(SQLBase):
     """A class to access the BugTracker table in the database.
 
@@ -303,7 +304,6 @@ class BugTracker(SQLBase):
     BugTracker. bugzilla.mozilla.org and bugzilla.gnome.org are each
     distinct BugTrackers.
     """
-    implements(IBugTracker)
 
     _table = 'BugTracker'
 
@@ -726,12 +726,11 @@ class BugTracker(SQLBase):
         return groups, products
 
 
+@implementer(IBugTrackerSet)
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTrackers,
     either the full set in the db, or a subset.
     """
-
-    implements(IBugTrackerSet)
 
     table = BugTracker
 
@@ -855,18 +854,18 @@ class BugTrackerSet:
         return results
 
 
+@implementer(IBugTrackerAlias)
 class BugTrackerAlias(SQLBase):
     """See `IBugTrackerAlias`."""
-    implements(IBugTrackerAlias)
 
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=True)
     base_url = StringCol(notNull=True)
 
 
+@implementer(IBugTrackerAliasSet)
 class BugTrackerAliasSet:
     """See `IBugTrackerAliasSet`."""
-    implements(IBugTrackerAliasSet)
 
     table = BugTrackerAlias
 

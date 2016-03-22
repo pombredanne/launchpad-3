@@ -416,8 +416,7 @@ The first and second restrictions both apply to the GNOME Bugzilla:
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bugtracker-delete-not-possible-reasons'))
     Please note, this bug tracker cannot be deleted because:
-      This is the bug tracker for The GNOME Project and The GNOME Terminal
-      Emulator.
+      This is the bug tracker for GNOME and GNOME Terminal.
       There are linked bug watches and only members of ...Launchpad
         Administrators...
 

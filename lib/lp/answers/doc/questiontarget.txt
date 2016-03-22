@@ -309,7 +309,7 @@ Questions needing attention
 ---------------------------
 
 You can search among the questions that need attention.  A question needs the
-attention of a user if he owns it and if it is in the NEEDSINFO or ANSWERED
+attention of a user if they own it and if it is in the NEEDSINFO or ANSWERED
 state.  Questions on which the user gave an answer or requested for more
 information, and that are back in the OPEN state, are also included.
 
@@ -410,7 +410,7 @@ was already on the list.
     >>> target.addAnswerContact(name18, name18)
     False
 
-An answer contact must have at least one language among his preferred
+An answer contact must have at least one language among their preferred
 languages.
 
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
@@ -559,8 +559,8 @@ copied to the question.
     >>> print question_message.text_contents
     This is really a question.
 
-    >>> for bug_link in target_question.bug_links:
-    ...     print bug_link.bug.title
+    >>> for bug in target_question.bugs:
+    ...     print bug.title
     Print is broken
     >>> print target_question.messages[-1].text_contents
     This is really a question.

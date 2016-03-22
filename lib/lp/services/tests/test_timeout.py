@@ -129,6 +129,7 @@ class TestTimeout(TestCase):
         def block():
             """This will block indefinitely."""
             sockets[0].recv(1024)
+
         self.assertRaises(TimeoutError, block)
         self.assertEqual([True], closed)
 
@@ -160,6 +161,7 @@ class TestTimeout(TestCase):
             @with_timeout(cleanup='not_a_method', timeout=0.5)
             def a_function():
                 pass
+
         self.assertRaises(TypeError, do_definition)
 
     def test_timeout_uses_default(self):
@@ -269,8 +271,8 @@ class TestTimeout(TestCase):
         self.assertRaises(TimeoutError, urlfetch, http_server_url)
         # Note that the cleanup also takes care of leaving no worker thread
         # behind.
-        remaining_threads = set(
-            threading.enumerate()).difference(saved_threads)
+        remaining_threads = set(threading.enumerate()).difference(
+            saved_threads)
         self.assertEqual(set(), remaining_threads)
         stop_event.set()
         slow_thread.join()

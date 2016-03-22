@@ -23,7 +23,9 @@ We need to insert some dependent fake data before continuing.
     >>> cprov_ppa = cprov_db.archive
     >>> for pub in cprov_ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
-    ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
+    ...     pub.sourcepackagerelease.signing_key_owner = fake_signer.owner
+    ...     pub.sourcepackagerelease.signing_key_fingerprint = (
+    ...         fake_signer.fingerprint)
     >>> logout()
     >>> cprov_webservice = webservice_for_person(
     ...     cprov_db, permission=OAuthPermission.WRITE_PUBLIC)
@@ -159,7 +161,8 @@ Make cprov's PPA packages unsigned:
     >>> login("foo.bar@canonical.com")
     >>> for pub in cprov_ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
-    ...     pub.sourcepackagerelease.dscsigningkey = None
+    ...     pub.sourcepackagerelease.signing_key_owner = None
+    ...     pub.sourcepackagerelease.signing_key_fingerprint = None
     >>> logout()
 
 Query the source again:
@@ -216,7 +219,7 @@ The package's binaries are also marked for deletion:
 
     >>> login("admin@canonical.com")
     >>> for bin in cprov_ppa.getAllPublishedBinaries(
-    ...     name="testwebservice-bin"):
+    ...     name=u"testwebservice-bin"):
     ...     if bin.status != PackagePublishingStatus.DELETED:
     ...         print "%s is not deleted when it should be" % bin.displayname
     ...     else:

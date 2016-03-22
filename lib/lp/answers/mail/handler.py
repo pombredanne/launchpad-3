@@ -11,7 +11,7 @@ __all__ = [
 import re
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -20,10 +20,9 @@ from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp.interfaces import ILaunchBag
 
 
+@implementer(IMailHandler)
 class AnswerTrackerHandler:
     """Handles emails sent to the Answer Tracker."""
-
-    implements(IMailHandler)
 
     allow_unknown_users = False
 

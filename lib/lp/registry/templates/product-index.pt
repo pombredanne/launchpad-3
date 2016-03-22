@@ -25,6 +25,9 @@
           });
       </script>
     </tal:uses_launchpad_bugtracker>
+
+    <meta name="go-import" tal:condition="view/golang_import_spec"
+          tal:attributes="content view/golang_import_spec" />
   </tal:head-epilogue>
 </head>
 
@@ -129,6 +132,11 @@
                 <dd tal:content="structure view/languages_edit_widget" />
               </dl>
 
+              <dl id="product-vcs" tal:condition="context/inferred_vcs">
+                <dt>Version control system:</dt>
+                <dd tal:content="context/inferred_vcs/title">Git</dd>
+              </dl>
+
               <dl id="licences">
                 <dt>Licences:</dt>
                 <dd>
@@ -192,6 +200,10 @@
                 <a tal:replace="structure overview_menu/milestones/fmt:link" />
               </li>
               <li tal:define="link context/menu:overview/view_recipes"
+                  tal:condition="link/enabled">
+                <a tal:replace="structure link/fmt:link" />
+              </li>
+              <li tal:define="link context/menu:overview/view_snaps"
                   tal:condition="link/enabled">
                 <a tal:replace="structure link/fmt:link" />
               </li>

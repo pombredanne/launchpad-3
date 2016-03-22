@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackageRelease',
-    'PackageDiffAlreadyRequestedError',
     ]
 
 
@@ -36,7 +35,6 @@ class ISourcePackageRelease(Interface):
     version = Attribute("A version string")
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
-    dscsigningkeyID = Attribute("DB ID of the DSC Signing Key")
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
@@ -51,7 +49,7 @@ class ISourcePackageRelease(Interface):
                       "package depends to build"),
         required=False)
     builddependsindep = TextLine(
-        title=_("DSC build depends"),
+        title=_("DSC arch-independent build depends"),
         description=_("Same as builddepends, but the list is of "
                       "arch-independent packages"),
         required=False)
@@ -220,7 +218,3 @@ class ISourcePackageRelease(Interface):
             versions, with a blank line between each.  If there is no
             changelog, or there is an error parsing it, None is returned.
         """
-
-
-class PackageDiffAlreadyRequestedError(Exception):
-    """Raised when an `IPackageDiff` request already exists."""

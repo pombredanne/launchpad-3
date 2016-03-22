@@ -148,7 +148,7 @@ The COPY archive has no packages.
     >>> print_repository_usage(copy_repository_usage)
     binaries_size:   0
     binary_label:    0 binary packages
-    quota:           2147483648
+    quota:           0
     source_label:    0 source packages
     sources_size:    0
     used:            0
@@ -708,8 +708,8 @@ Also the 'selected_dependencies' form field is present, even if it is empty.
     0
 
 When there is no dependencies the form focus is set to the
-'dependency_candidate' input field. Where the user can directly type
-the owner of the PPA he wants to mark as dependency.
+'dependency_candidate' input field, where the user can directly type
+the owner of the PPA they want to mark as dependency.
 
     >>> print view.focusedElementScript()
     <!--
@@ -1011,6 +1011,7 @@ buildd_secret would leak through the public buildlogs.
 
     >>> login('foo.bar@canonical.com')
     >>> ignored = a_team.addMember(cprov, mark)
+    >>> transaction.commit()
     >>> login('celso.providelo@canonical.com')
 
     >>> view = create_initialized_view(
@@ -1113,8 +1114,8 @@ PPA.
     >>> view.can_copy_to_context_ppa
     True
 
-Lets exercise the properties. 'No Privileges Person' user has his own
-PPA, thus he can copy to it, but not to Celso's PPA.
+Lets exercise the properties. 'No Privileges Person' user has their own
+PPA, thus they can copy to it, but not to Celso's PPA.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(
@@ -1137,7 +1138,7 @@ When 'No Privileges Person' gets upload right to Celso's PPA ...
     >>> cprov.archive.newComponentUploader(no_priv, "main")
     <ArchivePermission ...>
 
-He becomes able to copy to the context PPA.
+They become able to copy to the context PPA.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(
@@ -1173,7 +1174,7 @@ When the No-Priv's PPA is disabled it's not available as a
     >>> login('foo.bar@canonical.com')
     >>> no_priv.archive.enable()
 
-'Foo Bar' user has no PPA, so he cannot perform copies at all.
+'Foo Bar' user has no PPA, so they cannot perform copies at all.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")

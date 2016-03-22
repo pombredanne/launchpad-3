@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductJobs."""
@@ -16,8 +16,8 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -199,18 +199,18 @@ class IProductThingJobSource(IProductJobSource):
     """An interface for testing derived job source classes."""
 
 
+@implementer(IProductThingJob)
+@provider(IProductThingJobSource)
 class FakeProductJob(ProductJobDerived):
     """A class that reuses other interfaces and types for testing."""
     class_job_type = ProductJobType.REVIEWER_NOTIFICATION
-    implements(IProductThingJob)
-    classProvides(IProductThingJobSource)
 
 
+@implementer(IProductThingJob)
+@provider(IProductThingJobSource)
 class OtherFakeProductJob(ProductJobDerived):
     """A class that reuses other interfaces and types for testing."""
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
-    implements(IProductThingJob)
-    classProvides(IProductThingJobSource)
 
 
 class ProductJobDerivedTestCase(TestCaseWithFactory):
@@ -442,6 +442,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             ('X-Launchpad-Project', '%s (%s)' %
               (product.displayname, product.name)),
             ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ('X-Launchpad-Message-For', product.owner.name),
             ('Reply-To', reply_to),
             ]
         self.assertContentEqual(expected_headers, headers.items())
@@ -458,6 +459,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             ('X-Launchpad-Project', '%s (%s)' %
               (product.displayname, product.name)),
             ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ('X-Launchpad-Message-For', product.owner.name),
             ]
         self.assertContentEqual(expected_headers, headers.items())
 

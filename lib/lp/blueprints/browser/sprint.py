@@ -30,7 +30,7 @@ from lazr.restful.utils import smartquote
 import pytz
 from zope.component import getUtility
 from zope.formlib.widgets import TextAreaWidget
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -102,8 +102,9 @@ class SprintNavigation(Navigation):
     usedfor = ISprint
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class SprintBreadcrumb(TitleBreadcrumb):
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
+    pass
 
 
 class SprintOverviewMenu(NavigationMenu):
@@ -170,9 +171,8 @@ class HasSprintsView(LaunchpadView):
     page_title = 'Events'
 
 
+@implementer(IMajorHeadingView)
 class SprintView(HasSpecificationsView):
-
-    implements(IMajorHeadingView)
 
     # XXX Michael Nelson 20090923 bug=435255
     # This class inherits a label from HasSpecificationsView, which causes
@@ -532,10 +532,9 @@ class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
         return Link('+all', text, icon='list')
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class SprintSetView(LaunchpadView):
     """View for the /sprints top level collection page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'Meetings and sprints registered in Launchpad'
 

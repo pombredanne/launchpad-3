@@ -20,6 +20,7 @@ __all__ = [
     'person_sort_key',
     'PersonLanguage',
     'PersonSet',
+    'PersonSettings',
     'SSHKey',
     'SSHKeySet',
     'TeamInvitationEvent',
@@ -38,7 +39,7 @@ import re
 import subprocess
 import weakref
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
@@ -91,7 +92,6 @@ from zope.interface import (
     alsoProvides,
     classImplements,
     implementer,
-    implements,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
@@ -106,10 +106,7 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -249,6 +246,7 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import (
+    convert_storm_clause_to_string,
     cursor,
     quote,
     SQLBase,
@@ -332,20 +330,18 @@ class AlreadyConvertedException(Exception):
     """Raised when an attempt to claim a team that has been claimed."""
 
 
+@implementer(IJoinTeamEvent)
 class JoinTeamEvent:
     """See `IJoinTeamEvent`."""
-
-    implements(IJoinTeamEvent)
 
     def __init__(self, person, team):
         self.person = person
         self.team = team
 
 
+@implementer(ITeamInvitationEvent)
 class TeamInvitationEvent:
     """See `IJoinTeamEvent`."""
-
-    implements(ITeamInvitationEvent)
 
     def __init__(self, member, team):
         self.member = member
@@ -408,16 +404,15 @@ _person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
 
 def person_sort_key(person):
     """Identical to `person_sort_key` in the database."""
-    # Strip noise out of displayname. We do not have to bother with
+    # Strip noise out of display_name. We do not have to bother with
     # name, as we know it is just plain ascii.
-    displayname = _person_sort_re.sub(u'', person.displayname.lower())
-    return "%s, %s" % (displayname.strip(), person.name)
+    display_name = _person_sort_re.sub(u'', person.display_name.lower())
+    return "%s, %s" % (display_name.strip(), person.name)
 
 
+@implementer(IPersonSettings)
 class PersonSettings(Storm):
     "The relatively rarely used settings for person (not a team)."
-
-    implements(IPersonSettings)
 
     __storm_table__ = 'PersonSettings'
 
@@ -425,6 +420,8 @@ class PersonSettings(Storm):
     person = Reference(personID, "Person.id")
 
     selfgenerated_bugnotifications = BoolCol(notNull=True, default=False)
+
+    expanded_notification_footers = BoolCol(notNull=False, default=False)
 
 
 def readonly_settings(message, interface):
@@ -474,13 +471,13 @@ _readonly_person_settings = readonly_settings(
     'Teams do not support changing this attribute.', IPersonSettings)
 
 
+@implementer(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+@delegate_to(IPersonSettings, context='_person_settings')
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
     QuestionsPersonMixin):
     """A Person."""
-
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     def __init__(self, *args, **kwargs):
         super(Person, self).__init__(*args, **kwargs)
@@ -504,8 +501,6 @@ class Person(
             return IStore(PersonSettings).find(
                 PersonSettings,
                 PersonSettings.person == self).one()
-
-    delegates(IPersonSettings, context='_person_settings')
 
     sortingColumns = SQL("person_sort_key(Person.displayname, Person.name)")
     # Redefine the default ordering into Storm syntax.
@@ -550,7 +545,11 @@ class Person(
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return '<Person at 0x%x %s (%s)>' % (id(self), self.name, displayname)
 
-    displayname = StringCol(dbName='displayname', notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
+
+    @property
+    def displayname(self):
+        return self.display_name
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -1013,52 +1012,23 @@ class Person(
 
     def _genAffiliatedProductSql(self, user=None):
         """Helper to generate the product sql for getAffiliatePillars"""
+        from lp.registry.model.product import ProductSet
         base_query = """
             SELECT name, 3 as kind, displayname
-            FROM product p
+            FROM product
             WHERE
-                p.active = True
+                product.active = True
                 AND (
-                    p.driver = %(person)s
-                    OR p.owner = %(person)s
-                    OR p.bug_supervisor = %(person)s
+                    product.driver = %(person)s
+                    OR product.owner = %(person)s
+                    OR product.bug_supervisor = %(person)s
                 )
         """ % sqlvalues(person=self)
 
-        if user is not None:
-            roles = IPersonRoles(user)
-            if roles.in_admin or roles.in_commercial_admin:
-                return base_query
-
-        # This is the raw sql version of model/product getProductPrivacyFilter
-        granted_products = """
-            SELECT p.id
-            FROM product p,
-                 accesspolicygrantflat apflat,
-                 teamparticipation part,
-                 accesspolicy ap
-             WHERE
-                apflat.grantee = part.team
-                AND part.person = %(user)s
-                AND apflat.policy = ap.id
-                AND ap.product = p.id
-                AND ap.type = p.information_type
-        """ % sqlvalues(user=user)
-
-        # We have to generate the sqlvalues first so that they're properly
-        # setup and escaped. Then we combine the above query which is already
-        # processed.
-        query_values = sqlvalues(information_type=InformationType.PUBLIC)
-        query_values.update(granted_sql=granted_products)
-
-        query = base_query + """
-                AND (
-                    p.information_type = %(information_type)s
-                    OR p.information_type is NULL
-                    OR p.id IN (%(granted_sql)s)
-                )
-        """ % query_values
-        return query
+        return "%s AND (%s)" % (
+            base_query,
+            convert_storm_clause_to_string(
+                ProductSet.getProductPrivacyFilter(user)))
 
     def getAffiliatedPillars(self, user):
         """See `IPerson`."""
@@ -1125,7 +1095,7 @@ class Person(
             clauses.append(
                 Or(
                     Product.name.contains_string(match_name),
-                    Product.displayname.contains_string(match_name),
+                    Product.display_name.contains_string(match_name),
                     fti_search(Product, match_name)))
 
         if user is not None:
@@ -1133,7 +1103,7 @@ class Person(
 
         return IStore(Product).find(
             Product, *clauses
-            ).config(distinct=True).order_by(Product.displayname)
+            ).config(distinct=True).order_by(Product.display_name)
 
     def isAnyPillarOwner(self):
         """See IPerson."""
@@ -1441,6 +1411,10 @@ class Person(
         """See `IPerson`."""
         self._inTeam_cache = {}
 
+    def __storm_invalidated__(self):
+        super(Person, self).__storm_invalidated__()
+        self.clearInTeamCache()
+
     @cachedproperty
     def participant_ids(self):
         """See `IPerson`."""
@@ -1716,7 +1690,7 @@ class Person(
         """
         tm = TeamMembership.selectOneBy(person=self, team=team)
         assert tm.canBeRenewedByMember(), (
-            "This membership can't be renewed by the member himself.")
+            "This membership can't be renewed by the member themselves.")
 
         assert (team.defaultrenewalperiod is not None
                 and team.defaultrenewalperiod > 0), (
@@ -1742,7 +1716,7 @@ class Person(
             Person.merged == None)
         return IStore(Person).find(
             Person, query).order_by(
-                Upper(Person.displayname), Upper(Person.name))
+                Upper(Person.display_name), Upper(Person.name))
 
     @cachedproperty
     def administrated_teams(self):
@@ -1750,22 +1724,33 @@ class Person(
 
     def getAdministratedTeams(self):
         """See `IPerson`."""
-        owner_of_teams = Person.select('''
-            Person.teamowner = TeamParticipation.team
-            AND TeamParticipation.person = %s
-            AND Person.merged IS NULL
-            ''' % sqlvalues(self),
-            clauseTables=['TeamParticipation'])
-        admin_of_teams = Person.select('''
-            Person.id = TeamMembership.team
-            AND TeamMembership.status = %(admin)s
-            AND TeamMembership.person = TeamParticipation.team
-            AND TeamParticipation.person = %(person)s
-            AND Person.merged IS NULL
-            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
-            clauseTables=['TeamParticipation', 'TeamMembership'])
-        return admin_of_teams.union(
-            owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
+        class RestrictedParticipation:
+            __storm_table__ = 'RestrictedParticipation'
+            teamID = Int(primary=True, name='team')
+
+        restricted_participation_cte = With(
+            'RestrictedParticipation',
+            Select(
+                TeamParticipation.teamID, tables=[TeamParticipation],
+                where=TeamParticipation.person == self))
+        team_select = Select(
+            RestrictedParticipation.teamID, tables=[RestrictedParticipation])
+
+        return Store.of(self).with_(restricted_participation_cte).find(
+            Person,
+            Person.id.is_in(
+                Union(
+                    Select(
+                        Person.id, tables=[Person],
+                        where=Person.teamownerID.is_in(team_select)),
+                    Select(
+                        TeamMembership.teamID, tables=[TeamMembership],
+                        where=And(
+                            TeamMembership.status ==
+                                TeamMembershipStatus.ADMIN,
+                            TeamMembership.personID.is_in(team_select))))),
+            Person.merged == None).order_by(
+                self._sortingColumnsForSetOperations)
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
@@ -2159,7 +2144,7 @@ class Person(
                     TeamMembershipStatus.APPROVED,
                     TeamMembershipStatus.ADMIN,
                     ]))).order_by(
-                        Upper(Team.displayname),
+                        Upper(Team.display_name),
                         Upper(Team.name))
 
     def anyone_can_join(self):
@@ -2214,7 +2199,7 @@ class Person(
         if pre_deactivate and not comment:
             raise AssertionError("Require a comment to deactivate.")
 
-        # Set account status, and set all e-mails to NEW.
+        # Set account status, and set all emails to NEW.
         if pre_deactivate:
             self.preDeactivate(comment)
 
@@ -2275,6 +2260,7 @@ class Person(
         # Nuke all subscriptions of this person.
         removals = [
             ('BranchSubscription', 'person'),
+            ('GitSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
@@ -2343,6 +2329,8 @@ class Person(
             ('bugsummary', 'viewed_by'),
             ('bugtask', 'assignee'),
             ('emailaddress', 'person'),
+            ('gitrepository', 'owner'),
+            ('gitsubscription', 'person'),
             ('gpgkey', 'owner'),
             ('ircid', 'person'),
             ('jabberid', 'person'),
@@ -2371,6 +2359,7 @@ class Person(
             ('teammembership', 'team'),
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
+            ('usertouseremail', 'recipient'),
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team'),
@@ -2770,13 +2759,13 @@ class Person(
     def inactive_gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
+        return gpgkeyset.getGPGKeysForPerson(self, active=False)
 
     @property
     def gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGPGKeys(ownerid=self.id)
+        return gpgkeyset.getGPGKeysForPerson(self)
 
     def hasMaintainedPackages(self):
         """See `IPerson`."""
@@ -2818,7 +2807,8 @@ class Person(
 
         Active 'ppa_only' flag is usually associated with active
         'uploader_only' because there shouldn't be any sense of maintainership
-        for packages uploaded to PPAs by someone else than the user himself.
+        for packages uploaded to PPAs by someone else than the user
+        themselves.
         """
         clauses = []
         if uploader_only:
@@ -2960,13 +2950,6 @@ class Person(
         return Store.of(self).find(
             SourcePackageRecipe, SourcePackageRecipe.owner == self,
             SourcePackageRecipe.name == name).one()
-
-    def getMergeQueue(self, name):
-        from lp.code.model.branchmergequeue import BranchMergeQueue
-        return Store.of(self).find(
-            BranchMergeQueue,
-            BranchMergeQueue.owner == self,
-            BranchMergeQueue.name == unicode(name)).one()
 
     @cachedproperty
     def is_ubuntu_coc_signer(self):
@@ -3251,9 +3234,9 @@ class Person(
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
 
+@implementer(IPersonSet)
 class PersonSet:
     """The set of persons."""
-    implements(IPersonSet)
 
     def __init__(self):
         self.title = 'People registered with Launchpad'
@@ -3440,7 +3423,7 @@ class PersonSet:
                 trust_email=False)
         return person
 
-    def newTeam(self, teamowner, name, displayname, teamdescription=None,
+    def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None,
                 subscription_policy=None):
@@ -3452,11 +3435,12 @@ class PersonSet:
         if subscription_policy is not None:
             # Support 1.0 API.
             membership_policy = subscription_policy
-        team = Person(teamowner=teamowner, name=name, displayname=displayname,
-                description=teamdescription,
-                defaultmembershipperiod=defaultmembershipperiod,
-                defaultrenewalperiod=defaultrenewalperiod,
-                membership_policy=membership_policy)
+        team = Person(
+            teamowner=teamowner, name=name, display_name=display_name,
+            description=teamdescription,
+            defaultmembershipperiod=defaultmembershipperiod,
+            defaultrenewalperiod=defaultrenewalperiod,
+            membership_policy=membership_policy)
         notify(ObjectCreatedEvent(team))
         # Here we add the owner as a team admin manually because we know what
         # we're doing (so we don't need to do any sanity checks) and we don't
@@ -3527,7 +3511,7 @@ class PersonSet:
         else:
             account_id = account.id
         person = Person(
-            name=name, displayname=displayname, accountID=account_id,
+            name=name, display_name=displayname, accountID=account_id,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
         return person
@@ -3987,8 +3971,8 @@ class PersonLanguage(SQLBase):
                           notNull=True)
 
 
+@implementer(ISSHKey)
 class SSHKey(SQLBase):
-    implements(ISSHKey)
     _defaultOrder = ["person", "keytype", "keytext"]
 
     _table = 'SSHKey'
@@ -4007,8 +3991,8 @@ class SSHKey(SQLBase):
         super(SSHKey, self).destroySelf()
 
 
+@implementer(ISSHKeySet)
 class SSHKeySet:
-    implements(ISSHKeySet)
 
     def new(self, person, sshkey):
         try:
@@ -4053,8 +4037,8 @@ class SSHKeySet:
             """ % sqlvalues([person.id for person in people]))
 
 
+@implementer(IWikiName)
 class WikiName(SQLBase, HasOwnerMixin):
-    implements(IWikiName)
 
     _table = 'WikiName'
 
@@ -4067,8 +4051,8 @@ class WikiName(SQLBase, HasOwnerMixin):
         return self.wiki + self.wikiname
 
 
+@implementer(IWikiNameSet)
 class WikiNameSet:
-    implements(IWikiNameSet)
 
     def getByWikiAndName(self, wiki, wikiname):
         """See `IWikiNameSet`."""
@@ -4086,8 +4070,8 @@ class WikiNameSet:
         return WikiName(person=person, wiki=wiki, wikiname=wikiname)
 
 
+@implementer(IJabberID)
 class JabberID(SQLBase, HasOwnerMixin):
-    implements(IJabberID)
 
     _table = 'JabberID'
     _defaultOrder = ['jabberid']
@@ -4096,8 +4080,8 @@ class JabberID(SQLBase, HasOwnerMixin):
     jabberid = StringCol(dbName='jabberid', notNull=True)
 
 
+@implementer(IJabberIDSet)
 class JabberIDSet:
-    implements(IJabberIDSet)
 
     def new(self, person, jabberid):
         """See `IJabberIDSet`"""
@@ -4112,9 +4096,9 @@ class JabberIDSet:
         return JabberID.selectBy(person=person)
 
 
+@implementer(IIrcID)
 class IrcID(SQLBase, HasOwnerMixin):
     """See `IIrcID`"""
-    implements(IIrcID)
 
     _table = 'IrcID'
 
@@ -4123,9 +4107,9 @@ class IrcID(SQLBase, HasOwnerMixin):
     nickname = StringCol(dbName='nickname', notNull=True)
 
 
+@implementer(IIrcIDSet)
 class IrcIDSet:
     """See `IIrcIDSet`"""
-    implements(IIrcIDSet)
 
     def get(self, id):
         """See `IIrcIDSet`"""

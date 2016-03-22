@@ -9,12 +9,13 @@ __all__ = [
     ]
 
 from sqlobject import IntCol
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.featuredproject import IFeaturedProject
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IFeaturedProject)
 class FeaturedProject(SQLBase):
     """A featured project reference.
 
@@ -22,9 +23,7 @@ class FeaturedProject(SQLBase):
     that is currently being "featured" by being listed on the Launchpad home
     page.
     """
-    implements(IFeaturedProject)
 
     _defaultOrder = ['id']
 
     pillar_name = IntCol(notNull=True)
-

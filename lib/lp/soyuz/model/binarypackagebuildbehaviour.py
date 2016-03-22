@@ -9,7 +9,7 @@ __all__ = [
     'BinaryPackageBuildBehaviour',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -28,10 +28,9 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.publishing import makePoolPath
 
 
+@implementer(IBuildFarmJobBehaviour)
 class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
     """Define the behaviour of binary package builds."""
-
-    implements(IBuildFarmJobBehaviour)
 
     def getLogFileName(self):
         """See `IBuildPackageJob`."""
@@ -97,9 +96,9 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
            distroseries state.
         """
         build = self.build
-        if build.is_virtualized and not self._builder.virtualized:
+        if build.archive.require_virtualized and not self._builder.virtualized:
             raise AssertionError(
-                "Attempt to build virtual item on a non-virtual builder.")
+                "Attempt to build virtual archive on a non-virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY

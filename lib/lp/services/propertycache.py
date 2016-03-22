@@ -18,7 +18,7 @@ __all__ = [
 from functools import partial
 
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -48,10 +48,9 @@ class IPropertyCache(Interface):
         """Iterate over the cached names."""
 
 
+@implementer(IPropertyCache)
 class DefaultPropertyCache:
     """A simple cache."""
-
-    implements(IPropertyCache)
 
     # __getattr__ -- well, __getattribute__ -- and __setattr__ are inherited
     # from object.

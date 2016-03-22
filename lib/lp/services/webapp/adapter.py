@@ -42,8 +42,8 @@ from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
     classImplements,
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -115,9 +115,9 @@ class LaunchpadTimeoutError(TimeoutError):
                 % (self.statement, self.params, self.original_error))
 
 
+@implementer(IRequestExpired)
 class RequestExpired(RuntimeError):
     """Request has timed out."""
-    implements(IRequestExpired)
 
 
 def _get_dirty_commit_flags():
@@ -747,9 +747,9 @@ install_tracer(LaunchpadStatementTracer())
 install_tracer(LaunchpadTimeoutTracer())
 
 
+@provider(IStoreSelector)
 class StoreSelector:
     """See `lp.services.database.interfaces.IStoreSelector`."""
-    classProvides(IStoreSelector)
 
     @staticmethod
     def push(db_policy):

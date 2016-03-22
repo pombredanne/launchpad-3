@@ -1,7 +1,8 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'cannot_modify_suite',
     'FORMAT_TO_SUBCOMPONENT',
     'GLOBAL_PUBLISHER_LOCK',
     'Publisher',
@@ -10,8 +11,10 @@ __all__ = [
 
 __metaclass__ = type
 
+import bz2
 from datetime import datetime
 import errno
+import gzip
 import hashlib
 from itertools import (
     chain,
@@ -109,9 +112,21 @@ def reorder_components(components):
     return ordered
 
 
+def remove_suffix(path):
+    """Return `path` but with any compression suffix removed."""
+    if path.endswith('.gz'):
+        return path[:-len('.gz')]
+    elif path.endswith('.bz2'):
+        return path[:-len('.bz2')]
+    elif path.endswith('.xz'):
+        return path[:-len('.xz')]
+    else:
+        return path
+
+
 def get_suffixed_indices(path):
     """Return a set of paths to compressed copies of the given index."""
-    return set([path + suffix for suffix in ('', '.gz', '.bz2')])
+    return set([path + suffix for suffix in ('', '.gz', '.bz2', '.xz')])
 
 
 def _getDiskPool(pubconf, log):
@@ -189,6 +204,13 @@ def get_packages_path(config, suite_name, component, arch, subcomp=None):
         return os.path.join(component_root, arch_path, "Packages")
     else:
         return os.path.join(component_root, subcomp, arch_path, "Packages")
+
+
+def cannot_modify_suite(archive, distroseries, pocket):
+    """Return True for Release pockets of stable series in primary archives."""
+    return (not distroseries.isUnstable() and
+            not archive.allowUpdatesToReleasePocket() and
+            pocket == PackagePublishingPocket.RELEASE)
 
 
 class I18nIndex(_multivalued):
@@ -482,7 +504,7 @@ class Publisher(object):
         for distroseries, pocket in chain(source_suites, binary_suites):
             if self.isDirty(distroseries, pocket):
                 continue
-            if (self.cannotModifySuite(distroseries, pocket)
+            if (cannot_modify_suite(self.archive, distroseries, pocket)
                 or not self.isAllowed(distroseries, pocket)):
                 # We don't want to mark release pockets dirty in a
                 # stable distroseries, no matter what other bugs
@@ -552,23 +574,43 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
+                else:
+                    if not self.isAllowed(distroseries, pocket):
+                        continue
+                    # If we were asked for careful Release file generation
+                    # but not careful indexing, then we may not have the raw
+                    # material needed to generate Release files for all
+                    # suites.  Only force those suites that already have
+                    # Release files.
+                    release_path = os.path.join(
+                        self._config.distsroot, distroseries.getSuite(pocket),
+                        "Release")
+                    if file_exists(release_path):
+                        self.release_files_needed.add(
+                            (distroseries.name, pocket))
                 self._writeSuite(distroseries, pocket)
 
     def _allIndexFiles(self, distroseries):
-        """Return all index files on disk for a distroseries."""
+        """Return all index files on disk for a distroseries.
+
+        For each index file, this yields a tuple of (function to open file
+        in uncompressed form, path to file).
+        """
         components = self.archive.getComponentsForSeries(distroseries)
         for pocket in self.archive.getPockets():
             suite_name = distroseries.getSuite(pocket)
             for component in components:
-                yield get_sources_path(self._config, suite_name, component)
+                yield gzip.open, get_sources_path(
+                    self._config, suite_name, component) + ".gz"
                 for arch in distroseries.architectures:
                     if not arch.enabled:
                         continue
-                    yield get_packages_path(
-                        self._config, suite_name, component, arch)
+                    yield gzip.open, get_packages_path(
+                        self._config, suite_name, component, arch) + ".gz"
                     for subcomp in self.subcomponents:
-                        yield get_packages_path(
-                            self._config, suite_name, component, arch, subcomp)
+                        yield gzip.open, get_packages_path(
+                            self._config, suite_name, component, arch,
+                            subcomp) + ".gz"
 
     def _latestNonEmptySeries(self):
         """Find the latest non-empty series in an archive.
@@ -579,11 +621,12 @@ class Publisher(object):
         through what we published on disk.
         """
         for distroseries in self.distro:
-            for index in self._allIndexFiles(distroseries):
+            for open_func, index in self._allIndexFiles(distroseries):
                 try:
-                    if os.path.getsize(index) > 0:
-                        return distroseries
-                except OSError:
+                    with open_func(index) as index_file:
+                        if index_file.read(1):
+                            return distroseries
+                except IOError:
                     pass
 
     def createSeriesAliases(self):
@@ -658,11 +701,11 @@ class Publisher(object):
             translation_en = RepositoryIndexFile(
                 os.path.join(self._config.distsroot, suite_name,
                              component.name, "i18n", "Translation-en"),
-                self._config.temproot)
+                self._config.temproot, distroseries.index_compressors)
 
         source_index = RepositoryIndexFile(
             get_sources_path(self._config, suite_name, component),
-            self._config.temproot)
+            self._config.temproot, distroseries.index_compressors)
 
         for spp in distroseries.getSourcePackagePublishing(
                 pocket, component, self.archive):
@@ -683,13 +726,13 @@ class Publisher(object):
             indices = {}
             indices[None] = RepositoryIndexFile(
                 get_packages_path(self._config, suite_name, component, arch),
-                self._config.temproot)
+                self._config.temproot, distroseries.index_compressors)
 
             for subcomp in self.subcomponents:
                 indices[subcomp] = RepositoryIndexFile(
                     get_packages_path(
                         self._config, suite_name, component, arch, subcomp),
-                    self._config.temproot)
+                    self._config.temproot, distroseries.index_compressors)
 
             for bpp in distroseries.getBinaryPackagePublishing(
                     arch.architecturetag, pocket, component, self.archive):
@@ -725,12 +768,6 @@ class Publisher(object):
         if separate_long_descriptions:
             translation_en.close()
 
-    def cannotModifySuite(self, distroseries, pocket):
-        """Return True if the distroseries is stable and pocket is release."""
-        return (not distroseries.isUnstable() and
-                not self.archive.allowUpdatesToReleasePocket() and
-                pocket == PackagePublishingPocket.RELEASE)
-
     def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
         """Last check before publishing a dirty suite.
 
@@ -738,7 +775,7 @@ class Publisher(object):
         in RELEASE pocket (primary archives) we certainly have a problem,
         better stop.
         """
-        if self.cannotModifySuite(distroseries, pocket):
+        if cannot_modify_suite(self.archive, distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
@@ -791,6 +828,7 @@ class Publisher(object):
         """Make sure the timestamps on all files in a suite match."""
         location = os.path.join(self._config.distsroot, suite)
         paths = [os.path.join(location, path) for path in all_files]
+        paths = [path for path in paths if os.path.exists(path)]
         latest_timestamp = max(os.stat(path).st_mtime for path in paths)
         for path in paths:
             os.utime(path, (latest_timestamp, latest_timestamp))
@@ -808,20 +846,48 @@ class Publisher(object):
             # and pocket, don't!
             return
 
+        suite = distroseries.getSuite(pocket)
         all_components = [
             comp.name for comp in
             self.archive.getComponentsForSeries(distroseries)]
         all_architectures = [
             a.architecturetag for a in distroseries.enabled_architectures]
-        all_files = set()
+        # Core files are those that are normally updated when a suite
+        # changes, and which therefore receive special treatment with
+        # caching headers on mirrors.
+        core_files = set()
+        # Extra files are updated occasionally from other sources.  They are
+        # still checksummed and indexed, but they do not receive special
+        # treatment with caching headers on mirrors.  We must not play any
+        # special games with timestamps here, as it will interfere with the
+        # "staging" mechanism used to update these files.
+        extra_files = set()
         for component in all_components:
             self._writeSuiteSource(
-                distroseries, pocket, component, all_files)
+                distroseries, pocket, component, core_files)
             for architecture in all_architectures:
                 self._writeSuiteArch(
-                    distroseries, pocket, component, architecture, all_files)
+                    distroseries, pocket, component, architecture, core_files)
             self._writeSuiteI18n(
-                distroseries, pocket, component, all_files)
+                distroseries, pocket, component, core_files)
+            dep11_dir = os.path.join(
+                self._config.distsroot, suite, component, "dep11")
+            try:
+                for dep11_file in os.listdir(dep11_dir):
+                    if (dep11_file.startswith("Components-") or
+                            dep11_file.startswith("icons-")):
+                        dep11_path = os.path.join(
+                            component, "dep11", dep11_file)
+                        extra_files.add(remove_suffix(dep11_path))
+                        extra_files.add(dep11_path)
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+        for architecture in all_architectures:
+            for contents_path in get_suffixed_indices(
+                    'Contents-' + architecture):
+                extra_files.add(contents_path)
+        all_files = core_files | extra_files
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)
@@ -830,7 +896,6 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        suite = distroseries.getSuite(pocket)
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
@@ -849,38 +914,28 @@ class Publisher(object):
             release_file["ButAutomaticUpgrades"] = "yes"
 
         for filename in sorted(all_files, key=os.path.dirname):
-            entry = self._readIndexFileContents(suite, filename)
-            if entry is None:
+            hashes = self._readIndexFileHashes(suite, filename)
+            if hashes is None:
                 continue
-            release_file.setdefault("MD5Sum", []).append({
-                "md5sum": hashlib.md5(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
-            release_file.setdefault("SHA1", []).append({
-                "sha1": hashlib.sha1(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
-            release_file.setdefault("SHA256", []).append({
-                "sha256": hashlib.sha256(entry).hexdigest(),
-                "name": filename,
-                "size": len(entry)})
+            release_file.setdefault("MD5Sum", []).append(hashes["md5sum"])
+            release_file.setdefault("SHA1", []).append(hashes["sha1"])
+            release_file.setdefault("SHA256", []).append(hashes["sha256"])
 
         self._writeReleaseFile(suite, release_file)
-        all_files.add("Release")
+        core_files.add("Release")
 
-        # Skip signature if the archive signing key is undefined.
-        if self.archive.signing_key is None:
+        if self.archive.signing_key is not None:
+            # Sign the repository.
+            IArchiveSigningKey(self.archive).signRepository(suite)
+            core_files.add("Release.gpg")
+            core_files.add("InRelease")
+        else:
+            # Skip signature if the archive signing key is undefined.
             self.log.debug("No signing key available, skipping signature.")
-            return
-
-        # Sign the repository.
-        archive_signer = IArchiveSigningKey(self.archive)
-        archive_signer.signRepository(suite)
-        all_files.add("Release.gpg")
 
         # Make sure all the timestamps match, to make it easier to insert
         # caching headers on mirrors.
-        self._syncTimestamps(suite, all_files)
+        self._syncTimestamps(suite, core_files)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                 file_stub, arch_name, arch_path,
@@ -942,12 +997,13 @@ class Publisher(object):
 
         i18n_subpath = os.path.join(component, "i18n")
         i18n_dir = os.path.join(self._config.distsroot, suite, i18n_subpath)
-        i18n_files = []
+        i18n_files = set()
         try:
             for i18n_file in os.listdir(i18n_dir):
                 if not i18n_file.startswith('Translation-'):
                     continue
-                i18n_files.append(i18n_file)
+                i18n_files.add(remove_suffix(i18n_file))
+                i18n_files.add(i18n_file)
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
@@ -958,14 +1014,11 @@ class Publisher(object):
 
         i18n_index = I18nIndex()
         for i18n_file in sorted(i18n_files):
-            entry = self._readIndexFileContents(
-                suite, os.path.join(i18n_subpath, i18n_file))
-            if entry is None:
+            hashes = self._readIndexFileHashes(
+                suite, i18n_file, subpath=i18n_subpath)
+            if hashes is None:
                 continue
-            i18n_index.setdefault("SHA1", []).append({
-                "sha1": hashlib.sha1(entry).hexdigest(),
-                "name": i18n_file,
-                "size": len(entry)})
+            i18n_index.setdefault("SHA1", []).append(hashes["sha1"])
             # Schedule i18n files for inclusion in the Release file.
             all_series_files.add(os.path.join(i18n_subpath, i18n_file))
 
@@ -975,24 +1028,53 @@ class Publisher(object):
         # Schedule this for inclusion in the Release file.
         all_series_files.add(os.path.join(component, "i18n", "Index"))
 
-    def _readIndexFileContents(self, distroseries_name, file_name):
-        """Read an index files' contents.
+    def _readIndexFileHashes(self, distroseries_name, file_name,
+                             subpath=None):
+        """Read an index file and return its hashes.
 
         :param distroseries_name: Distro series name
         :param file_name: Filename relative to the parent container directory.
-        :return: File contents, or None if the file could not be found.
+        :param subpath: Optional subpath within the distroseries root.
+            Generated indexes will not include this path. If omitted,
+            filenames are assumed to be relative to the distroseries
+            root.
+        :return: A dictionary mapping hash field names to dictionaries of
+            their components as defined by debian.deb822.Release (e.g.
+            {"md5sum": {"md5sum": ..., "size": ..., "name": ...}}), or None
+            if the file could not be found.
         """
-        full_name = os.path.join(self._config.distsroot,
-                                 distroseries_name, file_name)
+        open_func = open
+        full_name = os.path.join(
+            self._config.distsroot, distroseries_name, subpath or '.',
+            file_name)
         if not os.path.exists(full_name):
-            # The file we were asked to write out doesn't exist.
-            # Most likely we have an incomplete archive (E.g. no sources
-            # for a given distroseries). This is a non-fatal issue
-            self.log.debug("Failed to find " + full_name)
-            return None
+            if os.path.exists(full_name + '.gz'):
+                open_func = gzip.open
+                full_name = full_name + '.gz'
+            elif os.path.exists(full_name + '.bz2'):
+                open_func = bz2.BZ2File
+                full_name = full_name + '.bz2'
+            else:
+                # The file we were asked to write out doesn't exist.
+                # Most likely we have an incomplete archive (e.g. no sources
+                # for a given distroseries). This is a non-fatal issue.
+                self.log.debug("Failed to find " + full_name)
+                return None
 
-        with open(full_name, 'r') as in_file:
-            return in_file.read()
+        hashes = {
+            "md5sum": hashlib.md5(),
+            "sha1": hashlib.sha1(),
+            "sha256": hashlib.sha256(),
+            }
+        size = 0
+        with open_func(full_name) as in_file:
+            for chunk in iter(lambda: in_file.read(256 * 1024), ""):
+                for hashobj in hashes.values():
+                    hashobj.update(chunk)
+                size += len(chunk)
+        return {
+            alg: {alg: hashobj.hexdigest(), "name": file_name, "size": size}
+            for alg, hashobj in hashes.items()}
 
     def deleteArchive(self):
         """Delete the archive.

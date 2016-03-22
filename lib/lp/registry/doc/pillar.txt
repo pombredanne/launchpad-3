@@ -140,7 +140,7 @@ aliases, in the same way that it can't be retrieved through its name.
 Setting the aliases of a pillar is an operation that requires launchpad.Admin
 rights on the pillar.
 
-Sample Person has edit rights on firefox, but he'd need admin rights
+Sample Person has edit rights on firefox, but they'd need admin rights
 to be able to set its aliases.
 
     >>> login('test@canonical.com')
@@ -195,11 +195,11 @@ queries.
     >>> for row in pillar_set.search('ubuntu', limit=5):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Distribution: Ubuntu Linux (ubuntu)
-    Distribution: Ubuntu Test (ubuntutest)
-    ProductWithLicenses: The Evolution Groupware Application (evolution)
+    Distribution: Ubuntu (ubuntu)
+    Distribution: ubuntutest (ubuntutest)
+    ProductWithLicenses: Evolution (evolution)
     ProductWithLicenses: Tomcat (tomcat)
-    ProductWithLicenses: The Gnome Panel Applets (applets)
+    ProductWithLicenses: Gnome Applets (applets)
 
 We can search by any of the pillar's aliases too.
 
@@ -221,11 +221,11 @@ Note that inactive products and projects won't be included in the results.
     >>> for row in pillar_set.search('ubuntu', limit=5):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Distribution: Ubuntu Linux (ubuntu)
-    Distribution: Ubuntu Test (ubuntutest)
-    ProductWithLicenses: The Evolution Groupware Application (evolution)
+    Distribution: Ubuntu (ubuntu)
+    Distribution: ubuntutest (ubuntutest)
+    ProductWithLicenses: Evolution (evolution)
     ProductWithLicenses: Tomcat (tomcat)
-    Distribution: GuadaLinex: Linux for Andalucia (guadalinex)
+    Distribution: GuadaLinex (guadalinex)
 
 
 == PillarName objects ==

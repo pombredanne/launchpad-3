@@ -17,7 +17,6 @@ from lazr.restful.interfaces import IJSONRequestCache
 from pytz import UTC
 import simplejson
 import soupmatchers
-from storm.store import Store
 from testtools.matchers import (
     LessThan,
     Not,
@@ -80,9 +79,9 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -115,65 +114,29 @@ class TestBugTaskView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def invalidate_caches(self, obj):
-        store = Store.of(obj)
-        # Make sure everything is in the database.
-        store.flush()
-        # And invalidate the cache (not a reset, because that stops us using
-        # the domain objects)
-        store.invalidate()
-
     def test_rendered_query_counts_constant_with_team_memberships(self):
-        login(ADMIN_EMAIL)
         task = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson()
-        person_with_teams = self.factory.makePerson()
-        for _ in range(10):
-            self.factory.makeTeam(members=[person_with_teams])
-        # count with no teams
+        person = self.factory.makePerson()
         url = canonical_url(task)
-        recorder = QueryCollector()
-        recorder.register()
-        self.addCleanup(recorder.unregister)
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, person_no_teams)
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, person),
+            lambda: self.factory.makeTeam(members=[person]),
+            0, 10, login_method=lambda: login(ADMIN_EMAIL))
         # This may seem large: it is; there is easily another 25% fat in
         # there.
-        # If this test is run in isolation, the query count is 80.
-        # Other tests in this TestCase could cache the
-        # "SELECT id, product, project, distribution FROM PillarName ..."
-        # query by previously browsing the task url, in which case the
-        # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(83)))
-        count_with_no_teams = recorder.count
-        # count with many teams
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, person_with_teams)
-        # Allow an increase of one because storm bug 619017 causes additional
-        # queries, revalidating things unnecessarily. An increase which is
-        # less than the number of new teams shows it is definitely not
-        # growing per-team.
-        self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_teams + 3),
-            ))
+        self.assertThat(recorder1, HasQueryCount(LessThan(83)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_rendered_query_counts_constant_with_attachments(self):
-        with celebrity_logged_in('admin'):
-            browses_under_limit = BrowsesWithQueryLimit(
-                85, self.factory.makePerson())
-
-            # First test with a single attachment.
-            task = self.factory.makeBugTask()
-            self.factory.makeBugAttachment(bug=task.bug)
-        self.assertThat(task, browses_under_limit)
-
-        with celebrity_logged_in('admin'):
-            # And now with 10.
-            task = self.factory.makeBugTask()
-            self.factory.makeBugTask(bug=task.bug)
-            for i in range(10):
-                self.factory.makeBugAttachment(bug=task.bug)
-        self.assertThat(task, browses_under_limit)
+        task = self.factory.makeBugTask()
+        person = self.factory.makePerson()
+        url = canonical_url(task)
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, person),
+            lambda: self.factory.makeBugAttachment(bug=task.bug),
+            1, 9, login_method=lambda: login(ADMIN_EMAIL))
+        self.assertThat(recorder1, HasQueryCount(LessThan(84)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def makeLinkedBranchMergeProposal(self, sourcepackage, bug, owner):
         with person_logged_in(owner):
@@ -199,22 +162,19 @@ class TestBugTaskView(TestCaseWithFactory):
             self.factory.makeBugTask(bug=bug, owner=owner, target=sp)
         task = bug.default_bugtask
         url = canonical_url(task)
-        recorder = QueryCollector()
-        recorder.register()
-        self.addCleanup(recorder.unregister)
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, owner)
-        # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(114)))
-        count_with_no_branches = recorder.count
-        for sp in sourcepackages:
-            self.makeLinkedBranchMergeProposal(sp, bug, owner)
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, owner)  # This triggers the query recorder.
+
+        def make_merge_proposals():
+            for sp in sourcepackages:
+                self.makeLinkedBranchMergeProposal(sp, bug, owner)
+
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, owner),
+            make_merge_proposals, 0, 1)
+        self.assertThat(recorder1, HasQueryCount(LessThan(89)))
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(
-            recorder, HasQueryCount(LessThan(count_with_no_branches + 46)))
+            recorder2, HasQueryCount(LessThan(recorder1.count + 41)))
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting
@@ -245,27 +205,19 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_activities(self):
         # More queries are not used for extra bug activities.
         task = self.factory.makeBugTask()
+        person = self.factory.makePerson()
+        url = canonical_url(task)
 
         def add_activity(what, who):
             getUtility(IBugActivitySet).new(
                 task.bug, datetime.now(UTC), who, whatchanged=what)
 
-        # Render the view with one activity.
-        with celebrity_logged_in('admin'):
-            browses_under_limit = BrowsesWithQueryLimit(
-                83, self.factory.makePerson())
-            person = self.factory.makePerson()
-            add_activity("description", person)
-
-        self.assertThat(task, browses_under_limit)
-
-        # Render the view with many more activities by different people.
-        with celebrity_logged_in('admin'):
-            for _ in range(20):
-                person = self.factory.makePerson()
-                add_activity("description", person)
-
-        self.assertThat(task, browses_under_limit)
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, person),
+            lambda: add_activity("description", self.factory.makePerson()),
+            1, 20, login_method=lambda: login(ADMIN_EMAIL))
+        self.assertThat(recorder1, HasQueryCount(LessThan(84)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_rendered_query_counts_constant_with_milestones(self):
         # More queries are not used for extra milestones.
@@ -274,7 +226,7 @@ class TestBugTaskView(TestCaseWithFactory):
 
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                88, self.factory.makePerson())
+                84, self.factory.makePerson())
 
         self.assertThat(bug, browses_under_limit)
 
@@ -441,7 +393,7 @@ class TestBugTasksNominationsView(TestCaseWithFactory):
 
     def test_other_users_affected_count(self):
         # The number of other users affected does not change when the
-        # logged-in user marked him or herself as affected or not.
+        # logged-in user marked themselves as affected or not.
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
         self.bug.markUserAffected(self.view.user, True)
@@ -2046,29 +1998,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         view.initialize()
         return view
 
-    def invalidate_caches(self, obj):
-        store = Store.of(obj)
-        store.flush()
-        store.invalidate()
-
     def test_rendered_query_counts_constant_with_many_bugtasks(self):
         product = self.factory.makeProduct()
         url = canonical_url(product, view_name='+bugs')
-        bug = self.factory.makeBug(target=product)
-        buggy_product = self.factory.makeProduct()
-        buggy_url = canonical_url(buggy_product, view_name='+bugs')
-        for _ in range(10):
-            self.factory.makeBug(target=buggy_product)
-        recorder = QueryCollector()
-        recorder.register()
-        self.addCleanup(recorder.unregister)
-        self.invalidate_caches(bug)
-        # count with single task
-        self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(35)))
-        # count with many tasks
-        self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(35)))
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url),
+            lambda: self.factory.makeBug(target=product),
+            1, 10, login_method=lambda: login(ANONYMOUS))
+        self.assertThat(recorder1, HasQueryCount(LessThan(46)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.

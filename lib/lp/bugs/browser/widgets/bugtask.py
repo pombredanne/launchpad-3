@@ -35,7 +35,7 @@ from zope.formlib.widget import (
     Widget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema.interfaces import (
@@ -73,10 +73,9 @@ from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
 
 
+@implementer(IInputWidget)
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
-
-    implements(IInputWidget)
 
     __call__ = ViewPageTemplateFile(
         "templates/bugtask-assignee-widget.pt")
@@ -264,10 +263,10 @@ class BugTaskAssigneeWidget(Widget):
         return context.userCanUnassign(user) or context.assignee is None
 
     def showPersonChooserWidget(self):
-        """Should the person chooser widget bw shown?
+        """Should the person chooser widget be shown?
 
         The person chooser is shown only if the user can assign at least
-        one other person or team in addition to himself.
+        one other person or team in addition to themselves.
         """
         user = getUtility(ILaunchBag).user
         context = self.context.context
@@ -554,10 +553,9 @@ class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
 
+@implementer(IDisplayWidget)
 class AssigneeDisplayWidget(BrowserWidget):
     """A widget for displaying an assignee."""
-
-    implements(IDisplayWidget)
 
     def __init__(self, context, vocabulary, request):
         super(AssigneeDisplayWidget, self).__init__(context, request)
@@ -583,10 +581,9 @@ class AssigneeDisplayWidget(BrowserWidget):
                 return renderElement('i', contents='unknown')
 
 
+@implementer(IDisplayWidget)
 class DBItemDisplayWidget(BrowserWidget):
     """A widget for displaying a bugtask dbitem."""
-
-    implements(IDisplayWidget)
 
     def __init__(self, context, vocabulary, request):
         super(DBItemDisplayWidget, self).__init__(context, request)

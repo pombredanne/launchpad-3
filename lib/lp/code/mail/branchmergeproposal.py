@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branch merge proposals."""
@@ -10,7 +10,10 @@ from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.mail.branch import BranchMailer
 from lp.services.config import config
 from lp.services.mail.basemailer import BaseMailer
-from lp.services.mail.sendmail import get_msgid
+from lp.services.mail.sendmail import (
+    format_address_for_person,
+    get_msgid,
+    )
 from lp.services.webapp import canonical_url
 
 
@@ -23,13 +26,13 @@ class BMPMailer(BranchMailer):
                  direct_email=False):
         BranchMailer.__init__(
             self, subject, template_name, recipients, from_address,
-            message_id=message_id, notification_type='code-review')
+            delta=delta, message_id=message_id,
+            notification_type='code-review')
         self.merge_proposal = merge_proposal
         if requested_reviews is None:
             requested_reviews = []
         self.requested_reviews = requested_reviews
         self.preview_diff = preview_diff
-        self.delta_text = delta
         self.template_params = self._generateTemplateParams()
         self.direct_email = direct_email
 
@@ -51,7 +54,7 @@ class BMPMailer(BranchMailer):
 
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
-        from_address = cls._format_user_address(from_user)
+        from_address = format_address_for_person(from_user)
 
         return cls(
             '%(proposal_title)s',
@@ -73,7 +76,7 @@ class BMPMailer(BranchMailer):
         if from_user is not None:
             assert from_user.preferredemail is not None, (
                 'The sender must have an email address.')
-            from_address = cls._format_user_address(from_user)
+            from_address = format_address_for_person(from_user)
         else:
             from_address = config.canonical.noreply_from_address
         return cls(
@@ -85,7 +88,7 @@ class BMPMailer(BranchMailer):
     @classmethod
     def forReviewRequest(cls, reason, merge_proposal, from_user):
         """Return a mailer for a request to review a BranchMergeProposal."""
-        from_address = cls._format_user_address(from_user)
+        from_address = format_address_for_person(from_user)
         recipients = {reason.subscriber: reason}
         return cls(
             '%(proposal_title)s',
@@ -93,11 +96,11 @@ class BMPMailer(BranchMailer):
             merge_proposal, from_address, message_id=get_msgid(),
             preview_diff=merge_proposal.preview_diff, direct_email=True)
 
-    def _getReplyToAddress(self):
+    def _getReplyToAddress(self, email, recipient):
         """Return the address to use for the reply-to header."""
         return self.merge_proposal.address
 
-    def _getToAddresses(self, recipient, email):
+    def _getToAddresses(self, email, recipient):
         """Return the addresses to use for the to header.
 
         If the email is being sent directly to the recipient, their email
@@ -105,7 +108,7 @@ class BMPMailer(BranchMailer):
         reviewers are returned.
         """
         if self.direct_email:
-            return BaseMailer._getToAddresses(self, recipient, email)
+            return BaseMailer._getToAddresses(self, email, recipient)
         to_addrs = [self.merge_proposal.address]
         for vote in self.merge_proposal.votes:
             if vote.reviewer == vote.registrant:
@@ -114,12 +117,12 @@ class BMPMailer(BranchMailer):
                 continue
             if vote.reviewer.hide_email_addresses:
                 continue
-            to_addrs.append(self._format_user_address(vote.reviewer))
+            to_addrs.append(format_address_for_person(vote.reviewer))
         return to_addrs
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """Return the mail headers to use."""
-        headers = BranchMailer._getHeaders(self, email)
+        headers = BranchMailer._getHeaders(self, email, recipient)
         if self.merge_proposal.root_message_id is not None:
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
@@ -139,8 +142,8 @@ class BMPMailer(BranchMailer):
         proposal = self.merge_proposal
         params = {
             'proposal_registrant': proposal.registrant.displayname,
-            'source_branch': proposal.source_branch.bzr_identity,
-            'target_branch': proposal.target_branch.bzr_identity,
+            'source_branch': proposal.merge_source.identity,
+            'target_branch': proposal.merge_target.identity,
             'prerequisite': '',
             'proposal_title': proposal.title,
             'proposal_url': canonical_url(proposal),
@@ -154,8 +157,8 @@ class BMPMailer(BranchMailer):
         if self.delta_text is not None:
             params['delta'] = self.delta_text
 
-        if proposal.prerequisite_branch is not None:
-            prereq_url = proposal.prerequisite_branch.bzr_identity
+        if proposal.merge_prerequisite is not None:
+            prereq_url = proposal.merge_prerequisite.identity
             params['prerequisite'] = ' with %s as a prerequisite' % prereq_url
 
         requested_reviews = []
@@ -202,7 +205,8 @@ class BMPMailer(BranchMailer):
         if not self.merge_proposal.commit_message:
             return ''
         else:
-            return 'Commit message:\n%s\n\n' % self.merge_proposal.commit_message
+            return 'Commit message:\n%s\n\n' % (
+                self.merge_proposal.commit_message)
 
     def _getRequestedReviews(self):
         """Return a string describing the requested reviews, if any."""

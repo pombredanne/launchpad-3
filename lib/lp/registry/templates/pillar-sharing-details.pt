@@ -28,15 +28,16 @@
     <div id="observer-summary">
       <p>
       <tal:bugs replace="view/shared_bugs_count">0</tal:bugs> bugs,
-      <tal:branches replace="view/shared_branches_count">0</tal:branches> branches,
+      <tal:branches replace="view/shared_branches_count">0</tal:branches> Bazaar branches,
+      <tal:gitrepositories replace="view/shared_gitrepositories_count">0</tal:gitrepositories> Git repositories,
       and  <tal:specifications
       replace="view/shared_specifications_count">0</tal:specifications>
       blueprints shared with <tal:name replace="view/person/displayname">
       grantee</tal:name>.<br />
 
       <tal:is-team condition="view/person/is_team">
-        <tal:members>3</tal:members> team members can view these bugs and
-        branches.
+        <tal:members>3</tal:members> team members can view these bugs,
+        Bazaar branches, Git repositories, and blueprints.
       </tal:is-team>
       </p>
     </div>
@@ -48,7 +49,7 @@
       <thead>
         <tr>
           <th colspan="2" width="">
-            Subscribed Bug Report, Branch, or Blueprint
+            Subscribed Bug Report, Bazaar Branch, Git Repository, or Blueprint
           </th>
           <th>
             Information Type
@@ -58,7 +59,8 @@
       <tbody id="sharing-table-body">
           <tr>
               <td colspan="3">
-                  There are no shared bugs, branches, or blueprints.
+                  There are no shared bugs, Bazaar branches, Git repositories,
+                  or blueprints.
               </td>
           </tr>
       </tbody>

@@ -40,14 +40,16 @@ from lp.registry.interfaces.person import (
     ITeam,
     )
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
+    GPG_DATABASE_READONLY_FEATURE_FLAG,
     GPGKeyExpired,
     GPGKeyNotFoundError,
     GPGKeyRevoked,
+    GPGReadOnly,
     GPGVerificationError,
     IGPGHandler,
     )
-from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
@@ -63,11 +65,7 @@ from lp.services.webapp import (
     LaunchpadView,
     )
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import (
-    IAlwaysSubmittedWidget,
-    IPlacelessLoginSource,
-    )
-from lp.services.webapp.login import logInPrincipal
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 from lp.services.webapp.vhosts import allvhosts
 
 
@@ -163,12 +161,6 @@ class BaseTokenView:
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
 
-    def logInPrincipalByEmail(self, email):
-        """Login the principal with the given email address."""
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email)
-        logInPrincipal(self.request, principal, email)
-
     def _cancel(self):
         """Consume the LoginToken and set self._next_url_for_cancel.
 
@@ -178,34 +170,13 @@ class BaseTokenView:
         self._next_url_for_cancel = canonical_url(self.context.requester)
         self.context.consume()
 
-    def accountWasSuspended(self, account, reason):
-        """Return True if the person's account was SUSPENDED, otherwise False.
-
-        When the account was SUSPENDED, the Warning Notification with the
-        reason is added to the request's response. The LoginToken is consumed.
-
-        :param account: The IAccount.
-        :param reason: A sentence that explains why the SUSPENDED account
-            cannot be used.
-        """
-        if account.status != AccountStatus.SUSPENDED:
-            return False
-        suspended_account_mailto = (
-            'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
-        message = structured(
-              '%s Contact a <a href="%s">Launchpad admin</a> '
-              'about this issue.' % (reason, suspended_account_mailto))
-        self.request.response.addWarningNotification(message)
-        self.context.consume()
-        return True
-
 
 class ClaimTeamView(
     BaseTokenView, HasRenewalPolicyMixin, LaunchpadEditFormView):
 
     schema = ITeam
     field_names = [
-        'teamowner', 'displayname', 'description', 'membership_policy',
+        'teamowner', 'display_name', 'description', 'membership_policy',
         'defaultmembershipperiod', 'renewal_policy', 'defaultrenewalperiod']
     label = 'Claim Launchpad team'
     custom_widget('description', TextAreaWidget, height=10, width=30)
@@ -291,6 +262,8 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         super(ValidateGPGKeyView, self).initialize()
 
     def validate(self, data):
+        if getFeatureFlag(GPG_DATABASE_READONLY_FEATURE_FLAG):
+            raise GPGReadOnly()
         self.gpg_key = self._getGPGKey()
         if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
             self._validateSignOnlyGPGKey(data)
@@ -396,7 +369,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                         structured(_(
                 'The key ${key} cannot be validated because it has expired. '
                 'Change the expiry date (in a terminal, enter '
-                '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
+                '<kbd>gpg --edit-key <var>your@email.address</var></kbd> '
                 'then enter <kbd>expire</kbd>), and try again.',
                 mapping=dict(key=e.key.keyid))))
         else:
@@ -408,7 +381,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
     schema = Interface
     field_names = []
     expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
-    label = 'Confirm e-mail address'
+    label = 'Confirm email address'
 
     def initialize(self):
         if self.redirectIfInvalidOrConsumedToken():
@@ -537,10 +510,10 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
                 'duplicated account will belong to your own account.'))
         else:
             self.success(_(
-                'The e-mail address %s has been assigned to you, but the '
-                'duplicate account you selected has other registered e-mail '
+                'The email address %s has been assigned to you, but the '
+                'duplicate account you selected has other registered email '
                 'addresses too. To complete the merge, you have to prove '
-                'that you have access to all those e-mail addresses.'
+                'that you have access to all those email addresses.'
                 % self.context.email))
         self.context.consume()
 
@@ -556,8 +529,8 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         - If the duplicate user has no other email addresses, does the merge.
 
         """
-        # The user proved that he has access to this email address of the
-        # dupe account, so we can assign it to him.
+        # The user proved that they have access to this email address of the
+        # dupe account, so we can assign it to them.
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
         email = removeSecurityProxy(emailset.getByEmail(self.context.email))

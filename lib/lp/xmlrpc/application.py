@@ -15,7 +15,7 @@ import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -26,20 +26,18 @@ from lp.code.interfaces.codeimportscheduler import (
     )
 from lp.code.interfaces.gitapi import IGitApplication
 from lp.registry.interfaces.mailinglist import IMailingListApplication
-from lp.registry.interfaces.person import (
-    ICanonicalSSOApplication,
-    ISoftwareCenterAgentApplication,
-    )
+from lp.registry.interfaces.person import ICanonicalSSOApplication
 from lp.services.authserver.interfaces import IAuthServerApplication
 from lp.services.features.xmlrpc import IFeatureFlagApplication
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc.interfaces import IPrivateApplication
 
+
 # NOTE: If you add a traversal here, you should update
 # the regular expression in utilities/page-performance-report.ini
+@implementer(IPrivateApplication)
 class PrivateApplication:
-    implements(IPrivateApplication)
 
     @property
     def mailinglists(self):
@@ -65,11 +63,6 @@ class PrivateApplication:
     def bugs(self):
         """See `IPrivateApplication`."""
         return getUtility(IPrivateMaloneApplication)
-
-    @property
-    def softwarecenteragent(self):
-        """See `IPrivateApplication`."""
-        return getUtility(ISoftwareCenterAgentApplication)
 
     @property
     def canonicalsso(self):
@@ -103,9 +96,8 @@ class ISelfTest(Interface):
         """Raise an exception."""
 
 
+@implementer(ISelfTest)
 class SelfTest(LaunchpadXMLRPCView):
-
-    implements(ISelfTest)
 
     def make_fault(self):
         """Returns an xmlrpc fault."""

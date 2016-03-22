@@ -50,20 +50,19 @@ Branch merge proposals can be created through the API.
     commit_message: u'It was merged!\n'
     date_created: u'...'
     date_merged: None
-    date_queued: None
     date_review_requested: u'...'
     date_reviewed: None
     description: u'Merge\nit!'
     merge_reporter_link: None
+    merged_revision_id: None
     merged_revno: None
     prerequisite_branch_link: u'http://api.launchpad.dev/devel/~...'
+    prerequisite_git_path: None
+    prerequisite_git_repository_link: None
     preview_diff_link: None
     preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
-    queue_position: None
     queue_status: u'Needs review'
-    queued_revid: None
-    queuer_link: None
     registrant_link: u'http://api.launchpad.dev/devel/~person-name...'
     resource_type_link:
         u'http://api.launchpad.dev/devel/#branch_merge_proposal'
@@ -71,9 +70,13 @@ Branch merge proposals can be created through the API.
     reviewer_link: None
     self_link: u'http://api.launchpad.dev/devel/~.../+merge/...'
     source_branch_link: u'http://api.launchpad.dev/devel/~...'
+    source_git_path: None
+    source_git_repository_link: None
     superseded_by_link: None
     supersedes_link: None
     target_branch_link: u'http://api.launchpad.dev/devel/~...'
+    target_git_path: None
+    target_git_repository_link: None
     votes_collection_link:
         u'http://api.launchpad.dev/devel/~.../+merge/.../votes'
     web_link: u'http://code.../~.../+merge/...'
@@ -149,29 +152,32 @@ We use the webservice as an unrelated, unprivileged user.
     commit_message: None
     date_created: ...
     date_merged: None
-    date_queued: None
     date_review_requested: None
     date_reviewed: None
     description: None
     merge_reporter_link: None
+    merged_revision_id: None
     merged_revno: None
     prerequisite_branch_link: None
+    prerequisite_git_path: None
+    prerequisite_git_repository_link: None
     preview_diff_link: None
     preview_diffs_collection_link: u'http://.../preview_diffs'
     private: False
-    queue_position: None
     queue_status: u'Work in progress'
-    queued_revid: None
-    queuer_link: None
     registrant_link: u'http://.../~person-name...'
     resource_type_link: u'http://.../#branch_merge_proposal'
     reviewed_revid: None
     reviewer_link: None
     self_link: u'http://.../~source/fooix/fix-it/+merge/...'
     source_branch_link: u'http://.../~source/fooix/fix-it'
+    source_git_path: None
+    source_git_repository_link: None
     superseded_by_link: None
     supersedes_link: None
     target_branch_link: u'http://.../~target/fooix/trunk'
+    target_git_path: None
+    target_git_repository_link: None
     votes_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../votes'
     web_link: u'http://code.../~source/fooix/fix-it/+merge/...'
 
@@ -198,8 +204,10 @@ The comments on a branch merge proposal are exposed through the API.
     vote_tag: u'code'
     web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
+    >>> comment_2_id = all_comments['entries'][1]['id']
     >>> comment_2 = webservice.named_get(
-    ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
+    ...     merge_proposal['self_link'], 'getComment',
+    ...     id=comment_2_id).jsonBody()
     >>> pprint_entry(comment_2)
     as_quoted_email: u'> This is mediocre work.'
     author_link: u'http://api.launchpad.dev/devel/~...'
@@ -470,5 +478,5 @@ return this review.
     ...     ).jsonBody()
     >>> for proposal in proposals['entries']:
     ...     print_proposal(proposal)
-    http://.../~source/blob/foo/+merge/4 - Needs review
+    http://.../~source/blob/foo/+merge/... - Needs review
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -29,7 +29,7 @@ from zope.configuration.fields import (
     )
 from zope.contenttype import guess_content_type
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.pagetemplate.engine import TrustedEngine
@@ -57,6 +57,7 @@ from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IContextMenu,
     IFacetMenu,
+    IFavicon,
     INavigationMenu,
     )
 from lp.services.webapp.publisher import RenamedView
@@ -340,11 +341,10 @@ class TALESContextForInterfaceInstance:
         self.vars = InterfaceInstanceDispatcher(interface, instance)
 
 
+# This is not true in this base class.  It will be true for subclasses that
+# provide an 'inside' property.
+@implementer(ICanonicalUrlData)
 class CanonicalUrlDataBase:
-
-    # This is not true in this base class.  It will be true for subclasses
-    # that provide an 'inside' property.
-    implements(ICanonicalUrlData)
 
     # Filled in by subclass.
     _for = None
@@ -408,8 +408,6 @@ def url(_context, for_, path_expression=None, urldata=None,
 
 
 class FaviconRendererBase:
-    # subclasses must provide a 'fileobj' member that has 'contentType'
-    # and 'data' attributes.
 
     def __call__(self):
         self.request.response.setHeader(
@@ -418,6 +416,7 @@ class FaviconRendererBase:
 
 
 def favicon(_context, for_, file):
+    @implementer(IFavicon)
     class Favicon(FaviconRendererBase):
         path = file
         data = open(file, 'rb').read()
@@ -548,9 +547,9 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
             context, request, new_name=new_name, rootsite=rootsite)
 
     _context.action(
-        discriminator = ('view', for_, name, IBrowserRequest, layer),
-        callable = handler,
-        args = (
+        discriminator=('view', for_, name, IBrowserRequest, layer),
+        callable=handler,
+        args=(
             'registerAdapter',
             renamed_factory, (for_, layer), Interface, name, _context.info))
 
@@ -591,8 +590,8 @@ class ILaunchpadPermission(IPermission):
     access_level = IDefineLaunchpadPermissionDirective['access_level']
 
 
+@implementer(ILaunchpadPermission)
 class LaunchpadPermission(Permission):
-    implements(ILaunchpadPermission)
 
     def __init__(self, id, title, access_level, description):
         assert access_level in ["read", "write"], (

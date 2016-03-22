@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchNamespace`."""
@@ -19,7 +19,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -157,19 +157,18 @@ class _BaseBranchNamespace:
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
+        branch._reconcileAccess()
 
-        # The registrant of the branch should also be automatically subscribed
-        # in order for them to get code review notifications.  The implicit
-        # registrant subscription does not cause email to be sent about
-        # attribute changes, just merge proposals and code review comments.
+        # The owner of the branch should also be automatically subscribed in
+        # order for them to get code review notifications.  The default
+        # owner subscription does not cause email to be sent about attribute
+        # changes, just merge proposals and code review comments.
         branch.subscribe(
             self.owner,
             BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL,
             registrant)
-
-        branch._reconcileAccess()
 
         notify(ObjectCreatedEvent(branch))
         return branch
@@ -289,13 +288,12 @@ class _BaseBranchNamespace:
         raise NotImplementedError
 
 
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
 class PersonalBranchNamespace(_BaseBranchNamespace):
     """A namespace for personal (or 'junk') branches.
 
     Branches in this namespace have names like '~foo/+junk/bar'.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person):
         self.owner = person
@@ -337,14 +335,13 @@ class PersonalBranchNamespace(_BaseBranchNamespace):
         return IBranchTarget(self.owner)
 
 
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
 class ProjectBranchNamespace(_BaseBranchNamespace):
     """A namespace for project branches.
 
     This namespace is for all the branches owned by a particular person in a
     particular project.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, product):
         self.owner = person
@@ -393,14 +390,13 @@ class ProjectBranchNamespace(_BaseBranchNamespace):
         return default_type
 
 
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
 class PackageBranchNamespace(_BaseBranchNamespace):
     """A namespace for source package branches.
 
     This namespace is for all the branches owned by a particular person in a
     particular source package in a particular distroseries.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
         self.owner = person

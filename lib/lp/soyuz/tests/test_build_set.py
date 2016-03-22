@@ -13,7 +13,6 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
@@ -45,16 +44,16 @@ class TestBuildSet(TestCaseWithFactory):
     def setUp(self):
         super(TestBuildSet, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self.processor_one = self.factory.makeProcessor()
-        self.processor_two = self.factory.makeProcessor()
+        self.processor_one = self.factory.makeProcessor(
+            supports_virtualized=True)
+        self.processor_two = self.factory.makeProcessor(
+            supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         self.distribution = self.distroseries.distribution
         self.das_one = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_one,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_one)
         self.das_two = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_two,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_two)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
@@ -63,10 +62,8 @@ class TestBuildSet(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das_one
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder_one = self.factory.makeBuilder(
-                processors=[self.processor_one])
-            self.builder_two = self.factory.makeBuilder(
-                processors=[self.processor_two])
+            self.factory.makeBuilder(processors=[self.processor_one])
+            self.factory.makeBuilder(processors=[self.processor_two])
         self.builds = []
         self.spphs = []
 
@@ -91,6 +88,36 @@ class TestBuildSet(TestCaseWithFactory):
                         b.updateStatus(BuildStatus.FULLYBUILT)
                     b.buildqueue_record.destroySelf()
             self.builds += builds
+
+    def test_new_virtualization(self):
+        # Builds are virtualized unless Processor.support_nonvirtualized
+        # and not Archive.require_virtualized.
+
+        def make(proc_virt, proc_nonvirt, archive_virt):
+            proc = self.factory.makeProcessor(
+                supports_nonvirtualized=proc_nonvirt,
+                supports_virtualized=proc_virt)
+            das = self.factory.makeDistroArchSeries(processor=proc)
+            archive = self.factory.makeArchive(
+                distribution=das.distroseries.distribution,
+                virtualized=archive_virt)
+            bpb = getUtility(IBinaryPackageBuildSet).new(
+                self.factory.makeSourcePackageRelease(),
+                archive, das, PackagePublishingPocket.RELEASE)
+            self.assertEqual(proc, bpb.processor)
+            return bpb
+
+        vvvbpb = make(proc_virt=True, proc_nonvirt=True, archive_virt=True)
+        self.assertTrue(vvvbpb.virtualized)
+
+        vvnbpb = make(proc_virt=True, proc_nonvirt=True, archive_virt=False)
+        self.assertFalse(vvnbpb.virtualized)
+
+        vnvbpb = make(proc_virt=True, proc_nonvirt=False, archive_virt=True)
+        self.assertTrue(vnvbpb.virtualized)
+
+        vnvbpb = make(proc_virt=True, proc_nonvirt=False, archive_virt=False)
+        self.assertTrue(vnvbpb.virtualized)
 
     def test_get_for_distro_distribution(self):
         # Test fetching builds for a distro's main archives
@@ -243,38 +270,48 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGetAllowedArchitectures, self).setUp()
-        self.avr = self.factory.makeProcessor(name="avr2001")
-        self.sparc = self.factory.makeProcessor(name="sparc64")
+        self.avr = self.factory.makeProcessor(
+            name="avr2001", supports_virtualized=True)
+        self.sparc = self.factory.makeProcessor(
+            name="sparc64", supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
+        self.distro = self.distroseries.distribution
         for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
             self.factory.makeDistroArchSeries(
                 architecturetag=name, processor=arch,
-                distroseries=self.distroseries, supports_virtualized=True)
-        self.archive = self.factory.makeArchive(
-            distribution=self.distroseries.distribution)
+                distroseries=self.distroseries)
 
     def test_normal(self):
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_restricted(self):
         # Restricted architectures aren't returned by default.
+        self.avr.build_by_default = False
         self.avr.restricted = True
         self.assertContentEqual(
             [self.distroseries['sparc']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_restricted_override(self):
         # Restricted architectures are returned if allowed by the archive.
+        self.avr.build_by_default = False
         self.avr.restricted = True
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
+        archive = self.factory.makeArchive(distribution=self.distro)
+        self.assertContentEqual(
+            [self.distroseries['sparc']],
+            BinaryPackageBuildSet()._getAllowedArchitectures(
+                archive, self.distroseries.architectures))
+        archive.setProcessors(archive.processors + [self.avr])
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                archive, self.distroseries.architectures))
 
     def test_disabled_architectures_omitted(self):
         # Disabled architectures are not buildable, so are excluded.
@@ -282,25 +319,28 @@ class TestGetAllowedArchitectures(TestCaseWithFactory):
         self.assertContentEqual(
             [self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_virt_archives_have_only_virt_archs(self):
         # For archives which must build on virtual builders, only
         # virtual archs are returned.
-        self.distroseries['sparc'].supports_virtualized = False
+        self.sparc.supports_virtualized = False
         self.assertContentEqual(
             [self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(distribution=self.distro),
+                self.distroseries.architectures))
 
     def test_nonvirt_archives_have_only_all_archs(self):
         # Non-virtual archives can build on all unrestricted architectures.
-        self.distroseries['sparc'].supports_virtualized = False
-        self.archive.require_virtualized = False
+        self.sparc.supports_virtualized = False
         self.assertContentEqual(
             [self.distroseries['sparc'], self.distroseries['avr']],
             BinaryPackageBuildSet()._getAllowedArchitectures(
-                self.archive, self.distroseries.architectures))
+                self.factory.makeArchive(
+                    distribution=self.distro, virtualized=False),
+                self.distroseries.architectures))
 
 
 class BuildRecordCreationTests(TestNativePublishingBase):
@@ -309,17 +349,19 @@ class BuildRecordCreationTests(TestNativePublishingBase):
     def setUp(self):
         super(BuildRecordCreationTests, self).setUp()
         self.distro = self.factory.makeDistribution()
-        self.archive = self.factory.makeArchive(distribution=self.distro)
-        self.avr = self.factory.makeProcessor(name="avr2001")
-        self.sparc = self.factory.makeProcessor(name="sparc64")
-        self.x32 = self.factory.makeProcessor(name="x32")
+        self.avr = self.factory.makeProcessor(
+            name="avr2001", supports_virtualized=True)
+        self.sparc = self.factory.makeProcessor(
+            name="sparc64", supports_virtualized=True)
+        self.x32 = self.factory.makeProcessor(
+            name="x32", supports_virtualized=True)
 
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, name="crazy")
         for name, arch in (('avr', self.avr), ('sparc', self.sparc)):
             self.factory.makeDistroArchSeries(
                 architecturetag=name, processor=arch,
-                distroseries=self.distroseries, supports_virtualized=True)
+                distroseries=self.distroseries)
         self.distroseries.nominatedarchindep = self.distroseries['sparc']
         self.addFakeChroots(self.distroseries)
 
@@ -329,9 +371,13 @@ class BuildRecordCreationTests(TestNativePublishingBase):
                            ('x32', self.x32)):
             self.factory.makeDistroArchSeries(
                 architecturetag=name, processor=arch,
-                distroseries=self.distroseries2, supports_virtualized=True)
+                distroseries=self.distroseries2)
         self.distroseries2.nominatedarchindep = self.distroseries2['x32']
         self.addFakeChroots(self.distroseries2)
+
+        # Initialised by the first createBuilds in case the test needs
+        # to tweak arch settings.
+        self.archive = None
 
     def getPubSource(self, architecturehintlist):
         """Return a mock source package publishing record for the archive
@@ -341,10 +387,12 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             (e.g. "i386 amd64")
         """
         return super(BuildRecordCreationTests, self).getPubSource(
-            archive=self.archive, distroseries=self.distroseries,
+            archive=self.factory.makeArchive(), distroseries=self.distroseries,
             architecturehintlist=architecturehintlist)
 
     def createBuilds(self, spr, distroseries):
+        if self.archive is None:
+            self.archive = self.factory.makeArchive(distribution=self.distro)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=self.archive,
             distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
@@ -373,6 +421,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """createForSource() should limit builds targeted at 'any'
         architecture to those allowed for the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
@@ -382,6 +431,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """createForSource() limits builds targeted at a variety of
         architectures architecture to those allowed for the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
         spr = self.factory.makeSourcePackageRelease(
             architecturehintlist='sparc i386 avr')
@@ -393,6 +443,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         architectures to the nominated independent architecture,
         if that is allowed for the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='all')
         builds = self.createBuilds(spr, self.distroseries)
@@ -403,8 +454,10 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
+        self.avr.build_by_default = False
         self.avr.restricted = True
-        getUtility(IArchiveArchSet).new(self.archive, self.avr)
+        self.archive = self.factory.makeArchive(distribution=self.distro)
+        self.archive.setProcessors(self.archive.processors + [self.avr])
         spr = self.factory.makeSourcePackageRelease(architecturehintlist='any')
         builds = self.createBuilds(spr, self.distroseries)
         self.assertBuildsMatch({'sparc': True, 'avr': False}, builds)
@@ -607,7 +660,8 @@ class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
             sourcepackagerelease=spr, archive=parent_archive,
             distroseries=dsp.parent_series)
         das = self.factory.makeDistroArchSeries(
-            distroseries=dsp.parent_series, supports_virtualized=True)
+            distroseries=dsp.parent_series,
+            processor=self.factory.makeProcessor(supports_virtualized=True))
         orig_build = getUtility(IBinaryPackageBuildSet).new(
             spr, parent_archive, das, PackagePublishingPocket.RELEASE,
             status=BuildStatus.FULLYBUILT)
@@ -620,7 +674,7 @@ class TestFindBuiltOrPublishedBySourceAndArchive(TestCaseWithFactory):
         # archtag as the parent.
         das_derived = self.factory.makeDistroArchSeries(
             dsp.derived_series, architecturetag=das.architecturetag,
-            processor=das.processor, supports_virtualized=True)
+            processor=das.processor)
         # Now copy the package to the derived series, with binary.
         derived_archive = dsp.derived_series.main_archive
         getUtility(ISourcePackageFormatSelectionSet).add(

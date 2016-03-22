@@ -15,7 +15,7 @@ from sqlobject import (
     )
 from storm.expr import Join
 from storm.store import EmptyResultSet
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.app.errors import NotFoundError
@@ -37,9 +37,8 @@ from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 
+@implementer(IBinaryPackageName)
 class BinaryPackageName(SQLBase):
-
-    implements(IBinaryPackageName)
     _table = 'BinaryPackageName'
     name = StringCol(dbName='name', notNull=True, unique=True,
                      alternateID=True)
@@ -51,8 +50,8 @@ class BinaryPackageName(SQLBase):
         return "<BinaryPackageName at %X name=%r>" % (id(self), self.name)
 
 
+@implementer(IBinaryPackageNameSet)
 class BinaryPackageNameSet:
-    implements(IBinaryPackageNameSet)
 
     def __getitem__(self, name):
         """See `IBinaryPackageNameSet`."""

@@ -11,7 +11,6 @@ Change some details of the Ubuntu distribution that were incorrect.
   'Ubuntu'
   >>> admin_browser.getControl("Display Name").value = 'Test Distro'
 
-  >>> admin_browser.getControl("Title").value = 'The Test Distribution'
   >>> admin_browser.getControl("Summary").value = 'Test Distro Summary'
   >>> admin_browser.getControl("Description").value = 'Test Distro Description'
 

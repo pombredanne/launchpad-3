@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = ['DiskPoolEntry', 'DiskPool', 'poolify', 'unpoolify']
@@ -51,7 +51,8 @@ def relative_symlink(src_path, dst_path):
         if not os.path.isabs(dst_path):
             dst_path = os.path.abspath(dst_path)
         common_prefix = os.path.commonprefix([src_path_elems, dst_path_elems])
-        backward_elems = ['..'] * (len(dst_path_elems)-len(common_prefix)-1)
+        backward_elems = ['..'] * (
+            len(dst_path_elems) - len(common_prefix) - 1)
         forward_elems = src_path_elems[len(common_prefix):]
         src_path = path_sep.join(backward_elems + forward_elems)
     os.symlink(src_path, dst_path)
@@ -104,7 +105,7 @@ class _diskpool_atomicfile:
     def close(self):
         """Make the atomic move into place having closed the temp file."""
         self.fd.close()
-        os.chmod(self.tempname, 0644)
+        os.chmod(self.tempname, 0o644)
         # Note that this will fail if the target and the temp dirs are on
         # different filesystems.
         os.rename(self.tempname, self.targetfilename)
@@ -238,7 +239,6 @@ class DiskPoolEntry:
             raise NotInPool(
                 "File for removing %s %s/%s is not in pool, skipping." %
                 (component, self.source, self.filename))
-
 
         # Okay, it's there, if it's a symlink then we need to remove
         # it simply.

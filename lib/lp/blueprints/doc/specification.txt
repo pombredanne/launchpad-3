@@ -132,7 +132,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> ubuspec.assignee = jdub
     >>> ubuspec.drafter = jdub
     >>> ubuspec.linkBug(getUtility(IBugSet).get(2))
-    <...>
+    True
 
     >>> delta = ubuspec.getDelta(unmodified_spec, jdub)
     >>> delta.specification == ubuspec

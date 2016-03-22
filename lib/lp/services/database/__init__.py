@@ -54,7 +54,7 @@ def retry_transaction(func):
             except (DisconnectionError, IntegrityError,
                     TransactionRollbackError):
                 if attempt >= RETRY_ATTEMPTS:
-                    raise # tried too many times
+                    raise  # tried too many times
     return mergeFunctionMetadata(func, retry_transaction_decorator)
 
 
@@ -94,4 +94,3 @@ def write_transaction(func):
         return ret
     return retry_transaction(mergeFunctionMetadata(
         func, write_transaction_decorator))
-

@@ -24,7 +24,8 @@ details.
 Create a restricted processor.
 
     >>> login('admin@canonical.com')
-    >>> ign = factory.makeProcessor(name='arm', restricted=True)
+    >>> ign = factory.makeProcessor(
+    ...     name='arm', restricted=True, build_by_default=False)
     >>> logout()
 
 The distribution's registrant can access the page and change the usage.
@@ -47,9 +48,8 @@ The distribution's registrant can access the page and change the usage.
     LAUNCHPAD
     >>> print registrant.getControl(name='field.require_virtualized').value
     False
-    >>> print registrant.getControl(
-    ...     name='field.enabled_restricted_processors').value
-    []
+    >>> print registrant.getControl(name='field.processors').value
+    ['386', 'amd64', 'hppa']
 
     >>> registrant.getControl(name='field.translations_usage').value = [
     ...     'UNKNOWN']
@@ -124,8 +124,8 @@ bug expiration.
 
     >>> content = find_main_content(admin_browser.contents)
 
-Foo Bar chooses to switch the bug tracker again, but this time he
-does not change the expiration check box, and he does the whole
+Foo Bar chooses to switch the bug tracker again, but this time they
+do not change the expiration check box, and they do the whole
 operation before the page complete loading.
 
     >>> admin_browser.getLink('Change details').click()

@@ -2,7 +2,7 @@
 People karma
 ============
 
-In Launchpad, everytime a user performs an action, we give him some karma
+In Launchpad, everytime a user performs an action, we give them some karma
 points. These karma points are stored in the KarmaAction table and the
 assignment to a user is made in the Karma table. The method used to calculate
 a users karma is time-dependent, because we want to give more karma points for
@@ -98,9 +98,9 @@ show the 5 most active projects.
     >>> for contrib in foobar.getProjectsAndCategoriesContributedTo(None):
     ...     categories = sorted(cat.name for cat in contrib['categories'])
     ...     print contrib['project'].title, categories
-    The Evolution Groupware Application [u'bugs', u'translations']
-    Ubuntu Linux [u'bugs']
-    Gnome Baker [u'bugs']
+    Evolution [u'bugs', u'translations']
+    Ubuntu [u'bugs']
+    gnomebaker [u'bugs']
     Mozilla Thunderbird [u'bugs']
     Mozilla Firefox [u'bugs']
 

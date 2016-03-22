@@ -160,7 +160,7 @@ And if no-priv owns the series...
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-... he can edit existing releases as well, even if they are owned by
+... they can edit existing releases as well, even if they are owned by
 others:
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')

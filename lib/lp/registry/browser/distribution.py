@@ -45,7 +45,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.boolwidgets import CheckBoxWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.security.checker import canWrite
@@ -77,6 +77,8 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.registry.browser import (
     add_subscribe_link,
     RegistryEditFormView,
@@ -128,17 +130,16 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.soyuz.browser.archive import EnableRestrictedProcessorsMixin
+from lp.soyuz.browser.archive import EnableProcessorsMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
     FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin,
-    PillarNavigationMixin):
+    PillarNavigationMixin, TargetDefaultVCSNavigationMixin):
 
     usedfor = IDistribution
 
@@ -785,10 +786,9 @@ class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
         'create_account']
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class DistributionSetView(LaunchpadView):
     """View for /distros top level collection."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'Distributions registered in Launchpad'
 
@@ -816,14 +816,13 @@ class RequireVirtualizedBuildersMixin:
 
 
 class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
-                          EnableRestrictedProcessorsMixin):
+                          EnableProcessorsMixin):
 
     schema = IDistribution
     label = "Register a new distribution"
     field_names = [
         "name",
-        "displayname",
-        "title",
+        "display_name",
         "summary",
         "description",
         "domainname",
@@ -834,7 +833,7 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         "answers_usage",
         ]
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @property
     def page_title(self):
@@ -843,9 +842,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
 
     @property
     def initial_values(self):
-        restricted_processors = getUtility(IProcessorSet).getRestricted()
         return {
-            'enabled_restricted_processors': restricted_processors,
+            'processors': getUtility(IProcessorSet).getAll(),
             'require_virtualized': False,
             }
 
@@ -858,16 +856,17 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedProcessors(
-            u"The restricted architectures on which the distribution's main "
-            "archive can build.")
+        self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
+            u"The architectures on which the distribution's main archive can "
+            u"build.")
 
     @action("Save", name='save')
     def save_action(self, action, data):
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
-            displayname=data['displayname'],
-            title=data['title'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             summary=data['summary'],
             description=data['description'],
             domainname=data['domainname'],
@@ -877,8 +876,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
             )
         archive = distribution.main_archive
         self.updateRequireVirtualized(data['require_virtualized'], archive)
-        archive.enabled_restricted_processors = data[
-            'enabled_restricted_processors']
+        archive.setProcessors(
+            data['processors'], check_permissions=True, user=self.user)
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -886,12 +885,11 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
 
 class DistributionEditView(RegistryEditFormView,
                            RequireVirtualizedBuildersMixin,
-                           EnableRestrictedProcessorsMixin):
+                           EnableProcessorsMixin):
 
     schema = IDistribution
     field_names = [
-        'displayname',
-        'title',
+        'display_name',
         'summary',
         'description',
         'bug_reporting_guidelines',
@@ -912,7 +910,7 @@ class DistributionEditView(RegistryEditFormView,
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @property
     def label(self):
@@ -923,17 +921,17 @@ class DistributionEditView(RegistryEditFormView,
         """See `LaunchpadFormView`."""
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedProcessors(
-            u"The restricted architectures on which the distribution's main "
-            "archive can build.")
+        self.form_fields += self.createEnabledProcessors(
+            getUtility(IProcessorSet).getAll(),
+            u"The architectures on which the distribution's main archive can "
+            u"build.")
 
     @property
     def initial_values(self):
         return {
             'require_virtualized':
                 self.context.main_archive.require_virtualized,
-            'enabled_restricted_processors':
-                self.context.main_archive.enabled_restricted_processors,
+            'processors': self.context.main_archive.processors,
             }
 
     def validate(self, data):
@@ -952,14 +950,13 @@ class DistributionEditView(RegistryEditFormView,
             self.updateRequireVirtualized(
                 new_require_virtualized, self.context.main_archive)
             del(data['require_virtualized'])
-        new_enabled_restricted_processors = data.get(
-            'enabled_restricted_processors')
-        if new_enabled_restricted_processors is not None:
-            if (set(self.context.main_archive.enabled_restricted_processors) !=
-                set(new_enabled_restricted_processors)):
-                self.context.main_archive.enabled_restricted_processors = (
-                    new_enabled_restricted_processors)
-            del(data['enabled_restricted_processors'])
+        new_processors = data.get('processors')
+        if new_processors is not None:
+            if (set(self.context.main_archive.processors) !=
+                    set(new_processors)):
+                self.context.main_archive.setProcessors(
+                    new_processors, check_permissions=True, user=self.user)
+            del(data['processors'])
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -1059,13 +1056,13 @@ class DistributionChangeMembersView(RegistryEditFormView):
         return "Change the %s members team" % self.context.displayname
 
 
+@implementer(IDistributionMirrorMenuMarker)
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
     """A text/plain page that lists the mirrors in the country of the request.
 
     If there are no mirrors located in the country of the request, we fallback
     to the main Ubuntu repositories.
     """
-    implements(IDistributionMirrorMenuMarker)
 
     def render(self):
         request = self.request
@@ -1094,9 +1091,8 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
         return body.encode('utf-8')
 
 
+@implementer(IDistributionMirrorMenuMarker)
 class DistributionMirrorsView(LaunchpadView):
-
-    implements(IDistributionMirrorMenuMarker)
     show_freshness = True
     show_mirror_type = False
     description = None

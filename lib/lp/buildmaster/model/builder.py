@@ -34,7 +34,7 @@ from storm.references import Reference
 from storm.store import Store
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -54,6 +54,7 @@ from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     specific_build_farm_job_sources,
     )
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.bulk import (
     load,
@@ -67,10 +68,7 @@ from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
     )
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
 from lp.services.propertycache import (
     cachedproperty,
@@ -84,12 +82,10 @@ from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords,
     IncompatibleArguments,
     )
-from lp.soyuz.model.processor import Processor
 
 
+@implementer(IBuilder, IHasBuildRecords)
 class Builder(SQLBase):
-
-    implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
     _defaultOrder = ['id']
@@ -103,7 +99,6 @@ class Builder(SQLBase):
     _builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
     virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
-    speedindex = IntCol(dbName='speedindex')
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
@@ -141,7 +136,7 @@ class Builder(SQLBase):
         return list(Store.of(self).find(
             Processor,
             BuilderProcessor.processor_id == Processor.id,
-            BuilderProcessor.builder == self).order_by(Processor.id))
+            BuilderProcessor.builder == self).order_by(Processor.name))
 
     def _processors(self):
         return self._processors_cache
@@ -243,14 +238,6 @@ class Builder(SQLBase):
 
         :return: A candidate job.
         """
-        def qualify_subquery(job_type, sub_query):
-            """Put the sub-query into a job type context."""
-            qualified_query = """
-                ((BuildFarmJob.job_type != %s) OR EXISTS(%%s))
-            """ % sqlvalues(job_type)
-            qualified_query %= sub_query
-            return qualified_query
-
         job_type_conditions = []
         job_sources = specific_build_farm_job_sources()
         for job_type, job_source in job_sources.iteritems():
@@ -304,9 +291,9 @@ class BuilderProcessor(StormBase):
     processor = Reference(processor_id, Processor.id)
 
 
+@implementer(IBuilderSet)
 class BuilderSet(object):
     """See IBuilderSet"""
-    implements(IBuilderSet)
 
     def __init__(self):
         self.title = "The Launchpad build farm"
@@ -344,11 +331,12 @@ class BuilderSet(object):
     def _preloadProcessors(self, rows):
         # Grab (Builder.id, Processor.id) pairs and stuff them into the
         # Builders' processor caches.
-        store = IStore(Builder)
-        pairs = list(store.find(
+        store = IStore(BuilderProcessor)
+        pairs = list(store.using(BuilderProcessor, Processor).find(
             (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
+            BuilderProcessor.processor_id == Processor.id,
             BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
-                BuilderProcessor.builder_id, BuilderProcessor.processor_id))
+                BuilderProcessor.builder_id, Processor.name))
         load(Processor, [pid for bid, pid in pairs])
         for row in rows:
             get_property_cache(row)._processors_cache = []

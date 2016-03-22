@@ -66,21 +66,20 @@ The view provides a cancel link.
 The view accepts the basic fields to register a distribution.
 
     >>> view.field_names
-    ['name', 'displayname', 'title', 'summary', 'description', 'domainname',
+    ['name', 'display_name', 'summary', 'description', 'domainname',
      'members', 'official_malone', 'blueprints_usage', 'translations_usage',
      'answers_usage']
 
     >>> login("admin@canonical.com")
     >>> form = {
     ...     'field.name': 'youbuntu',
-    ...     'field.displayname': 'YoUbuntu',
-    ...     'field.title': 'YoUbuntu OS',
+    ...     'field.display_name': 'YoUbuntu',
     ...     'field.summary': 'summary',
     ...     'field.description': 'description',
     ...     'field.domainname': 'youbuntu.me',
     ...     'field.members': 'landscape-developers',
     ...     'field.require_virtualized': 'on',
-    ...     'field.enabled_restricted_processors': [],
+    ...     'field.processors': [],
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(distributionset, '+add', form=form)
@@ -128,7 +127,7 @@ The view accepts most of the distribution fields.
     <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
 
     >>> view.field_names
-    ['displayname', 'title', 'summary', 'description',
+    ['display_name', 'summary', 'description',
      'bug_reporting_guidelines', 'bug_reported_acknowledgement',
      'package_derivatives_email', 'icon',
      'logo', 'mugshot', 'official_malone', 'enable_bug_expiration',
@@ -354,7 +353,7 @@ and search results.
 
     >>> view = create_view(ubuntu, name='+ppas')
     >>> print view.label
-    Personal Package Archives for Ubuntu Linux
+    Personal Package Archives for Ubuntu
 
     # The leaf of the breadcrumbs, also used in the page-title.
     >>> print view.page_title

@@ -108,6 +108,10 @@ class UrlLib2Transport(Transport):
         Uses the configured proxy server to make the connection.
         """
         url = urlunparse((self.scheme, host, handler, '', '', ''))
+        # httplib can raise a UnicodeDecodeError when using a Unicode
+        # URL, a non-ASCII body and a proxy. http://bugs.python.org/issue12398
+        if isinstance(url, unicode):
+            url = url.encode('utf-8')
         headers = {'Content-type': 'text/xml'}
         request = Request(url, request_body, headers)
         try:

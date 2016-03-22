@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A collection of branches.
@@ -73,8 +73,8 @@ class IBranchCollection(Interface):
     def getBranchIds():
         """Return a result set of all branch ids in this collection."""
 
-    def getMergeProposals(statuses=None, for_branches=None,
-                          target_branch=None, eager_load=False):
+    def getMergeProposals(statuses=None, for_branches=None, target_branch=None,
+                          prerequisite_branch=None, eager_load=False):
         """Return a result set of merge proposals for the branches in this
         collection.
 
@@ -85,6 +85,8 @@ class IBranchCollection(Interface):
             branch is one of the branches specified.
         :param target_branch: If specified, only return merge proposals
             that target the specified branch.
+        :param prerequisite_branch: If specified, only return merge proposals
+            that require the specified branch to be merged first.
         :param eager_load: If True, preloads all the related information for
             merge proposals like PreviewDiffs and Branches.
         """
@@ -207,7 +209,7 @@ class IBranchCollection(Interface):
     def scannedSince(epoch):
         """Restrict the collection to branches scanned since `epoch`."""
 
-    def targetedBy(person):
+    def targetedBy(person, since=None):
         """Restrict the collection to branches targeted by person.
 
         A branch is targeted by a person if that person has registered a merge

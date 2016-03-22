@@ -71,7 +71,7 @@ Next check column.
     >>> login('foo.bar@canonical.com')
     >>> watch = getUtility(IBugWatchSet).get(2)
     >>> removeSecurityProxy(watch).next_check = datetime(
-    ...     2010, 4, 8, 16, 07, tzinfo=utc)
+    ...     2010, 4, 8, 16, 7, tzinfo=utc)
     >>> logout()
 
     >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')

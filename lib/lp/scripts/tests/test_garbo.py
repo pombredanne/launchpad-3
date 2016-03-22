@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -16,6 +16,10 @@ from StringIO import StringIO
 import time
 
 from pytz import UTC
+from storm.exceptions import (
+    LostObjectError,
+    NoneError,
+    )
 from storm.expr import (
     In,
     Like,
@@ -49,6 +53,7 @@ from lp.code.bzr import (
     )
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
@@ -56,14 +61,21 @@ from lp.code.model.branchjob import (
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.diff import Diff
+from lp.code.model.gitjob import (
+    GitJob,
+    GitRefScanJob,
+    )
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.person import PersonSettings
 from lp.registry.model.teammembership import TeamMembership
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -111,12 +123,16 @@ from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
+    admin_logged_in,
     FakeAdapterMixin,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -723,7 +739,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.factory.makePerson(name='test-unlinked-person-new')
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
-            2008, 01, 01, tzinfo=UTC)
+            2008, 1, 1, tzinfo=UTC)
 
         # Normally, the garbage collector will do nothing because the
         # PersonPruner is experimental
@@ -930,6 +946,62 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         switch_dbuser('testadmin')
         self.assertEqual(store.find(BranchJob).count(), 1)
 
+    def test_GitJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        db_repository = self.factory.makeGitRepository()
+        Store.of(db_repository).flush()
+        git_job = GitRefScanJob.create(db_repository)
+        git_job.job.date_finished = THIRTY_DAYS_AGO
+
+        self.assertEqual(
+            1,
+            store.find(GitJob, GitJob.repository == db_repository.id).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(
+            0,
+            store.find(GitJob, GitJob.repository == db_repository.id).count())
+
+    def test_GitJobPruner_doesnt_prune_recent_jobs(self):
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        db_repository = self.factory.makeGitRepository()
+
+        git_job = GitRefScanJob.create(db_repository)
+        git_job.job.date_finished = THIRTY_DAYS_AGO
+
+        db_repository2 = self.factory.makeGitRepository()
+        GitRefScanJob.create(db_repository2)
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(1, store.find(GitJob).count())
+
+    def test_WebhookJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        switch_dbuser('testadmin')
+
+        webhook = self.factory.makeWebhook()
+        job1 = webhook.ping()
+        removeSecurityProxy(job1).job.date_finished = THIRTY_DAYS_AGO
+        job2 = webhook.ping()
+        removeSecurityProxy(job2).job.date_finished = SEVEN_DAYS_AGO
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(webhook, job2.webhook)
+        self.assertRaises(LostObjectError, getattr, job1, 'webhook')
+
     def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.
 
@@ -962,7 +1034,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             path="sample path"))))
         # One to clean and one to keep
         store.add(TimeLimitedToken(path="sample path", token="foo",
-            created=datetime(2008, 01, 01, tzinfo=UTC)))
+            created=datetime(2008, 1, 1, tzinfo=UTC)))
         store.add(TimeLimitedToken(path="sample path", token="bar")),
         store.commit()
         self.assertEqual(2, len(list(store.find(TimeLimitedToken,
@@ -1165,6 +1237,20 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
 
+    def test_ProductVCSPopulator(self):
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        self.assertIs(None, product.vcs)
+
+        with admin_logged_in():
+            repo = self.factory.makeGitRepository(target=product)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=product, repository=repo)
+
+        self.runDaily()
+
+        self.assertEqual(VCSType.GIT, product.vcs)
+
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
         # Make some same test data - we create published source package
@@ -1307,6 +1393,49 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # retained.
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
+
+    def test_PersonSettingsENFPopulator(self):
+        switch_dbuser('testadmin')
+        store = IMasterStore(PersonSettings)
+        people_enf_none = []
+        people_enf_false = []
+        people_enf_true = []
+        for _ in range(2):
+            person = self.factory.makePerson()
+            try:
+                person.expanded_notification_footers = None
+            except NoneError:
+                # Now enforced by DB NOT NULL constraint; backfilling is no
+                # longer necessary.
+                return
+            people_enf_none.append(person)
+            person = self.factory.makePerson()
+            person.expanded_notification_footers = False
+            people_enf_false.append(person)
+            person = self.factory.makePerson()
+            person.expanded_notification_footers = True
+            people_enf_true.append(person)
+        settings_count = store.find(PersonSettings).count()
+        self.runDaily()
+        switch_dbuser('testadmin')
+
+        # No rows have been deleted.
+        self.assertEqual(settings_count, store.find(PersonSettings).count())
+
+        def _assert_enf_by_person(person, expected):
+            record = store.find(
+                PersonSettings, PersonSettings.person == person.id).one()
+            self.assertEqual(expected, record.expanded_notification_footers)
+
+        # Rows with expanded_notification_footers=None have been backfilled.
+        for person in people_enf_none:
+            _assert_enf_by_person(person, False)
+
+        # Other rows have been left alone.
+        for person in people_enf_false:
+            _assert_enf_by_person(person, False)
+        for person in people_enf_true:
+            _assert_enf_by_person(person, True)
 
 
 class TestGarboTasks(TestCaseWithFactory):

@@ -26,14 +26,11 @@ from lazr.batchnavigator import ListRangeFactory
 from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    isinstance as zope_isinstance,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -98,6 +95,7 @@ def get_build_by_id_str(utility, id_str):
         return None
 
 
+@implementer(ICanonicalUrlData)
 class BuildUrl:
     """Dynamic URL declaration for IBinaryPackageBuild.
 
@@ -113,7 +111,6 @@ class BuildUrl:
     Copy archives will be presented under the archives page:
        /ubuntu/+archive/my-special-archive/+build/1234
     """
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):

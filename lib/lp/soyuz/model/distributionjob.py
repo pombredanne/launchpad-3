@@ -8,14 +8,14 @@ __all__ = [
     "DistributionJobDerived",
 ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from storm.locals import (
     And,
     Int,
     JSON,
     Reference,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.model.distribution import Distribution
@@ -34,10 +34,9 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 
 
+@implementer(IDistributionJob)
 class DistributionJob(StormBase):
     """Base class for jobs related to Distributions."""
-
-    implements(IDistributionJob)
 
     __storm_table__ = 'DistributionJob'
 
@@ -68,12 +67,11 @@ class DistributionJob(StormBase):
         return DistributionJobDerived.makeSubclass(self)
 
 
+@delegate_to(IDistributionJob)
 class DistributionJobDerived(BaseRunnableJob):
     """Abstract class for deriving from DistributionJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IDistributionJob)
 
     def __init__(self, job):
         self.context = job

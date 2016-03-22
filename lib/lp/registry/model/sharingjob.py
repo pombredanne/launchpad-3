@@ -12,7 +12,7 @@ __all__ = [
 
 import logging
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -35,8 +35,8 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.app.enums import InformationType
@@ -63,7 +63,11 @@ from lp.code.model.branch import (
     get_branch_privacy_filter,
     )
 from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.gitrepository import GitRepository
+from lp.code.model.gitrepository import (
+    get_git_repository_privacy_filter,
+    GitRepository,
+    )
+from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sharingjob import (
@@ -109,10 +113,9 @@ class SharingJobType(DBEnumeratedType):
         """)
 
 
+@implementer(ISharingJob)
 class SharingJob(StormBase):
     """Base class for jobs related to sharing."""
-
-    implements(ISharingJob)
 
     __storm_table__ = 'SharingJob'
 
@@ -166,13 +169,12 @@ class SharingJob(StormBase):
         return SharingJobDerived.makeSubclass(self)
 
 
+@delegate_to(ISharingJob)
+@provider(ISharingJobSource)
 class SharingJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from SharingJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(ISharingJob)
-    classProvides(ISharingJobSource)
 
     def __init__(self, job):
         self.context = job
@@ -249,11 +251,10 @@ class SharingJobDerived(BaseRunnableJob):
         return vars
 
 
+@implementer(IRemoveArtifactSubscriptionsJob)
+@provider(IRemoveArtifactSubscriptionsJobSource)
 class RemoveArtifactSubscriptionsJob(SharingJobDerived):
     """See `IRemoveArtifactSubscriptionsJob`."""
-
-    implements(IRemoveArtifactSubscriptionsJob)
-    classProvides(IRemoveArtifactSubscriptionsJobSource)
     class_job_type = SharingJobType.REMOVE_ARTIFACT_SUBSCRIPTIONS
 
     config = config.IRemoveArtifactSubscriptionsJobSource
@@ -421,8 +422,11 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                     Select(
                         TeamParticipation.personID,
                         where=TeamParticipation.team == self.grantee)))
-            # XXX cjwatson 2015-02-05: Fill this in once we have
-            # GitRepositorySubscription.
+            gitrepository_filters.append(
+                In(GitSubscription.person_id,
+                    Select(
+                        TeamParticipation.personID,
+                        where=TeamParticipation.team == self.grantee)))
             specification_filters.append(
                 In(SpecificationSubscription.personID,
                     Select(
@@ -452,8 +456,20 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
             for sub in branch_subscriptions:
                 sub.branch.unsubscribe(
                     sub.person, self.requestor, ignore_permissions=True)
-        # XXX cjwatson 2015-02-05: Fill this in once we have
-        # GitRepositorySubscription.
+        if gitrepository_filters:
+            gitrepository_filters.append(Not(
+                Or(*get_git_repository_privacy_filter(
+                    GitSubscription.person_id))))
+            gitrepository_subscriptions = IStore(GitSubscription).using(
+                GitSubscription,
+                Join(
+                    GitRepository,
+                    GitRepository.id == GitSubscription.repository_id)
+                ).find(GitSubscription, *gitrepository_filters).config(
+                    distinct=True)
+            for sub in gitrepository_subscriptions:
+                sub.repository.unsubscribe(
+                    sub.person, self.requestor, ignore_permissions=True)
         if specification_filters:
             specification_filters.append(Not(*get_specification_privacy_filter(
                 SpecificationSubscription.personID)))

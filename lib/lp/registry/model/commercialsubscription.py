@@ -13,7 +13,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.errors import CannotDeleteCommercialSubscription
 from lp.registry.interfaces.commercialsubscription import (
@@ -25,8 +25,8 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ICommercialSubscription)
 class CommercialSubscription(SQLBase):
-    implements(ICommercialSubscription)
 
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=True)

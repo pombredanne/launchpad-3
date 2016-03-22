@@ -106,8 +106,6 @@ class _BranchSubscriptionView(LaunchpadFormView):
 
 class BranchSubscriptionAddView(_BranchSubscriptionView):
 
-    subscribing_self = True
-
     page_title = label = "Subscribe to branch"
 
     @action("Subscribe")
@@ -195,7 +193,6 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     # Since we are subscribing other people, the current user
     # is never considered subscribed.
     user_is_subscribed = False
-    subscribing_self = False
 
     page_title = label = "Subscribe to branch"
 

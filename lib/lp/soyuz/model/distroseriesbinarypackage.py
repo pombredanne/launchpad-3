@@ -10,7 +10,7 @@ from operator import attrgetter
 
 from storm.expr import Desc
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.propertycache import (
     cachedproperty,
@@ -23,6 +23,7 @@ from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
+@implementer(IDistroSeriesBinaryPackage)
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".
 
@@ -31,8 +32,6 @@ class DistroSeriesBinaryPackage:
     described is the "name", and from there we can jump to specific versions
     in specific DistroArchSeriess.
     """
-
-    implements(IDistroSeriesBinaryPackage)
 
     default = object()
 

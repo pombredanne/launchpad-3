@@ -17,7 +17,7 @@ import os
 
 from zope.component import getUtility
 from zope.formlib.interfaces import ConversionError
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -598,10 +598,9 @@ class TranslationImportQueueView(HasTranslationImportsView):
             title='Choose which target to show')
 
 
+@implementer(IContextSourceBinder)
 class TranslationImportTargetVocabularyFactory:
     """Factory for a vocabulary containing a list of targets."""
-
-    implements(IContextSourceBinder)
 
     def __init__(self, view):
         """Create a `TranslationImportTargetVocabularyFactory`.

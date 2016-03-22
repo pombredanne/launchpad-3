@@ -16,7 +16,7 @@ from lazr.restful.declarations import (
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -302,6 +302,7 @@ class IPOFile(IRosettaStats):
         """
 
 
+@implementer(IContextSourceBinder)
 class AlternativeLanguageVocabularyFactory:
     """Gets vocab for user's preferred languages, or all languages if not set.
 
@@ -329,7 +330,6 @@ class AlternativeLanguageVocabularyFactory:
     # and class derivation.  Also of course, the distinction applies unchanged
     # throughout the vocabulary object's lifetime.  See interfaces.buglink.py
     # for an example of the same implementation pattern.
-    implements(IContextSourceBinder)
 
     def __call__(self, context):
         """See `IContextSourceBinder`."""

@@ -150,7 +150,7 @@ Page Footers
     Contact Launchpad Support /feedback
     Blog http://blog.launchpad.net/
     Careers http://www.canonical.com/about-canonical/careers
-    System status http://identi.ca/launchpadstatus
+    System status https://twitter.com/launchpadstatus
     Get the code! https://dev.launchpad.net/
 
 

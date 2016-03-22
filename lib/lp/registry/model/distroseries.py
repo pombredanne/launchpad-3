@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -17,7 +17,7 @@ from cStringIO import StringIO
 from operator import attrgetter
 
 import apt_pkg
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -34,12 +34,13 @@ from storm.expr import (
     Or,
     SQL,
     )
+from storm.locals import JSON
 from storm.store import (
     EmptyResultSet,
     Store,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
@@ -57,6 +58,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.buildmaster.model.processor import Processor
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import (
     DerivationError,
@@ -122,6 +124,7 @@ from lp.services.propertycache import (
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -200,16 +203,21 @@ ACTIVE_UNRELEASED_STATUSES = [
     ]
 
 
+DEFAULT_INDEX_COMPRESSORS = [
+    IndexCompressionType.GZIP,
+    IndexCompressionType.BZIP2,
+    ]
+
+
+@implementer(
+    IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
+    IServiceUsage, ISeriesBugTarget)
+@delegate_to(ISpecificationTarget, context='distribution')
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
-    implements(
-        IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IServiceUsage, ISeriesBugTarget)
-
-    delegates(ISpecificationTarget, 'distribution')
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -217,7 +225,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol()
-    displayname = StringCol(notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
@@ -252,14 +260,30 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
-    backports_not_automatic = BoolCol(notNull=True, default=False)
-    include_long_descriptions = BoolCol(notNull=True, default=True)
+    publishing_options = JSON("publishing_options")
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
     sections = SQLRelatedJoin(
         'Section', joinColumn='distroseries', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    def __init__(self, *args, **kwargs):
+        if "publishing_options" not in kwargs:
+            kwargs["publishing_options"] = {
+                "backports_not_automatic": False,
+                "include_long_descriptions": True,
+                "index_compressors": [
+                    compressor.title
+                    for compressor in DEFAULT_INDEX_COMPRESSORS],
+                "publish_by_hash": False,
+                "advertise_by_hash": False,
+                }
+        super(DistroSeries, self).__init__(*args, **kwargs)
+
+    @property
+    def displayname(self):
+        return self.display_name
 
     @property
     def pillar(self):
@@ -273,7 +297,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def named_version(self):
-        return '%s (%s)' % (self.displayname, self.version)
+        return '%s (%s)' % (self.display_name, self.version)
 
     @property
     def upload_components(self):
@@ -420,7 +444,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         results = store.find(
             DistroArchSeries,
             DistroArchSeries.distroseries == self,
-            DistroArchSeries.supports_virtualized == True)
+            Processor.id == DistroArchSeries.processor_id,
+            Processor.supports_virtualized == True)
         return results.order_by(DistroArchSeries.architecturetag)
     # End of DistroArchSeries lookup methods
 
@@ -785,6 +810,57 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self, type=LanguagePackType.DELTA,
             updates=self.language_pack_base, orderBy='-date_exported')
 
+    @property
+    def backports_not_automatic(self):
+        return self.publishing_options.get("backports_not_automatic", False)
+
+    @backports_not_automatic.setter
+    def backports_not_automatic(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["backports_not_automatic"] = value
+
+    @property
+    def include_long_descriptions(self):
+        return self.publishing_options.get("include_long_descriptions", True)
+
+    @include_long_descriptions.setter
+    def include_long_descriptions(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["include_long_descriptions"] = value
+
+    @property
+    def index_compressors(self):
+        if "index_compressors" in self.publishing_options:
+            return [
+                IndexCompressionType.getTermByToken(name).value
+                for name in self.publishing_options["index_compressors"]]
+        else:
+            return list(DEFAULT_INDEX_COMPRESSORS)
+
+    @index_compressors.setter
+    def index_compressors(self, value):
+        assert isinstance(value, list)
+        self.publishing_options["index_compressors"] = [
+            compressor.title for compressor in value]
+
+    @property
+    def publish_by_hash(self):
+        return self.publishing_options.get("publish_by_hash", False)
+
+    @publish_by_hash.setter
+    def publish_by_hash(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["publish_by_hash"] = value
+
+    @property
+    def advertise_by_hash(self):
+        return self.publishing_options.get("advertise_by_hash", False)
+
+    @advertise_by_hash.setter
+    def advertise_by_hash(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["advertise_by_hash"] = value
+
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
@@ -1108,8 +1184,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog,
             changelog_entry=changelog_entry, dsc=dsc,
-            dscsigningkey=dscsigningkey, section=section, copyright=copyright,
-            upload_archive=archive,
+            signing_key_owner=dscsigningkey.owner if dscsigningkey else None,
+            signing_key_fingerprint=(
+                dscsigningkey.fingerprint if dscsigningkey else None),
+            section=section, copyright=copyright, upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
@@ -1178,12 +1256,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return DecoratedResultSet(package_caches, result_to_dsbp)
 
     def newArch(self, architecturetag, processor, official, owner,
-                supports_virtualized=False, enabled=True):
+                enabled=True):
         """See `IDistroSeries`."""
         return DistroArchSeries(
             architecturetag=architecturetag, processor=processor,
-            official=official, distroseries=self, owner=owner,
-            supports_virtualized=supports_virtualized, enabled=enabled)
+            official=official, distroseries=self, owner=owner, enabled=enabled)
 
     def newMilestone(self, name, dateexpected=None, summary=None,
                      code_name=None, tags=None):
@@ -1295,7 +1372,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive, changesfile=changes_file_alias,
-            signing_key=signing_key, package_copy_job=package_copy_job)
+            signing_key_owner=signing_key.owner if signing_key else None,
+            signing_key_fingerprint=(
+                signing_key.fingerprint if signing_key else None),
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""
@@ -1457,8 +1537,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self, since=since, source_package_name=source_package_name)
 
 
+@implementer(IDistroSeriesSet)
 class DistroSeriesSet:
-    implements(IDistroSeriesSet)
 
     def get(self, distroseriesid):
         """See `IDistroSeriesSet`."""

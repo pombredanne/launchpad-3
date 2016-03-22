@@ -51,7 +51,7 @@ review the state of the translation.
     Spanish (es) : Template ...evolution-2.2... :
     Hoary (5.04) : Translations : evolution package : Ubuntu
 
-He can see that there are 22 messages.
+They can see that there are 22 messages.
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -69,8 +69,8 @@ Untranslated
 ............
 
 No Privileges Person chooses to see the untranslated messages in the
-evolution-2.2 sourcepackage. He sets the view filter to 'Untranslated'
-to filter the messages. He sees 15 messages are not translated.
+evolution-2.2 sourcepackage. They set the view filter to 'Untranslated'
+to filter the messages. They see 15 messages are not translated.
 
     >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
@@ -147,7 +147,7 @@ that there are 21 untranslated messages.
     >>> print_batch_header(contents)
     10 ... 19  of 21 results
 
-When No Privileges Person returns to the previous page, he can see the
+When No Privileges Person returns to the previous page, they can see the
 first 10 untranslated messages. The message is translated is not
 displayed.
 
@@ -162,7 +162,7 @@ displayed.
 
 Projects can restrict translation to privileged users. The messages that
 No Privileges Person adds to upstream Evolution are then taken as
-suggestions, not translations. His changes do not change the total
+suggestions, not translations. Their changes do not change the total
 number of untranslated messages; they do not affect the batch
 navigation.
 
@@ -208,19 +208,19 @@ navigation.
     >>> user_browser.getControl('Save & Continue').click()
 
 No Privileges Person can see that the number of untranslated messages
-has not changed, and that he is seeing messages 11 though 20.
+has not changed, and that they are seeing messages 11 though 20.
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
     11 ... 20  of 22 results
 
-He returns to the previous page to check that his suggest of 'fnord' was
-accepted.
+They return to the previous page to check that their suggestion of 'fnord'
+was accepted.
 
     >>> user_browser.getLink('Previous').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> contents.find(text='fnord').parent
-    <div lang="en-AU"...id="msgset_1_en_AU_suggestion_702_0"...>fnord</div>
+    <div lang="en-AU"...id="msgset_1_en_AU_suggestion_..._0"...>fnord</div>
 
 
 Messages changed in Ubuntu
@@ -326,8 +326,8 @@ Batch parameters when changing filters
 
 When the filter changes, the batch is reset to the start of the set of
 messages, while preserving the batch size. No Privileges Person can see
-the batch header when he switches the filter to show 'untranslated'
-message; he is seeing the first batch.
+the batch header when they switch the filter to show 'untranslated'
+message; they are seeing the first batch.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
@@ -348,7 +348,7 @@ Filters and error display
 -------------------------
 
 When there are errors in translations that No Privileges Person submits,
-he sees a general error message at the top of the page, plus individual
+they see a general error message at the top of the page, plus individual
 error messages for the individual problematic translations.
 
 The error page shows the same messages that the user submitted for: it
@@ -422,7 +422,7 @@ Person submits Chinese translations using Spanish suggestions.
     ...     name='msgset_130_zh_CN_translation_0_new').value = 'Chinese!'
     >>> user_browser.getControl(name='submit_translations').click()
 
-When he returns to the first page of messages, he is still shown Spanish
+When they return to the first page of messages, they are still shown Spanish
 suggestions.
 
     >>> user_browser.getLink("Previous").click()

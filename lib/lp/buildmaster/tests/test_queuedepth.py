@@ -13,6 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.queuedepth import (
     estimate_job_delay,
@@ -26,7 +27,6 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -391,7 +391,7 @@ class TestBuilderData(SingleArchBuildsBase):
         build = self.builds[0]
         # The build in question is an x86/native one.
         self.assertEqual(self.x86_proc.id, build.processor.id)
-        self.assertEqual(False, build.is_virtualized)
+        self.assertEqual(False, build.virtualized)
 
         # To test this non-interface method, we need to remove the
         # security proxy.
@@ -403,36 +403,36 @@ class TestBuilderData(SingleArchBuildsBase):
             "The number of native x86 builders is wrong")
         # Initially all 4 builders are free.
         free_count = get_free_builders_count(
-            build.processor, build.is_virtualized)
+            build.processor, build.virtualized)
         self.assertEqual(4, free_count)
         # Once we assign a build to one of them we should see the free
         # builders count drop by one.
         assign_to_builder(self, 'postgres', 1)
         free_count = get_free_builders_count(
-            build.processor, build.is_virtualized)
+            build.processor, build.virtualized)
         self.assertEqual(3, free_count)
         # When we assign another build to one of them we should see the free
         # builders count drop by one again.
         assign_to_builder(self, 'gcc', 2)
         free_count = get_free_builders_count(
-            build.processor, build.is_virtualized)
+            build.processor, build.virtualized)
         self.assertEqual(2, free_count)
         # Let's use up another builder.
         assign_to_builder(self, 'apg', 3)
         free_count = get_free_builders_count(
-            build.processor, build.is_virtualized)
+            build.processor, build.virtualized)
         self.assertEqual(1, free_count)
         # And now for the last one.
         assign_to_builder(self, 'flex', 4)
         free_count = get_free_builders_count(
-            build.processor, build.is_virtualized)
+            build.processor, build.virtualized)
         self.assertEqual(0, free_count)
         # If we reset the 'flex' build the builder that was assigned to it
         # will be free again.
         build, bq = find_job(self, 'flex')
         bq.reset()
         free_count = get_free_builders_count(
-            build.processor, build.is_virtualized)
+            build.processor, build.virtualized)
         self.assertEqual(1, free_count)
 
 

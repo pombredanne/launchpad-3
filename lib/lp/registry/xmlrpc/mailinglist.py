@@ -12,7 +12,7 @@ import re
 import xmlrpclib
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import PersonVisibility
@@ -48,10 +48,9 @@ except ImportError:
     BYUSER = 2
 
 
+@implementer(IMailingListAPIView)
 class MailingListAPIView(LaunchpadXMLRPCView):
     """The XMLRPC API that Mailman polls for mailing list actions."""
-
-    implements(IMailingListAPIView)
 
     def getPendingActions(self):
         """See `IMailingListAPIView`."""

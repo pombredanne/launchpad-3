@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -37,7 +37,34 @@
       template="../templates/code-in-branches.pt"
       permission="zope.Public"
       />
-
+  <browser:page
+      name="+configure-code"
+      for="lp.registry.interfaces.product.IProduct"
+      class="lp.registry.browser.product.ProductSetBranchView"
+      permission="launchpad.Edit"
+      template="../templates/configure-code.pt"
+      />
+  <browser:page
+      name="+setbranch"
+      for="lp.registry.interfaces.productseries.IProductSeries"
+      class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
+      permission="launchpad.Edit"
+      template="../templates/configure-code.pt"
+      />
+  <browser:page
+      name="+configure-code-macros"
+      for="lp.registry.interfaces.productseries.IProductSeries"
+      class="lp.app.browser.launchpad.Macro"
+      permission="zope.Public"
+      template="../templates/configure-code-macros.pt"
+      />
+    <browser:page
+      name="+configure-code-macros"
+      for="lp.registry.interfaces.product.IProduct"
+      class="lp.app.browser.launchpad.Macro"
+      permission="zope.Public"
+      template="../templates/configure-code-macros.pt"
+      />
   <browser:page
       for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+project-cloud"
@@ -221,30 +248,6 @@
         permission="launchpad.Edit"
         template="../templates/branchmergeproposal-resubmit.pt"/>
     <browser:page
-        name="+enqueue"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalEnqueueView"
-        permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-enqueue.pt"/>
-    <browser:page
-        name="+dequeue"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalDequeueView"
-        permission="launchpad.Edit"
-        template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        name="+dequeue-inline"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalInlineDequeueView"
-        permission="launchpad.Edit"
-        template="../templates/inline-form-only-buttons.pt"/>
-    <browser:page
-        name="+jump-queue"
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalJumpQueueView"
-        permission="launchpad.Edit"
-        template="../templates/inline-form-only-buttons.pt"/>
-    <browser:page
         name="+merged"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalMergedView"
@@ -277,7 +280,7 @@
     <browser:url
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         path_expression="string:+merge/${id}"
-        attribute_to_parent="source_branch"
+        attribute_to_parent="parent"
         rootsite="code"/>
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalListingBatchNavigator"
@@ -499,6 +502,12 @@
         permission="zope.Public"
         name="+activereviews"
         template="../templates/active-reviews.pt"/>
+    <browser:page
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branchmergeproposallisting.BranchDependentMergesView"
+        permission="zope.Public"
+        name="+dependent-merges"
+        template="../templates/branchmergeproposal-generic-listing.pt"/>
     <browser:page
         for="lp.code.interfaces.branch.IBranchBatchNavigator"
         name="+branch-listing"
@@ -738,23 +747,22 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.code.browser.branchlisting.ProductBranchesView"
         permission="zope.Public"
-        name="+all-branches"
-        template="../templates/product-branches.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchlisting.ProductCodeIndexView"
-        permission="zope.Public"
         name="+branches"
         template="../templates/product-branches.pt"/>
+    <browser:renamed-page
+        for="lp.registry.interfaces.product.IProduct"
+        name="+all-branches"
+        new_name="+branches"
+        rootsite="code"/>
    <browser:page
       for="lp.registry.interfaces.product.IProduct"
       class="lp.code.browser.branchlisting.ProductBranchStatisticsView"
       permission="zope.Public"
-      name="+portlet-product-codestatistics"
-      template="../templates/product-portlet-codestatistics.pt"/>
+      name="+portlet-product-branchstatistics"
+      template="../templates/product-portlet-branchstatistics.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branchlisting.ProductCodeIndexView"
+        class="lp.code.browser.branchlisting.ProductBranchSummaryView"
         permission="zope.Public"
         name="+branch-summary"
         template="../templates/product-branch-summary.pt"/>
@@ -771,10 +779,14 @@
     <browser:url
         for="lp.code.interfaces.gitrepository.IGitRepository"
         urldata="lp.code.browser.gitrepository.GitRepositoryURL"/>
+    <browser:navigation
+        module="lp.code.browser.gitrepository"
+        classes="GitRepositoryNavigation"/>
     <browser:menus
         module="lp.code.browser.gitrepository"
         classes="
-            GitRepositoryContextMenu"/>
+            GitRepositoryContextMenu
+            GitRepositoryEditMenu"/>
     <browser:pages
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryView"
@@ -783,16 +795,199 @@
             name="+index"
             template="../templates/gitrepository-index.pt"/>
         <browser:page
-            name="++repository-information"
-            template="../templates/gitrepository-information.pt"/>
+            name="+portlet-privacy"
+            template="../templates/gitrepository-portlet-privacy.pt"/>
         <browser:page
             name="++repository-management"
             template="../templates/gitrepository-management.pt"/>
+        <browser:page
+            name="++repository-recipes"
+            template="../templates/gitrepository-recipes.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        permission="launchpad.View"
+        name="+portlet-subscribers"
+        template="../templates/gitrepository-portlet-subscribers.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitRepositoryPortletSubscribersContent"
+        permission="launchpad.View"
+        name="+repository-portlet-subscriber-content"
+        template="../templates/gitrepository-portlet-subscribers-content.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        name="+macros"
+        permission="zope.Public"
+        template="../templates/git-macros.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryEditInformationTypeView"
+        permission="launchpad.Edit"
+        name="+edit-information-type"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryEditReviewerView"
+        permission="launchpad.Edit"
+        name="+reviewer"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryEditView"
+        permission="launchpad.Edit"
+        name="+edit"
+        template="../templates/gitrepository-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryDeletionView"
+        permission="launchpad.Edit"
+        name="+delete"
+        template="../templates/gitrepository-delete.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitSubscriptionAddView"
+        permission="launchpad.AnyPerson"
+        name="+subscribe"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitSubscriptionAddOtherView"
+        permission="launchpad.AnyPerson"
+        name="+addsubscriber"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitsubscription.GitSubscriptionEditOwnView"
+        permission="launchpad.AnyPerson"
+        name="+edit-subscription"
+        template="../templates/gitrepository-edit-subscription.pt"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.gitrepository.IGitRepository"
         factory="lp.code.browser.gitrepository.GitRepositoryBreadcrumb"
+        permission="zope.Public"/>
+
+    <browser:defaultView
+        for="lp.code.interfaces.gitref.IGitRef"
+        name="+index"/>
+    <browser:url
+        for="lp.code.interfaces.gitref.IGitRef"
+        path_expression="string:+ref/${name}"
+        attribute_to_parent="repository"
+        rootsite="code"/>
+    <browser:pages
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.gitref.GitRefView"
+        permission="launchpad.View">
+        <browser:page
+            name="+index"
+            template="../templates/gitref-index.pt"/>
+        <browser:page
+            name="++ref-commits"
+            template="../templates/gitref-commits.pt"/>
+        <browser:page
+            name="++ref-management"
+            template="../templates/gitref-management.pt"/>
+        <browser:page
+            name="++ref-pending-merges"
+            template="../templates/gitref-pending-merges.pt"/>
+        <browser:page
+            name="++ref-recipes"
+            template="../templates/gitref-recipes.pt"/>
+    </browser:pages>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        name="+macros"
+        permission="zope.Public"
+        template="../templates/git-macros.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRefBatchNavigator"
+        permission="zope.Public"
+        name="+ref-listing"
+        template="../templates/gitref-listing.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.gitref.GitRefRegisterMergeProposalView"
+        name="+register-merge"
+        permission="launchpad.AnyPerson"
+        template="../templates/gitref-register-merge.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.branchmergeproposallisting.BranchActiveReviewsView"
+        permission="zope.Public"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.branchmergeproposallisting.BranchDependentMergesView"
+        permission="zope.Public"
+        name="+dependent-merges"
+        template="../templates/branchmergeproposal-generic-listing.pt"/>
+    <browser:menus
+        classes="GitRefContextMenu"
+        module="lp.code.browser.gitref"/>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.gitref.IGitRef"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
+        permission="zope.Public"/>
+
+    <browser:defaultView
+        for="lp.code.interfaces.gitsubscription.IGitSubscription"
+        name="+index"/>
+    <browser:page
+        for="lp.code.interfaces.gitsubscription.IGitSubscription"
+        class="lp.code.browser.gitsubscription.GitSubscriptionEditView"
+        permission="launchpad.Edit"
+        name="+index"
+        template="../templates/gitsubscription-edit.pt"/>
+    <browser:url
+        for="lp.code.interfaces.gitsubscription.IGitSubscription"
+        path_expression="string:+subscription/${person/name}"
+        attribute_to_parent="repository"
+        rootsite="code"/>
+
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.code.browser.gitlisting.TargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        class="lp.code.browser.gitlisting.TargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        class="lp.code.browser.gitlisting.PersonTargetGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        class="lp.code.browser.gitlisting.PersonDistributionSourcePackageGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.code.browser.gitlisting.PlainGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.code.browser.gitlisting.PlainGitListingView"
+        permission="zope.Public"
+        name="+git"
+        template="../templates/gitlisting.pt"/>
+    <browser:page
+        for="lp.code.browser.gitlisting.IGitRepositoryBatchNavigator"
+        name="+gitrepository-listing"
+        template="../templates/gitrepository-listing.pt"
         permission="zope.Public"/>
 
     <browser:menus
@@ -812,7 +1007,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         layer="lp.code.publisher.CodeLayer"
-        name="+branches"/>
+        name="+code"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -843,7 +1038,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         layer="lp.code.publisher.CodeLayer"
-        name="+branches" />
+        name="+code" />
 
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1004,7 +1199,7 @@
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
             name="+cancel"
             template="../../app/templates/generic-edit.pt"
-            permission="launchpad.Admin"/>
+            permission="launchpad.Edit"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"
@@ -1019,6 +1214,18 @@
 
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-recipe"
+            template="../templates/sourcepackagerecipe-new.pt"/>
+        <browser:page
+            for="lp.code.interfaces.gitrepository.IGitRepository"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-recipe"
+            template="../templates/sourcepackagerecipe-new.pt"/>
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
             permission="launchpad.AnyPerson"
             name="+new-recipe"
@@ -1043,6 +1250,18 @@
             name="+recipes"
             template="../templates/sourcepackagerecipe-listing.pt"/>
         <browser:page
+            for="lp.code.interfaces.gitrepository.IGitRepository"
+            class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
+            permission="zope.Public"
+            name="+recipes"
+            template="../templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
+            class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
+            permission="zope.Public"
+            name="+recipes"
+            template="../templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
             for="lp.registry.interfaces.product.IProduct"
             class="lp.code.browser.sourcepackagerecipelisting.ProductRecipeListingView"
             permission="zope.Public"
@@ -1060,47 +1279,6 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBreadcrumb"
             permission="zope.Public"/>
-
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branchmergequeuelisting.PersonMergeQueueListingView"
-            permission="zope.Public"
-            name="+merge-queues"
-            template="../templates/branchmergequeue-listing.pt"/>
-
-        <browser:page
-            for="*"
-            name="+bmq-macros"
-            permission="zope.Public"
-            template="../templates/branchmergequeue-macros.pt"
-            class="lp.app.browser.launchpad.Macro"/>
-
-
-    <browser:url
-        for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
-        attribute_to_parent="owner"
-        path_expression="string:+merge-queues/${name}"
-        rootsite="code" />
-
-    <browser:menus
-        classes="BranchMergeQueueContextMenu"
-        module="lp.code.browser.branchmergequeue"/>
-
-        <browser:defaultView
-            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
-            name="+index" />
-        <browser:page
-            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
-            class="lp.code.browser.branchmergequeue.BranchMergeQueueView"
-            name="+index"
-            template="../templates/branchmergequeue-index.pt"
-            permission="zope.Public" />
-        <browser:page
-            for="lp.code.interfaces.branch.IBranch"
-            class="lp.code.browser.branchmergequeue.BranchMergeQueueAddView"
-            name="+create-queue"
-            template="../../app/templates/generic-edit.pt"
-            permission="launchpad.Edit" />
 
     </facet>
 

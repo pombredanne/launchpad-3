@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistroSeries."""
@@ -91,6 +91,7 @@ from lp.services.fields import (
     UniqueField,
     )
 from lp.services.webservice.apihelpers import patch_plain_parameter_type
+from lp.soyuz.enums import IndexCompressionType
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -185,10 +186,12 @@ class IDistroSeriesPublic(
             title=_("Name"), required=True,
             description=_("The name of this series."),
             constraint=name_validator))
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_("Display name"), required=True,
-            description=_("The series displayname.")))
+            description=_("The series displayname.")),
+        exported_as="displayname")
+    displayname = Attribute("Display name (deprecated)")
     fullseriesname = exported(
         TextLine(
             title=_("Series full name"), required=False,
@@ -265,8 +268,8 @@ class IDistroSeriesPublic(
             required=False, vocabulary='ValidPersonOrTeam', schema=IPerson))
     changeslist = exported(
         TextLine(
-            title=_("E-mail changes to"), required=True,
-            description=_("The mailing list or other e-mail address that "
+            title=_("Email changes to"), required=True,
+            description=_("The mailing list or other email address that "
                           "Launchpad should notify about new uploads."),
             constraint=email_validator))
     sourcecount = Attribute("Source Packages Counter")
@@ -375,6 +378,28 @@ class IDistroSeriesPublic(
                 file reduces the bandwidth footprint of enabling multiarch
                 on clients, which requires downloading Packages files for
                 multiple architectures.""")))
+
+    index_compressors = exported(List(
+        value_type=Choice(vocabulary=IndexCompressionType),
+        title=_("Compression types to use for published index files"),
+        required=True,
+        description=_("""
+            A list of compression types to use for published index files
+            (Packages, Sources, etc.).""")))
+
+    publish_by_hash = exported(Bool(
+        title=_("Publish by-hash directories"), required=True,
+        description=_("""
+            Publish archive index files in by-hash directories so that apt
+            can retrieve them based on their hash, avoiding race conditions
+            between InRelease and other files during mirror updates.""")))
+
+    advertise_by_hash = exported(Bool(
+        title=_("Advertise by-hash directories"), required=True,
+        description=_("""
+            Advertise by-hash directories with a flag in the Release file so
+            that apt uses them by default.  Only effective if
+            publish_by_hash is also set.""")))
 
     inherit_overrides_from_parents = Bool(
         title=_("Inherit overrides from parents"),
@@ -765,8 +790,7 @@ class IDistroSeriesPublic(
         :return: A new `PackageUpload`.
         """
 
-    def newArch(architecturetag, processor, official, owner,
-                supports_virtualized=False, enabled=True):
+    def newArch(architecturetag, processor, official, owner, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def getPOFileContributorsByLanguage(language):

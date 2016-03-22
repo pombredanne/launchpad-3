@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,6 +17,8 @@ __all__ = [
     'get_where_for_reference',
     'IsDistinctFrom',
     'NullCount',
+    'NullsFirst',
+    'NullsLast',
     'rank_by_fti',
     'TryAdvisoryLock',
     'Unnest',
@@ -37,6 +39,7 @@ from storm.expr import (
     NamedFunc,
     Or,
     SQL,
+    SuffixExpr,
     TABLE,
     )
 from storm.info import (
@@ -47,13 +50,14 @@ from storm.info import (
 
 class BulkUpdate(Expr):
     # Perform a bulk table update using literal values.
-    __slots__ = ("map", "where", "table", "values")
+    __slots__ = ("map", "where", "table", "values", "primary_columns")
 
-    def __init__(self, map, table, values, where=Undef):
+    def __init__(self, map, table, values, where=Undef, primary_columns=Undef):
         self.map = map
         self.where = where
         self.table = table
         self.values = values
+        self.primary_columns = primary_columns
 
 
 @compile.when(BulkUpdate)
@@ -210,6 +214,18 @@ class IsDistinctFrom(CompoundOper):
     """True iff the left side is distinct from the right side."""
     __slots__ = ()
     oper = " IS DISTINCT FROM "
+
+
+class NullsFirst(SuffixExpr):
+    """Order null values before non-null values."""
+    __slots__ = ()
+    suffix = "NULLS FIRST"
+
+
+class NullsLast(SuffixExpr):
+    """Order null values after non-null values."""
+    __slots__ = ()
+    suffix = "NULLS LAST"
 
 
 def get_where_for_reference(reference, other):

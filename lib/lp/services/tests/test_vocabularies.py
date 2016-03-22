@@ -9,7 +9,6 @@ __all__ = []
 from zope.component import getUtilitiesFor
 from zope.proxy import isProxy
 from zope.schema.interfaces import IVocabularyFactory
-from zope.security._proxy import _Proxy
 
 from lp.testing import TestCase
 from lp.testing.layers import FunctionalLayer

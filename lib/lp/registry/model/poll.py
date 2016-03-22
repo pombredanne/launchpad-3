@@ -27,7 +27,7 @@ from sqlobject import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.poll import (
@@ -53,10 +53,9 @@ from lp.services.database.sqlbase import (
 from lp.services.tokens import create_token
 
 
+@implementer(IPoll)
 class Poll(SQLBase):
     """See IPoll."""
-
-    implements(IPoll)
     _table = 'Poll'
     sortingColumns = ['title', 'id']
     _defaultOrder = sortingColumns
@@ -272,10 +271,9 @@ class Poll(SQLBase):
         return pairwise_matrix
 
 
+@implementer(IPollSet)
 class PollSet:
     """See IPollSet."""
-
-    implements(IPollSet)
 
     def new(self, team, name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
@@ -320,10 +318,9 @@ class PollSet:
             return default
 
 
+@implementer(IPollOption)
 class PollOption(SQLBase):
     """See IPollOption."""
-
-    implements(IPollOption)
     _table = 'PollOption'
     _defaultOrder = ['title', 'id']
 
@@ -336,10 +333,9 @@ class PollOption(SQLBase):
     active = BoolCol(notNull=True, default=False)
 
 
+@implementer(IPollOptionSet)
 class PollOptionSet:
     """See IPollOptionSet."""
-
-    implements(IPollOptionSet)
 
     def new(self, poll, name, title, active=True):
         """See IPollOptionSet."""
@@ -362,10 +358,9 @@ class PollOptionSet:
             return default
 
 
+@implementer(IVoteCast)
 class VoteCast(SQLBase):
     """See IVoteCast."""
-
-    implements(IVoteCast)
     _table = 'VoteCast'
     _defaultOrder = 'id'
 
@@ -376,20 +371,18 @@ class VoteCast(SQLBase):
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
 
+@implementer(IVoteCastSet)
 class VoteCastSet:
     """See IVoteCastSet."""
-
-    implements(IVoteCastSet)
 
     def new(self, poll, person):
         """See IVoteCastSet."""
         return VoteCast(poll=poll, person=person)
 
 
+@implementer(IVote)
 class Vote(SQLBase):
     """See IVote."""
-
-    implements(IVote)
     _table = 'Vote'
     _defaultOrder = ['preference', 'id']
 
@@ -406,10 +399,9 @@ class Vote(SQLBase):
     token = StringCol(dbName='token', notNull=True, unique=True)
 
 
+@implementer(IVoteSet)
 class VoteSet:
     """See IVoteSet."""
-
-    implements(IVoteSet)
 
     def new(self, poll, option, preference, token, person):
         """See IVoteSet."""

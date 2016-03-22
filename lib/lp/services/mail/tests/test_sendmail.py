@@ -5,10 +5,10 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 import email.header
-from email.Message import Message
+from email.message import Message
 import unittest
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.sendmail.interfaces import IMailDelivery
 
 from lp.services.encoding import is_ascii_only
@@ -275,7 +275,7 @@ class TestMailController(TestCase):
         self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject)
 
     def test_sendmail_with_email_header(self):
-        """Check the timeline is ok even if there is an email.Header.
+        """Check the timeline is ok even if there is an email.header.Header.
 
         See https://bugs.launchpad.net/launchpad/+bug/885972
         """
@@ -303,9 +303,8 @@ class TestMailController(TestCase):
         self.assertIsInstance(a0.detail, basestring)
 
 
+@implementer(IMailDelivery)
 class RecordingMailer(object):
-
-    implements(IMailDelivery)
 
     def send(self, from_addr, to_addr, raw_message):
         self.from_addr = from_addr

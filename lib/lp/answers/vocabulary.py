@@ -12,12 +12,11 @@ __all__ = [
 
 from sqlobject import OR
 from storm.expr import And
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.model.product import Product
 from lp.registry.vocabularies import (
@@ -31,9 +30,9 @@ from lp.services.webapp.vocabulary import (
     )
 
 
+@implementer(IHugeVocabulary)
 class FAQVocabulary(FilteredVocabularyBase):
     """Vocabulary containing all the FAQs in an `IFAQTarget`."""
-    implements(IHugeVocabulary)
 
     displayname = 'Select a FAQ'
     step_title = 'Search'
@@ -97,6 +96,7 @@ class UsesAnswersProductVocabulary(ProductVocabulary):
             And(Product.official_answers == True))
         return super(UsesAnswersProductVocabulary, self).search(
             query, vocab_filter)
+
 
 class UsesAnswersDistributionVocabulary(DistributionVocabulary):
     """Distributions that use Launchpad to track questions.

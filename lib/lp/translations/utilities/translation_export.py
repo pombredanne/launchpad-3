@@ -15,7 +15,7 @@ from StringIO import StringIO
 import tempfile
 
 from zope.component import subscribers
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.translations.interfaces.translationexporter import (
@@ -28,9 +28,9 @@ from lp.translations.interfaces.translationfileformat import (
     )
 
 
+@implementer(IExportedTranslationFile)
 class ExportedTranslationFile:
     """See `IExportedTranslationFile`."""
-    implements(IExportedTranslationFile)
 
     def __init__(self, content_file):
         self._content_file = content_file
@@ -56,9 +56,9 @@ class ExportedTranslationFile:
         self._content_file.close()
 
 
+@implementer(ITranslationExporter)
 class TranslationExporter:
     """See `ITranslationExporter`."""
-    implements(ITranslationExporter)
 
     def getExportersForSupportedFileFormat(self, file_format):
         """See `ITranslationExporter`."""

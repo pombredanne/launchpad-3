@@ -10,7 +10,7 @@ from storm.locals import (
     Int,
     Reference,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
@@ -21,10 +21,9 @@ from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
 
 
+@implementer(IBugSubscription)
 class BugSubscription(StormBase):
     """A relationship between a person and a bug."""
-
-    implements(IBugSubscription)
 
     __storm_table__ = 'BugSubscription'
 

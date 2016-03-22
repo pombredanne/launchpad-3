@@ -46,7 +46,7 @@ The schema can be an interface implemented by your content object, or
 an interface specifically tailored for data entry.  Below is an
 example schema:
 
-  >>> from zope.interface import Interface, implements
+  >>> from zope.interface import Interface, implementer
   >>> from zope.schema import TextLine
 
   >>> class IFormTest(Interface):
@@ -54,8 +54,8 @@ example schema:
   ...     displayname = TextLine(title=u"Title")
   ...     password = TextLine(title=u"Password")
 
-  >>> class FormTest:
-  ...     implements(IFormTest)
+  >>> @implementer(IFormTest)
+  ... class FormTest:
   ...     name = 'fred'
   ...     displayname = 'Fred'
   ...     password = 'password'

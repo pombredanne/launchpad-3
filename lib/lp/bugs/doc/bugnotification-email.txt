@@ -246,7 +246,7 @@ logins to a user that is explicitly subscribed to this bug):
     ** Information type changed from Public to Private Security
     -----------------------------
 
-Now we set the bug back to public and check if the e-mail sent changed as well.
+Now we set the bug back to public and check if the email sent changed as well.
 
     >>> changed = edited_bug.transitionToInformationType(
     ...     InformationType.PUBLIC, getUtility(ILaunchBag).user)
@@ -387,7 +387,7 @@ Adding an attachment will generate a notification that looks as follows:
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment added: "A screenshot of the problem"
-       http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/screenshot.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/screenshot.png
     -----------------------------
 
 Removing an attachment generates a notification, too.
@@ -402,7 +402,7 @@ Removing an attachment generates a notification, too.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment removed: "A screenshot of the problem"
-       http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/screenshot.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/screenshot.png
     -----------------------------
 
 Adding an attachment and marking it as a patch generates a different
@@ -421,7 +421,7 @@ notification.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Patch added: "A new icon for the application"
-       http://bugs.launchpad.dev/bugs/.../+attachment/2/+files/new-icon.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/new-icon.png
     -----------------------------
 
 Removing a patch also generates a different notification.
@@ -436,7 +436,7 @@ Removing a patch also generates a different notification.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Patch removed: "A new icon for the application"
-       http://bugs.launchpad.dev/bugs/.../+attachment/2/+files/new-icon.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/.../+files/new-icon.png
     -----------------------------
 
 
@@ -533,20 +533,21 @@ the bug so that they are not calculated for every recipient.
     X-Launchpad-Bug-Reporter: Sample Person (name12)
     X-Launchpad-Bug-Modifier: Ford Prefect (person-name...)
 
-The build() method of a builder accepts a number of parameters and
-returns an instance of email.MIMEText. The most basic invocation of this
-method requires a from address, a to address, a body, a subject and a
-sending date for the mail.
+The build() method of a builder accepts a number of parameters and returns
+an instance of email.mime.text.MIMEText. The most basic invocation of this
+method requires a from address, a to person, a body, a subject and a sending
+date for the mail.
 
     >>> from datetime import datetime
     >>> import pytz
 
     >>> from_address = get_bugmail_from_address(lp_janitor, bug_four)
+    >>> to_person = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> sending_date = pytz.timezone('Europe/Prague').localize(
     ...     datetime(2008, 5, 20, 11, 5, 47))
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
+    ...     from_address, to_person,
     ...     "A test body.", "A test subject.", sending_date)
 
 The fields of the generated notification email will be set according to
@@ -572,7 +573,7 @@ The <builder>.build() method also accepts parameters for rationale,
 references and message_id.
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
+    ...     from_address, to_person,
     ...     "A test body.", "A test subject.", sending_date,
     ...     rationale='Because-I-said-so',
     ...     references=['<12345@launchpad.net>'],
@@ -583,6 +584,12 @@ parameter.
 
     >>> print notification_email['X-Launchpad-Message-Rationale']
     Because-I-said-so
+
+The X-Launchpad-Message-For header is set from the to_person (since this
+notification is not for a team).
+
+    >>> print notification_email['X-Launchpad-Message-For']
+    name16
 
 The references parameter sets the References header of the email.
 
@@ -598,7 +605,7 @@ will be auto-generated if it is not supplied.
 The message subject will always have [Bug <bug_id>] prepended to it.
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
+    ...     from_address, to_person,
     ...     "A test body.", "Yet another message", sending_date)
 
     >>> print notification_email['Subject']
@@ -608,8 +615,7 @@ If the subject passed is None the email subject will be set to [Bug
 <bug_id>].
 
     >>> notification_email = bug_four_notification_builder.build(
-    ...     from_address, 'foo.bar@canonical.com',
-    ...     "A test body.", None, sending_date)
+    ...     from_address, to_person, "A test body.", None, sending_date)
 
     >>> print notification_email['Subject']
     [Bug 4]

@@ -41,6 +41,7 @@ For "devel" additional attributes are available.
     ...     "/~cprov/+archive/ubuntu/ppa", api_version='devel').jsonBody()
     >>> pprint_entry(cprov_archive_devel)
     authorized_size: 1024
+    build_debug_symbols: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ubuntu/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
@@ -49,7 +50,10 @@ For "devel" additional attributes are available.
     external_dependencies: None
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    permit_obsolete_series_uploads: False
     private: False
+    processors_collection_link: u'http://.../~cprov/+archive/ubuntu/ppa/processors'
+    publish_debug_symbols: False
     reference: u'~cprov/ubuntu/ppa'
     relative_build_score: 0
     require_virtualized: True
@@ -76,7 +80,10 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
     ABCDEF0123456789ABCDDCBA0000111112345678
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> removeSecurityProxy(cprov.archive).signing_key = a_key
+    >>> removeSecurityProxy(cprov.archive).signing_key_fingerprint = (
+    ...     a_key.fingerprint)
+    >>> removeSecurityProxy(cprov.archive).signing_key_owner = (
+    ...     a_key.owner)
     >>> print cprov.archive.signing_key_fingerprint
     ABCDEF0123456789ABCDDCBA0000111112345678
 
@@ -1099,7 +1106,7 @@ Non-virtualized archives
 
 
 Modifying the require_virtualized flag through the API is not allowed except
-for admins and commercial admins.
+for admins, commercial admins, and PPA admins.
 
     >>> import simplejson
     >>> def modify_archive(service, archive):
@@ -1140,7 +1147,7 @@ describes the maximum size, in MiB, allowed for the archive.
     1024
 
 Modifying the authorized_size attribute through the API is not allowed except
-for admins and commercial admins.
+for admins, commercial admins, and PPA admins.
 
     >>> mark_archive['authorized_size'] = 4096
     >>> response = modify_archive(admin_webservice, mark_archive)
@@ -1326,14 +1333,32 @@ Modifying privacy
 ~~~~~~~~~~~~~~~~~
 
 Modifying the privacy flag through the API is not allowed except for
-admins and commercial admins.
+admins, commercial admins, and PPA admins.
 
-    >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
-    >>> mark_archive['private'] = True
-    >>> print modify_archive(user_webservice, mark_archive)
+    >>> login('foo.bar@canonical.com')
+    >>> pubpriv_archive_db = factory.makeArchive(
+    ...     owner=cprov, distribution=ubuntu_db, name="pubpriv")
+    >>> logout()
+    >>> pubpriv_archive = webservice.get(
+    ...     "/~cprov/+archive/ubuntu/pubpriv").jsonBody()
+    >>> pubpriv_archive['private'] = True
+    >>> print modify_archive(user_webservice, pubpriv_archive)
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'private', 'launchpad.Admin')
+
+    >>> login('foo.bar@canonical.com')
+    >>> ppa_admin = factory.makePerson(member_of=[
+    ...     getUtility(IPersonSet).getByName('launchpad-ppa-admins')])
+    >>> logout()
+    >>> ppa_admin_webservice = webservice_for_person(
+    ...     ppa_admin, permission=OAuthPermission.WRITE_PRIVATE)
+    >>> print modify_archive(ppa_admin_webservice, pubpriv_archive)
+    HTTP/1.1 209 Content Returned
+    ...
+    >>> webservice.get(
+    ...     "/~cprov/+archive/ubuntu/pubpriv").jsonBody()['private']
+    True
 
 
 Copying private file to public archives

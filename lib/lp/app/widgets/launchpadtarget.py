@@ -19,7 +19,7 @@ from zope.formlib.widget import (
     InputWidget,
     renderElement,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 
 from lp.app.errors import (
@@ -40,10 +40,9 @@ from lp.services.webapp.interfaces import (
     )
 
 
+@implementer(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     """Widget for selecting a product, distribution or package target."""
-
-    implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 
     template = ViewPageTemplateFile('templates/launchpad-target.pt')
     default_option = "package"
@@ -51,7 +50,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getDistributionVocabulary(self):
         return 'Distribution'
-    
+
     def getProductVocabulary(self):
         return 'Product'
 

@@ -24,9 +24,9 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
     InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
@@ -34,6 +34,7 @@ from lp.registry.browser.product import (
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     TeamMembershipPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.product import (
     IProductSet,
@@ -43,6 +44,7 @@ from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing import (
     BrowserTestCase,
     login_celebrity,
@@ -105,12 +107,12 @@ class TestProductConfiguration(BrowserTestCase):
 
     def test_configure_answers_skips_launchpad_for_proprietary(self):
         # Proprietary projects forbid LAUNCHPAD for answers.
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            product = self.factory.makeProduct(information_type=info_type)
-            with person_logged_in(None):
-                browser = self.getViewBrowser(product, '+configure-answers',
-                    user=removeSecurityProxy(product).owner)
-            self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(product, '+configure-answers',
+                user=removeSecurityProxy(product).owner)
+        self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
 
 
 def make_product_form(person=None, action=1, proprietary=False):
@@ -125,9 +127,8 @@ def make_product_form(person=None, action=1, proprietary=False):
         return {
             'field.actions.continue': 'Continue',
             'field.__visited_steps__': ProjectAddStepOne.step_name,
-            'field.displayname': 'Fnord',
+            'field.display_name': 'Fnord',
             'field.name': 'fnord',
-            'field.title': 'fnord',
             'field.summary': 'fnord summary',
             }
     else:
@@ -135,9 +136,8 @@ def make_product_form(person=None, action=1, proprietary=False):
             'field.actions.continue': 'Continue',
             'field.__visited_steps__': '%s|%s' % (
                 ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
-            'field.displayname': 'Fnord',
+            'field.display_name': 'Fnord',
             'field.name': 'fnord',
-            'field.title': 'fnord',
             'field.summary': 'fnord summary',
             'field.disclaim_maintainer': 'off',
             }
@@ -204,13 +204,13 @@ class TestProductAddView(TestCaseWithFactory):
         disclaim_widget = view.view.widgets['disclaim_maintainer']
         self.assertEqual('subordinate', disclaim_widget.cssClass)
         self.assertEqual(
-            ['displayname', 'name', 'title', 'summary', 'description',
+            ['display_name', 'name', 'summary', 'description',
              'homepageurl', 'information_type', 'licenses', 'license_info',
              'driver', 'bug_supervisor', 'owner',
              '__visited_steps__'],
             view.view.field_names)
         self.assertEqual(
-            ['displayname', 'name', 'title', 'summary', 'description',
+            ['display_name', 'name', 'summary', 'description',
              'homepageurl', 'information_type', 'licenses', 'driver',
              'bug_supervisor', 'owner', 'disclaim_maintainer',
              'source_package_name', 'distroseries', '__visited_steps__',
@@ -294,6 +294,99 @@ class TestProductView(BrowserTestCase):
         super(TestProductView, self).setUp()
         self.product = self.factory.makeProduct(name='fnord')
 
+    def test_golang_meta_renders_git(self):
+        # ensure golang meta import path is rendered if project has
+        # git default vcs.
+        # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        repo = self.factory.makeGitRepository()
+        view = create_initialized_view(repo.target, '+index')
+        with person_logged_in(repo.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=repo.target, repository=repo)
+            repo.target.vcs = VCSType.GIT
+
+        golang_import = '{base}/{product_name} git {repo_url}'.format(
+            base=config.vhost.mainsite.hostname,
+            product_name=repo.target.name,
+            repo_url=repo.git_https_url
+            )
+        self.assertEqual(golang_import, view.golang_import_spec)
+        meta_tag = Tag('go-import-meta', 'meta',
+                       attrs={'name': 'go-import', 'content': golang_import})
+        browser = self.getViewBrowser(repo.target, '+index',
+                                      user=repo.target.owner)
+        self.assertThat(browser.contents, HTMLContains(meta_tag))
+
+    def test_golang_meta_renders_bzr(self):
+        # ensure golang meta import path is rendered if project has
+        # bzr default vcs.
+        # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        owner = self.factory.makePerson(name='zardoz')
+        product = self.factory.makeProduct(name='wapcaplet')
+        branch = self.factory.makeBranch(product=product, name='a-branch',
+                                         owner=owner)
+        view = create_initialized_view(branch.product, '+index')
+
+        with person_logged_in(branch.product.owner):
+            branch.product.development_focus.branch = branch
+            branch.product.vcs = VCSType.BZR
+
+        golang_import = (
+            "{hostname}/wapcaplet bzr "
+            "{root_url}~zardoz/wapcaplet/a-branch").format(
+                hostname=config.vhost.mainsite.hostname,
+                root_url=allvhosts.configs['mainsite'].rooturl)
+        self.assertEqual(golang_import, view.golang_import_spec)
+        meta_tag = Tag('go-import-meta', 'meta',
+                       attrs={'name': 'go-import', 'content': golang_import})
+        browser = self.getViewBrowser(branch.product, '+index',
+                                      user=branch.owner)
+        self.assertThat(browser.contents, HTMLContains(meta_tag))
+
+    def test_golang_meta_no_default_vcs(self):
+        # ensure golang meta import path is not rendered without
+        # a default vcs
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch.product, '+index')
+        self.assertIsNone(view.golang_import_spec)
+
+    def test_golang_meta_no_default_branch(self):
+        # ensure golang meta import path is not rendered without
+        # a product development_focus.
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch.product, '+index')
+        with person_logged_in(branch.product.owner):
+            branch.product.vcs = VCSType.BZR
+        self.assertIsNone(view.golang_import_spec)
+
+    def test_golang_meta_no_default_repo(self):
+        # ensure golang meta import path is not rendered without
+        # a default repo.
+        repo = self.factory.makeGitRepository()
+        view = create_initialized_view(repo.target, '+index')
+        with person_logged_in(repo.target.owner):
+            repo.target.vcs = VCSType.GIT
+        self.assertIsNone(view.golang_import_spec)
+
+    def test_golang_meta_no_permissions(self):
+        # ensure golang meta import path is not rendered if user does
+        # not have launchpad.View permissions on branch.
+        simple_user = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.PRIVATESECURITY)
+
+        with person_logged_in(owner):
+            product.development_focus.branch = branch
+            product.vcs = VCSType.BZR
+            view = create_initialized_view(product, '+index')
+            self.assertIsNot(None, view.golang_import_spec)
+
+        with person_logged_in(simple_user):
+            view = create_initialized_view(product, '+index')
+            self.assertIsNone(view.golang_import_spec)
+
     def test_show_programming_languages_without_languages(self):
         # show_programming_languages is false when there are no programming
         # languages set.
@@ -308,6 +401,12 @@ class TestProductView(BrowserTestCase):
             self.product.programminglang = 'C++'
         view = create_initialized_view(self.product, '+index')
         self.assertTrue(view.show_programming_languages)
+
+    def test_show_inferred_vcs(self):
+        with person_logged_in(self.product.owner):
+            self.product.vcs = VCSType.GIT
+        browser = self.getViewBrowser(self.product, '+index')
+        self.assertIn(VCSType.GIT.title, browser.contents)
 
     def test_show_license_info_without_other_license(self):
         # show_license_info is false when one of the "other" licences is
@@ -466,7 +565,7 @@ class TestProductEditView(BrowserTestCase):
         return {
             'field.actions.change': 'Change',
             'field.name': product.name,
-            'field.displayname': product.displayname,
+            'field.display_name': product.display_name,
             'field.title': product.title,
             'field.summary': product.summary,
             'field.information_type': information_type,
@@ -475,14 +574,14 @@ class TestProductEditView(BrowserTestCase):
         }
 
     def test_limited_information_types_allowed(self):
-        """Products can only be PUBLIC_PROPRIETARY_INFORMATION_TYPES"""
+        """Products can only be PILLAR_INFORMATION_TYPES"""
         product = self.factory.makeProduct()
         login_person(product.owner)
         view = create_initialized_view(
             product, '+edit', principal=product.owner)
         vocabulary = view.widgets['information_type'].vocabulary
         info_types = [t.name for t in vocabulary]
-        expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
+        expected = ['PUBLIC', 'PROPRIETARY']
         self.assertEqual(expected, info_types)
 
     def test_change_information_type_proprietary(self):
@@ -642,12 +741,12 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
             product = self.factory.makeProduct()
             for _ in range(5):
                 self.factory.makeProductReleaseFile(product=product)
-        IStore(Product).reset()
+        IStore(Product).invalidate()
         with StormStatementRecorder() as recorder:
             view = create_initialized_view(
                 self.product_set, '+review-licenses', principal=self.user)
             view.render()
-            self.assertThat(recorder, HasQueryCount(LessThan(25)))
+            self.assertThat(recorder, HasQueryCount(LessThan(26)))
 
 
 class TestProductRdfView(BrowserTestCase):
@@ -676,52 +775,46 @@ class TestProductSet(BrowserTestCase):
             information_type=InformationType.PUBLIC, owner=owner)
         proprietary = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY, owner=owner)
-        embargoed = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED, owner=owner)
-        return owner, public, proprietary, embargoed
+        return owner, public, proprietary
 
     def test_proprietary_products_skipped(self):
         # Ignore proprietary products for anonymous users
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         browser = self.getViewBrowser(getUtility(IProductSet))
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertNotIn(proprietary.name, browser.contents)
-            self.assertNotIn(embargoed.name, browser.contents)
 
     def test_proprietary_products_shown_to_owners(self):
         # Owners will see their proprietary products listed
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         browser = self.getViewBrowser(getUtility(IProductSet), user=owner)
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
-            self.assertIn(embargoed.name, browser.contents)
 
     def test_proprietary_products_skipped_all(self):
         # Ignore proprietary products for anonymous users
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         product_set = getUtility(IProductSet)
         browser = self.getViewBrowser(product_set, view_name='+all')
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertNotIn(proprietary.name, browser.contents)
-            self.assertNotIn(embargoed.name, browser.contents)
 
     def test_proprietary_products_shown_to_owners_all(self):
         # Owners will see their proprietary products listed
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         browser = self.getViewBrowser(getUtility(IProductSet), user=owner,
                 view_name='+all')
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
-            self.assertIn(embargoed.name, browser.contents)
 
     def test_review_exclude_proprietary_for_expert(self):
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         expert = self.factory.makeRegistryExpert()
         browser = self.getViewBrowser(getUtility(IProductSet),
@@ -730,10 +823,9 @@ class TestProductSet(BrowserTestCase):
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertNotIn(proprietary.name, browser.contents)
-            self.assertNotIn(embargoed.name, browser.contents)
 
     def test_review_include_proprietary_for_admin(self):
-        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        owner, public, proprietary = self.makeAllInformationTypes()
         transaction.commit()
         admin = self.factory.makeAdministrator()
         browser = self.getViewBrowser(getUtility(IProductSet),
@@ -742,4 +834,3 @@ class TestProductSet(BrowserTestCase):
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
-            self.assertIn(embargoed.name, browser.contents)

@@ -13,7 +13,7 @@ from zope.component import (
     provideUtility,
     )
 from zope.formlib.interfaces import ConversionError
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 
 from lp import _
@@ -38,10 +38,9 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import LaunchpadFunctionalLayer
 
 
+@implementer(ILaunchBag)
 class DummyLaunchBag:
     """Dummy LaunchBag that we can easily control in our tests."""
-
-    implements(ILaunchBag)
 
     def __init__(self, user=None, product=None):
         self.user = user

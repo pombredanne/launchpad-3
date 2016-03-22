@@ -150,9 +150,9 @@ class TestBuildViews(TestCaseWithFactory):
         with person_logged_in(self.admin):
             self.assertTrue(build.can_be_retried)
         nopriv = getUtility(IPersonSet).getByName("no-priv")
-        # Mr no privileges can't retry
+        # A person with no privileges can't retry
         self.assertBuildViewRetryIsExpected(build, nopriv, False)
-        # But he can as a member of launchpad-buildd-admins
+        # But they can as a member of launchpad-buildd-admins
         buildd_admins = getUtility(IPersonSet).getByName(
             "launchpad-buildd-admins")
         with person_logged_in(self.admin):

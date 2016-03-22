@@ -1,11 +1,11 @@
 = Ubuntu PPAs =
 
-The Ubuntu Linux page contains a link to get to the Personal Package Archives.
+The Ubuntu page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux
+    Hierarchy: Ubuntu
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu
     * Code - http://code.launchpad.dev/ubuntu
@@ -13,7 +13,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     * Blueprints - http://blueprints.launchpad.dev/ubuntu
     * Translations - http://translations.launchpad.dev/ubuntu
     * Answers - http://answers.launchpad.dev/ubuntu
-    Main heading: Personal Package Archives for Ubuntu Linux
+    Main heading: Personal Package Archives for Ubuntu
 
 
 == Distribution PPA main page ==
@@ -55,15 +55,31 @@ further tests.
 
 == Other distributions PPAs ==
 
-Currently we only support PPAs for ubuntu, although the '+ppas' page
-is presented for other distribution.
+Currently we only support PPAs for a limited number of distros. The
+'+ppas' page isn't linked for other distribution.
+
+    >>> anon_browser.open("http://launchpad.dev/debian")
+    >>> anon_browser.getLink("Personal Package Archives")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+If we enable Debian PPA support, the links appear and the pages present
+coherent data for a distribution with no PPAs.
+
+    >>> from zope.component import getUtility
+    >>> import transaction
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.supports_ppas = True
+    >>> logout()
+    >>> transaction.commit()
 
     >>> anon_browser.open("http://launchpad.dev/debian")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
     Personal Package Archives : Debian
-
-Those pages present coherent data for a distribution with no PPAs.
 
 PPA supported architectures reflects what we have in sampledata.
 
@@ -185,11 +201,6 @@ No data matches the non-existent search string "bustmybuffers".
 
 We have to update the archive caches, in order to be able to search
 them properly, see doc/package-archive.txt.
-
-    >>> from zope.component import getUtility
-
-    >>> import transaction
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -545,8 +556,10 @@ for more information).
 
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> a_key = getUtility(IGPGKeySet).get(1)
-    >>> removeSecurityProxy(no_priv.archive).signing_key = a_key
+    >>> a_key = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
+    >>> removeSecurityProxy(no_priv.archive).signing_key_fingerprint = (
+    ...     a_key.fingerprint)
+    >>> removeSecurityProxy(no_priv.archive).signing_key_owner = a_key.owner
     >>> logout()
 
 Now that 'No privileges' PPA has a signing key, a text with the key
@@ -567,7 +580,7 @@ keyserver.
 
     >>> print anon_browser.getLink(
     ...     '1024D/12345678').url
-    http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&op=index
+    http://keyserver.ubuntu.com:11371/pks/lookup?fingerprint=on&op=index&search=0xABCDEF0123456789ABCDDCBA0000111112345678
 
 Using software from a PPA can be hard for novices. We offer two
 links to the same help pop-up that describes how to add a PPA and
@@ -607,20 +620,6 @@ And the sources.list entries point to the right distribution release:
     deb-src http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
 
 
-== Other Distribution PPAs ==
-
-PPAs are targeted to a specific distribution and currently we only
-allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
-
-    >>> anon_browser.open("http://launchpad.dev/ubuntutest")
-    >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> print anon_browser.title
-    Personal Package Archives : ubuntutest
-
-    >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
-    0
-
-
 == Populating 'Most Active' section ==
 
 Since the sampledata publications are not recent enough to appear in
@@ -640,7 +639,7 @@ can check how it looks.
     >>> transaction.commit()
 
 Publications created, now when any user access the 'Ubuntu PPAs' page,
-he will be able to see 4 PPAs where we've added publications listed in
+they will be able to see 4 PPAs where we've added publications listed in
 the 'Most active' section.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")

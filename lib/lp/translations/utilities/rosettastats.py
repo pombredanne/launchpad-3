@@ -1,16 +1,16 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.rosettastats import IRosettaStats
+
 
 # XXX: Carlos Perello Marin 2005-04-14 bug=396:
 # This code should be change to be an adaptor.
 
+@implementer(IRosettaStats)
 class RosettaStats(object):
-
-    implements(IRosettaStats)
 
     def testStatistics(self):
         """See IRosettaStats."""

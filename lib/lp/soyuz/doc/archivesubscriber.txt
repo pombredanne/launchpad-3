@@ -138,7 +138,7 @@ entry is created:
     ----------------------------------------
 
 If the description of the P3A is changed to None, and a new user subscribed
-the e-mail does not contain the description.
+the email does not contain the description.
 
     >>> cprov_private_ppa.description = None
     >>> unused = cprov_private_ppa.newSubscription(fredsmith, cprov)

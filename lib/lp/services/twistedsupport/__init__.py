@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'cancel_on_timeout',
-    'defer_to_thread',
     'extract_result',
     'gatherResults',
     'no_traceback_failures',
@@ -27,19 +26,8 @@ import sys
 from twisted.internet import (
     defer,
     reactor as default_reactor,
-    threads,
     )
 from twisted.python.failure import Failure
-
-
-def defer_to_thread(function):
-    """Run in a thread and return a Deferred that fires when done."""
-
-    @functools.wraps(function)
-    def decorated(*args, **kwargs):
-        return threads.deferToThread(function, *args, **kwargs)
-
-    return decorated
 
 
 def gatherResults(deferredList):

@@ -15,7 +15,7 @@ from soupmatchers import (
 from testtools.matchers import Not
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -82,7 +82,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
              '+source/python-super-package'),
             ('field.__visited_steps__', 'projectaddstep1'),
             ('field.actions.continue', 'Continue'),
-            ('field.displayname', 'Python Super Package'),
+            ('field.display_name', 'Python Super Package'),
             ('field.distroseries', 'zoobuntu/walrus'),
             ('field.name', 'python-super-package'),
             ('field.source_package_name', 'python-super-package'),
@@ -90,7 +90,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             ]
         self.assertEqual(expected_params, params)
 
-    def test_get_register_upstream_url_displayname(self):
+    def test_get_register_upstream_url_display_name(self):
         # The sourcepackagename 'python-super-package' is split on
         # the hyphens, and each word is capitalized.
         distroseries = self.factory.makeDistroSeries(
@@ -101,7 +101,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             sourcepackagename='python-super-package')
         url = get_register_upstream_url(source_package)
         self.assertInQueryString(
-            url, 'field.displayname', 'Python Super Package')
+            url, 'field.display_name', 'Python Super Package')
 
     def test_get_register_upstream_url_summary(self):
         source_package = self._makePublishedSourcePackage()
@@ -117,16 +117,19 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             def __init__(self, **kw):
                 self.__dict__.update(kw)
 
+        @implementer(ISourcePackage)
         class FakeSourcePackage(Faker):
             # Interface necessary for canonical_url() call in
             # get_register_upstream_url().
-            implements(ISourcePackage)
+            pass
 
+        @implementer(IDistroSeries)
         class FakeDistroSeries(Faker):
-            implements(IDistroSeries)
+            pass
 
+        @implementer(IDistribution)
         class FakeDistribution(Faker):
-            implements(IDistribution)
+            pass
 
         releases = Faker(sample_binary_packages=[
             Faker(summary='summary for foo'),

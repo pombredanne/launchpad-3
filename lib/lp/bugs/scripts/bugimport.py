@@ -327,7 +327,7 @@ class BugImporter:
             if cve is None:
                 raise BugXMLSyntaxError('Unknown CVE: %s' %
                                         get_text(cvenode))
-            bug.linkCVE(cve, self.bug_importer)
+            bug.linkCVE(cve, self.bug_importer, check_permissions=False)
 
         tags = []
         for tagnode in get_all(bugnode, 'tags/tag'):

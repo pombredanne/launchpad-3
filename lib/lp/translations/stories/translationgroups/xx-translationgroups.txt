@@ -149,7 +149,7 @@ But Sample Person is now listed as its owner:
     ...     print t.renderContents()
     Sample Person
 
-That means that Sample Person is allowed to administer "his" group.
+That means that Sample Person is allowed to administer "their" group.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
@@ -263,7 +263,7 @@ Watson's account, he's one of the owners of Ubuntu.
 Other users cannot access this page, nor see the menu link to it.
 
     >>> user_browser.open(anon_browser.url)
-    >>> user_browser.getLink('Configure translations').click()
+    >>> user_browser.getLink('Configure Translations').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -315,7 +315,7 @@ First make sure it uses Launchpad for translations.
     ...     auth='Basic test@canonical.com:test')
     >>> netapplet_owner_browser.open('http://launchpad.dev/netapplet')
     >>> netapplet_owner_browser.getLink(
-    ...   'Configure translations').click()
+    ...   'Translations', index=1).click()
     >>> print netapplet_owner_browser.title
     Configure translations : Translations : NetApplet
 
@@ -341,7 +341,7 @@ Now let's make sure we can see the page to let us change translation
 group and permissions.
 
     >>> translations_page_url = netapplet_owner_browser.url
-    >>> netapplet_owner_browser.getLink('Configure translations').click()
+    >>> netapplet_owner_browser.getLink('Configure Translations').click()
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
@@ -356,11 +356,11 @@ group and permissions.
     ...     'Translation group').displayValue
     ['(nothing selected)']
 
-Ordinary users cannot see the "Configure translations" link or the page it
+Ordinary users cannot see the "Configure Translations" link or the page it
 leads to.
 
     >>> user_browser.open(translations_page_url)
-    >>> user_browser.getLink('Configure translations').click()
+    >>> user_browser.getLink('Configure Translations').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -741,7 +741,7 @@ So now No Privileges Person is the Welsh translator for the PolyGlot
 translation group, and they are the translation group for Ubuntu, which
 uses the Closed translation mode. This means that No Privileges Person
 should be able to translate any strings in Ubuntu to Welsh. In other
-languages, he will not be able to add or change translations.
+languages, they will not be able to add or change translations.
 
 Let's see if No Privileges Person can see the translated strings in
 Southern Sotho. We expect them to see a readonly form:
@@ -819,7 +819,7 @@ translation group, and they are the translation group for Ubuntu, which
 we are going to set as having Restricted translations. This means that
 No Privileges Person should be able to translate any strings in Ubuntu
 to Welsh. In other languages, No Privileges Person should be warned that
-he is not a designated translator.
+they are not a designated translator.
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
 
@@ -1001,7 +1001,7 @@ has been added.
 First, we verify that netapplet is using Launchpad Translations.
 
     >>> admin_browser.open('http://launchpad.dev/netapplet')
-    >>> admin_browser.getLink('Configure translations').click()
+    >>> admin_browser.getLink('Translations', index=1).click()
     >>> print_radio_button_field(admin_browser.contents, "translations_usage")
     ( ) Unknown
     (*) Launchpad
@@ -1015,7 +1015,7 @@ We set the 'Structured' permission and select the 'Just a testing team'
 as the translation group for the netapplet product...
 
     >>> admin_browser.getLink('Translations').click()
-    >>> admin_browser.getLink('Configure translations').click()
+    >>> admin_browser.getLink('Configure Translations').click()
     >>> admin_browser.getControl('Translation group').displayOptions
     ['(nothing selected)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
@@ -1216,32 +1216,16 @@ Let's add a new suggestion as a person without privileges.
 
 Now, we can see the added suggestion + others from the sample data.
 
-    >>> print find_tag_by_id(
-    ...     browser.contents, "msgset_134_es_suggestion_703_0")
+    >>> for suggestion in find_main_content(browser.contents).findAll(
+    ...         True, {'id': re.compile('msgset_134_es_suggestion_.*')}):
+    ...     print suggestion
     <...<samp> </samp>new suggestion...
-
-    >>> print find_tag_by_id(
-    ...     browser.contents, "msgset_134_es_suggestion_703_0_origin")
     <...
     ...Suggested by...No Privileges Person...
-
-These are old suggestions:
-
-    >>> print find_tag_by_id(
-    ...     browser.contents, "msgset_134_es_suggestion_698_0")
     <...<samp> </samp>Srprise! (non-editor)...
-
-    >>> print find_tag_by_id(
-    ...     browser.contents, "msgset_134_es_suggestion_698_0_origin")
     <...
     ...Suggested by...Valentina Commissari...2005-06-06...
-
-    >>> print find_tag_by_id(
-    ...     browser.contents, "msgset_134_es_suggestion_696_0")
     <...<samp> </samp>bang bang in evo hoary...
-
-    >>> print find_tag_by_id(
-    ...     browser.contents, "msgset_134_es_suggestion_696_0_origin")
     <...
     ...Suggested in...evolution-2.2 in Evolution trunk...
     ...Mark Shuttleworth</a>...2005-06-06...

@@ -43,7 +43,7 @@ from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -98,10 +98,7 @@ from lp.translations.model.potmsgset import (
     POTMsgSet,
     )
 from lp.translations.model.translationimportqueue import collect_import_info
-from lp.translations.model.translationmessage import (
-    make_plurals_sql_fragment,
-    TranslationMessage,
-    )
+from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
@@ -110,17 +107,6 @@ from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
-
-
-def compose_sql_translationmessage_has_translations(tm_sql_identifier):
-    """Compose SQL for "`TranslationMessage` is nonempty.".
-
-    :param tm_sql_identifier: The SQL identifier for the
-        `TranslationMessage` in the query that's to be tested.
-    """
-    return "COALESCE(%s) IS NOT NULL" % ", ".join([
-        "%s.msgstr%d" % (tm_sql_identifier, form)
-        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
 
 
 class POFileMixIn(RosettaStats):
@@ -327,8 +313,8 @@ class POFileMixIn(RosettaStats):
             self.lasttranslator = translator
 
 
+@implementer(IPOFile)
 class POFile(SQLBase, POFileMixIn):
-    implements(IPOFile)
 
     _table = 'POFile'
 
@@ -528,25 +514,6 @@ class POFile(SQLBase, POFileMixIn):
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
                 "unknown credits type '%s'." % credits_type.title)
-
-    def _getClausesForPOFileMessages(self, current=True):
-        """Get TranslationMessages for the POFile via TranslationTemplateItem.
-
-        Call-site will have to have appropriate clauseTables.
-        """
-        # When all the code that uses this method is moved to Storm,
-        # we can replace it with _getStormClausesForPOFileMessages
-        # and then remove it.
-        clauses = [
-            'TranslationTemplateItem.potemplate = %s' % sqlvalues(
-                self.potemplate),
-            ('TranslationTemplateItem.potmsgset'
-             ' = TranslationMessage.potmsgset'),
-            'TranslationMessage.language = %s' % sqlvalues(self.language)]
-        if current:
-            clauses.append('TranslationTemplateItem.sequence > 0')
-
-        return clauses
 
     def _getStormClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.
@@ -1270,11 +1237,11 @@ class POFile(SQLBase, POFileMixIn):
         return self._selectRows(where="is_current_upstream IS FALSE")
 
 
+@implementer(IPOFile)
 class DummyPOFile(POFileMixIn):
     """Represents a POFile where we do not yet actually HAVE a POFile for
     that language for this template.
     """
-    implements(IPOFile)
 
     def __init__(self, potemplate, language, owner=None):
         self.id = None
@@ -1415,10 +1382,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def createMessageSetFromMessageSet(self, potmsgset):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def getStatistics(self):
         """See `IPOFile`."""
         return (0, 0, 0, )
@@ -1440,10 +1403,6 @@ class DummyPOFile(POFileMixIn):
         # Any path will do for a DummyPOFile.
         self.path = path
 
-    def getNextToImport(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
         """See `IPOFile`."""
         raise NotImplementedError
@@ -1461,8 +1420,8 @@ class DummyPOFile(POFileMixIn):
         return []
 
 
+@implementer(IPOFileSet)
 class POFileSet:
-    implements(IPOFileSet)
 
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
@@ -1626,9 +1585,9 @@ class POFileSet:
         return results
 
 
+@implementer(ITranslationFileData)
 class POFileToTranslationFileDataAdapter:
     """Adapter from `IPOFile` to `ITranslationFileData`."""
-    implements(ITranslationFileData)
 
     def __init__(self, pofile):
         self._pofile = pofile
@@ -1717,7 +1676,7 @@ class POFileToTranslationFileDataAdapter:
             email = self._pofile.lasttranslator.safe_email_or_blank
             if not email:
                 # We are supposed to have always a valid email address, but
-                # with removed accounts or people not wanting to show his
+                # with removed accounts or people not wanting to show their
                 # email that's not true anymore so we just set it to 'Unknown'
                 # to note we don't know it.
                 email = 'Unknown'

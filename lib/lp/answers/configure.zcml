@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -116,7 +116,7 @@
       attributes="requestInfo giveAnswer expireQuestion addComment
                   addCommentWithoutNotify linkFAQ subscribe unsubscribe
                   setCommentVisibility"
-      set_attributes="title description datedue target language"
+      set_attributes="datedue target language"
       />
     <require
       permission="launchpad.Append"
@@ -124,12 +124,16 @@
       set_attributes="assignee"
       />
     <require
+      permission="launchpad.Edit"
+      set_attributes="title description"
+      />
+    <require
       permission="launchpad.Admin"
       attributes="setStatus"
       set_attributes="priority whiteboard"
       />
     <!-- IBugLinkTarget -->
-    <allow attributes="bugs bug_links" />
+    <allow attributes="bugs" />
     <require
       permission="launchpad.AnyPerson"
       attributes="linkBug unlinkBug"
@@ -212,11 +216,15 @@
 
   <class class=".model.faq.FAQ">
     <!-- IFAQ-->
-    <allow interface=".interfaces.faq.IFAQ" />
+    <allow interface=".interfaces.faq.IFAQPublic" />
     <require
         permission="launchpad.Edit"
         set_attributes="title keywords content
                         last_updated_by date_last_updated"
+        />
+    <require
+        permission="launchpad.Delete"
+        attributes="destroySelf"
         />
   </class>
 

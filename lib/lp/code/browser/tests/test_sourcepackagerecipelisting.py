@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 
-from testtools.matchers import Equals
-
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -22,11 +20,9 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_project_branch_recipe_listing(self):
-        # We can see recipes for the project. We need to create two, since
-        # only one will redirect to that recipe.
+        # We can see recipes for the project.
         branch = self.factory.makeProductBranch()
         recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
-        self.factory.makeSourcePackageRecipe(branches=[branch])
         text = self.getMainText(recipe.base_branch, '+recipes')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*
@@ -34,11 +30,9 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
             spr-name.*        Person-name""", text)
 
     def test_package_branch_recipe_listing(self):
-        # We can see recipes for the package. We need to create two, since
-        # only one will redirect to that recipe.
+        # We can see recipes for the package.
         branch = self.factory.makePackageBranch()
         recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
-        self.factory.makeSourcePackageRecipe(branches=[branch])
         text = self.getMainText(recipe.base_branch, '+recipes')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*
@@ -57,7 +51,7 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(branch, "+recipes"), create_recipe, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_project_query_count(self):
         # The number of queries required to render the list of all recipes
@@ -73,7 +67,7 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(project, "+recipes"), create_recipe, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_person_query_count(self):
         # The number of queries required to render the list of all recipes
@@ -89,4 +83,4 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(person, "+recipes"), create_recipe, 5)
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

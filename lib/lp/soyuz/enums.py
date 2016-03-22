@@ -1,10 +1,11 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/soyuz modules."""
 
 __metaclass__ = type
 __all__ = [
+    'ArchiveJobType',
     'ArchivePermissionType',
     'ArchivePurpose',
     'ArchiveStatus',
@@ -12,6 +13,7 @@ __all__ = [
     'archive_suffixes',
     'BinaryPackageFileType',
     'BinaryPackageFormat',
+    'IndexCompressionType',
     'PackageCopyPolicy',
     'PackageCopyStatus',
     'PackageDiffStatus',
@@ -37,6 +39,19 @@ re_closes = re.compile(
     r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
 re_lp_closes = re.compile(r"lp:\s+\#\d+(?:,\s*\#\d+)*", re.I)
 re_bug_numbers = re.compile(r"\#?\s?(\d+)")
+
+
+class ArchiveJobType(DBEnumeratedType):
+    """Values that IArchiveJob.job_type can take."""
+
+    # 0 was once used for COPY_ARCHIVE.
+
+    PACKAGE_UPLOAD_NOTIFICATION = DBItem(1, """
+        Package upload notification
+
+        Send notifications about a package upload being accepted, rejected,
+        or held for approval.
+        """)
 
 
 class ArchivePermissionType(DBEnumeratedType):
@@ -556,3 +571,16 @@ class SourcePackageFormat(DBEnumeratedType):
         Specifies a native package, with a single tar.*. Supports gzip,
         bzip2, and xz compression.
         """)
+
+
+class IndexCompressionType(DBEnumeratedType):
+    """Index compression type
+
+    Archive indexes such as Packages and Sources may be compressed using any
+    of several different schemes.
+    """
+
+    UNCOMPRESSED = DBItem(0, "uncompressed")
+    GZIP = DBItem(1, "gzip")
+    BZIP2 = DBItem(2, "bzip2")
+    XZ = DBItem(3, "xz")

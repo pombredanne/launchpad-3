@@ -32,7 +32,7 @@ from storm.properties import (
 from storm.references import Reference
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import (
     InformationType,
@@ -88,8 +88,8 @@ def reconcile_access_for_artifact(artifact, information_type, pillars,
     apasource.delete(existing_links - wanted_links)
 
 
+@implementer(IAccessArtifact)
 class AccessArtifact(StormBase):
-    implements(IAccessArtifact)
 
     __storm_table__ = 'AccessArtifact'
 
@@ -184,8 +184,8 @@ class AccessArtifact(StormBase):
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
+@implementer(IAccessPolicy)
 class AccessPolicy(StormBase):
-    implements(IAccessPolicy)
 
     __storm_table__ = 'AccessPolicy'
 
@@ -279,8 +279,8 @@ class AccessPolicy(StormBase):
         cls.find(pillars_and_types).remove()
 
 
+@implementer(IAccessPolicyArtifact)
 class AccessPolicyArtifact(StormBase):
-    implements(IAccessPolicyArtifact)
 
     __storm_table__ = 'AccessPolicyArtifact'
     __storm_primary__ = 'abstract_artifact_id', 'policy_id'
@@ -332,8 +332,8 @@ class AccessPolicyArtifact(StormBase):
         cls.findByArtifact(artifacts).remove()
 
 
+@implementer(IAccessArtifactGrant)
 class AccessArtifactGrant(StormBase):
-    implements(IAccessArtifactGrant)
 
     __storm_table__ = 'AccessArtifactGrant'
     __storm_primary__ = 'abstract_artifact_id', 'grantee_id'
@@ -384,8 +384,8 @@ class AccessArtifactGrant(StormBase):
         cls.findByArtifact(artifacts, grantees).remove()
 
 
+@implementer(IAccessPolicyGrant)
 class AccessPolicyGrant(StormBase):
-    implements(IAccessPolicyGrant)
 
     __storm_table__ = 'AccessPolicyGrant'
     __storm_primary__ = 'policy_id', 'grantee_id'

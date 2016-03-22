@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher script class."""
@@ -13,6 +13,7 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.publishing import (
+    cannot_modify_suite,
     getPublisher,
     GLOBAL_PUBLISHER_LOCK,
     )
@@ -66,8 +67,25 @@ class PublishDistro(PublisherScript):
             help="Make index generation (e.g. apt-ftparchive) careful.")
 
         self.parser.add_option(
+            "--careful-release", action="store_true", dest="careful_release",
+            default=False,
+            help="Make the Release file generation process careful.")
+
+        self.parser.add_option(
+            "--include-non-pending", action="store_true",
+            dest="include_non_pending", default=False,
+            help=(
+                "When publishing PPAs, also include those that do not have "
+                "pending publications."))
+
+        self.parser.add_option(
             '-s', '--suite', metavar='SUITE', dest='suite', action='append',
             type='string', default=[], help='The suite to publish')
+
+        self.parser.add_option(
+            "--dirty-suite", metavar="SUITE", dest="dirty_suites",
+            action="append", default=[],
+            help="Consider this suite dirty regardless of publications.")
 
         self.parser.add_option(
             "-R", "--distsroot", dest="distsroot", metavar="SUFFIX",
@@ -147,6 +165,7 @@ class PublishDistro(PublisherScript):
             ('Publishing', self.options.careful_publishing),
             ('Domination', self.options.careful_domination),
             (indexing_engine, self.options.careful_apt),
+            ('Release', self.options.careful_release),
             ]
         for name, option in log_items:
             self.logOption(name, self.describeCare(option))
@@ -174,19 +193,21 @@ class PublishDistro(PublisherScript):
         """Find the named `suite` in the selected `Distribution`.
 
         :param suite: The suite name to look for.
-        :return: A tuple of distroseries name and pocket.
+        :return: A tuple of distroseries and pocket.
         """
         try:
             series, pocket = distribution.getDistroSeriesAndPocket(suite)
         except NotFoundError as e:
             raise OptionValueError(e)
-        return series.name, pocket
+        return series, pocket
 
     def findAllowedSuites(self, distribution):
         """Find the selected suite(s)."""
-        return set([
-            self.findSuite(distribution, suite)
-            for suite in self.options.suite])
+        suites = set()
+        for suite in self.options.suite:
+            series, pocket = self.findSuite(distribution, suite)
+            suites.add((series.name, pocket))
+        return suites
 
     def getCopyArchives(self, distribution):
         """Find copy archives for the selected distribution."""
@@ -199,7 +220,8 @@ class PublishDistro(PublisherScript):
 
     def getPPAs(self, distribution):
         """Find private package archives for the selected distribution."""
-        if self.isCareful(self.options.careful_publishing):
+        if (self.isCareful(self.options.careful_publishing) or
+                self.options.include_non_pending):
             return distribution.getAllPPAs()
         else:
             return distribution.getPendingPublicationPPAs()
@@ -266,7 +288,8 @@ class PublishDistro(PublisherScript):
             publisher.C_writeIndexes(careful_indexing)
         self.txn.commit()
 
-        publisher.D_writeReleaseFiles(careful_indexing)
+        publisher.D_writeReleaseFiles(self.isCareful(
+            self.options.careful_apt or self.options.careful_release))
         # The caller will commit this last step.
 
         publisher.createSeriesAliases()
@@ -284,7 +307,13 @@ class PublishDistro(PublisherScript):
 
                 if archive.status == ArchiveStatus.DELETING:
                     work_done = self.deleteArchive(archive, publisher)
-                elif archive.publish:
+                elif archive.can_be_published:
+                    for suite in self.options.dirty_suites:
+                        distroseries, pocket = self.findSuite(
+                            distribution, suite)
+                        if not cannot_modify_suite(
+                                archive, distroseries, pocket):
+                            publisher.markPocketDirty(distroseries, pocket)
                     self.publishArchive(archive, publisher)
                     work_done = True
                 else:

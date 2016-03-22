@@ -44,7 +44,7 @@ class ProcessUpload(LaunchpadCronScript):
         self.parser.add_option(
             "-J", "--just-leaf", action="store", dest="leafname",
             default=None, help="A specific leaf dir to limit to.",
-            metavar = "LEAF")
+            metavar="LEAF")
 
         self.parser.add_option(
             "-C", "--context", action="store", dest="context",
@@ -77,6 +77,7 @@ class ProcessUpload(LaunchpadCronScript):
                 "%s is not a directory" % self.options.base_fsroot)
 
         self.logger.debug("Initializing connection.")
+
         def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
@@ -87,6 +88,7 @@ class ProcessUpload(LaunchpadCronScript):
                 policy.pocket = build.pocket
                 policy.archive = build.archive
             return policy
+
         processor = UploadProcessor(self.options.base_fsroot,
             self.options.dryrun, self.options.nomails, self.options.builds,
             self.options.keep, getPolicy, self.txn, self.logger)
@@ -101,5 +103,3 @@ class ProcessUpload(LaunchpadCronScript):
         of each other.
         """
         return "process-upload-%s.lock" % self.options.context
-
-

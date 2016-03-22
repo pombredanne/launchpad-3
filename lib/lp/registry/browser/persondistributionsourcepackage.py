@@ -12,10 +12,11 @@ __all__ = [
 
 
 from zope.component import queryAdapter
-from zope.interface import implements
+from zope.interface import implementer
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.errors import NotFoundError
+from lp.code.browser.vcslisting import PersonTargetDefaultVCSNavigationMixin
 from lp.registry.interfaces.persondistributionsourcepackage import (
     IPersonDistributionSourcePackage,
     )
@@ -28,7 +29,8 @@ from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 
 
-class PersonDistributionSourcePackageNavigation(Navigation):
+class PersonDistributionSourcePackageNavigation(
+        PersonTargetDefaultVCSNavigationMixin, Navigation):
     usedfor = IPersonDistributionSourcePackage
 
     def traverse(self, branch_name):
@@ -39,9 +41,9 @@ class PersonDistributionSourcePackageNavigation(Navigation):
 
 # XXX cjwatson 2015-01-29: Do we need two breadcrumbs, one for the
 # distribution and one for the source package?
+@implementer(IMultiFacetedBreadcrumb)
 class PersonDistributionSourcePackageBreadcrumb(Breadcrumb):
     """Breadcrumb for an `IPersonDistributionSourcePackage`."""
-    implements(IMultiFacetedBreadcrumb)
 
     @property
     def text(self):

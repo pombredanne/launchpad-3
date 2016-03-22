@@ -1,10 +1,13 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from lp.app.enums import ServiceUsage
 from lp.code.enums import BranchType
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -192,11 +195,21 @@ class TestProductUsageEnums(TestCaseWithFactory, UsageEnumsMixin):
             self.target.codehosting_usage)
 
     def test_codehosting_hosted_branch(self):
-        # A branch on Launchpad is HOSTED.
+        # A branch on Launchpad has LAUNCHPAD usage.
         login_person(self.target.owner)
         self.target.development_focus.branch = self.factory.makeProductBranch(
             product=self.target,
             branch_type=BranchType.HOSTED)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.target.codehosting_usage)
+
+    def test_codehosting_default_git_repository(self):
+        # A default Git repository on Launchpad has LAUNCHPAD usage.
+        login_person(self.target.owner)
+        repository = self.factory.makeGitRepository(target=self.target)
+        getUtility(IGitRepositorySet).setDefaultRepository(
+            self.target, repository)
         self.assertEqual(
             ServiceUsage.LAUNCHPAD,
             self.target.codehosting_usage)

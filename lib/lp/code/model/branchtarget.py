@@ -13,7 +13,7 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.code.errors import NoLinkedBranch
@@ -55,8 +55,8 @@ class _BaseBranchTarget:
         return []
 
 
+@implementer(IBranchTarget)
 class PackageBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     def __init__(self, sourcepackage):
         self.sourcepackage = sourcepackage
@@ -113,12 +113,17 @@ class PackageBranchTarget(_BaseBranchTarget):
         return True
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return True
 
     @property
     def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def allow_recipe_name_from_target(self):
         """See `IBranchTarget`."""
         return True
 
@@ -188,8 +193,8 @@ class PackageBranchTarget(_BaseBranchTarget):
         return result
 
 
+@implementer(IBranchTarget)
 class PersonBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     name = u'+junk'
     default_stacked_on_branch = None
@@ -229,12 +234,17 @@ class PersonBranchTarget(_BaseBranchTarget):
         return False
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return False
 
     @property
     def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
+    def allow_recipe_name_from_target(self):
         """See `IBranchTarget`."""
         return False
 
@@ -262,8 +272,8 @@ class PersonBranchTarget(_BaseBranchTarget):
         branch.sourcepackagename = None
 
 
+@implementer(IBranchTarget)
 class ProductBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     def __init__(self, product):
         self.product = product
@@ -314,12 +324,17 @@ class ProductBranchTarget(_BaseBranchTarget):
         return True
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return True
 
     @property
     def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def allow_recipe_name_from_target(self):
         """See `IBranchTarget`."""
         return True
 

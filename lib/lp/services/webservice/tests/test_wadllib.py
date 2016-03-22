@@ -17,6 +17,7 @@ from lp.testing.systemdocs import LayeredDocFileSuite
 
 topdir = os.path.dirname(wadllib.__file__)
 
+
 def test_suite():
     suite = unittest.TestSuite()
 
@@ -24,7 +25,7 @@ def test_suite():
     packages = []
     for dirpath, dirnames, filenames in os.walk(topdir):
         if 'docs' in dirnames:
-            docsdir = os.path.join(dirpath, 'docs')[len(topdir)+1:]
+            docsdir = os.path.join(dirpath, 'docs')[len(topdir) + 1:]
             packages.append(docsdir)
     doctest_files = {}
     for docsdir in packages:

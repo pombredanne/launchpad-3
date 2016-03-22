@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes that implement SourcePackage items."""
@@ -20,8 +20,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -184,6 +184,9 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return self.distribution.owner
 
 
+@implementer(
+    IBugSummaryDimension, ISourcePackage, IHasBuildRecords, ISeriesBugTarget)
+@provider(ISourcePackageFactory)
 class SourcePackage(BugTargetBase, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     HasBranchesMixin, HasMergeProposalsMixin,
@@ -194,12 +197,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
     represent the concept of a source package in a distro series, with links
     to the relevant database objects.
     """
-
-    implements(
-        IBugSummaryDimension, ISourcePackage, IHasBuildRecords,
-        ISeriesBugTarget)
-
-    classProvides(ISourcePackageFactory)
 
     def __init__(self, sourcepackagename, distroseries):
         # We store the ID of the sourcepackagename and distroseries
@@ -289,10 +286,12 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             self.sourcepackagename.name])
 
     @property
-    def displayname(self):
+    def display_name(self):
         return "%s in %s %s" % (
             self.sourcepackagename.name, self.distribution.displayname,
             self.distroseries.displayname)
+
+    displayname = display_name
 
     @property
     def bugtargetdisplayname(self):
@@ -423,9 +422,11 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             thedict[pocket] = []
         # add all the sourcepackagereleases in the right place
         for spph in result:
-            thedict[spph.pocket].append(
-                spph.distroseries.distribution.getSourcePackageRelease(
-                    spph.sourcepackagerelease))
+            thedict[spph.pocket].append({
+                'spr': spph.distroseries.distribution.getSourcePackageRelease(
+                    spph.sourcepackagerelease),
+                'component_name': spph.component_name,
+                })
         return thedict
 
     @property

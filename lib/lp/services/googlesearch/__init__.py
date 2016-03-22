@@ -21,7 +21,7 @@ import xml.etree.cElementTree as ET
 
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.googlesearch.interfaces import (
@@ -36,12 +36,12 @@ from lp.services.timeout import TimeoutError
 from lp.services.webapp import urlparse
 
 
+@implementer(ISearchResult)
 class PageMatch:
     """See `ISearchResult`.
 
     A search result that represents a web page.
     """
-    implements(ISearchResult)
 
     @property
     def url_rewrite_exceptions(self):
@@ -124,12 +124,12 @@ class PageMatch:
         return self._strip_trailing_slash(url)
 
 
+@implementer(ISearchResults)
 class PageMatches:
     """See `ISearchResults`.
 
     A collection of PageMatches.
     """
-    implements(ISearchResults)
 
     def __init__(self, matches, start, total):
         """initialize a PageMatches.
@@ -156,12 +156,12 @@ class PageMatches:
         return iter(self._matches)
 
 
+@implementer(ISearchService)
 class GoogleSearchService:
     """See `ISearchService`.
 
     A search service that search Google for launchpad.net pages.
     """
-    implements(ISearchService)
 
     _default_values = {
         'client': 'google-csbe',

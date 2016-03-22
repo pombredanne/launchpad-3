@@ -42,7 +42,7 @@ class TestBuildStartEstimation(TestCaseWithFactory):
         self.bob = getUtility(IBuilderSet).getByName(BOB_THE_BUILDER_NAME)
         das = self.factory.makeDistroArchSeries(
             distroseries=self.distroseries, processor=self.bob.processor,
-            architecturetag='i386', supports_virtualized=True)
+            architecturetag='i386')
         with person_logged_in(self.admin):
             self.distroseries.nominatedarchindep = das
         self.publisher.addFakeChroots(distroseries=self.distroseries)
@@ -85,4 +85,3 @@ class TestBuildStartEstimation(TestCaseWithFactory):
             build1.archive.disable()
         estimate = self.job_start_estimate(build2)
         self.assertEquals(5, (estimate - now).seconds)
-

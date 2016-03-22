@@ -1,0 +1,158 @@
+<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+    <facet facet="overview">
+        <browser:url
+            for="lp.snappy.interfaces.snap.ISnap"
+            path_expression="string:+snap/${name}"
+            attribute_to_parent="owner" />
+        <browser:defaultView
+            for="lp.snappy.interfaces.snap.ISnap"
+            name="+index" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapView"
+            permission="launchpad.View"
+            name="+index"
+            template="../templates/snap-index.pt" />
+        <browser:menus
+            module="lp.snappy.browser.snap"
+            classes="
+                SnapNavigationMenu
+                SnapContextMenu" />
+        <browser:navigation
+            module="lp.snappy.browser.snap"
+            classes="SnapNavigation" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapView"
+            permission="launchpad.View"
+            name="+portlet-privacy"
+            template="../templates/snap-portlet-privacy.pt"/>
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.snappy.browser.snap.SnapAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-snap"
+            template="../templates/snap-new.pt" />
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
+            class="lp.snappy.browser.snap.SnapAddView"
+            permission="launchpad.AnyPerson"
+            name="+new-snap"
+            template="../templates/snap-new.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapRequestBuildsView"
+            permission="launchpad.Edit"
+            name="+request-builds"
+            template="../templates/snap-request-builds.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapAdminView"
+            permission="launchpad.Admin"
+            name="+admin"
+            template="../../app/templates/generic-edit.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapEditView"
+            permission="launchpad.Edit"
+            name="+edit"
+            template="../templates/snap-edit.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapDeleteView"
+            permission="launchpad.Edit"
+            name="+delete"
+            template="../../app/templates/generic-edit.pt" />
+        <adapter
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
+            for="lp.snappy.interfaces.snap.ISnap"
+            factory="lp.snappy.browser.snap.SnapBreadcrumb"
+            permission="zope.Public" />
+        <browser:url
+            for="lp.snappy.interfaces.snap.ISnapSet"
+            path_expression="string:+snaps"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot" />
+        <browser:url
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            path_expression="string:+build/${id}"
+            attribute_to_parent="snap" />
+        <browser:menus
+            module="lp.snappy.browser.snapbuild"
+            classes="SnapBuildContextMenu" />
+        <browser:navigation
+            module="lp.snappy.browser.snapbuild"
+            classes="SnapBuildNavigation" />
+        <browser:defaultView
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            name="+index" />
+        <browser:page
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            class="lp.snappy.browser.snapbuild.SnapBuildView"
+            permission="launchpad.View"
+            name="+index"
+            template="../templates/snapbuild-index.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            class="lp.snappy.browser.snapbuild.SnapBuildCancelView"
+            permission="launchpad.Edit"
+            name="+cancel"
+            template="../../app/templates/generic-edit.pt" />
+        <browser:page
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            class="lp.snappy.browser.snapbuild.SnapBuildRescoreView"
+            permission="launchpad.Admin"
+            name="+rescore"
+            template="../../app/templates/generic-edit.pt" />
+        <adapter
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
+            for="lp.snappy.interfaces.snapbuild.ISnapBuild"
+            factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
+            permission="zope.Public" />
+
+        <browser:page
+            for="*"
+            class="lp.app.browser.launchpad.Macro"
+            permission="zope.Public"
+            name="+snap-macros"
+            template="../templates/snap-macros.pt" />
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.snappy.browser.snaplisting.BranchSnapListingView"
+            permission="launchpad.View"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.code.interfaces.gitrepository.IGitRepository"
+            class="lp.snappy.browser.snaplisting.GitSnapListingView"
+            permission="launchpad.View"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.code.interfaces.gitref.IGitRef"
+            class="lp.snappy.browser.snaplisting.GitSnapListingView"
+            permission="launchpad.View"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.snappy.browser.snaplisting.PersonSnapListingView"
+            permission="launchpad.View"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+        <browser:page
+            for="lp.registry.interfaces.product.IProduct"
+            class="lp.snappy.browser.snaplisting.ProjectSnapListingView"
+            permission="launchpad.View"
+            name="+snaps"
+            template="../templates/snap-listing.pt" />
+    </facet>
+</configure>

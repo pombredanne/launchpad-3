@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -26,8 +26,8 @@ from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import IArchiveSet
 
 
+@implementer(IHugeVocabulary)
 class BuildableDistroSeries(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
 
     _table = DistroSeries
 

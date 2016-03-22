@@ -29,13 +29,13 @@ __all__ = [
 
 
 from binascii import b2a_qp
-from email import Charset
-from email.Encoders import encode_base64
-from email.Header import Header
-from email.Message import Message
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
-from email.Utils import (
+from email import charset
+from email.encoders import encode_base64
+from email.header import Header
+from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import (
     formataddr,
     formatdate,
     getaddresses,
@@ -62,9 +62,9 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
 # our own custom charset definition to force quoted printable.
-del Charset.CHARSETS['utf-8']
-Charset.add_charset('utf-8', Charset.SHORTEST, Charset.QP, 'utf-8')
-Charset.add_alias('utf8', 'utf-8')
+del charset.CHARSETS['utf-8']
+charset.add_charset('utf-8', charset.SHORTEST, charset.QP, 'utf-8')
+charset.add_alias('utf8', 'utf-8')
 
 
 def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
@@ -142,7 +142,7 @@ def format_address(name, address):
         '"Foo \\[Baz\\] Bar" <foo.bar@canonical.com>'
 
     Really long names doesn't get folded, since we're not constructing
-    an e-mail header here.
+    an email header here.
 
         >>> formatted_address = format_address(
         ...     'a '*100, 'long.name@example.com')
@@ -333,7 +333,7 @@ def simple_sendmail_from_person(
 
 
 def get_addresses_from_header(email_header):
-    r"""Get the e-mail addresses specificed in an e-mail header.
+    r"""Get the email addresses specificed in an email header.
 
         >>> get_addresses_from_header('one@example.com')
         ['one@example.com']
@@ -356,7 +356,7 @@ def get_addresses_from_header(email_header):
 
 def validate_message(message):
     """Validate that the supplied message is suitable for sending."""
-    assert isinstance(message, Message), "Not an email.Message.Message"
+    assert isinstance(message, Message), "Not an email.message.Message"
     assert 'to' in message and bool(message['to']), "No To: header"
     assert 'from' in message and bool(message['from']), "No From: header"
     assert 'subject' in message and bool(message['subject']), (
@@ -364,7 +364,7 @@ def validate_message(message):
 
 
 def sendmail(message, to_addrs=None, bulk=True):
-    """Send an email.Message.Message
+    """Send an email.message.Message
 
     If you just need to send dumb ASCII or Unicode, simple_sendmail
     will be easier for you. Sending attachments or multipart messages

@@ -19,7 +19,7 @@ from storm.locals import (
     Unicode,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
@@ -29,9 +29,9 @@ from lp.soyuz.interfaces.archiveauthtoken import (
     )
 
 
+@implementer(IArchiveAuthToken)
 class ArchiveAuthToken(Storm):
     """See `IArchiveAuthToken`."""
-    implements(IArchiveAuthToken)
     __storm_table__ = 'ArchiveAuthToken'
 
     id = Int(primary=True)
@@ -59,13 +59,13 @@ class ArchiveAuthToken(Storm):
         """Return a custom archive url for basic authentication."""
         normal_url = URI(self.archive.archive_url)
         auth_url = normal_url.replace(
-            userinfo="%s:%s" %(self.person.name, self.token))
+            userinfo="%s:%s" % (self.person.name, self.token))
         return str(auth_url)
 
 
+@implementer(IArchiveAuthTokenSet)
 class ArchiveAuthTokenSet:
     """See `IArchiveAuthTokenSet`."""
-    implements(IArchiveAuthTokenSet)
     title = "Archive Tokens in Launchpad"
 
     def get(self, token_id):

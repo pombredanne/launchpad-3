@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions to copy translations from one distroseries to another."""
@@ -48,7 +48,7 @@ def omit_redundant_pofiles(from_table, to_table, batch_size, begin_id,
 
 
 def copy_active_translations(source, target, transaction, logger,
-                             sourcepackagenames=None):
+                             sourcepackagenames=None, skip_duplicates=False):
     """Populate target `DistroSeries` with source series' translations.
 
     The target must not already have any translations.
@@ -76,9 +76,14 @@ def copy_active_translations(source, target, transaction, logger,
     full_name = "%s_%s" % (target.distribution.name, target.name)
     copier = MultiTableCopy(full_name, translation_tables, logger=logger)
 
-    # Incremental copy of updates is no longer supported
-    assert not target.has_translation_templates, (
-        "The target series must not yet have any translation templates.")
+    # Incremental copy of updates is no longer supported.  skip_duplicates
+    # is not a real incremental copy, since it doesn't update any
+    # POTemplates/POFiles for sources that already have a template in the
+    # target, but it is useful when digging ourselves out of situations
+    # where a few templates already exist in the target.
+    if not skip_duplicates:
+        assert not target.has_translation_templates, (
+            "The target series must not yet have any translation templates.")
 
     logger.info(
         "Populating blank distroseries %s %s with translations from %s %s." %
@@ -116,6 +121,12 @@ def copy_active_translations(source, target, transaction, logger,
             where += (
                 ' AND sourcepackagename IN %s'
                 % quote([spn.id for spn in sourcepackagenames]))
+    if skip_duplicates:
+        where += ('''
+            AND sourcepackagename NOT IN (
+                SELECT sourcepackagename FROM potemplate
+                WHERE distroseries = %s)
+            ''' % quote(target))
     copier.extract('potemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,

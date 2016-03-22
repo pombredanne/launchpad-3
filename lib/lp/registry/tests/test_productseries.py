@@ -16,10 +16,7 @@ from zope.security.checker import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import (
-    InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
-    )
+from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.registry.enums import SharingPermission
@@ -74,15 +71,14 @@ class TestProductSeries(TestCaseWithFactory):
         # Autoimports are forbidden if products are proprietary/embargoed.
         series = self.factory.makeProductSeries()
         self.useContext(person_logged_in(series.product.owner))
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            series.product.information_type = info_type
-            for mode in TranslationsBranchImportMode.items:
-                if mode == TranslationsBranchImportMode.NO_IMPORT:
-                    continue
-                with ExpectedException(ProprietaryProduct,
-                        'Translations are disabled for proprietary'
-                        ' projects.'):
-                    series.translations_autoimport_mode = mode
+        series.product.information_type = InformationType.PROPRIETARY
+        for mode in TranslationsBranchImportMode.items:
+            if mode == TranslationsBranchImportMode.NO_IMPORT:
+                continue
+            with ExpectedException(ProprietaryProduct,
+                    'Translations are disabled for proprietary'
+                    ' projects.'):
+                series.translations_autoimport_mode = mode
 
 
 class ProductSeriesReleasesTestCase(TestCaseWithFactory):
@@ -198,17 +194,6 @@ class TestProductSeriesSetPackaging(TestCaseWithFactory):
         sp = self.makeSourcePackage()
         with ExpectedException(CannotPackageProprietaryProduct,
             'Only Public project series can be packaged, not Proprietary.'):
-            series.setPackaging(
-                sp.distroseries, sp.sourcepackagename, series.owner)
-
-    def test_refuses_EMBARGOED(self):
-        """Packaging cannot be created for EMBARGOED productseries"""
-        product = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED)
-        sp = self.makeSourcePackage()
-        series = self.factory.makeProductSeries(product=product)
-        with ExpectedException(CannotPackageProprietaryProduct,
-            'Only Public project series can be packaged, not Embargoed.'):
             series.setPackaging(
                 sp.distroseries, sp.sourcepackagename, series.owner)
 
@@ -643,8 +628,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             'getFirstEntryToImport', 'getLatestRelease', 'getPOTemplate',
             'getPackage', 'getPackagingInDistribution', 'getRelease',
             'getSharingPartner', 'getSpecification', 'getSubscription',
-            'getSubscriptions', 'getTemplatesAndLanguageCounts',
-            'getTemplatesCollection', 'getTimeline',
+            'getSubscriptions', 'getTemplatesCollection', 'getTimeline',
             'getTranslationImportQueueEntries',
             'getTranslationTemplateByName', 'getTranslationTemplateFormats',
             'getTranslationTemplates', 'getUbuntuTranslationFocusPackage',

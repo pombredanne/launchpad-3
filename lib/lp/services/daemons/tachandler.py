@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for TAC (Twisted Application Configuration) files."""
@@ -21,7 +21,10 @@ from txfixtures.tachandler import (
 
 import lp
 from lp.services.daemons import readyservice
-from lp.services.osutils import remove_if_exists
+from lp.services.osutils import (
+    override_environ,
+    remove_if_exists,
+    )
 
 
 twistd_script = os.path.abspath(os.path.join(
@@ -42,9 +45,10 @@ class TacTestSetup(TacTestFixture):
         # hard-to-diagnose race conditions. Delete the logfile to make sure
         # this does not happen.
         remove_if_exists(self.logfile)
-        TacTestFixture.setUp(self,
-            python_path=sys.executable,
-            twistd_script=twistd_script)
+        with override_environ(LP_DEBUG_SQL=None):
+            TacTestFixture.setUp(self,
+                python_path=sys.executable,
+                twistd_script=twistd_script)
 
     def _hasDaemonStarted(self):
         """Has the daemon started?

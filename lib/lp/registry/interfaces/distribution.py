@@ -52,6 +52,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import (
@@ -71,6 +72,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
+from lp.registry.enums import VCSType
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distroseries import DistroSeriesNameField
@@ -126,7 +128,7 @@ class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
 class IDistributionDriverRestricted(Interface):
     """IDistribution properties requiring launchpad.Driver permission."""
 
-    def newSeries(name, displayname, title, summary, description,
+    def newSeries(name, display_name, title, summary, description,
                   version, previous_series, registrant):
         """Creates a new distroseries."""
 
@@ -146,12 +148,12 @@ class IDistributionPublic(
             title=_("Name"),
             constraint=name_validator,
             description=_("The distro's name."), required=True))
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_("Display Name"),
             description=_("The displayable name of the distribution."),
-            required=True),
-        exported_as='display_name')
+            required=True))
+    displayname = Attribute("Display name (deprecated)")
     title = exported(
         Title(
             title=_("Title"),
@@ -374,6 +376,14 @@ class IDistributionPublic(
             "distribution."),
         constraint=name_validator, readonly=False, required=False))
 
+    vcs = exported(
+        Choice(
+            title=_("VCS"),
+            required=False,
+            vocabulary=VCSType,
+            description=_(
+                "Version control system for this distribution's code.")))
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
@@ -480,7 +490,7 @@ class IDistributionPublic(
     def getCountryMirror(country, mirror_type):
         """Return the country DNS mirror for a country and content type."""
 
-    def newMirror(owner, speed, country, content, displayname=None,
+    def newMirror(owner, speed, country, content, display_name=None,
                   description=None, http_base_url=None,
                   ftp_base_url=None, rsync_base_url=None, enabled=False,
                   official_candidate=False, whiteboard=None):
@@ -643,7 +653,7 @@ class IDistributionPublic(
 
 class IDistribution(
     IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
-    IQuestionTarget, IStructuralSubscriptionTarget):
+    IFAQTarget, IQuestionTarget, IStructuralSubscriptionTarget):
     """An operating system distribution.
 
     Launchpadlib example: retrieving the current version of a package in a
@@ -694,7 +704,7 @@ class IDistributionSet(Interface):
     def getByName(distroname):
         """Return the IDistribution with the given name or None."""
 
-    def new(name, displayname, title, description, summary, domainname,
+    def new(name, display_name, title, description, summary, domainname,
             members, owner, registrant, mugshot=None, logo=None, icon=None):
         """Create a new distribution."""
 

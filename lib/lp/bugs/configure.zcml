@@ -77,17 +77,14 @@
         for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
-    <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
-    <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.karma.cve_added"/>
+    <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+        handler="lp.bugs.subscribers.karma.branch_linked"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
@@ -527,17 +524,7 @@
         class="lp.bugs.model.bugbranch.BugBranch">
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranch"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
-                destroySelf"/>
     </class>
-
-    <!-- hierarchy -->
-
-    <subscriber
-        for="lp.bugs.interfaces.bugbranch.IBugBranch                                                lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.karma.bug_branch_created"/>
 
     <!-- BugBranchSet -->
 
@@ -552,14 +539,6 @@
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranchSet"/>
     </securedutility>
-
-    <!-- BugCve -->
-
-    <class
-        class="lp.bugs.model.cve.BugCve">
-        <allow
-            interface="lp.bugs.interfaces.bugcve.IBugCve"/>
-    </class>
 
         <!-- CVE -->
 
@@ -727,6 +706,7 @@
                 interface="lp.bugs.interfaces.bug.IBugView"
                 attributes="
                     linked_branches
+                    linked_bugbranches
                     getVisibleLinkedBranches"/>
             <require
                 permission="launchpad.Edit"
@@ -831,10 +811,10 @@
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_linked_to_bug"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_unlinked_from_bug"/>
     <subscriber
         for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"

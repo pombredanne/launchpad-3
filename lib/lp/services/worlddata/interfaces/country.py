@@ -102,4 +102,3 @@ class IContinent(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     code = TextLine(title=_("Continent's code"), required=True, readonly=True)
     name = TextLine(title=_("Continent's name"), required=True, readonly=True)
-

@@ -46,14 +46,6 @@ We need some setup for the upload handler.
 
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> from lp.archiveuploader.tests import datadir, getPolicy
-
-Since we landed correct security adapters for PackageUpload,
-we need to perform further actions logged in as an admins, which have
-launchpad.Edit on the records:
-
-    >>> from lp.testing import login
-    >>> login("foo.bar@canonical.com")
-
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
@@ -201,7 +193,7 @@ Check the behaviour of @cachedproperty  attributes:
     i386
 
     >>> qitem.sourcepackagerelease
-    <SourcePackageRelease at ...>
+    <SourcePackageRelease mozilla-firefox ...>
 
 
 Let's check the behaviour of @cachedproperty attributes in a custom upload:
@@ -317,12 +309,11 @@ Performing full acceptance:
 
 Move the ACCEPTED items back to NEW.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.soyuz.model.queue import PassthroughStatusValue
-    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.ACCEPTED)
+    >>> items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.ACCEPTED)
     >>> for item in items:
-    ...     removeSecurityProxy(item).status = PassthroughStatusValue(
-    ...         PackageUploadStatus.NEW)
+    ...     item.status = PassthroughStatusValue(PackageUploadStatus.NEW)
     ...     print item.displayname, item.status.name
     netapplet-1.0.0.tar.gz NEW
     netapplet-1.0.0.tar.gz NEW
@@ -339,8 +330,7 @@ don't raise any exception):
     >>> test_qitem.setUnapproved()
     >>> test_qitem.setRejected()
     >>> test_qitem.setDone()
-    >>> removeSecurityProxy(test_qitem).status = PassthroughStatusValue(
-    ...     PackageUploadStatus.NEW)
+    >>> test_qitem.status = PassthroughStatusValue(PackageUploadStatus.NEW)
 
 Check forbidden approval of not selected Section:
 
@@ -356,6 +346,7 @@ Override the mozilla-firefox component to fresh created 'hell' component.
 
 XXX cprov 20060118: remove proxy magic is required for BPR instances.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_bin = removeSecurityProxy(
     ...       item.builds[0].build.binarypackages[0])
     >>> naked_bin.component = getUtility(IComponentSet).new('hell')
@@ -416,7 +407,7 @@ The only available action will be rejection:
 Move the second item back to its original queue to perform the same
 test after the former accepted item was published (DONE queue)
 
-    >>> removeSecurityProxy(dup_two).status = PassthroughStatusValue(
+    >>> dup_two.status = PassthroughStatusValue(
     ...     PackageUploadStatus.UNAPPROVED)
     >>> dup_two.syncUpdate()
     >>> dup_two.status.name
@@ -458,58 +449,6 @@ normally accepted.
     >>> item.setAccepted()
     >>> print item.status.name
     ACCEPTED
-
-We will reject the just-accepted entry so it does not mess with the
-other tests.
-
-    >>> item.setRejected()
-
-Check how the security adapters work for PackageUpload:
-
-    >>> pub_qitem = getUtility(IPackageUploadSet)[1]
-
-UNAPPROVED queue items are expected to be private:
-
-    >>> priv_qitem = getUtility(IPackageUploadSet)[5]
-
-Anonymous can view all queue items, public and private ones.
-
-    >>> login(ANONYMOUS)
-
-    >>> pub_qitem.displayname
-    u'mozilla-firefox'
-
-    >>> priv_qitem.displayname
-    u'netapplet-1.0.0.tar.gz'
-
-A normal user can't act on both of them:
-
-    >>> login('no-priv@canonical.com')
-
-    >>> pub_qitem.setDone()
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
-
-    >>> priv_qitem.setDone()
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
-
-Only the members of distroseries drivers in question have
-launchpad.Edit on a packageupload record.
-
-    >>> login('foo.bar@canonical.com')
-
-    >>> pub_qitem.displayname
-    u'mozilla-firefox'
-
-    >>> priv_qitem.displayname
-    u'netapplet-1.0.0.tar.gz'
-
-    >>> pub_qitem.setDone()
-
-    >>> priv_qitem.setDone()
 
 Roll back modified data:
 
@@ -821,6 +760,20 @@ with fake changes files first so that emails can be generated.)
 Two emails are generated.  We won't look what is inside them here, that is
 well shown in nascentupload-announcements.txt.
 
+    >>> from lp.services.config import config
+    >>> from lp.services.job.runner import JobRunner
+    >>> from lp.soyuz.interfaces.archivejob import (
+    ...     IPackageUploadNotificationJobSource,
+    ...     )
+    >>> from lp.testing.dbuser import dbuser
+
+    >>> def run_package_upload_notification_jobs():
+    ...     job_source = getUtility(IPackageUploadNotificationJobSource)
+    ...     logger = DevNullLogger()
+    ...     with dbuser(config.IPackageUploadNotificationJobSource.dbuser):
+    ...         JobRunner.fromReady(job_source, logger).runAll()
+
+    >>> run_package_upload_notification_jobs()
     >>> [notification, announcement] = pop_notifications()
 
 When accepting single sources we also immediately create its
@@ -845,6 +798,7 @@ Let's reject something in the queue:
 
 One email is generated (see nascentupload-announcements.txt)
 
+    >>> run_package_upload_notification_jobs()
     >>> [notification] = pop_notifications()
 
 Clean up the librarian files:

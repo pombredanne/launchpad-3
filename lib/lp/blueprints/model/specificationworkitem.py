@@ -13,7 +13,7 @@ from storm.locals import (
     Unicode,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.blueprints.interfaces.specificationworkitem import (
@@ -27,8 +27,8 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.stormbase import StormBase
 
 
+@implementer(ISpecificationWorkItem)
 class SpecificationWorkItem(StormBase):
-    implements(ISpecificationWorkItem)
 
     __storm_table__ = 'SpecificationWorkItem'
     __storm_order__ = 'id'
@@ -69,8 +69,8 @@ class SpecificationWorkItem(StormBase):
         return self.status == SpecificationWorkItemStatus.DONE
 
 
+@implementer(ISpecificationWorkItemSet)
 class SpecificationWorkItemSet:
-    implements(ISpecificationWorkItemSet)
 
     def unlinkMilestone(self, milestone):
         """See `ISpecificationWorkItemSet`."""

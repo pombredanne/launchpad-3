@@ -105,7 +105,7 @@ class BugWatchEditView(LaunchpadFormView):
     @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
-        return {'url' : self.context.url}
+        return {'url': self.context.url}
 
     @property
     def watch_has_activity(self):

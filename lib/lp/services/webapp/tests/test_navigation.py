@@ -9,7 +9,7 @@ from zope.component import (
     )
 from zope.configuration import xmlconfig
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.interfaces.browser import (
@@ -27,7 +27,7 @@ class TestNavigationDirective(TestCase):
     def test_default_layer(self):
         # By default all navigation classes are registered for
         # IDefaultBrowserLayer.
-        directive = """ 
+        directive = """
             <browser:navigation
                 module="%(this)s" classes="ThingNavigation"/>
             """ % dict(this=this)
@@ -57,7 +57,7 @@ class TestNavigationDirective(TestCase):
     def test_multiple_navigations_for_single_context(self):
         # It is possible to have multiple navigation classes for a given
         # context class as long as they are registered for different layers.
-        directive = """ 
+        directive = """
             <browser:navigation
                 module="%(this)s" classes="ThingNavigation"/>
             <browser:navigation
@@ -77,16 +77,18 @@ class TestNavigationDirective(TestCase):
         cleanUp()
 
 
+@implementer(IDefaultBrowserLayer)
 class DefaultBrowserLayer:
-    implements(IDefaultBrowserLayer)
+    pass
 
 
 class IThing(Interface):
     pass
 
 
+@implementer(IThing)
 class Thing(object):
-    implements(IThing)
+    pass
 
 
 class ThingNavigation(Navigation):
@@ -101,8 +103,9 @@ class IOtherLayer(Interface):
     pass
 
 
+@implementer(IOtherLayer)
 class OtherLayer:
-    implements(IOtherLayer)
+    pass
 
 
 this = "lp.services.webapp.tests.test_navigation"

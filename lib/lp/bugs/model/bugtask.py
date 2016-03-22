@@ -61,7 +61,7 @@ from storm.store import (
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -143,6 +143,7 @@ from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.xref.interfaces import IXRefSet
 
 
 def bugtask_sort_key(bugtask):
@@ -234,10 +235,9 @@ def bug_target_to_key(target):
     return values
 
 
+@implementer(IBugTaskDelta)
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
-
-    implements(IBugTaskDelta)
 
     def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, bugwatch=None, target=None):
@@ -397,9 +397,9 @@ def validate_new_target(bug, target, check_source_package=True):
         check_source_package=check_source_package)
 
 
+@implementer(IBugTask)
 class BugTask(SQLBase):
     """See `IBugTask`."""
-    implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distroseries', 'milestone', 'sourcepackagename']
@@ -878,7 +878,7 @@ class BugTask(SQLBase):
                 new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
 
         self._setStatusDateProperties(self.status, new_status, when=when)
-        
+
     def _setStatusDateProperties(self, old_status, new_status, when=None):
         if old_status == new_status:
             # No change in the status, so nothing to do.
@@ -1327,9 +1327,9 @@ class BugTask(SQLBase):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
 
 
+@implementer(IBugTaskSet)
 class BugTaskSet:
     """See `IBugTaskSet`."""
-    implements(IBugTaskSet)
 
     title = "A set of bug tasks"
 
@@ -1384,14 +1384,14 @@ class BugTaskSet:
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
         # Import locally to avoid circular imports.
-        from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
 
         bug_ids = set(bugtask.bugID for bugtask in bugtasks)
-        bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-            SpecificationBug.bugID,
-            SpecificationBug.bugID.is_in(bug_ids)))
+        bug_ids_with_specifications = set(
+            int(id) for _, id in getUtility(IXRefSet).findFromMany(
+                [(u'bug', unicode(bug_id)) for bug_id in bug_ids],
+                types=[u'specification']).keys())
         bug_ids_with_branches = set(IStore(BugBranch).find(
                 BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
         # Badging looks up milestones too : eager load into the storm cache.

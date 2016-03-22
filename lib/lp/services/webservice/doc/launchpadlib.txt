@@ -17,7 +17,7 @@ if a specific user exists...
     ...
     HTTPError: HTTP Error 404: Not Found
 
-...and when he doesn't, create him.
+...and when they don't, create them.
 
     >>> browser.open('%s/people/+newteam' % root_url)
     >>> browser.getControl(name='field.name').value = 'stimpy'

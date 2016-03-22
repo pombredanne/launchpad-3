@@ -77,24 +77,6 @@
         </tr>
       </tal:reviewed>
     </tal:not-superseded>
-    <tal:queued condition="context/queue_status/enumvalue:QUEUED">
-      <tr id="summary-row-4-queued-by">
-        <th>Queued by:</th>
-        <td tal:content="structure context/queuer/fmt:link">Some User</td>
-      </tr>
-      <tr id="summary-row-5-queued-revision">
-        <th>Queued revision:</th>
-        <td>
-          <tal:not-available condition="not: context/queued_revision_id">
-            not available
-          </tal:not-available>
-          <tal:revision condition="context/queued_revision_id"
-                        content="view/queued_revision_number">
-            1234
-          </tal:revision>
-        </td>
-      </tr>
-    </tal:queued>
     <tal:merged condition="context/queue_status/enumvalue:MERGED">
       <tr id="summary-row-6-merge-reporter"
           tal:condition="context/merge_reporter">
@@ -104,11 +86,11 @@
       <tr id="summary-row-7-merged-revision">
         <th>Merged at revision:</th>
         <td>
-          <tal:not-available condition="not: context/merged_revno">
+          <tal:not-available condition="not: context/merged_revision">
             not available
           </tal:not-available>
-          <tal:revision condition="context/merged_revno"
-                        content="context/merged_revno">
+          <tal:revision condition="context/merged_revision"
+                        content="context/merged_revision">
             1234
           </tal:revision>
           <a tal:define="link context_menu/update_merge_revno"
@@ -121,16 +103,16 @@
     </tal:merged>
     <tr id="summary-row-8-source-branch">
       <th>Proposed branch:</th>
-      <td tal:content="structure context/source_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
+      <td tal:content="structure context/merge_source/fmt:link">lp:~foo/bar/baz</td>
     </tr>
     <tr id="summary-row-9-target-branch">
       <th>Merge into:</th>
-      <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
+      <td tal:content="structure context/merge_target/fmt:link">lp:~foo/bar/baz</td>
     </tr>
     <tr id="summary-row-a-prerequisite-branch"
-        tal:condition="context/prerequisite_branch">
+        tal:condition="context/merge_prerequisite">
       <th>Prerequisite:</th>
-      <td tal:content="structure context/prerequisite_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
+      <td tal:content="structure context/merge_prerequisite/fmt:link">lp:~foo/bar/baz</td>
     </tr>
     <tr id="summary-row-b-diff"
         tal:condition="context/preview_diff">
@@ -139,7 +121,11 @@
         <div tal:replace="structure context/@@++diff-stats" />
       </td>
     </tr>
-    <tr id="summary-row-merge-instruction">
+    <tal:comment condition="nothing">
+      <!-- XXX cjwatson 2015-04-18: Add merge instructions for Git. -->
+    </tal:comment>
+    <tr id="summary-row-merge-instruction"
+        tal:condition="context/source_branch">
       <th>To merge this branch:</th>
       <td>bzr merge <span class="branch-url" tal:content="context/source_branch/bzr_identity" /></td>
     </tr>

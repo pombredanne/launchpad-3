@@ -15,7 +15,7 @@ from textwrap import dedent
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from lp.app.browser.launchpadform import (
@@ -268,10 +268,9 @@ class HWDBApplicationNavigation(Navigation):
         return getUtility(IHWVendorIDSet).get(id)
 
 
+@implementer(IBrowserPublisher)
 class HWDBFingerprintSetView(LaunchpadView):
     """View class for lists of HWDB submissions for a system fingerprint."""
-
-    implements(IBrowserPublisher)
     label = page_title = "Hardware Database submissions for a fingerprint"
 
     template = ViewPageTemplateFile(

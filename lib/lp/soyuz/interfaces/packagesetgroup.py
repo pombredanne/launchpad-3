@@ -21,7 +21,7 @@ from lp.registry.interfaces.role import IHasOwner
 
 
 class IPackagesetGroup(IHasOwner):
-    """A group of related package sets across distroseries' 
+    """A group of related package sets across distroseries.
 
     This class is used internally to group related packagesets across
     distroseries.  For example, if in Karmic there is a 'gnome-games'
@@ -40,4 +40,3 @@ class IPackagesetGroup(IHasOwner):
     owner = Reference(
         IPerson, title=_("Person"), required=True, readonly=True,
         description=_("The person who created this packageset group."))
-

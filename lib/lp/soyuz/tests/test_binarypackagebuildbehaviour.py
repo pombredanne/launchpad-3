@@ -317,7 +317,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         e = self.assertRaises(
             AssertionError, behaviour.verifyBuildRequest, BufferLogger())
         self.assertEqual(
-            'Attempt to build virtual item on a non-virtual builder.',
+            'Attempt to build virtual archive on a non-virtual builder.',
             str(e))
 
     def test_verifyBuildRequest_no_chroot(self):

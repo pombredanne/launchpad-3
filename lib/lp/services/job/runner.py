@@ -41,11 +41,12 @@ from ampoule import (
     main,
     pool,
     )
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
     LeaseHeld,
     )
+from pytz import utc
 from storm.exceptions import LostObjectError
 import transaction
 from twisted.internet import reactor
@@ -89,6 +90,7 @@ class BaseRunnableJobSource:
         yield
 
 
+@delegate_to(IJob, context='job')
 class BaseRunnableJob(BaseRunnableJobSource):
     """Base class for jobs to be run via JobRunner.
 
@@ -98,7 +100,6 @@ class BaseRunnableJob(BaseRunnableJobSource):
     Subclasses may provide getOopsRecipients, to send mail about oopses.
     If so, they should also provide getOperationDescription.
     """
-    delegates(IJob, 'job')
 
     user_error_types = ()
 
@@ -108,7 +109,9 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     celery_responses = None
 
+    lease_duration = timedelta(minutes=5)
     retry_delay = timedelta(minutes=10)
+    soft_time_limit = timedelta(minutes=5)
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -191,6 +194,11 @@ class BaseRunnableJob(BaseRunnableJobSource):
         return oops_config.create(
             context=dict(exc_info=info))
 
+    def acquireLease(self, duration=None):
+        if duration is None:
+            duration = self.lease_duration.total_seconds()
+        self.job.acquireLease(duration)
+
     def taskId(self):
         """Return a task ID that gives a clue what this job is about.
 
@@ -226,12 +234,15 @@ class BaseRunnableJob(BaseRunnableJobSource):
             cls = CeleryRunJob
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
-        if self.job.lease_expires is not None:
-            eta = datetime.now() + self.retry_delay
-        else:
-            eta = None
+        eta = self.job.scheduled_start
+        # Don't schedule the job while its lease is still held, or
+        # celery will skip it.
+        if (self.job.lease_expires is not None
+                and (eta is None or eta < self.job.lease_expires)):
+            eta = self.job.lease_expires
         return cls.apply_async(
             (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta,
+            soft_time_limit=self.soft_time_limit.total_seconds(),
             task_id=self.taskId())
 
     def getDBClass(self):
@@ -254,6 +265,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
+        if self.job.attempt_count > 0:
+            self.job.scheduled_start = datetime.now(utc) + self.retry_delay
         self.job.queue(
             manage_transaction, abort_transaction,
             add_commit_hook=self.celeryRunOnCommit)

@@ -108,7 +108,7 @@ class ICve(Interface):
         CollectionField(
             title=_('Bugs related to this CVE entry.'),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Redefined in bug.py.
+            value_type=Reference(schema=Interface)))  # Redefined in bug.py.
 
     # Other attributes.
     url = exported(

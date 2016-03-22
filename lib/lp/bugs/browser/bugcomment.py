@@ -22,15 +22,15 @@ from itertools import (
     )
 from operator import itemgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interfaces import IWebServiceClientRequest
 from zope.component import (
-    adapts,
+    adapter,
     getMultiAdapter,
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -173,6 +173,8 @@ def group_comments_with_activity(comments, activities):
             yield [event for (kind, event) in window_group]
 
 
+@implementer(IBugComment)
+@delegate_to(IMessage, context='_message')
 class BugComment(MessageComment):
     """Data structure that holds all data pertaining to a bug comment.
 
@@ -184,9 +186,6 @@ class BugComment(MessageComment):
     canonical_url()s of BugComments to take you to the correct
     (task-specific) location.
     """
-    implements(IBugComment)
-
-    delegates(IMessage, '_message')
 
     def __init__(
             self, index, message, bugtask, activity=None,
@@ -311,13 +310,6 @@ class BugCommentView(LaunchpadView):
     def page_description(self):
         return self.comment.text_contents
 
-    @property
-    def privacy_notice_classes(self):
-        if not self.context.bug.private:
-            return 'hidden'
-        else:
-            return ''
-
 
 class BugCommentBoxViewMixin:
     """A class which provides proxied Librarian URLs for bug attachments."""
@@ -350,10 +342,9 @@ class BugCommentBoxExpandedReplyView(LaunchpadView, BugCommentBoxViewMixin):
     expand_reply_box = True
 
 
+@adapter(IBugComment, IWebServiceClientRequest)
+@implementer(Interface)
 class BugCommentXHTMLRepresentation:
-    adapts(IBugComment, IWebServiceClientRequest)
-    implements(Interface)
-
     def __init__(self, comment, request):
         self.comment = comment
         self.request = request

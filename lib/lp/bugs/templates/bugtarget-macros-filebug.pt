@@ -80,7 +80,7 @@
             </td>
             <td>
               <label tal:attributes="for widget/name">
-                This bug is a security vulnerability
+                <span class="sprite private">This bug is a security vulnerability</span>
               </label>
               <div>
                   The security group for

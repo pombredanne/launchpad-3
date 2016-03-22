@@ -17,7 +17,7 @@ The PersonAdministerView is registered under the +review name.
     >>> print view.errors
     []
     >>> view.field_names
-    ['name', 'displayname',
+    ['name', 'display_name',
      'personal_standing', 'personal_standing_reason']
     >>> view.label
     'Review person'
@@ -34,7 +34,7 @@ of a user's attributes.
 
     >>> form = {
     ...     'field.name': 'zaphod',
-    ...     'field.displayname': 'Zaphod Beeblebrox',
+    ...     'field.display_name': 'Zaphod Beeblebrox',
     ...     'field.personal_standing': 'POOR',
     ...     'field.personal_standing_reason': "Zaphod's just this guy.",
     ...     'field.actions.change': 'Change',
@@ -44,7 +44,7 @@ of a user's attributes.
     []
     >>> print user.name
     zaphod
-    >>> print user.displayname
+    >>> print user.display_name
     Zaphod Beeblebrox
     >>> user.personal_standing
     <DBItem PersonalStanding.POOR, ...>

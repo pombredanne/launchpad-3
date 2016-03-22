@@ -11,7 +11,7 @@ A simple object hierarchy
 First, we need a hierarchy of objects to build upon:
 
     >>> from zope.component import getMultiAdapter, provideAdapter
-    >>> from zope.interface import Interface, implements
+    >>> from zope.interface import Interface, implementer
 
     >>> class ICookbook(Interface):
     ...     """A cookbook for holding recipes."""
@@ -25,8 +25,8 @@ First, we need a hierarchy of objects to build upon:
     >>> from lp.services.webapp.interfaces import ICanonicalUrlData
     >>> from lp.services.webapp.url import urlappend
 
-    >>> class BaseContent:
-    ...     implements(ICanonicalUrlData)
+    >>> @implementer(ICanonicalUrlData)
+    ... class BaseContent:
     ...
     ...     def __init__(self, name, parent, path_prefix=None):
     ...         self.name = name
@@ -40,14 +40,17 @@ First, we need a hierarchy of objects to build upon:
     >>> class Root(BaseContent):
     ...     """ The site root."""
 
-    >>> class Cookbook(BaseContent):
-    ...     implements(ICookbook)
+    >>> @implementer(ICookbook)
+    ... class Cookbook(BaseContent):
+    ...     pass
 
-    >>> class Recipe(BaseContent):
-    ...     implements(IRecipe)
+    >>> @implementer(IRecipe)
+    ... class Recipe(BaseContent):
+    ...     pass
 
-    >>> class Cooker(BaseContent):
-    ...     implements(ICooker)
+    >>> @implementer(ICooker)
+    ... class Cooker(BaseContent):
+    ...     pass
 
 Today we'll be cooking with Spam!
 
@@ -88,12 +91,12 @@ breadcrumbs starting with the breadcrumb closest to the hierarchy root.
     >>> from lp.app.browser.launchpad import Hierarchy
     >>> from lp.services.webapp.breadcrumb import Breadcrumb
 
-    # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't
+    # Monkey patch Hierarchy.makeBreadcrumbsForRequestedPage so that we don't
     # have to create fake views and other stuff to test breadcrumbs here. The
     # functionality provided by that method is tested in
     # webapp/tests/test_breadcrumbs.py.
-    >>> make_breadcrumb_func = Hierarchy.makeBreadcrumbForRequestedPage
-    >>> Hierarchy.makeBreadcrumbForRequestedPage = lambda self: None
+    >>> make_breadcrumb_func = Hierarchy.makeBreadcrumbsForRequestedPage
+    >>> Hierarchy.makeBreadcrumbsForRequestedPage = lambda self: []
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
@@ -291,4 +294,4 @@ considered to be on the home page if there are no breadcrumbs.
 
 Put the monkey patched method back.
 
-    >>> Hierarchy.makeBreadcrumbForRequestedPage = make_breadcrumb_func
+    >>> Hierarchy.makeBreadcrumbsForRequestedPage = make_breadcrumb_func

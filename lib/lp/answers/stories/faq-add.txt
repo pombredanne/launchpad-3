@@ -4,7 +4,7 @@ New FAQs can be created for a project by users who have 'moderation'
 privileges. This includes answer contacts and the project's owner.
 
 No Privileges Person is not an answer contact for Mozilla Firefox, nor
-the project owner, therefore he cannot create a new FAQ.
+the project owner, therefore they cannot create a new FAQ.
 
     >>> user_browser.open('http://answers.launchpad.dev/firefox')
     >>> user_browser.getLink('All FAQs').click()
@@ -20,9 +20,9 @@ the project owner, therefore he cannot create a new FAQ.
       ...
     Unauthorized: ...
 
-Sample Person does have that ability to create a FAQ because he is the
-project owner. He is looking for a FAQ about RSS, but he does not find
-one. He chooses to create one because he has answered several questions
+Sample Person does have that ability to create a FAQ because they are the
+project owner. They are looking for a FAQ about RSS, but they do not find
+one. They choose to create one because they have answered several questions
 from various sources about the subject.
 
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
@@ -43,7 +43,7 @@ from various sources about the subject.
 
 The page for creating a new FAQ contains three fields that are empty.
 Sample Person adds a title, keywords, and puts the answer into the
-content field. He then submits the form using the 'Create' button.
+content field. They then submit the form using the 'Create' button.
 
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+createfaq'
@@ -67,7 +67,7 @@ The FAQ is created and the browser displays the page for Sample Person.
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+faq/...'
     >>> print owner_browser.title
-    FAQ #12 : Questions : Mozilla Firefox
+    FAQ #... : Questions : Mozilla Firefox
 
     >>> content = find_main_content(owner_browser.contents)
     >>> extract_text(find_tag_by_id(content, 'faq-keywords'))
@@ -75,7 +75,7 @@ The FAQ is created and the browser displays the page for Sample Person.
     >>> extract_text(find_tag_by_id(content, 'faq-content'))
     u'Use the bookmark bar.'
 
-He returns to the projects list of FAQs to verify that the newest
+They return to the project's list of FAQs to verify that the newest
 FAQ is listed first.
 
     >>> owner_browser.getLink('List all FAQs').click()

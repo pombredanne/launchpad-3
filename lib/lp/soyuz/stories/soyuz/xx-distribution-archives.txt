@@ -52,14 +52,14 @@ page, but it exists at:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
     >>> print anon_browser.title
-    Ubuntu Linux Copy Archives...
+    Ubuntu Copy Archives...
 
 This index of /ubuntu/+archives provides an overview describing
 what the viewer can expect to find here
 
     >>> main_content = find_main_content(anon_browser.contents)
     >>> print extract_text(main_content)
-    Copy Archives related to Ubuntu Linux
+    Copy Archives related to Ubuntu
     'Copy' archives containing packages copied from other archives
     (the main archive or PPAs) for a distribution.
     ...
@@ -126,7 +126,7 @@ First, create a private copy archive:
     ...     copy_location)
     >>> copy_archive = naked_copy_location.archive
     >>> copy_archive.private = True
-    >>> copy_archive.owner.displayname = "Harry Potter"
+    >>> copy_archive.owner.display_name = "Harry Potter"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     naked_copy_location, copy_archive.owner)
     >>> pub_src = stp.getPubSource(

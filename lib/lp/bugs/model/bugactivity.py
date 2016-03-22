@@ -11,7 +11,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.adapters.bugchange import (
     ATTACHMENT_ADDED,
@@ -36,10 +36,9 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IBugActivity)
 class BugActivity(SQLBase):
     """Bug activity log entry."""
-
-    implements(IBugActivity)
 
     _table = 'BugActivity'
     bug = ForeignKey(foreignKey='Bug', dbName='bug', notNull=True)
@@ -111,10 +110,9 @@ class BugActivity(SQLBase):
             return match.groupdict()['attribute']
 
 
+@implementer(IBugActivitySet)
 class BugActivitySet:
     """See IBugActivitySet."""
-
-    implements(IBugActivitySet)
 
     def new(self, bug, datechanged, person, whatchanged,
             oldvalue=None, newvalue=None, message=None):

@@ -24,8 +24,8 @@ There is a link in the body page pointing to Celso's PPA.
     >>> print anon_browser.title
     PPA for Celso Providelo : Celso Providelo
 
-On the other hand, Sample Person hasn't activated his PPA yet, so he
-can quickly activate one via the link in his PPA section.
+On the other hand, Sample Person hasn't activated their PPA yet, so they
+can quickly activate one via the link in their PPA section.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open("http://launchpad.dev/~name12")
@@ -113,7 +113,7 @@ The PPA owner is able to edit PPA 'displayname' and 'description'.
     >>> sample_browser.getControl("Save").click()
 
 After confirming the changes Sample Person is sent to the PPA page
-where he can see the updated information.
+where they can see the updated information.
 
     >>> print sample_browser.title
     Sample testing PPA : Sample Person
@@ -136,7 +136,7 @@ Empty 'description' fields are not rendered.
     None
 
 On the other hand, the PPA 'displayname' field is required. Sample
-user can't have an emtpy displayname on his PPA.
+user can't have an empty displayname on their PPA.
 
     >>> sample_browser.getLink("Change details").click()
     >>> sample_browser.getControl(name="field.displayname").value = ('')
@@ -311,9 +311,10 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more importantly, administering Personal Package Archives is
-restricted to LP administrators and LP commercial administrators, as
-they need to be able to make PPAs private.
+But more importantly, administering Personal Package Archives is restricted
+to LP administrators, LP commercial administrators, and LP PPA
+administrators, as they need to be able to make PPAs private, change their
+virtualisation settings, and so on.
 
     >>> sample_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> print sample_browser.getLink("Administer archive")
@@ -330,6 +331,17 @@ they need to be able to make PPAs private.
     ...     auth='Basic commercial-member@canonical.com:test')
     >>> commercial_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> commercial_browser.getLink("Administer archive") is not None
+    True
+
+    >>> login('admin@canonical.com')
+    >>> ppa_admin = getUtility(IPersonSet).getByName('launchpad-ppa-admins')
+    >>> ppa_admin_member = factory.makePerson(
+    ...     email='ppa-member@canonical.com', member_of=[ppa_admin])
+    >>> logout()
+    >>> ppa_admin_browser = setupBrowser(
+    ...     auth='Basic ppa-member@canonical.com:test')
+    >>> ppa_admin_browser.open("http://launchpad.dev/~jblack/+archive")
+    >>> ppa_admin_browser.getLink("Administer archive") is not None
     True
 
 
@@ -385,7 +397,7 @@ build on a virtualized builder.
     ...     ).value = "deb http://my.spethial.repo.com/ %(series)s main"
     >>> admin_browser.getControl("Save").click()
 
-Once confirmed the administrator is sent to the PPA page where he can
+Once confirmed the administrator is sent to the PPA page where they can
 see some of the updated information.
 
     >>> print admin_browser.title
@@ -530,7 +542,7 @@ Celso can simply click on 'Create a new PPA' and will be presented to
 the usual PPA activation form where the checkbox for acknowledging the
 PPA-ToS is no longer present and a list of 'Existing PPAs' is presented.
 Launchpad requires a user to acknowledge the PPA-ToS only once for
-all his PPAs.
+all their PPAs.
 
     >>> cprov_browser.getLink("Create a new PPA").click()
 
@@ -763,17 +775,17 @@ The page contains a stern warning that this action is final and irreversible:
     Are you sure ?
     ...
 
-If the user changes his mind, he can click on the cancel link to go back
+If the user changes their mind, they can click on the cancel link to go back
 a page:
 
     >>> print no_priv_browser.getLink("Cancel").url
     http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
-Otherwise, he has a button to press to confirm the deletion.
+Otherwise, they have a button to press to confirm the deletion.
 
     >>> no_priv_browser.getControl("Permanently delete PPA").click()
 
-This action will redirect the user back to his profile page, which will
+This action will redirect the user back to their profile page, which will
 contain a notification message that the deletion is in progress.
 
     >>> print no_priv_browser.url

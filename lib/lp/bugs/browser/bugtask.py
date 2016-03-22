@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -37,7 +37,7 @@ from operator import attrgetter
 import re
 import urllib
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
@@ -64,7 +64,6 @@ from zope.event import notify
 from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import (
     implementer,
-    implements,
     providedBy,
     )
 from zope.schema import Choice
@@ -243,12 +242,10 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         get_property_cache(comment._message).bugattachments = []
 
     for attachment in bugtask.bug.attachments_unpopulated:
-        message_id = attachment.message.id
-        # All attachments are related to a message, so we can be
-        # sure that the BugComment is already created.
+        message_id = attachment._messageID
         if message_id not in comments:
             # We are not showing this message.
-            break
+            continue
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
         cache = get_property_cache(attachment.message)
@@ -295,10 +292,14 @@ def get_visible_comments(comments, user=None):
     # cannot see, because they have been marked invisible.
     strip_invisible = True
     if user is not None:
+        # XXX cjwatson 2015-09-15: Unify with
+        # Bug.userCanSetCommentVisibility, which also allows
+        # project-privileged users.
         role = PersonRoles(user)
         strip_invisible = not (role.in_admin or role.in_registry_experts)
     if strip_invisible:
-        visible_comments = [c for c in visible_comments if c.visible]
+        visible_comments = [c for c in visible_comments
+                            if c.visible or c.owner == user]
 
     return visible_comments
 
@@ -385,9 +386,16 @@ class BugTaskNavigation(Navigation):
         # Ask the DB to slice out just the comment that we need.
         comments = get_comments_for_bugtask(
             self.context, slice_info=[slice(index, index + 1)])
-        if (comments and
-            (comments[0].visible
-             or check_permission('launchpad.Admin', self.context))):
+        # XXX cjwatson 2015-09-15: Unify with
+        # Bug.userCanSetCommentVisibility, which also allows
+        # project-privileged users.
+        user = getUtility(ILaunchBag).user
+        roles = PersonRoles(user) if user else None
+        if (comments and (
+                comments[0].visible
+                or user and (
+                    comments[0].owner == user
+                    or roles.in_admin or roles.in_registry_experts))):
             return comments[0]
         return None
 
@@ -900,13 +908,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         return (
             '<span><a href="/+help-bugs/bug-heat.html" target="help" '
             'class="sprite flame">%d</a></span>' % self.context.bug.heat)
-
-    @property
-    def privacy_notice_classes(self):
-        if not self.context.bug.private:
-            return 'hidden'
-        else:
-            return ''
 
 
 class BugTaskBatchedCommentsAndActivityView(BugTaskView):
@@ -2272,10 +2273,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             )
 
 
+@implementer(IObjectPrivacy)
 class BugTaskPrivacyAdapter:
     """Provides `IObjectPrivacy` for `IBugTask`."""
-
-    implements(IObjectPrivacy)
 
     def __init__(self, context):
         self.context = context
@@ -2366,9 +2366,9 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
             return
 
         owner_is_subscribed = question.isSubscribed(self.context.bug.owner)
-        question.unlinkBug(self.context.bug)
+        question.unlinkBug(self.context.bug, user=self.user)
         # The question.owner was implicitly unsubscribed when the bug
-        # was unlinked. We resubscribe the owner if he was subscribed.
+        # was unlinked. We resubscribe the owner if they were subscribed.
         if owner_is_subscribed is True:
             self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
@@ -2393,9 +2393,9 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
     page_title = label
 
 
+@delegate_to(IBugActivity, context='activity')
 class BugActivityItem:
     """A decorated BugActivity."""
-    delegates(IBugActivity, 'activity')
 
     def __init__(self, activity):
         self.activity = activity

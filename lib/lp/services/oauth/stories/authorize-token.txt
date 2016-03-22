@@ -3,7 +3,7 @@ Authorizing a request token
 
 Once the consumer gets a request token, it must send the user to
 Launchpad's +authorize-token page in order for the user to authenticate
-and authorize or not the consumer to act on his behalf.
+and authorize or not the consumer to act on their behalf.
 
     >>> def request_token_for(consumer):
     ...     """Helper method to create a request token."""
@@ -17,7 +17,7 @@ and authorize or not the consumer to act on his behalf.
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey(u'foobar123451432')
     >>> logout()
     >>> token = request_token_for(consumer)
 
@@ -179,7 +179,7 @@ the list of authentication levels.
     [('READ_PRIVATE', 'Read Anything'),
      ('UNAUTHORIZED', 'No Access')]
 
-Once the user authorizes the application to access Launchpad on his
+Once the user authorizes the application to access Launchpad on their
 behalf, we issue a redirect to the given oauth_callback (if it was
 specified by the application).
 
@@ -308,7 +308,7 @@ we'll create such a consumer, and then a request token for that consumer.
 
     >>> login('foo.bar@canonical.com')
     >>> consumer = factory.makeOAuthConsumer(
-    ...     "System-wide: Ubuntu (mycomputer)")
+    ...     u"System-wide: Ubuntu (mycomputer)")
     >>> logout()
 
     >>> token = request_token_for(consumer)
