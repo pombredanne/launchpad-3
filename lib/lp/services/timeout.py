@@ -251,8 +251,6 @@ class URLFetcher:
         """Fetch the URL using a custom HTTP handler supporting timeout."""
         request_kwargs.setdefault("method", "GET")
         self.session = Session()
-        # Don't honour things like environment proxy configuration.
-        self.session.trust_env = False
         # Mount our custom adapters.
         self.session.mount("https://", CleanableHTTPAdapter())
         self.session.mount("http://", CleanableHTTPAdapter())
