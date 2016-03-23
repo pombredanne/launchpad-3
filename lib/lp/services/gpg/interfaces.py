@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -290,24 +290,23 @@ class IGPGHandler(Interface):
         :return: a `PymeKey` object for the just-generated secret key.
         """
 
-    def encryptContent(content, fingerprint):
-        """Encrypt the given content for the given fingerprint.
+    def encryptContent(content, key):
+        """Encrypt the given content for the given key.
 
         content must be a traditional string. It's up to the caller to
-        encode or decode properly. Fingerprint must be hexadecimal string.
+        encode or decode properly.
 
         :param content: the Unicode content to be encrypted.
-        :param fingerprint: the OpenPGP key's fingerprint.
+        :param key: the `IPymeKey` to encrypt the content for.
 
         :return: the encrypted content or None if failed.
         """
 
-    def signContent(content, key_fingerprint, password='', mode=None):
-        """Signs content with a given GPG fingerprint.
+    def signContent(content, key, password='', mode=None):
+        """Signs content with a given GPG key.
 
         :param content: the content to sign.
-        :param key_fingerprint: the fingerprint of the key to use when
-            signing the content.
+        :param key: the `IPymeKey` to use when signing the content.
         :param password: optional password to the key identified by
             key_fingerprint, the default value is '',
         :param mode: optional type of GPG signature to produce, the
@@ -386,6 +385,7 @@ class IPymeKey(Interface):
     """pyME key model."""
 
     fingerprint = Attribute("Key Fingerprint")
+    key = Attribute("Underlying GpgmeKey object")
     algorithm = Attribute("Key Algorithm")
     revoked = Attribute("Key Revoked")
     expired = Attribute("Key Expired")
