@@ -7,6 +7,7 @@ __all__ = [
     'PublishDistro',
     ]
 
+from itertools import ifilter
 from optparse import OptionValueError
 
 from zope.component import getUtility
@@ -251,9 +252,9 @@ class PublishDistro(PublisherScript):
         if self.options.partner:
             return [distribution.getArchiveByComponent('partner')]
         elif self.options.ppa:
-            return filter(is_ppa_public, self.getPPAs(distribution))
+            return ifilter(is_ppa_public, self.getPPAs(distribution))
         elif self.options.private_ppa:
-            return filter(is_ppa_private, self.getPPAs(distribution))
+            return ifilter(is_ppa_private, self.getPPAs(distribution))
         elif self.options.copy_archive:
             return self.getCopyArchives(distribution)
         else:
