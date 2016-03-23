@@ -429,8 +429,10 @@ class TestPublishDistro(TestNativePublishingBase):
         self.assertThat(hoary_inrelease_path, Not(PathExists()))
         self.assertThat(breezy_inrelease_path, Not(PathExists()))
 
-        self.runPublishDistro(
-            ['--ppa', '--careful-release', '--include-non-pending'])
+        self.runPublishDistro([
+            '--ppa', '--careful-release', '--include-non-pending',
+            '--disable-publishing', '--disable-domination', '--disable-apt',
+            ])
         # hoary-test never had indexes created, so is untouched.
         self.assertThat(hoary_inrelease_path, Not(PathExists()))
         # breezy-autotest has its Release files rewritten.
@@ -895,6 +897,31 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             1, publisher.A2_markPocketsWithDeletionsDirty.call_count)
         self.assertEqual(1, publisher.B_dominate.call_count)
         self.assertEqual(1, publisher.D_writeReleaseFiles.call_count)
+
+    def test_publishArchive_honours_disable_options(self):
+        # The various --disable-* options disable the corresponding
+        # publisher steps.
+        possible_options = {
+            "--disable-publishing": ["A_publish"],
+            "--disable-domination": [
+                "A2_markPocketsWithDeletionsDirty", "B_dominate",
+                ],
+            "--disable-apt": ["C_doFTPArchive", "createSeriesAliases"],
+            "--disable-release": ["D_writeReleaseFiles"],
+            }
+        for option in possible_options:
+            distro = self.makeDistro()
+            script = self.makeScript(distro, args=[option])
+            script.txn = FakeTransaction()
+            publisher = FakePublisher()
+            script.publishArchive(FakeArchive(), publisher)
+            for check_option, steps in possible_options.items():
+                for step in steps:
+                    publisher_step = getattr(publisher, step)
+                    if check_option == option:
+                        self.assertEqual(0, publisher_step.call_count)
+                    else:
+                        self.assertEqual(1, publisher_step.call_count)
 
     def test_publishArchive_uses_apt_ftparchive_for_main_archive(self):
         # For some types of archive, publishArchive invokes the

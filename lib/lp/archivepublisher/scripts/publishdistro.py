@@ -72,6 +72,26 @@ class PublishDistro(PublisherScript):
             help="Make the Release file generation process careful.")
 
         self.parser.add_option(
+            "--disable-publishing", action="store_false",
+            dest="enable_publishing", default=True,
+            help="Disable the package publishing process.")
+
+        self.parser.add_option(
+            "--disable-domination", action="store_false",
+            dest="enable_domination", default=True,
+            help="Disable the domination process.")
+
+        self.parser.add_option(
+            "--disable-apt", action="store_false",
+            dest="enable_apt", default=True,
+            help="Disable index generation (e.g. apt-ftparchive).")
+
+        self.parser.add_option(
+            "--disable-release", action="store_false",
+            dest="enable_release", default=True,
+            help="Disable the Release file generation process.")
+
+        self.parser.add_option(
             "--include-non-pending", action="store_true",
             dest="include_non_pending", default=False,
             help=(
@@ -270,29 +290,37 @@ class PublishDistro(PublisherScript):
         Commits transactions along the way.
         """
         publisher.setupArchiveDirs()
-        publisher.A_publish(self.isCareful(self.options.careful_publishing))
-        self.txn.commit()
+        if self.options.enable_publishing:
+            publisher.A_publish(
+                self.isCareful(self.options.careful_publishing))
+            self.txn.commit()
 
-        # Flag dirty pockets for any outstanding deletions.
-        publisher.A2_markPocketsWithDeletionsDirty()
-        publisher.B_dominate(self.isCareful(self.options.careful_domination))
-        self.txn.commit()
+        if self.options.enable_domination:
+            # Flag dirty pockets for any outstanding deletions.
+            publisher.A2_markPocketsWithDeletionsDirty()
+            publisher.B_dominate(
+                self.isCareful(self.options.careful_domination))
+            self.txn.commit()
 
-        # The primary and copy archives use apt-ftparchive to
-        # generate the indexes, everything else uses the newer
-        # internal LP code.
-        careful_indexing = self.isCareful(self.options.careful_apt)
-        if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
-            publisher.C_doFTPArchive(careful_indexing)
-        else:
-            publisher.C_writeIndexes(careful_indexing)
-        self.txn.commit()
+        if self.options.enable_apt:
+            # The primary and copy archives use apt-ftparchive to
+            # generate the indexes, everything else uses the newer
+            # internal LP code.
+            careful_indexing = self.isCareful(self.options.careful_apt)
+            if archive.purpose in (
+                    ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
+                publisher.C_doFTPArchive(careful_indexing)
+            else:
+                publisher.C_writeIndexes(careful_indexing)
+            self.txn.commit()
 
-        publisher.D_writeReleaseFiles(self.isCareful(
-            self.options.careful_apt or self.options.careful_release))
-        # The caller will commit this last step.
+        if self.options.enable_release:
+            publisher.D_writeReleaseFiles(self.isCareful(
+                self.options.careful_apt or self.options.careful_release))
+            # The caller will commit this last step.
 
-        publisher.createSeriesAliases()
+        if self.options.enable_apt:
+            publisher.createSeriesAliases()
 
     def main(self):
         """See `LaunchpadScript`."""
