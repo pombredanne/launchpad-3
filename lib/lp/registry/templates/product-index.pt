@@ -106,18 +106,6 @@
                 <dt>Driver:</dt>
                 <dd tal:content="structure view/driver_widget" />
               </dl>
-
-              <dl id="product-languages"
-                tal:condition="view/show_programming_languages">
-                <dt>Programming Languages:</dt>
-                <dd tal:content="structure view/languages_edit_widget" />
-              </dl>
-
-              <dl id="product-vcs" tal:condition="context/inferred_vcs">
-                <dt>Version control system:</dt>
-                <dd tal:content="context/inferred_vcs/title">Git</dd>
-              </dl>
-
               <dl id="licences">
                 <dt>Licences:</dt>
                 <dd>
@@ -221,6 +209,19 @@
                 </p>
               </dd>
             </dl>
+
+            <div class="two-column-list">
+              <dl id="product-vcs" tal:condition="context/inferred_vcs">
+                <dt>Version control system:</dt>
+                <dd tal:content="context/inferred_vcs/title">Git</dd>
+              </dl>
+
+              <dl id="product-languages"
+                tal:condition="view/show_programming_languages">
+                <dt>Programming languages:</dt>
+                <dd tal:content="structure view/languages_edit_widget" />
+              </dl>
+            </div>
           </div>
 
           <div tal:content="structure context/@@+portlet-listfaqs"
