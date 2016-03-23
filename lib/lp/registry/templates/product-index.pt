@@ -223,8 +223,11 @@
             </div>
           </div>
 
-          <div tal:content="structure context/@@+portlet-top-contributors" />
+          <div tal:content="structure context/@@+portlet-latestquestions"
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
+          <div tal:content="structure context/@@+portlet-listfaqs"
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
           <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
@@ -232,16 +235,12 @@
           <div tal:content="structure context/@@+portlet-latestbugs"
             tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
-          <div tal:content="structure context/@@+portlet-latestquestions"
-            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
-
-          <div tal:content="structure context/@@+portlet-listfaqs"
-            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
-
           <div tal:content="structure context/@@+portlet-latestspecs"
             tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
+
+          <div tal:content="structure context/@@+portlet-top-contributors" />
         </div>
         <div class="yui-u">
           <div id="structural-subscription-content-box"></div>
