@@ -898,6 +898,7 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
+        self.log.debug("Writing Release file for %s" % suite)
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
@@ -928,6 +929,7 @@ class Publisher(object):
 
         if self.archive.signing_key is not None:
             # Sign the repository.
+            self.log.debug("Signing Release file for %s" % suite)
             IArchiveSigningKey(self.archive).signRepository(suite)
             core_files.add("Release.gpg")
             core_files.add("InRelease")
