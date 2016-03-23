@@ -106,8 +106,11 @@
                 <dt>Driver:</dt>
                 <dd tal:content="structure view/driver_widget" />
               </dl>
+            </div>
+
+            <div>
               <dl id="licences">
-                <dt>Licences:</dt>
+                <dt>Licence:</dt>
                 <dd>
                   <tal:licenses repeat="license context/licenses">
                     <tal:license replace="license/title">GPL</tal:license><tal:comma
