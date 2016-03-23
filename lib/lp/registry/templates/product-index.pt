@@ -157,8 +157,10 @@
               metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
 
             <p id="development-focus">
-              <a tal:replace="structure context/development_focus/fmt:link" />
-              is the current focus of development
+              <a tal:attributes="href context/development_focus/fmt:url"
+                tal:content="string:${context/development_focus/name} series" />
+                is the current focus of development.
+              <a tal:replace="structure overview_menu/edit/fmt:icon" />
             </p>
 
             <ul class="horizontal">
@@ -192,21 +194,15 @@
             </h2>
 
             <dl id="dev-focus"
-                tal:define="dev_focus context/development_focus;
-                            trunk dev_focus/branch;
-                            trunk_visible trunk/required:launchpad.View|nothing">
+                tal:define="trunk context/development_focus/branch;
+                            trunk_visible trunk/required:launchpad.View|nothing"
+                tal:condition="trunk_visible">
               <dt>Development focus:</dt>
               <dd>
-                <p>
-                <a tal:attributes="href dev_focus/fmt:url"
-                    tal:content="string:${dev_focus/name} series" />&nbsp;
-                <a tal:replace="structure overview_menu/edit/fmt:icon" /></p>
-                <p tal:condition="trunk_visible">
-                  <a tal:replace="structure trunk/fmt:link" />&nbsp;
-                  <a tal:replace="structure dev_focus/menu:overview/set_branch/fmt:icon" />
-                  <br/>
-                  <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
-                </p>
+                <a tal:replace="structure trunk/fmt:link" />&nbsp;
+                <a tal:replace="structure context/menu:overview/configure_code/fmt:icon" />
+                <br/>
+                <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
               </dd>
             </dl>
 
