@@ -202,10 +202,12 @@
                 tal:condition="trunk_visible">
               <dt>Development focus:</dt>
               <dd>
-                <a tal:replace="structure trunk/fmt:link" />&nbsp;
-                <a tal:replace="structure context/menu:overview/configure_code/fmt:icon" />
-                <br/>
-                <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
+                <p>
+                  <a tal:replace="structure trunk/fmt:link" />&nbsp;
+                  <a tal:replace="structure context/menu:overview/configure_code/fmt:icon" />
+                  <br/>
+                  <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
+                </p>
               </dd>
             </dl>
 
