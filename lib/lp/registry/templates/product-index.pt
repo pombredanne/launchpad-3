@@ -187,7 +187,16 @@
       </div>
 
       <div class="yui-g">
-        <div class="yui-u first">
+        <tal:comment replace="nothing">
+          The Code section could show something if the project had
+          programming languages set or settable, but that field on its
+          own is so boring that it's not sufficient to reveal the
+          section.
+        </tal:comment>
+        <div class="yui-u first"
+             tal:define="trunk context/development_focus/branch;
+                         trunk_visible trunk/required:launchpad.View|nothing"
+             tal:condition="python: trunk_visible or context.inferred_vcs">
           <div id="code-info" class="portlet">
             <h2>
               <span class="see-all"><a
@@ -196,10 +205,7 @@
               Code
             </h2>
 
-            <dl id="dev-focus"
-                tal:define="trunk context/development_focus/branch;
-                            trunk_visible trunk/required:launchpad.View|nothing"
-                tal:condition="trunk_visible">
+            <dl id="dev-focus" tal:condition="trunk_visible">
               <dt>Development focus:</dt>
               <dd>
                 <p>
