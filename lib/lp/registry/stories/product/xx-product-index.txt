@@ -27,11 +27,13 @@ Now update Tomcat to actually have this data:
 
     >>> import transaction
     >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.registry.enums import VCSType
     >>> from lp.registry.model.product import Product
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
 
     >>> tomcat = Product.selectOneBy(name="tomcat")
+    >>> tomcat.vcs = VCSType.GIT
     >>> tomcat.homepageurl = "http://home.page/"
     >>> tomcat.sourceforgeproject = "sf-tomcat"
     >>> tomcat.wikiurl = "http://wiki.url/"
