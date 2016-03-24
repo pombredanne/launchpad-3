@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -167,8 +167,8 @@ class LoginToken(SQLBase):
         # Encrypt this part's content if requested.
         if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
-            token_text = gpghandler.encryptContent(token_text.encode('utf-8'),
-                                                   key.fingerprint)
+            token_text = gpghandler.encryptContent(
+                token_text.encode('utf-8'), key)
             # In this case, we need to include some clear text instructions
             # for people who do not have an MUA that can decrypt the ASCII
             # armored text.

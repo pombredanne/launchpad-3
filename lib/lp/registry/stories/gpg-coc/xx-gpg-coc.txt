@@ -246,8 +246,7 @@ If they sign a different text, they get an error message.
     >>> login(ANONYMOUS)
     >>> key = import_secret_test_key('sign.only@canonical.com.sec')
     >>> bad = gpghandler.signContent(
-    ...     'This is not the verification message!',
-    ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
+    ...     'This is not the verification message!', key, 'test')
     >>> logout()
 
     >>> browser.getControl('Signed text').value = bad
@@ -283,9 +282,7 @@ message. The following text was signed with the key DFD20543:
 If they sign the text correctly, they are redirected to their home page.
 
     >>> login(ANONYMOUS)
-    >>> good = gpghandler.signContent(
-    ...     str(verification_content),
-    ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
+    >>> good = gpghandler.signContent(str(verification_content), key, 'test')
     >>> logout()
 
     >>> browser.getControl('Signed text').value = good
