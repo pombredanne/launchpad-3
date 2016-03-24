@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test MaloneHandler."""
@@ -682,7 +682,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         # isn't too far in the future or past.  This test shows that a
         # signature with a timestamp of appxoimately now will be accepted.
         signing_context = GPGSigningContext(
-            import_secret_test_key().fingerprint, password='test')
+            import_secret_test_key(), password='test')
         msg = self.factory.makeSignedMessage(
             body=' security no', signing_context=signing_context)
         handler = MaloneHandler()

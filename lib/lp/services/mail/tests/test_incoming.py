@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -182,7 +182,7 @@ class AuthenticateEmailTestCase(TestCaseWithFactory):
         """If the signature is nontrivial future-dated, it's not trusted."""
 
         signing_context = GPGSigningContext(
-            import_secret_test_key().fingerprint, password='test')
+            import_secret_test_key(), password='test')
         msg = self.factory.makeSignedMessage(signing_context=signing_context)
         # It's not trivial to make a gpg signature with a bogus timestamp, so
         # let's just treat everything as invalid, and trust that the regular
