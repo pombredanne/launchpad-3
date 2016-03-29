@@ -362,24 +362,24 @@ class ByHashes:
         self.root = root
         self.children = {}
 
-    def registerChild(self, path):
+    def registerChild(self, dirpath):
         """Register a single by-hash directory.
 
         Only directories that have been registered here will be pruned by
         the `prune` method.
         """
-        key = os.path.dirname(path)
-        if key not in self.children:
-            self.children[key] = ByHash(self.root, key)
-        return self.children[key]
+        if dirpath not in self.children:
+            self.children[dirpath] = ByHash(self.root, dirpath)
+        return self.children[dirpath]
 
     def add(self, path, lfa, copy_from_path=None):
-        self.registerChild(path).add(
-            os.path.basename(path), lfa, copy_from_path=copy_from_path)
+        dirpath, name = os.path.split(path)
+        self.registerChild(dirpath).add(
+            name, lfa, copy_from_path=copy_from_path)
 
     def known(self, path, hashname, digest):
-        return self.registerChild(path).known(
-            os.path.basename(path), hashname, digest)
+        dirpath, name = os.path.split(path)
+        return self.registerChild(dirpath).known(name, hashname, digest)
 
     def prune(self):
         for child in self.children.values():
@@ -1009,7 +1009,7 @@ class Publisher(object):
         # we can prune them properly later.
         for db_file in archive_file_set.getByArchive(
                 self.archive, container=container):
-            by_hashes.registerChild(db_file.path)
+            by_hashes.registerChild(os.path.dirname(db_file.path))
         archive_file_set.reap(self.archive, container=container)
 
         # Ensure that all files recorded in the database are in by-hash.
