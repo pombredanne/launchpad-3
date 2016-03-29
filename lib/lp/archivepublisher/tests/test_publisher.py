@@ -509,7 +509,7 @@ class TestByHash(TestCaseWithFactory):
         transaction.commit()
         by_hash = ByHash(root, "dists/foo/main/source")
         for lfa in lfas:
-            by_hash.add(lfa)
+            by_hash.add("Sources", lfa)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
         self.assertThat(by_hash_path, ByHashHasContents(contents))
 
@@ -522,7 +522,7 @@ class TestByHash(TestCaseWithFactory):
             sources.write(content)
         lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
         by_hash = ByHash(root, "dists/foo/main/source")
-        by_hash.add(lfa, copy_from_path=sources_path)
+        by_hash.add("Sources", lfa, copy_from_path=sources_path)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
         self.assertThat(by_hash_path, ByHashHasContents([content]))
 
@@ -539,7 +539,7 @@ class TestByHash(TestCaseWithFactory):
                 f.write(content)
         by_hash = ByHash(root, "dists/foo/main/source")
         self.assertThat(by_hash_path, ByHashHasContents([content]))
-        by_hash.add(lfa)
+        by_hash.add("Sources", lfa)
         self.assertThat(by_hash_path, ByHashHasContents([content]))
 
     def test_known(self):
@@ -552,13 +552,16 @@ class TestByHash(TestCaseWithFactory):
         md5 = hashlib.md5(content).hexdigest()
         sha1 = hashlib.sha1(content).hexdigest()
         sha256 = hashlib.sha256(content).hexdigest()
-        self.assertFalse(by_hash.known("MD5Sum", md5))
-        self.assertFalse(by_hash.known("SHA1", sha1))
-        self.assertFalse(by_hash.known("SHA256", sha256))
-        by_hash.add(lfa, copy_from_path="abc")
-        self.assertTrue(by_hash.known("MD5Sum", md5))
-        self.assertTrue(by_hash.known("SHA1", sha1))
-        self.assertTrue(by_hash.known("SHA256", sha256))
+        self.assertFalse(by_hash.known("abc", "MD5Sum", md5))
+        self.assertFalse(by_hash.known("abc", "SHA1", sha1))
+        self.assertFalse(by_hash.known("abc", "SHA256", sha256))
+        by_hash.add("abc", lfa, copy_from_path="abc")
+        self.assertTrue(by_hash.known("abc", "MD5Sum", md5))
+        self.assertTrue(by_hash.known("abc", "SHA1", sha1))
+        self.assertTrue(by_hash.known("abc", "SHA256", sha256))
+        self.assertFalse(by_hash.known("def", "SHA256", sha256))
+        by_hash.add("def", lfa, copy_from_path="abc")
+        self.assertTrue(by_hash.known("def", "SHA256", sha256))
 
     def test_prune(self):
         root = self.makeTemporaryDirectory()
@@ -568,7 +571,7 @@ class TestByHash(TestCaseWithFactory):
             f.write(content)
         lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
         by_hash = ByHash(root, "dists/foo/main/source")
-        by_hash.add(lfa, copy_from_path=sources_path)
+        by_hash.add("Sources", lfa, copy_from_path=sources_path)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
         with open_for_writing(os.path.join(by_hash_path, "MD5Sum/0"), "w"):
             pass
@@ -2290,6 +2293,82 @@ class TestPublisher(TestPublisherBase):
              'dists/breezy-autotest/main/source/Sources.gz'],
             [archive_file.path for archive_file in archive_files
              if archive_file.scheduled_deletion_date is not None])
+
+    def testUpdateByHashIdenticalFiles(self):
+        # Multiple identical files in the same directory receive multiple
+        # ArchiveFile rows, even though they share a by-hash entry.
+        self.breezy_autotest.publish_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        get_contents_files = lambda: [
+            archive_file
+            for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive)
+            if archive_file.path.startswith('dists/breezy-autotest/Contents-')]
+
+        # Create the first file.
+        with open_for_writing(suite_path('Contents-i386'), 'w') as f:
+            f.write('A Contents file\n')
+        publisher.markPocketDirty(
+            self.breezy_autotest, PackagePublishingPocket.RELEASE)
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        matchers = [
+            MatchesStructure(
+                path=Equals('dists/breezy-autotest/Contents-i386'),
+                scheduled_deletion_date=Is(None))]
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Add a second identical file.
+        with open_for_writing(suite_path('Contents-hppa'), 'w') as f:
+            f.write('A Contents file\n')
+        publisher.D_writeReleaseFiles(False)
+        matchers.append(
+            MatchesStructure(
+                path=Equals('dists/breezy-autotest/Contents-hppa'),
+                scheduled_deletion_date=Is(None)))
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Delete the first file, but allow it its stay of execution.
+        os.unlink(suite_path('Contents-i386'))
+        publisher.D_writeReleaseFiles(False)
+        matchers[0] = matchers[0].update(scheduled_deletion_date=Not(Is(None)))
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Arrange for the first file to be pruned, and delete the second
+        # file.
+        now = datetime.now(pytz.UTC)
+        i386_file = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive,
+            path=u'dists/breezy-autotest/Contents-i386').one()
+        removeSecurityProxy(i386_file).scheduled_deletion_date = (
+            now - timedelta(hours=1))
+        os.unlink(suite_path('Contents-hppa'))
+        publisher.D_writeReleaseFiles(False)
+        matchers = [matchers[1].update(scheduled_deletion_date=Not(Is(None)))]
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Arrange for the second file to be pruned.
+        hppa_file = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive,
+            path=u'dists/breezy-autotest/Contents-hppa').one()
+        removeSecurityProxy(hppa_file).scheduled_deletion_date = (
+            now - timedelta(hours=1))
+        publisher.D_writeReleaseFiles(False)
+        self.assertContentEqual([], get_contents_files())
+        self.assertThat(suite_path('by-hash'), Not(PathExists()))
 
     def testUpdateByHashReprieve(self):
         # If a newly-modified index file is identical to a

@@ -297,11 +297,12 @@ class ByHash:
     def __init__(self, root, key):
         self.root = root
         self.path = os.path.join(root, key, "by-hash")
-        self.known_digests = defaultdict(set)
+        self.known_digests = defaultdict(lambda: defaultdict(set))
 
-    def add(self, lfa, copy_from_path=None):
+    def add(self, name, lfa, copy_from_path=None):
         """Ensure that by-hash entries for a single file exist.
 
+        :param name: The name of the file under this directory tree.
         :param lfa: The `ILibraryFileAlias` to add.
         :param copy_from_path: If not None, copy file content from here
             rather than fetching it from the librarian.  This can be used
@@ -312,7 +313,7 @@ class ByHash:
             digest = getattr(lfa.content, archive_hash.lfc_name)
             digest_path = os.path.join(
                 self.path, archive_hash.apt_name, digest)
-            self.known_digests[archive_hash.apt_name].add(digest)
+            self.known_digests[archive_hash.apt_name][digest].add(name)
             if not os.path.exists(digest_path):
                 ensure_directory_exists(os.path.dirname(digest_path))
                 if copy_from_path is not None:
@@ -326,9 +327,10 @@ class ByHash:
                         finally:
                             lfa.close()
 
-    def known(self, hashname, digest):
-        """Do we know about a file with this digest?"""
-        return digest in self.known_digests[hashname]
+    def known(self, name, hashname, digest):
+        """Do we know about a file with this name and digest?"""
+        names = self.known_digests[hashname].get(digest)
+        return names is not None and name in names
 
     def prune(self):
         """Remove all by-hash entries that we have not been told to add.
@@ -341,7 +343,7 @@ class ByHash:
             if os.path.exists(hash_path):
                 prune_hash_directory = True
                 for digest in list(os.listdir(hash_path)):
-                    if not self.known(archive_hash.apt_name, digest):
+                    if digest not in self.known_digests[archive_hash.apt_name]:
                         os.unlink(os.path.join(hash_path, digest))
                     else:
                         prune_hash_directory = False
@@ -372,10 +374,12 @@ class ByHashes:
         return self.children[key]
 
     def add(self, path, lfa, copy_from_path=None):
-        self.registerChild(path).add(lfa, copy_from_path=copy_from_path)
+        self.registerChild(path).add(
+            os.path.basename(path), lfa, copy_from_path=copy_from_path)
 
     def known(self, path, hashname, digest):
-        return self.registerChild(path).known(hashname, digest)
+        return self.registerChild(path).known(
+            os.path.basename(path), hashname, digest)
 
     def prune(self):
         for child in self.children.values():
