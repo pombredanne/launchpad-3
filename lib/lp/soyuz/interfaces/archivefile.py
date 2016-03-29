@@ -79,11 +79,12 @@ class IArchiveFileSet(Interface):
         :param content_type: The MIME type of the file.
         """
 
-    def getByArchive(archive, container=None, eager_load=False):
+    def getByArchive(archive, container=None, path=None, eager_load=False):
         """Get files in an archive.
 
         :param archive: Return files in this `IArchive`.
         :param container: Return only files with this container.
+        :param path: Return only files with this path.
         :param eager_load: If True, preload related `LibraryFileAlias` and
             `LibraryFileContent` rows.
         """

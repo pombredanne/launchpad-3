@@ -95,13 +95,15 @@ class ArchiveFileSet:
         return cls.new(archive, container, path, library_file)
 
     @staticmethod
-    def getByArchive(archive, container=None, eager_load=False):
+    def getByArchive(archive, container=None, path=None, eager_load=False):
         """See `IArchiveFileSet`."""
         clauses = [ArchiveFile.archive == archive]
         # XXX cjwatson 2016-03-15: We'll need some more sophisticated way to
         # match containers once we're using them for custom uploads.
         if container is not None:
             clauses.append(ArchiveFile.container == container)
+        if path is not None:
+            clauses.append(ArchiveFile.path == path)
         archive_files = IStore(ArchiveFile).find(ArchiveFile, *clauses)
 
         def eager_load(rows):

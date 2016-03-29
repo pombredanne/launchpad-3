@@ -76,12 +76,24 @@ class TestArchiveFile(TestCaseWithFactory):
         self.assertContentEqual(
             [], archive_file_set.getByArchive(archives[0], container="bar"))
         self.assertContentEqual(
+            [archive_files[1]],
+            archive_file_set.getByArchive(
+                archives[0], path=archive_files[1].path))
+        self.assertContentEqual(
+            [], archive_file_set.getByArchive(archives[0], path="other"))
+        self.assertContentEqual(
             archive_files[2:], archive_file_set.getByArchive(archives[1]))
         self.assertContentEqual(
             [archive_files[3]],
             archive_file_set.getByArchive(archives[1], container="foo"))
         self.assertContentEqual(
             [], archive_file_set.getByArchive(archives[1], container="bar"))
+        self.assertContentEqual(
+            [archive_files[3]],
+            archive_file_set.getByArchive(
+                archives[1], path=archive_files[3].path))
+        self.assertContentEqual(
+            [], archive_file_set.getByArchive(archives[1], path="other"))
 
     def test_scheduleDeletion(self):
         archive_files = [self.factory.makeArchiveFile() for _ in range(3)]

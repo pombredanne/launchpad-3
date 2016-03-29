@@ -2350,12 +2350,9 @@ class TestPublisher(TestPublisherBase):
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
-        archive_files = [
-            archive_file
-            for archive_file in getUtility(IArchiveFileSet).getByArchive(
-                self.ubuntutest.main_archive)
-            if archive_file.path == 'dists/breezy-autotest/main/source/Sources'
-            ]
+        archive_files = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive,
+            path=u'dists/breezy-autotest/main/source/Sources')
         self.assertThat(
             sorted(archive_files, key=attrgetter('id')),
             MatchesListwise([
