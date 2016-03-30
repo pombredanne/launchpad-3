@@ -87,6 +87,7 @@ class IArchiveFileSet(Interface):
         :param path: Return only files with this path.
         :param eager_load: If True, preload related `LibraryFileAlias` and
             `LibraryFileContent` rows.
+        :return: An iterable of matched files.
         """
 
     def scheduleDeletion(archive_files, stay_of_execution):
@@ -95,6 +96,8 @@ class IArchiveFileSet(Interface):
         :param archive_files: The `IArchiveFile`s to schedule for deletion.
         :param stay_of_execution: A `timedelta`; schedule files for deletion
             this amount of time in the future.
+        :return: An iterable of (container, path, sha256) for files that
+            were scheduled for deletion.
         """
 
     def unscheduleDeletion(archive, container=None, sha256_checksums=set()):
@@ -110,6 +113,8 @@ class IArchiveFileSet(Interface):
         :param container: Operate only on files with this container.
         :param sha256_checksums: Operate only on files with any of these
             checksums.
+        :return: An iterable of (container, path, sha256) for files that
+            were unscheduled for deletion.
         """
 
     def getContainersToReap(archive, container_prefix=None):
@@ -118,6 +123,7 @@ class IArchiveFileSet(Interface):
         :param archive: Return containers in this `IArchive`.
         :param container_prefix: Return only containers that start with this
             prefix.
+        :return: An iterable of matched container names.
         """
 
     def reap(archive, container=None):
@@ -125,4 +131,6 @@ class IArchiveFileSet(Interface):
 
         :param archive: Delete files from this `IArchive`.
         :param container: Delete only files with this container.
+        :return: An iterable of (container, path, sha256) for files that
+            were deleted.
         """

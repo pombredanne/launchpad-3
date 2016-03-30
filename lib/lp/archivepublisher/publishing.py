@@ -294,9 +294,10 @@ archive_hashes = [
 class ByHash:
     """Represents a single by-hash directory tree."""
 
-    def __init__(self, root, key):
+    def __init__(self, root, key, log):
         self.root = root
         self.path = os.path.join(root, key, "by-hash")
+        self.log = log
         self.known_digests = defaultdict(lambda: defaultdict(set))
 
     def add(self, name, lfa, copy_from_path=None):
@@ -315,6 +316,8 @@ class ByHash:
                 self.path, archive_hash.apt_name, digest)
             self.known_digests[archive_hash.apt_name][digest].add(name)
             if not os.path.exists(digest_path):
+                self.log.debug(
+                    "by-hash: Creating %s for %s" % (digest_path, name))
                 ensure_directory_exists(os.path.dirname(digest_path))
                 if copy_from_path is not None:
                     os.link(
@@ -344,7 +347,10 @@ class ByHash:
                 prune_hash_directory = True
                 for digest in list(os.listdir(hash_path)):
                     if digest not in self.known_digests[archive_hash.apt_name]:
-                        os.unlink(os.path.join(hash_path, digest))
+                        digest_path = os.path.join(hash_path, digest)
+                        self.log.debug(
+                            "by-hash: Deleting unreferenced %s" % digest_path)
+                        os.unlink(digest_path)
                     else:
                         prune_hash_directory = False
                 if prune_hash_directory:
@@ -358,8 +364,9 @@ class ByHash:
 class ByHashes:
     """Represents all by-hash directory trees in an archive."""
 
-    def __init__(self, root):
+    def __init__(self, root, log):
         self.root = root
+        self.log = log
         self.children = {}
 
     def registerChild(self, dirpath):
@@ -369,7 +376,7 @@ class ByHashes:
         the `prune` method.
         """
         if dirpath not in self.children:
-            self.children[dirpath] = ByHash(self.root, dirpath)
+            self.children[dirpath] = ByHash(self.root, dirpath, self.log)
         return self.children[dirpath]
 
     def add(self, path, lfa, copy_from_path=None):
@@ -985,7 +992,7 @@ class Publisher(object):
         entries that ceased to be current sufficiently long ago are removed.
         """
         archive_file_set = getUtility(IArchiveFileSet)
-        by_hashes = ByHashes(self._config.archiveroot)
+        by_hashes = ByHashes(self._config.archiveroot, self.log)
         suite_dir = os.path.relpath(
             os.path.join(self._config.distsroot, suite),
             self._config.archiveroot)
@@ -994,14 +1001,18 @@ class Publisher(object):
         # Gather information on entries in the current Release file, and
         # make sure nothing there is condemned.
         current_files = {}
+        current_sha256_checksums = set()
         for current_entry in release_data["SHA256"]:
             path = os.path.join(suite_dir, current_entry["name"])
             current_files[path] = (
                 current_entry["size"], current_entry["sha256"])
-        archive_file_set.unscheduleDeletion(
-            self.archive, container=container,
-            sha256_checksums=set(
-                sha256 for _, sha256 in current_files.values()))
+            current_sha256_checksums.add(current_entry["sha256"])
+        for container, path, sha256 in archive_file_set.unscheduleDeletion(
+                self.archive, container=container,
+                sha256_checksums=current_sha256_checksums):
+            self.log.debug(
+                "by-hash: Unscheduled %s for %s in %s for deletion" % (
+                    sha256, path, container))
 
         # Remove any condemned files from the database whose stay of
         # execution has elapsed.  We ensure that we know about all the
@@ -1010,7 +1021,10 @@ class Publisher(object):
         for db_file in archive_file_set.getByArchive(
                 self.archive, container=container):
             by_hashes.registerChild(os.path.dirname(db_file.path))
-        archive_file_set.reap(self.archive, container=container)
+        for container, path, sha256 in archive_file_set.reap(
+                self.archive, container=container):
+            self.log.debug(
+                "by-hash: Deleted %s for %s in %s" % (sha256, path, container))
 
         # Ensure that all files recorded in the database are in by-hash.
         db_files = archive_file_set.getByArchive(
@@ -1031,8 +1045,12 @@ class Publisher(object):
                 if db_file.library_file.content.sha256 != current_sha256:
                     condemned_files.add(db_file)
         if condemned_files:
-            archive_file_set.scheduleDeletion(
-                condemned_files, timedelta(days=BY_HASH_STAY_OF_EXECUTION))
+            for container, path, sha256 in archive_file_set.scheduleDeletion(
+                    condemned_files,
+                    timedelta(days=BY_HASH_STAY_OF_EXECUTION)):
+                self.log.debug(
+                    "by-hash: Scheduled %s for %s in %s for deletion" % (
+                        sha256, path, container))
 
         # Ensure that all the current index files are in by-hash and have
         # corresponding database entries.

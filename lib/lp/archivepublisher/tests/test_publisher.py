@@ -69,6 +69,7 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.interfaces import IGPGHandler
@@ -507,7 +508,7 @@ class TestByHash(TestCaseWithFactory):
             self.factory.makeLibraryFileAlias(content=content)
             for content in contents]
         transaction.commit()
-        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         for lfa in lfas:
             by_hash.add("Sources", lfa)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
@@ -521,7 +522,7 @@ class TestByHash(TestCaseWithFactory):
                 os.path.join(root, sources_path), "w") as sources:
             sources.write(content)
         lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
-        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         by_hash.add("Sources", lfa, copy_from_path=sources_path)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
         self.assertThat(by_hash_path, ByHashHasContents([content]))
@@ -537,7 +538,7 @@ class TestByHash(TestCaseWithFactory):
             with open_for_writing(
                     os.path.join(by_hash_path, hashname, digest), "w") as f:
                 f.write(content)
-        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         self.assertThat(by_hash_path, ByHashHasContents([content]))
         by_hash.add("Sources", lfa)
         self.assertThat(by_hash_path, ByHashHasContents([content]))
@@ -548,7 +549,7 @@ class TestByHash(TestCaseWithFactory):
         with open_for_writing(os.path.join(root, "abc"), "w") as f:
             f.write(content)
         lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
-        by_hash = ByHash(root, "")
+        by_hash = ByHash(root, "", DevNullLogger())
         md5 = hashlib.md5(content).hexdigest()
         sha1 = hashlib.sha1(content).hexdigest()
         sha256 = hashlib.sha256(content).hexdigest()
@@ -570,7 +571,7 @@ class TestByHash(TestCaseWithFactory):
         with open_for_writing(os.path.join(root, sources_path), "w") as f:
             f.write(content)
         lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
-        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         by_hash.add("Sources", lfa, copy_from_path=sources_path)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
         with open_for_writing(os.path.join(by_hash_path, "MD5Sum/0"), "w"):
@@ -581,7 +582,7 @@ class TestByHash(TestCaseWithFactory):
 
     def test_prune_empty(self):
         root = self.makeTemporaryDirectory()
-        by_hash = ByHash(root, "dists/foo/main/source")
+        by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
         with open_for_writing(os.path.join(by_hash_path, "MD5Sum/0"), "w"):
             pass
@@ -603,7 +604,7 @@ class TestByHashes(TestCaseWithFactory):
             "dists/foo/main/binary-amd64": {
                 "Packages.gz": "def\n", "Packages.xz": "ghi\n"},
             }
-        by_hashes = ByHashes(root)
+        by_hashes = ByHashes(root, DevNullLogger())
         for dirpath, contents in path_contents.items():
             for name, content in contents.items():
                 path = os.path.join(dirpath, name)
@@ -623,7 +624,7 @@ class TestByHashes(TestCaseWithFactory):
         with open_for_writing(os.path.join(root, sources_path), "w") as f:
             f.write(content)
         lfa = self.factory.makeLibraryFileAlias(content=content, db_only=True)
-        by_hashes = ByHashes(root)
+        by_hashes = ByHashes(root, DevNullLogger())
         md5 = hashlib.md5(content).hexdigest()
         sha1 = hashlib.sha1(content).hexdigest()
         sha256 = hashlib.sha256(content).hexdigest()
@@ -642,7 +643,7 @@ class TestByHashes(TestCaseWithFactory):
             "dists/foo/main/binary-amd64": {
                 "Packages.gz": "def\n", "Packages.xz": "ghi\n"},
             }
-        by_hashes = ByHashes(root)
+        by_hashes = ByHashes(root, DevNullLogger())
         for dirpath, contents in path_contents.items():
             for name, content in contents.items():
                 path = os.path.join(dirpath, name)
@@ -2225,6 +2226,7 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
         publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
@@ -2274,6 +2276,7 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
         publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
 
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
             with open(suite_path('main', 'source', name), 'rb') as f:
@@ -2317,6 +2320,7 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
         publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
         matchers = [
             MatchesStructure(
                 path=Equals('dists/breezy-autotest/Contents-i386'),
@@ -2329,6 +2333,7 @@ class TestPublisher(TestPublisherBase):
         with open_for_writing(suite_path('Contents-hppa'), 'w') as f:
             f.write('A Contents file\n')
         publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
         matchers.append(
             MatchesStructure(
                 path=Equals('dists/breezy-autotest/Contents-hppa'),
@@ -2340,6 +2345,7 @@ class TestPublisher(TestPublisherBase):
         # Delete the first file, but allow it its stay of execution.
         os.unlink(suite_path('Contents-i386'))
         publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
         matchers[0] = matchers[0].update(scheduled_deletion_date=Not(Is(None)))
         self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
         self.assertThat(
@@ -2355,6 +2361,7 @@ class TestPublisher(TestPublisherBase):
             now - timedelta(hours=1))
         os.unlink(suite_path('Contents-hppa'))
         publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
         matchers = [matchers[1].update(scheduled_deletion_date=Not(Is(None)))]
         self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
         self.assertThat(
@@ -2367,6 +2374,7 @@ class TestPublisher(TestPublisherBase):
         removeSecurityProxy(hppa_file).scheduled_deletion_date = (
             now - timedelta(hours=1))
         publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
         self.assertContentEqual([], get_contents_files())
         self.assertThat(suite_path('by-hash'), Not(PathExists()))
 
