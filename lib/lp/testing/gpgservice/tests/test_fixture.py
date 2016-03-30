@@ -65,4 +65,5 @@ class GPGServiceFixtureTests(TestCase):
         gpg_fixture = self.useFixture(GPGKeyServiceFixture(config_fixture))
 
         self.assertEqual(
-            gpg_fixture.bind_address, config.gpgservice.api_endpoint)
+            'http://%s/' % gpg_fixture.bind_address,
+            config.gpgservice.api_endpoint)
