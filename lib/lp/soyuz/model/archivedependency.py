@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for ArchiveDependency."""
@@ -16,7 +16,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
-from lp.soyuz.adapters.archivedependencies import component_dependencies
+from lp.soyuz.adapters.archivedependencies import get_components_for_context
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 
 
@@ -63,6 +63,6 @@ class ArchiveDependency(SQLBase):
             return pocket_title
 
         component_part = ", ".join(
-            component_dependencies[self.component.name])
+            get_components_for_context(self.component, self.pocket))
 
         return "%s (%s)" % (pocket_title, component_part)

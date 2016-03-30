@@ -64,7 +64,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
-            None)
+            None).name
         args['archives'] = get_sources_list_for_building(
             self.build, distroarchseries, None,
             tools_source=config.builddmaster.bzr_builder_sources_list,
