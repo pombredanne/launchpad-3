@@ -65,6 +65,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.client import LibrarianClient
+from lp.services.osutils import open_for_writing
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -818,10 +819,8 @@ class Publisher(object):
         :param release_data: A `debian.deb822.Release` object to write
             to the filesystem.
         """
-        location = os.path.join(self._config.distsroot, suite)
-        if not file_exists(location):
-            os.makedirs(location)
-        with open(os.path.join(location, "Release"), "w") as release_file:
+        release_path = os.path.join(self._config.distsroot, suite, "Release")
+        with open_for_writing(release_path, "w") as release_file:
             release_data.dump(release_file, "utf-8")
 
     def _syncTimestamps(self, suite, all_files):
@@ -970,8 +969,8 @@ class Publisher(object):
         release_file["Label"] = self._getLabel()
         release_file["Architecture"] = arch_name
 
-        with open(os.path.join(suite_dir,
-                               component, arch_path, "Release"), "w") as f:
+        release_path = os.path.join(suite_dir, component, arch_path, "Release")
+        with open_for_writing(release_path, "w") as f:
             release_file.dump(f, "utf-8")
 
     def _writeSuiteSource(self, distroseries, pocket, component,
