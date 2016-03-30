@@ -640,7 +640,7 @@ class LPGPGClient(GPGClient):
     """See IGPGClient."""
 
     def get_endpoint(self):
-        return "http://{}".format(config.gpgservice.api_endpoint)
+        return config.gpgservice.api_endpoint
 
     def get_timeout(self):
         return 30.0
