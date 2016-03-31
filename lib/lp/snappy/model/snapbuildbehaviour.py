@@ -11,6 +11,12 @@ __all__ = [
     'SnapBuildBehaviour',
     ]
 
+import base64
+import json
+import time
+
+from twisted.internet import defer
+from twisted.web.client import getPage
 from zope.component import adapter
 from zope.interface import implementer
 
@@ -70,12 +76,24 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             raise CannotBuild(
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
+    @defer.inlineCallbacks
     def _extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
         args = {}
+        token = yield self._requestProxyToken()
+        args["proxy_url"] = (
+            "http://{username}:{password}@{host}:{port}".format(
+                username=token['username'],
+                password=token['secret'],
+                host=config.snappy.builder_proxy_host,
+                port=config.snappy.builder_proxy_port))
+        args["revocation_endpoint"] = (
+            "{endpoint}/{token}".format(
+                endpoint=config.snappy.builder_proxy_auth_api_endpoint,
+                token=token['username']))
         args["name"] = build.snap.name
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
@@ -96,12 +114,36 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %
                 (build.snap.owner.name, build.snap.name))
-        return args
+        defer.returnValue(args)
 
+    @defer.inlineCallbacks
+    def _requestProxyToken(self):
+        admin_username = config.snappy.builder_proxy_auth_api_admin_username
+        secret = config.snappy.builder_proxy_auth_api_admin_secret
+        url = config.snappy.builder_proxy_auth_api_endpoint
+        timestamp = int(time.time())
+        proxy_username = '{build_id}-{timestamp}'.format(
+            build_id=self.build.build_cookie,
+            timestamp=timestamp)
+        auth_string = '{}:{}'.format(admin_username, secret).strip()
+        auth_header = 'Basic ' + base64.encodestring(auth_string)
+        data = json.dumps({'username': proxy_username})
+
+        result = yield getPage(
+            url,
+            method='POST',
+            postdata=data,
+            headers={
+                'Authorization': auth_header,
+                'Content-Type': 'application/json'}
+            )
+        token = json.loads(result)
+        defer.returnValue(token)
+
+    @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
-        return (
-            "snap", self.build.distro_arch_series, {},
-            self._extraBuildArgs(logger=logger))
+        args = yield self._extraBuildArgs(logger=logger)
+        defer.returnValue(("snap", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""
