@@ -8,9 +8,7 @@ __metaclass__ = type
 import shutil
 import tempfile
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
-from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
