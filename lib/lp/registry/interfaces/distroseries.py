@@ -401,6 +401,12 @@ class IDistroSeriesPublic(
             that apt uses them by default.  Only effective if
             publish_by_hash is also set.""")))
 
+    strict_supported_component_dependencies = exported(Bool(
+        title=_("Strict dependencies of supported components"), required=True,
+        description=_("""
+            If True, packages in supported components (main and restricted)
+            may not build-depend on packages in unsupported components.""")))
+
     inherit_overrides_from_parents = Bool(
         title=_("Inherit overrides from parents"),
         readonly=False, required=True)

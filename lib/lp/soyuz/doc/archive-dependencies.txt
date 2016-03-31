@@ -75,10 +75,6 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     get_components_for_context)
     >>> from lp.soyuz.enums import ArchivePurpose
 
-    >>> archive = factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-    >>> ogre_build = factory.makeBinaryPackageBuild(
-    ...     archive=archive, pocket=PackagePublishingPocket.RELEASE)
-
     >>> def testOgreComponents(build):
     ...     print " Component | Ogre-Model"
     ...     print "-----------+---------------"
@@ -87,17 +83,42 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...         npub = removeSecurityProxy(build.current_source_publication)
     ...         npub.component = component
     ...         flush_database_caches()
-    ...         components_term = " ".join(
-    ...             get_components_for_context(
-    ...                 build.current_component, build.pocket))
+    ...         components_term = " ".join(get_components_for_context(
+    ...             build.current_component, build.distro_series,
+    ...             build.pocket))
     ...         print '%10s | %s' % (build.current_component.name,
     ...                              components_term)
 
+    >>> archive = factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+    >>> ogre_build = factory.makeBinaryPackageBuild(
+    ...     archive=archive, pocket=PackagePublishingPocket.RELEASE)
     >>> testOgreComponents(ogre_build)
      Component | Ogre-Model
     -----------+---------------
           main | main
     restricted | main restricted
+      universe | main universe
+    multiverse | main restricted universe multiverse
+       partner | partner
+
+Series with strict_supported_component_dependencies=False additionally allow
+source packages in 'supported' components (main and restricted) to
+build-depend on binary packages in 'unsupported' components (universe and
+multiverse).
+
+    >>> lax_distroseries = factory.makeDistroSeries(
+    ...     distribution=archive.distribution)
+    >>> lax_distroseries.strict_supported_component_dependencies = False
+    >>> lax_distroarchseries = factory.makeDistroArchSeries(
+    ...     distroseries=lax_distroseries)
+    >>> lax_ogre_build = factory.makeBinaryPackageBuild(
+    ...     distroarchseries=lax_distroarchseries, archive=archive,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> testOgreComponents(lax_ogre_build)
+     Component | Ogre-Model
+    -----------+---------------
+          main | main universe
+    restricted | main restricted universe multiverse
       universe | main universe
     multiverse | main restricted universe multiverse
        partner | partner
@@ -157,7 +178,7 @@ the building 'sources_list' contents.
 
     >>> for component_name in get_components_for_context(
     ...         getUtility(IComponentSet)[default_component_dependency_name],
-    ...         pocket):
+    ...         hoary, pocket):
     ...     print component_name
     main
     restricted

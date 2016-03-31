@@ -62,7 +62,13 @@ class ArchiveDependency(SQLBase):
         if self.component is None:
             return pocket_title
 
-        component_part = ", ".join(
-            get_components_for_context(self.component, self.pocket))
+        # XXX cjwatson 2016-03-31: This may be inaccurate, but we can't do
+        # much better since this ArchiveDependency applies to multiple
+        # series which may each resolve component dependencies in different
+        # ways.
+        distroseries = self.archive.distribution.currentseries
+
+        component_part = ", ".join(get_components_for_context(
+            self.component, distroseries, self.pocket))
 
         return "%s (%s)" % (pocket_title, component_part)
