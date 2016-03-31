@@ -9,7 +9,6 @@ __all__ = [
     'BinaryPackageBuildBehaviour',
     ]
 
-from twisted.internet import defer
 from zope.interface import implementer
 
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -83,9 +82,9 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
         return filemap
 
     def composeBuildRequest(self, logger):
-        return defer.succeed(
-            ("binarypackage", self.build.distro_arch_series,
-             self.determineFilesToSend(), self._extraBuildArgs(self.build)))
+        return (
+            "binarypackage", self.build.distro_arch_series,
+            self.determineFilesToSend(), self._extraBuildArgs(self.build))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
