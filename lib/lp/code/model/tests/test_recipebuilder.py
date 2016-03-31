@@ -8,7 +8,9 @@ __metaclass__ = type
 import shutil
 import tempfile
 
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -60,8 +62,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         """Create a sample `ISourcePackageRecipeBuild`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
-        distroseries = self.factory.makeDistroSeries(name="mydistro",
-            distribution=distro)
+        distroseries = self.factory.makeDistroSeries(
+            name="mydistro", distribution=distro)
         processor = getUtility(IProcessorSet).getByName('386')
         distroseries.nominatedarchindep = distroseries.newArch(
             'i386', processor, True, self.factory.makePerson())
@@ -147,20 +149,21 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         expected_archives.insert(
             0, "deb http://foo %s main" % job.build.distroseries.name)
+        args = job._extraBuildArgs(distroarchseries)
         self.assertEqual({
-           'archive_private': False,
-           'arch_tag': 'i386',
-           'author_email': u'requester@ubuntu.com',
-           'suite': u'mydistro',
-           'author_name': u'Joe User',
-           'archive_purpose': 'PPA',
-           'ogrecomponent': 'universe',
-           'recipe_text':
-               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
-               'lp://dev/~joe/someapp/pkg\n',
-           'archives': expected_archives,
-           'distroseries_name': job.build.distroseries.name,
-            }, job._extraBuildArgs(distroarchseries))
+            'archive_private': False,
+            'arch_tag': 'i386',
+            'author_email': u'requester@ubuntu.com',
+            'suite': u'mydistro',
+            'author_name': u'Joe User',
+            'archive_purpose': 'PPA',
+            'ogrecomponent': 'universe',
+            'recipe_text':
+            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
+            'lp://dev/~joe/someapp/pkg\n',
+            'archives': expected_archives,
+            'distroseries_name': job.build.distroseries.name,
+        }, args)
 
     def test_extraBuildArgs_private_archive(self):
         # If the build archive is private, the archive_private flag is
@@ -232,19 +235,19 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         logger = BufferLogger()
         self.assertEqual({
-           'archive_private': False,
-           'arch_tag': 'i386',
-           'author_email': u'requester@ubuntu.com',
-           'suite': u'mydistro',
-           'author_name': u'Joe User',
-           'archive_purpose': 'PPA',
-           'ogrecomponent': 'universe',
-           'recipe_text':
-               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
-               'lp://dev/~joe/someapp/pkg\n',
-           'archives': expected_archives,
-           'distroseries_name': job.build.distroseries.name,
-            }, job._extraBuildArgs(distroarchseries, logger))
+            'archive_private': False,
+            'arch_tag': 'i386',
+            'author_email': u'requester@ubuntu.com',
+            'suite': u'mydistro',
+            'author_name': u'Joe User',
+            'archive_purpose': 'PPA',
+            'ogrecomponent': 'universe',
+            'recipe_text':
+            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
+            'lp://dev/~joe/someapp/pkg\n',
+            'archives': expected_archives,
+            'distroseries_name': job.build.distroseries.name,
+        }, job._extraBuildArgs(distroarchseries, logger))
         self.assertIn(
             "Exception processing build tools sources.list entry:",
             logger.getLogBuffer())
@@ -289,7 +292,6 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, SourcePackageRecipeBuild.getByID(job.build.id))
 
     def test_composeBuildRequest(self):
-        # Ensure composeBuildRequest is correct.
         job = self.makeJob()
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
@@ -297,9 +299,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder = MockBuilder("bob-de-bouwer")
         builder.processor = das.processor
         job.setBuilder(builder, None)
+        build_request = yield job.composeBuildRequest(None)
         self.assertEqual(
             ('sourcepackagerecipe', das, {}, job._extraBuildArgs(das)),
-            job.composeBuildRequest(None))
+            build_request)
 
 
 class TestBuildNotifications(TrialTestCase):

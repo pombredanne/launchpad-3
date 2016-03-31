@@ -57,7 +57,8 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
             'arch_tag': self._getDistroArchSeries().architecturetag,
             'branch_url': self.build.branch.composePublicURL(),
             }
-        return ("translation-templates", self._getDistroArchSeries(), {}, args)
+        return defer.succeed(
+            ("translation-templates", self._getDistroArchSeries(), {}, args))
 
     def _getDistroArchSeries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

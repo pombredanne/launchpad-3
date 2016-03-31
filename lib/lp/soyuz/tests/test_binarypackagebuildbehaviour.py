@@ -88,7 +88,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         expected = self.makeExpectedInteraction(
             builder, build, chroot, archive, archive_purpose, component,
             extra_uploads, filemap_names)
-        self.assertEqual(call_log, expected)
+        self.assertEqual(expected, call_log)
 
     def makeExpectedInteraction(self, builder, build, chroot, archive,
                                 archive_purpose, component=None,

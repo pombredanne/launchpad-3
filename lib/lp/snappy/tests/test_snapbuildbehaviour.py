@@ -5,8 +5,19 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+import uuid
+
 import fixtures
+from mock import (
+    patch,
+    Mock,
+    )
 import transaction
+from testtools import ExpectedException
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.matchers import IsInstance
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 
@@ -27,6 +38,7 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.snappy.interfaces.snap import (
@@ -42,12 +54,11 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestSnapBuildBehaviour(TestCaseWithFactory):
-
+class TestSnapBuildBehaviourBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestSnapBuildBehaviour, self).setUp()
+        super(TestSnapBuildBehaviourBase, self).setUp()
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.pushConfig("snappy", tools_source=None)
 
@@ -64,6 +75,10 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             distroarchseries=distroarchseries, pocket=pocket,
             name=u"test-snap", **kwargs)
         return IBuildFarmJobBehaviour(build)
+
+
+class TestSnapBuildBehaviour(TestSnapBuildBehaviourBase):
+    layer = LaunchpadZopelessLayer
 
     def test_provides_interface(self):
         # SnapBuildBehaviour provides IBuildFarmJobBehaviour.
@@ -154,6 +169,46 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         e = self.assertRaises(CannotBuild, job.verifyBuildRequest, logger)
         self.assertIn("Missing chroot", str(e))
 
+
+class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
+    run_tests_with = AsynchronousDeferredRunTest
+
+    def setUp(self):
+        super(TestAsyncSnapBuildBehaviour, self).setUp()
+        build_username = 'SNAPBUILD-1'
+        self.token = {'secret': uuid.uuid4().get_hex(),
+                      'username': build_username,
+                      'timestamp': datetime.utcnow().isoformat()}
+        self.proxy_url = ("http://{username}:{password}"
+                          "@{host}:{port}".format(
+                              username=self.token['username'],
+                              password=self.token['secret'],
+                              host=config.snappy.builder_proxy_host,
+                              port=config.snappy.builder_proxy_port))
+        self.revocation_endpoint = "{endpoint}/{username}".format(
+            endpoint=config.snappy.builder_proxy_auth_api_endpoint,
+            username=build_username)
+        self.patcher = patch.object(
+            SnapBuildBehaviour, '_requestProxyToken',
+            Mock(return_value=self.mockRequestProxyToken())).start()
+
+    def tearDown(self):
+        super(TestAsyncSnapBuildBehaviour, self).tearDown()
+        self.patcher.stop()
+
+    def mockRequestProxyToken(self):
+        return defer.succeed(self.token)
+
+    @defer.inlineCallbacks
+    def test_composeBuildRequest(self):
+        job = self.makeJob()
+        lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        build_request = yield job.composeBuildRequest(None)
+        self.assertEqual(build_request[1], job.build.distro_arch_series)
+        self.assertThat(build_request[3], IsInstance(dict))
+
+    @defer.inlineCallbacks
     def test_extraBuildArgs_bzr(self):
         # _extraBuildArgs returns appropriate arguments if asked to build a
         # job for a Bazaar branch.
@@ -161,14 +216,18 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob(branch=branch)
         expected_archives = get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
+        args = yield job._extraBuildArgs()
         self.assertEqual({
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
             "branch": branch.bzr_identity,
             "name": u"test-snap",
-            }, job._extraBuildArgs())
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            }, args)
 
+    @defer.inlineCallbacks
     def test_extraBuildArgs_git(self):
         # _extraBuildArgs returns appropriate arguments if asked to build a
         # job for a Git branch.
@@ -176,6 +235,7 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob(git_ref=ref)
         expected_archives = get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
+        args = yield job._extraBuildArgs()
         self.assertEqual({
             "archive_private": False,
             "archives": expected_archives,
@@ -183,17 +243,23 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
             "git_repository": ref.repository.git_https_url,
             "git_path": ref.name,
             "name": u"test-snap",
-            }, job._extraBuildArgs())
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            }, args)
 
-    def test_composeBuildRequest(self):
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_proxy_url_set(self):
         job = self.makeJob()
-        lfa = self.factory.makeLibraryFileAlias(db_only=True)
-        job.build.distro_arch_series.addOrUpdateChroot(lfa)
-        self.assertEqual(
-            ('snap', job.build.distro_arch_series, {},
-             job._extraBuildArgs()),
-            job.composeBuildRequest(None))
+        build_request = yield job.composeBuildRequest(None)
+        proxy_url = ("http://{username}:{password}"
+                     "@{host}:{port}".format(
+                         username=self.token['username'],
+                         password=self.token['secret'],
+                         host=config.snappy.builder_proxy_host,
+                         port=config.snappy.builder_proxy_port))
+        self.assertEqual(proxy_url, build_request[3]['proxy_url'])
 
+    @defer.inlineCallbacks
     def test_composeBuildRequest_deleted(self):
         # If the source branch/repository has been deleted,
         # composeBuildRequest raises CannotBuild.
@@ -203,12 +269,12 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         branch.destroySelf(break_references=True)
         self.assertIsNone(job.build.snap.branch)
         self.assertIsNone(job.build.snap.git_repository)
-        self.assertRaisesWithContent(
-            CannotBuild,
-            "Source branch/repository for ~snap-owner/test-snap has been "
-            "deleted.",
-            job.composeBuildRequest, None)
+        expected_exception_msg = ("Source branch/repository for "
+                                  "~snap-owner/test-snap has been deleted.")
+        with ExpectedException(CannotBuild, expected_exception_msg):
+            yield job.composeBuildRequest(None)
 
+    @defer.inlineCallbacks
     def test_composeBuildRequest_git_ref_deleted(self):
         # If the source Git reference has been deleted, composeBuildRequest
         # raises CannotBuild.
@@ -218,11 +284,10 @@ class TestSnapBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob(registrant=owner, owner=owner, git_ref=ref)
         repository.removeRefs([ref.path])
         self.assertIsNone(job.build.snap.git_ref)
-        self.assertRaisesWithContent(
-            CannotBuild,
-            "Source branch/repository for ~snap-owner/test-snap has been "
-            "deleted.",
-            job.composeBuildRequest, None)
+        expected_exception_msg = ("Source branch/repository for "
+                                  "~snap-owner/test-snap has been deleted.")
+        with ExpectedException(CannotBuild, expected_exception_msg):
+            yield job.composeBuildRequest(None)
 
 
 class MakeSnapBuildMixin:
