@@ -392,10 +392,10 @@ _DEFAULT = object()
 
 
 class GPGSigningContext:
-    """A helper object to hold the fingerprint, password and mode."""
+    """A helper object to hold the key, password and mode."""
 
-    def __init__(self, fingerprint, password='', mode=None):
-        self.fingerprint = fingerprint
+    def __init__(self, key, password='', mode=None):
+        self.key = key
         self.password = password
         self.mode = mode
 
@@ -2158,8 +2158,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if signing_context is not None:
             gpghandler = getUtility(IGPGHandler)
             body = gpghandler.signContent(
-                body, signing_context.fingerprint,
-                signing_context.password, signing_context.mode)
+                body, signing_context.key, signing_context.password,
+                signing_context.mode)
             assert body is not None
         if attachment_contents is None:
             mail.set_payload(body)

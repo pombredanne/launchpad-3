@@ -23,9 +23,22 @@ Make revisions for the branch so it has a codebrowse link.
     >>> owner_browser = setupBrowser('Basic eric@example.com:test')
     >>> def print_development_focus(browser):
     ...     """Print out the development focus part of the project info."""
-    ...     project_info = find_tag_by_id(browser.contents, 'project-info')
-    ...     dev_focus = project_info.find(attrs={'id':'dev-focus'})
+    ...     dev_focus = find_tag_by_id(browser.contents, 'development-focus')
     ...     print extract_text(dev_focus)
+    ...     print "Links:"
+    ...     for a in dev_focus.findAll('a'):
+    ...         for content in a.contents:
+    ...             print content
+    ...         title = a.get('title', '')
+    ...         print "%s (%s)" % (title, a['href'])
+    >>> def print_code_trunk(browser):
+    ...     """Print out code trunk part of the project info."""
+    ...     project_info = find_tag_by_id(browser.contents, 'code-info')
+    ...     dev_focus = project_info.find(attrs={'id':'dev-focus'})
+    ...     try:
+    ...         print extract_text(dev_focus)
+    ...     except TypeError:
+    ...         return
     ...     print "Links:"
     ...     for a in dev_focus.findAll('a'):
     ...         for content in a.contents:
@@ -49,10 +62,10 @@ series.
 
     >>> anon_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(anon_browser)
-    Development focus:
-    trunk series
+    trunk series is the current focus of development.
     Links:
       trunk series (/fooix/trunk)
+    >>> print_code_trunk(anon_browser)
     >>> print_involvement_portlet(anon_browser)
 
 
@@ -65,13 +78,11 @@ portlet.
 
     >>> owner_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(owner_browser)
-    Development focus:
-    trunk series    Change details
+    trunk series is the current focus of development.  Change details
     Links:
-    trunk series
-     (/fooix/trunk)
-     Change details
-     (http://launchpad.dev/fooix/+edit)
+     trunk series (/fooix/trunk)
+     Change details (http://launchpad.dev/fooix/+edit)
+    >>> print_code_trunk(anon_browser)
     >>> print_involvement_portlet(owner_browser)
     Code
     http://launchpad.dev/fooix/+configure-code
@@ -94,11 +105,22 @@ The owner can specify the development focus branch from the overview page.
 
 The owner is taken back to the project page.
 
-    >>> print_tag_with_id(owner_browser.contents, 'dev-focus')
+    >>> print_development_focus(owner_browser)
+    trunk series is the current focus of development.  Change details
+    Links:
+     trunk series (/fooix/trunk)
+     Change details (http://launchpad.dev/fooix/+edit)
+    >>> print_code_trunk(owner_browser)
     Development focus:
-    trunk series Change details
-    lp://dev/fooix Change branch
+    lp://dev/fooix  Configure Code
     Browse the code
+    Links:
+      lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
+      Configure Code
+        Configure code for this project
+        (http://launchpad.dev/fooix/+configure-code)
+      Browse the code
+        (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
 
 Projects with development focus branches
@@ -112,30 +134,33 @@ branch.
 
     >>> anon_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(anon_browser)
+    trunk series is the current focus of development.
+    Links:
+     trunk series (/fooix/trunk)
+    >>> print_code_trunk(anon_browser)
     Development focus:
-    trunk series
     lp://dev/fooix
     Browse the code
     Links:
-      trunk series (/fooix/trunk)
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
       Browse the code
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
     >>> owner_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(owner_browser)
+    trunk series is the current focus of development.  Change details
+    Links:
+     trunk series (/fooix/trunk)
+     Change details (http://launchpad.dev/fooix/+edit)
+    >>> print_code_trunk(owner_browser)
     Development focus:
-    trunk series     Change details
-    lp://dev/fooix   Change branch
+    lp://dev/fooix   Configure Code
     Browse the code
     Links:
-      trunk series (/fooix/trunk)
-      Change details
-        (http://launchpad.dev/fooix/+edit)
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
-      Change branch
-      Change the branch for this series
-        (http://launchpad.dev/fooix/trunk/+setbranch)
+      Configure Code
+        Configure code for this project
+        (http://launchpad.dev/fooix/+configure-code)
       Browse the code
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
@@ -154,24 +179,26 @@ appears as if there is no series branch set.
 
     >>> anon_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(anon_browser)
-    Development focus:
-    trunk series
+    trunk series is the current focus of development.
     Links:
       trunk series (/fooix/trunk)
+    >>> print_code_trunk(anon_browser)
 
     >>> owner_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(owner_browser)
-    Development focus:
-    trunk series     Change details
-    lp://dev/fooix   Change branch
-    Browse the code
+    trunk series is the current focus of development.  Change details
     Links:
       trunk series (/fooix/trunk)
       Change details
         (http://launchpad.dev/fooix/+edit)
+    >>> print_code_trunk(owner_browser)
+    Development focus:
+    lp://dev/fooix   Configure Code
+    Browse the code
+    Links:
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
-      Change branch
-      Change the branch for this series
-        (http://launchpad.dev/fooix/trunk/+setbranch)
+      Configure Code
+        Configure code for this project
+        (http://launchpad.dev/fooix/+configure-code)
       Browse the code
         (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)

@@ -2168,6 +2168,27 @@ class TestPublisher(TestPublisherBase):
                 os.stat(os.path.join(dep11_path, name)).st_mtime,
                 LessThan(now - 59))
 
+    def testReleaseFileWritingCreatesDirectories(self):
+        # Writing Release files creates directories as needed.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource()
+        # Create the top-level Release file so that careful Release
+        # republication is allowed.
+        release_path = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release')
+        with open_for_writing(release_path, 'w'):
+            pass
+
+        publisher.D_writeReleaseFiles(True)
+
+        source_release = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'source',
+            'Release')
+        self.assertTrue(file_exists(source_release))
+
     def testUpdateByHashDisabled(self):
         # The publisher does not create by-hash directories if it is
         # disabled in the series configuration.

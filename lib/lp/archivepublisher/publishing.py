@@ -75,7 +75,10 @@ from lp.services.database.interfaces import IStore
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.client import LibrarianClient
-from lp.services.osutils import ensure_directory_exists
+from lp.services.osutils import (
+    ensure_directory_exists,
+    open_for_writing,
+    )
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1079,10 +1082,8 @@ class Publisher(object):
         :param release_data: A `debian.deb822.Release` object to write
             to the filesystem.
         """
-        location = os.path.join(self._config.distsroot, suite)
-        if not file_exists(location):
-            os.makedirs(location)
-        with open(os.path.join(location, "Release"), "w") as release_file:
+        release_path = os.path.join(self._config.distsroot, suite, "Release")
+        with open_for_writing(release_path, "w") as release_file:
             release_data.dump(release_file, "utf-8")
 
     def _syncTimestamps(self, suite, all_files):
@@ -1108,6 +1109,7 @@ class Publisher(object):
             return
 
         suite = distroseries.getSuite(pocket)
+        suite_dir = os.path.join(self._config.distsroot, suite)
         all_components = [
             comp.name for comp in
             self.archive.getComponentsForSeries(distroseries)]
@@ -1131,8 +1133,7 @@ class Publisher(object):
                     distroseries, pocket, component, architecture, core_files)
             self._writeSuiteI18n(
                 distroseries, pocket, component, core_files)
-            dep11_dir = os.path.join(
-                self._config.distsroot, suite, component, "dep11")
+            dep11_dir = os.path.join(suite_dir, component, "dep11")
             try:
                 for dep11_file in os.listdir(dep11_dir):
                     if (dep11_file.startswith("Components-") or
@@ -1147,7 +1148,9 @@ class Publisher(object):
         for architecture in all_architectures:
             for contents_path in get_suffixed_indices(
                     'Contents-' + architecture):
-                extra_files.add(contents_path)
+                if os.path.exists(os.path.join(suite_dir, contents_path)):
+                    extra_files.add(remove_suffix(contents_path))
+                    extra_files.add(contents_path)
         all_files = core_files | extra_files
 
         drsummary = "%s %s " % (self.distro.displayname,
@@ -1157,6 +1160,7 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
+        self.log.debug("Writing Release file for %s" % suite)
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
@@ -1192,6 +1196,7 @@ class Publisher(object):
 
         if self.archive.signing_key is not None:
             # Sign the repository.
+            self.log.debug("Signing Release file for %s" % suite)
             IArchiveSigningKey(self.archive).signRepository(suite)
             core_files.add("Release.gpg")
             core_files.add("InRelease")
@@ -1210,6 +1215,7 @@ class Publisher(object):
         # XXX kiko 2006-08-24: Untested method.
 
         suite = distroseries.getSuite(pocket)
+        suite_dir = os.path.join(self._config.distsroot, suite)
         self.log.debug("Writing Release file for %s/%s/%s" % (
             suite, component, arch_path))
 
@@ -1217,7 +1223,10 @@ class Publisher(object):
         # the suite's architectures
         file_stub = os.path.join(component, arch_path, file_stub)
 
-        all_series_files.update(get_suffixed_indices(file_stub))
+        for path in get_suffixed_indices(file_stub):
+            if os.path.exists(os.path.join(suite_dir, path)):
+                all_series_files.add(remove_suffix(path))
+                all_series_files.add(path)
         all_series_files.add(os.path.join(component, arch_path, "Release"))
 
         release_file = Release()
@@ -1228,8 +1237,8 @@ class Publisher(object):
         release_file["Label"] = self._getLabel()
         release_file["Architecture"] = arch_name
 
-        with open(os.path.join(self._config.distsroot, suite,
-                               component, arch_path, "Release"), "w") as f:
+        release_path = os.path.join(suite_dir, component, arch_path, "Release")
+        with open_for_writing(release_path, "w") as f:
             release_file.dump(f, "utf-8")
 
     def _writeSuiteSource(self, distroseries, pocket, component,
@@ -1242,6 +1251,9 @@ class Publisher(object):
     def _writeSuiteArch(self, distroseries, pocket, component,
                         arch_name, all_series_files):
         """Write out a Release file for an architecture in a suite."""
+        suite = distroseries.getSuite(pocket)
+        suite_dir = os.path.join(self._config.distsroot, suite)
+
         file_stub = 'Packages'
         arch_path = 'binary-' + arch_name
 
@@ -1249,7 +1261,10 @@ class Publisher(object):
             # Set up the subcomponent paths.
             sub_path = os.path.join(component, subcomp, arch_path)
             sub_file_stub = os.path.join(sub_path, file_stub)
-            all_series_files.update(get_suffixed_indices(sub_file_stub))
+            for path in get_suffixed_indices(sub_file_stub):
+                if os.path.exists(os.path.join(suite_dir, path)):
+                    all_series_files.add(remove_suffix(path))
+                    all_series_files.add(path)
         self._writeSuiteArchOrSource(
             distroseries, pocket, component, 'Packages', arch_name, arch_path,
             all_series_files)

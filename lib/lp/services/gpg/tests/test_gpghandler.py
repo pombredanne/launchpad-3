@@ -221,7 +221,7 @@ class TestGPGHandler(TestCase):
             secret_key = import_secret_test_key(key_name)
             content = "abc\n"
             signed_content = self.gpg_handler.signContent(
-                content, secret_key.fingerprint, password)
+                content, secret_key, password)
             signature = self.gpg_handler.getVerifiedSignature(signed_content)
             self.assertEqual(content, signature.plain_data)
             self.assertEqual(secret_key.fingerprint, signature.fingerprint)

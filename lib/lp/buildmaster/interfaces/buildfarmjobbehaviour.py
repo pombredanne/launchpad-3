@@ -23,7 +23,8 @@ class IBuildFarmJobBehaviour(Interface):
         :param logger: A logger to be used to log diagnostic information.
         :return: A tuple of (
             "builder type", `DistroArchSeries` to build against,
-            {filename: `sendFileToSlave` arguments}, {extra build arguments})
+            {filename: `sendFileToSlave` arguments}, {extra build arguments}),
+            or a Deferred resulting in the same.
         """
 
     def dispatchBuildToSlave(logger):
