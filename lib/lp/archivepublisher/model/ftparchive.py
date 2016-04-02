@@ -54,10 +54,14 @@ def make_empty_dir(path):
     """Ensure that the path exists and is an empty directory."""
     if os.path.isdir(path):
         for name in os.listdir(path):
+            if name == "by-hash":
+                # Ignore existing by-hash directories; they will be cleaned
+                # up to match the rest of the directory tree later.
+                continue
             child_path = os.path.join(path, name)
             # Directories containing index files should never have
-            # subdirectories.  Guard against expensive mistakes by not
-            # recursing here.
+            # subdirectories other than by-hash.  Guard against expensive
+            # mistakes by not recursing here.
             os.unlink(child_path)
     else:
         os.makedirs(path, 0o755)

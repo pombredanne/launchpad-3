@@ -79,13 +79,15 @@ class IArchiveFileSet(Interface):
         :param content_type: The MIME type of the file.
         """
 
-    def getByArchive(archive, container=None, eager_load=False):
+    def getByArchive(archive, container=None, path=None, eager_load=False):
         """Get files in an archive.
 
         :param archive: Return files in this `IArchive`.
         :param container: Return only files with this container.
+        :param path: Return only files with this path.
         :param eager_load: If True, preload related `LibraryFileAlias` and
             `LibraryFileContent` rows.
+        :return: An iterable of matched files.
         """
 
     def scheduleDeletion(archive_files, stay_of_execution):
@@ -94,6 +96,25 @@ class IArchiveFileSet(Interface):
         :param archive_files: The `IArchiveFile`s to schedule for deletion.
         :param stay_of_execution: A `timedelta`; schedule files for deletion
             this amount of time in the future.
+        :return: An iterable of (container, path, sha256) for files that
+            were scheduled for deletion.
+        """
+
+    def unscheduleDeletion(archive, container=None, sha256_checksums=set()):
+        """Unschedule these archive files for deletion.
+
+        This is useful in the case when the new content of a file is
+        identical to a version that was previously condemned.  This method's
+        signature does not match that of `scheduleDeletion`; this is more
+        convenient because in such cases we normally do not yet have
+        `ArchiveFile` rows in hand.
+
+        :param archive: Operate on files in this `IArchive`.
+        :param container: Operate only on files with this container.
+        :param sha256_checksums: Operate only on files with any of these
+            checksums.
+        :return: An iterable of (container, path, sha256) for files that
+            were unscheduled for deletion.
         """
 
     def getContainersToReap(archive, container_prefix=None):
@@ -102,6 +123,7 @@ class IArchiveFileSet(Interface):
         :param archive: Return containers in this `IArchive`.
         :param container_prefix: Return only containers that start with this
             prefix.
+        :return: An iterable of matched container names.
         """
 
     def reap(archive, container=None):
@@ -109,4 +131,6 @@ class IArchiveFileSet(Interface):
 
         :param archive: Delete files from this `IArchive`.
         :param container: Delete only files with this container.
+        :return: An iterable of (container, path, sha256) for files that
+            were deleted.
         """
