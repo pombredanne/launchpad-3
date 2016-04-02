@@ -161,7 +161,7 @@ class FakeLibrarian(Fixture):
         return content_object
 
     def create(self, name, size, file, contentType, expires=None,
-               debugID=None, restricted=False):
+               debugID=None, restricted=False, allow_zero_length=False):
         "See `ILibraryFileAliasSet`."""
         return self._storeFile(name, size, file, contentType, expires=expires)
 
