@@ -738,7 +738,7 @@ class Publisher(object):
             distroseries, pocket = self.distro.getDistroSeriesAndPocket(
                 container[len(u"release:"):])
             archive_file_suites.add((distroseries, pocket))
-        self.release_files_needed.update(archive_file_suites)
+            self.release_files_needed.add((distroseries.name, pocket))
 
         for distroseries in self.distro:
             for pocket in self.archive.getPockets():
