@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for implementing distribution items."""
@@ -1283,10 +1283,22 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],
             orderBy=['archive.id'], distinct=True)
 
+        reapable_af_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        ArchiveFile.archive = archive.id AND
+        ArchiveFile.scheduled_deletion_date < %s
+        """ % sqlvalues(ArchivePurpose.PPA, self, UTC_NOW)
+
+        reapable_af_archives = Archive.select(
+            reapable_af_query, clauseTables=['ArchiveFile'],
+            orderBy=['archive.id'], distinct=True)
+
         deleting_archives = Archive.selectBy(
             status=ArchiveStatus.DELETING).orderBy(['archive.id'])
 
-        return src_archives.union(bin_archives).union(deleting_archives)
+        return src_archives.union(bin_archives).union(
+            reapable_af_archives).union(deleting_archives)
 
     def getArchiveByComponent(self, component_name):
         """See `IDistribution`."""

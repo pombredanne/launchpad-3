@@ -19,6 +19,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.osutils import open_for_writing
 from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.testing import TestCaseWithFactory
@@ -75,17 +76,35 @@ class TestArchiveFile(TestCaseWithFactory):
         self.assertContentEqual(
             [], archive_file_set.getByArchive(archives[0], container="bar"))
         self.assertContentEqual(
+            [archive_files[1]],
+            archive_file_set.getByArchive(
+                archives[0], path=archive_files[1].path))
+        self.assertContentEqual(
+            [], archive_file_set.getByArchive(archives[0], path="other"))
+        self.assertContentEqual(
             archive_files[2:], archive_file_set.getByArchive(archives[1]))
         self.assertContentEqual(
             [archive_files[3]],
             archive_file_set.getByArchive(archives[1], container="foo"))
         self.assertContentEqual(
             [], archive_file_set.getByArchive(archives[1], container="bar"))
+        self.assertContentEqual(
+            [archive_files[3]],
+            archive_file_set.getByArchive(
+                archives[1], path=archive_files[3].path))
+        self.assertContentEqual(
+            [], archive_file_set.getByArchive(archives[1], path="other"))
 
     def test_scheduleDeletion(self):
         archive_files = [self.factory.makeArchiveFile() for _ in range(3)]
-        getUtility(IArchiveFileSet).scheduleDeletion(
+        expected_rows = [
+            (archive_file.container, archive_file.path,
+             archive_file.library_file.content.sha256)
+            for archive_file in archive_files[:2]]
+        rows = getUtility(IArchiveFileSet).scheduleDeletion(
             archive_files[:2], timedelta(days=1))
+        self.assertContentEqual(expected_rows, rows)
+        flush_database_caches()
         tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
         # Allow a bit of timing slack for slow tests.
         self.assertThat(
@@ -95,6 +114,34 @@ class TestArchiveFile(TestCaseWithFactory):
             tomorrow - archive_files[1].scheduled_deletion_date,
             LessThan(timedelta(minutes=5)))
         self.assertIsNone(archive_files[2].scheduled_deletion_date)
+
+    def test_unscheduleDeletion(self):
+        archives = [self.factory.makeArchive() for _ in range(2)]
+        lfas = [
+            self.factory.makeLibraryFileAlias(db_only=True) for _ in range(3)]
+        archive_files = []
+        for archive in archives:
+            for container in ("foo", "bar"):
+                archive_files.extend([
+                    self.factory.makeArchiveFile(
+                        archive=archive, container=container, library_file=lfa)
+                    for lfa in lfas])
+        now = datetime.now(pytz.UTC)
+        for archive_file in archive_files:
+            removeSecurityProxy(archive_file).scheduled_deletion_date = now
+        expected_rows = [
+            ("foo", archive_files[0].path, lfas[0].content.sha256),
+            ("foo", archive_files[1].path, lfas[1].content.sha256),
+            ]
+        rows = getUtility(IArchiveFileSet).unscheduleDeletion(
+            archive=archives[0], container="foo",
+            sha256_checksums=[lfas[0].content.sha256, lfas[1].content.sha256])
+        self.assertContentEqual(expected_rows, rows)
+        flush_database_caches()
+        self.assertContentEqual(
+            [archive_files[0], archive_files[1]],
+            [archive_file for archive_file in archive_files
+             if archive_file.scheduled_deletion_date is None])
 
     def test_getContainersToReap(self):
         archive = self.factory.makeArchive()
@@ -149,6 +196,11 @@ class TestArchiveFile(TestCaseWithFactory):
         removeSecurityProxy(archive_files[4]).scheduled_deletion_date = (
             now - timedelta(days=1))
         archive_file_set = getUtility(IArchiveFileSet)
-        archive_file_set.reap(archive, container="foo")
+        expected_rows = [
+            ("foo", archive_files[0].path,
+             archive_files[0].library_file.content.sha256),
+            ]
+        rows = archive_file_set.reap(archive, container="foo")
+        self.assertContentEqual(expected_rows, rows)
         self.assertContentEqual(
             archive_files[1:4], archive_file_set.getByArchive(archive))

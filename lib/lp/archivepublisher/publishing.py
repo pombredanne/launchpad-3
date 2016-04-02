@@ -12,7 +12,11 @@ __all__ = [
 __metaclass__ = type
 
 import bz2
-from datetime import datetime
+from collections import defaultdict
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import errno
 import gzip
 import hashlib
@@ -31,6 +35,11 @@ from debian.deb822 import (
     )
 from storm.expr import Desc
 from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    implementer,
+    Interface,
+    )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -64,8 +73,12 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 from lp.services.features import getFeatureFlag
+from lp.services.helpers import filenameToContentType
 from lp.services.librarian.client import LibrarianClient
-from lp.services.osutils import open_for_writing
+from lp.services.osutils import (
+    ensure_directory_exists,
+    open_for_writing,
+    )
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -74,6 +87,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import NoSuchPPA
+from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
@@ -94,6 +108,10 @@ FORMAT_TO_SUBCOMPONENT = {
     BinaryPackageFormat.UDEB: 'debian-installer',
     BinaryPackageFormat.DDEB: 'debug',
     }
+
+
+# Number of days before unreferenced files are removed from by-hash.
+BY_HASH_STAY_OF_EXECUTION = 1
 
 
 def reorder_components(components):
@@ -230,6 +248,152 @@ class I18nIndex(_multivalued):
 
     def _get_size_field_length(self, key):
         return max(len(str(item['size'])) for item in self[key])
+
+
+class IArchiveHash(Interface):
+    """Represents a hash algorithm used for index files."""
+
+    hash_factory = Attribute("A hashlib class suitable for this algorithm.")
+    deb822_name = Attribute(
+        "Algorithm name expected by debian.deb822.Release.")
+    apt_name = Attribute(
+        "Algorithm name used by apt in Release files and by-hash "
+        "subdirectories.")
+    lfc_name = Attribute(
+        "LibraryFileContent attribute name corresponding to this algorithm.")
+
+
+@implementer(IArchiveHash)
+class MD5ArchiveHash:
+    hash_factory = hashlib.md5
+    deb822_name = "md5sum"
+    apt_name = "MD5Sum"
+    lfc_name = "md5"
+
+
+@implementer(IArchiveHash)
+class SHA1ArchiveHash:
+    hash_factory = hashlib.sha1
+    deb822_name = "sha1"
+    apt_name = "SHA1"
+    lfc_name = "sha1"
+
+
+@implementer(IArchiveHash)
+class SHA256ArchiveHash:
+    hash_factory = hashlib.sha256
+    deb822_name = "sha256"
+    apt_name = "SHA256"
+    lfc_name = "sha256"
+
+
+archive_hashes = [
+    MD5ArchiveHash(),
+    SHA1ArchiveHash(),
+    SHA256ArchiveHash(),
+    ]
+
+
+class ByHash:
+    """Represents a single by-hash directory tree."""
+
+    def __init__(self, root, key, log):
+        self.root = root
+        self.path = os.path.join(root, key, "by-hash")
+        self.log = log
+        self.known_digests = defaultdict(lambda: defaultdict(set))
+
+    def add(self, name, lfa, copy_from_path=None):
+        """Ensure that by-hash entries for a single file exist.
+
+        :param name: The name of the file under this directory tree.
+        :param lfa: The `ILibraryFileAlias` to add.
+        :param copy_from_path: If not None, copy file content from here
+            rather than fetching it from the librarian.  This can be used
+            for newly-added files to avoid needing to commit the transaction
+            before calling this method.
+        """
+        for archive_hash in archive_hashes:
+            digest = getattr(lfa.content, archive_hash.lfc_name)
+            digest_path = os.path.join(
+                self.path, archive_hash.apt_name, digest)
+            self.known_digests[archive_hash.apt_name][digest].add(name)
+            if not os.path.exists(digest_path):
+                self.log.debug(
+                    "by-hash: Creating %s for %s" % (digest_path, name))
+                ensure_directory_exists(os.path.dirname(digest_path))
+                if copy_from_path is not None:
+                    os.link(
+                        os.path.join(self.root, copy_from_path), digest_path)
+                else:
+                    with open(digest_path, "wb") as outfile:
+                        lfa.open()
+                        try:
+                            shutil.copyfileobj(lfa, outfile, 4 * 1024 * 1024)
+                        finally:
+                            lfa.close()
+
+    def known(self, name, hashname, digest):
+        """Do we know about a file with this name and digest?"""
+        names = self.known_digests[hashname].get(digest)
+        return names is not None and name in names
+
+    def prune(self):
+        """Remove all by-hash entries that we have not been told to add.
+
+        This also removes the by-hash directory itself if no entries remain.
+        """
+        prune_directory = True
+        for archive_hash in archive_hashes:
+            hash_path = os.path.join(self.path, archive_hash.apt_name)
+            if os.path.exists(hash_path):
+                prune_hash_directory = True
+                for digest in list(os.listdir(hash_path)):
+                    if digest not in self.known_digests[archive_hash.apt_name]:
+                        digest_path = os.path.join(hash_path, digest)
+                        self.log.debug(
+                            "by-hash: Deleting unreferenced %s" % digest_path)
+                        os.unlink(digest_path)
+                    else:
+                        prune_hash_directory = False
+                if prune_hash_directory:
+                    os.rmdir(hash_path)
+                else:
+                    prune_directory = False
+        if prune_directory and os.path.exists(self.path):
+            os.rmdir(self.path)
+
+
+class ByHashes:
+    """Represents all by-hash directory trees in an archive."""
+
+    def __init__(self, root, log):
+        self.root = root
+        self.log = log
+        self.children = {}
+
+    def registerChild(self, dirpath):
+        """Register a single by-hash directory.
+
+        Only directories that have been registered here will be pruned by
+        the `prune` method.
+        """
+        if dirpath not in self.children:
+            self.children[dirpath] = ByHash(self.root, dirpath, self.log)
+        return self.children[dirpath]
+
+    def add(self, path, lfa, copy_from_path=None):
+        dirpath, name = os.path.split(path)
+        self.registerChild(dirpath).add(
+            name, lfa, copy_from_path=copy_from_path)
+
+    def known(self, path, hashname, digest):
+        dirpath, name = os.path.split(path)
+        return self.registerChild(dirpath).known(name, hashname, digest)
+
+    def prune(self):
+        for child in self.children.values():
+            child.prune()
 
 
 class Publisher(object):
@@ -567,10 +731,20 @@ class Publisher(object):
         Otherwise we include only pockets flagged as true in dirty_pockets.
         """
         self.log.debug("* Step D: Generating Release files.")
+
+        archive_file_suites = set()
+        for container in getUtility(IArchiveFileSet).getContainersToReap(
+                self.archive, container_prefix=u"release:"):
+            distroseries, pocket = self.distro.getDistroSeriesAndPocket(
+                container[len(u"release:"):])
+            archive_file_suites.add((distroseries, pocket))
+        self.release_files_needed.update(archive_file_suites)
+
         for distroseries in self.distro:
             for pocket in self.archive.getPockets():
                 if not is_careful:
-                    if not self.isDirty(distroseries, pocket):
+                    if (not self.isDirty(distroseries, pocket) and
+                            (distroseries, pocket) not in archive_file_suites):
                         self.log.debug("Skipping release files for %s/%s" %
                                        (distroseries.name, pocket.name))
                         continue
@@ -811,6 +985,95 @@ class Publisher(object):
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
+    def _updateByHash(self, suite, release_data):
+        """Update by-hash files for a suite.
+
+        This takes Release file data which references a set of on-disk
+        files, injects any newly-modified files from that set into the
+        librarian and the ArchiveFile table, and updates the on-disk by-hash
+        directories to be in sync with ArchiveFile.  Any on-disk by-hash
+        entries that ceased to be current sufficiently long ago are removed.
+        """
+        archive_file_set = getUtility(IArchiveFileSet)
+        by_hashes = ByHashes(self._config.archiveroot, self.log)
+        suite_dir = os.path.relpath(
+            os.path.join(self._config.distsroot, suite),
+            self._config.archiveroot)
+        container = "release:%s" % suite
+
+        # Gather information on entries in the current Release file, and
+        # make sure nothing there is condemned.
+        current_files = {}
+        current_sha256_checksums = set()
+        for current_entry in release_data["SHA256"]:
+            path = os.path.join(suite_dir, current_entry["name"])
+            current_files[path] = (
+                current_entry["size"], current_entry["sha256"])
+            current_sha256_checksums.add(current_entry["sha256"])
+        for container, path, sha256 in archive_file_set.unscheduleDeletion(
+                self.archive, container=container,
+                sha256_checksums=current_sha256_checksums):
+            self.log.debug(
+                "by-hash: Unscheduled %s for %s in %s for deletion" % (
+                    sha256, path, container))
+
+        # Remove any condemned files from the database whose stay of
+        # execution has elapsed.  We ensure that we know about all the
+        # relevant by-hash directory trees before doing any removals so that
+        # we can prune them properly later.
+        for db_file in archive_file_set.getByArchive(
+                self.archive, container=container):
+            by_hashes.registerChild(os.path.dirname(db_file.path))
+        for container, path, sha256 in archive_file_set.reap(
+                self.archive, container=container):
+            self.log.debug(
+                "by-hash: Deleted %s for %s in %s" % (sha256, path, container))
+
+        # Ensure that all files recorded in the database are in by-hash.
+        db_files = archive_file_set.getByArchive(
+            self.archive, container=container, eager_load=True)
+        for db_file in db_files:
+            by_hashes.add(db_file.path, db_file.library_file)
+
+        # Condemn any database records that do not correspond to current
+        # index files.
+        condemned_files = set()
+        for db_file in db_files:
+            if db_file.scheduled_deletion_date is None:
+                path = db_file.path
+                if path in current_files:
+                    current_sha256 = current_files[path][1]
+                else:
+                    current_sha256 = None
+                if db_file.library_file.content.sha256 != current_sha256:
+                    condemned_files.add(db_file)
+        if condemned_files:
+            for container, path, sha256 in archive_file_set.scheduleDeletion(
+                    condemned_files,
+                    timedelta(days=BY_HASH_STAY_OF_EXECUTION)):
+                self.log.debug(
+                    "by-hash: Scheduled %s for %s in %s for deletion" % (
+                        sha256, path, container))
+
+        # Ensure that all the current index files are in by-hash and have
+        # corresponding database entries.
+        # XXX cjwatson 2016-03-15: This should possibly use bulk creation,
+        # although we can only avoid about a third of the queries since the
+        # librarian client has no bulk upload methods.
+        for path, (size, sha256) in current_files.items():
+            full_path = os.path.join(self._config.archiveroot, path)
+            if (os.path.exists(full_path) and
+                    not by_hashes.known(path, "SHA256", sha256)):
+                with open(full_path, "rb") as fileobj:
+                    db_file = archive_file_set.newFromFile(
+                        self.archive, container, path, fileobj,
+                        size, filenameToContentType(path))
+                by_hashes.add(path, db_file.library_file, copy_from_path=path)
+
+        # Finally, remove any files from disk that aren't recorded in the
+        # database and aren't active.
+        by_hashes.prune()
+
     def _writeReleaseFile(self, suite, release_data):
         """Write a Release file to the archive.
 
@@ -919,9 +1182,14 @@ class Publisher(object):
             hashes = self._readIndexFileHashes(suite, filename)
             if hashes is None:
                 continue
-            release_file.setdefault("MD5Sum", []).append(hashes["md5sum"])
-            release_file.setdefault("SHA1", []).append(hashes["sha1"])
-            release_file.setdefault("SHA256", []).append(hashes["sha256"])
+            for archive_hash in archive_hashes:
+                release_file.setdefault(archive_hash.apt_name, []).append(
+                    hashes[archive_hash.deb822_name])
+
+        if distroseries.publish_by_hash:
+            self._updateByHash(suite, release_file)
+            if distroseries.advertise_by_hash:
+                release_file["Acquire-By-Hash"] = "yes"
 
         self._writeReleaseFile(suite, release_file)
         core_files.add("Release")
@@ -1041,16 +1309,14 @@ class Publisher(object):
         # Schedule this for inclusion in the Release file.
         all_series_files.add(os.path.join(component, "i18n", "Index"))
 
-    def _readIndexFileHashes(self, distroseries_name, file_name,
-                             subpath=None):
+    def _readIndexFileHashes(self, suite, file_name, subpath=None):
         """Read an index file and return its hashes.
 
-        :param distroseries_name: Distro series name
+        :param suite: Suite name.
         :param file_name: Filename relative to the parent container directory.
-        :param subpath: Optional subpath within the distroseries root.
-            Generated indexes will not include this path. If omitted,
-            filenames are assumed to be relative to the distroseries
-            root.
+        :param subpath: Optional subpath within the suite root.  Generated
+            indexes will not include this path.  If omitted, filenames are
+            assumed to be relative to the suite root.
         :return: A dictionary mapping hash field names to dictionaries of
             their components as defined by debian.deb822.Release (e.g.
             {"md5sum": {"md5sum": ..., "size": ..., "name": ...}}), or None
@@ -1058,8 +1324,7 @@ class Publisher(object):
         """
         open_func = open
         full_name = os.path.join(
-            self._config.distsroot, distroseries_name, subpath or '.',
-            file_name)
+            self._config.distsroot, suite, subpath or '.', file_name)
         if not os.path.exists(full_name):
             if os.path.exists(full_name + '.gz'):
                 open_func = gzip.open
@@ -1075,10 +1340,8 @@ class Publisher(object):
                 return None
 
         hashes = {
-            "md5sum": hashlib.md5(),
-            "sha1": hashlib.sha1(),
-            "sha256": hashlib.sha256(),
-            }
+            archive_hash.deb822_name: archive_hash.hash_factory()
+            for archive_hash in archive_hashes}
         size = 0
         with open_func(full_name) as in_file:
             for chunk in iter(lambda: in_file.read(256 * 1024), ""):
