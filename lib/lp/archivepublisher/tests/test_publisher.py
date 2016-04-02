@@ -2490,10 +2490,6 @@ class TestPublisher(TestPublisherBase):
                 with open(suite_path('main', 'source', name), 'rb') as f:
                     main_contents.add(f.read())
         transaction.commit()
-        # Undo any previous determination that breezy-autotest is dirty, so
-        # that we can use that to check that future runs don't force index
-        # regeneration.
-        publisher.dirty_pockets = set()
 
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
@@ -2520,10 +2516,18 @@ class TestPublisher(TestPublisherBase):
             suite_path('main', 'source', 'by-hash'),
             Not(ByHashHasContents(main_contents)))
 
+        # Use a fresh Publisher instance to ensure that it doesn't have
+        # dirty-pocket state left over from the last run.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
         publisher.A2_markPocketsWithDeletionsDirty()
         publisher.C_doFTPArchive(False)
         publisher.D_writeReleaseFiles(False)
         self.assertEqual(set(), publisher.dirty_pockets)
+        self.assertContentEqual(
+            [('breezy-autotest', PackagePublishingPocket.RELEASE)],
+            publisher.release_files_needed)
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
