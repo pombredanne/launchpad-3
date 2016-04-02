@@ -168,11 +168,13 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
             archive_component = primary_component
         else:
             archive_component = archive_dependency.component
+        components = get_components_for_context(
+            archive_component, archive_dependency.pocket)
         # Follow pocket dependencies.
         for pocket in pocket_dependencies[archive_dependency.pocket]:
             deps.append(
                 (archive_dependency.dependency, distro_arch_series, pocket,
-                 get_components_for_context(archive_component, pocket)))
+                 components))
 
     # Consider build tools archive dependencies.
     if tools_source is not None:
@@ -203,11 +205,10 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
             dep_arch_series = dsp.parent_series.getDistroArchSeries(
                 distro_arch_series.architecturetag)
             dep_archive = dsp.parent_series.distribution.main_archive
+            components = get_components_for_context(dsp.component, dsp.pocket)
             # Follow pocket dependencies.
             for pocket in pocket_dependencies[dsp.pocket]:
-                deps.append(
-                    (dep_archive, dep_arch_series, pocket,
-                     get_components_for_context(dsp.component, pocket)))
+                deps.append((dep_archive, dep_arch_series, pocket, components))
         except NotFoundError:
             pass
 
