@@ -141,6 +141,7 @@ class ArchiveFileSet:
         """See `IArchiveFileSet`."""
         clauses = [
             ArchiveFile.archive == archive,
+            ArchiveFile.scheduled_deletion_date != None,
             ArchiveFile.library_file == LibraryFileAlias.id,
             LibraryFileAlias.content == LibraryFileContent.id,
             LibraryFileContent.sha256.is_in(sha256_checksums),
