@@ -10,10 +10,8 @@ sources in the given IBuildQueue context.
 We use `SoyuzTestPublisher` to generate a source publications and
 build candidates for ubuntu/hoary.
 
-    >>> from lp.registry.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> from lp.testing import login
 
     >>> login('foo.bar@canonical.com')
@@ -29,35 +27,10 @@ build candidates for ubuntu/hoary.
 
 == Static dependency maps ==
 
-`component_dependencies` contains a static map of the default ubuntu
-component dependencies (known as the 'ogre-model').
-
-    >>> from lp.soyuz.adapters.archivedependencies import (
-    ...     component_dependencies)
-
-    >>> def show_component_deps():
-    ...     print "Component  |   Dependencies"
-    ...     print "-----------+---------------"
-    ...     for key, value in sorted(component_dependencies.items()):
-    ...         print "%10s |" % (key,),
-    ...         for dep in value:
-    ...             print dep,
-    ...         print
-
-    >>> show_component_deps()
-    Component  |   Dependencies
-    -----------+---------------
-          main | main
-    multiverse | main restricted universe multiverse
-       partner | partner
-    restricted | main restricted
-      universe | main universe
-
 `pocket_dependencies` contains a static map of the default ubuntu
 pocket dependencies.
 
-    >>> from lp.soyuz.adapters.archivedependencies import (
-    ...     pocket_dependencies)
+    >>> from lp.soyuz.adapters.archivedependencies import pocket_dependencies
 
     >>> def show_pocket_deps():
     ...     print "Pocket    |   Dependencies"
@@ -182,8 +155,9 @@ the building 'sources_list' contents.
     Security
     Updates
 
-    >>> for component_name in component_dependencies[
-    ...     default_component_dependency_name]:
+    >>> for component_name in get_components_for_context(
+    ...         getUtility(IComponentSet)[default_component_dependency_name],
+    ...         pocket):
     ...     print component_name
     main
     restricted
@@ -215,8 +189,7 @@ considered when building the source candidate. That's because there is
 no binary published in Celso's PPA hoary/i386, so there is
 no need to request the builder to load its archive indexes.
 
-    >>> from lp.soyuz.enums import (
-    ...     PackagePublishingStatus)
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> cprov.archive.getAllPublishedBinaries(
     ...      distroarchseries=a_build.distro_arch_series,
@@ -345,7 +318,7 @@ the primary archive.
     ...     get_primary_current_component)
 
     >>> print get_primary_current_component(a_build.archive,
-    ...     a_build.distro_series, a_build.source_package_release.name)
+    ...     a_build.distro_series, a_build.source_package_release.name).name
     universe
 
     >>> print_building_sources_list(a_build)
