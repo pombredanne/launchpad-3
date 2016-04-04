@@ -96,7 +96,8 @@ class ArchiveFileSet:
         return cls.new(archive, container, path, library_file)
 
     @staticmethod
-    def getByArchive(archive, container=None, path=None, eager_load=False):
+    def getByArchive(archive, container=None, path=None, only_condemned=False,
+                     eager_load=False):
         """See `IArchiveFileSet`."""
         clauses = [ArchiveFile.archive == archive]
         # XXX cjwatson 2016-03-15: We'll need some more sophisticated way to
@@ -105,6 +106,8 @@ class ArchiveFileSet:
             clauses.append(ArchiveFile.container == container)
         if path is not None:
             clauses.append(ArchiveFile.path == path)
+        if only_condemned:
+            clauses.append(ArchiveFile.scheduled_deletion_date != None)
         archive_files = IStore(ArchiveFile).find(ArchiveFile, *clauses)
 
         def eager_load(rows):
@@ -137,17 +140,14 @@ class ArchiveFileSet:
             columns=return_columns)))
 
     @staticmethod
-    def unscheduleDeletion(archive, container=None, sha256_checksums=set()):
+    def unscheduleDeletion(archive_files):
         """See `IArchiveFileSet`."""
         clauses = [
-            ArchiveFile.archive == archive,
-            ArchiveFile.scheduled_deletion_date != None,
+            ArchiveFile.id.is_in(
+                set(archive_file.id for archive_file in archive_files)),
             ArchiveFile.library_file == LibraryFileAlias.id,
             LibraryFileAlias.content == LibraryFileContent.id,
-            LibraryFileContent.sha256.is_in(sha256_checksums),
             ]
-        if container is not None:
-            clauses.append(ArchiveFile.container == container)
         return_columns = [
             ArchiveFile.container, ArchiveFile.path, LibraryFileContent.sha256]
         return list(IMasterStore(ArchiveFile).execute(Returning(
