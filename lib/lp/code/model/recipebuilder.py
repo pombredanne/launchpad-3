@@ -83,8 +83,8 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                  self.build.distroseries.displayname))
-        return (
-            "sourcepackagerecipe", das, {}, self._extraBuildArgs(das, logger))
+        args = self._extraBuildArgs(das, logger=logger)
+        return ("sourcepackagerecipe", das, {}, args)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

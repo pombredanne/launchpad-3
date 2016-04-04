@@ -331,12 +331,13 @@ class PublishDistro(PublisherScript):
         for distribution in self.findDistros():
             allowed_suites = self.findAllowedSuites(distribution)
             for archive in self.getTargetArchives(distribution):
-                publisher = self.getPublisher(
-                    distribution, archive, allowed_suites)
-
                 if archive.status == ArchiveStatus.DELETING:
+                    publisher = self.getPublisher(
+                        distribution, archive, allowed_suites)
                     work_done = self.deleteArchive(archive, publisher)
                 elif archive.can_be_published:
+                    publisher = self.getPublisher(
+                        distribution, archive, allowed_suites)
                     for suite in self.options.dirty_suites:
                         distroseries, pocket = self.findSuite(
                             distribution, suite)

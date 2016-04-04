@@ -155,7 +155,7 @@ class ILibraryFileContent(Interface):
 class ILibraryFileAliasSet(Interface):
 
     def create(name, size, file, contentType, expires=None, debugID=None,
-               restricted=False):
+               restricted=False, allow_zero_length=False):
         """Create a file in the Librarian, returning the new alias.
 
         An expiry time of None means the file will never expire until it
