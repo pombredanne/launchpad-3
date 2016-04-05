@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-  <table tal:condition="view/files" class="narrow listing">
+  <table tal:condition="view/files" class="wide listing">
   <thead>
     <tr>
     <th>File</th>
