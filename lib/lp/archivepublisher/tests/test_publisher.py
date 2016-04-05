@@ -2372,12 +2372,22 @@ class TestPublisher(TestPublisherBase):
         self.assertThat(
             suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
 
-        # Arrange for the first file to be pruned, and delete the second
-        # file.
-        now = datetime.now(pytz.UTC)
+        # A no-op run leaves the scheduled deletion date intact.
         i386_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
             path=u'dists/breezy-autotest/Contents-i386').one()
+        i386_date = i386_file.scheduled_deletion_date
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+        matchers[0] = matchers[0].update(
+            scheduled_deletion_date=Equals(i386_date))
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Arrange for the first file to be pruned, and delete the second
+        # file.
+        now = datetime.now(pytz.UTC)
         removeSecurityProxy(i386_file).scheduled_deletion_date = (
             now - timedelta(hours=1))
         os.unlink(suite_path('Contents-hppa'))

@@ -1010,12 +1010,20 @@ class Publisher(object):
             current_files[path] = (
                 current_entry["size"], current_entry["sha256"])
             current_sha256_checksums.add(current_entry["sha256"])
-        for container, path, sha256 in archive_file_set.unscheduleDeletion(
-                self.archive, container=container,
-                sha256_checksums=current_sha256_checksums):
-            self.log.debug(
-                "by-hash: Unscheduled %s for %s in %s for deletion" % (
-                    sha256, path, container))
+        uncondemned_files = set()
+        for db_file in archive_file_set.getByArchive(
+                self.archive, container=container, only_condemned=True,
+                eager_load=True):
+            if db_file.path in current_files:
+                current_sha256 = current_files[db_file.path][1]
+                if db_file.library_file.content.sha256 == current_sha256:
+                    uncondemned_files.add(db_file)
+        if uncondemned_files:
+            for container, path, sha256 in archive_file_set.unscheduleDeletion(
+                    uncondemned_files):
+                self.log.debug(
+                    "by-hash: Unscheduled %s for %s in %s for deletion" % (
+                        sha256, path, container))
 
         # Remove any condemned files from the database whose stay of
         # execution has elapsed.  We ensure that we know about all the
@@ -1040,9 +1048,8 @@ class Publisher(object):
         condemned_files = set()
         for db_file in db_files:
             if db_file.scheduled_deletion_date is None:
-                path = db_file.path
-                if path in current_files:
-                    current_sha256 = current_files[path][1]
+                if db_file.path in current_files:
+                    current_sha256 = current_files[db_file.path][1]
                 else:
                     current_sha256 = None
                 if db_file.library_file.content.sha256 != current_sha256:

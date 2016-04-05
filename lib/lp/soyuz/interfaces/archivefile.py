@@ -79,12 +79,15 @@ class IArchiveFileSet(Interface):
         :param content_type: The MIME type of the file.
         """
 
-    def getByArchive(archive, container=None, path=None, eager_load=False):
+    def getByArchive(archive, container=None, path=None, only_condemned=False,
+                     eager_load=False):
         """Get files in an archive.
 
         :param archive: Return files in this `IArchive`.
         :param container: Return only files with this container.
         :param path: Return only files with this path.
+        :param only_condemned: If True, return only files with a
+            scheduled_deletion_date set.
         :param eager_load: If True, preload related `LibraryFileAlias` and
             `LibraryFileContent` rows.
         :return: An iterable of matched files.
@@ -100,19 +103,13 @@ class IArchiveFileSet(Interface):
             were scheduled for deletion.
         """
 
-    def unscheduleDeletion(archive, container=None, sha256_checksums=set()):
+    def unscheduleDeletion(archive_files):
         """Unschedule these archive files for deletion.
 
         This is useful in the case when the new content of a file is
-        identical to a version that was previously condemned.  This method's
-        signature does not match that of `scheduleDeletion`; this is more
-        convenient because in such cases we normally do not yet have
-        `ArchiveFile` rows in hand.
+        identical to a version that was previously condemned.
 
-        :param archive: Operate on files in this `IArchive`.
-        :param container: Operate only on files with this container.
-        :param sha256_checksums: Operate only on files with any of these
-            checksums.
+        :param archive_files: The `IArchiveFile`s to unschedule for deletion.
         :return: An iterable of (container, path, sha256) for files that
             were unscheduled for deletion.
         """
