@@ -86,7 +86,7 @@ published version) if they are available:
   >>> print extract_text(find_portlet(
   ...     content, 'Download files from current release (0.9)'))
   Download files from current release (0.9)
-  File Size MD5 Checksum
+  File Size SHA-256 Checksum
   firefox_0.9.2.orig.tar.gz 9.5 MiB ...
 
   >>> print browser.getLink("firefox_0.9.2.orig.tar.gz").url
@@ -281,7 +281,7 @@ And also download the files contained in this source, like '.orig',
 
   >>> print extract_text(find_portlet(browser.contents, 'Downloads'))
   Downloads
-  File Size MD5 Checksum
+  File Size SHA-256 Checksum
   firefox_0.9.2.orig.tar.gz 9.5 MiB ...
 
   >>> print browser.getLink("firefox_0.9.2.orig.tar.gz").url
@@ -347,7 +347,7 @@ published version) if they are available:
     >>> print extract_text(find_portlet(
     ...     browser.contents, 'Download files from current release (1.0-1)'))
     Download files from current release (1.0-1)
-    File Size MD5 Checksum
+    File Size SHA-256 Checksum
     commercialpackage_1.0.orig.tar.gz 179 bytes ...
     commercialpackage_1.0-1.diff.gz 610 bytes ...
     commercialpackage_1.0-1.dsc 567 bytes ...
@@ -427,7 +427,7 @@ And also download the files contained in this source, like '.orig',
 
     >>> print extract_text(find_portlet(browser.contents, 'Downloads'))
     Downloads
-    File Size MD5 Checksum
+    File Size SHA-256 Checksum
     commercialpackage_1.0.orig.tar.gz 179 bytes ...
     commercialpackage_1.0-1.diff.gz 610 bytes ...
     commercialpackage_1.0-1.dsc 567 bytes ...

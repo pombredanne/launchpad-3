@@ -63,8 +63,10 @@ class TestArchiveFile(TestCaseWithFactory):
     def test_getByArchive(self):
         archives = [self.factory.makeArchive(), self.factory.makeArchive()]
         archive_files = []
+        now = datetime.now(pytz.UTC)
         for archive in archives:
-            archive_files.append(self.factory.makeArchiveFile(archive=archive))
+            archive_files.append(self.factory.makeArchiveFile(
+                archive=archive, scheduled_deletion_date=now))
             archive_files.append(self.factory.makeArchiveFile(
                 archive=archive, container="foo"))
         archive_file_set = getUtility(IArchiveFileSet)
@@ -82,6 +84,9 @@ class TestArchiveFile(TestCaseWithFactory):
         self.assertContentEqual(
             [], archive_file_set.getByArchive(archives[0], path="other"))
         self.assertContentEqual(
+            [archive_files[0]],
+            archive_file_set.getByArchive(archives[0], only_condemned=True))
+        self.assertContentEqual(
             archive_files[2:], archive_file_set.getByArchive(archives[1]))
         self.assertContentEqual(
             [archive_files[3]],
@@ -94,6 +99,9 @@ class TestArchiveFile(TestCaseWithFactory):
                 archives[1], path=archive_files[3].path))
         self.assertContentEqual(
             [], archive_file_set.getByArchive(archives[1], path="other"))
+        self.assertContentEqual(
+            [archive_files[2]],
+            archive_file_set.getByArchive(archives[1], only_condemned=True))
 
     def test_scheduleDeletion(self):
         archive_files = [self.factory.makeArchiveFile() for _ in range(3)]
@@ -116,32 +124,21 @@ class TestArchiveFile(TestCaseWithFactory):
         self.assertIsNone(archive_files[2].scheduled_deletion_date)
 
     def test_unscheduleDeletion(self):
-        archives = [self.factory.makeArchive() for _ in range(2)]
-        lfas = [
-            self.factory.makeLibraryFileAlias(db_only=True) for _ in range(3)]
-        archive_files = []
-        for archive in archives:
-            for container in ("foo", "bar"):
-                archive_files.extend([
-                    self.factory.makeArchiveFile(
-                        archive=archive, container=container, library_file=lfa)
-                    for lfa in lfas])
+        archive_files = [self.factory.makeArchiveFile() for _ in range(3)]
         now = datetime.now(pytz.UTC)
         for archive_file in archive_files:
             removeSecurityProxy(archive_file).scheduled_deletion_date = now
         expected_rows = [
-            ("foo", archive_files[0].path, lfas[0].content.sha256),
-            ("foo", archive_files[1].path, lfas[1].content.sha256),
-            ]
+            (archive_file.container, archive_file.path,
+             archive_file.library_file.content.sha256)
+            for archive_file in archive_files[:2]]
         rows = getUtility(IArchiveFileSet).unscheduleDeletion(
-            archive=archives[0], container="foo",
-            sha256_checksums=[lfas[0].content.sha256, lfas[1].content.sha256])
+            archive_files[:2])
         self.assertContentEqual(expected_rows, rows)
         flush_database_caches()
-        self.assertContentEqual(
-            [archive_files[0], archive_files[1]],
-            [archive_file for archive_file in archive_files
-             if archive_file.scheduled_deletion_date is None])
+        self.assertIsNone(archive_files[0].scheduled_deletion_date)
+        self.assertIsNone(archive_files[1].scheduled_deletion_date)
+        self.assertIsNotNone(archive_files[2].scheduled_deletion_date)
 
     def test_getContainersToReap(self):
         archive = self.factory.makeArchive()

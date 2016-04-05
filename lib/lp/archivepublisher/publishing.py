@@ -313,16 +313,23 @@ class ByHash:
             for newly-added files to avoid needing to commit the transaction
             before calling this method.
         """
-        for archive_hash in archive_hashes:
+        best_hash = archive_hashes[-1]
+        best_digest = getattr(lfa.content, best_hash.lfc_name)
+        for archive_hash in reversed(archive_hashes):
             digest = getattr(lfa.content, archive_hash.lfc_name)
             digest_path = os.path.join(
                 self.path, archive_hash.apt_name, digest)
             self.known_digests[archive_hash.apt_name][digest].add(name)
-            if not os.path.exists(digest_path):
+            if not os.path.lexists(digest_path):
                 self.log.debug(
                     "by-hash: Creating %s for %s" % (digest_path, name))
                 ensure_directory_exists(os.path.dirname(digest_path))
-                if copy_from_path is not None:
+                if archive_hash != best_hash:
+                    os.symlink(
+                        os.path.join(
+                            os.pardir, best_hash.apt_name, best_digest),
+                        digest_path)
+                elif copy_from_path is not None:
                     os.link(
                         os.path.join(self.root, copy_from_path), digest_path)
                 else:
@@ -1010,12 +1017,20 @@ class Publisher(object):
             current_files[path] = (
                 current_entry["size"], current_entry["sha256"])
             current_sha256_checksums.add(current_entry["sha256"])
-        for container, path, sha256 in archive_file_set.unscheduleDeletion(
-                self.archive, container=container,
-                sha256_checksums=current_sha256_checksums):
-            self.log.debug(
-                "by-hash: Unscheduled %s for %s in %s for deletion" % (
-                    sha256, path, container))
+        uncondemned_files = set()
+        for db_file in archive_file_set.getByArchive(
+                self.archive, container=container, only_condemned=True,
+                eager_load=True):
+            if db_file.path in current_files:
+                current_sha256 = current_files[db_file.path][1]
+                if db_file.library_file.content.sha256 == current_sha256:
+                    uncondemned_files.add(db_file)
+        if uncondemned_files:
+            for container, path, sha256 in archive_file_set.unscheduleDeletion(
+                    uncondemned_files):
+                self.log.debug(
+                    "by-hash: Unscheduled %s for %s in %s for deletion" % (
+                        sha256, path, container))
 
         # Remove any condemned files from the database whose stay of
         # execution has elapsed.  We ensure that we know about all the
@@ -1040,9 +1055,8 @@ class Publisher(object):
         condemned_files = set()
         for db_file in db_files:
             if db_file.scheduled_deletion_date is None:
-                path = db_file.path
-                if path in current_files:
-                    current_sha256 = current_files[path][1]
+                if db_file.path in current_files:
+                    current_sha256 = current_files[db_file.path][1]
                 else:
                     current_sha256 = None
                 if db_file.library_file.content.sha256 != current_sha256:
