@@ -195,8 +195,9 @@ via `dget`.
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Downloads'))
     Downloads
-    File                  Size      MD5 Checksum
-    testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
+    File                  Size      SHA-256 Checksum
+    testing-dspr_1.0.dsc  28 bytes
+    ac512102db9724bee18f26945efeeb82fdab89819e64e120fbfda755ca50c2c6
     View changes file
 
     >>> print anon_browser.getLink('testing-dspr_1.0.dsc').url
@@ -218,8 +219,9 @@ are available.
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Downloads'))
     Downloads
-    File                  Size      MD5 Checksum
-    testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
+    File                  Size      SHA-256 Checksum
+    testing-dspr_1.0.dsc  28 bytes
+    ac512102db9724bee18f26945efeeb82fdab89819e64e120fbfda755ca50c2c6
     Available diffs
     diff from 0.9 to 1.0 (7 bytes)
     View changes file
