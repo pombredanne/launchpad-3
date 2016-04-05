@@ -3,6 +3,7 @@
 
 from collections import defaultdict
 import os
+import re
 from StringIO import StringIO
 import time
 
@@ -50,11 +51,15 @@ def package_name(filename):
     return (os.path.basename(filename).split("_"))[0]
 
 
-def make_empty_dir(path):
-    """Ensure that the path exists and is an empty directory."""
+def make_clean_dir(path, clean_pattern=".*"):
+    """Ensure that the path exists and is an empty directory.
+
+    :param clean_pattern: a regex of filenames to remove from the directory.
+        If omitted, all files are removed.
+    """
     if os.path.isdir(path):
         for name in os.listdir(path):
-            if name == "by-hash":
+            if name == "by-hash" or not re.match(clean_pattern, name):
                 # Ignore existing by-hash directories; they will be cleaned
                 # up to match the rest of the directory tree later.
                 continue
@@ -772,13 +777,18 @@ class FTPArchiveHandler:
         for comp in comps:
             component_path = os.path.join(
                 self._config.distsroot, suite, comp)
-            make_empty_dir(os.path.join(component_path, "source"))
+            make_clean_dir(os.path.join(component_path, "source"))
             if not distroseries.include_long_descriptions:
-                make_empty_dir(os.path.join(component_path, "i18n"))
+                # apt-ftparchive only generates the English
+                # translations; DDTP custom uploads might have put other
+                # files here that we want to keep.
+                make_clean_dir(
+                    os.path.join(component_path, "i18n"),
+                    r'Translation-en(\..*)?$')
             for arch in archs:
-                make_empty_dir(os.path.join(component_path, "binary-" + arch))
+                make_clean_dir(os.path.join(component_path, "binary-" + arch))
                 for subcomp in self.publisher.subcomponents:
-                    make_empty_dir(os.path.join(
+                    make_clean_dir(os.path.join(
                         component_path, subcomp, "binary-" + arch))
 
     def writeAptConfig(self, apt_config, suite, comps, archs,

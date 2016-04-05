@@ -555,6 +555,12 @@ class TestFTPArchive(TestCaseWithFactory):
         os.makedirs(os.path.join(comp_dir, "uefi"))
         with open(os.path.join(comp_dir, "uefi", "stuff"), "w"):
             pass
+        os.makedirs(os.path.join(comp_dir, "i18n"))
+        for name in ("Translation-de", "Translation-de.gz", "Translation-en",
+                     "Translation-en.Z"):
+            with open(os.path.join(comp_dir, "i18n", name), "w"):
+                pass
+        self._distribution["hoary-test"].include_long_descriptions = False
 
         # Run the publisher once with gzip and bzip2 compressors.
         apt_conf = fa.generateConfig(fullpublish=True)
@@ -572,6 +578,10 @@ class TestFTPArchive(TestCaseWithFactory):
         self.assertContentEqual(
             ["Sources.gz", "Sources.bz2"],
             os.listdir(os.path.join(comp_dir, "source")))
+        self.assertContentEqual(
+            ["Translation-de", "Translation-de.gz", "Translation-en.gz",
+             "Translation-en.bz2"],
+            os.listdir(os.path.join(comp_dir, "i18n")))
 
         # Try again, this time with gzip and xz compressors.  There are no
         # bzip2 leftovers, but other files are left untouched.
@@ -593,6 +603,10 @@ class TestFTPArchive(TestCaseWithFactory):
             ["Sources.gz", "Sources.xz"],
             os.listdir(os.path.join(comp_dir, "source")))
         self.assertEqual(["stuff"], os.listdir(os.path.join(comp_dir, "uefi")))
+        self.assertContentEqual(
+            ["Translation-de", "Translation-de.gz", "Translation-en.gz",
+             "Translation-en.xz"],
+            os.listdir(os.path.join(comp_dir, "i18n")))
 
     def test_cleanCaches_noop_if_recent(self):
         # cleanCaches does nothing if it was run recently.
