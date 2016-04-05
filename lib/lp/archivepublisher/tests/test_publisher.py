@@ -41,6 +41,7 @@ from testtools.matchers import (
     MatchesStructure,
     Not,
     PathExists,
+    SamePath,
     )
 import transaction
 from zope.component import getUtility
@@ -468,10 +469,18 @@ class ByHashHasContents(Matcher):
             if mismatch is not None:
                 return mismatch
             for digest, content in digests.items():
-                mismatch = FileContains(content).match(
-                    os.path.join(path, digest))
-                if mismatch is not None:
-                    return mismatch
+                full_path = os.path.join(path, digest)
+                if hashname == "SHA256":
+                    mismatch = FileContains(content).match(full_path)
+                    if mismatch is not None:
+                        return mismatch
+                else:
+                    best_path = os.path.join(
+                        by_hash_path, "SHA256",
+                        hashlib.sha256(content).hexdigest())
+                    mismatch = SamePath(best_path).match(full_path)
+                    if mismatch is not None:
+                        return mismatch
 
 
 class ByHashesHaveContents(Matcher):
@@ -532,12 +541,16 @@ class TestByHash(TestCaseWithFactory):
         content = "abc\n"
         lfa = self.factory.makeLibraryFileAlias(content=content)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
-        for hashname, hashattr in (
-                ("MD5Sum", "md5"), ("SHA1", "sha1"), ("SHA256", "sha256")):
+        sha256_digest = hashlib.sha256(content).hexdigest()
+        with open_for_writing(
+                os.path.join(by_hash_path, "SHA256", sha256_digest), "w") as f:
+            f.write(content)
+        for hashname, hashattr in (("MD5Sum", "md5"), ("SHA1", "sha1")):
             digest = getattr(hashlib, hashattr)(content).hexdigest()
-            with open_for_writing(
-                    os.path.join(by_hash_path, hashname, digest), "w") as f:
-                f.write(content)
+            os.makedirs(os.path.join(by_hash_path, hashname))
+            os.symlink(
+                os.path.join(os.pardir, "SHA256", sha256_digest),
+                os.path.join(by_hash_path, hashname, digest))
         by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         self.assertThat(by_hash_path, ByHashHasContents([content]))
         by_hash.add("Sources", lfa)

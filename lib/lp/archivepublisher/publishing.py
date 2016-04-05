@@ -313,16 +313,23 @@ class ByHash:
             for newly-added files to avoid needing to commit the transaction
             before calling this method.
         """
-        for archive_hash in archive_hashes:
+        best_hash = archive_hashes[-1]
+        best_digest = getattr(lfa.content, best_hash.lfc_name)
+        for archive_hash in reversed(archive_hashes):
             digest = getattr(lfa.content, archive_hash.lfc_name)
             digest_path = os.path.join(
                 self.path, archive_hash.apt_name, digest)
             self.known_digests[archive_hash.apt_name][digest].add(name)
-            if not os.path.exists(digest_path):
+            if not os.path.lexists(digest_path):
                 self.log.debug(
                     "by-hash: Creating %s for %s" % (digest_path, name))
                 ensure_directory_exists(os.path.dirname(digest_path))
-                if copy_from_path is not None:
+                if archive_hash != best_hash:
+                    os.symlink(
+                        os.path.join(
+                            os.pardir, best_hash.apt_name, best_digest),
+                        digest_path)
+                elif copy_from_path is not None:
                     os.link(
                         os.path.join(self.root, copy_from_path), digest_path)
                 else:
