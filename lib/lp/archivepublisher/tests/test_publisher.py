@@ -2202,359 +2202,6 @@ class TestPublisher(TestPublisherBase):
             'Release')
         self.assertTrue(file_exists(source_release))
 
-    def testUpdateByHashDisabled(self):
-        # The publisher does not create by-hash directories if it is
-        # disabled in the series configuration.
-        self.assertFalse(self.breezy_autotest.publish_by_hash)
-        self.assertFalse(self.breezy_autotest.advertise_by_hash)
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-
-        suite_path = partial(
-            os.path.join, self.config.distsroot, 'breezy-autotest')
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'), Not(PathExists()))
-        release = self.parseRelease(suite_path('Release'))
-        self.assertNotIn('Acquire-By-Hash', release)
-
-    def testUpdateByHashUnadvertised(self):
-        # If the series configuration sets publish_by_hash but not
-        # advertise_by_hash, then by-hash directories are created but not
-        # advertised in Release.  This is useful for testing.
-        self.breezy_autotest.publish_by_hash = True
-        self.assertFalse(self.breezy_autotest.advertise_by_hash)
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-
-        suite_path = partial(
-            os.path.join, self.config.distsroot, 'breezy-autotest')
-        self.assertThat(suite_path('main', 'source', 'by-hash'), PathExists())
-        release = self.parseRelease(suite_path('Release'))
-        self.assertNotIn('Acquire-By-Hash', release)
-
-    def testUpdateByHashInitial(self):
-        # An initial publisher run populates by-hash directories and leaves
-        # no archive files scheduled for deletion.
-        self.breezy_autotest.publish_by_hash = True
-        self.breezy_autotest.advertise_by_hash = True
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-
-        suite_path = partial(
-            os.path.join, self.config.distsroot, 'breezy-autotest')
-        contents = set()
-        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
-            with open(suite_path('main', 'source', name), 'rb') as f:
-                contents.add(f.read())
-
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            ByHashHasContents(contents))
-
-        archive_files = getUtility(IArchiveFileSet).getByArchive(
-            self.ubuntutest.main_archive)
-        self.assertNotEqual([], archive_files)
-        self.assertEqual([], [
-            archive_file for archive_file in archive_files
-            if archive_file.scheduled_deletion_date is not None])
-
-    def testUpdateByHashSubsequent(self):
-        # A subsequent publisher run updates by-hash directories where
-        # necessary, and marks inactive index files for later deletion.
-        self.breezy_autotest.publish_by_hash = True
-        self.breezy_autotest.advertise_by_hash = True
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-
-        suite_path = partial(
-            os.path.join, self.config.distsroot, 'breezy-autotest')
-        main_contents = set()
-        universe_contents = set()
-        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
-            with open(suite_path('main', 'source', name), 'rb') as f:
-                main_contents.add(f.read())
-            with open(suite_path('universe', 'source', name), 'rb') as f:
-                universe_contents.add(f.read())
-
-        self.getPubSource(sourcename='baz', filecontent='Source: baz\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-
-        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
-            with open(suite_path('main', 'source', name), 'rb') as f:
-                main_contents.add(f.read())
-
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            ByHashHasContents(main_contents))
-        self.assertThat(
-            suite_path('universe', 'source', 'by-hash'),
-            ByHashHasContents(universe_contents))
-
-        archive_files = getUtility(IArchiveFileSet).getByArchive(
-            self.ubuntutest.main_archive)
-        self.assertContentEqual(
-            ['dists/breezy-autotest/main/source/Sources.bz2',
-             'dists/breezy-autotest/main/source/Sources.gz'],
-            [archive_file.path for archive_file in archive_files
-             if archive_file.scheduled_deletion_date is not None])
-
-    def testUpdateByHashIdenticalFiles(self):
-        # Multiple identical files in the same directory receive multiple
-        # ArchiveFile rows, even though they share a by-hash entry.
-        self.breezy_autotest.publish_by_hash = True
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-        suite_path = partial(
-            os.path.join, self.config.distsroot, 'breezy-autotest')
-        get_contents_files = lambda: [
-            archive_file
-            for archive_file in getUtility(IArchiveFileSet).getByArchive(
-                self.ubuntutest.main_archive)
-            if archive_file.path.startswith('dists/breezy-autotest/Contents-')]
-
-        # Create the first file.
-        with open_for_writing(suite_path('Contents-i386'), 'w') as f:
-            f.write('A Contents file\n')
-        publisher.markPocketDirty(
-            self.breezy_autotest, PackagePublishingPocket.RELEASE)
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-        matchers = [
-            MatchesStructure(
-                path=Equals('dists/breezy-autotest/Contents-i386'),
-                scheduled_deletion_date=Is(None))]
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
-        self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
-
-        # Add a second identical file.
-        with open_for_writing(suite_path('Contents-hppa'), 'w') as f:
-            f.write('A Contents file\n')
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-        matchers.append(
-            MatchesStructure(
-                path=Equals('dists/breezy-autotest/Contents-hppa'),
-                scheduled_deletion_date=Is(None)))
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
-        self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
-
-        # Delete the first file, but allow it its stay of execution.
-        os.unlink(suite_path('Contents-i386'))
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-        matchers[0] = matchers[0].update(scheduled_deletion_date=Not(Is(None)))
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
-        self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
-
-        # A no-op run leaves the scheduled deletion date intact.
-        i386_file = getUtility(IArchiveFileSet).getByArchive(
-            self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/Contents-i386').one()
-        i386_date = i386_file.scheduled_deletion_date
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-        matchers[0] = matchers[0].update(
-            scheduled_deletion_date=Equals(i386_date))
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
-        self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
-
-        # Arrange for the first file to be pruned, and delete the second
-        # file.
-        now = datetime.now(pytz.UTC)
-        removeSecurityProxy(i386_file).scheduled_deletion_date = (
-            now - timedelta(hours=1))
-        os.unlink(suite_path('Contents-hppa'))
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-        matchers = [matchers[1].update(scheduled_deletion_date=Not(Is(None)))]
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
-        self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
-
-        # Arrange for the second file to be pruned.
-        hppa_file = getUtility(IArchiveFileSet).getByArchive(
-            self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/Contents-hppa').one()
-        removeSecurityProxy(hppa_file).scheduled_deletion_date = (
-            now - timedelta(hours=1))
-        publisher.D_writeReleaseFiles(False)
-        flush_database_caches()
-        self.assertContentEqual([], get_contents_files())
-        self.assertThat(suite_path('by-hash'), Not(PathExists()))
-
-    def testUpdateByHashReprieve(self):
-        # If a newly-modified index file is identical to a
-        # previously-condemned one, then it is reprieved and not pruned.
-        self.breezy_autotest.publish_by_hash = True
-        # Enable uncompressed index files to avoid relying on stable output
-        # from compressors in this test.
-        self.breezy_autotest.index_compressors = [
-            IndexCompressionType.UNCOMPRESSED]
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        # Publish empty index files.
-        publisher.markPocketDirty(
-            self.breezy_autotest, PackagePublishingPocket.RELEASE)
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-        suite_path = partial(
-            os.path.join, self.config.distsroot, 'breezy-autotest')
-        main_contents = set()
-        for name in ('Release', 'Sources'):
-            with open(suite_path('main', 'source', name), 'rb') as f:
-                main_contents.add(f.read())
-
-        # Add a source package so that Sources is non-empty.
-        pub_source = self.getPubSource(filecontent='Source: foo\n')
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-        transaction.commit()
-        with open(suite_path('main', 'source', 'Sources'), 'rb') as f:
-            main_contents.add(f.read())
-        self.assertEqual(3, len(main_contents))
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            ByHashHasContents(main_contents))
-
-        # Make the empty Sources file ready to prune.
-        old_archive_files = []
-        for archive_file in getUtility(IArchiveFileSet).getByArchive(
-                self.ubuntutest.main_archive):
-            if ('main/source' in archive_file.path and
-                    archive_file.scheduled_deletion_date is not None):
-                old_archive_files.append(archive_file)
-        self.assertEqual(1, len(old_archive_files))
-        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
-            datetime.now(pytz.UTC) - timedelta(hours=1))
-
-        # Delete the source package so that Sources is empty again.  The
-        # empty file is reprieved and the non-empty one is condemned.
-        pub_source.requestDeletion(self.ubuntutest.owner)
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-        transaction.commit()
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            ByHashHasContents(main_contents))
-        archive_files = getUtility(IArchiveFileSet).getByArchive(
-            self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/main/source/Sources')
-        self.assertThat(
-            sorted(archive_files, key=attrgetter('id')),
-            MatchesListwise([
-                MatchesStructure(scheduled_deletion_date=Is(None)),
-                MatchesStructure(scheduled_deletion_date=Not(Is(None))),
-                ]))
-
-    def testUpdateByHashPrune(self):
-        # The publisher prunes files from by-hash that were condemned more
-        # than a day ago.
-        self.breezy_autotest.publish_by_hash = True
-        self.breezy_autotest.advertise_by_hash = True
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        suite_path = partial(
-            os.path.join, self.config.distsroot, 'breezy-autotest')
-        main_contents = set()
-        for sourcename in ('foo', 'bar'):
-            self.getPubSource(
-                sourcename=sourcename, filecontent='Source: %s\n' % sourcename)
-            publisher.A_publish(False)
-            publisher.C_doFTPArchive(False)
-            publisher.D_writeReleaseFiles(False)
-            for name in ('Release', 'Sources.gz', 'Sources.bz2'):
-                with open(suite_path('main', 'source', name), 'rb') as f:
-                    main_contents.add(f.read())
-        transaction.commit()
-
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            ByHashHasContents(main_contents))
-        old_archive_files = []
-        for archive_file in getUtility(IArchiveFileSet).getByArchive(
-                self.ubuntutest.main_archive):
-            if ('main/source' in archive_file.path and
-                    archive_file.scheduled_deletion_date is not None):
-                old_archive_files.append(archive_file)
-        self.assertEqual(2, len(old_archive_files))
-
-        now = datetime.now(pytz.UTC)
-        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
-            now + timedelta(hours=12))
-        removeSecurityProxy(old_archive_files[1]).scheduled_deletion_date = (
-            now - timedelta(hours=12))
-        old_archive_files[1].library_file.open()
-        try:
-            main_contents.remove(old_archive_files[1].library_file.read())
-        finally:
-            old_archive_files[1].library_file.close()
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            Not(ByHashHasContents(main_contents)))
-
-        # Use a fresh Publisher instance to ensure that it doesn't have
-        # dirty-pocket state left over from the last run.
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-        publisher.A2_markPocketsWithDeletionsDirty()
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
-        self.assertEqual(set(), publisher.dirty_pockets)
-        self.assertContentEqual(
-            [('breezy-autotest', PackagePublishingPocket.RELEASE)],
-            publisher.release_files_needed)
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            ByHashHasContents(main_contents))
-
     def testCreateSeriesAliasesNoAlias(self):
         """createSeriesAliases has nothing to do by default."""
         publisher = Publisher(
@@ -2849,6 +2496,365 @@ class TestFtparchiveIndices(TestArchiveIndices):
     def runStepC(self, publisher):
         """Run the apt-ftparchive index generation step of the publisher."""
         publisher.C_doFTPArchive(False)
+
+
+class TestUpdateByHash(TestPublisherBase):
+    """Tests for handling of by-hash files."""
+
+    def test_disabled(self):
+        # The publisher does not create by-hash directories if it is
+        # disabled in the series configuration.
+        self.assertFalse(self.breezy_autotest.publish_by_hash)
+        self.assertFalse(self.breezy_autotest.advertise_by_hash)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'), Not(PathExists()))
+        with open(suite_path('Release')) as release_file:
+            release = Release(release_file)
+        self.assertNotIn('Acquire-By-Hash', release)
+
+    def test_unadvertised(self):
+        # If the series configuration sets publish_by_hash but not
+        # advertise_by_hash, then by-hash directories are created but not
+        # advertised in Release.  This is useful for testing.
+        self.breezy_autotest.publish_by_hash = True
+        self.assertFalse(self.breezy_autotest.advertise_by_hash)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        self.assertThat(suite_path('main', 'source', 'by-hash'), PathExists())
+        with open(suite_path('Release')) as release_file:
+            release = Release(release_file)
+        self.assertNotIn('Acquire-By-Hash', release)
+
+    def test_initial(self):
+        # An initial publisher run populates by-hash directories and leaves
+        # no archive files scheduled for deletion.
+        self.breezy_autotest.publish_by_hash = True
+        self.breezy_autotest.advertise_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        contents = set()
+        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                contents.add(f.read())
+
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(contents))
+
+        archive_files = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive)
+        self.assertNotEqual([], archive_files)
+        self.assertEqual([], [
+            archive_file for archive_file in archive_files
+            if archive_file.scheduled_deletion_date is not None])
+
+    def test_subsequent(self):
+        # A subsequent publisher run updates by-hash directories where
+        # necessary, and marks inactive index files for later deletion.
+        self.breezy_autotest.publish_by_hash = True
+        self.breezy_autotest.advertise_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubSource(filecontent='Source: foo\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        main_contents = set()
+        universe_contents = set()
+        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                main_contents.add(f.read())
+            with open(suite_path('universe', 'source', name), 'rb') as f:
+                universe_contents.add(f.read())
+
+        self.getPubSource(sourcename='baz', filecontent='Source: baz\n')
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+
+        for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                main_contents.add(f.read())
+
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+        self.assertThat(
+            suite_path('universe', 'source', 'by-hash'),
+            ByHashHasContents(universe_contents))
+
+        archive_files = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive)
+        self.assertContentEqual(
+            ['dists/breezy-autotest/main/source/Sources.bz2',
+             'dists/breezy-autotest/main/source/Sources.gz'],
+            [archive_file.path for archive_file in archive_files
+             if archive_file.scheduled_deletion_date is not None])
+
+    def test_identical_files(self):
+        # Multiple identical files in the same directory receive multiple
+        # ArchiveFile rows, even though they share a by-hash entry.
+        self.breezy_autotest.publish_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        get_contents_files = lambda: [
+            archive_file
+            for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive)
+            if archive_file.path.startswith('dists/breezy-autotest/Contents-')]
+
+        # Create the first file.
+        with open_for_writing(suite_path('Contents-i386'), 'w') as f:
+            f.write('A Contents file\n')
+        publisher.markPocketDirty(
+            self.breezy_autotest, PackagePublishingPocket.RELEASE)
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+        matchers = [
+            MatchesStructure(
+                path=Equals('dists/breezy-autotest/Contents-i386'),
+                scheduled_deletion_date=Is(None))]
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Add a second identical file.
+        with open_for_writing(suite_path('Contents-hppa'), 'w') as f:
+            f.write('A Contents file\n')
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+        matchers.append(
+            MatchesStructure(
+                path=Equals('dists/breezy-autotest/Contents-hppa'),
+                scheduled_deletion_date=Is(None)))
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Delete the first file, but allow it its stay of execution.
+        os.unlink(suite_path('Contents-i386'))
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+        matchers[0] = matchers[0].update(scheduled_deletion_date=Not(Is(None)))
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # A no-op run leaves the scheduled deletion date intact.
+        i386_file = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive,
+            path=u'dists/breezy-autotest/Contents-i386').one()
+        i386_date = i386_file.scheduled_deletion_date
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+        matchers[0] = matchers[0].update(
+            scheduled_deletion_date=Equals(i386_date))
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Arrange for the first file to be pruned, and delete the second
+        # file.
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(i386_file).scheduled_deletion_date = (
+            now - timedelta(hours=1))
+        os.unlink(suite_path('Contents-hppa'))
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+        matchers = [matchers[1].update(scheduled_deletion_date=Not(Is(None)))]
+        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertThat(
+            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+
+        # Arrange for the second file to be pruned.
+        hppa_file = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive,
+            path=u'dists/breezy-autotest/Contents-hppa').one()
+        removeSecurityProxy(hppa_file).scheduled_deletion_date = (
+            now - timedelta(hours=1))
+        publisher.D_writeReleaseFiles(False)
+        flush_database_caches()
+        self.assertContentEqual([], get_contents_files())
+        self.assertThat(suite_path('by-hash'), Not(PathExists()))
+
+    def test_reprieve(self):
+        # If a newly-modified index file is identical to a
+        # previously-condemned one, then it is reprieved and not pruned.
+        self.breezy_autotest.publish_by_hash = True
+        # Enable uncompressed index files to avoid relying on stable output
+        # from compressors in this test.
+        self.breezy_autotest.index_compressors = [
+            IndexCompressionType.UNCOMPRESSED]
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Publish empty index files.
+        publisher.markPocketDirty(
+            self.breezy_autotest, PackagePublishingPocket.RELEASE)
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        main_contents = set()
+        for name in ('Release', 'Sources'):
+            with open(suite_path('main', 'source', name), 'rb') as f:
+                main_contents.add(f.read())
+
+        # Add a source package so that Sources is non-empty.
+        pub_source = self.getPubSource(filecontent='Source: foo\n')
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        transaction.commit()
+        with open(suite_path('main', 'source', 'Sources'), 'rb') as f:
+            main_contents.add(f.read())
+        self.assertEqual(3, len(main_contents))
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+
+        # Make the empty Sources file ready to prune.
+        old_archive_files = []
+        for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive):
+            if ('main/source' in archive_file.path and
+                    archive_file.scheduled_deletion_date is not None):
+                old_archive_files.append(archive_file)
+        self.assertEqual(1, len(old_archive_files))
+        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
+            datetime.now(pytz.UTC) - timedelta(hours=1))
+
+        # Delete the source package so that Sources is empty again.  The
+        # empty file is reprieved and the non-empty one is condemned.
+        pub_source.requestDeletion(self.ubuntutest.owner)
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        transaction.commit()
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+        archive_files = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive,
+            path=u'dists/breezy-autotest/main/source/Sources')
+        self.assertThat(
+            sorted(archive_files, key=attrgetter('id')),
+            MatchesListwise([
+                MatchesStructure(scheduled_deletion_date=Is(None)),
+                MatchesStructure(scheduled_deletion_date=Not(Is(None))),
+                ]))
+
+    def test_prune(self):
+        # The publisher prunes files from by-hash that were condemned more
+        # than a day ago.
+        self.breezy_autotest.publish_by_hash = True
+        self.breezy_autotest.advertise_by_hash = True
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        main_contents = set()
+        for sourcename in ('foo', 'bar'):
+            self.getPubSource(
+                sourcename=sourcename, filecontent='Source: %s\n' % sourcename)
+            publisher.A_publish(False)
+            publisher.C_doFTPArchive(False)
+            publisher.D_writeReleaseFiles(False)
+            for name in ('Release', 'Sources.gz', 'Sources.bz2'):
+                with open(suite_path('main', 'source', name), 'rb') as f:
+                    main_contents.add(f.read())
+        transaction.commit()
+
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+        old_archive_files = []
+        for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive):
+            if ('main/source' in archive_file.path and
+                    archive_file.scheduled_deletion_date is not None):
+                old_archive_files.append(archive_file)
+        self.assertEqual(2, len(old_archive_files))
+
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
+            now + timedelta(hours=12))
+        removeSecurityProxy(old_archive_files[1]).scheduled_deletion_date = (
+            now - timedelta(hours=12))
+        old_archive_files[1].library_file.open()
+        try:
+            main_contents.remove(old_archive_files[1].library_file.read())
+        finally:
+            old_archive_files[1].library_file.close()
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            Not(ByHashHasContents(main_contents)))
+
+        # Use a fresh Publisher instance to ensure that it doesn't have
+        # dirty-pocket state left over from the last run.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        publisher.A2_markPocketsWithDeletionsDirty()
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+        self.assertEqual(set(), publisher.dirty_pockets)
+        self.assertContentEqual(
+            [('breezy-autotest', PackagePublishingPocket.RELEASE)],
+            publisher.release_files_needed)
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
 
 
 class TestPublisherRepositorySignatures(TestPublisherBase):
