@@ -405,7 +405,10 @@ class IDistroSeriesPublic(
         title=_("Strict dependencies of supported components"), required=True,
         description=_("""
             If True, packages in supported components (main and restricted)
-            may not build-depend on packages in unsupported components.""")))
+            may not build-depend on packages in unsupported components.  Do
+            not rely on the name of this attribute, even for reading; it is
+            currently subject to change.""")),
+        as_of="devel")
 
     inherit_overrides_from_parents = Bool(
         title=_("Inherit overrides from parents"),

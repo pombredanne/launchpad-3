@@ -89,7 +89,6 @@ For distroseries we publish a subset of its attributes.
     resource_type_link: ...
     self_link: u'http://.../ubuntu/hoary'
     status: u'Active Development'
-    strict_supported_component_dependencies: True
     suite_names:
         [u'Release', u'Security', u'Updates', u'Proposed', u'Backports']
     summary: u'Hoary is the ...
