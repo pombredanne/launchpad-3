@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -85,6 +85,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         parent.include_long_descriptions = False
         parent.publish_by_hash = True
         parent.advertise_by_hash = True
+        parent.strict_supported_component_dependencies = False
         self._populate_parent(parent, parent_das, packages, pocket)
         return parent, parent_das
 
@@ -614,6 +615,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertFalse(child.include_long_descriptions)
         self.assertTrue(child.publish_by_hash)
         self.assertTrue(child.advertise_by_hash)
+        self.assertFalse(child.strict_supported_component_dependencies)
 
     def test_initialize(self):
         # Test a full initialize with no errors.

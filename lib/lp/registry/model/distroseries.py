@@ -278,6 +278,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     for compressor in DEFAULT_INDEX_COMPRESSORS],
                 "publish_by_hash": False,
                 "advertise_by_hash": False,
+                "strict_supported_component_dependencies": True,
                 }
         super(DistroSeries, self).__init__(*args, **kwargs)
 
@@ -860,6 +861,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def advertise_by_hash(self, value):
         assert isinstance(value, bool)
         self.publishing_options["advertise_by_hash"] = value
+
+    @property
+    def strict_supported_component_dependencies(self):
+        return self.publishing_options.get(
+            "strict_supported_component_dependencies", True)
+
+    @strict_supported_component_dependencies.setter
+    def strict_supported_component_dependencies(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["strict_supported_component_dependencies"] = (
+            value)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""
