@@ -2501,6 +2501,18 @@ class TestFtparchiveIndices(TestArchiveIndices):
 class TestUpdateByHash(TestPublisherBase):
     """Tests for handling of by-hash files."""
 
+    def runSteps(self, publisher, step_a=False, step_a2=False, step_c=False,
+                 step_d=False):
+        """Run publisher steps."""
+        if step_a:
+            publisher.A_publish(False)
+        if step_a2:
+            publisher.A2_markPocketsWithDeletionsDirty()
+        if step_c:
+            publisher.C_doFTPArchive(False)
+        if step_d:
+            publisher.D_writeReleaseFiles(False)
+
     def test_disabled(self):
         # The publisher does not create by-hash directories if it is
         # disabled in the series configuration.
@@ -2509,12 +2521,8 @@ class TestUpdateByHash(TestPublisherBase):
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
-
         self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
@@ -2533,12 +2541,8 @@ class TestUpdateByHash(TestPublisherBase):
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
-
         self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
@@ -2555,12 +2559,8 @@ class TestUpdateByHash(TestPublisherBase):
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
-
         self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         flush_database_caches()
 
         suite_path = partial(
@@ -2589,12 +2589,8 @@ class TestUpdateByHash(TestPublisherBase):
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
-
         self.getPubSource(filecontent='Source: foo\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
@@ -2607,10 +2603,7 @@ class TestUpdateByHash(TestPublisherBase):
                 universe_contents.add(f.read())
 
         self.getPubSource(sourcename='baz', filecontent='Source: baz\n')
-
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         flush_database_caches()
 
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
@@ -2652,9 +2645,7 @@ class TestUpdateByHash(TestPublisherBase):
             f.write('A Contents file\n')
         publisher.markPocketDirty(
             self.breezy_autotest, PackagePublishingPocket.RELEASE)
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         flush_database_caches()
         matchers = [
             MatchesStructure(
@@ -2667,7 +2658,7 @@ class TestUpdateByHash(TestPublisherBase):
         # Add a second identical file.
         with open_for_writing(suite_path('Contents-hppa'), 'w') as f:
             f.write('A Contents file\n')
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_d=True)
         flush_database_caches()
         matchers.append(
             MatchesStructure(
@@ -2679,7 +2670,7 @@ class TestUpdateByHash(TestPublisherBase):
 
         # Delete the first file, but allow it its stay of execution.
         os.unlink(suite_path('Contents-i386'))
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_d=True)
         flush_database_caches()
         matchers[0] = matchers[0].update(scheduled_deletion_date=Not(Is(None)))
         self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
@@ -2691,7 +2682,7 @@ class TestUpdateByHash(TestPublisherBase):
             self.ubuntutest.main_archive,
             path=u'dists/breezy-autotest/Contents-i386').one()
         i386_date = i386_file.scheduled_deletion_date
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_d=True)
         flush_database_caches()
         matchers[0] = matchers[0].update(
             scheduled_deletion_date=Equals(i386_date))
@@ -2705,7 +2696,7 @@ class TestUpdateByHash(TestPublisherBase):
         removeSecurityProxy(i386_file).scheduled_deletion_date = (
             now - timedelta(hours=1))
         os.unlink(suite_path('Contents-hppa'))
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_d=True)
         flush_database_caches()
         matchers = [matchers[1].update(scheduled_deletion_date=Not(Is(None)))]
         self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
@@ -2718,7 +2709,7 @@ class TestUpdateByHash(TestPublisherBase):
             path=u'dists/breezy-autotest/Contents-hppa').one()
         removeSecurityProxy(hppa_file).scheduled_deletion_date = (
             now - timedelta(hours=1))
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_d=True)
         flush_database_caches()
         self.assertContentEqual([], get_contents_files())
         self.assertThat(suite_path('by-hash'), Not(PathExists()))
@@ -2738,9 +2729,7 @@ class TestUpdateByHash(TestPublisherBase):
         # Publish empty index files.
         publisher.markPocketDirty(
             self.breezy_autotest, PackagePublishingPocket.RELEASE)
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
         main_contents = set()
@@ -2750,9 +2739,7 @@ class TestUpdateByHash(TestPublisherBase):
 
         # Add a source package so that Sources is non-empty.
         pub_source = self.getPubSource(filecontent='Source: foo\n')
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         transaction.commit()
         with open(suite_path('main', 'source', 'Sources'), 'rb') as f:
             main_contents.add(f.read())
@@ -2775,9 +2762,7 @@ class TestUpdateByHash(TestPublisherBase):
         # Delete the source package so that Sources is empty again.  The
         # empty file is reprieved and the non-empty one is condemned.
         pub_source.requestDeletion(self.ubuntutest.owner)
-        publisher.A_publish(False)
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         transaction.commit()
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
@@ -2807,9 +2792,7 @@ class TestUpdateByHash(TestPublisherBase):
         for sourcename in ('foo', 'bar'):
             self.getPubSource(
                 sourcename=sourcename, filecontent='Source: %s\n' % sourcename)
-            publisher.A_publish(False)
-            publisher.C_doFTPArchive(False)
-            publisher.D_writeReleaseFiles(False)
+            self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
             for name in ('Release', 'Sources.gz', 'Sources.bz2'):
                 with open(suite_path('main', 'source', name), 'rb') as f:
                     main_contents.add(f.read())
@@ -2845,9 +2828,7 @@ class TestUpdateByHash(TestPublisherBase):
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
-        publisher.A2_markPocketsWithDeletionsDirty()
-        publisher.C_doFTPArchive(False)
-        publisher.D_writeReleaseFiles(False)
+        self.runSteps(publisher, step_a2=True, step_c=True, step_d=True)
         self.assertEqual(set(), publisher.dirty_pockets)
         self.assertContentEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
@@ -2855,6 +2836,28 @@ class TestUpdateByHash(TestPublisherBase):
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
+
+
+class TestUpdateByHashOverriddenDistsroot(TestUpdateByHash):
+    """Test by-hash handling with an overridden distsroot.
+
+    This exercises the way that the publisher is used by PublishFTPMaster.
+    """
+
+    def runSteps(self, publisher, **kwargs):
+        """Run publisher steps with an overridden distsroot."""
+        original_dists = self.config.distsroot
+        temporary_dists = original_dists + ".in-progress"
+        if not os.path.exists(original_dists):
+            os.makedirs(original_dists)
+        os.rename(original_dists, temporary_dists)
+        try:
+            self.config.distsroot = temporary_dists
+            super(TestUpdateByHashOverriddenDistsroot, self).runSteps(
+                publisher, **kwargs)
+        finally:
+            self.config.distsroot = original_dists
+            os.rename(temporary_dists, original_dists)
 
 
 class TestPublisherRepositorySignatures(TestPublisherBase):

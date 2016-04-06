@@ -1002,11 +1002,15 @@ class Publisher(object):
         entries that ceased to be current sufficiently long ago are removed.
         """
         archive_file_set = getUtility(IArchiveFileSet)
-        by_hashes = ByHashes(self._config.archiveroot, self.log)
+        by_hashes = ByHashes(self._config.distsroot, self.log)
         suite_dir = os.path.relpath(
             os.path.join(self._config.distsroot, suite),
-            self._config.archiveroot)
+            self._config.distsroot)
         container = "release:%s" % suite
+
+        def strip_dists(path):
+            assert path.startswith("dists/")
+            return path[len("dists/"):]
 
         # Gather information on entries in the current Release file, and
         # make sure nothing there is condemned.
@@ -1021,8 +1025,9 @@ class Publisher(object):
         for db_file in archive_file_set.getByArchive(
                 self.archive, container=container, only_condemned=True,
                 eager_load=True):
-            if db_file.path in current_files:
-                current_sha256 = current_files[db_file.path][1]
+            stripped_path = strip_dists(db_file.path)
+            if stripped_path in current_files:
+                current_sha256 = current_files[stripped_path][1]
                 if db_file.library_file.content.sha256 == current_sha256:
                     uncondemned_files.add(db_file)
         if uncondemned_files:
@@ -1038,7 +1043,7 @@ class Publisher(object):
         # we can prune them properly later.
         for db_file in archive_file_set.getByArchive(
                 self.archive, container=container):
-            by_hashes.registerChild(os.path.dirname(db_file.path))
+            by_hashes.registerChild(os.path.dirname(strip_dists(db_file.path)))
         for container, path, sha256 in archive_file_set.reap(
                 self.archive, container=container):
             self.log.debug(
@@ -1048,15 +1053,16 @@ class Publisher(object):
         db_files = archive_file_set.getByArchive(
             self.archive, container=container, eager_load=True)
         for db_file in db_files:
-            by_hashes.add(db_file.path, db_file.library_file)
+            by_hashes.add(strip_dists(db_file.path), db_file.library_file)
 
         # Condemn any database records that do not correspond to current
         # index files.
         condemned_files = set()
         for db_file in db_files:
             if db_file.scheduled_deletion_date is None:
-                if db_file.path in current_files:
-                    current_sha256 = current_files[db_file.path][1]
+                stripped_path = strip_dists(db_file.path)
+                if stripped_path in current_files:
+                    current_sha256 = current_files[stripped_path][1]
                 else:
                     current_sha256 = None
                 if db_file.library_file.content.sha256 != current_sha256:
@@ -1075,13 +1081,13 @@ class Publisher(object):
         # although we can only avoid about a third of the queries since the
         # librarian client has no bulk upload methods.
         for path, (size, sha256) in current_files.items():
-            full_path = os.path.join(self._config.archiveroot, path)
+            full_path = os.path.join(self._config.distsroot, path)
             if (os.path.exists(full_path) and
                     not by_hashes.known(path, "SHA256", sha256)):
                 with open(full_path, "rb") as fileobj:
                     db_file = archive_file_set.newFromFile(
-                        self.archive, container, path, fileobj,
-                        size, filenameToContentType(path))
+                        self.archive, container, os.path.join("dists", path),
+                        fileobj, size, filenameToContentType(path))
                 by_hashes.add(path, db_file.library_file, copy_from_path=path)
 
         # Finally, remove any files from disk that aren't recorded in the
