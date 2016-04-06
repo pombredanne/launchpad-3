@@ -176,7 +176,10 @@ from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
@@ -911,7 +914,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         # This is eager loaded by BranchCollection.getBranches.
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
-        return Store.of(self).find(ProductSeries, ProductSeries.branch == self)
+        return list(
+            Store.of(self).find(ProductSeries, ProductSeries.branch == self))
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -1523,6 +1527,7 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
+        del get_property_cache(self.branch)._associatedProductSeries
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):
