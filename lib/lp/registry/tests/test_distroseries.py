@@ -403,6 +403,17 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertTrue(
             naked_distroseries.publishing_options["advertise_by_hash"])
 
+    def test_strict_supported_component_dependencies(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(distroseries.strict_supported_component_dependencies)
+        with admin_logged_in():
+            distroseries.strict_supported_component_dependencies = False
+        self.assertFalse(distroseries.strict_supported_component_dependencies)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertFalse(
+            naked_distroseries.publishing_options[
+                "strict_supported_component_dependencies"])
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 

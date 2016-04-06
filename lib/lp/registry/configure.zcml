@@ -320,6 +320,7 @@
                 index_compressors
                 publish_by_hash
                 advertise_by_hash
+                strict_supported_component_dependencies
                 inherit_overrides_from_parents"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to

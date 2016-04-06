@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -1740,11 +1740,11 @@ class TestOverlays(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def _createDep(self, derived_series, parent_series,
+    def _createDep(self, test_publisher, derived_series, parent_series,
                    parent_distro, component_name=None, pocket=None,
                    overlay=True, arch_tag='i386',
                    publish_base_url=u'http://archive.launchpad.dev/'):
-        # Helper to create a parent/child relationshipi.
+        # Helper to create a parent/child relationship.
         if type(parent_distro) == str:
             depdistro = self.factory.makeDistribution(parent_distro,
                 publish_base_url=publish_base_url)
@@ -1757,10 +1757,14 @@ class TestOverlays(TestCaseWithFactory):
                 distroseries=depseries, architecturetag=arch_tag)
         else:
             depseries = parent_series
+        test_publisher.addFakeChroots(depseries)
         if component_name is not None:
             component = getUtility(IComponentSet)[component_name]
         else:
             component = None
+        for name in ('main', 'restricted', 'universe', 'multiverse'):
+            self.factory.makeComponentSelection(
+                depseries, getUtility(IComponentSet)[name])
 
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series, parent_series=depseries,
@@ -1792,14 +1796,15 @@ class TestOverlays(TestCaseWithFactory):
             version='1.1', archive=breezy.main_archive)
         [build] = pub_source.createMissingBuilds()
         series11, depdistro = self._createDep(
-            breezy, 'series11', 'depdistro', 'universe',
+            test_publisher, breezy, 'series11', 'depdistro', 'universe',
             PackagePublishingPocket.SECURITY)
         self._createDep(
-            breezy, 'series21', 'depdistro2', 'multiverse',
+            test_publisher, breezy, 'series21', 'depdistro2', 'multiverse',
             PackagePublishingPocket.UPDATES)
-        self._createDep(breezy, 'series31', 'depdistro3', overlay=False)
         self._createDep(
-            series11, 'series12', 'depdistro4', 'multiverse',
+            test_publisher, breezy, 'series31', 'depdistro3', overlay=False)
+        self._createDep(
+            test_publisher, series11, 'series12', 'depdistro4', 'multiverse',
             PackagePublishingPocket.UPDATES)
         sources_list = get_sources_list_for_building(build,
             build.distro_arch_series, build.source_package_release.name)
