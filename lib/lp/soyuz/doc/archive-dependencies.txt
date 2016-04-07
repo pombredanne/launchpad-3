@@ -386,6 +386,21 @@ the primary archive.
     deb http://archive.launchpad.dev/ubuntu hoary-security
         main universe
 
+    >>> _ = test_publisher.getPubSource(
+    ...     sourcename='with-ancestry', version='1.0',
+    ...     archive=ubuntu.main_archive)
+    >>> [build_with_ancestry] = test_publisher.getPubSource(
+    ...     sourcename='with-ancestry', version='1.1',
+    ...     archive=cprov.archive).createMissingBuilds()
+    >>> print get_primary_current_component(
+    ...     build_with_ancestry.archive, build_with_ancestry.distro_series,
+    ...     build_with_ancestry.source_package_release.name).name
+    main
+    >>> print_building_sources_list(build_with_ancestry)
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary-security main
+
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
 It's also possible to modify the PPA to act as a super-free and

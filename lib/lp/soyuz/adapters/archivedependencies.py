@@ -138,7 +138,7 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
             distroseries=distroseries, exact_match=True).first()
 
     if ancestry is not None:
-        return ancestry.component.name
+        return ancestry.component
     else:
         return getUtility(IComponentSet)['universe']
 
