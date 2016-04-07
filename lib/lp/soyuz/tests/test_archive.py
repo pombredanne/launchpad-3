@@ -1735,6 +1735,33 @@ class TestFindDepCandidates(TestCaseWithFactory):
         self.assertDep('i386', 'foo-main', [main_bins[0]])
         self.assertDep('i386', 'foo-universe', [universe_bins[0]])
 
+    def test_obeys_dependency_components_with_primary_ancestry(self):
+        # When the dependency component is undefined, only packages
+        # published in a component matching the primary archive ancestry
+        # should be found.
+        primary = self.archive.distribution.main_archive
+        self.publisher.getPubSource(
+            sourcename='something-new', version='1', archive=primary,
+            component='main', status=PackagePublishingStatus.PUBLISHED)
+        main_bins = self.publisher.getPubBinaries(
+            binaryname='foo-main', archive=primary, component='main',
+            status=PackagePublishingStatus.PUBLISHED)
+        universe_bins = self.publisher.getPubBinaries(
+            binaryname='foo-universe', archive=primary,
+            component='universe',
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.archive.addArchiveDependency(
+            primary, PackagePublishingPocket.RELEASE)
+        self.assertDep('i386', 'foo-main', [main_bins[0]])
+        self.assertDep('i386', 'foo-universe', [])
+
+        self.publisher.getPubSource(
+            sourcename='something-new', version='2', archive=primary,
+            component='universe', status=PackagePublishingStatus.PUBLISHED)
+        self.assertDep('i386', 'foo-main', [main_bins[0]])
+        self.assertDep('i386', 'foo-universe', [universe_bins[0]])
+
 
 class TestOverlays(TestCaseWithFactory):
 
