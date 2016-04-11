@@ -406,6 +406,14 @@ class PersonCreationRationale(DBEnumeratedType):
         and commercial archive) was made via Software Center.
         """)
 
+    USERNAME_PLACEHOLDER = DBItem(17, """
+        Created by setting a username in SSO.
+
+        Somebody without a Launchpad account set their username in SSO.
+        Since SSO doesn't store usernames directly, an invisible
+        placeholder Launchpad account is required.
+        """)
+
 
 class PersonNameField(BlacklistableContentNameField):
     """A `Person` team name, which is unique and performs psuedo blacklisting.
@@ -2112,6 +2120,19 @@ class IPersonSet(Interface):
             (e.g. "when the foo package was imported into Ubuntu Breezy").
         :param displayname: The person's displayname.
         :param registrant: The user who created this person, if any.
+        :raises InvalidName: When the passed name isn't valid.
+        :raises NameAlreadyTaken: When the passed name has already been
+            used.
+        """
+
+    def createPlaceholderPerson(openid_identifier, name):
+        """Create and return an SSO username placeholder `IPerson`.
+
+        The returned Person will have no email address, just a username and an
+        OpenID identifier.
+
+        :param openid_identifier: The SSO account's OpenID suffix.
+        :param name: The person's name.
         :raises InvalidName: When the passed name isn't valid.
         :raises NameAlreadyTaken: When the passed name has already been
             used.

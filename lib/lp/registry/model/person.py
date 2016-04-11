@@ -3490,6 +3490,17 @@ class PersonSet:
             name, displayname, hide_email_addresses=True, rationale=rationale,
             comment=comment, registrant=registrant)
 
+    def createPlaceholderPerson(self, openid_identifier, name):
+        """See `IPersonSet`."""
+        account = getUtility(IAccountSet).new(
+            AccountCreationRationale.USERNAME_PLACEHOLDER, name,
+            openid_identifier=openid_identifier,
+            status=AccountStatus.PLACEHOLDER)
+        return self._newPerson(
+            name, name, True,
+            rationale=PersonCreationRationale.USERNAME_PLACEHOLDER,
+            comment="when setting a username in SSO", account=account)
+
     def _newPerson(self, name, displayname, hide_email_addresses,
                    rationale, comment=None, registrant=None, account=None):
         """Create and return a new Person with the given attributes."""

@@ -50,6 +50,16 @@ class AccountSuspendedError(Exception):
 class AccountStatus(DBEnumeratedType):
     """The status of an account."""
 
+    PLACEHOLDER = DBItem(5, """
+        Placeholder
+
+        The account was created automatically by SSO and exists solely
+        to hold a username. It is visible only to staff.
+
+        XXX wgrant 2016-03-03: This is a hack until usernames are moved
+            into SSO properly.
+        """)
+
     NOACCOUNT = DBItem(10, """
         Unactivated
 
@@ -76,7 +86,8 @@ class AccountStatus(DBEnumeratedType):
 
 
 INACTIVE_ACCOUNT_STATUSES = [
-    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
+    AccountStatus.PLACEHOLDER, AccountStatus.DEACTIVATED,
+    AccountStatus.SUSPENDED]
 
 
 class AccountCreationRationale(DBEnumeratedType):
@@ -206,6 +217,14 @@ class AccountCreationRationale(DBEnumeratedType):
         and commercial archive) was made via Software Center.
         """)
 
+    USERNAME_PLACEHOLDER = DBItem(17, """
+        Created by setting a username in SSO.
+
+        Somebody without a Launchpad account set their username in SSO.
+        Since SSO doesn't store usernames directly, an invisible
+        placeholder Launchpad account is required.
+        """)
+
 
 class AccountStatusError(LaunchpadValidationError):
     """The account status cannot change to the proposed status."""
@@ -215,6 +234,7 @@ class AccountStatusChoice(Choice):
     """A valid status and transition."""
 
     transitions = {
+        AccountStatus.PLACEHOLDER: [AccountStatus.NOACCOUNT],
         AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
         AccountStatus.ACTIVE: [
             AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED],
@@ -224,7 +244,7 @@ class AccountStatusChoice(Choice):
 
     def constraint(self, value):
         """See `IField`."""
-        if not IAccount.providedBy(self.context):
+        if removeSecurityProxy(self.context)._SO_creating:
             # This object is initializing.
             return True
         if self.context.status == value:
