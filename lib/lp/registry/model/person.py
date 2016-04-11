@@ -3397,7 +3397,13 @@ class PersonSet:
                 raise NameAlreadyTaken(
                     "The account matching the identifier is inactive.")
             elif person.account.status in [AccountStatus.DEACTIVATED,
-                                           AccountStatus.NOACCOUNT]:
+                                           AccountStatus.NOACCOUNT,
+                                           AccountStatus.PLACEHOLDER]:
+                if person.account.status == AccountStatus.PLACEHOLDER:
+                    # Placeholder accounts were never visible to anyone
+                    # before, so make them appear fresh to the user.
+                    removeSecurityProxy(person).display_name = full_name
+                    removeSecurityProxy(person).datecreated = UTC_NOW
                 removeSecurityProxy(person.account).reactivate(comment)
                 if email is None:
                     email = getUtility(IEmailAddressSet).new(

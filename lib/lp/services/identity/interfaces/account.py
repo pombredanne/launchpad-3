@@ -234,7 +234,8 @@ class AccountStatusChoice(Choice):
     """A valid status and transition."""
 
     transitions = {
-        AccountStatus.PLACEHOLDER: [AccountStatus.NOACCOUNT],
+        AccountStatus.PLACEHOLDER: [
+            AccountStatus.NOACCOUNT, AccountStatus.ACTIVE],
         AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
         AccountStatus.ACTIVE: [
             AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED],
