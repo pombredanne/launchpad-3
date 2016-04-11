@@ -65,6 +65,7 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    ubuntu_sso = Attribute("The Ubuntu One login service.")
     ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
 
