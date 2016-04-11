@@ -33,8 +33,7 @@
                 <li>
                   <label tal:replace="structure view/default_vcs_git">
                     Git
-                    </label> <div style="display: inline"
-                    class="beta"><img alt="[BETA]" src="/@@/beta" /></div>
+                  </label>
                 </li>
               </ul>
               <p>Your project may have both Git repositories and Bazaar branches.
