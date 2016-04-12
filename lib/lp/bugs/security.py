@@ -12,6 +12,7 @@ from lp.app.security import (
     DelegatedAuthorization,
     )
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
@@ -156,6 +157,19 @@ class EditBugAttachment(DelegatedAuthorization):
     def __init__(self, bugattachment):
         super(EditBugAttachment, self).__init__(
             bugattachment, bugattachment.bug)
+
+
+class ViewBugActivity(DelegatedAuthorization):
+    """Security adapter for viewing a bug activity record.
+
+    If the user is authorized to view the bug, they're allowed to view the
+    activity.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBugActivity
+
+    def __init__(self, bugactivity):
+        super(ViewBugActivity, self).__init__(bugactivity, bugactivity.bug)
 
 
 class ViewBugSubscription(AnonymousAuthorization):

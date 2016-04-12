@@ -165,6 +165,7 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
     ITeamMembership,
     TeamMembershipStatus,
@@ -2916,6 +2917,10 @@ class EditEmailAddress(EditByOwnersOrAdmins):
 
 class ViewGPGKey(AnonymousAuthorization):
     usedfor = IGPGKey
+
+
+class ViewSSHKey(AnonymousAuthorization):
+    usedfor = ISSHKey
 
 
 class ViewIrcID(AnonymousAuthorization):
