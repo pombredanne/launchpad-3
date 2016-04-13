@@ -9,7 +9,6 @@ __all__ = [
     'LicensesModifiedEvent',
     'Product',
     'ProductSet',
-    'ProductWithLicenses',
     ]
 
 
@@ -19,7 +18,6 @@ import httplib
 import itertools
 import operator
 
-from lazr.delegates import delegate_to
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.declarations import error_status
@@ -38,7 +36,6 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
-    NamedFunc,
     Not,
     Or,
     Select,
@@ -54,7 +51,6 @@ from zope.interface import (
     implementer,
     providedBy,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.faq import (
@@ -260,74 +256,6 @@ def get_license_status(license_approved, project_reviewed, licenses):
         # The project has at least one licence and does not have
         # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a licence.
         return LicenseStatus.OPEN_SOURCE
-
-
-class Array(NamedFunc):
-    """Implements the postgres "array" function in Storm."""
-    name = 'array'
-
-
-@delegate_to(IProduct, context='product')
-class ProductWithLicenses:
-    """Caches `Product.licenses`."""
-
-    def __init__(self, product, license_ids):
-        """Initialize a `ProductWithLicenses`.
-
-        :param product: the `Product` to wrap.
-        :param license_ids: a sequence of numeric `License` ids.
-        """
-        self.product = product
-        self._licenses = tuple([
-            License.items[id] for id in sorted(license_ids)])
-
-    @property
-    def licenses(self):
-        """See `IProduct`."""
-        return self._licenses
-
-    @property
-    def license_status(self):
-        """See `IProduct`.
-
-        Normally, the `Product.license_status` property would use
-        `Product.licenses`, which is not cached, instead of
-        `ProductWithLicenses.licenses`, which is cached.
-        """
-        naked_product = removeSecurityProxy(self.product)
-        return get_license_status(
-            naked_product.license_approved, naked_product.project_reviewed,
-            self.licenses)
-
-    @classmethod
-    def composeLicensesColumn(cls, for_class=None):
-        """Compose a Storm column specification for licences.
-
-        Use this to render a list of `Product` linkes without querying
-        licences for each one individually.
-
-        It lets you prefetch the licensing information in the same
-        query that fetches a `Product`.  Just add the column spec
-        returned by this function to the query, and pass it to the
-        `ProductWithLicenses` constructor:
-
-        license_column = ProductWithLicenses.composeLicensesColumn()
-        products_with_licenses = [
-            ProductWithLicenses(product, licenses)
-            for product, licenses in store.find(Product, license_column)
-            ]
-
-        :param for_class: Class to find licenses for.  Defaults to
-            `Product`, but could also be a Storm `ClassAlias`.
-        """
-        if for_class is None:
-            for_class = Product
-
-        return Array(
-            Select(
-                columns=[ProductLicense.license],
-                where=(ProductLicense.product == for_class.id),
-                tables=[ProductLicense]))
 
 
 @error_status(httplib.BAD_REQUEST)
