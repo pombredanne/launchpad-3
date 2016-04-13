@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_precached_products',
     'LicensesModifiedEvent',
     'Product',
     'ProductSet',
@@ -1650,7 +1651,7 @@ def get_precached_products(products, need_licences=False,
                            need_projectgroups=False, need_series=False,
                            need_releases=False, role_names=None,
                            need_role_validity=False,
-                           need_codehosting_usage=False):
+                           need_codehosting_usage=False, need_packages=False):
     """Load and cache product information.
 
     :param products: the products for which to pre-cache information
@@ -1680,7 +1681,7 @@ def get_precached_products(products, need_licences=False,
             cache.commercial_subscription = None
         if need_licences and  not safe_hasattr(cache, '_cached_licenses'):
             cache._cached_licenses = []
-        if not safe_hasattr(cache, 'distrosourcepackages'):
+        if need_packages and not safe_hasattr(cache, 'distrosourcepackages'):
             cache.distrosourcepackages = []
         if need_series and not safe_hasattr(cache, 'series'):
             cache.series = []
@@ -1689,13 +1690,14 @@ def get_precached_products(products, need_licences=False,
         DistributionSourcePackage,
         )
 
-    distrosourcepackages = get_distro_sourcepackages(products)
-    for sourcepackagename, distro, product_id in distrosourcepackages:
-        cache = caches[product_id]
-        dsp = DistributionSourcePackage(
-                        sourcepackagename=sourcepackagename,
-                        distribution=distro)
-        cache.distrosourcepackages.append(dsp)
+    if need_packages:
+        distrosourcepackages = get_distro_sourcepackages(products)
+        for sourcepackagename, distro, product_id in distrosourcepackages:
+            cache = caches[product_id]
+            dsp = DistributionSourcePackage(
+                            sourcepackagename=sourcepackagename,
+                            distribution=distro)
+            cache.distrosourcepackages.append(dsp)
 
     if need_series:
         series_caches = {}
@@ -2101,7 +2103,7 @@ class ProductSet:
                 products, role_names=['_owner', 'registrant'],
                 need_role_validity=True, need_licences=True,
                 need_series=True, need_releases=True,
-                need_codehosting_usage=True)
+                need_codehosting_usage=True, need_packages=True)
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
