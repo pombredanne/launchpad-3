@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference ("ref") interfaces."""
@@ -47,11 +47,12 @@ from lp.code.enums import (
     GitObjectType,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
-class IGitRef(IHasMergeProposals, IPrivacy, IInformationType):
+class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
     """A reference in a Git repository."""
 
     # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL

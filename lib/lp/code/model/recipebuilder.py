@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
@@ -60,17 +60,19 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
             # Don't keep the naked requester around though.
             args["author_email"] = removeSecurityProxy(
                 requester).preferredemail.email
-        args["recipe_text"] = str(self.build.recipe.builder_recipe)
+        args["recipe_text"] = self.build.recipe.getRecipeText(validate=True)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
-            None)
+            None).name
         args['archives'] = get_sources_list_for_building(
             self.build, distroarchseries, None,
             tools_source=config.builddmaster.bzr_builder_sources_list,
             logger=logger)
         args['archive_private'] = self.build.archive.private
         args['distroseries_name'] = self.build.distroseries.name
+        if self.build.recipe.base_git_repository is not None:
+            args['git'] = True
         return args
 
     def composeBuildRequest(self, logger):
@@ -81,8 +83,8 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                  self.build.distroseries.displayname))
-        return (
-            "sourcepackagerecipe", das, {}, self._extraBuildArgs(das, logger))
+        args = self._extraBuildArgs(das, logger=logger)
+        return ("sourcepackagerecipe", das, {}, args)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

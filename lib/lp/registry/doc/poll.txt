@@ -39,7 +39,7 @@ a given team (in our case, the 'Ubuntu Team')
   >>> pollsubset = IPollSubset(team)
 
 Now we create a new poll on this team.
-  >>> opendate = datetime(2005, 01, 01, tzinfo=pytz.timezone('UTC'))
+  >>> opendate = datetime(2005, 1, 1, tzinfo=pytz.timezone('UTC'))
   >>> closedate = opendate + timedelta(weeks=2)
   >>> title = "2005 Leader's Elections"
   >>> proposition = "Who's going to be the next leader?"

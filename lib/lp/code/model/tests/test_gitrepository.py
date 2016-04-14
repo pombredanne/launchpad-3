@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -72,6 +72,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositoryView,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
@@ -452,6 +453,21 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
             [ReclaimGitRepositorySpaceJob(job).repository_path
              for job in jobs])
 
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        # If repository is a base_git_repository in a recipe, it is deleted.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs(owner=self.user))
+        recipe.base_git_repository.destroySelf(break_references=True)
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        # If repository is referred to by a recipe, it is deleted.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
+        [ref1] = self.factory.makeGitRefs(owner=self.user)
+        [ref2] = self.factory.makeGitRefs(owner=self.user)
+        self.factory.makeSourcePackageRecipe(branches=[ref1, ref2])
+        ref2.repository.destroySelf(break_references=True)
+
     def test_destroySelf_with_inline_comments_draft(self):
         # Draft inline comments related to a deleted repository (source or
         # target MP repository) also get removed.
@@ -683,6 +699,15 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
         self.assertRaises(
             SQLObjectNotFound, BranchMergeProposal.get, merge_proposal_id)
 
+    def test_deletionRequirements_with_SourcePackageRecipe(self):
+        # Recipes are listed as deletion requirements.
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        self.assertEqual(
+            {recipe: ("delete", "This recipe uses this repository.")},
+            recipe.base_git_repository.getDeletionRequirements())
+
 
 class TestGitRepositoryModifications(TestCaseWithFactory):
     """Tests for Git repository modifications."""
@@ -699,7 +724,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         # When a GitRepository receives an object modified event, the last
         # modified date is set to UTC_NOW.
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 02, 04, 17, 42, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 2, 4, 17, 42, 0, tzinfo=pytz.UTC))
         notify(ObjectModifiedEvent(
             removeSecurityProxy(repository), repository,
             [IGitRepository["name"]], user=repository.owner))
@@ -708,7 +733,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_create_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
             ref.path: {
@@ -722,7 +747,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_update_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
             u"refs/heads/new": {
@@ -736,7 +761,7 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
 
     def test_remove_ref_sets_date_last_modified(self):
         repository = self.factory.makeGitRepository(
-            date_created=datetime(2015, 06, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         repository.removeRefs(set([ref.path]))
         self.assertSqlAttributeEqualsDate(
@@ -1818,6 +1843,102 @@ class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
                 removeSecurityProxy(bmp).deleteProposal()
         jobs = source_ref.repository.scheduleDiffUpdates([source_ref.path])
         self.assertEqual(0, len(jobs))
+
+
+class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestGitRepositoryMarkRecipesStale, self).setUp()
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
+
+    def test_base_repository_recipe(self):
+        # On ref changes, recipes where this ref is the base become stale.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_base_repository_different_ref_recipe(self):
+        # On ref changes, recipes where a different ref in the same
+        # repository is the base are left alone.
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(branches=[ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_base_repository_default_branch_recipe(self):
+        # On ref changes to the default branch, recipes where this
+        # repository is the base with no explicit revspec become stale.
+        repository = self.factory.makeGitRepository()
+        ref1, ref2 = self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/a", u"refs/heads/b"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/a"
+        recipe = self.factory.makeSourcePackageRecipe(branches=[repository])
+        removeSecurityProxy(recipe).is_stale = False
+        repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+        repository.createOrUpdateRefs(
+            {ref1.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_instruction_repository_recipe(self):
+        # On ref changes, recipes including this ref become stale.
+        [base_ref] = self.factory.makeGitRefs()
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[base_ref, ref])
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_instruction_repository_different_ref_recipe(self):
+        # On ref changes, recipes including a different ref in the same
+        # repository are left alone.
+        [base_ref] = self.factory.makeGitRefs()
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_ref, ref1])
+        removeSecurityProxy(recipe).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+
+    def test_instruction_repository_default_branch_recipe(self):
+        # On ref changes to the default branch, recipes including this
+        # repository with no explicit revspec become stale.
+        [base_ref] = self.factory.makeGitRefs()
+        repository = self.factory.makeGitRepository()
+        ref1, ref2 = self.factory.makeGitRefs(
+            repository=repository, paths=[u"refs/heads/a", u"refs/heads/b"])
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/a"
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_ref, repository])
+        removeSecurityProxy(recipe).is_stale = False
+        repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
+        repository.createOrUpdateRefs(
+            {ref1.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(recipe.is_stale)
+
+    def test_unrelated_repository_recipe(self):
+        # On ref changes, unrelated recipes are left alone.
+        [ref] = self.factory.makeGitRefs()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=self.factory.makeGitRefs())
+        removeSecurityProxy(recipe).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(recipe.is_stale)
 
 
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):

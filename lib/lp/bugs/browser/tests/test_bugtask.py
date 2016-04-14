@@ -393,7 +393,7 @@ class TestBugTasksNominationsView(TestCaseWithFactory):
 
     def test_other_users_affected_count(self):
         # The number of other users affected does not change when the
-        # logged-in user marked him or herself as affected or not.
+        # logged-in user marked themselves as affected or not.
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
         self.bug.markUserAffected(self.view.user, True)

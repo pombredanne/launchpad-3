@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSigningKey implementation."""
@@ -23,10 +23,8 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config import config
-from lp.services.gpg.interfaces import (
-    GPGKeyAlgorithm,
-    IGPGHandler,
-    )
+from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.propertycache import get_property_cache
 
 
 @implementer(IArchiveSigningKey)
@@ -70,7 +68,10 @@ class ArchiveSigningKey:
         if self.archive != default_ppa:
             if default_ppa.signing_key is None:
                 IArchiveSigningKey(default_ppa).generateSigningKey()
-            self.archive.signing_key = default_ppa.signing_key
+            key = default_ppa.signing_key
+            self.archive.signing_key_owner = key.owner
+            self.archive.signing_key_fingerprint = key.fingerprint
+            del get_property_cache(self.archive).signing_key
             return
 
         key_displayname = (
@@ -103,11 +104,12 @@ class ArchiveSigningKey:
         pub_key = gpghandler.retrieveKey(secret_key.fingerprint)
         gpghandler.uploadPublicKey(pub_key.fingerprint)
 
-        algorithm = GPGKeyAlgorithm.items[pub_key.algorithm]
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
-        self.archive.signing_key = getUtility(IGPGKeySet).new(
-            key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
-            algorithm, active=True, can_encrypt=pub_key.can_encrypt)
+        key, _ = getUtility(IGPGKeySet).activate(
+            key_owner, pub_key, pub_key.can_encrypt)
+        self.archive.signing_key_owner = key.owner
+        self.archive.signing_key_fingerprint = key.fingerprint
+        del get_property_cache(self.archive).signing_key
 
     def signRepository(self, suite):
         """See `IArchiveSigningKey`."""
@@ -128,8 +130,7 @@ class ArchiveSigningKey:
 
         release_file_content = open(release_file_path).read()
         signature = gpghandler.signContent(
-            release_file_content, secret_key.fingerprint,
-            mode=gpgme.SIG_MODE_DETACH)
+            release_file_content, secret_key, mode=gpgme.SIG_MODE_DETACH)
 
         release_signature_file = open(
             os.path.join(suite_path, 'Release.gpg'), 'w')
@@ -137,8 +138,7 @@ class ArchiveSigningKey:
         release_signature_file.close()
 
         inline_release = gpghandler.signContent(
-            release_file_content, secret_key.fingerprint,
-            mode=gpgme.SIG_MODE_CLEAR)
+            release_file_content, secret_key, mode=gpgme.SIG_MODE_CLEAR)
 
         inline_release_file = open(
             os.path.join(suite_path, 'InRelease'), 'w')

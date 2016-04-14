@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BinaryPackageBuildBehaviour."""
@@ -88,7 +88,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         expected = self.makeExpectedInteraction(
             builder, build, chroot, archive, archive_purpose, component,
             extra_uploads, filemap_names)
-        self.assertEqual(call_log, expected)
+        self.assertEqual(expected, call_log)
 
     def makeExpectedInteraction(self, builder, build, chroot, archive,
                                 archive_purpose, component=None,
@@ -165,6 +165,35 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, builder, build,
             lf, archive, ArchivePurpose.PRIMARY, 'universe')
+        return d
+
+    def test_non_virtual_ppa_dispatch_with_primary_ancestry(self):
+        # If there is a primary component override, it is honoured for
+        # non-virtual PPA builds too.
+        archive = self.factory.makeArchive(virtualized=False)
+        slave = OkSlave()
+        builder = self.factory.makeBuilder(virtualized=False)
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        vitals = extract_vitals_from_db(builder)
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=build.distro_series,
+            archive=archive.distribution.main_archive,
+            sourcepackagename=build.source_package_release.sourcepackagename,
+            component='main')
+        lf = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        build.distro_arch_series.addOrUpdateChroot(lf)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        interactor = BuilderInteractor()
+        d = interactor._startBuild(
+            bq, vitals, builder, slave,
+            interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
+        d.addCallback(
+            self.assertExpectedInteraction, slave.call_log, builder, build,
+            lf, archive, ArchivePurpose.PRIMARY, 'main')
         return d
 
     def test_virtual_ppa_dispatch(self):

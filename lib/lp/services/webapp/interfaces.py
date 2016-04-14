@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -41,8 +41,11 @@ from lp import _
 class ILaunchpadContainer(Interface):
     """Marker interface for objects used as the context of something."""
 
-    def isWithin(scope):
-        """Return True if this context is within the given scope."""
+    def getParentContainers():
+        """Return the containers of each parent of this context."""
+
+    def isWithin(scope_url):
+        """Return True if this context is within the given scope URL."""
 
 
 class ILaunchpadRoot(IContainmentRoot):
@@ -496,12 +499,12 @@ class LoggedOutEvent:
 class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
-    a method to allow the acquisition of a principal using his
+    a method to allow the acquisition of a principal using their
     login name.
     """
 
     def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+        """Return a principal based on their login name."""
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -511,7 +514,7 @@ class IPlacelessLoginSource(IPrincipalSource):
     """
 
     def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+        """Return a principal based on their login name."""
 
     def getPrincipals(name):
         """Not implemented.

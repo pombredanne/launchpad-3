@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference views."""
@@ -35,11 +35,14 @@ from lp.app.widgets.suggestion import TargetGitRepositoryWidget
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -49,18 +52,21 @@ from lp.services.webapp import (
     Link,
     )
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import structured
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
     HasSnapsViewMixin,
     )
 
 
-class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
+class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
     """Context menu for Git references."""
 
     usedfor = IGitRef
     facet = 'branches'
-    links = ['create_snap', 'register_merge', 'source']
+    links = [
+        'create_recipe', 'create_snap', 'register_merge', 'source',
+        'view_recipes']
 
     def source(self):
         """Return a link to the branch's browsing interface."""
@@ -73,8 +79,20 @@ class GitRefContextMenu(ContextMenu, HasSnapsMenuMixin):
         enabled = self.context.namespace.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
+    def create_recipe(self):
+        # You can't create a recipe for a reference in a private repository.
+        enabled = (
+            not self.context.private and
+            bool(getFeatureFlag(GIT_RECIPES_FEATURE_FLAG)))
+        text = "Create packaging recipe"
+        return Link("+new-recipe", text, enabled=enabled, icon="add")
+
 
 class GitRefView(LaunchpadView, HasSnapsViewMixin):
+
+    related_features = {
+        "code.git.recipes.enabled": False,
+        }
 
     @property
     def label(self):
@@ -143,6 +161,24 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def dependent_landing_count_text(self):
         return self._getBranchCountText(len(self.dependent_landings))
+
+    @property
+    def recipes_link(self):
+        """A link to recipes for this reference."""
+        count = self.context.recipes.count()
+        if count == 0:
+            # Nothing to link to.
+            return 'No recipes using this branch.'
+        elif count == 1:
+            # Link to the single recipe.
+            return structured(
+                '<a href="%s">1 recipe</a> using this branch.',
+                canonical_url(self.context.recipes.one())).escapedtext
+        else:
+            # Link to a recipe listing.
+            return structured(
+                '<a href="+recipes">%s recipes</a> using this branch.',
+                count).escapedtext
 
 
 class GitRefRegisterMergeProposalSchema(Interface):

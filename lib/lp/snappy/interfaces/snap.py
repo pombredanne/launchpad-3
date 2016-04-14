@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package interfaces."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BadSnapSearchContext',
-    'CannotDeleteSnap',
     'CannotModifySnapProcessor',
     'DuplicateSnapName',
     'ISnap',
@@ -16,11 +15,16 @@ __all__ = [
     'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_FEATURE_FLAG',
+    'SNAP_PRIVATE_FEATURE_FLAG',
+    'SNAP_TESTING_FLAGS',
+    'SNAP_WEBHOOKS_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
     'SnapFeatureDisabled',
     'SnapNotOwner',
+    'SnapPrivacyMismatch',
+    'SnapPrivateFeatureDisabled',
     ]
 
 import httplib
@@ -66,6 +70,7 @@ from zope.security.interfaces import (
     )
 
 from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
@@ -80,11 +85,21 @@ from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     )
+from lp.services.webhooks.interfaces import IWebhookTarget
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 SNAP_FEATURE_FLAG = u"snap.allow_new"
+SNAP_PRIVATE_FEATURE_FLAG = u"snap.allow_private"
+SNAP_WEBHOOKS_FEATURE_FLAG = u"snap.webhooks.enabled"
+
+
+SNAP_TESTING_FLAGS = {
+    SNAP_FEATURE_FLAG: u"on",
+    SNAP_PRIVATE_FEATURE_FLAG: u"on",
+    SNAP_WEBHOOKS_FEATURE_FLAG: u"on",
+    }
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -134,6 +149,15 @@ class SnapFeatureDisabled(Unauthorized):
             "builds.")
 
 
+@error_status(httplib.UNAUTHORIZED)
+class SnapPrivateFeatureDisabled(Unauthorized):
+    """Only certain users can create private snap objects."""
+
+    def __init__(self):
+        super(SnapPrivateFeatureDisabled, self).__init__(
+            "You do not have permission to create private snaps")
+
+
 @error_status(httplib.BAD_REQUEST)
 class DuplicateSnapName(Exception):
     """Raised for snap packages with duplicate name/owner."""
@@ -164,8 +188,12 @@ class NoSourceForSnap(Exception):
 
 
 @error_status(httplib.BAD_REQUEST)
-class CannotDeleteSnap(Exception):
-    """This snap package cannot be deleted."""
+class SnapPrivacyMismatch(Exception):
+    """Snap package privacy does not match its content."""
+
+    def __init__(self):
+        super(SnapPrivacyMismatch, self).__init__(
+            "Snap contains private information and cannot be public.")
 
 
 class BadSnapSearchContext(Exception):
@@ -263,7 +291,7 @@ class ISnapView(Interface):
         value_type=Reference(schema=Interface), readonly=True)))
 
 
-class ISnapEdit(Interface):
+class ISnapEdit(IWebhookTarget):
     """`ISnap` methods that require launchpad.Edit permission."""
 
     @export_destructor_operation()
@@ -332,6 +360,11 @@ class ISnapAdminAttributes(Interface):
 
     These attributes need launchpad.View to see, and launchpad.Admin to change.
     """
+
+    private = exported(Bool(
+        title=_("Private"), required=False, readonly=False,
+        description=_("Whether or not this snap is private.")))
+
     require_virtualized = exported(Bool(
         title=_("Require virtualized builders"), required=True, readonly=False,
         description=_("Only build this snap package on virtual builders.")))
@@ -345,7 +378,8 @@ class ISnapAdminAttributes(Interface):
 
 
 class ISnap(
-    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes):
+    ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
+    IPrivacy):
     """A buildable snap package."""
 
     # XXX cjwatson 2015-07-17 bug=760849: "beta" is a lie to get WADL
@@ -363,15 +397,18 @@ class ISnapSet(Interface):
     @export_factory_operation(
         ISnap, [
             "owner", "distro_series", "name", "description", "branch",
-            "git_ref"])
+            "git_ref", "private"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=None):
+            processors=None, date_created=None, private=False):
         """Create an `ISnap`."""
 
     def exists(owner, name):
         """Check to see if a matching snap exists."""
+
+    def isValidPrivacy(private, owner, branch=None, git_ref=None):
+        """Whether or not the privacy context is valid."""
 
     @operation_parameters(
         owner=Reference(IPerson, title=_("Owner"), required=True),

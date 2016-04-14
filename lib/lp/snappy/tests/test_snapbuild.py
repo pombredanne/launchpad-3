@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build features."""
@@ -15,6 +15,11 @@ from urllib2 import (
     )
 
 import pytz
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -29,8 +34,9 @@ from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.snappy.interfaces.snap import (
-    SNAP_FEATURE_FLAG,
+    SNAP_TESTING_FLAGS,
     SnapFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import (
@@ -46,6 +52,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -89,7 +96,7 @@ class TestSnapBuild(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapBuild, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.build = self.factory.makeSnapBuild()
 
     def test_implements_interfaces(self):
@@ -127,7 +134,8 @@ class TestSnapBuild(TestCaseWithFactory):
             visibility=PersonVisibility.PRIVATE)
         with person_logged_in(private_team.teamowner):
             build = self.factory.makeSnapBuild(
-                requester=private_team.teamowner, owner=private_team)
+                requester=private_team.teamowner, owner=private_team,
+                private=True)
             self.assertTrue(build.is_private)
         private_archive = self.factory.makeArchive(private=True)
         with person_logged_in(private_archive.owner):
@@ -217,6 +225,31 @@ class TestSnapBuild(TestCaseWithFactory):
         self.factory.makeSnapFile(snapbuild=self.build)
         self.assertTrue(self.build.verifySuccessfulUpload())
 
+    def test_updateStatus_triggers_webhooks(self):
+        # Updating the status of a SnapBuild triggers webhooks on the
+        # corresponding Snap.
+        hook = self.factory.makeWebhook(
+            target=self.build.snap, event_types=["snap:build:0.1"])
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        expected_payload = {
+            "snap_build": Equals(
+                canonical_url(self.build, force_local_path=True)),
+            "action": Equals("status-changed"),
+            "snap": Equals(
+                canonical_url(self.build.snap, force_local_path=True)),
+            "status": Equals("Successfully built"),
+            }
+        delivery = hook.deliveries.one()
+        self.assertThat(
+            delivery, MatchesStructure(
+                event_type=Equals("snap:build:0.1"),
+                payload=MatchesDict(expected_payload)))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
+
     def test_notify_fullybuilt(self):
         # notify does not send mail when a SnapBuild completes normally.
         person = self.factory.makePerson(name="person")
@@ -238,7 +271,7 @@ class TestSnapBuild(TestCaseWithFactory):
         build = self.factory.makeSnapBuild(
             name=u"snap-1", requester=person, owner=person,
             distroarchseries=distroarchseries,
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
             status=BuildStatus.FAILEDTOBUILD,
             builder=self.factory.makeBuilder(name="bob"),
             duration=timedelta(minutes=10))
@@ -287,7 +320,7 @@ class TestSnapBuildSet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapBuildSet, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
 
     def test_getByBuildFarmJob_works(self):
         build = self.factory.makeSnapBuild()
@@ -318,7 +351,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapBuildWebservice, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.person = self.factory.makePerson()
         self.webservice = webservice_for_person(
             self.person, permission=OAuthPermission.WRITE_PRIVATE)
@@ -332,7 +365,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         # The basic properties of a SnapBuild are sensible.
         db_build = self.factory.makeSnapBuild(
             requester=self.person,
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         build_url = api_url(db_build)
         logout()
         build = self.webservice.get(build_url).jsonBody()
@@ -366,7 +399,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             owner=self.person, visibility=PersonVisibility.PRIVATE)
         with person_logged_in(self.person):
             db_build = self.factory.makeSnapBuild(
-                requester=self.person, owner=db_team)
+                requester=self.person, owner=db_team, private=True)
             build_url = api_url(db_build)
         unpriv_webservice = webservice_for_person(
             self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)

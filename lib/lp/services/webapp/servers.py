@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -79,6 +79,7 @@ from lp.services.webapp.authentication import (
     )
 from lp.services.webapp.authorization import (
     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY,
     )
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
@@ -101,7 +102,10 @@ from lp.services.webapp.notifications import (
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.publication import LaunchpadBrowserPublication
-from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.publisher import (
+    canonical_url,
+    RedirectionView,
+    )
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -674,6 +678,8 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def clearSecurityPolicyCache(self):
         if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
             del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+        if LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY in self.annotations:
+            del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY]
 
     def beforeCompletion(self, transaction):
         """See `ISynchronizer`."""
@@ -904,6 +910,12 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
+
+    If force_fresh_login_for_testing is set to True, the
+    ``lp.services.webapp.login.isFreshLogin`` function will always return True.
+    This is useful in tests where you want to avoid needing a fresh login when
+    exercising views such as ``PersonGPGView``
+
     """
 
     # These two attributes satisfy IParticipation.
@@ -911,7 +923,8 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
-                 skin=None, outstream=None, method='GET', **kw):
+                 skin=None, outstream=None, method='GET',
+                 force_fresh_login_for_testing=False, **kw):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
@@ -921,6 +934,7 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
         self.features = get_relevant_feature_controller()
         if self.features is None:
             self.features = NullFeatureController()
+        self.force_fresh_login_for_testing = force_fresh_login_for_testing
 
     @property
     def uuid(self):
@@ -1255,7 +1269,10 @@ class WebServicePublication(WebServicePublicationMixin,
             return super(WebServicePublication, self).getPrincipal(request)
 
         # Fetch OAuth authorization information from the request.
-        form = get_oauth_authorization(request)
+        try:
+            form = get_oauth_authorization(request)
+        except UnicodeDecodeError:
+            raise TokenException('Invalid UTF-8.')
 
         consumer_key = form.get('oauth_consumer_key')
         consumers = getUtility(IOAuthConsumerSet)
@@ -1271,8 +1288,10 @@ class WebServicePublication(WebServicePublicationMixin,
             # header.
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
-            if consumer_key == '':
-                consumer_key = 'anonymous client'
+            if isinstance(consumer_key, bytes):
+                consumer_key = consumer_key.decode('UTF-8')
+            if consumer_key == u'':
+                consumer_key = u'anonymous client'
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:
@@ -1318,9 +1337,13 @@ class WebServicePublication(WebServicePublicationMixin,
             # Everything is fine, let's return the principal.
             pass
         alsoProvides(request, IOAuthSignedRequest)
+        if token.context is not None:
+            scope_url = canonical_url(token.context, force_local_path=True)
+        else:
+            scope_url = None
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
             token.person.account.id, access_level=token.permission,
-            scope=token.context)
+            scope_url=scope_url)
 
         return principal
 

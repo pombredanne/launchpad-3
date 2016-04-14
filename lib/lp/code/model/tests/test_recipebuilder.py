@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test RecipeBuildBehaviour."""
@@ -29,11 +29,13 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestHandleStatusMixin,
     TestVerifySuccessfulBuildMixin,
     )
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.code.model.recipebuilder import RecipeBuildBehaviour
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -54,12 +56,12 @@ class TestRecipeBuilder(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None,
-                archive=None):
+                archive=None, git=False):
         """Create a sample `ISourcePackageRecipeBuild`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
-        distroseries = self.factory.makeDistroSeries(name="mydistro",
-            distribution=distro)
+        distroseries = self.factory.makeDistroSeries(
+            name="mydistro", distribution=distro)
         processor = getUtility(IProcessorSet).getByName('386')
         distroseries.nominatedarchindep = distroseries.newArch(
             'i386', processor, True, self.factory.makePerson())
@@ -70,9 +72,15 @@ class TestRecipeBuilder(TestCaseWithFactory):
                 name="joe", displayname="Joe User")
         if recipe_owner is None:
             recipe_owner = recipe_registrant
-        somebranch = self.factory.makeBranch(
-            owner=recipe_owner, name="pkg",
-            product=self.factory.makeProduct("someapp"))
+        if git:
+            [somebranch] = self.factory.makeGitRefs(
+                owner=recipe_owner, name=u"pkg",
+                target=self.factory.makeProduct("someapp"),
+                paths=[u"refs/heads/packaging"])
+        else:
+            somebranch = self.factory.makeBranch(
+                owner=recipe_owner, name="pkg",
+                product=self.factory.makeProduct("someapp"))
         recipe = self.factory.makeSourcePackageRecipe(
             recipe_registrant, recipe_owner, distroseries, u"recept",
             u"Recipe description", branches=[somebranch])
@@ -139,20 +147,21 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         expected_archives.insert(
             0, "deb http://foo %s main" % job.build.distroseries.name)
+        args = job._extraBuildArgs(distroarchseries)
         self.assertEqual({
-           'archive_private': False,
-           'arch_tag': 'i386',
-           'author_email': u'requester@ubuntu.com',
-           'suite': u'mydistro',
-           'author_name': u'Joe User',
-           'archive_purpose': 'PPA',
-           'ogrecomponent': 'universe',
-           'recipe_text':
-               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
-               'lp://dev/~joe/someapp/pkg\n',
-           'archives': expected_archives,
-           'distroseries_name': job.build.distroseries.name,
-            }, job._extraBuildArgs(distroarchseries))
+            'archive_private': False,
+            'arch_tag': 'i386',
+            'author_email': u'requester@ubuntu.com',
+            'suite': u'mydistro',
+            'author_name': u'Joe User',
+            'archive_purpose': 'PPA',
+            'ogrecomponent': 'universe',
+            'recipe_text':
+            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
+            'lp://dev/~joe/someapp/pkg\n',
+            'archives': expected_archives,
+            'distroseries_name': job.build.distroseries.name,
+        }, args)
 
     def test_extraBuildArgs_private_archive(self):
         # If the build archive is private, the archive_private flag is
@@ -224,19 +233,19 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         logger = BufferLogger()
         self.assertEqual({
-           'archive_private': False,
-           'arch_tag': 'i386',
-           'author_email': u'requester@ubuntu.com',
-           'suite': u'mydistro',
-           'author_name': u'Joe User',
-           'archive_purpose': 'PPA',
-           'ogrecomponent': 'universe',
-           'recipe_text':
-               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
-               'lp://dev/~joe/someapp/pkg\n',
-           'archives': expected_archives,
-           'distroseries_name': job.build.distroseries.name,
-            }, job._extraBuildArgs(distroarchseries, logger))
+            'archive_private': False,
+            'arch_tag': 'i386',
+            'author_email': u'requester@ubuntu.com',
+            'suite': u'mydistro',
+            'author_name': u'Joe User',
+            'archive_purpose': 'PPA',
+            'ogrecomponent': 'universe',
+            'recipe_text':
+            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
+            'lp://dev/~joe/someapp/pkg\n',
+            'archives': expected_archives,
+            'distroseries_name': job.build.distroseries.name,
+        }, job._extraBuildArgs(distroarchseries, logger))
         self.assertIn(
             "Exception processing build tools sources.list entry:",
             logger.getLogBuffer())
@@ -251,6 +260,29 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
 
+    def test_extraBuildArgs_git(self):
+        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
+        job = self.makeJob(git=True)
+        distroarchseries = job.build.distroseries.architectures[0]
+        expected_archives = get_sources_list_for_building(
+            job.build, distroarchseries, None)
+        self.assertEqual({
+            'archive_private': False,
+            'arch_tag': 'i386',
+            'author_email': u'requester@ubuntu.com',
+            'suite': u'mydistro',
+            'author_name': u'Joe User',
+            'archive_purpose': 'PPA',
+            'ogrecomponent': 'universe',
+            'recipe_text':
+                '# git-build-recipe format 0.4 deb-version '
+                '{debupstream}-0~{revtime}\n'
+                'lp:~joe/someapp/+git/pkg packaging\n',
+            'archives': expected_archives,
+            'distroseries_name': job.build.distroseries.name,
+            'git': True,
+            }, job._extraBuildArgs(distroarchseries))
+
     def test_getByID(self):
         job = self.makeJob()
         transaction.commit()
@@ -258,7 +290,6 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, SourcePackageRecipeBuild.getByID(job.build.id))
 
     def test_composeBuildRequest(self):
-        # Ensure composeBuildRequest is correct.
         job = self.makeJob()
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
@@ -266,9 +297,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder = MockBuilder("bob-de-bouwer")
         builder.processor = das.processor
         job.setBuilder(builder, None)
+        build_request = yield job.composeBuildRequest(None)
         self.assertEqual(
             ('sourcepackagerecipe', das, {}, job._extraBuildArgs(das)),
-            job.composeBuildRequest(None))
+            build_request)
 
 
 class TestBuildNotifications(TrialTestCase):

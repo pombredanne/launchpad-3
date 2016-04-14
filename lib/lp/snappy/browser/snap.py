@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap views."""
@@ -36,6 +36,8 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -63,14 +65,17 @@ from lp.services.webapp.breadcrumb import (
     Breadcrumb,
     NameBreadcrumb,
     )
+from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
 from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapSet,
     NoSuchSnap,
     SNAP_FEATURE_FLAG,
+    SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapFeatureDisabled,
+    SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.soyuz.browser.archive import EnableProcessorsMixin
@@ -78,7 +83,7 @@ from lp.soyuz.browser.build import get_build_by_id_str
 from lp.soyuz.interfaces.archive import IArchive
 
 
-class SnapNavigation(Navigation):
+class SnapNavigation(WebhookTargetNavigationMixin, Navigation):
     usedfor = ISnap
 
     @stepthrough('+build')
@@ -106,7 +111,7 @@ class SnapNavigationMenu(NavigationMenu):
 
     facet = 'overview'
 
-    links = ('edit', 'delete', 'admin')
+    links = ('admin', 'edit', 'webhooks', 'delete')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -115,6 +120,12 @@ class SnapNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         return Link('+edit', 'Edit snap package', icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def webhooks(self):
+        return Link(
+            '+webhooks', 'Manage webhooks', icon='edit',
+            enabled=bool(getFeatureFlag('webhooks.new.enabled')))
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -146,7 +157,7 @@ class SnapView(LaunchpadView):
     def person_picker(self):
         field = copy_field(
             ISnap['owner'],
-            vocabularyName='UserTeamsParticipationPlusSelfSimpleDisplay')
+            vocabularyName='AllUserTeamsParticipationPlusSelfSimpleDisplay')
         return InlinePersonEditPickerWidget(
             self.context, field, format_link(self.context.owner),
             header='Change owner', step_title='Select a new owner')
@@ -273,6 +284,7 @@ class ISnapEditSchema(Interface):
     use_template(ISnap, include=[
         'owner',
         'name',
+        'private',
         'require_virtualized',
         ])
     distro_series = Choice(
@@ -298,7 +310,15 @@ class SnapAddView(LaunchpadFormView):
         """See `LaunchpadView`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
+
         super(SnapAddView, self).initialize()
+
+        # Once initialized, if the private_snap flag is disabled, it
+        # prevents snap creation for private contexts.
+        if not getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG):
+            if (IInformationType.providedBy(self.context) and
+                self.context.information_type in PRIVATE_INFORMATION_TYPES):
+                raise SnapPrivateFeatureDisabled
 
     @property
     def cancel_url(self):
@@ -321,9 +341,11 @@ class SnapAddView(LaunchpadFormView):
             kwargs = {'git_ref': self.context}
         else:
             kwargs = {'branch': self.context}
+        private = not getUtility(
+            ISnapSet).isValidPrivacy(False, data['owner'], **kwargs)
         snap = getUtility(ISnapSet).new(
             self.user, data['owner'], data['distro_series'], data['name'],
-            **kwargs)
+            private=private, **kwargs)
         self.next_url = canonical_url(snap)
 
     def validate(self, data):
@@ -404,7 +426,20 @@ class SnapAdminView(BaseSnapEditView):
 
     page_title = 'Administer'
 
-    field_names = ['require_virtualized']
+    field_names = ['private', 'require_virtualized']
+
+    def validate(self, data):
+        super(SnapAdminView, self).validate(data)
+        private = data.get('private', None)
+        if private is not None:
+            if not getUtility(ISnapSet).isValidPrivacy(
+                    private, self.context.owner, self.context.branch,
+                    self.context.git_ref):
+                self.setFieldError(
+                    'private',
+                    u'This snap contains private information and cannot '
+                    u'be public.'
+                )
 
 
 class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
@@ -478,10 +513,6 @@ class SnapDeleteView(BaseSnapEditView):
     page_title = 'Delete'
 
     field_names = []
-
-    @property
-    def has_builds(self):
-        return not self.context.builds.is_empty()
 
     @action('Delete snap package', name='delete')
     def delete_action(self, action, data):

@@ -1256,7 +1256,7 @@ class TestCheckTeamParticipationScript(TestCase):
         """The script reports spurious participants of people.
 
         Teams can have multiple participants, but only the person should be a
-        paricipant of him/herself.
+        paricipant of themselves.
         """
         cursor().execute(self.script_create_inconsistent_participation)
         transaction.commit()

@@ -63,8 +63,8 @@ XXX: This doctest needs a lot of cleanups!
 Adding new members
 ------------------
 
-One way of adding new members to a team is by having the user himself join the
-team he wants.
+One way of adding new members to a team is by having the user themselves
+join the team they want.
 
     >>> salgado = personset.getByName('salgado')
     >>> ignored = login_person(salgado)
@@ -153,7 +153,7 @@ to a team.
     # Log in as the team owner.
     >>> ignored = login_person(t3.teamowner)
 
-If the member was added (i.e. he wasn't already a member of the team),
+If the member was added (i.e. they weren't already a member of the team),
 addMember returns a tuple with True plus the new membership status.
 
     >>> t3.addMember(
@@ -227,7 +227,7 @@ of t1 and the owner of t2 is an indirect member.
     >>> [m.displayname for m in t1.allmembers]
     [u'James Blackwell', u'No Privileges Person', u't2']
 
-A team admin can also decline an invitation made to his team.
+A team admin can also decline an invitation made to their team.
 
     >>> t2.addMember(t3, reviewer=mark)
     (True, <DBItem TeamMembershipStatus.INVITED...)
@@ -305,8 +305,8 @@ members too.
 
 After adding all this mess, this is what we have:
 
-(This table doesn't include the team owner (Foo Bar), but since he's the
-owner he's also a direct member of all teams)
+(This table doesn't include the team owner (Foo Bar), but since they're the
+owner they're also a direct member of all teams)
 =============================================================
 ||  Team      ||  Direct Members   ||  Indirect Members    ||
 =============================================================
@@ -376,8 +376,8 @@ and t2, but not from t4, because he's a direct member of t4.
 
 This is what we have now, after removing t2 from t5 and Salgado from t3.
 
-(This table doesn't include the team owner (Foo Bar), but since he's the
-owner he's also a direct member of all teams)
+(This table doesn't include the team owner (Foo Bar), but since they're the
+owner they're also a direct member of all teams)
 =============================================================
 ||  Team      ||  Members          ||  Indirect Members    ||
 =============================================================
@@ -408,8 +408,8 @@ Let's see...
 
 
 It's important to note that even if the owner leaves the team, which
-removes his membership, he will still be the team's owner and retain his
-rights over it. This ensures we'll never have teams which can't be
+removes their membership, they will still be the team's owner and retain
+their rights over it. This ensures we'll never have teams which can't be
 managed. This does not imply that the owner will be a member of the team.
 
     >>> ignored = login_person(t5.teamowner)
@@ -447,8 +447,8 @@ the launchpad.Edit permission. Also, since we don't want team admins to change
 the expiry date of their own memberships, the setExpirationDate() method does
 an extra check to ensure that doesn't happen.
 
-    # Foo Bar is a launchpad admin, but even so he can't change a membership's
-    # status/expiry-date by hand.
+    # Foo Bar is a launchpad admin, but even so they can't change a
+    # membership's status/expiry-date by hand.
     >>> ignored = login_person(foobar)
     >>> membership = foobar.team_memberships[0]
     >>> membership.status = None
@@ -461,8 +461,8 @@ an extra check to ensure that doesn't happen.
     ...
     ForbiddenAttribute: ...
 
-Foo Bar asked to join Warty Security Team on 2006-01-26 and he's been doing
-good work, so we'll approve his membership.
+Foo Bar asked to join Warty Security Team on 2006-01-26 and they've been doing
+good work, so we'll approve their membership.
 
     >>> warty_team = getUtility(IPersonSet).getByName('name20')
     >>> membership = membershipset.getByPersonAndTeam(foobar, warty_team)
@@ -473,7 +473,7 @@ good work, so we'll approve his membership.
     >>> print membership.datejoined
     None
 
-When we approve his membership, the datejoined will contain the date that it
+When we approve their membership, the datejoined will contain the date that it
 was approved. It returns True to indicate that the status was changed.
 
     >>> membership.setStatus(TeamMembershipStatus.APPROVED, foobar)
@@ -520,11 +520,11 @@ made active.
     True
 
 When changing the expiry date we need to provide a date in the future and,
-as mentioned above, the change can't be done by a team admin to his own
+as mentioned above, the change can't be done by a team admin to their own
 membership.
 
 We're still logged in as Foo Bar, which is a launchpad admin and thus
-can change any membership's expiry date (even his own), as long as
+can change any membership's expiry date (even their own), as long as
 the new expiry date is not in the past.
 
     >>> foobar == foobar_on_buildd.team.teamowner
@@ -644,7 +644,7 @@ A team membership can be renewed before it has been expired by either
 changing its dateexpires (which can be done only by admins of the
 membership's team) or by using IPerson.renewTeamMembership, which is
 accessible only to the membership's member a few days before it expires.
-Also, for a member to renew his own membership, it's necessary that the
+Also, for a member to renew their own membership, it's necessary that the
 team's renewal policy is set to ONDEMAND and that the membership is
 still active.
 
@@ -658,7 +658,7 @@ still active.
     >>> print karl_on_mirroradmins.dateexpires
     None
 
-The member himself can't change the expiration date of his membership.
+The member themselves can't change the expiration date of their membership.
 
     >>> ignored = login_person(karl)
     >>> karl_on_mirroradmins.setExpirationDate(tomorrow, karl)
@@ -675,7 +675,7 @@ Only a team admin can.
     True
 
 If the team's renewal policy is ONDEMAND, the membership can be renewed
-by the member himself. (That is only true because this membership is
+by the member themselves. (That is only true because this membership is
 active and set to expire tomorrow).
 
     >>> print karl_on_mirroradmins.team.renewal_policy.name
@@ -685,7 +685,7 @@ active and set to expire tomorrow).
     >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
     >>> karl_on_mirroradmins.team.renewal_policy = ondemand
 
-    # When a user renews his own membership, we use the team's default
+    # When a user renews their own membership, we use the team's default
     # renewal period, so we must specify that for the mirror admins
     # team.
     >>> mirror_admins.defaultrenewalperiod = 365
@@ -761,7 +761,7 @@ Finding team administrators
 ---------------------------
 
 Another convenient method is getDirectAdministrators(), which returns the
-admin members plus the owner in case he is not one of the admin members.
+admin members plus the owner in case they are not one of the admin members.
 
     >>> [admin.unique_displayname for admin in t3.adminmembers]
     [u'Jeff Waugh (jdub)']

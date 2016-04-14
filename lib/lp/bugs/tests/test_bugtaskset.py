@@ -48,7 +48,7 @@ class TestCountsForProducts(TestCase):
             'product_id=20 count=2')
 
         # A Launchpad admin will get a higher count for the product with id=20
-        # because he can see the private bug.
+        # because they can see the private bug.
         bugtask_counts = getUtility(IBugTaskSet).getOpenBugTasksPerProduct(
             foobar, products)
         res = sorted(bugtask_counts.items())

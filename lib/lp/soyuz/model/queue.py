@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -46,6 +46,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient
@@ -184,8 +185,9 @@ class PackageUpload(SQLBase):
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
-    signing_key = ForeignKey(
-        foreignKey='GPGKey', dbName='signing_key', notNull=False)
+    signing_key_owner_id = Int(name="signing_key_owner")
+    signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
+    signing_key_fingerprint = Unicode()
 
     package_copy_job_id = Int(name='package_copy_job', allow_none=True)
     package_copy_job = Reference(package_copy_job_id, 'PackageCopyJob.id')
@@ -287,6 +289,12 @@ class PackageUpload(SQLBase):
                 "customformat": file.customformat.title,
                 })
         return properties
+
+    @cachedproperty
+    def signing_key(self):
+        if self.signing_key_fingerprint is not None:
+            return getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint)
 
     @property
     def copy_source_archive(self):
@@ -469,7 +477,7 @@ class PackageUpload(SQLBase):
         sourcepackagename = self.sources[
             0].sourcepackagerelease.sourcepackagename
 
-        # The package creator always gets his karma.
+        # The package creator always gets their karma.
         changed_by.assignKarma(
             main_karma_action, distribution=distribution,
             sourcepackagename=sourcepackagename)
@@ -477,7 +485,7 @@ class PackageUpload(SQLBase):
         if self.archive.is_ppa:
             return
 
-        # If a sponsor was involved, give him some too.
+        # If a sponsor was involved, give them some too.
         if uploader is not None and changed_by != uploader:
             uploader.assignKarma(
                 'sponsoruploadaccepted', distribution=distribution,
@@ -1444,7 +1452,7 @@ class PackageUploadCustom(SQLBase):
         dest_file = os.path.join(
             archive_config.metaroot, self.libraryfilealias.filename)
         if not os.path.isdir(archive_config.metaroot):
-            os.makedirs(archive_config.metaroot, 0755)
+            os.makedirs(archive_config.metaroot, 0o755)
 
         # At this point we now have a directory of the format:
         # <person_name>/meta/<ppa_name>

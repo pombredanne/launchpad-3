@@ -28,7 +28,6 @@ import re
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
-    ObjectDeletedEvent,
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
@@ -148,6 +147,10 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.buglinktarget import (
+    ObjectLinkedEvent,
+    ObjectUnlinkedEvent,
+    )
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
@@ -361,7 +364,7 @@ class Bug(SQLBase, InformationTypeMixin):
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    linked_branches = SQLMultipleJoin(
+    linked_bugbranches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
@@ -371,6 +374,10 @@ class Bug(SQLBase, InformationTypeMixin):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def linked_branches(self):
+        return [link.branch for link in self.linked_bugbranches]
 
     @property
     def cves(self):
@@ -751,7 +758,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
-        # property, he has permission to see the bug, so we're not
+        # property, they have permission to see the bug, so we're not
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
@@ -776,7 +783,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
-        # property, he has permission to see the bug, so we're not
+        # property, they have permission to see the bug, so we're not
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
@@ -1351,32 +1358,26 @@ class Bug(SQLBase, InformationTypeMixin):
             title=title, message=message,
             send_notifications=send_notifications)
 
-    def hasBranch(self, branch):
-        """See `IBug`."""
-        return BugBranch.selectOneBy(branch=branch, bug=self) is not None
-
     def linkBranch(self, branch, registrant):
         """See `IBug`."""
-        for bug_branch in shortlist(self.linked_branches):
-            if bug_branch.branch == branch:
-                return bug_branch
+        if branch in self.linked_branches:
+            return
 
-        bug_branch = BugBranch(
-            branch=branch, bug=self, registrant=registrant)
+        BugBranch(branch=branch, bug=self, registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
         self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch, self))
-        notify(ObjectCreatedEvent(bug_branch))
-
-        return bug_branch
+        notify(ObjectLinkedEvent(branch, self, user=registrant))
+        notify(ObjectLinkedEvent(self, branch, user=registrant))
 
     def unlinkBranch(self, branch, user):
         """See `IBug`."""
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:
             self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
-            notify(ObjectDeletedEvent(bug_branch, user=user))
-            bug_branch.destroySelf()
+            notify(ObjectUnlinkedEvent(branch, self, user=user))
+            notify(ObjectUnlinkedEvent(self, branch, user=user))
+            Store.of(bug_branch).remove(bug_branch)
 
     def getVisibleLinkedBranches(self, user, eager_load=False):
         """Return all the branches linked to the bug that `user` can see."""

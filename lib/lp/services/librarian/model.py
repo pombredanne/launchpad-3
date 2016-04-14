@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -244,7 +244,7 @@ class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
 
     def create(self, name, size, file, contentType, expires=None,
-               debugID=None, restricted=False):
+               debugID=None, restricted=False, allow_zero_length=False):
         """See `ILibraryFileAliasSet`"""
         if restricted:
             client = getUtility(IRestrictedLibrarianClient)
@@ -252,7 +252,9 @@ class LibraryFileAliasSet(object):
             client = getUtility(ILibrarianClient)
         if '/' in name:
             raise InvalidFilename("Filename cannot contain slashes.")
-        fid = client.addFile(name, size, file, contentType, expires, debugID)
+        fid = client.addFile(
+            name, size, file, contentType, expires=expires, debugID=debugID,
+            allow_zero_length=allow_zero_length)
         lfa = IMasterStore(LibraryFileAlias).find(
             LibraryFileAlias, LibraryFileAlias.id == fid).one()
         assert lfa is not None, "client.addFile didn't!"
@@ -262,12 +264,12 @@ class LibraryFileAliasSet(object):
         """See ILibraryFileAliasSet.__getitem__"""
         return LibraryFileAlias.get(key)
 
-    def findBySHA1(self, sha1):
+    def findBySHA256(self, sha256):
         """See ILibraryFileAliasSet."""
         return LibraryFileAlias.select("""
             content = LibraryFileContent.id
-            AND LibraryFileContent.sha1 = '%s'
-            """ % sha1, clauseTables=['LibraryFileContent'])
+            AND LibraryFileContent.sha256 = '%s'
+            """ % sha256, clauseTables=['LibraryFileContent'])
 
 
 @implementer(ILibraryFileDownloadCount)

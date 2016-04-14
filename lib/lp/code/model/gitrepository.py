@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -130,6 +130,7 @@ from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
@@ -953,6 +954,36 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
         return jobs
 
+    def _getRecipes(self, paths=None):
+        """Undecorated version of recipes for use by `markRecipesStale`."""
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData,
+            )
+        if paths is not None:
+            revspecs = set()
+            for path in paths:
+                revspecs.add(path)
+                if path.startswith("refs/heads/"):
+                    revspecs.add(path[len("refs/heads/"):])
+                if path == self.default_branch:
+                    revspecs.add(None)
+            revspecs = list(revspecs)
+        else:
+            revspecs = None
+        return SourcePackageRecipeData.findRecipes(self, revspecs=revspecs)
+
+    @property
+    def recipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
+        return DecoratedResultSet(self._getRecipes(), pre_iter_hook=hook)
+
+    def markRecipesStale(self, paths):
+        """See `IGitRepository`."""
+        for recipe in self._getRecipes(paths):
+            recipe.is_stale = True
+
     def _markProposalMerged(self, proposal, merged_revision_id, logger=None):
         if logger is not None:
             logger.info(
@@ -1023,6 +1054,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
+        deletion_operations.extend(
+            DeletionCallable(
+                recipe, msg("This recipe uses this repository."),
+                recipe.destroySelf)
+            for recipe in self.recipes)
         if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, msg("Some snap packages build from this repository."),

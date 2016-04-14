@@ -342,7 +342,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
 
 
 class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
-    """Notification sent to the owner when his question is modified."""
+    """Notification sent to the owner when their question is modified."""
 
     recipient_set = QuestionRecipientSet.ASKER
     # These actions will be done by the owner, so use the second person.

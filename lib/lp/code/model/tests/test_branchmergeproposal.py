@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -73,6 +73,7 @@ from lp.code.tests.helpers import (
 from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
@@ -87,6 +88,7 @@ from lp.testing import (
     WebServiceTestCase,
     ws_object,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -969,11 +971,16 @@ class TestMergeProposalWebhooksMixin:
             }
         return {k: Equals(v) for k, v in payload.items()}
 
-    def assertCorrectDelivery(self, expected_payload, delivery):
+    def assertCorrectDelivery(self, expected_payload, hook, delivery):
         self.assertThat(
             delivery, MatchesStructure(
                 event_type=Equals("merge-proposal:0.1"),
                 payload=MatchesDict(expected_payload)))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
 
     def test_create_triggers_webhooks(self):
         # When a merge proposal is created, any relevant webhooks are
@@ -993,7 +1000,7 @@ class TestMergeProposalWebhooksMixin:
             "action": Equals("created"),
             "new": MatchesDict(self.getExpectedPayload(proposal)),
             }
-        self.assertCorrectDelivery(expected_payload, delivery)
+        self.assertCorrectDelivery(expected_payload, hook, delivery)
 
     def test_modify_triggers_webhooks(self):
         # When an existing merge proposal is modified, any relevant webhooks
@@ -1019,7 +1026,7 @@ class TestMergeProposalWebhooksMixin:
         expected_payload["new"] = MatchesDict(
             self.getExpectedPayload(proposal))
         delivery = hook.deliveries.one()
-        self.assertCorrectDelivery(expected_payload, delivery)
+        self.assertCorrectDelivery(expected_payload, hook, delivery)
 
     def test_delete_triggers_webhooks(self):
         # When an existing merge proposal is deleted, any relevant webhooks
@@ -1040,7 +1047,7 @@ class TestMergeProposalWebhooksMixin:
             }
         proposal.deleteProposal()
         delivery = hook.deliveries.one()
-        self.assertCorrectDelivery(expected_payload, delivery)
+        self.assertCorrectDelivery(expected_payload, hook, delivery)
 
 
 class TestMergeProposalWebhooksBzr(

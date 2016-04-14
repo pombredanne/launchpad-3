@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -176,7 +176,7 @@ class LaunchpadLoginSource:
     """
 
     def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE,
-                     scope=None):
+                     scope_url=None):
         """Return an `ILaunchpadPrincipal` for the account with the given id.
 
         Return None if there is no account with the given id.
@@ -184,9 +184,9 @@ class LaunchpadLoginSource:
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
 
-        Similarly, when a `scope` is given, the principal's capabilities will
-        apply only to things within that scope.  For everything else that is
-        not private, the principal will have only read access.
+        Similarly, when a `scope_url` is given, the principal's capabilities
+        will apply only to things within that scope.  For everything else
+        that is not private, the principal will have only read access.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -198,14 +198,14 @@ class LaunchpadLoginSource:
         except LookupError:
             return None
 
-        return self._principalForAccount(account, access_level, scope)
+        return self._principalForAccount(account, access_level, scope_url)
 
     def getPrincipals(self, name):
         raise NotImplementedError
 
     def getPrincipalByLogin(self, login,
                             access_level=AccessLevel.WRITE_PRIVATE,
-                            scope=None):
+                            scope_url=None):
         """Return a principal based on the account with the email address
         signified by "login".
 
@@ -214,9 +214,9 @@ class LaunchpadLoginSource:
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
 
-        Similarly, when a `scope` is given, the principal's capabilities will
-        apply only to things within that scope.  For everything else that is
-        not private, the principal will have only read access.
+        Similarly, when a `scope_url` is given, the principal's capabilities
+        will apply only to things within that scope.  For everything else
+        that is not private, the principal will have only read access.
 
 
         Note that we currently need to be able to retrieve principals for
@@ -227,9 +227,10 @@ class LaunchpadLoginSource:
         person = getUtility(IPersonSet).getByEmail(login, filter_status=False)
         if person is None or person.account is None:
             return None
-        return self._principalForAccount(person.account, access_level, scope)
+        return self._principalForAccount(
+            person.account, access_level, scope_url)
 
-    def _principalForAccount(self, account, access_level, scope):
+    def _principalForAccount(self, account, access_level, scope_url):
         """Return a LaunchpadPrincipal for the given account.
 
         The LaunchpadPrincipal will also have the given access level and
@@ -239,7 +240,7 @@ class LaunchpadLoginSource:
         principal = LaunchpadPrincipal(
             naked_account.id, naked_account.displayname,
             naked_account.displayname, account,
-            access_level=access_level, scope=scope)
+            access_level=access_level, scope_url=scope_url)
         principal.__parent__ = self
         return principal
 
@@ -254,12 +255,12 @@ loginSource.__parent__ = authService
 class LaunchpadPrincipal:
 
     def __init__(self, id, title, description, account,
-                 access_level=AccessLevel.WRITE_PRIVATE, scope=None):
+                 access_level=AccessLevel.WRITE_PRIVATE, scope_url=None):
         self.id = unicode(id)
         self.title = title
         self.description = description
         self.access_level = access_level
-        self.scope = scope
+        self.scope_url = scope_url
         self.account = account
         self.person = IPerson(account, None)
 
@@ -274,9 +275,16 @@ def get_oauth_authorization(request):
     or it might be in the query string or entity-body.
 
     :return: a dictionary of authorization information.
+    :raises UnicodeDecodeError: If the Authorization header is not valid
+        UTF-8.
     """
     header = request._auth
     if header is not None and header.startswith("OAuth "):
+        # http://oauth.net/core/1.0/#encoding_parameters says "Text names
+        # and values MUST be encoded as UTF-8 octets before percent-encoding
+        # them", so we can reasonably fail if this hasn't been done.
+        if isinstance(header, bytes):
+            header = header.decode("UTF-8")
         return OAuthRequest._split_header(header)
     else:
         return request.form
@@ -288,7 +296,11 @@ def check_oauth_signature(request, consumer, token):
     If the signature is incorrect or its method is not supported, set the
     appropriate status in the request's response and return False.
     """
-    authorization = get_oauth_authorization(request)
+    try:
+        authorization = get_oauth_authorization(request)
+    except UnicodeDecodeError:
+        request.response.setStatus(400)
+        return False
 
     if authorization.get('oauth_signature_method') != 'PLAINTEXT':
         # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported

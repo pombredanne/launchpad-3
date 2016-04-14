@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webhook interfaces."""
@@ -76,6 +76,7 @@ WEBHOOK_EVENT_TYPES = {
     "bzr:push:0.1": "Bazaar push",
     "git:push:0.1": "Git push",
     "merge-proposal:0.1": "Merge proposal",
+    "snap:build:0.1": "Snap build",
     }
 
 

@@ -29,7 +29,7 @@ Any logged in user can use the 'Link to a FAQ' action item to link
 the question to an existing FAQ.
 
 For example, No Privileges Person comes across a question about SVG
-support in Firefox. That question has a well-known answer, so he clicks
+support in Firefox. That question has a well-known answer, so they click
 on 'Link to a FAQ' to answer the question:
 
     # We use backslashreplace because the page title includes smart quotes.
@@ -101,13 +101,13 @@ it.
     >>> user_browser.getControl('10').selected = True
 
 There is a 'Message' field that will be used to answer the question.
-It is pre-filled, but he can change its value. The FAQ reference will
+It is pre-filled, but they can change its value. The FAQ reference will
 be appended to the message.
 
     >>> print user_browser.getControl('Message').value
     No Privileges Person suggests this article as an answer to your question:
 
-He can then click 'Link to FAQ' to answer the question with the selected
+They can then click 'Link to FAQ' to answer the question with the selected
 FAQ. After clicking the button, the user is redirected to the question
 page.
 
@@ -115,7 +115,7 @@ page.
     >>> print user_browser.url
     http://answers.launchpad.dev/firefox/+question/2
 
-He sees that the question's status was changed to 'Answered':
+They see that the question's status was changed to 'Answered':
 
     >>> def print_question_status(browser):
     ...     print extract_text(
@@ -145,8 +145,8 @@ The answer message was added to the question's discussion:
 
 The link to the FAQ can be changed by using the same 'Link to a FAQ'
 option. Continuing on the previous example, the user went on to read
-the FAQ that he just linked and found that it doesn't really answer
-the question. To correct the mistake, he uses the same 'Link to a FAQ'
+the FAQ that they just linked and found that it doesn't really answer
+the question. To correct the mistake, they use the same 'Link to a FAQ'
 action.
 
     >>> user_browser.getLink('Link to a FAQ').click()
@@ -160,13 +160,13 @@ question's title are displayed:
     ( ) 8: How do I install Extensions?
     ( ) 9: How do I troubleshoot problems with extensions/themes?
 
-He changes the message and click 'Link to FAQ'.
+They change the message and click 'Link to FAQ'.
 
     >>> user_browser.getControl('Message').value = (
     ...     "Sorry, this document doesn't really answer your question.")
     >>> user_browser.getControl('Link to FAQ').click()
 
-But since, he forgot to change the link, the form is displayed again
+But since they forgot to change the link, the form is displayed again
 with an error message.
 
     >>> print user_browser.url
@@ -203,7 +203,7 @@ users having 'moderation' privilege on the project (this includes
 answer contacts and the project's owner).
 
 Since No Privileges Person isn't an answer contact for the project nor
-the project owner, he doesn't have the possibility to create a new FAQ.
+the project owner, they don't have the possibility to create a new FAQ.
 
     >>> user_browser.getLink('Create a FAQ')
     Traceback (most recent call last):
@@ -236,8 +236,8 @@ Sample Person who is the project owner does have that ability.
     >>> print owner_browser.title
     Create a FAQ for Mozilla...
 
-The FAQ title and content are pre-filled with the target question. He
-edits them to be more appropriate:
+The FAQ title and content are pre-filled with the target question. They
+edit them to be more appropriate:
 
     >>> print owner_browser.getControl('Title').value
     SVG extension
@@ -250,13 +250,13 @@ edits them to be more appropriate:
     >>> owner_browser.getControl('Content').value = (
     ...     'Upgrade your browser to Firefox 2.0.')
 
-He can also enter keywords describing the FAQ:
+They can also enter keywords describing the FAQ:
 
     >>> owner_browser.getControl('Keywords').value = (
     ...     'scalable vector graphic')
 
 There is a 'Message' field that will be used to answer the question.
-It is pre-filled, but he can change its value:
+It is pre-filled, but they can change its value:
 
     >>> print owner_browser.getControl(
     ...     'Additional comment for question #2').value
@@ -358,7 +358,7 @@ When linking a solved question to a FAQ the action is treated as a
 comment.
 
 No Privileges Person sees a recently solved question that relates to a
-FAQ. He decided to add it to the question to provide additional
+FAQ. They decided to add it to the question to provide additional
 information.
 
     >>> user_browser.open(
@@ -379,7 +379,7 @@ information.
     >>> user_browser.getControl('Link to FAQ').click()
 
 The question is still solved. No Privileges Person sees the FAQ was
-added to the question, and his message was added to the question's
+added to the question, and their message was added to the question's
 discussion.
 
     >>> print user_browser.title

@@ -140,7 +140,7 @@ the administrator control on the membership page.
     'Approved'
     >>> logout()
 
-Sample person had his membership declined to the guadamen group. Test
+Sample person had their membership declined to the guadamen group. Test
 that the page works and that foo.bar@canonical can access it.
 
     >>> browser.open('http://launchpad.dev/~guadamen/+member/name12/')

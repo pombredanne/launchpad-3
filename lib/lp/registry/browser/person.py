@@ -205,10 +205,15 @@ from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
+    GPG_DATABASE_READONLY_FEATURE_FLAG,
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyNotFoundError,
+    GPGReadOnly,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -1140,7 +1145,7 @@ class BeginTeamClaimView(LaunchpadFormView):
 
 
 class RedirectToEditLanguagesView(LaunchpadView):
-    """Redirect the logged in user to his +editlanguages page.
+    """Redirect the logged in user to their +editlanguages page.
 
     This view should always be registered with a launchpad.AnyPerson
     permission, to make sure the user is logged in. It exists so that
@@ -1914,7 +1919,7 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
-        A person is said to be a team participant when he's a member
+        A person is said to be a team participant when they're a member
         of that team, either directly or indirectly via another team
         membership.
         """
@@ -2531,14 +2536,16 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
+        if self.request.method != "POST":
+            return ''
+        if getFeatureFlag(GPG_DATABASE_READONLY_FEATURE_FLAG):
+            raise GPGReadOnly()
         permitted_actions = [
             'claim_gpg',
             'deactivate_gpg',
             'remove_gpgtoken',
             'reactivate_gpg',
             ]
-        if self.request.method != "POST":
-            return ''
         action = self.request.form.get('action')
         if action not in permitted_actions:
             raise UnexpectedFormData("Action not permitted: %s" % action)
@@ -2560,6 +2567,8 @@ class PersonGPGView(LaunchpadView):
             self.key_already_imported = True
             return
 
+        # Launchpad talks to the keyserver directly to check if the key has been
+        # uploaded to the key server.
         try:
             key = gpghandler.retrieveKey(self.fingerprint)
         except GPGKeyNotFoundError:
@@ -2572,29 +2581,28 @@ class PersonGPGView(LaunchpadView):
             self.key_ok = True
 
     def deactivate_gpg(self):
-        key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
+        key_fingerprints = self.request.form.get('DEACTIVATE_GPGKEY')
 
-        if key_ids is None:
+        if key_fingerprints is None:
             self.error_message = structured(
                 'No key(s) selected for deactivation.')
             return
 
         # verify if we have multiple entries to deactive
-        if not isinstance(key_ids, list):
-            key_ids = [key_ids]
+        if not isinstance(key_fingerprints, list):
+            key_fingerprints = [key_fingerprints]
 
         gpgkeyset = getUtility(IGPGKeySet)
-
         deactivated_keys = []
-        for key_id in key_ids:
-            gpgkey = gpgkeyset.get(key_id)
+        for key_fingerprint in key_fingerprints:
+            gpgkey = gpgkeyset.getByFingerprint(key_fingerprint)
             if gpgkey is None:
                 continue
             if gpgkey.owner != self.user:
                 self.error_message = structured(
                     "Cannot deactivate someone else's key")
                 return
-            gpgkey.active = False
+            gpgkeyset.deactivate(gpgkey)
             deactivated_keys.append(gpgkey.displayname)
 
         flush_database_updates()
@@ -2626,9 +2634,9 @@ class PersonGPGView(LaunchpadView):
             ", ".join(cancelled_fingerprints))
 
     def reactivate_gpg(self):
-        key_ids = self.request.form.get('REACTIVATE_GPGKEY')
+        key_fingerprints = self.request.form.get('REACTIVATE_GPGKEY')
 
-        if key_ids is None:
+        if key_fingerprints is None:
             self.error_message = structured(
                 'No key(s) selected for reactivation.')
             return
@@ -2636,14 +2644,14 @@ class PersonGPGView(LaunchpadView):
         found = []
         notfound = []
         # Verify if we have multiple entries to activate.
-        if not isinstance(key_ids, list):
-            key_ids = [key_ids]
+        if not isinstance(key_fingerprints, list):
+            key_fingerprints = [key_fingerprints]
 
         gpghandler = getUtility(IGPGHandler)
         keyset = getUtility(IGPGKeySet)
 
-        for key_id in key_ids:
-            gpgkey = keyset.get(key_id)
+        for key_fingerprint in key_fingerprints:
+            gpgkey = keyset.getByFingerprint(key_fingerprint)
             try:
                 key = gpghandler.retrieveKey(gpgkey.fingerprint)
             except GPGKeyNotFoundError:
@@ -2723,7 +2731,7 @@ class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     label = 'Change your personal details'
     page_title = label
 
-    # Will contain an hidden input when the user is renaming his
+    # Will contain an hidden input when the user is renaming their
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
 
@@ -3166,7 +3174,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.
 
-        This is 'Preferred address' if the user is subscribed using her
+        This is 'Preferred address' if the user is subscribed using their
         preferred address and 'Don't subscribe' if the user is not
         subscribed at all. Otherwise it's the EmailAddress under
         which the user is subscribed to this mailing list.
@@ -3279,7 +3287,7 @@ class PersonEditMailingListsView(LaunchpadFormView):
                 else:
                     if new_value == "Preferred address":
                         # If the user is subscribed but not under any
-                        # particular address, her current preferred
+                        # particular address, their current preferred
                         # address will always be used.
                         new_value = None
                     subscription = mailing_list.getSubscription(self.context)
@@ -4064,8 +4072,8 @@ class ContactViaWebNotificationRecipientSet:
         """Initialize the state based on the context and the user.
 
         The recipients are determined by the relationship between the user
-        and the context that he is contacting: another user, himself, his
-        team, another team.
+        and the context that they are contacting: another user, themselves,
+        their team, another team.
 
         :param user: The person doing the contacting.
         :type user: an `IPerson`.

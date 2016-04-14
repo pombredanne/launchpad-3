@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -816,6 +816,10 @@
         interface="lp.code.interfaces.gitrepository.IGitRepositoryEdit"
         set_schema="lp.code.interfaces.gitrepository.IGitRepositoryEditableAttributes" />
   </class>
+  <adapter
+      for="lp.code.interfaces.gitrepository.IGitRepository"
+      provides="lp.services.webapp.interfaces.ILaunchpadContainer"
+      factory="lp.code.publisher.LaunchpadGitRepositoryContainer"/>
   <subscriber
       for="lp.code.interfaces.gitrepository.IGitRepository zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrepository.git_repository_modified"/>
@@ -1053,6 +1057,15 @@
     <require permission="launchpad.View"
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeData"/>
   </class>
+  <utility
+    component="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData"
+    provides="lp.code.interfaces.sourcepackagerecipe.IRecipeBranchSource">
+  </utility>
+  <securedutility
+      component="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData"
+      provides="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeDataSource">
+    <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeDataSource"/>
+  </securedutility>
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">

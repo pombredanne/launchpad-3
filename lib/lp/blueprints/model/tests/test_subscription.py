@@ -61,8 +61,8 @@ class TestSpecificationSubscription(TestCaseWithFactory):
         return spec, subscriber, subscribed_by, subscription
 
     def test_can_unsubscribe_self(self):
-        # The user can of course unsubscribe himself, even if someone else
-        # subscribed him.
+        # The user can of course unsubscribe themselves, even if someone
+        # else subscribed them.
         (spec, subscriber,
             subscribed_by, subscription) = self._make_subscription()
         self.assertTrue(subscription.canBeUnsubscribedByUser(subscriber))
@@ -72,14 +72,14 @@ class TestSpecificationSubscription(TestCaseWithFactory):
     # subscribed_by can unsubscribe, sometimes not.
     def test_subscriber_cannot_unsubscribe_user_from_public_spec(self):
         # For public specifications, the one who subscribed the
-        # subscriber doesn't have permission to unsubscribe him.
+        # subscriber doesn't have permission to unsubscribe them.
         (spec, subscriber,
             subscribed_by, subscription) = self._make_subscription()
         self.assertFalse(subscription.canBeUnsubscribedByUser(subscribed_by))
 
     def test_subscriber_can_unsubscribe_user_from_private_spec(self):
         # For private specifications, the one who subscribed the
-        # subscriber has permission to unsubscribe him.
+        # subscriber has permission to unsubscribe them.
         (spec, subscriber,
             subscribed_by, subscription) = self._make_subscription(True)
         self.assertTrue(subscription.canBeUnsubscribedByUser(subscribed_by))
@@ -91,7 +91,7 @@ class TestSpecificationSubscription(TestCaseWithFactory):
         self.assertFalse(subscription.canBeUnsubscribedByUser(None))
 
     def test_can_unsubscribe_team(self):
-        # A user can unsubscribe a team he's a member of.
+        # A user can unsubscribe a team they're a member of.
         (spec, subscriber,
             subscribed_by, subscription) = self._make_subscription()
         team = self.factory.makeTeam()
@@ -105,7 +105,7 @@ class TestSpecificationSubscription(TestCaseWithFactory):
         self.assertFalse(subscription.canBeUnsubscribedByUser(non_member))
 
     def test_cannot_unsubscribe_team(self):
-        # A user cannot unsubscribe a team he's a not member of.
+        # A user cannot unsubscribe a team they're not a member of.
         (spec, subscriber,
             subscribed_by, subscription) = self._make_subscription()
         team = self.factory.makeTeam()

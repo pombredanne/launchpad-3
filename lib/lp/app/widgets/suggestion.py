@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBranch."""
@@ -355,7 +355,7 @@ class TargetGitRepositoryWidget(SuggestionWidget):
 class RecipeOwnerWidget(SuggestionWidget):
     """Widget for selecting a recipe owner.
 
-    The current user and the base branch owner are suggested.
+    The current user and the base source owner are suggested.
     """
 
     @staticmethod

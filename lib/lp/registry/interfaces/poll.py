@@ -442,8 +442,8 @@ class IVoteCastSet(Interface):
 class IVote(Interface):
     """Here we store the vote itself, linked to a special token.
 
-    This token is given to the user when he votes, so he can change his vote
-    later.
+    This token is given to the user when they vote, so they can change their
+    vote later.
     """
 
     id = Int(

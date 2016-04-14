@@ -2278,7 +2278,7 @@ specify a device's bus, vendor ID and product ID and one or more bugs.
 
 By default, only bug reporters are looked up. Sample Person has made
 a hardware report containing the IDE disk Seagate ST3250820NS, and
-he has filed bug 1.
+they have filed bug 1.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_set = getUtility(IBugSet)
@@ -2291,8 +2291,8 @@ he has filed bug 1.
     ...     print person.displayname
     Sample Person
 
-If Foo Bar says that he is affected by this bug, he will be listed
-too, since he too owns the Seagate disk.
+If Foo Bar says that they are affected by this bug, they will be listed
+too, since they too own the Seagate disk.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> bug_one = bug_set.get(1)
@@ -2304,7 +2304,7 @@ too, since he too owns the Seagate disk.
     Foo Bar
     Sample Person
 
-When he says that he is not affected by the bug, he will no longer
+When they say that they are not affected by the bug, they will no longer
 be listed.
 
     >>> bug_one.markUserAffected(foo_bar, False)
@@ -2467,8 +2467,8 @@ bug.
     ...     print person.displayname
     Sample Person
 
-If Foo Bar says that he is affected by this bug, he will be listed
-too, since his machine too uses the sd driver.
+If Foo Bar says that they are affected by this bug, they will be listed
+too, since their machine too uses the sd driver.
 
     >>> bug_one.markUserAffected(foo_bar)
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
@@ -2477,7 +2477,7 @@ too, since his machine too uses the sd driver.
     Foo Bar
     Sample Person
 
-He is also listed, if he subscribes to bug 1.
+They are also listed if they subscribe to bug 1.
 
     >>> bug_one.markUserAffected(foo_bar, False)
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
@@ -2692,7 +2692,7 @@ We can also check for when the user is subscribed to the bug.
     >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
 
 Data from private submissions is not included by default.
-The owner of a private submission can see his or her submission.
+The owner of a private submission can see their submission.
 
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
@@ -2731,8 +2731,8 @@ An admin can also see no_priv's private entry.
     (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
     (u'no-priv', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
 
-But sample_person cannot see the private entry because she
-is not the owner or an admin.
+But sample_person cannot see the private entry because they
+are not the owner or an admin.
 
     >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True, user=sample_person):

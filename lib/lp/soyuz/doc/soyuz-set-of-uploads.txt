@@ -56,7 +56,7 @@ Processing Uploads
 
 Before asking the system to process the upload, we must prepare the
 database and services to receive it. Since we're using
-'sample.person@canonical.com' as our Changed-By address and his
+'sample.person@canonical.com' as our Changed-By address and their
 key has signed all the relevant uploads in the suite of uploads we're
 using, this essentially boils down to ensuring that test keyserver and the
 librarian are running and making sure that the key is attached to the

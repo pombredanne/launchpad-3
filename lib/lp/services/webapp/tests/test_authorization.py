@@ -1,14 +1,16 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `lp.services.webapp.authorization`."""
 
 __metaclass__ = type
 
+from itertools import count
 from random import getrandbits
 import StringIO
 
 import transaction
+from zope.app.testing import ztapi
 from zope.component import (
     provideAdapter,
     provideUtility,
@@ -27,21 +29,28 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.interfaces import IStoreSelector
 from lp.services.privacy.interfaces import IObjectPrivacy
-from lp.services.webapp.authentication import LaunchpadPrincipal
+from lp.services.webapp.authentication import (
+    LaunchpadPrincipal,
+    PlacelessAuthUtility,
+    )
 from lp.services.webapp.authorization import (
     available_with_permission,
     check_permission,
     iter_authorization,
     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+    LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY,
     LaunchpadSecurityPolicy,
     precache_permission_for_objects,
     )
 from lp.services.webapp.interfaces import (
     AccessLevel,
+    ICanonicalUrlData,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
+    IPlacelessAuthUtility,
     )
 from lp.services.webapp.metazcml import ILaunchpadPermission
+from lp.services.webapp.publisher import LaunchpadContainer
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
@@ -182,7 +191,7 @@ class FakePerson:
 class FakeLaunchpadPrincipal:
     """A minimal principal implementing `ILaunchpadPrincipal`"""
     person = FakePerson()
-    scope = None
+    scope_url = None
     access_level = ''
 
 
@@ -373,6 +382,55 @@ class TestCheckPermissionCaching(TestCase):
             ['checkUnauthenticated', 'checkUnauthenticated'],
             checker_factory.calls)
 
+    def test_checkUnauthenticatedPermission_cache_unauthenticated(self):
+        # checkUnauthenticatedPermission caches the result of
+        # checkUnauthenticated for a particular object and permission.
+        # We set a principal to ensure that it is not used even if set.
+        provideUtility(PlacelessAuthUtility(), IPlacelessAuthUtility)
+        zope.testing.cleanup.addCleanUp(
+            ztapi.unprovideUtility, (IPlacelessAuthUtility,))
+        principal = FakeLaunchpadPrincipal()
+        request = self.makeRequest()
+        request.setPrincipal(principal)
+        policy = LaunchpadSecurityPolicy(request)
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
+        # When we call checkUnauthenticatedPermission for the first time,
+        # the security policy calls the checker.
+        policy.checkUnauthenticatedPermission(permission, obj)
+        self.assertEqual(['checkUnauthenticated'], checker_factory.calls)
+        # A subsequent identical call does not call the checker.
+        policy.checkUnauthenticatedPermission(permission, obj)
+        self.assertEqual(['checkUnauthenticated'], checker_factory.calls)
+        # The result is stored in the correct cache.
+        cache = request.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_UNAUTH_KEY]
+        self.assertEqual({obj: {permission: False}}, dict(cache))
+
+    def test_checkUnauthenticatedPermission_commit_clears_cache(self):
+        # Committing a transaction clears the cache.
+        # We set a principal to ensure that it is not used even if set.
+        provideUtility(PlacelessAuthUtility(), IPlacelessAuthUtility)
+        zope.testing.cleanup.addCleanUp(
+            ztapi.unprovideUtility, (IPlacelessAuthUtility,))
+        principal = FakeLaunchpadPrincipal()
+        request = self.makeRequest()
+        request.setPrincipal(principal)
+        policy = LaunchpadSecurityPolicy(request)
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
+        # When we call checkUnauthenticatedPermission before setting the
+        # principal, the security policy calls checkUnauthenticated on the
+        # checker.
+        policy.checkUnauthenticatedPermission(permission, obj)
+        self.assertEqual(['checkUnauthenticated'], checker_factory.calls)
+        transaction.commit()
+        # After committing a transaction, the policy calls
+        # checkUnauthenticated again rather than finding a value in the cache.
+        policy.checkUnauthenticatedPermission(permission, obj)
+        self.assertEqual(
+            ['checkUnauthenticated', 'checkUnauthenticated'],
+            checker_factory.calls)
+
 
 class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
 
@@ -385,12 +443,13 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         self.security = LaunchpadSecurityPolicy()
         provideAdapter(
             adapt_loneobject_to_container, [ILoneObject], ILaunchpadContainer)
+        provideAdapter(LoneObjectURL, [ILoneObject], ICanonicalUrlData)
         self.addCleanup(zope.testing.cleanup.cleanUp)
 
     def test_no_scope(self):
         """Principal's access level is used when no scope is given."""
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
-        self.principal.scope = None
+        self.principal.scope_url = None
         self.failUnlessEqual(
             self.security._getPrincipalsAccessLevel(
                 self.principal, LoneObject()),
@@ -400,7 +459,7 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         """Principal's access level is used when object is within scope."""
         obj = LoneObject()
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
-        self.principal.scope = obj
+        self.principal.scope_url = '/+loneobject/%d' % obj.id
         self.failUnlessEqual(
             self.security._getPrincipalsAccessLevel(self.principal, obj),
             self.principal.access_level)
@@ -409,7 +468,7 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         """READ_PUBLIC is used when object is /not/ within scope."""
         obj = LoneObject()
         obj2 = LoneObject()  # This is out of obj's scope.
-        self.principal.scope = obj
+        self.principal.scope_url = '/+loneobject/%d' % obj.id
 
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
         self.failUnlessEqual(
@@ -431,11 +490,31 @@ class ILoneObject(Interface):
     """A marker interface for objects that only contain themselves."""
 
 
-@implementer(ILoneObject, ILaunchpadContainer)
-class LoneObject:
+@implementer(ILoneObject)
+class LoneObject(LaunchpadContainer):
 
-    def isWithin(self, context):
-        return self == context
+    _id_counter = count(1)
+
+    def __init__(self):
+        super(LoneObject, self).__init__(self)
+        self.id = LoneObject._id_counter.next()
+
+    def getParentContainers(self):
+        return []
+
+
+@implementer(ICanonicalUrlData)
+class LoneObjectURL:
+
+    rootsite = None
+    inside = None
+
+    def __init__(self, loneobject):
+        self.loneobject = loneobject
+
+    @property
+    def path(self):
+        return '+loneobject/%d' % self.loneobject.id
 
 
 def adapt_loneobject_to_container(loneobj):

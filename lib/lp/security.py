@@ -885,7 +885,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself.
+        """A user can edit the Person who is themselves.
 
         The admin team can also edit any Person.
         """
@@ -920,7 +920,7 @@ class EditPersonBySelf(AuthorizationBase):
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself."""
+        """A user can edit the Person who is themselves."""
         return self.obj.id == user.person.id
 
 
@@ -2885,8 +2885,8 @@ class ViewEmailAddress(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
-        If the email address' owner doesn't want his email addresses to be
-        hidden, anyone can see them.  Otherwise only the owner himself or
+        If the email address' owner doesn't want their email addresses to be
+        hidden, anyone can see them.  Otherwise only the owner themselves or
         admins can see them.
         """
         # Always allow users to see their own email addresses.
@@ -3112,12 +3112,22 @@ class ViewWebhookDeliveryJob(DelegatedAuthorization):
             obj, obj.webhook, 'launchpad.View')
 
 
-class ViewSnap(DelegatedAuthorization):
+class ViewSnap(AuthorizationBase):
+    """Private snaps are only visible to their owners and admins."""
     permission = 'launchpad.View'
     usedfor = ISnap
 
-    def __init__(self, obj):
-        super(ViewSnap, self).__init__(obj, obj.owner, 'launchpad.View')
+    def checkUnauthenticated(self):
+        return not self.obj.private
+
+    def checkAuthenticated(self, user):
+        if not self.obj.private:
+            return True
+
+        return (
+            user.isOwner(self.obj) or
+            user.in_commercial_admin or
+            user.in_admin)
 
 
 class EditSnap(AuthorizationBase):

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -176,7 +176,10 @@ from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import urlappend
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
@@ -860,7 +863,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         deletion_operations.extend(
-            DeletionCallable.forSourcePackageRecipe(recipe)
+            DeletionCallable(
+                recipe, _('This recipe uses this branch.'), recipe.destroySelf)
             for recipe in self.recipes)
         if not getUtility(ISnapSet).findByBranch(self).is_empty():
             alteration_operations.append(DeletionCallable(
@@ -910,7 +914,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         # This is eager loaded by BranchCollection.getBranches.
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
-        return Store.of(self).find(ProductSeries, ProductSeries.branch == self)
+        return list(
+            Store.of(self).find(ProductSeries, ProductSeries.branch == self))
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -1498,11 +1503,6 @@ class DeletionCallable(DeletionOperation):
     def __call__(self):
         self.func(*self.args, **self.kwargs)
 
-    @classmethod
-    def forSourcePackageRecipe(cls, recipe):
-        return cls(
-            recipe, _('This recipe uses this branch.'), recipe.destroySelf)
-
 
 class ClearDependentBranch(DeletionOperation):
     """Delete operation that clears a merge proposal's prerequisite branch."""
@@ -1527,6 +1527,7 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
+        del get_property_cache(self.branch)._associatedProductSeries
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):

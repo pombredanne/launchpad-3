@@ -163,7 +163,7 @@ PAGE-BOTTOM
       &nbsp;&bull;&nbsp;
       <a href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
-      <a href="http://identi.ca/launchpadstatus">System status</a>
+      <a href="https://twitter.com/launchpadstatus">System status</a>
       </span>
     </div>
   </div>

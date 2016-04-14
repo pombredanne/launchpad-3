@@ -80,7 +80,10 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
     ABCDEF0123456789ABCDDCBA0000111112345678
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> removeSecurityProxy(cprov.archive).signing_key = a_key
+    >>> removeSecurityProxy(cprov.archive).signing_key_fingerprint = (
+    ...     a_key.fingerprint)
+    >>> removeSecurityProxy(cprov.archive).signing_key_owner = (
+    ...     a_key.owner)
     >>> print cprov.archive.signing_key_fingerprint
     ABCDEF0123456789ABCDDCBA0000111112345678
 

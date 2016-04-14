@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code's custom publication."""
@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+from zope.component import queryAdapter
 from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
@@ -56,12 +57,20 @@ def code_request_publication_factory():
 
 class LaunchpadBranchContainer(LaunchpadContainer):
 
-    def isWithin(self, scope):
-        """Is this branch within the given scope?
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`."""
+        # A branch is within its target.
+        adapter = queryAdapter(
+            self.context.target.context, ILaunchpadContainer)
+        if adapter is not None:
+            yield adapter
 
-        If a branch has a product, it is always in the scope that product or
-        its project.  Otherwise it's not in any scope.
-        """
-        if self.context.product is None:
-            return False
-        return ILaunchpadContainer(self.context.product).isWithin(scope)
+
+class LaunchpadGitRepositoryContainer(LaunchpadContainer):
+
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`."""
+        # A repository is within its target.
+        adapter = queryAdapter(self.context.target, ILaunchpadContainer)
+        if adapter is not None:
+            yield adapter

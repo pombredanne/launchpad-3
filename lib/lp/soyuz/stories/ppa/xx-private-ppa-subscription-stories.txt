@@ -116,7 +116,7 @@ new subscriber.
     from PPA named p3a for Celso Providelo. Members of Launchpad Developers
     will be notified of the access via email.
 
-== Story 2: An owner edits a subscription for his private archive ==
+== Story 2: An owner edits a subscription for their private archive ==
 
  * As a software developer who has released some private software
  * I want to edit subscriptions to my private PPA

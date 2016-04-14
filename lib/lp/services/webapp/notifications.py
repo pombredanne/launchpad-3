@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser notification messages
@@ -155,13 +155,13 @@ class NotificationResponse:
 
     >>> session = ISession(request)[SESSION_KEY]
     >>> del ISession(request)[SESSION_KEY]['notifications']
-    >>> session.has_key('notifications')
+    >>> 'notifications' in session
     False
     >>> len(response.notifications)
     0
     >>> response.redirect("http://example.com")
     302: http://example.com
-    >>> session.has_key('notifications')
+    >>> 'notifications' in session
     False
     """
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
@@ -11,6 +11,10 @@ import shutil
 import subprocess
 import sys
 
+from testtools.matchers import (
+    Not,
+    PathExists,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -24,6 +28,8 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
+from lp.services.gpg.interfaces import GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -246,7 +252,9 @@ class TestPublishDistro(TestNativePublishingBase):
         self.addCleanup(tac.tearDown)
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
         IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
-        name16.archive.signing_key = cprov.archive.signing_key
+        name16.archive.signing_key_owner = cprov.archive.signing_key_owner
+        name16.archive.signing_key_fingerprint = (
+            cprov.archive.signing_key_fingerprint)
 
         self.layer.txn.commit()
 
@@ -376,18 +384,74 @@ class TestPublishDistro(TestNativePublishingBase):
 
         # Check some index files
         index_path = (
-            "%s/hoary-test-updates/main/binary-i386/Packages"
+            "%s/hoary-test-updates/main/binary-i386/Packages.gz"
             % self.config.distsroot)
         self.assertExists(index_path)
 
         index_path = (
-            "%s/hoary-test-backports/main/binary-i386/Packages"
+            "%s/hoary-test-backports/main/binary-i386/Packages.gz"
             % self.config.distsroot)
         self.assertExists(index_path)
 
         index_path = (
-            "%s/hoary-test/main/binary-i386/Packages" % self.config.distsroot)
+            "%s/hoary-test/main/binary-i386/Packages.gz" %
+            self.config.distsroot)
         self.assertNotExists(index_path)
+
+    def testCarefulRelease(self):
+        """publish-distro can be asked to just rewrite Release files."""
+        archive = self.factory.makeArchive(distribution=self.ubuntutest)
+        pub_source = self.getPubSource(filecontent='foo', archive=archive)
+
+        self.setUpRequireSigningKeys()
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        IArchiveSigningKey(archive).setSigningKey(key_path)
+
+        self.layer.txn.commit()
+
+        self.runPublishDistro(['--ppa'])
+
+        pub_source.sync()
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
+
+        dists_path = getPubConfig(archive).distsroot
+        hoary_inrelease_path = os.path.join(
+            dists_path, 'hoary-test', 'InRelease')
+        breezy_inrelease_path = os.path.join(
+            dists_path, 'breezy-autotest', 'InRelease')
+        self.assertThat(hoary_inrelease_path, Not(PathExists()))
+        os.unlink(breezy_inrelease_path)
+
+        self.runPublishDistro(['--ppa', '--careful-release'])
+        self.assertThat(hoary_inrelease_path, Not(PathExists()))
+        self.assertThat(breezy_inrelease_path, Not(PathExists()))
+
+        self.runPublishDistro([
+            '--ppa', '--careful-release', '--include-non-pending',
+            '--disable-publishing', '--disable-domination', '--disable-apt',
+            ])
+        # hoary-test never had indexes created, so is untouched.
+        self.assertThat(hoary_inrelease_path, Not(PathExists()))
+        # breezy-autotest has its Release files rewritten.
+        self.assertThat(breezy_inrelease_path, PathExists())
+
+
+class TestPublishDistroWithGPGService(TestPublishDistro):
+    """A copy of the TestPublishDistro tests, but with the gpgservice feature
+    flag enabled.
+
+    Once gpgservice is the default and launchpad no longer manages it's own gpg
+    key storage, these tests can be removed.
+
+    """
+
+    def setUp(self):
+        super(TestPublishDistroWithGPGService, self).setUp()
+        self.useFixture(FeatureFixture(
+            {GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG: True}))
 
 
 class FakeArchive:
@@ -683,7 +747,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
 
     def test_getPPAs_gets_pending_distro_PPAs_if_careful(self):
         # In careful mode, getPPAs includes PPAs for the distribution
-        # that are pending pulication.
+        # that are pending publication.
         distro = self.makeDistro()
         script = self.makeScript(distro, ['--careful'])
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
@@ -692,15 +756,23 @@ class TestPublishDistroMethods(TestCaseWithFactory):
 
     def test_getPPAs_gets_nonpending_distro_PPAs_if_careful(self):
         # In careful mode, getPPAs includes PPAs for the distribution
-        # that are not pending pulication.
+        # that are not pending publication.
         distro = self.makeDistro()
         script = self.makeScript(distro, ['--careful'])
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
         self.assertContentEqual([ppa], script.getPPAs(distro))
 
+    def test_getPPAs_gets_nonpending_distro_PPAs_if_requested(self):
+        # In --include-non-pending mode, getPPAs includes PPAs for the
+        # distribution that are not pending publication.
+        distro = self.makeDistro()
+        script = self.makeScript(distro, ['--include-non-pending'])
+        ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
+        self.assertContentEqual([ppa], script.getPPAs(distro))
+
     def test_getPPAs_gets_pending_distro_PPAs_if_not_careful(self):
         # In non-careful mode, getPPAs includes PPAs that are pending
-        # pulication.
+        # publication.
         distro = self.makeDistro()
         script = self.makeScript(distro)
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
@@ -709,7 +781,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
 
     def test_getPPAs_ignores_nonpending_distro_PPAs_if_not_careful(self):
         # In non-careful mode, getPPAs does not include PPAs that are
-        # not pending pulication.
+        # not pending publication.
         distro = self.makeDistro()
         script = self.makeScript(distro)
         self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
@@ -825,6 +897,31 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             1, publisher.A2_markPocketsWithDeletionsDirty.call_count)
         self.assertEqual(1, publisher.B_dominate.call_count)
         self.assertEqual(1, publisher.D_writeReleaseFiles.call_count)
+
+    def test_publishArchive_honours_disable_options(self):
+        # The various --disable-* options disable the corresponding
+        # publisher steps.
+        possible_options = {
+            "--disable-publishing": ["A_publish"],
+            "--disable-domination": [
+                "A2_markPocketsWithDeletionsDirty", "B_dominate",
+                ],
+            "--disable-apt": ["C_doFTPArchive", "createSeriesAliases"],
+            "--disable-release": ["D_writeReleaseFiles"],
+            }
+        for option in possible_options:
+            distro = self.makeDistro()
+            script = self.makeScript(distro, args=[option])
+            script.txn = FakeTransaction()
+            publisher = FakePublisher()
+            script.publishArchive(FakeArchive(), publisher)
+            for check_option, steps in possible_options.items():
+                for step in steps:
+                    publisher_step = getattr(publisher, step)
+                    if check_option == option:
+                        self.assertEqual(0, publisher_step.call_count)
+                    else:
+                        self.assertEqual(1, publisher_step.call_count)
 
     def test_publishArchive_uses_apt_ftparchive_for_main_archive(self):
         # For some types of archive, publishArchive invokes the

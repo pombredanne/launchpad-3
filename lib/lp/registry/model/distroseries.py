@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -124,6 +124,7 @@ from lp.services.propertycache import (
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -202,6 +203,12 @@ ACTIVE_UNRELEASED_STATUSES = [
     ]
 
 
+DEFAULT_INDEX_COMPRESSORS = [
+    IndexCompressionType.GZIP,
+    IndexCompressionType.BZIP2,
+    ]
+
+
 @implementer(
     IBugSummaryDimension, IDistroSeries, IHasBuildRecords, IHasQueueItems,
     IServiceUsage, ISeriesBugTarget)
@@ -253,10 +260,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
-    _backports_not_automatic = BoolCol(
-        dbName="backports_not_automatic", notNull=True, default=False)
-    _include_long_descriptions = BoolCol(
-        dbName="include_long_descriptions", notNull=True, default=True)
     publishing_options = JSON("publishing_options")
 
     language_packs = SQLMultipleJoin(
@@ -270,6 +273,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             kwargs["publishing_options"] = {
                 "backports_not_automatic": False,
                 "include_long_descriptions": True,
+                "index_compressors": [
+                    compressor.title
+                    for compressor in DEFAULT_INDEX_COMPRESSORS],
+                "publish_by_hash": False,
+                "advertise_by_hash": False,
+                "strict_supported_component_dependencies": True,
                 }
         super(DistroSeries, self).__init__(*args, **kwargs)
 
@@ -804,35 +813,65 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def backports_not_automatic(self):
-        if self.publishing_options is not None:
-            return self.publishing_options.get(
-                "backports_not_automatic", False)
-        else:
-            return self._backports_not_automatic
+        return self.publishing_options.get("backports_not_automatic", False)
 
     @backports_not_automatic.setter
     def backports_not_automatic(self, value):
         assert isinstance(value, bool)
-        if self.publishing_options is not None:
-            self.publishing_options["backports_not_automatic"] = value
-        else:
-            self._backports_not_automatic = value
+        self.publishing_options["backports_not_automatic"] = value
 
     @property
     def include_long_descriptions(self):
-        if self.publishing_options is not None:
-            return self.publishing_options.get(
-                "include_long_descriptions", True)
-        else:
-            return self._include_long_descriptions
+        return self.publishing_options.get("include_long_descriptions", True)
 
     @include_long_descriptions.setter
     def include_long_descriptions(self, value):
         assert isinstance(value, bool)
-        if self.publishing_options is not None:
-            self.publishing_options["include_long_descriptions"] = value
+        self.publishing_options["include_long_descriptions"] = value
+
+    @property
+    def index_compressors(self):
+        if "index_compressors" in self.publishing_options:
+            return [
+                IndexCompressionType.getTermByToken(name).value
+                for name in self.publishing_options["index_compressors"]]
         else:
-            self._include_long_descriptions = value
+            return list(DEFAULT_INDEX_COMPRESSORS)
+
+    @index_compressors.setter
+    def index_compressors(self, value):
+        assert isinstance(value, list)
+        self.publishing_options["index_compressors"] = [
+            compressor.title for compressor in value]
+
+    @property
+    def publish_by_hash(self):
+        return self.publishing_options.get("publish_by_hash", False)
+
+    @publish_by_hash.setter
+    def publish_by_hash(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["publish_by_hash"] = value
+
+    @property
+    def advertise_by_hash(self):
+        return self.publishing_options.get("advertise_by_hash", False)
+
+    @advertise_by_hash.setter
+    def advertise_by_hash(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["advertise_by_hash"] = value
+
+    @property
+    def strict_supported_component_dependencies(self):
+        return self.publishing_options.get(
+            "strict_supported_component_dependencies", True)
+
+    @strict_supported_component_dependencies.setter
+    def strict_supported_component_dependencies(self, value):
+        assert isinstance(value, bool)
+        self.publishing_options["strict_supported_component_dependencies"] = (
+            value)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""
@@ -1157,8 +1196,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog,
             changelog_entry=changelog_entry, dsc=dsc,
-            dscsigningkey=dscsigningkey, section=section, copyright=copyright,
-            upload_archive=archive,
+            signing_key_owner=dscsigningkey.owner if dscsigningkey else None,
+            signing_key_fingerprint=(
+                dscsigningkey.fingerprint if dscsigningkey else None),
+            section=section, copyright=copyright, upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
@@ -1343,7 +1384,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive, changesfile=changes_file_alias,
-            signing_key=signing_key, package_copy_job=package_copy_job)
+            signing_key_owner=signing_key.owner if signing_key else None,
+            signing_key_fingerprint=(
+                signing_key.fingerprint if signing_key else None),
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""

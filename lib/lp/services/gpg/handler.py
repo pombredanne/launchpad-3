@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,8 +23,10 @@ import urllib
 import urllib2
 
 import gpgme
+from gpgservice_client import GPGClient
 from lazr.restful.utils import get_current_browser_request
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.validators.email import valid_email
 from lp.services.config import config
@@ -37,6 +39,7 @@ from lp.services.gpg.interfaces import (
     GPGKeyTemporarilyNotFoundError,
     GPGUploadFailure,
     GPGVerificationError,
+    IGPGClient,
     IGPGHandler,
     IPymeKey,
     IPymeSignature,
@@ -85,15 +88,18 @@ class GPGHandler:
         """
         self.home = tempfile.mkdtemp(prefix='gpg-')
         confpath = os.path.join(self.home, 'gpg.conf')
-        conf = open(confpath, 'w')
         # set needed GPG options, 'auto-key-retrieve' is necessary for
         # automatically retrieve from the keyserver unknown key when
         # verifying signatures and 'no-auto-check-trustdb' avoid wasting
         # time verifying the local keyring consistence.
-        conf.write('keyserver hkp://%s\n'
-                   'keyserver-options auto-key-retrieve\n'
-                   'no-auto-check-trustdb\n' % config.gpghandler.host)
-        conf.close()
+        with open(confpath, 'w') as conf:
+            conf.write('keyserver hkp://%s\n' % config.gpghandler.host)
+            conf.write('keyserver-options auto-key-retrieve\n')
+            conf.write('no-auto-check-trustdb\n')
+            # Prefer a SHA-2 hash where possible, otherwise GPG will fall
+            # back to a hash it can use.
+            conf.write(
+                'personal-digest-preferences SHA512 SHA384 SHA256 SHA224\n')
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
 
@@ -106,15 +112,7 @@ class GPGHandler:
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
-        # remove whitespaces, truncate to max of 40 (as per v4 keys) and
-        # convert to upper case
-        fingerprint = fingerprint.replace(' ', '')
-        fingerprint = fingerprint[:40].upper()
-
-        if not valid_fingerprint(fingerprint):
-            return None
-
-        return fingerprint
+        return sanitize_fingerprint(fingerprint)
 
     def resetLocalState(self):
         """See IGPGHandler."""
@@ -323,7 +321,7 @@ class GPGHandler:
 
         return key
 
-    def encryptContent(self, content, fingerprint):
+    def encryptContent(self, content, key):
         """See IGPGHandler."""
         if isinstance(content, unicode):
             raise TypeError('Content cannot be Unicode.')
@@ -336,22 +334,21 @@ class GPGHandler:
         plain = StringIO(content)
         cipher = StringIO()
 
-        # retrive gpgme key object
-        try:
-            key = ctx.get_key(fingerprint.encode('ascii'), 0)
-        except gpgme.GpgmeError:
+        if key.key is None:
             return None
 
         if not key.can_encrypt:
             raise ValueError('key %s can not be used for encryption'
-                             % fingerprint)
+                             % key.fingerprint)
 
         # encrypt content
-        ctx.encrypt([key], gpgme.ENCRYPT_ALWAYS_TRUST, plain, cipher)
+        ctx.encrypt(
+            [removeSecurityProxy(key.key)], gpgme.ENCRYPT_ALWAYS_TRUST,
+            plain, cipher)
 
         return cipher.getvalue()
 
-    def signContent(self, content, key_fingerprint, password='', mode=None):
+    def signContent(self, content, key, password='', mode=None):
         """See IGPGHandler."""
         if not isinstance(content, str):
             raise TypeError('Content should be a string.')
@@ -364,8 +361,7 @@ class GPGHandler:
         context = gpgme.Context()
         context.armor = True
 
-        key = context.get_key(key_fingerprint.encode('ascii'), True)
-        context.signers = [key]
+        context.signers = [removeSecurityProxy(key.key)]
 
         # Set up containers.
         plaintext = StringIO(content)
@@ -564,6 +560,7 @@ class PymeKey:
 
     def _buildFromGpgmeKey(self, key):
         self.exists_in_local_keyring = True
+        self.key = key
         subkey = key.subkeys[0]
         self.fingerprint = subkey.fpr
         self.revoked = subkey.revoked
@@ -619,3 +616,31 @@ class PymeUserId:
         self.name = uid.name
         self.email = uid.email
         self.comment = uid.comment
+
+
+def sanitize_fingerprint(fingerprint):
+    """Sanitize a GPG fingerprint.
+
+    This is the ultimate implementation of IGPGHandler.sanitizeFingerprint, and
+    is also used by the IGPGClient implementation.
+    """
+    # remove whitespaces, truncate to max of 40 (as per v4 keys) and
+    # convert to upper case
+    fingerprint = fingerprint.replace(' ', '')
+    fingerprint = fingerprint[:40].upper()
+
+    if not valid_fingerprint(fingerprint):
+        return None
+
+    return fingerprint
+
+
+@implementer(IGPGClient)
+class LPGPGClient(GPGClient):
+    """See IGPGClient."""
+
+    def get_endpoint(self):
+        return config.gpgservice.api_endpoint
+
+    def get_timeout(self):
+        return 30.0

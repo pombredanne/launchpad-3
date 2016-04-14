@@ -343,7 +343,7 @@ the maximum we allow.
                        LaunchpadValidationError(u'\nThis image is not exactly
                                                   193x191\npixels in size.'))
 
-Finally, if the user specifies the 'change' action he must also provide
+Finally, if the user specifies the 'change' action they must also provide
 a file to be uploaded.
 
     >>> form = {'field.mugshot.action': 'change', 'field.mugshot.image': ''}

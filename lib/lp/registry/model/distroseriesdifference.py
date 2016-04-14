@@ -330,17 +330,13 @@ def eager_load_dsds(dsds):
         SourcePackageRecipeBuild, sprs,
         ("source_package_recipe_build_id",))
 
-    # SourcePackageRelease.uploader can end up getting the owner of
-    # the DSC signing key.
-    gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
-
     # Load DistroSeriesDifferenceComment owners, SourcePackageRecipeBuild
     # requesters, GPGKey owners, and SourcePackageRelease creators.
     person_ids = set().union(
         (dsdc.message.ownerID for dsdc in latest_comments),
         (sprb.requester_id for sprb in sprbs),
-        (gpgkey.ownerID for gpgkey in gpgkeys),
-        (spr.creatorID for spr in sprs))
+        (spr.creatorID for spr in sprs),
+        (spr.signing_key_owner_id for spr in sprs))
     uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
         person_ids, need_validity=True)
     list(uploaders)

@@ -13,7 +13,6 @@ from lp.app.security import (
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
@@ -131,20 +130,10 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         return not self.obj.private
 
 
-class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
-    permission = 'launchpad.Edit'
-    usedfor = IBugBranch
-
-    def __init__(self, bug_branch):
-        # The same permissions as for the BugBranch's bug should apply
-        # to the BugBranch itself.
-        super(EditBugBranch, self).__init__(bug_branch.bug)
-
-
 class ViewBugAttachment(DelegatedAuthorization):
     """Security adapter for viewing a bug attachment.
 
-    If the user is authorized to view the bug, he's allowed to view the
+    If the user is authorized to view the bug, they're allowed to view the
     attachment.
     """
     permission = 'launchpad.View'
@@ -158,7 +147,7 @@ class ViewBugAttachment(DelegatedAuthorization):
 class EditBugAttachment(DelegatedAuthorization):
     """Security adapter for editing a bug attachment.
 
-    If the user is authorized to view the bug, he's allowed to edit the
+    If the user is authorized to view the bug, they're allowed to edit the
     attachment.
     """
     permission = 'launchpad.Edit'

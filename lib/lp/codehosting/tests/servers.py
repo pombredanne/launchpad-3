@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server used in codehosting acceptance tests."""
@@ -67,7 +67,7 @@ class CodeHostingTac(TacTestSetup):
         """Clear the branch areas."""
         if os.path.isdir(self._mirror_root):
             shutil.rmtree(self._mirror_root)
-        os.makedirs(self._mirror_root, 0700)
+        os.makedirs(self._mirror_root, 0o700)
 
     def setUpRoot(self):
         self.clear()
@@ -112,7 +112,7 @@ class SSHCodeHostingServer(Server):
         shutil.copyfile(
             sibpath(__file__, 'id_dsa.pub'),
             os.path.join(user_home, '.ssh', 'id_dsa.pub'))
-        os.chmod(os.path.join(user_home, '.ssh', 'id_dsa'), 0600)
+        os.chmod(os.path.join(user_home, '.ssh', 'id_dsa'), 0o600)
         real_home, os.environ['HOME'] = os.environ['HOME'], user_home
         return real_home, user_home
 

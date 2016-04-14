@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for linking Specifications and Branches."""
@@ -21,17 +21,19 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Int
 
 from lp import _
-from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 
 
-class ISpecificationBranch(IHasDateCreated):
+class ISpecificationBranch(Interface):
     """A branch linked to a specification."""
 
     export_as_webservice_entry(as_of="beta")
@@ -49,6 +51,7 @@ class ISpecificationBranch(IHasDateCreated):
             required=True,
             schema=IBranch), as_of="beta")
 
+    datecreated = Attribute("The date on which I was created.")
     registrant = exported(
         Reference(
             schema=IPerson, readonly=True, required=True,

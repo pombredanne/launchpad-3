@@ -52,18 +52,90 @@ read "3 recipes." Let's click through.
     >>> print nopriv_browser.url
     http://code.launchpad.dev/%7Eperson-name.../product-name.../branch.../+recipes
 
-The "Base branch" column should not be shown.
+The "Base Source" column should not be shown.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
     Owner
     Registered
 
-The branch page should have a list of all the recipes the branch is a
-base_branch for.
+The recipe listing page should have a list of all the recipes the branch is
+a base for.
 
     >>> print_recipe_listing_contents(nopriv_browser)
     spr-name... Person-name...
+    spr-name... Person-name...
+    spr-name... Person-name...
+
+
+Git Recipe Listings
+===================
+
+Create a new sample repository, some branches in it, and some source package
+recipes to go along with them.
+
+    >>> from lp.code.interfaces.sourcepackagerecipe import (
+    ...     GIT_RECIPES_FEATURE_FLAG,
+    ...     )
+    >>> from lp.services.features.testing import FeatureFixture
+
+    >>> login('foo.bar@canonical.com')
+    >>> repository = factory.makeGitRepository()
+    >>> ref1, ref2, ref3 = factory.makeGitRefs(
+    ...     repository=repository,
+    ...     paths=[u"refs/heads/a", u"refs/heads/b", u"refs/heads/c"])
+    >>> with FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}):
+    ...     recipe1a = factory.makeSourcePackageRecipe(branches=[ref1])
+    ...     recipe1b = factory.makeSourcePackageRecipe(branches=[ref1])
+    ...     recipe2 = factory.makeSourcePackageRecipe(branches=[ref2])
+    ...     recipe3 = factory.makeSourcePackageRecipe(branches=[ref3])
+
+Keep these urls, including the target url.  We'll use these later.
+
+    >>> repository_url = canonical_url(repository)
+    >>> ref1_url = canonical_url(ref1)
+    >>> target_url = canonical_url(repository.target)
+
+    >>> logout()
+
+Since there are 4 recipes associated with this repository now, the link
+should now read "4 recipes."  Let's click through.
+
+    >>> nopriv_browser.open(repository_url)
+    >>> nopriv_browser.getLink('4 recipes').click()
+    >>> print nopriv_browser.url
+    http://code.launchpad.dev/%7Eperson-name.../product-name.../+git/gitrepository.../+recipes
+
+The "Base Source" column should not be shown.
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Owner
+    Registered
+
+The recipe listing page should have a list of all the recipes the repository
+is a base for.
+
+    >>> print_recipe_listing_contents(nopriv_browser)
+    spr-name... Person-name...
+    spr-name... Person-name...
+    spr-name... Person-name...
+    spr-name... Person-name...
+
+If we start from one of the branches instead, then only two recipes are
+listed.
+
+    >>> nopriv_browser.open(ref1_url)
+    >>> nopriv_browser.getLink('2 recipes').click()
+    >>> print nopriv_browser.url
+    http://code.launchpad.dev/%7Eperson-name.../product-name.../+git/gitrepository.../+ref/a/+recipes
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Owner
+    Registered
+
+    >>> print_recipe_listing_contents(nopriv_browser)
     spr-name... Person-name...
     spr-name... Person-name...
 
@@ -81,7 +153,7 @@ Let's use the product from the former branch test.
     >>> print_recipe_listing_head(nopriv_browser)
     Name
     Owner
-    Base Branch
+    Base Source
     Registered
 
 The listings should now show all recipes whose base branch is a branch from
@@ -91,6 +163,25 @@ this product.
     spr-name... Person-name... lp://dev/... ...
     spr-name... Person-name... lp://dev/... ...
     spr-name... Person-name... lp://dev/... ...
+
+The same thing works for the target of the former Git repository test.
+
+    >>> nopriv_browser.open(target_url)
+    >>> nopriv_browser.getLink('View source package recipes').click()
+    >>> print nopriv_browser.url
+    http://code.launchpad.dev/product-name.../+recipes
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Owner
+    Base Source
+    Registered
+
+    >>> print_recipe_listing_contents(nopriv_browser)
+    spr-name... Person-name... lp:~.../+git/... ...
+    spr-name... Person-name... lp:~.../+git/... ...
+    spr-name... Person-name... lp:~.../+git/... ...
+    spr-name... Person-name... lp:~.../+git/... ...
 
 
 Person Recipe Listings
@@ -115,7 +206,7 @@ The "Owner" section should be missing.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
-    Base Branch
+    Base Source
     Registered
 
 The listings should now show all recipes whose base branch is a branch from

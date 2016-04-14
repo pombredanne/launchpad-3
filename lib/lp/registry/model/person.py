@@ -1690,7 +1690,7 @@ class Person(
         """
         tm = TeamMembership.selectOneBy(person=self, team=team)
         assert tm.canBeRenewedByMember(), (
-            "This membership can't be renewed by the member himself.")
+            "This membership can't be renewed by the member themselves.")
 
         assert (team.defaultrenewalperiod is not None
                 and team.defaultrenewalperiod > 0), (
@@ -2759,13 +2759,13 @@ class Person(
     def inactive_gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
+        return gpgkeyset.getGPGKeysForPerson(self, active=False)
 
     @property
     def gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGPGKeys(ownerid=self.id)
+        return gpgkeyset.getGPGKeysForPerson(self)
 
     def hasMaintainedPackages(self):
         """See `IPerson`."""
@@ -2807,7 +2807,8 @@ class Person(
 
         Active 'ppa_only' flag is usually associated with active
         'uploader_only' because there shouldn't be any sense of maintainership
-        for packages uploaded to PPAs by someone else than the user himself.
+        for packages uploaded to PPAs by someone else than the user
+        themselves.
         """
         clauses = []
         if uploader_only:

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -317,6 +317,10 @@
                 driver
                 backports_not_automatic
                 include_long_descriptions
+                index_compressors
+                publish_by_hash
+                advertise_by_hash
+                strict_supported_component_dependencies
                 inherit_overrides_from_parents"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
@@ -612,7 +616,7 @@
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="lp.services.webapp.interfaces.ILaunchpadContainer"
-        factory="lp.registry.publisher.LaunchpadDistributionSourcePackageContainer"/>
+        factory="lp.services.webapp.publisher.LaunchpadContainer"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -1049,9 +1053,9 @@
 
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
-        sure only the user (and not launchpad admins) will be able to edit her own
-        ssh keys. Another option would be to require the user's password on this
-        page. GuilhermeSalgado 25/08/2005 -->
+        sure only the user (and not launchpad admins) will be able to edit
+        their own ssh keys. Another option would be to require the user's
+        password on this page. GuilhermeSalgado 25/08/2005 -->
 
 
         <!-- Team Views -->
@@ -1282,6 +1286,11 @@
         <require
             permission="launchpad.Edit"
             set_attributes="active can_encrypt"/>
+    </class>
+    <class
+        class="lp.registry.model.gpgkey.GPGServiceKey">
+        <allow
+            interface="lp.registry.interfaces.gpg.IGPGKey"/>
     </class>
 
     <!-- GPGKeySet -->

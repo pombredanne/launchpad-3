@@ -132,8 +132,8 @@ The owner can see the Status and Importance widgets.
     Status: True
     Importance: True
 
-An ordinary user can see the Status widget. He can't see the
-Importance widget because he would not normally be permitted to alter
+An ordinary user can see the Status widget. They can't see the
+Importance widget because they would not normally be permitted to alter
 the importance of a bugtask in Alsa Utils.
 
     >>> login("foo.bar@canonical.com")

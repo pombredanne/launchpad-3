@@ -34,7 +34,7 @@ quoted passage, and a signature with an email address in it.
 == Email addresses are only shown to authenticated users ==
 
 Email addresses are visible to authenticated users. Sample Person is
-authenticated already, He will see 'human@somewhere.org'
+authenticated already, so they will see 'human@somewhere.org'.
 
     >>> print user_browser.title.decode('utf-8')
     Question #11 :  ...
@@ -47,7 +47,7 @@ authenticated already, He will see 'human@somewhere.org'
     Witty signatures rock!
 
 Unauthenticated users, such as a bot will see the mock email address
-of 'person@domain.dom'. The anonymous user is unauthenticated, he will
+of 'person@domain.dom'. The anonymous user is unauthenticated, so they will
 see the obfuscated email address (<email address hidden>).
 
     >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')

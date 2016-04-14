@@ -31,6 +31,12 @@
             module="lp.snappy.browser.snap"
             classes="SnapNavigation" />
         <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapView"
+            permission="launchpad.View"
+            name="+portlet-privacy"
+            template="../templates/snap-portlet-privacy.pt"/>
+        <browser:page
             for="lp.code.interfaces.branch.IBranch"
             class="lp.snappy.browser.snap.SnapAddView"
             permission="launchpad.AnyPerson"
@@ -65,7 +71,7 @@
             class="lp.snappy.browser.snap.SnapDeleteView"
             permission="launchpad.Edit"
             name="+delete"
-            template="../templates/snap-delete.pt" />
+            template="../../app/templates/generic-edit.pt" />
         <adapter
             provides="lp.services.webapp.interfaces.IBreadcrumb"
             for="lp.snappy.interfaces.snap.ISnap"

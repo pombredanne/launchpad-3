@@ -52,7 +52,7 @@ consumer keys.
     ...     LaunchpadWebServiceCaller)
     >>> from lp.services.oauth.interfaces import IOAuthConsumerSet
 
-    >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
+    >>> caller = LaunchpadWebServiceCaller(u'new-consumer', u'access-key')
     >>> response = caller.get(root)
     >>> print response.getheader('status')
     401 Unauthorized
@@ -67,11 +67,11 @@ doesn't recognize the client.
     >>> login(ANONYMOUS)
     >>> from zope.component import getUtility
     >>> consumer_set = getUtility(IOAuthConsumerSet)
-    >>> print consumer_set.getByKey('another-new-consumer')
+    >>> print consumer_set.getByKey(u'another-new-consumer')
     None
     >>> logout()
 
-    >>> caller = LaunchpadWebServiceCaller('another-new-consumer', '')
+    >>> caller = LaunchpadWebServiceCaller(u'another-new-consumer', u'')
     >>> response = caller.get(root)
     >>> print response.getheader('status')
     200 Ok
@@ -79,7 +79,7 @@ doesn't recognize the client.
 Launchpad automatically adds new consumer keys it sees to its database.
 
     >>> login(ANONYMOUS)
-    >>> print consumer_set.getByKey('another-new-consumer').key
+    >>> print consumer_set.getByKey(u'another-new-consumer').key
     another-new-consumer
     >>> logout()
 
@@ -105,7 +105,7 @@ Anonymous requests can't change the dataset.
 A completely unsigned web service request is treated as an anonymous
 request, with the OAuth consumer name being equal to the User-Agent.
 
-    >>> agent = "unsigned-user-agent"
+    >>> agent = u"unsigned-user-agent"
     >>> login(ANONYMOUS)
     >>> print consumer_set.getByKey(agent)
     None

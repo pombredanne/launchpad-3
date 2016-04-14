@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -64,6 +64,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -118,7 +119,7 @@ def git_repository_name_validator(name):
     return True
 
 
-class IGitRepositoryView(Interface):
+class IGitRepositoryView(IHasRecipes):
     """IGitRepository attributes that require launchpad.View permission."""
 
     id = Int(title=_("ID"), readonly=True, required=True)
@@ -513,6 +514,14 @@ class IGitRepositoryView(Interface):
         :param paths: A list of reference paths.  Any merge proposals whose
             source is this repository and one of these paths will have their
             diffs updated.
+        """
+
+    def markRecipesStale(paths):
+        """Mark recipes associated with this repository as stale.
+
+        :param paths: A list of reference paths.  Any recipes that include
+            an entry that points to this repository and that has a `revspec`
+            that is one of these paths will be marked as stale.
         """
 
     def detectMerges(paths, logger=None):

@@ -1,15 +1,35 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import os
+import random
+import string
+import subprocess
+
+import gpgme
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    HasLength,
+    raises,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.constants import THIRTY_DAYS_AGO
+from lp.services.database.interfaces import IMasterStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
     GPGKeyTemporarilyNotFoundError,
+    GPGServiceException,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -20,6 +40,8 @@ from lp.testing import (
     logout,
     TestCase,
     )
+from lp.testing.factory import BareLaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import (
     import_secret_test_key,
     iter_test_key_emails,
@@ -27,16 +49,20 @@ from lp.testing.gpgkeys import (
     test_pubkey_from_email,
     )
 from lp.testing.keyserver import KeyServerTac
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    GPGServiceLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
-class TestImportKeyRing(TestCase):
-    """Tests for keyring imports"""
+class TestGPGHandler(TestCase):
+    """Unit tests for the GPG handler."""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Get a gpghandler and login"""
-        super(TestImportKeyRing, self).setUp()
+        super(TestGPGHandler, self).setUp()
         login(ANONYMOUS)
         self.gpg_handler = getUtility(IGPGHandler)
         self.gpg_handler.resetLocalState()
@@ -47,7 +73,7 @@ class TestImportKeyRing(TestCase):
         # This should be a zope test cleanup thing per SteveA.
         self.gpg_handler.resetLocalState()
         logout()
-        super(TestImportKeyRing, self).tearDown()
+        super(TestGPGHandler, self).tearDown()
 
     def populateKeyring(self):
         for email in iter_test_key_emails():
@@ -184,3 +210,286 @@ class TestImportKeyRing(TestCase):
         self.assertRaises(
             GPGKeyDoesNotExistOnServer,
             removeSecurityProxy(self.gpg_handler)._getPubKey, fingerprint)
+
+    def test_signContent_uses_sha512_digests(self):
+        secret_keys = [
+            ("ppa-sample@canonical.com.sec", ""),       # 1024R
+            ("ppa-sample-4096@canonical.com.sec", ""),  # 4096R
+            ]
+        for key_name, password in secret_keys:
+            self.gpg_handler.resetLocalState()
+            secret_key = import_secret_test_key(key_name)
+            content = "abc\n"
+            signed_content = self.gpg_handler.signContent(
+                content, secret_key, password)
+            signature = self.gpg_handler.getVerifiedSignature(signed_content)
+            self.assertEqual(content, signature.plain_data)
+            self.assertEqual(secret_key.fingerprint, signature.fingerprint)
+            # pygpgme doesn't tell us the hash algorithm used for a verified
+            # signature, so we have to do this by hand.  Sending --status-fd
+            # output to stdout is a bit dodgy, but at least with --quiet
+            # it's OK for test purposes and it simplifies subprocess
+            # plumbing.
+            with open(os.devnull, "w") as devnull:
+                gpg_proc = subprocess.Popen(
+                    ["gpg", "--quiet", "--status-fd", "1", "--verify"],
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=devnull, universal_newlines=True)
+            status = gpg_proc.communicate(signed_content)[0].splitlines()
+            validsig_prefix = "[GNUPG:] VALIDSIG "
+            [validsig_line] = [
+                line for line in status if line.startswith(validsig_prefix)]
+            validsig_tokens = validsig_line[len(validsig_prefix):].split()
+            self.assertEqual(gpgme.MD_SHA512, int(validsig_tokens[7]))
+
+
+class GPGServiceZopelessLayer(ZopelessDatabaseLayer, GPGServiceLayer):
+    """A layer specifically for running the IGPGClient utility tests."""
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
+
+
+class GPGClientTests(TestCase):
+
+    layer = GPGServiceZopelessLayer
+
+    def setUp(self):
+        super(GPGClientTests, self).setUp()
+        self.factory = BareLaunchpadObjectFactory()
+
+    def test_can_get_utility(self):
+        client = getUtility(IGPGClient)
+        self.assertIsNot(None, client)
+
+    def get_random_owner_id_string(self):
+        """Get a random string that's representative of the owner id scheme."""
+        candidates = string.ascii_lowercase + string.digits
+        openid_id = ''.join((random.choice(candidates) for i in range(6)))
+        return 'http://testopenid.dev/+id/' + openid_id
+
+    def test_get_key_for_user_with_sampledata(self):
+        client = getUtility(IGPGClient)
+        person = getUtility(IPersonSet).getByName('name16')
+        openid_id = getUtility(IGPGKeySet).getOwnerIdForPerson(person)
+        data = client.getKeysForOwner(openid_id)
+        self.assertThat(data, ContainsDict({'keys': HasLength(1)}))
+
+    def test_get_key_for_unknown_user(self):
+        client = getUtility(IGPGClient)
+        user = self.get_random_owner_id_string()
+        data = client.getKeysForOwner(user)
+        self.assertThat(data, ContainsDict({'keys': HasLength(0)}))
+
+    def test_register_non_callable_raises_TypeError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.registerWriteHook("not a callable"),
+            raises(TypeError))
+
+    def test_unregister_with_unregistered_hook_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.unregisterWriteHook("not registered"),
+            raises(ValueError))
+
+    def test_can_unregister_registered_write_hook(self):
+        client = getUtility(IGPGClient)
+        hook = FakeMethod()
+        client.registerWriteHook(hook)
+        client.unregisterWriteHook(hook)
+
+        self.assertThat(
+            lambda: client.unregisterWriteHook(hook),
+            raises(ValueError))
+
+    def test_can_add_new_fingerprint_for_user(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+        data = client.getKeysForOwner(user)
+        self.assertThat(data, ContainsDict({'keys': HasLength(1)}))
+        keys = data['keys']
+        self.assertThat(
+            keys[0],
+            ContainsDict({
+                'fingerprint': Equals(fingerprint),
+                'enabled': Equals(True)
+            }))
+
+    def test_adding_fingerprint_notifies_writes(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        hook = FakeMethod()
+        client.registerWriteHook(hook)
+        self.addCleanup(client.unregisterWriteHook, hook)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+
+        self.assertThat(hook.call_count, Equals(1))
+
+    def test_adding_invalid_fingerprint_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.addKeyForOwner(
+                self.get_random_owner_id_string(), ''),
+            raises(ValueError("Invalid fingerprint: ''.")))
+
+    def test_adding_duplicate_fingerprint_raises_GPGServiceException(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user_one = self.get_random_owner_id_string()
+        user_two = self.get_random_owner_id_string()
+        client.addKeyForOwner(user_one, fingerprint)
+        self.assertThat(
+            lambda: client.addKeyForOwner(user_two, fingerprint),
+            raises(GPGServiceException(
+                "Error: Fingerprint already in database.")))
+
+    def test_disabling_active_key(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+        client.disableKeyForOwner(user, fingerprint)
+        data = client.getKeysForOwner(user)
+
+        self.assertThat(data, ContainsDict({'keys': HasLength(1)}))
+        keys = data['keys']
+        self.assertThat(keys[0], ContainsDict({'enabled': Equals(False)}))
+
+    def test_disabling_key_notifies_writes(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+
+        hook = FakeMethod()
+        client.registerWriteHook(hook)
+        self.addCleanup(client.unregisterWriteHook, hook)
+        client.disableKeyForOwner(user, fingerprint)
+        self.assertThat(hook.call_count, Equals(1))
+
+    def test_disabling_invalid_fingerprint_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(
+            lambda: client.disableKeyForOwner(
+                self.get_random_owner_id_string(), ''),
+            raises(ValueError("Invalid fingerprint: ''."))
+        )
+
+    def test_can_get_key_by_fingerprint(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        user = self.get_random_owner_id_string()
+        client.addKeyForOwner(user, fingerprint)
+
+        key = client.getKeyByFingerprint(fingerprint)
+        self.assertThat(
+            key, ContainsDict({'owner': Equals(user),
+                               'fingerprint': Equals(fingerprint)}))
+
+    def test_get_missing_key_by_fingerprint(self):
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        self.assertIsNone(client.getKeyByFingerprint(fingerprint))
+
+    def test_get_key_with_bad_fingerprint_raises_ValueError(self):
+        client = getUtility(IGPGClient)
+        self.assertThat(lambda: client.getKeyByFingerprint('bad fingerprint'),
+                        raises(ValueError))
+
+    def test_can_add_IGPGKey_to_test_enabled_gpgservice(self):
+        self.useFixture(
+            FeatureFixture({'gpg.write_to_gpgservice': True}))
+        client = getUtility(IGPGClient)
+        person = self.factory.makePerson()
+        # With the feature flag enabled, the following creates a
+        # gpg key on the gpgservice.
+        gpgkey = self.factory.makeGPGKey(person)
+        user = getUtility(IGPGKeySet).getOwnerIdForPerson(person)
+        key = client.getKeyByFingerprint(gpgkey.fingerprint)
+        self.assertThat(
+            key, ContainsDict({'owner': Equals(user),
+                               'fingerprint': Equals(gpgkey.fingerprint)}))
+
+    def makePersonWithMultipleGPGKeysInDifferentOpenids(self):
+        """Make a person with multiple GPG keys owned by
+        different openid identifiers. This happens as a result
+        of an account merge.
+
+        :returns: an IPerson instance with two keys under
+                  different openid identifiers.
+        """
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        # Create a second openid identifier from 30 days ago.
+        # This simulates the account merge:
+        identifier = OpenIdIdentifier()
+        identifier.account = person.account
+        identifier.identifier = u'openid_identifier'
+        identifier.date_created = THIRTY_DAYS_AGO
+        IMasterStore(OpenIdIdentifier).add(identifier)
+        self.factory.makeGPGKey(person)
+        return person
+
+    def test_can_retrieve_keys_for_all_openid_identifiers(self):
+        person = self.makePersonWithMultipleGPGKeysInDifferentOpenids()
+        keys = getUtility(IGPGKeySet).getGPGKeysForPerson(person)
+        self.assertThat(keys, HasLength(2))
+
+    def test_can_deactivate_all_keys_with_multiple_openid_identifiers(self):
+        person = self.makePersonWithMultipleGPGKeysInDifferentOpenids()
+        keyset = getUtility(IGPGKeySet)
+        key_one, key_two = keyset.getGPGKeysForPerson(person)
+        keyset.deactivate(key_one)
+        keyset.deactivate(key_two)
+        key_one, key_two = keyset.getGPGKeysForPerson(person, active=False)
+
+        self.assertFalse(key_one.active)
+        self.assertFalse(key_two.active)
+
+    def test_can_reactivate_all_keys_with_multiple_openid_identifiers(self):
+        person = self.makePersonWithMultipleGPGKeysInDifferentOpenids()
+        keyset = getUtility(IGPGKeySet)
+        for k in keyset.getGPGKeysForPerson(person):
+            keyset.deactivate(k)
+        for k in keyset.getGPGKeysForPerson(person, active=False):
+            keyset.activate(person, k, k.can_encrypt)
+        key_one, key_two = keyset.getGPGKeysForPerson(person)
+
+        self.assertTrue(key_one.active)
+        self.assertTrue(key_two.active)
+
+    def test_cannot_reactivate_someone_elses_key(self):
+        person1 = self.factory.makePerson()
+        key = self.factory.makeGPGKey(person1)
+        person2 = self.factory.makePerson()
+
+        keyset = getUtility(IGPGKeySet)
+        keyset.deactivate(key)
+        self.assertRaises(
+            AssertionError,
+            keyset.activate,
+            person2, key, key.can_encrypt
+        )

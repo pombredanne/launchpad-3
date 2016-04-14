@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -112,10 +112,10 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(
             PackageUploadStatus.DONE, build.package_upload.status)
         self.assertEquals(
-            datetime(2008, 01, 01, 0, 0, 0, tzinfo=pytz.UTC),
+            datetime(2008, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             build.date_started)
         self.assertEquals(
-            datetime(2008, 01, 01, 0, 5, 0, tzinfo=pytz.UTC),
+            datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC),
             build.date_finished)
         self.assertEquals(timedelta(minutes=5), build.duration)
         expected_buildlog = 'buildlog_%s-%s-%s.%s_%s_FULLYBUILT.txt.gz' % (

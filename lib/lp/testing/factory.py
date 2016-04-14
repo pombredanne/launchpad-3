@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -112,6 +112,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -119,11 +120,14 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.gitnamespace import get_git_namespace
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
-    MINIMAL_RECIPE_TEXT,
+    MINIMAL_RECIPE_TEXT_BZR,
+    MINIMAL_RECIPE_TEXT_GIT,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -174,6 +178,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -227,8 +232,12 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
+    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
+    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
+    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -283,6 +292,7 @@ from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
     IArchiveSet,
     )
+from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -382,10 +392,10 @@ _DEFAULT = object()
 
 
 class GPGSigningContext:
-    """A helper object to hold the fingerprint, password and mode."""
+    """A helper object to hold the key, password and mode."""
 
-    def __init__(self, fingerprint, password='', mode=None):
-        self.fingerprint = fingerprint
+    def __init__(self, key, password='', mode=None):
+        self.key = key
         self.password = password
         self.mode = mode
 
@@ -453,8 +463,8 @@ class ObjectFactory:
         string = "%s-%s" % (prefix, self.getUniqueInteger())
         return string
 
-    def getUniqueUnicode(self):
-        return self.getUniqueString().decode('latin-1')
+    def getUniqueUnicode(self, prefix=None):
+        return self.getUniqueString(prefix=prefix).decode('latin-1')
 
     def getUniqueURL(self, scheme=None, host=None):
         """Return a URL unique to this run of the test case."""
@@ -582,7 +592,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
         fingerprint = key_id + 'A' * 32
-        return getUtility(IGPGKeySet).new(
+        keyset = getUtility(IGPGKeySet)
+        key = keyset.new(
             owner.id,
             keyid=key_id,
             fingerprint=fingerprint,
@@ -590,6 +601,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             algorithm=GPGKeyAlgorithm.R,
             active=True,
             can_encrypt=False)
+        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
+            client = getUtility(IGPGClient)
+            openid_identifier = keyset.getOwnerIdForPerson(owner)
+            client.addKeyForTest(
+                openid_identifier, key.keyid, key.fingerprint, key.keysize,
+                key.algorithm.name, key.active, key.can_encrypt)
+            # Sadly client.addKeyForTest does not return the key that
+            # was added:
+            if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
+                return GPGServiceKey(
+                    client.getKeyByFingerprint(key.fingerprint))
+        return key
 
     def makePerson(
         self, email=None, name=None, displayname=None, account_status=None,
@@ -2135,8 +2158,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if signing_context is not None:
             gpghandler = getUtility(IGPGHandler)
             body = gpghandler.signContent(
-                body, signing_context.fingerprint,
-                signing_context.password, signing_context.mode)
+                body, signing_context.key, signing_context.password,
+                signing_context.mode)
             assert body is not None
         if attachment_contents is None:
             mail.set_payload(body)
@@ -2864,6 +2887,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         permission_set.newQueueAdmin(archive, person, 'main')
         return person
 
+    def makeArchiveFile(self, archive=None, container=None, path=None,
+                        library_file=None, scheduled_deletion_date=None):
+        if archive is None:
+            archive = self.makeArchive()
+        if container is None:
+            container = self.getUniqueUnicode()
+        if path is None:
+            path = self.getUniqueUnicode()
+        if library_file is None:
+            library_file = self.makeLibraryFileAlias()
+        archive_file = getUtility(IArchiveFileSet).new(
+            archive=archive, container=container, path=path,
+            library_file=library_file)
+        if scheduled_deletion_date is not None:
+            removeSecurityProxy(archive_file).scheduled_deletion_date = (
+                scheduled_deletion_date)
+        return archive_file
+
     def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
                     vm_reset_protocol=None, manual=False):
@@ -2897,9 +2938,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branches = (self.makeAnyBranch(), )
         base_branch = branches[0]
         other_branches = branches[1:]
-        text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        if IBranch.providedBy(base_branch):
+            text = MINIMAL_RECIPE_TEXT_BZR % base_branch.identity
+        elif IGitRepository.providedBy(base_branch):
+            # The UI normally guides people towards using an explicit branch
+            # name, but it's also possible to leave the branch name empty
+            # which is equivalent to the repository's default branch.  This
+            # makes that mode easier to test.
+            text = "%s\n%s\n" % (
+                MINIMAL_RECIPE_TEXT_GIT.splitlines()[0], base_branch.identity)
+        elif IGitRef.providedBy(base_branch):
+            text = MINIMAL_RECIPE_TEXT_GIT % (
+                base_branch.repository.identity, base_branch.name)
+        else:
+            raise AssertionError(
+                "Unsupported base_branch: %r" % (base_branch,))
         for i, branch in enumerate(other_branches):
-            text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
+            if IBranch.providedBy(branch) or IGitRepository.providedBy(branch):
+                text += 'merge dummy-%s %s\n' % (i, branch.identity)
+            elif IGitRef.providedBy(branch):
+                text += 'merge dummy-%s %s %s\n' % (
+                    i, branch.repository.identity, branch.name)
+            else:
+                raise AssertionError("Unsupported branch: %r" % (branch,))
         return text
 
     def makeRecipe(self, *branches):
@@ -4247,7 +4308,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
         from lp.testing.layers import BaseLayer
         launchpad = launchpadlib_for(
-            "test", person, service_root=BaseLayer.appserver_root_url("api"),
+            u"test", person, service_root=BaseLayer.appserver_root_url("api"),
             version=version)
         login_person(person)
         return launchpad
@@ -4279,9 +4340,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     # Factory methods for OAuth tokens.
     def makeOAuthConsumer(self, key=None, secret=None):
         if key is None:
-            key = self.getUniqueString("oauthconsumerkey")
+            key = self.getUniqueUnicode("oauthconsumerkey")
         if secret is None:
-            secret = ''
+            secret = u''
         return getUtility(IOAuthConsumerSet).new(key, secret)
 
     def makeOAuthRequestToken(self, consumer=None, date_created=None,
@@ -4538,7 +4599,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSnap(self, registrant=None, owner=None, distroseries=None,
                  name=None, branch=None, git_ref=None,
                  require_virtualized=True, processors=None,
-                 date_created=DEFAULT):
+                 date_created=DEFAULT, private=False):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4553,7 +4614,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         snap = getUtility(ISnapSet).new(
             registrant, owner, distroseries, name,
             require_virtualized=require_virtualized, processors=processors,
-            date_created=date_created, branch=branch, git_ref=git_ref)
+            date_created=date_created, branch=branch, git_ref=git_ref,
+            private=private)
         IStore(snap).flush()
         return snap
 

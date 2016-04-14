@@ -156,7 +156,7 @@ If the user has no matching vouchers an empty list is returned.
     0
 
 Similarly the call to get all of a user's vouchers returns the empty
-list when she has none.
+list when they have none.
 
     >>> vouchers = voucher_proxy.getAllVouchers(foobar)
     >>> len(vouchers)

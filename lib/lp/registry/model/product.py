@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -122,6 +122,7 @@ from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
+from lp.code.model.gitrepository import GitRepository
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasCodeImportsMixin,
@@ -1500,7 +1501,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             summary=summary, branch=branch, releasefileglob=releasefileglob)
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # The user is a product driver, and should be the driver of this
-            # series to make him the release manager.
+            # series to make them the release manager.
             series.driver = owner
         return series
 
@@ -1574,12 +1575,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        recipes = Store.of(self).find(
+        tables = [
+            SourcePackageRecipe,
+            SourcePackageRecipeData,
+            LeftJoin(Branch, SourcePackageRecipeData.base_branch == Branch.id),
+            LeftJoin(
+                GitRepository,
+                SourcePackageRecipeData.base_git_repository ==
+                    GitRepository.id),
+            ]
+        recipes = Store.of(self).using(*tables).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
-            SourcePackageRecipeData.base_branch == Branch.id,
-            Branch.product == self)
+            Or(Branch.product == self, GitRepository.project == self))
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(recipes, pre_iter_hook=hook)
 

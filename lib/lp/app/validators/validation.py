@@ -101,8 +101,8 @@ def validate_new_person_email(email):
 
     This validator is supposed to be used only when creating a new profile
     using the /people/+newperson page, as the message will say clearly to the
-    user that the profile he's trying to create already exists, so there's no
-    need to create another one.
+    user that the profile they're trying to create already exists, so there's
+    no need to create another one.
     """
     from lp.services.webapp.publisher import canonical_url
     from lp.registry.interfaces.person import IPersonSet

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -70,11 +70,7 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import (
-    Person,
-    PersonSettings,
-    )
+from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamMembership
 from lp.services.config import config
@@ -1439,63 +1435,6 @@ class LiveFSFilePruner(BulkPruner):
         """
 
 
-class PersonSettingsENFPopulator(BulkPruner):
-    """Populates PersonSettings.expanded_notification_footers."""
-
-    target_table_class = PersonSettings
-    ids_to_prune_query = """
-        SELECT person
-        FROM PersonSettings
-        WHERE expanded_notification_footers IS NULL
-        """
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        result = self.store.execute("""
-            UPDATE PersonSettings
-            SET expanded_notification_footers = FALSE
-            WHERE person IN (
-                SELECT * FROM
-                cursor_fetch('%s', %d) AS f(person integer))
-            """ % (self.cursor_name, chunk_size))
-        self._num_removed = result.rowcount
-        transaction.commit()
-
-
-class DistroSeriesPublishingOptionsPopulator(TunableLoop):
-    """Populates DistroSeries.publishing_options."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(DistroSeriesPublishingOptionsPopulator, self).__init__(
-            log, abort_time)
-        self.start_at = 1
-        self.store = IMasterStore(DistroSeries)
-
-    def findSeries(self):
-        return self.store.find(
-            DistroSeries,
-            DistroSeries.id >= self.start_at).order_by(DistroSeries.id)
-
-    def isDone(self):
-        return self.findSeries().is_empty()
-
-    def __call__(self, chunk_size):
-        all_series = list(self.findSeries()[:chunk_size])
-        for series in all_series:
-            if series.publishing_options is None:
-                naked_series = removeSecurityProxy(series)
-                series.publishing_options = {
-                    "backports_not_automatic":
-                        naked_series._backports_not_automatic,
-                    "include_long_descriptions":
-                        naked_series._include_long_descriptions,
-                    }
-        self.start_at = all_series[-1].id + 1
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1774,14 +1713,12 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         DiffPruner,
-        DistroSeriesPublishingOptionsPopulator,
         GitJobPruner,
         HWSubmissionEmailLinker,
         LiveFSFilePruner,
         LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
-        PersonSettingsENFPopulator,
         POTranslationPruner,
         PreviewDiffPruner,
         ProductVCSPopulator,

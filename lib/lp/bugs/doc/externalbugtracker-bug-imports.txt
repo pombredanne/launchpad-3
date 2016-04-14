@@ -34,7 +34,7 @@ methods.
     ...     'http://example.com/')
 
 When importing bugs, the reporter is automatically created in Launchpad,
-if he doesn't exist.
+if they don't exist.
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> print getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
@@ -85,8 +85,8 @@ The bug reporter, as returned by getBugReporter(), got automatically created.
     >>> print bug.owner.displayname
     Joe Bloggs
 
-Since he didn't have a Launchpad account before, he doesn't have a
-preferred email address, and the one that is associated with his
+Since they didn't have a Launchpad account before, they don't have a
+preferred email address, and the one that is associated with their
 account is marked as NEW, since we don't know whether it's valid.
 
     >>> from lp.services.identity.interfaces.emailaddress import (
@@ -168,7 +168,7 @@ Reporter already registered in Launchpad
 ----------------------------------------
 
 Even if the reporter of the bug has an account in Launchpad (and thus a
-valid email address), he still won't be subscribed to the imported bug.
+valid email address), they still won't be subscribed to the imported bug.
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv.preferredemail is not None

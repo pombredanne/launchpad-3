@@ -717,7 +717,7 @@ class FileBugViewBase(LaunchpadFormView):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
             # publishTraverse() has already been called once before,
-            # which means that he URL contains more path components than
+            # which means that the URL contains more path components than
             # expected.
             raise NotFound(self, name, request=request)
 
@@ -726,7 +726,7 @@ class FileBugViewBase(LaunchpadFormView):
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
             #      We should handle this case better, since a user might
-            #      come to this page when finishing his account
+            #      come to this page when finishing their account
             #      registration. In that case we should inform the user
             #      that the blob has expired.
             raise NotFound(self, name, request=request)

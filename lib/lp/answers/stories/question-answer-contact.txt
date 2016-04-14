@@ -36,8 +36,8 @@ each team that user is an administrator of.
     ['landscape-developers', 'launchpad-users']
 
 The user can select any of these checkboxes to register as an answer
-contact himself or one of the team for which he's an administrator. In
-our case, the user decides to register himself and the Landscape
+contact themselves or one of the team for which they're an administrator. In
+our case, the user decides to register themselves and the Landscape
 Developers team.
 
     >>> browser.getControl(
@@ -47,9 +47,9 @@ Developers team.
 
 Answer contacts must tell Launchpad which languages they provide help
 in. As a convenience, the Answer Tracker will set the Person's preferred
-languages for him. The browser languages are used for a Person. In the
+languages for them. The browser languages are used for a Person. In the
 case of a Team, only English is added. Sample Person reads the notice
-that his preferred languages were set, and uses the link to in the
+that their preferred languages were set, and uses the link to in the
 notice to review the changes. Sample Person's browser sends the accept-
 languages header with English and Spanish.
 
@@ -64,7 +64,7 @@ languages header with English and Spanish.
     True
 
 To remove oneself from the answer contacts, the user uses the same 'Set
-answer contact' link and uncheck himself or the team he want to remove
+answer contact' link and uncheck themselves or the team they want to remove
 from the answer contact list.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
@@ -110,7 +110,7 @@ answer contact. Team admins may configure a team's preferred languages
 to set exactly which languages the team supports.
 
 Sample Person visits the Answers facet of Ubuntu as described in the
-main story above. He wants Landscape Developers team to be answer
+main story above. They want Landscape Developers team to be answer
 contacts for Ubuntu, but only for Spanish questions to keep the email
 traffic to a manageable volume.
 
@@ -126,7 +126,7 @@ traffic to a manageable volume.
     Landscape Developers has been added as an answer contact for Ubuntu.
 
 Sample Person navigates to the team page to set it's preferred
-languages. He must add Spanish to the team's preferred languages.
+languages. They must add Spanish to the team's preferred languages.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.title

@@ -10,6 +10,7 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.propertycache import get_property_cache
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
@@ -50,8 +51,11 @@ class TestPPAKeyGenerator(TestCase):
         key_generator.txn = txn
 
         def fake_key_generation(archive):
-            a_key = getUtility(IGPGKeySet).get(1)
-            archive.signing_key = a_key
+            a_key = getUtility(IGPGKeySet).getByFingerprint(
+                'ABCDEF0123456789ABCDDCBA0000111112345678')
+            archive.signing_key_fingerprint = a_key.fingerprint
+            archive.signing_key_owner = a_key.owner
+            del get_property_cache(archive).signing_key
 
         key_generator.generateKey = fake_key_generation
 
@@ -68,8 +72,10 @@ class TestPPAKeyGenerator(TestCase):
     def testPPAAlreadyHasSigningKey(self):
         """Raises an error if the specified PPA already has a signing_key."""
         cprov = getUtility(IPersonSet).getByName('cprov')
-        a_key = getUtility(IGPGKeySet).get(1)
-        cprov.archive.signing_key = a_key
+        a_key = getUtility(IGPGKeySet).getByFingerprint(
+            'ABCDEF0123456789ABCDDCBA0000111112345678')
+        cprov.archive.signing_key_fingerprint = a_key.fingerprint
+        cprov.archive.signing_key_owner = a_key.owner
 
         key_generator = self._getKeyGenerator(
             archive_reference='~cprov/ubuntu/ppa')

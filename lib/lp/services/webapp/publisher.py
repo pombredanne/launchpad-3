@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -77,6 +77,7 @@ from lp.services.features import (
     defaultFlagValue,
     getFeatureFlag,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.utils import obfuscate_structure
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
@@ -821,7 +822,7 @@ def get_raw_form_value_from_current_request(field, field_name):
     assert isinstance(request, WebServiceClientRequest)
     # Zope wrongly encodes any form element that doesn't look like a file,
     # so re-fetch the file content if it has been encoded.
-    if request and request.form.has_key(field_name) and isinstance(
+    if request and field_name in request.form and isinstance(
         request.form[field_name], unicode):
         request._environ['wsgi.input'].seek(0)
         fs = FieldStorage(fp=request._body_instream, environ=request._environ)
@@ -844,13 +845,36 @@ class LaunchpadContainer:
     def __init__(self, context):
         self.context = context
 
-    def isWithin(self, scope):
-        """Is this object within the given scope?
+    @cachedproperty
+    def _context_url(self):
+        try:
+            return canonical_url(self.context, force_local_path=True)
+        except NoCanonicalUrl:
+            return None
 
-        By default all objects are only within itself.  More specific adapters
-        must override this and implement the logic they want.
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`.
+
+        By default, we only consider the parent of this object in the
+        canonical URL iteration.  Adapters for objects with more complex
+        parentage rules must override this method.
         """
-        return self.context == scope
+        # Circular import.
+        from lp.services.webapp.canonicalurl import nearest_adapter
+        urldata = ICanonicalUrlData(self.context, None)
+        if urldata is not None and urldata.inside is not None:
+            container = nearest_adapter(urldata.inside, ILaunchpadContainer)
+            yield container
+
+    def isWithin(self, scope_url):
+        """See `ILaunchpadContainer`."""
+        if self._context_url is None:
+            return False
+        if self._context_url == scope_url:
+            return True
+        return any(
+            parent.isWithin(scope_url)
+            for parent in self.getParentContainers())
 
 
 @implementer(IBrowserPublisher)

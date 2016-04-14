@@ -61,7 +61,7 @@ Carlos appoints Sample Person as a translator for Esperanto.
     >>> print carlos_browser.url
     http://translations.launchpad.dev/+groups/testing-translation-team
 
-Sample Person can not administer her ITranslator record but she can edit
+Sample Person can not administer their ITranslator record but they can edit
 the documentation url through the edit view.
 
     >>> test_browser = setupBrowser(auth='Basic test@canonical.com:test')

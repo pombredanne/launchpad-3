@@ -349,8 +349,8 @@ class TestTeamMembershipPolicyChoiceModerated(TeamMembershipPolicyBase):
 
     def test_closed_team_with_closed_super_team_cannot_become_open(self):
         # The team cannot compromise the membership of the super team
-        # by becoming open. The user must remove his team from the super team
-        # first.
+        # by becoming open. The user must remove their team from the super
+        # team first.
         self.setUpTeams()
         self.other_team.addMember(self.team, self.team.teamowner)
         self.assertFalse(

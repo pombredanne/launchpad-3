@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fake, in-process implementation of the Librarian API.
@@ -161,7 +161,7 @@ class FakeLibrarian(Fixture):
         return content_object
 
     def create(self, name, size, file, contentType, expires=None,
-               debugID=None, restricted=False):
+               debugID=None, restricted=False, allow_zero_length=False):
         "See `ILibraryFileAliasSet`."""
         return self._storeFile(name, size, file, contentType, expires=expires)
 
@@ -174,10 +174,10 @@ class FakeLibrarian(Fixture):
                 "librarian, who has never heard of it." % key)
         return alias
 
-    def findBySHA1(self, sha1):
+    def findBySHA256(self, sha256):
         "See `ILibraryFileAliasSet`."""
         for alias in self.aliases.itervalues():
-            if alias.content.sha1 == sha1:
+            if alias.content.sha256 == sha256:
                 return alias
 
         return None

@@ -17,7 +17,7 @@ various kinds and badge decoration.
 Batching is applied to branch listings where there are many items.
 Luckily for us, many is 5 in the tests.
 
-Sample Person is used as the logged in user in order to show his private
+Sample Person is used as the logged in user in order to show their private
 branches in the listings.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')

@@ -18,7 +18,7 @@ The owner of Landscape Developers applies for a mailing list.
     >>> print backslashreplace(browser.title)
     Mailing list configuration...
 
-He thinks for a second whether his mailing list is for Ubuntu or not.
+They think for a second whether their mailing list is for Ubuntu or not.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'ubuntu-notice'))
     Ubuntu does not use Launchpad to host its mailing lists. Create them
@@ -290,7 +290,7 @@ to delete the archives of an INACTIVE list, this must be done manually.
     ...     print mailing_list.status.name
     ...     logout()
 
-The team owner can see that he can purge or reactivate mailing list.
+The team owner can see that they can purge or reactivate mailing list.
 
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> user_browser.getControl('Create new Mailing List').click()
@@ -320,7 +320,7 @@ The team owner can see that he can purge or reactivate mailing list.
 
 Mailing list experts can also purge mailing lists.  Sample Person is
 trustworthy enough to become a mailing list expert, but not a Launchpad
-administrator.  He's given mailing list expert authority so that he can
+administrator.  They're given mailing list expert authority so that they can
 purge mailing lists.
 
     >>> login('foo.bar@canonical.com')

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -29,6 +29,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -368,6 +369,50 @@ class TestDistroSeries(TestCaseWithFactory):
         naked_distroseries = removeSecurityProxy(distroseries)
         self.assertFalse(
             naked_distroseries.publishing_options["include_long_descriptions"])
+
+    def test_index_compressors(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertEqual(
+            [IndexCompressionType.GZIP, IndexCompressionType.BZIP2],
+            distroseries.index_compressors)
+        with admin_logged_in():
+            distroseries.index_compressors = [IndexCompressionType.XZ]
+        self.assertEqual(
+            [IndexCompressionType.XZ], distroseries.index_compressors)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertEqual(
+            ["xz"], naked_distroseries.publishing_options["index_compressors"])
+
+    def test_publish_by_hash(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.publish_by_hash)
+        with admin_logged_in():
+            distroseries.publish_by_hash = True
+        self.assertTrue(distroseries.publish_by_hash)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["publish_by_hash"])
+
+    def test_advertise_by_hash(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.advertise_by_hash)
+        with admin_logged_in():
+            distroseries.advertise_by_hash = True
+        self.assertTrue(distroseries.advertise_by_hash)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["advertise_by_hash"])
+
+    def test_strict_supported_component_dependencies(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(distroseries.strict_supported_component_dependencies)
+        with admin_logged_in():
+            distroseries.strict_supported_component_dependencies = False
+        self.assertFalse(distroseries.strict_supported_component_dependencies)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertFalse(
+            naked_distroseries.publishing_options[
+                "strict_supported_component_dependencies"])
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

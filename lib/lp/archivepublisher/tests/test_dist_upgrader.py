@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dist-upgrader custom uploads.
@@ -35,8 +35,8 @@ class TestDistUpgrader(TestCase):
         self.temp_dir = self.makeTemporaryDirectory()
         self.pubconf = FakeConfig(self.temp_dir)
         self.suite = "distroseries"
-        # CustomUpload.installFiles requires a umask of 022.
-        old_umask = os.umask(022)
+        # CustomUpload.installFiles requires a umask of 0o022.
+        old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
 
     def openArchive(self, version):
@@ -68,10 +68,10 @@ class TestDistUpgrader(TestCase):
         self.assertRaises(CustomUploadAlreadyExists, self.process)
 
     def test_bad_umask(self):
-        # The umask must be 022 to avoid incorrect permissions.
+        # The umask must be 0o022 to avoid incorrect permissions.
         self.openArchive("20060302.0120")
         self.archive.add_file("20060302.0120/file", "foo")
-        os.umask(002)  # cleanup already handled by setUp
+        os.umask(0o002)  # cleanup already handled by setUp
         self.assertRaises(CustomUploadBadUmask, self.process)
 
     def test_current_symlink(self):

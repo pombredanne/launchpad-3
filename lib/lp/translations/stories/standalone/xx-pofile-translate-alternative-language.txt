@@ -152,7 +152,7 @@ Filtering & Navigation
 ----------------------
 
 The translate page also allows the user to filter the translatable strings to
-show only the strings he is interested in.
+show only the strings they are interested in.
 
     >>> browser.getControl(name='show', index=1).displayOptions
     ['all items', 'untranslated items', 'translated items',
@@ -209,8 +209,8 @@ German.
     ...     name='field.alternative_language', index=0).displayValue
     ['German (de)']
 
-The samer user chooses to start a new en_GB translation of alsa-utils. The
-form is displayed for him to edit, but the 'Make suggestions from' control
+The same user chooses to start a new en_GB translation of alsa-utils. The
+form is displayed for them to edit, but the 'Make suggestions from' control
 is unset.
 
     >>> user_browser.open(
@@ -228,8 +228,8 @@ is unset.
 There is only one alternative language at a time
 ------------------------------------------------
 
-If a user specifies more than one alternative language in the URL, he
-gets an UnexpectedFormData exception:
+If a user specifies more than one alternative language in the URL, they
+get an UnexpectedFormData exception:
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'

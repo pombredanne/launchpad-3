@@ -80,7 +80,7 @@ asked which of a list of bugs have been modified since a given date.
     ...         return remote_bug_ids[::2]
 
     >>> remote = QueryableRemoteSystem()
-    >>> now = datetime(2010, 01, 13, 16, 52, tzinfo=UTC)
+    >>> now = datetime(2010, 1, 13, 16, 52, tzinfo=UTC)
 
 When there are no bug watches to check, the result is empty, and the
 remote system is not queried.

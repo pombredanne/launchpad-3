@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build behaviour."""
@@ -160,7 +160,7 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
     def test_extraBuildArgs(self):
         # _extraBuildArgs returns a reasonable set of additional arguments.
         job = self.makeJob(
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
             metadata={"project": "distro", "subproject": "special"})
         expected_archives = get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
@@ -198,10 +198,10 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
+        build_request = yield job.composeBuildRequest(None)
         self.assertEqual(
             ('livefs', job.build.distro_arch_series, {},
-             job._extraBuildArgs()),
-            job.composeBuildRequest(None))
+             job._extraBuildArgs()), build_request)
 
 
 class MakeLiveFSBuildMixin:

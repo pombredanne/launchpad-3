@@ -39,7 +39,6 @@ class IGPGKey(IHasOwner):
 
     export_as_webservice_entry('gpg_key')
 
-    id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
@@ -73,10 +72,10 @@ class IGPGKeySet(Interface):
             reactivated an existing key.
         """
 
-    def get(key_id, default=None):
-        """Return the GPGKey object for the given id.
+    def deactivate(key):
+        """Deactivate a key.
 
-        Return the given default if there's no object with the given id.
+        :param key: An IGPGKey instance.
         """
 
     def getByFingerprint(fingerprint, default=None):
@@ -84,11 +83,14 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
-    def getGPGKeys(ownerid=None, active=True):
-        """Return OpenPGP keys ordered by id.
+    def getOwnerIdForPerson(person):
+        """return an owner id string suitable for sending to gpgservice."""
 
-        Optionally for a given owner and or a given status.
+    def getByFingerprints(fingerprints):
+        """Get multiple OpenPGP keys by their fingerprints."""
+
+    def getGPGKeysForPerson(person, active=True):
+        """Return OpenGPG keys for a person.
+
+        :returns: a list of IGPGKey instances.
         """
-
-    def getGPGKeysForPeople(people):
-        """Return OpenPGP keys for a set of people."""

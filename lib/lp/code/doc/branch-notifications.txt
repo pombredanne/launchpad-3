@@ -250,7 +250,7 @@ There are also some useful headers for filtering emails.
     The size of the diff (6000 lines) is larger than your specified limit of
     5000 lines...
 
-Foo Bar is getting the email due to his membership in the Launchpad
+Foo Bar is getting the email due to their membership in the Launchpad
 developers team.  Since the email is due to a team, there is no
 unsubscribe link.
 

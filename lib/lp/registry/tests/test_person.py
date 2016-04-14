@@ -810,7 +810,7 @@ class TestPersonStates(TestCaseWithFactory):
         self.assertEquals([expected_error], user.canDeactivate())
 
     def test_deactivate_copes_with_names_already_in_use(self):
-        """When a user deactivates his account, its name is changed.
+        """When a user deactivates their account, their name is changed.
 
         We do that so that other users can use that name, which the original
         user doesn't seem to want anymore.
@@ -826,8 +826,9 @@ class TestPersonStates(TestCaseWithFactory):
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
         foo_bar.name = 'name12'
-        # If Foo Bar deactivates his account, though, we'll have to use a name
-        # other than name12-deactivatedaccount because that is already in use.
+        # If Foo Bar deactivates their account, though, we'll have to use a
+        # name other than name12-deactivatedaccount because that is already
+        # in use.
         login(foo_bar.preferredemail.email)
         foo_bar.deactivate(comment="blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')

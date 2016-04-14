@@ -600,7 +600,7 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
         self.assertEqual(sorted(bug_ids), [1, 4, 5, 6])
         apgs.revoke([(policy, mr_no_privs)])
 
-        # Privacy and Priviledged Users
+        # Privacy and Privileged Users
         # Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
         # when it was marked private:
         login("mark@example.com")
@@ -611,8 +611,8 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
             BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
         # Privacy and Team Awareness
-        # No Privileges Person can't see the private bug, because he's not a
-        # subscriber:
+        # No Privileges Person can't see the private bug, because they're
+        # not a subscriber:
         no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         params = BugTaskSearchParams(
             status=any(BugTaskStatus.NEW, BugTaskStatus.CONFIRMED),
@@ -1040,7 +1040,7 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.series_bugtask.userCanSetAnyAssignee(
                 self.series_driver_member))
         if self.supervisor_member is not None:
-            # But he cannot assign anybody to bug tasks of the main target...
+            # But they cannot assign anybody to bug tasks of the main target...
             self.assertFalse(
                 self.target_bugtask.userCanSetAnyAssignee(
                     self.series_driver_member))

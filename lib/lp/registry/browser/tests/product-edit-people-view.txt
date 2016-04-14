@@ -16,8 +16,8 @@ Person (name12).
     >>> print sample_person.name
     name12
 
-No Privileges Person is taking over the project, but he cannot access the
-view because he is not yet an owner/maintainer or admin.
+No Privileges Person is taking over the project, but they cannot access the
+view because they are not yet an owner/maintainer or admin.
 
     >>> from lp.services.webapp.authorization import check_permission
 

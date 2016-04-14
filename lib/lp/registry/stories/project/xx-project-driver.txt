@@ -12,7 +12,7 @@ Appoint Sample Person as the driver of the GNOME Project.
     >>> browser.getControl('Change').click()
 
 After changing the driver, the user is redirected to the overview page where a
-message inform him of the driver change.
+message informs them of the driver change.
 
     >>> browser.url
     'http://launchpad.dev/gnome'

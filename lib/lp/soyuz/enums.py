@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/soyuz modules."""
@@ -13,6 +13,7 @@ __all__ = [
     'archive_suffixes',
     'BinaryPackageFileType',
     'BinaryPackageFormat',
+    'IndexCompressionType',
     'PackageCopyPolicy',
     'PackageCopyStatus',
     'PackageDiffStatus',
@@ -570,3 +571,16 @@ class SourcePackageFormat(DBEnumeratedType):
         Specifies a native package, with a single tar.*. Supports gzip,
         bzip2, and xz compression.
         """)
+
+
+class IndexCompressionType(DBEnumeratedType):
+    """Index compression type
+
+    Archive indexes such as Packages and Sources may be compressed using any
+    of several different schemes.
+    """
+
+    UNCOMPRESSED = DBItem(0, "uncompressed")
+    GZIP = DBItem(1, "gzip")
+    BZIP2 = DBItem(2, "bzip2")
+    XZ = DBItem(3, "xz")

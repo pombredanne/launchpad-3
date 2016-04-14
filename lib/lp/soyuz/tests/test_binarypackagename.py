@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BinaryPackageName."""
@@ -169,10 +169,10 @@ class TestBinaryPackageNameSet(TestCaseWithFactory):
         name = self.factory.makeBinaryPackageName()
         self.factory.makeBinaryPackageRelease(
             binarypackagename=name, description="foo",
-            date_created=datetime(1980, 01, 01, tzinfo=pytz.UTC))
+            date_created=datetime(1980, 1, 1, tzinfo=pytz.UTC))
         self.factory.makeBinaryPackageRelease(
             binarypackagename=name, description="bar",
-            date_created=datetime(2000, 01, 01, tzinfo=pytz.UTC))
+            date_created=datetime(2000, 1, 1, tzinfo=pytz.UTC))
         self.assertEqual(
             {name.name: "bar"},
             getBinaryPackageDescriptions([name], max_title_length=3))

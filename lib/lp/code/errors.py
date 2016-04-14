@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -30,6 +30,7 @@ __all__ = [
     'ClaimReviewFailed',
     'DiffNotFound',
     'GitDefaultConflict',
+    'GitRecipesFeatureDisabled',
     'GitRepositoryCreationException',
     'GitRepositoryCreationFault',
     'GitRepositoryCreationForbidden',
@@ -46,6 +47,7 @@ __all__ = [
     'NoSuchGitReference',
     'NoSuchGitRepository',
     'PrivateBranchRecipe',
+    'PrivateGitRepositoryRecipe',
     'ReviewNotPending',
     'StaleLastMirrored',
     'TooNewRecipeFormat',
@@ -298,9 +300,19 @@ class PrivateBranchRecipe(Exception):
 
     def __init__(self, branch):
         message = (
-            'Recipe may not refer to private branch: %s' %
-            branch.bzr_identity)
+            'Recipe may not refer to private branch: %s' % branch.identity)
         self.branch = branch
+        Exception.__init__(self, message)
+
+
+@error_status(httplib.BAD_REQUEST)
+class PrivateGitRepositoryRecipe(Exception):
+
+    def __init__(self, repository):
+        message = (
+            'Recipe may not refer to private repository: %s' %
+            repository.identity)
+        self.repository = repository
         Exception.__init__(self, message)
 
 
@@ -472,6 +484,15 @@ class TooNewRecipeFormat(Exception):
         super(TooNewRecipeFormat, self).__init__()
         self.supplied_format = supplied_format
         self.newest_supported = newest_supported
+
+
+@error_status(httplib.UNAUTHORIZED)
+class GitRecipesFeatureDisabled(Exception):
+    """Only certain users can create new Git recipes."""
+
+    def __init__(self):
+        message = "You do not have permission to create Git recipes."
+        Exception.__init__(self, message)
 
 
 @error_status(httplib.BAD_REQUEST)
