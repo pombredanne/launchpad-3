@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import bz2
+from collections import OrderedDict
 import crypt
 from datetime import (
     datetime,
@@ -453,14 +454,16 @@ class ByHashHasContents(Matcher):
 
     def __init__(self, contents):
         self.contents = contents
+        self.expected_hashes = OrderedDict([
+            ("SHA256", "sha256"),
+            ])
 
     def match(self, by_hash_path):
-        mismatch = DirContains(["MD5Sum", "SHA1", "SHA256"]).match(
-            by_hash_path)
+        mismatch = DirContains(self.expected_hashes.keys()).match(by_hash_path)
         if mismatch is not None:
             return mismatch
-        for hashname, hashattr in (
-                ("MD5Sum", "md5"), ("SHA1", "sha1"), ("SHA256", "sha256")):
+        best_hashname, best_hashattr = self.expected_hashes.items()[-1]
+        for hashname, hashattr in self.expected_hashes.items():
             digests = {
                 getattr(hashlib, hashattr)(content).hexdigest(): content
                 for content in self.contents}
@@ -470,14 +473,14 @@ class ByHashHasContents(Matcher):
                 return mismatch
             for digest, content in digests.items():
                 full_path = os.path.join(path, digest)
-                if hashname == "SHA256":
+                if hashname == best_hashname:
                     mismatch = FileContains(content).match(full_path)
                     if mismatch is not None:
                         return mismatch
                 else:
                     best_path = os.path.join(
-                        by_hash_path, "SHA256",
-                        hashlib.sha256(content).hexdigest())
+                        by_hash_path, best_hashname,
+                        getattr(hashlib, best_hashattr)(content).hexdigest())
                     mismatch = SamePath(best_path).match(full_path)
                     if mismatch is not None:
                         return mismatch
@@ -545,12 +548,6 @@ class TestByHash(TestCaseWithFactory):
         with open_for_writing(
                 os.path.join(by_hash_path, "SHA256", sha256_digest), "w") as f:
             f.write(content)
-        for hashname, hashattr in (("MD5Sum", "md5"), ("SHA1", "sha1")):
-            digest = getattr(hashlib, hashattr)(content).hexdigest()
-            os.makedirs(os.path.join(by_hash_path, hashname))
-            os.symlink(
-                os.path.join(os.pardir, "SHA256", sha256_digest),
-                os.path.join(by_hash_path, hashname, digest))
         by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         self.assertThat(by_hash_path, ByHashHasContents([content]))
         by_hash.add("Sources", lfa)
@@ -570,8 +567,8 @@ class TestByHash(TestCaseWithFactory):
         self.assertFalse(by_hash.known("abc", "SHA1", sha1))
         self.assertFalse(by_hash.known("abc", "SHA256", sha256))
         by_hash.add("abc", lfa, copy_from_path="abc")
-        self.assertTrue(by_hash.known("abc", "MD5Sum", md5))
-        self.assertTrue(by_hash.known("abc", "SHA1", sha1))
+        self.assertFalse(by_hash.known("abc", "MD5Sum", md5))
+        self.assertFalse(by_hash.known("abc", "SHA1", sha1))
         self.assertTrue(by_hash.known("abc", "SHA256", sha256))
         self.assertFalse(by_hash.known("def", "SHA256", sha256))
         by_hash.add("def", lfa, copy_from_path="abc")
@@ -587,7 +584,7 @@ class TestByHash(TestCaseWithFactory):
         by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         by_hash.add("Sources", lfa, copy_from_path=sources_path)
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
-        with open_for_writing(os.path.join(by_hash_path, "MD5Sum/0"), "w"):
+        with open_for_writing(os.path.join(by_hash_path, "SHA256/0"), "w"):
             pass
         self.assertThat(by_hash_path, Not(ByHashHasContents([content])))
         by_hash.prune()
@@ -597,11 +594,34 @@ class TestByHash(TestCaseWithFactory):
         root = self.makeTemporaryDirectory()
         by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
         by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
-        with open_for_writing(os.path.join(by_hash_path, "MD5Sum/0"), "w"):
+        with open_for_writing(os.path.join(by_hash_path, "SHA256/0"), "w"):
             pass
         self.assertThat(by_hash_path, PathExists())
         by_hash.prune()
         self.assertThat(by_hash_path, Not(PathExists()))
+
+    def test_prune_old_hashes(self):
+        # The initial implementation of by-hash included MD5Sum and SHA1,
+        # but we since decided that this was unnecessary cruft.  If they
+        # exist on disk, they are pruned in their entirety.
+        root = self.makeTemporaryDirectory()
+        content = "abc\n"
+        lfa = self.factory.makeLibraryFileAlias(content=content)
+        by_hash_path = os.path.join(root, "dists/foo/main/source/by-hash")
+        sha256_digest = hashlib.sha256(content).hexdigest()
+        with open_for_writing(
+                os.path.join(by_hash_path, "SHA256", sha256_digest), "w") as f:
+            f.write(content)
+        for hashname, hashattr in (("MD5Sum", "md5"), ("SHA1", "sha1")):
+            digest = getattr(hashlib, hashattr)(content).hexdigest()
+            os.makedirs(os.path.join(by_hash_path, hashname))
+            os.symlink(
+                os.path.join(os.pardir, "SHA256", sha256_digest),
+                os.path.join(by_hash_path, hashname, digest))
+        by_hash = ByHash(root, "dists/foo/main/source", DevNullLogger())
+        by_hash.add("Sources", lfa)
+        by_hash.prune()
+        self.assertThat(by_hash_path, ByHashHasContents([content]))
 
 
 class TestByHashes(TestCaseWithFactory):
@@ -645,8 +665,8 @@ class TestByHashes(TestCaseWithFactory):
         self.assertFalse(by_hashes.known(sources_path, "SHA1", sha1))
         self.assertFalse(by_hashes.known(sources_path, "SHA256", sha256))
         by_hashes.add(sources_path, lfa, copy_from_path=sources_path)
-        self.assertTrue(by_hashes.known(sources_path, "MD5Sum", md5))
-        self.assertTrue(by_hashes.known(sources_path, "SHA1", sha1))
+        self.assertFalse(by_hashes.known(sources_path, "MD5Sum", md5))
+        self.assertFalse(by_hashes.known(sources_path, "SHA1", sha1))
         self.assertTrue(by_hashes.known(sources_path, "SHA256", sha256))
 
     def test_prune(self):
@@ -666,8 +686,8 @@ class TestByHashes(TestCaseWithFactory):
                     content=content, db_only=True)
                 by_hashes.add(path, lfa, copy_from_path=path)
         strays = [
-            "dists/foo/main/source/by-hash/MD5Sum/0",
-            "dists/foo/main/binary-amd64/by-hash/MD5Sum/0",
+            "dists/foo/main/source/by-hash/SHA256/0",
+            "dists/foo/main/binary-amd64/by-hash/SHA256/0",
             ]
         for stray in strays:
             with open_for_writing(os.path.join(root, stray), "w"):
