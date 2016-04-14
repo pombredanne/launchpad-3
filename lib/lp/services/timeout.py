@@ -167,19 +167,15 @@ class CleanableConnectionPoolMixin:
         self._all_connections_mutex = Lock()
 
     def _new_conn(self):
-        self._all_connections_mutex.acquire()
-        try:
+        with self._all_connections_mutex:
             if self._all_connections is None:
                 raise ClosedPoolError(self, "Pool is closed.")
             conn = super(CleanableConnectionPoolMixin, self)._new_conn()
             self._all_connections.append(conn)
             return conn
-        finally:
-            self._all_connections_mutex.release()
 
     def close(self):
-        self._all_connections_mutex.acquire()
-        try:
+        with self._all_connections_mutex:
             if self._all_connections is None:
                 return
             for conn in self._all_connections:
@@ -189,8 +185,6 @@ class CleanableConnectionPoolMixin:
                     sock.close()
                     conn.sock = None
             self._all_connections = None
-        finally:
-            self._all_connections_mutex.release()
         super(CleanableConnectionPoolMixin, self).close()
 
 
