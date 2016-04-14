@@ -227,14 +227,16 @@ class CleanableHTTPAdapter(HTTPAdapter):
 
     # XXX cjwatson 2015-03-11: Reimplements HTTPAdapter.init_poolmanager;
     # check this when upgrading requests.
-    def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK):
+    def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK,
+                         **pool_kwargs):
         # save these values for pickling
         self._pool_connections = connections
         self._pool_maxsize = maxsize
         self._pool_block = block
 
         self.poolmanager = CleanablePoolManager(
-            num_pools=connections, maxsize=maxsize, block=block)
+            num_pools=connections, maxsize=maxsize, block=block, strict=True,
+            **pool_kwargs)
 
 
 class URLFetcher:
