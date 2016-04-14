@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSigningKey implementation."""
@@ -23,10 +23,7 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config import config
-from lp.services.gpg.interfaces import (
-    GPGKeyAlgorithm,
-    IGPGHandler,
-    )
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.propertycache import get_property_cache
 
 
@@ -133,8 +130,7 @@ class ArchiveSigningKey:
 
         release_file_content = open(release_file_path).read()
         signature = gpghandler.signContent(
-            release_file_content, secret_key.fingerprint,
-            mode=gpgme.SIG_MODE_DETACH)
+            release_file_content, secret_key, mode=gpgme.SIG_MODE_DETACH)
 
         release_signature_file = open(
             os.path.join(suite_path, 'Release.gpg'), 'w')
@@ -142,8 +138,7 @@ class ArchiveSigningKey:
         release_signature_file.close()
 
         inline_release = gpghandler.signContent(
-            release_file_content, secret_key.fingerprint,
-            mode=gpgme.SIG_MODE_CLEAR)
+            release_file_content, secret_key, mode=gpgme.SIG_MODE_CLEAR)
 
         inline_release_file = open(
             os.path.join(suite_path, 'InRelease'), 'w')

@@ -392,10 +392,10 @@ _DEFAULT = object()
 
 
 class GPGSigningContext:
-    """A helper object to hold the fingerprint, password and mode."""
+    """A helper object to hold the key, password and mode."""
 
-    def __init__(self, fingerprint, password='', mode=None):
-        self.fingerprint = fingerprint
+    def __init__(self, key, password='', mode=None):
+        self.key = key
         self.password = password
         self.mode = mode
 
@@ -2158,8 +2158,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if signing_context is not None:
             gpghandler = getUtility(IGPGHandler)
             body = gpghandler.signContent(
-                body, signing_context.fingerprint,
-                signing_context.password, signing_context.mode)
+                body, signing_context.key, signing_context.password,
+                signing_context.mode)
             assert body is not None
         if attachment_contents is None:
             mail.set_payload(body)
@@ -2888,7 +2888,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return person
 
     def makeArchiveFile(self, archive=None, container=None, path=None,
-                        library_file=None):
+                        library_file=None, scheduled_deletion_date=None):
         if archive is None:
             archive = self.makeArchive()
         if container is None:
@@ -2897,9 +2897,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             path = self.getUniqueUnicode()
         if library_file is None:
             library_file = self.makeLibraryFileAlias()
-        return getUtility(IArchiveFileSet).new(
+        archive_file = getUtility(IArchiveFileSet).new(
             archive=archive, container=container, path=path,
             library_file=library_file)
+        if scheduled_deletion_date is not None:
+            removeSecurityProxy(archive_file).scheduled_deletion_date = (
+                scheduled_deletion_date)
+        return archive_file
 
     def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,

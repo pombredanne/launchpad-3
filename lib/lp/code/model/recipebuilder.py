@@ -64,7 +64,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
-            None)
+            None).name
         args['archives'] = get_sources_list_for_building(
             self.build, distroarchseries, None,
             tools_source=config.builddmaster.bzr_builder_sources_list,
@@ -83,8 +83,8 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                  self.build.distroseries.displayname))
-        return (
-            "sourcepackagerecipe", das, {}, self._extraBuildArgs(das, logger))
+        args = self._extraBuildArgs(das, logger=logger)
+        return ("sourcepackagerecipe", das, {}, args)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

@@ -100,11 +100,12 @@ class TestTranslationTemplatesBuildBehaviour(
     def test_composeBuildRequest(self):
         behaviour = self.makeBehaviour()
         switch_dbuser(config.builddmaster.dbuser)
+        build_request = yield behaviour.composeBuildRequest(None)
         self.assertEqual(
             ('translation-templates', behaviour._getDistroArchSeries(), {},
              {'arch_tag': behaviour._getDistroArchSeries().architecturetag,
               'branch_url': behaviour.build.branch.composePublicURL()}),
-             behaviour.composeBuildRequest(None))
+            build_request)
 
     def test_getDistroArchSeries(self):
         # _getDistroArchSeries produces the nominated arch-indep

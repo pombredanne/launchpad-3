@@ -7,6 +7,7 @@ __all__ = [
     'PublishDistro',
     ]
 
+from itertools import ifilter
 from optparse import OptionValueError
 
 from zope.component import getUtility
@@ -70,6 +71,26 @@ class PublishDistro(PublisherScript):
             "--careful-release", action="store_true", dest="careful_release",
             default=False,
             help="Make the Release file generation process careful.")
+
+        self.parser.add_option(
+            "--disable-publishing", action="store_false",
+            dest="enable_publishing", default=True,
+            help="Disable the package publishing process.")
+
+        self.parser.add_option(
+            "--disable-domination", action="store_false",
+            dest="enable_domination", default=True,
+            help="Disable the domination process.")
+
+        self.parser.add_option(
+            "--disable-apt", action="store_false",
+            dest="enable_apt", default=True,
+            help="Disable index generation (e.g. apt-ftparchive).")
+
+        self.parser.add_option(
+            "--disable-release", action="store_false",
+            dest="enable_release", default=True,
+            help="Disable the Release file generation process.")
 
         self.parser.add_option(
             "--include-non-pending", action="store_true",
@@ -231,9 +252,9 @@ class PublishDistro(PublisherScript):
         if self.options.partner:
             return [distribution.getArchiveByComponent('partner')]
         elif self.options.ppa:
-            return filter(is_ppa_public, self.getPPAs(distribution))
+            return ifilter(is_ppa_public, self.getPPAs(distribution))
         elif self.options.private_ppa:
-            return filter(is_ppa_private, self.getPPAs(distribution))
+            return ifilter(is_ppa_private, self.getPPAs(distribution))
         elif self.options.copy_archive:
             return self.getCopyArchives(distribution)
         else:
@@ -270,29 +291,37 @@ class PublishDistro(PublisherScript):
         Commits transactions along the way.
         """
         publisher.setupArchiveDirs()
-        publisher.A_publish(self.isCareful(self.options.careful_publishing))
-        self.txn.commit()
+        if self.options.enable_publishing:
+            publisher.A_publish(
+                self.isCareful(self.options.careful_publishing))
+            self.txn.commit()
 
-        # Flag dirty pockets for any outstanding deletions.
-        publisher.A2_markPocketsWithDeletionsDirty()
-        publisher.B_dominate(self.isCareful(self.options.careful_domination))
-        self.txn.commit()
+        if self.options.enable_domination:
+            # Flag dirty pockets for any outstanding deletions.
+            publisher.A2_markPocketsWithDeletionsDirty()
+            publisher.B_dominate(
+                self.isCareful(self.options.careful_domination))
+            self.txn.commit()
 
-        # The primary and copy archives use apt-ftparchive to
-        # generate the indexes, everything else uses the newer
-        # internal LP code.
-        careful_indexing = self.isCareful(self.options.careful_apt)
-        if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
-            publisher.C_doFTPArchive(careful_indexing)
-        else:
-            publisher.C_writeIndexes(careful_indexing)
-        self.txn.commit()
+        if self.options.enable_apt:
+            # The primary and copy archives use apt-ftparchive to
+            # generate the indexes, everything else uses the newer
+            # internal LP code.
+            careful_indexing = self.isCareful(self.options.careful_apt)
+            if archive.purpose in (
+                    ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
+                publisher.C_doFTPArchive(careful_indexing)
+            else:
+                publisher.C_writeIndexes(careful_indexing)
+            self.txn.commit()
 
-        publisher.D_writeReleaseFiles(self.isCareful(
-            self.options.careful_apt or self.options.careful_release))
-        # The caller will commit this last step.
+        if self.options.enable_release:
+            publisher.D_writeReleaseFiles(self.isCareful(
+                self.options.careful_apt or self.options.careful_release))
+            # The caller will commit this last step.
 
-        publisher.createSeriesAliases()
+        if self.options.enable_apt:
+            publisher.createSeriesAliases()
 
     def main(self):
         """See `LaunchpadScript`."""
@@ -302,12 +331,13 @@ class PublishDistro(PublisherScript):
         for distribution in self.findDistros():
             allowed_suites = self.findAllowedSuites(distribution)
             for archive in self.getTargetArchives(distribution):
-                publisher = self.getPublisher(
-                    distribution, archive, allowed_suites)
-
                 if archive.status == ArchiveStatus.DELETING:
+                    publisher = self.getPublisher(
+                        distribution, archive, allowed_suites)
                     work_done = self.deleteArchive(archive, publisher)
                 elif archive.can_be_published:
+                    publisher = self.getPublisher(
+                        distribution, archive, allowed_suites)
                     for suite in self.options.dirty_suites:
                         distroseries, pocket = self.findSuite(
                             distribution, suite)

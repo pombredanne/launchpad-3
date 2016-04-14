@@ -244,7 +244,7 @@ class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
 
     def create(self, name, size, file, contentType, expires=None,
-               debugID=None, restricted=False):
+               debugID=None, restricted=False, allow_zero_length=False):
         """See `ILibraryFileAliasSet`"""
         if restricted:
             client = getUtility(IRestrictedLibrarianClient)
@@ -252,7 +252,9 @@ class LibraryFileAliasSet(object):
             client = getUtility(ILibrarianClient)
         if '/' in name:
             raise InvalidFilename("Filename cannot contain slashes.")
-        fid = client.addFile(name, size, file, contentType, expires, debugID)
+        fid = client.addFile(
+            name, size, file, contentType, expires=expires, debugID=debugID,
+            allow_zero_length=allow_zero_length)
         lfa = IMasterStore(LibraryFileAlias).find(
             LibraryFileAlias, LibraryFileAlias.id == fid).one()
         assert lfa is not None, "client.addFile didn't!"

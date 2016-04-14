@@ -70,10 +70,7 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.person import (
-    Person,
-    PersonSettings,
-    )
+from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamMembership
 from lp.services.config import config
@@ -1438,29 +1435,6 @@ class LiveFSFilePruner(BulkPruner):
         """
 
 
-class PersonSettingsENFPopulator(BulkPruner):
-    """Populates PersonSettings.expanded_notification_footers."""
-
-    target_table_class = PersonSettings
-    ids_to_prune_query = """
-        SELECT person
-        FROM PersonSettings
-        WHERE expanded_notification_footers IS NULL
-        """
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        result = self.store.execute("""
-            UPDATE PersonSettings
-            SET expanded_notification_footers = FALSE
-            WHERE person IN (
-                SELECT * FROM
-                cursor_fetch('%s', %d) AS f(person integer))
-            """ % (self.cursor_name, chunk_size))
-        self._num_removed = result.rowcount
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1745,7 +1719,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
-        PersonSettingsENFPopulator,
         POTranslationPruner,
         PreviewDiffPruner,
         ProductVCSPopulator,

@@ -14,7 +14,9 @@ __all__ = [
 import os.path
 
 import pytz
+from storm.databases.postgres import Returning
 from storm.locals import (
+    And,
     DateTime,
     Int,
     Reference,
@@ -31,6 +33,7 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.stormexpr import BulkUpdate
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -89,17 +92,22 @@ class ArchiveFileSet:
                     content_type):
         library_file = getUtility(ILibraryFileAliasSet).create(
             os.path.basename(path), size, fileobj, content_type,
-            restricted=archive.private)
+            restricted=archive.private, allow_zero_length=True)
         return cls.new(archive, container, path, library_file)
 
     @staticmethod
-    def getByArchive(archive, container=None, eager_load=False):
+    def getByArchive(archive, container=None, path=None, only_condemned=False,
+                     eager_load=False):
         """See `IArchiveFileSet`."""
         clauses = [ArchiveFile.archive == archive]
         # XXX cjwatson 2016-03-15: We'll need some more sophisticated way to
         # match containers once we're using them for custom uploads.
         if container is not None:
             clauses.append(ArchiveFile.container == container)
+        if path is not None:
+            clauses.append(ArchiveFile.path == path)
+        if only_condemned:
+            clauses.append(ArchiveFile.scheduled_deletion_date != None)
         archive_files = IStore(ArchiveFile).find(ArchiveFile, *clauses)
 
         def eager_load(rows):
@@ -114,11 +122,41 @@ class ArchiveFileSet:
     @staticmethod
     def scheduleDeletion(archive_files, stay_of_execution):
         """See `IArchiveFileSet`."""
-        archive_file_ids = set(
-            archive_file.id for archive_file in archive_files)
-        rows = IMasterStore(ArchiveFile).find(
-            ArchiveFile, ArchiveFile.id.is_in(archive_file_ids))
-        rows.set(scheduled_deletion_date=UTC_NOW + stay_of_execution)
+        clauses = [
+            ArchiveFile.id.is_in(
+                set(archive_file.id for archive_file in archive_files)),
+            ArchiveFile.library_file == LibraryFileAlias.id,
+            LibraryFileAlias.content == LibraryFileContent.id,
+            ]
+        new_date = UTC_NOW + stay_of_execution
+        return_columns = [
+            ArchiveFile.container, ArchiveFile.path, LibraryFileContent.sha256]
+        return list(IMasterStore(ArchiveFile).execute(Returning(
+            BulkUpdate(
+                {ArchiveFile.scheduled_deletion_date: new_date},
+                table=ArchiveFile,
+                values=[LibraryFileAlias, LibraryFileContent],
+                where=And(*clauses)),
+            columns=return_columns)))
+
+    @staticmethod
+    def unscheduleDeletion(archive_files):
+        """See `IArchiveFileSet`."""
+        clauses = [
+            ArchiveFile.id.is_in(
+                set(archive_file.id for archive_file in archive_files)),
+            ArchiveFile.library_file == LibraryFileAlias.id,
+            LibraryFileAlias.content == LibraryFileContent.id,
+            ]
+        return_columns = [
+            ArchiveFile.container, ArchiveFile.path, LibraryFileContent.sha256]
+        return list(IMasterStore(ArchiveFile).execute(Returning(
+            BulkUpdate(
+                {ArchiveFile.scheduled_deletion_date: None},
+                table=ArchiveFile,
+                values=[LibraryFileAlias, LibraryFileContent],
+                where=And(*clauses)),
+            columns=return_columns)))
 
     @staticmethod
     def getContainersToReap(archive, container_prefix=None):
@@ -134,10 +172,25 @@ class ArchiveFileSet:
     @staticmethod
     def reap(archive, container=None):
         """See `IArchiveFileSet`."""
+        # XXX cjwatson 2016-03-30 bug=322972: Requires manual SQL due to
+        # lack of support for DELETE FROM ... USING ... in Storm.
         clauses = [
-            ArchiveFile.archive == archive,
-            ArchiveFile.scheduled_deletion_date < UTC_NOW,
+            "ArchiveFile.archive = ?",
+            "ArchiveFile.scheduled_deletion_date < "
+                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'",
+            "ArchiveFile.library_file = LibraryFileAlias.id",
+            "LibraryFileAlias.content = LibraryFileContent.id",
             ]
+        values = [archive.id]
         if container is not None:
-            clauses.append(ArchiveFile.container == container)
-        IMasterStore(ArchiveFile).find(ArchiveFile, *clauses).remove()
+            clauses.append("ArchiveFile.container = ?")
+            values.append(container)
+        return list(IMasterStore(ArchiveFile).execute("""
+            DELETE FROM ArchiveFile
+            USING LibraryFileAlias, LibraryFileContent
+            WHERE """ + " AND ".join(clauses) + """
+            RETURNING
+                ArchiveFile.container,
+                ArchiveFile.path,
+                LibraryFileContent.sha256
+            """, values))

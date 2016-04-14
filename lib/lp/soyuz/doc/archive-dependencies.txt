@@ -10,10 +10,9 @@ sources in the given IBuildQueue context.
 We use `SoyuzTestPublisher` to generate a source publications and
 build candidates for ubuntu/hoary.
 
-    >>> from lp.registry.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> from lp.testing import login
 
     >>> login('foo.bar@canonical.com')
@@ -24,40 +23,22 @@ build candidates for ubuntu/hoary.
     >>> hoary = ubuntu.getSeries('hoary')
 
     >>> test_publisher.addFakeChroots(hoary)
-    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> _ = test_publisher.setUpDefaultDistroSeries(hoary)
+
+    >>> ubuntu_components = [
+    ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
+    >>> for component_name in ubuntu_components:
+    ...     component = getUtility(IComponentSet)[component_name]
+    ...     if component not in hoary.components:
+    ...         _ = factory.makeComponentSelection(hoary, component)
 
 
 == Static dependency maps ==
 
-`component_dependencies` contains a static map of the default ubuntu
-component dependencies (known as the 'ogre-model').
-
-    >>> from lp.soyuz.adapters.archivedependencies import (
-    ...     component_dependencies)
-
-    >>> def show_component_deps():
-    ...     print "Component  |   Dependencies"
-    ...     print "-----------+---------------"
-    ...     for key, value in sorted(component_dependencies.items()):
-    ...         print "%10s |" % (key,),
-    ...         for dep in value:
-    ...             print dep,
-    ...         print
-
-    >>> show_component_deps()
-    Component  |   Dependencies
-    -----------+---------------
-          main | main
-    multiverse | main restricted universe multiverse
-       partner | partner
-    restricted | main restricted
-      universe | main universe
-
 `pocket_dependencies` contains a static map of the default ubuntu
 pocket dependencies.
 
-    >>> from lp.soyuz.adapters.archivedependencies import (
-    ...     pocket_dependencies)
+    >>> from lp.soyuz.adapters.archivedependencies import pocket_dependencies
 
     >>> def show_pocket_deps():
     ...     print "Pocket    |   Dependencies"
@@ -90,10 +71,6 @@ published in 'universe' is allowed to depend on binaries published in
 A proper name for this "model" would be 'cross-component-dependency'.
 
     >>> from lp.services.database.sqlbase import flush_database_caches
-    >>> from lp.soyuz.interfaces.component import IComponentSet
-
-    >>> ubuntu_components = [
-    ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.pocket import (
@@ -101,10 +78,6 @@ A proper name for this "model" would be 'cross-component-dependency'.
     >>> from lp.soyuz.adapters.archivedependencies import (
     ...     get_components_for_context)
     >>> from lp.soyuz.enums import ArchivePurpose
-
-    >>> archive = factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-    >>> ogre_build = factory.makeBinaryPackageBuild(
-    ...     archive=archive, pocket=PackagePublishingPocket.RELEASE)
 
     >>> def testOgreComponents(build):
     ...     print " Component | Ogre-Model"
@@ -114,17 +87,51 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...         npub = removeSecurityProxy(build.current_source_publication)
     ...         npub.component = component
     ...         flush_database_caches()
-    ...         components_term = " ".join(
-    ...             get_components_for_context(
-    ...                 build.current_component, build.pocket))
+    ...         components_term = " ".join(get_components_for_context(
+    ...             build.current_component, build.distro_series,
+    ...             build.pocket))
     ...         print '%10s | %s' % (build.current_component.name,
     ...                              components_term)
 
+    >>> archive = factory.makeArchive(
+    ...     distribution=ubuntu, purpose=ArchivePurpose.PRIMARY)
+    >>> ogre_build = factory.makeBinaryPackageBuild(
+    ...     distroarchseries=hoary.architectures[0], archive=archive,
+    ...     pocket=PackagePublishingPocket.RELEASE)
     >>> testOgreComponents(ogre_build)
      Component | Ogre-Model
     -----------+---------------
           main | main
     restricted | main restricted
+      universe | main universe
+    multiverse | main restricted universe multiverse
+       partner | partner
+
+Series with strict_supported_component_dependencies=False additionally allow
+source packages in 'supported' components (main and restricted) to
+build-depend on binary packages in 'unsupported' components (universe and
+multiverse).
+
+    >>> from lp.buildmaster.interfaces.processor import IProcessorSet
+
+    >>> lax_distroseries = factory.makeDistroSeries(
+    ...     distribution=archive.distribution, name='lax')
+    >>> lax_distroseries.strict_supported_component_dependencies = False
+    >>> lax_distroarchseries = factory.makeDistroArchSeries(
+    ...     distroseries=lax_distroseries, architecturetag='i386',
+    ...     processor=getUtility(IProcessorSet).getByName('386'))
+    >>> test_publisher.addFakeChroots(lax_distroseries)
+    >>> for component_name in ubuntu_components:
+    ...     component = getUtility(IComponentSet)[component_name]
+    ...     _ = factory.makeComponentSelection(lax_distroseries, component)
+    >>> lax_ogre_build = factory.makeBinaryPackageBuild(
+    ...     distroarchseries=lax_distroarchseries, archive=archive,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> testOgreComponents(lax_ogre_build)
+     Component | Ogre-Model
+    -----------+---------------
+          main | main universe
+    restricted | main restricted universe multiverse
       universe | main universe
     multiverse | main restricted universe multiverse
        partner | partner
@@ -140,6 +147,7 @@ will behave as if it were published in the multiverse component,
 despite the component it is actually published in.
 
     >>> back_build = factory.makeBinaryPackageBuild(
+    ...     distroarchseries=hoary.architectures[0],
     ...     archive=archive, pocket=PackagePublishingPocket.BACKPORTS)
     >>> testOgreComponents(back_build)
      Component | Ogre-Model
@@ -182,8 +190,9 @@ the building 'sources_list' contents.
     Security
     Updates
 
-    >>> for component_name in component_dependencies[
-    ...     default_component_dependency_name]:
+    >>> for component_name in get_components_for_context(
+    ...         getUtility(IComponentSet)[default_component_dependency_name],
+    ...         hoary, pocket):
     ...     print component_name
     main
     restricted
@@ -215,8 +224,7 @@ considered when building the source candidate. That's because there is
 no binary published in Celso's PPA hoary/i386, so there is
 no need to request the builder to load its archive indexes.
 
-    >>> from lp.soyuz.enums import (
-    ...     PackagePublishingStatus)
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> cprov.archive.getAllPublishedBinaries(
     ...      distroarchseries=a_build.distro_arch_series,
@@ -277,6 +285,29 @@ But *populated* PPA dependencies *are* listed in the building 'sources_list'.
     deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
     deb http://archive.launchpad.dev/ubuntu hoary-updates
+        main restricted universe multiverse
+
+Dependencies for series with strict_supported_component_dependencies=False
+are reasonable too.  PPAs only have the 'main' component.
+
+    >>> lax_pub_source = test_publisher.getPubSource(
+    ...     version='1.2', distroseries=lax_distroseries,
+    ...     archive=cprov.archive)
+    >>> [lax_build] = lax_pub_source.createMissingBuilds()
+    >>> _ = test_publisher.getPubBinaries(
+    ...     binaryname='dep-bin', distroseries=lax_distroseries,
+    ...     archive=cprov.archive, status=PackagePublishingStatus.PUBLISHED)
+    >>> _ = test_publisher.getPubBinaries(
+    ...     binaryname='dep-bin', distroseries=lax_distroseries,
+    ...     archive=mark.archive, status=PackagePublishingStatus.PUBLISHED)
+    >>> print_building_sources_list(lax_build)
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu lax main
+    deb http://ppa.launchpad.dev/mark/ppa/ubuntu lax main
+    deb http://archive.launchpad.dev/ubuntu lax
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu lax-security
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu lax-updates
         main restricted universe multiverse
 
     >>> cprov.archive.removeArchiveDependency(mark.archive)
@@ -345,7 +376,7 @@ the primary archive.
     ...     get_primary_current_component)
 
     >>> print get_primary_current_component(a_build.archive,
-    ...     a_build.distro_series, a_build.source_package_release.name)
+    ...     a_build.distro_series, a_build.source_package_release.name).name
     universe
 
     >>> print_building_sources_list(a_build)
@@ -354,6 +385,21 @@ the primary archive.
         main universe
     deb http://archive.launchpad.dev/ubuntu hoary-security
         main universe
+
+    >>> _ = test_publisher.getPubSource(
+    ...     sourcename='with-ancestry', version='1.0',
+    ...     archive=ubuntu.main_archive)
+    >>> [build_with_ancestry] = test_publisher.getPubSource(
+    ...     sourcename='with-ancestry', version='1.1',
+    ...     archive=cprov.archive).createMissingBuilds()
+    >>> print get_primary_current_component(
+    ...     build_with_ancestry.archive, build_with_ancestry.distro_series,
+    ...     build_with_ancestry.source_package_release.name).name
+    main
+    >>> print_building_sources_list(build_with_ancestry)
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary-security main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -571,6 +617,10 @@ the builders.
     ...     name='depseries', distribution=depdistro)
     >>> deparchseries = factory.makeDistroArchSeries(
     ...     distroseries = depseries, architecturetag = 'i386')
+    >>> test_publisher.addFakeChroots(depseries)
+    >>> for component_name in ubuntu_components:
+    ...     component = getUtility(IComponentSet)[component_name]
+    ...     _ = factory.makeComponentSelection(depseries, component)
     >>> universe_component = getUtility(IComponentSet)['universe']
     >>> dsp = factory.makeDistroSeriesParent(
     ...     derived_series=hoary, parent_series=depseries,

@@ -67,7 +67,7 @@ class GPGKeyServiceFixture(Fixture):
         if self._config_fixture is not None:
             config_section = service_config = dedent("""\
                 [gpgservice]
-                api_endpoint: %s
+                api_endpoint: http://%s/
                 """ % self.bind_address)
             self._config_fixture.add_section(config_section)
             config.reloadConfig()

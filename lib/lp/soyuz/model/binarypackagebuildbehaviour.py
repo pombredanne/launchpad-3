@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Builder behaviour for binary package builds."""
@@ -153,7 +153,8 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
                 get_primary_current_component(build.archive,
-                    build.distro_series, build.source_package_release.name))
+                    build.distro_series,
+                    build.source_package_release.name)).name
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (

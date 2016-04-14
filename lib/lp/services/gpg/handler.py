@@ -26,6 +26,7 @@ import gpgme
 from gpgservice_client import GPGClient
 from lazr.restful.utils import get_current_browser_request
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.validators.email import valid_email
 from lp.services.config import config
@@ -320,7 +321,7 @@ class GPGHandler:
 
         return key
 
-    def encryptContent(self, content, fingerprint):
+    def encryptContent(self, content, key):
         """See IGPGHandler."""
         if isinstance(content, unicode):
             raise TypeError('Content cannot be Unicode.')
@@ -333,22 +334,21 @@ class GPGHandler:
         plain = StringIO(content)
         cipher = StringIO()
 
-        # retrive gpgme key object
-        try:
-            key = ctx.get_key(fingerprint.encode('ascii'), 0)
-        except gpgme.GpgmeError:
+        if key.key is None:
             return None
 
         if not key.can_encrypt:
             raise ValueError('key %s can not be used for encryption'
-                             % fingerprint)
+                             % key.fingerprint)
 
         # encrypt content
-        ctx.encrypt([key], gpgme.ENCRYPT_ALWAYS_TRUST, plain, cipher)
+        ctx.encrypt(
+            [removeSecurityProxy(key.key)], gpgme.ENCRYPT_ALWAYS_TRUST,
+            plain, cipher)
 
         return cipher.getvalue()
 
-    def signContent(self, content, key_fingerprint, password='', mode=None):
+    def signContent(self, content, key, password='', mode=None):
         """See IGPGHandler."""
         if not isinstance(content, str):
             raise TypeError('Content should be a string.')
@@ -361,8 +361,7 @@ class GPGHandler:
         context = gpgme.Context()
         context.armor = True
 
-        key = context.get_key(key_fingerprint.encode('ascii'), True)
-        context.signers = [key]
+        context.signers = [removeSecurityProxy(key.key)]
 
         # Set up containers.
         plaintext = StringIO(content)
@@ -561,6 +560,7 @@ class PymeKey:
 
     def _buildFromGpgmeKey(self, key):
         self.exists_in_local_keyring = True
+        self.key = key
         subkey = key.subkeys[0]
         self.fingerprint = subkey.fpr
         self.revoked = subkey.revoked
@@ -640,7 +640,7 @@ class LPGPGClient(GPGClient):
     """See IGPGClient."""
 
     def get_endpoint(self):
-        return "http://{}".format(config.gpgservice.api_endpoint)
+        return config.gpgservice.api_endpoint
 
     def get_timeout(self):
         return 30.0

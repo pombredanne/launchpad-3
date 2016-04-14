@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the SignedMessage class."""
@@ -62,7 +62,7 @@ class TestSignedMessage(TestCaseWithFactory):
         # Create a signed message for the sender specified with the test
         # secret key.
         key = import_secret_test_key()
-        signing_context = GPGSigningContext(key.fingerprint, password='test')
+        signing_context = GPGSigningContext(key, password='test')
         if body is None:
             body = dedent("""\
                 This is a multi-line body.
@@ -136,7 +136,7 @@ class TestSignedMessage(TestCaseWithFactory):
         gpghandler = getUtility(IGPGHandler)
         signature = gpghandler.signContent(
             canonicalise_line_endings(body_text.as_string()),
-            key.fingerprint, 'test', gpgme.SIG_MODE_DETACH)
+            key, 'test', gpgme.SIG_MODE_DETACH)
 
         attachment = Message()
         attachment.set_payload(signature)
