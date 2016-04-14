@@ -15,9 +15,12 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.expr import LeftJoin
+from storm.expr import (
+    And,
+    LeftJoin,
+    SQL,
+    )
 from storm.info import ClassAlias
-from storm.locals import SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
@@ -146,13 +149,13 @@ class PillarNameSet:
         else:
             return getUtility(IDistributionSet).get(distribution)
 
-    def build_search_query(self, text, extra_columns=()):
+    def build_search_query(self, user, text):
         """Query parameters shared by search() and count_search_matches().
 
         :returns: Storm ResultSet object
         """
         # These classes are imported in this method to prevent an import loop.
-        from lp.registry.model.product import Product
+        from lp.registry.model.product import Product, ProductSet
         from lp.registry.model.projectgroup import ProjectGroup
         from lp.registry.model.distribution import Distribution
         OtherPillarName = ClassAlias(PillarName)
@@ -181,27 +184,26 @@ class PillarNameSet:
             ''' % sqlvalues(text=ensure_unicode(text)))
         columns = [
             PillarName, OtherPillarName, Product, ProjectGroup, Distribution]
-        for column in extra_columns:
-            columns.append(column)
         return IStore(PillarName).using(*origin).find(
-            tuple(columns), conditions)
+            tuple(columns),
+            And(conditions, ProductSet.getProductPrivacyFilter(user)))
 
-    def count_search_matches(self, text):
-        result = self.build_search_query(text)
+    def count_search_matches(self, user, text):
+        result = self.build_search_query(user, text)
         return result.count()
 
-    def search(self, text, limit):
+    def search(self, user, text, limit):
         """See `IPillarSet`."""
         # Avoid circular import.
-        from lp.registry.model.product import ProductWithLicenses
+        from lp.registry.model.product import get_precached_products
+
         if limit is None:
             limit = config.launchpad.default_batch_size
 
         # Pull out the licences as a subselect which is converted
         # into a PostgreSQL array so that multiple licences per product
         # can be retrieved in a single row for each product.
-        extra_column = ProductWithLicenses.composeLicensesColumn()
-        result = self.build_search_query(text, [extra_column])
+        result = self.build_search_query(user, text)
 
         # If the search text matches the name or title of the
         # Product, Project, or Distribution exactly, then this
@@ -230,13 +232,15 @@ class PillarNameSet:
                 % (limit, longest_expected),
                 stacklevel=2)
         pillars = []
-        # Prefill pillar.product.licenses.
-        for pillar_name, other, product, projectgroup, distro, licenses in (
+        products = []
+        for pillar_name, other, product, projectgroup, distro in (
             result[:limit]):
             pillar = pillar_name.pillar
             if IProduct.providedBy(pillar):
-                pillar = ProductWithLicenses(pillar, licenses)
+                products.append(pillar)
             pillars.append(pillar)
+        # Prefill pillar.product.licenses.
+        get_precached_products(products, need_licences=True)
         return pillars
 
     def add_featured_project(self, project):

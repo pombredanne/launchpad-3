@@ -136,7 +136,7 @@ class ITranslationGroup(IHasOwner):
             ordered by language name in English.
         """
 
-    def fetchProjectsForDisplay():
+    def fetchProjectsForDisplay(user):
         """Fetch `Product`s using this group, for display purposes.
 
         Prefetches display-related properties.

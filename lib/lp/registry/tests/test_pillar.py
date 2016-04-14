@@ -5,6 +5,7 @@
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import (
     IPillarNameSet,
     IPillarPerson,
@@ -36,7 +37,9 @@ class TestPillarNameSet(TestCaseWithFactory):
         launchzap.setAliases(['lz'])
         pillar_set = getUtility(IPillarNameSet)
         result_names = [
-            pillar.name for pillar in pillar_set.search('lz', limit=5)]
+            pillar.name for pillar in
+            pillar_set.search(
+                getUtility(IPersonSet).getByName('mark'), 'lz', limit=5)]
         self.assertEquals(result_names, [u'launchzap', u'lz-bar', u'lz-foo'])
 
 
