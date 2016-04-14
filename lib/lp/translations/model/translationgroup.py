@@ -180,17 +180,20 @@ class TranslationGroup(SQLBase):
         mapper = lambda row: row[slice(0, 3)]
         return DecoratedResultSet(translator_data, mapper)
 
-    def fetchProjectsForDisplay(self):
+    def fetchProjectsForDisplay(self, user):
         """See `ITranslationGroup`."""
         # Avoid circular imports.
         from lp.registry.model.product import (
             get_precached_products,
             Product,
+            ProductSet,
             )
         products = list(IStore(Product).find(
             Product,
             Product.translationgroupID == self.id,
-            Product.active == True).order_by(Product.display_name))
+            Product.active == True,
+            ProductSet.getProductPrivacyFilter(user),
+            ).order_by(Product.display_name))
         get_precached_products(products, need_licences=True)
         icons = bulk.load_related(LibraryFileAlias, products, ['iconID'])
         bulk.load_related(LibraryFileContent, icons, ['contentID'])
