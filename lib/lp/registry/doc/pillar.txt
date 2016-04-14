@@ -183,17 +183,24 @@ We can also use PillarNameSet to do a search across some of our pillars.
 Right now this search is done across Products, ProjectGroups and
 Distributions.
 
-    >>> for row in pillar_set.search('mozilla', limit=3):
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
     ProjectGroup: The Mozilla Project (mozilla)
     Product: Mozilla Firefox (firefox)
     Product: Mozilla Thunderbird (thunderbird)
 
-    >>> for row in pillar_set.search('ubuntu', limit=5):
+    >>> from lp.app.enums import InformationType
+    >>> factory.makeProduct(
+    ...     name='ubuntu-sekrit', information_type=InformationType.PROPRIETARY)
+    <Product ...>
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'ubuntu', limit=6):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
     Distribution: Ubuntu (ubuntu)
+    Product: Ubuntu-sekrit (ubuntu-sekrit)
     Distribution: ubuntutest (ubuntutest)
     Product: Evolution (evolution)
     Product: Tomcat (tomcat)
@@ -201,22 +208,28 @@ Distributions.
 
 We can search by any of the pillar's aliases too.
 
-    >>> for row in pillar_set.search('iceweasel', limit=5):
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'iceweasel', limit=5):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
     Product: Mozilla Firefox (firefox)
 
-Note that inactive products and projects won't be included in the results.
+Note that inaccessible private or inactive products and projects won't
+be included in the results.
 
     >>> pillar_set['firefox'].active = False
-    >>> for row in pillar_set.search('mozilla', limit=3):
+    >>> pillar_set['applets'].active = False
+    >>> login('test@canonical.com')
+
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
     ProjectGroup: The Mozilla Project (mozilla)
     Product: Mozilla Thunderbird (thunderbird)
 
-    >>> pillar_set['applets'].active = False
-    >>> for row in pillar_set.search('ubuntu', limit=5):
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'ubuntu', limit=6):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
     Distribution: Ubuntu (ubuntu)
@@ -224,6 +237,8 @@ Note that inactive products and projects won't be included in the results.
     Product: Evolution (evolution)
     Product: Tomcat (tomcat)
     Distribution: GuadaLinex (guadalinex)
+
+    >>> login('mark@example.com')
 
 
 == PillarName objects ==
