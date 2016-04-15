@@ -2108,13 +2108,15 @@ Each bug has a collection of activities that have taken place with it.
 
     >>> from lazr.restful.testing.webservice import (
     ...     pprint_collection, pprint_entry)
-    >>> activity = webservice.get(
+    >>> activity = anon_webservice.get(
     ...     bug_one['activity_collection_link']).jsonBody()
     >>> pprint_collection(activity)
     next_collection_link: u'http://.../bugs/1/activity?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#bug_activity-page-resource'
     start: 0
     total_size: 24
+    ...
+    message: u"Decided problem wasn't silly after all"
     ...
 
     >>> bug_nine_activity = webservice.get(
