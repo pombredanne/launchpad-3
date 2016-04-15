@@ -193,7 +193,7 @@ The sample person "ssh-user" doesn't have any keys to begin with:
     >>> sshkeys = sample_person['sshkeys_collection_link']
     >>> print sshkeys
     http://.../~ssh-user/sshkeys
-    >>> print_self_link_of_entries(webservice.get(sshkeys).jsonBody())
+    >>> print_self_link_of_entries(anon_webservice.get(sshkeys).jsonBody())
 
 Let's give "ssh-user" a key via the back door of our internal Python APIs.
 This setting of the ssh key should trigger a notice that the key has been
@@ -215,7 +215,7 @@ added.
 Now when we get the sshkey collection for 'sssh-user' again, the key should
 show up:
 
-    >>> keys = webservice.get(sshkeys).jsonBody()
+    >>> keys = anon_webservice.get(sshkeys).jsonBody()
     >>> print_self_link_of_entries(keys)
     http://.../~ssh-user/+ssh-keys/...
 
