@@ -29,6 +29,9 @@ from lp.registry.interfaces.person import (
     )
 from lp.services.config import config
 from lp.services.encoding import escape_nonascii_uniquely
+from lp.services.identity.interfaces.account import (
+    INACTIVE_ACCOUNT_STATUSES,
+    )
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
@@ -223,8 +226,11 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # discarded.
             return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
-        return (email_address is not None and
-                not email_address.person.is_team and
+        if email_address is None:
+            return False
+        person = email_address.person
+        return (not person.is_team and
+                person.account_status not in INACTIVE_ACCOUNT_STATUSES and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))
 
