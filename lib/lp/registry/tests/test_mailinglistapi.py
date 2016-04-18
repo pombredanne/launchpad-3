@@ -31,10 +31,11 @@ from lp.registry.xmlrpc.mailinglist import (
     MailingListAPIView,
     )
 from lp.services.config import config
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
-    celebrity_logged_in,
+    admin_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -132,6 +133,13 @@ class MailingListAPITestCase(TestCaseWithFactory):
         self.factory.makeTeam(email='me@fndor.dom')
         self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
 
+    def test_isRegisteredInLaunchpad_suspended(self):
+        person = self.factory.makePerson(email='me@fndor.dom')
+        self.assertTrue(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
+        with admin_logged_in():
+            person.setAccountStatus(AccountStatus.SUSPENDED, None, 'Spammer!')
+        self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
+
     def test_isTeamPublic(self):
         self.factory.makeTeam(
             name='team-b', visibility=PersonVisibility.PRIVATE)
@@ -145,7 +153,7 @@ class MailingListAPITestCase(TestCaseWithFactory):
     def test_inGoodStanding(self):
         self.factory.makePerson(email='no@eg.dom')
         yes_person = self.factory.makePerson(email='yes@eg.dom')
-        with celebrity_logged_in('admin'):
+        with admin_logged_in():
             yes_person.personal_standing = PersonalStanding.GOOD
         self.assertIs(True, self.api.inGoodStanding('yes@eg.dom'))
         self.assertIs(False, self.api.inGoodStanding('no@eg.dom'))
