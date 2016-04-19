@@ -19,6 +19,7 @@ from requests.exceptions import (
     ConnectionError,
     InvalidSchema,
     )
+from testtools.matchers import MatchesStructure
 
 from lp.services.timeout import (
     get_default_timeout_function,
@@ -294,7 +295,9 @@ class TestTimeout(TestCase):
 
         t = threading.Thread(target=success_result)
         t.start()
-        self.assertEqual('Success.', urlfetch(http_server_url))
+        self.assertThat(
+            urlfetch(http_server_url),
+            MatchesStructure.byEquality(status_code=200, content='Success.'))
         t.join()
 
     def test_urlfetch_does_not_support_ftp_urls(self):

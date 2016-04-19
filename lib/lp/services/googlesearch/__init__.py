@@ -32,7 +32,10 @@ from lp.services.googlesearch.interfaces import (
     ISearchService,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.timeout import TimeoutError
+from lp.services.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
 from lp.services.webapp import urlparse
 
 
@@ -203,12 +206,11 @@ class GoogleSearchService:
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
-        from lp.services.timeout import urlfetch
         request = get_current_browser_request()
         timeline = get_request_timeline(request)
         action = timeline.start("google-search-api", search_url)
         try:
-            gsp_xml = urlfetch(search_url)
+            response = urlfetch(search_url)
         except (TimeoutError, requests.RequestException) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
@@ -216,7 +218,7 @@ class GoogleSearchService:
                 "The response errored: %s" % str(error))
         finally:
             action.finish()
-        page_matches = self._parse_google_search_protocol(gsp_xml)
+        page_matches = self._parse_google_search_protocol(response.content)
         return page_matches
 
     def _checkParameter(self, name, value, is_int=False):

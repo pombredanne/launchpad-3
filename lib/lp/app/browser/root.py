@@ -173,10 +173,10 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             return cached_data
         try:
             # Use urlfetch which supports timeout
-            data = urlfetch(config.launchpad.homepage_recent_posts_feed)
+            response = urlfetch(config.launchpad.homepage_recent_posts_feed)
         except requests.RequestException:
             return []
-        feed = feedparser.parse(data)
+        feed = feedparser.parse(response.content)
         posts = []
         max_count = config.launchpad.homepage_recent_posts_count
         # FeedParser takes care of HTML sanitisation.
