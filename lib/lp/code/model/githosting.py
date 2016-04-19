@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Communication with the Git hosting service."""
@@ -8,7 +8,6 @@ __all__ = [
     'GitHostingClient',
     ]
 
-import json
 from urlparse import urljoin
 
 import requests
@@ -48,13 +47,6 @@ class GitHostingClient:
 
     def _request(self, method, path, json_data=None, **kwargs):
         session = self._makeSession()
-        if json_data is not None:
-            # XXX cjwatson 2015-03-01: Once we're on requests >= 2.4.2, we
-            # should just pass json through directly and drop the explicit
-            # Content-Type header.
-            kwargs.setdefault("headers", {})["Content-Type"] = (
-                "application/json")
-            kwargs["data"] = json.dumps(json_data)
         response = getattr(session, method)(
             urljoin(self.endpoint, path), timeout=self.timeout, **kwargs)
         if (response.status_code // 100) != 2:
@@ -83,7 +75,7 @@ class GitHostingClient:
                 request = {"repo_path": path, "clone_from": clone_from}
             else:
                 request = {"repo_path": path}
-            self._post("/repo", json_data=request)
+            self._post("/repo", json=request)
         except Exception as e:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % unicode(e))
@@ -99,7 +91,7 @@ class GitHostingClient:
     def setProperties(self, path, **props):
         """See `IGitHostingClient`."""
         try:
-            self._patch("/repo/%s" % path, json_data=props)
+            self._patch("/repo/%s" % path, json=props)
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to set properties of Git repository: %s" % unicode(e))
@@ -119,7 +111,7 @@ class GitHostingClient:
             if logger is not None:
                 logger.info("Requesting commit details for %s" % commit_oids)
             return self._post(
-                "/repo/%s/commits" % path, json_data={"commits": commit_oids})
+                "/repo/%s/commits" % path, json={"commits": commit_oids})
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get commit details from Git repository: %s" %
@@ -151,7 +143,7 @@ class GitHostingClient:
                         path, sources, target))
             return self._post(
                 "/repo/%s/detect-merges/%s" % (path, target),
-                json_data={"sources": sources})
+                json={"sources": sources})
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to detect merges in Git repository: %s" % unicode(e))
@@ -161,7 +153,7 @@ class GitHostingClient:
         try:
             if logger is not None:
                 logger.info("Deleting repository %s" % path)
-            return self._delete("/repo/%s" % path)
+            self._delete("/repo/%s" % path)
         except Exception as e:
             raise GitRepositoryDeletionFault(
                 "Failed to delete Git repository: %s" % unicode(e))
