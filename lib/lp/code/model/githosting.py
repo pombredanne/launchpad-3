@@ -20,6 +20,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
+from lp.services.timeout import urlfetch
 
 
 class HTTPResponseNotOK(Exception):
@@ -33,25 +34,14 @@ class GitHostingClient:
     def __init__(self):
         self.endpoint = config.codehosting.internal_git_api_endpoint
 
-    def _makeSession(self):
-        session = requests.Session()
-        session.trust_env = False
-        return session
-
-    @property
-    def timeout(self):
-        # XXX cjwatson 2015-03-01: The hardcoded timeout at least means that
-        # we don't lock tables indefinitely if the hosting service falls
-        # over, but is there some more robust way to do this?
-        return 30.0
-
     def _request(self, method, path, json_data=None, **kwargs):
-        session = self._makeSession()
-        response = getattr(session, method)(
-            urljoin(self.endpoint, path), timeout=self.timeout, **kwargs)
-        if (response.status_code // 100) != 2:
-            raise HTTPResponseNotOK(response.text)
-        elif response.content:
+        try:
+            response = urlfetch(
+                urljoin(self.endpoint, path), trust_env=False, method=method,
+                **kwargs)
+        except requests.HTTPError as e:
+            raise HTTPResponseNotOK(e.response.content)
+        if response.content:
             return response.json()
         else:
             return None
