@@ -213,6 +213,7 @@ class CleanablePoolManager(PoolManager):
         if scheme not in cleanable_pool_classes_by_scheme:
             raise ValueError("Unhandled scheme: %s" % scheme)
         pool_cls = cleanable_pool_classes_by_scheme[scheme]
+        kwargs = self.connection_pool_kw
         if scheme == 'http':
             kwargs = self.connection_pool_kw.copy()
             for kw in ('key_file', 'cert_file', 'cert_reqs', 'ca_certs',
