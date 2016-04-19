@@ -251,7 +251,9 @@ class URLFetcher:
         # Mount our custom adapters.
         self.session.mount("https://", CleanableHTTPAdapter())
         self.session.mount("http://", CleanableHTTPAdapter())
-        return self.session.request(url=url, **request_kwargs).content
+        response = self.session.request(url=url, **request_kwargs)
+        response.raise_for_status()
+        return response.content
 
     def cleanup(self):
         """Reset the connection when the operation timed out."""
