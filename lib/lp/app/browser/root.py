@@ -14,6 +14,7 @@ import time
 
 import feedparser
 from lazr.batchnavigator.z3batching import batch
+import requests
 from zope.component import getUtility
 from zope.formlib.interfaces import ConversionError
 from zope.interface import Interface
@@ -173,7 +174,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         try:
             # Use urlfetch which supports timeout
             data = urlfetch(config.launchpad.homepage_recent_posts_feed)
-        except IOError:
+        except requests.RequestException:
             return []
         feed = feedparser.parse(data)
         posts = []

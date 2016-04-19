@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 import urllib
-import urllib2
 from urlparse import (
     parse_qsl,
     urlunparse,
@@ -21,6 +20,7 @@ import xml.etree.cElementTree as ET
 
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
+import requests
 from zope.interface import implementer
 
 from lp.services.config import config
@@ -209,7 +209,7 @@ class GoogleSearchService:
         action = timeline.start("google-search-api", search_url)
         try:
             gsp_xml = urlfetch(search_url)
-        except (TimeoutError, urllib2.HTTPError, urllib2.URLError) as error:
+        except (TimeoutError, requests.RequestException) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
             raise GoogleResponseError(

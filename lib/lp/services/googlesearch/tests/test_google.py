@@ -6,9 +6,10 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-from urllib2 import (
+
+from requests.exceptions import (
+    ConnectionError,
     HTTPError,
-    URLError,
     )
 
 from lp.services.googlesearch import GoogleSearchService
@@ -54,9 +55,9 @@ class TestGoogleSearchService(TestCase):
             self.assertRaises(
                 GoogleResponseError, self.search_service.search, 'fnord')
 
-    def test_search_converts_URLError(self):
-        # The method converts URLError to GoogleResponseError.
-        with urlfetch_exception(URLError, 'oops'):
+    def test_search_converts_ConnectionError(self):
+        # The method converts ConnectionError to GoogleResponseError.
+        with urlfetch_exception(ConnectionError, 'oops'):
             self.assertRaises(
                 GoogleResponseError, self.search_service.search, 'fnord')
 
