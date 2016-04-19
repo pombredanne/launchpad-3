@@ -16,7 +16,7 @@ from lp.services.googlesearch import GoogleSearchService
 from lp.services.googlesearch.interfaces import GoogleResponseError
 from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
-from lp.testing.layers import FunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 @contextmanager
@@ -42,7 +42,7 @@ def urlfetch_exception(test_error, *args):
 class TestGoogleSearchService(TestCase):
     """Test GoogleSearchService."""
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestGoogleSearchService, self).setUp()
