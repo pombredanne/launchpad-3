@@ -154,7 +154,7 @@ class TestSnapSeriesWebservice(TestCaseWithFactory):
             "name: dummy is already in use by another series.", response.body)
 
     def test_getByName(self):
-        # lp.snap_series.getByName returns a matching SnapSeries.
+        # lp.snap_serieses.getByName returns a matching SnapSeries.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
@@ -167,7 +167,7 @@ class TestSnapSeriesWebservice(TestCaseWithFactory):
         self.assertEqual("dummy", response.jsonBody()["name"])
 
     def test_getByName_missing(self):
-        # lp.snap_series.getByName returns 404 for a non-existent SnapSeries.
+        # lp.snap_serieses.getByName returns 404 for a non-existent SnapSeries.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
@@ -179,8 +179,8 @@ class TestSnapSeriesWebservice(TestCaseWithFactory):
         self.assertEqual("No such snap series: 'nonexistent'.", response.body)
 
     def test_getByDistroSeries(self):
-        # lp.snap_series.getByDistroSeries returns a collection of matching
-        # SnapSeries.
+        # lp.snap_serieses.getByDistroSeries returns a collection of
+        # matching SnapSeries.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
@@ -206,7 +206,7 @@ class TestSnapSeriesWebservice(TestCaseWithFactory):
                 [entry["name"] for entry in response.jsonBody()["entries"]])
 
     def test_collection(self):
-        # lp.snap_series is a collection of all SnapSeries.
+        # lp.snap_serieses is a collection of all SnapSeries.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
