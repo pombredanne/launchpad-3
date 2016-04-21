@@ -82,6 +82,27 @@
         <allow interface="lp.snappy.interfaces.snapbuild.ISnapFile" />
     </class>
 
+    <!-- SnapSeries -->
+    <class class="lp.snappy.model.snapseries.SnapSeries">
+        <allow
+            interface="lp.snappy.interfaces.snapseries.ISnapSeriesView
+                       lp.snappy.interfaces.snapseries.ISnapSeriesEditableAttributes" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.snappy.interfaces.snapseries.ISnapSeriesEditableAttributes" />
+    </class>
+
+    <!-- SnapSeriesSet -->
+    <securedutility
+        class="lp.snappy.model.snapseries.SnapSeriesSet"
+        provides="lp.snappy.interfaces.snapseries.ISnapSeriesSet">
+        <allow
+            interface="lp.snappy.interfaces.snapseries.ISnapSeriesSet" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.snappy.interfaces.snapseries.ISnapSeriesSetEdit" />
+    </securedutility>
+
     <webservice:register module="lp.snappy.interfaces.webservice" />
 
 </configure>

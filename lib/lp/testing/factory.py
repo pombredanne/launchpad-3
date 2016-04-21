@@ -275,6 +275,7 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snapseries import ISnapSeriesSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -4671,6 +4672,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             libraryfile = self.makeLibraryFileAlias()
         return ProxyFactory(
             SnapFile(snapbuild=snapbuild, libraryfile=libraryfile))
+
+    def makeSnapSeries(self, registrant=None, name=None, display_name=None,
+                       status=SeriesStatus.DEVELOPMENT, date_created=DEFAULT):
+        """Make a new SnapSeries."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if name is None:
+            name = self.getUniqueString(u"snap-series-name")
+        if display_name is None:
+            display_name = SPACE.join(
+                word.capitalize() for word in name.split('-'))
+        snap_series = getUtility(ISnapSeriesSet).new(
+            registrant, name, display_name, status, date_created=date_created)
+        IStore(snap_series).flush()
+        return snap_series
 
 
 # Some factory methods return simple Python types. We don't add

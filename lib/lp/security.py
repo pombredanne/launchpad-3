@@ -194,6 +194,10 @@ from lp.services.worlddata.interfaces.language import (
     )
 from lp.snappy.interfaces.snap import ISnap
 from lp.snappy.interfaces.snapbuild import ISnapBuild
+from lp.snappy.interfaces.snapseries import (
+    ISnapSeries,
+    ISnapSeriesSet,
+    )
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -3191,3 +3195,11 @@ class EditSnapBuild(AdminByBuilddAdmin):
 
 class AdminSnapBuild(AdminByBuilddAdmin):
     usedfor = ISnapBuild
+
+
+class EditSnapSeries(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnapSeries
+
+
+class EditSnapSeriesSet(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnapSeriesSet

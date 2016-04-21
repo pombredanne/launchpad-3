@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the GNU
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the GNU
 # Affero General Public License version 3 (see the file LICENSE).
 
 """Snappy vocabularies."""
@@ -7,11 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     'SnapDistroArchSeriesVocabulary',
+    'SnapSeriesVocabulary',
     ]
 
 from zope.schema.vocabulary import SimpleTerm
 
+from lp.registry.model.series import ACTIVE_STATUSES
 from lp.services.webapp.vocabulary import StormVocabularyBase
+from lp.snappy.model.snapseries import SnapSeries
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
@@ -29,3 +32,10 @@ class SnapDistroArchSeriesVocabulary(StormVocabularyBase):
 
     def __len__(self):
         return len(self.context.getAllowedArchitectures())
+
+
+class SnapSeriesVocabulary(StormVocabularyBase):
+    """A vocabulary for searching snap series."""
+
+    _table = SnapSeries
+    _clauses = [SnapSeries.status.is_in(ACTIVE_STATUSES)]
