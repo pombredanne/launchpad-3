@@ -528,6 +528,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL,
             form={'starting_url': self.STARTING_URL})
+        view.initialize()
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -541,6 +542,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
             QUERY_STRING='starting_url=' + self.STARTING_URL)
+        view.initialize()
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -552,6 +554,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         # string values at all, then the application URL is used.
         view = OpenIDCallbackView(context=None, request=None)
         view.request = LaunchpadTestRequest(SERVER_URL=self.APPLICATION_URL)
+        view.initialize()
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -690,6 +693,7 @@ class ForwardsCorrectly:
     def match(self, query_string):
         args = dict(urlparse.parse_qsl(query_string))
         request = LaunchpadTestRequest(form=args)
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
@@ -735,6 +739,7 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # extension) to the OpenID provider so that we can automatically
         # register unseen OpenID identities.
         request = LaunchpadTestRequest()
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
@@ -754,6 +759,7 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # a reauth URL parameter, which should add PAPE extension's
         # max_auth_age paramter.
         request = LaunchpadTestRequest(QUERY_STRING='reauth=1')
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
@@ -770,6 +776,7 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # OP, so it's a potentially long action. It is logged to the
         # request timeline.
         request = LaunchpadTestRequest()
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
