@@ -763,6 +763,7 @@ address:
     Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
     Ubuntu Security Team (ubuntu-security): []
+    Ubuntu Single Sign On (ubuntu-sso): [u'ubuntu-sso@example.com']
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Technical Board (techboard): []
     Ubuntu Translators (ubuntu-translators): []
