@@ -71,16 +71,6 @@ class UefiUpload(CustomUpload):
         else:
             self.key = os.path.join(pubconf.uefiroot, "uefi.key")
             self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
-            if not os.access(self.key, os.R_OK):
-                if self.logger is not None:
-                    self.logger.warning(
-                        "UEFI private key %s not readable" % self.key)
-                self.key = None
-            if not os.access(self.cert, os.R_OK):
-                if self.logger is not None:
-                    self.logger.warning(
-                        "UEFI certificate %s not readable" % self.cert)
-                self.cert = None
 
         self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
@@ -102,13 +92,40 @@ class UefiUpload(CustomUpload):
                 if filename.endswith(".efi"):
                     yield os.path.join(dirpath, filename)
 
+    def getUefiKeys(self):
+        """Validate and return the uefi key and cert for encryption."""
+
+        if self.key and self.cert:
+            if not os.access(self.key, os.R_OK):
+                if self.logger is not None:
+                    self.logger.warning(
+                        "UEFI private key %s not readable" % self.key)
+                self.key = None
+            if not os.access(self.cert, os.R_OK):
+                if self.logger is not None:
+                    self.logger.warning(
+                        "UEFI certificate %s not readable" % self.cert)
+                self.cert = None
+
+        return (self.key, self.cert)
+
     def getSigningCommand(self, image):
         """Return the command used to sign an image."""
-        return ["sbsign", "--key", self.key, "--cert", self.cert, image]
+
+        (key, cert) = self.getUefiKeys()
+        if not key or not cert:
+            return None
+
+        return ["sbsign", "--key", key, "--cert", cert, image]
+
+    def execute_cmd(self, cmdl):
+        """Execute a signing command."""
+        return subprocess.call(cmdl)
 
     def sign(self, image):
         """Sign an image."""
-        if subprocess.call(self.getSigningCommand(image)) != 0:
+        cmdl = self.getSigningCommand(image)
+        if cmdl == None or self.execute_cmd(cmdl) != 0:
             # Just log this rather than failing, since custom upload errors
             # tend to make the publisher rather upset.
             if self.logger is not None:
@@ -120,11 +137,10 @@ class UefiUpload(CustomUpload):
         No actual extraction is required.
         """
         super(UefiUpload, self).extract()
-        if self.key is not None and self.cert is not None:
-            efi_filenames = list(self.findEfiFilenames())
-            for efi_filename in efi_filenames:
-                remove_if_exists("%s.signed" % efi_filename)
-                self.sign(efi_filename)
+        efi_filenames = list(self.findEfiFilenames())
+        for efi_filename in efi_filenames:
+            remove_if_exists("%s.signed" % efi_filename)
+            self.sign(efi_filename)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
