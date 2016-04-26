@@ -67,6 +67,13 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
+def make_openid_identifier(account, identifier):
+    openid_identifier = OpenIdIdentifier()
+    openid_identifier.identifier = identifier
+    openid_identifier.account = account
+    return IStore(OpenIdIdentifier).add(openid_identifier)
+
+
 class TestPersonSet(TestCaseWithFactory):
     """Test `IPersonSet`."""
     layer = DatabaseFunctionalLayer
@@ -248,7 +255,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
 
         # Generate some valid test data.
         self.account = self.makeAccount()
-        self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
+        self.identifier = make_openid_identifier(self.account, u'whatever')
         self.person = self.makePerson(self.account)
         self.email = self.makeEmailAddress(
             email='whatever@example.com', person=self.person)
@@ -258,12 +265,6 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
             displayname='Displayname',
             creation_rationale=AccountCreationRationale.UNKNOWN,
             status=AccountStatus.ACTIVE))
-
-    def makeOpenIdIdentifier(self, account, identifier):
-        openid_identifier = OpenIdIdentifier()
-        openid_identifier.identifier = identifier
-        openid_identifier.account = account
-        return self.store.add(openid_identifier)
 
     def makePerson(self, account):
         return self.store.add(Person(
@@ -627,12 +628,6 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
         super(TestPersonSetGetOrCreateSoftwareCenterCustomer, self).setUp()
         self.sca = getUtility(IPersonSet).getByName('software-center-agent')
 
-    def makeOpenIdIdentifier(self, account, identifier):
-        openid_identifier = OpenIdIdentifier()
-        openid_identifier.identifier = identifier
-        openid_identifier.account = account
-        return IStore(OpenIdIdentifier).add(openid_identifier)
-
     def test_restricted_to_sca(self):
         # Only the software-center-agent celebrity can invoke this
         # privileged method.
@@ -659,7 +654,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
     def test_finds_by_openid(self):
         # A Person with the requested OpenID identifier is returned.
         somebody = self.factory.makePerson()
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         with person_logged_in(self.sca):
             got = getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
                 self.sca, u'somebody', 'somebody@example.com', 'Example')
@@ -692,7 +687,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
         somebody = self.factory.makePerson(
             email='existing@example.com',
             account_status=AccountStatus.NOACCOUNT)
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         self.assertEqual(AccountStatus.NOACCOUNT, somebody.account.status)
         with person_logged_in(self.sca):
             got = getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
@@ -725,7 +720,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
     def test_fails_if_account_is_suspended(self):
         # Suspended accounts cannot be returned.
         somebody = self.factory.makePerson()
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         with admin_logged_in():
             somebody.setAccountStatus(
                 AccountStatus.SUSPENDED, None, "Go away!")
@@ -740,7 +735,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
         # nor do we want to potentially compromise them with a bad email
         # address.
         somebody = self.factory.makePerson()
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         with admin_logged_in():
             somebody.setAccountStatus(
                 AccountStatus.DEACTIVATED, None, "Goodbye cruel world.")
