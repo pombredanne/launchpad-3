@@ -27,6 +27,7 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database import bulk
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -179,35 +180,24 @@ class TranslationGroup(SQLBase):
         mapper = lambda row: row[slice(0, 3)]
         return DecoratedResultSet(translator_data, mapper)
 
-    def fetchProjectsForDisplay(self):
+    def fetchProjectsForDisplay(self, user):
         """See `ITranslationGroup`."""
         # Avoid circular imports.
         from lp.registry.model.product import (
+            get_precached_products,
             Product,
-            ProductWithLicenses,
+            ProductSet,
             )
-
-        using = [
+        products = list(IStore(Product).find(
             Product,
-            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
-            LeftJoin(
-                LibraryFileContent,
-                LibraryFileContent.id == LibraryFileAlias.contentID),
-            ]
-        columns = (
-            Product,
-            ProductWithLicenses.composeLicensesColumn(),
-            LibraryFileAlias,
-            LibraryFileContent,
-            )
-        product_data = ISlaveStore(Product).using(*using).find(
-            columns,
-            Product.translationgroupID == self.id, Product.active == True)
-        product_data = product_data.order_by(Product.display_name)
-
-        return [
-            ProductWithLicenses(product, tuple(licenses))
-            for product, licenses, icon_alias, icon_content in product_data]
+            Product.translationgroupID == self.id,
+            Product.active == True,
+            ProductSet.getProductPrivacyFilter(user),
+            ).order_by(Product.display_name))
+        get_precached_products(products, need_licences=True)
+        icons = bulk.load_related(LibraryFileAlias, products, ['iconID'])
+        bulk.load_related(LibraryFileContent, icons, ['contentID'])
+        return products
 
     def fetchProjectGroupsForDisplay(self):
         """See `ITranslationGroup`."""

@@ -1532,16 +1532,6 @@
 
     </class>
 
-    <!-- ProductWithLicenses
-                                This is a decorator for IProduct that eliminates an additional query
-                                for the product licenses.
-        -->
-
-    <class
-        class="lp.registry.model.product.ProductWithLicenses">
-        <allow
-            interface="lp.registry.interfaces.product.IProduct"/>
-    </class>
     <adapter
         for="lp.registry.interfaces.product.IProduct"
         provides="lp.services.webapp.interfaces.ILaunchpadContainer"

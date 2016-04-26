@@ -261,6 +261,8 @@ class IArchiveHash(Interface):
         "subdirectories.")
     lfc_name = Attribute(
         "LibraryFileContent attribute name corresponding to this algorithm.")
+    write_by_hash = Attribute(
+        "Whether to write by-hash subdirectories for this algorithm.")
 
 
 @implementer(IArchiveHash)
@@ -269,6 +271,7 @@ class MD5ArchiveHash:
     deb822_name = "md5sum"
     apt_name = "MD5Sum"
     lfc_name = "md5"
+    write_by_hash = False
 
 
 @implementer(IArchiveHash)
@@ -277,6 +280,7 @@ class SHA1ArchiveHash:
     deb822_name = "sha1"
     apt_name = "SHA1"
     lfc_name = "sha1"
+    write_by_hash = False
 
 
 @implementer(IArchiveHash)
@@ -285,6 +289,7 @@ class SHA256ArchiveHash:
     deb822_name = "sha256"
     apt_name = "SHA256"
     lfc_name = "sha256"
+    write_by_hash = True
 
 
 archive_hashes = [
@@ -303,6 +308,14 @@ class ByHash:
         self.log = log
         self.known_digests = defaultdict(lambda: defaultdict(set))
 
+    @property
+    def _usable_archive_hashes(self):
+        usable = []
+        for archive_hash in archive_hashes:
+            if archive_hash.write_by_hash:
+                usable.append(archive_hash)
+        return usable
+
     def add(self, name, lfa, copy_from_path=None):
         """Ensure that by-hash entries for a single file exist.
 
@@ -313,9 +326,9 @@ class ByHash:
             for newly-added files to avoid needing to commit the transaction
             before calling this method.
         """
-        best_hash = archive_hashes[-1]
+        best_hash = self._usable_archive_hashes[-1]
         best_digest = getattr(lfa.content, best_hash.lfc_name)
-        for archive_hash in reversed(archive_hashes):
+        for archive_hash in reversed(self._usable_archive_hashes):
             digest = getattr(lfa.content, archive_hash.lfc_name)
             digest_path = os.path.join(
                 self.path, archive_hash.apt_name, digest)

@@ -6,6 +6,12 @@ The GoogleSearchService is a Google Custom Service Business Edition
 (cs-be) client. Given one or more terms, it will retrieve an XML
 summary of the matching launchpad.net pages.
 
+We silence logging of new HTTP connections from requests throughout.
+
+    >>> from fixtures import FakeLogger
+    >>> logger = FakeLogger()
+    >>> logger.setUp()
+
 
 GoogleSearchService
 ===================
@@ -616,3 +622,5 @@ cases a TimeoutError is issued.
     # Restore the configuration and the timeout state.
     >>> timeout_data = config.pop('timeout_data')
     >>> set_default_timeout_function(old_timeout_function)
+
+    >>> logger.cleanUp()

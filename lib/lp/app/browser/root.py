@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -14,6 +14,7 @@ import time
 
 import feedparser
 from lazr.batchnavigator.z3batching import batch
+import requests
 from zope.component import getUtility
 from zope.formlib.interfaces import ConversionError
 from zope.interface import Interface
@@ -172,10 +173,10 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             return cached_data
         try:
             # Use urlfetch which supports timeout
-            data = urlfetch(config.launchpad.homepage_recent_posts_feed)
-        except IOError:
+            response = urlfetch(config.launchpad.homepage_recent_posts_feed)
+        except requests.RequestException:
             return []
-        feed = feedparser.parse(data)
+        feed = feedparser.parse(response.content)
         posts = []
         max_count = config.launchpad.homepage_recent_posts_count
         # FeedParser takes care of HTML sanitisation.

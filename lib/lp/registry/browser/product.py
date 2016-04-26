@@ -2044,13 +2044,14 @@ class ProductSetView(LaunchpadView):
         if not self.search_requested:
             return None
         pillarset = getUtility(IPillarNameSet)
-        return pillarset.count_search_matches(self.search_string)
+        return pillarset.count_search_matches(self.user, self.search_string)
 
     @cachedproperty
     def search_results(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
-        return getUtility(IPillarNameSet).search(search_string, limit)
+        return getUtility(IPillarNameSet).search(
+            self.user, search_string, limit)
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
@@ -2378,13 +2379,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         """
         # XXX BarryWarsaw 16-Apr-2009 do we need batching and should we return
         # more than 7 hits?
-        return getUtility(IPillarNameSet).search(self._search_string, 7)
+        return getUtility(IPillarNameSet).search(
+            self.user, self._search_string, 7)
 
     @cachedproperty
     def search_results_count(self):
         """Return the count of matching `IPillar`s."""
         return getUtility(IPillarNameSet).count_search_matches(
-            self._search_string)
+            self.user, self._search_string)
 
     # StepView requires that its validate() method not be overridden, so make
     # sure this calls the right method.  validateStep() will call the licence
