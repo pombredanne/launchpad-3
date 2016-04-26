@@ -798,6 +798,12 @@
         </dd>
     </xsl:template>
 
+    <!-- Documentation for the standard DELETE on an entry -->
+    <xsl:template match="wadl:method[@name='DELETE']" mode="standard-method">
+        <dt><xsl:value-of select="@name" /></dt>
+        <dd>Deletes the entry.</dd>
+    </xsl:template>
+
     <!-- Documentation for the custom GET operations of the resource type -->
     <xsl:template name="custom-GETs">
         <xsl:variable name="operations" select="wadl:method[
@@ -1052,7 +1058,7 @@
             representation of a
             <a href="#{$resource_type}"><xsl:value-of
                 select="$resource_type"
-            /></a><xsl:if test="contains($id, '-page')">collection</xsl:if>.
+            /></a><xsl:if test="contains($id, '-page')"> collection</xsl:if>.
         </p>
     </xsl:template>
 
