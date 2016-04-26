@@ -154,6 +154,7 @@ from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
+    NotPlaceholderAccount,
     PPACreationError,
     TeamMembershipPolicyError,
     )
@@ -3429,6 +3430,38 @@ class PersonSet:
                 trust_email=False)
         return person
 
+    def getUsernameForSSO(self, user, openid_identifier):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            return None
+        return IPerson(account).name
+
+    def setUsernameFromSSO(self, user, openid_identifier, name,
+                           dry_run=False):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        self._validateName(name)
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            if not dry_run:
+                person = self.createPlaceholderPerson(openid_identifier, name)
+        else:
+            if account.status != AccountStatus.PLACEHOLDER:
+                raise NotPlaceholderAccount(
+                    "An account for that OpenID identifier already exists.")
+            if not dry_run:
+                account = removeSecurityProxy(account)
+                person = IPerson(account)
+                person.name = person.display_name = account.displayname = name
+
     def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None,
@@ -3507,9 +3540,7 @@ class PersonSet:
             rationale=PersonCreationRationale.USERNAME_PLACEHOLDER,
             comment="when setting a username in SSO", account=account)
 
-    def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, registrant=None, account=None):
-        """Create and return a new Person with the given attributes."""
+    def _validateName(self, name):
         if not valid_name(name):
             raise InvalidName(
                 "%s is not a valid name for a person." % name)
@@ -3519,6 +3550,11 @@ class PersonSet:
         if self.getByName(name, ignore_merged=False) is not None:
             raise NameAlreadyTaken(
                 "The name '%s' is already taken." % name)
+
+    def _newPerson(self, name, displayname, hide_email_addresses,
+                   rationale, comment=None, registrant=None, account=None):
+        """Create and return a new Person with the given attributes."""
+        self._validateName(name)
 
         if not displayname:
             displayname = name.capitalize()
