@@ -53,7 +53,7 @@ class TestUefi(TestCase):
         self.archive.close()
         self.buffer.close()
         upload = UefiUpload()
-        upload.sign = FakeMethod()
+        upload.execute_cmd = FakeMethod()
         upload.process(self.pubconf, self.path, self.suite)
         return upload
 
@@ -69,7 +69,7 @@ class TestUefi(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
-        self.assertEqual(0, upload.sign.call_count)
+        self.assertEqual(0, upload.execute_cmd.call_count)
 
     def test_missing_key_and_cert(self):
         # If the configured key/cert are missing, processing succeeds but
@@ -77,7 +77,7 @@ class TestUefi(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
-        self.assertEqual(0, upload.sign.call_count)
+        self.assertEqual(0, upload.execute_cmd.call_count)
 
     def test_no_efi_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.
@@ -120,10 +120,10 @@ class TestUefi(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
-        self.assertEqual(1, upload.sign.call_count)
-        self.assertEqual(1, len(upload.sign.calls[0][0]))
+        self.assertEqual(1, upload.execute_cmd.call_count)
+        self.assertEqual(1, len(upload.execute_cmd.calls[0][0]))
         self.assertEqual(
-            "empty.efi", os.path.basename(upload.sign.calls[0][0][0]))
+            "empty.efi", os.path.basename(upload.execute_cmd.calls[0][0][0][5]))
 
     def test_installed(self):
         # Files in the tarball are installed correctly.
