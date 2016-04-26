@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers to time out external operations."""
@@ -14,15 +14,28 @@ __all__ = [
     "with_timeout",
     ]
 
-import httplib
 import socket
 import sys
-from threading import Thread
-import urllib2
+from threading import (
+    Lock,
+    Thread,
+    )
 from xmlrpclib import (
     SafeTransport,
     Transport,
     )
+
+from requests import Session
+from requests.adapters import (
+    DEFAULT_POOLBLOCK,
+    HTTPAdapter,
+    )
+from requests.packages.urllib3.connectionpool import (
+    HTTPConnectionPool,
+    HTTPSConnectionPool,
+    )
+from requests.packages.urllib3.exceptions import ClosedPoolError
+from requests.packages.urllib3.poolmanager import PoolManager
 
 
 default_timeout_function = None
@@ -145,47 +158,113 @@ class with_timeout:
         return call_with_timeout
 
 
-class CleanableHTTPHandler(urllib2.HTTPHandler):
-    """Subclass of `urllib2.HTTPHandler` that can be cleaned-up."""
+class CleanableConnectionPoolMixin:
+    """Enhance urllib3's connection pools to support forced socket cleanup."""
 
-    def http_open(self, req):
-        """See `urllib2.HTTPHandler`."""
-        def connection_factory(*args, **kwargs):
-            """Save the created connection so that we can clean it up."""
-            self.__conn = httplib.HTTPConnection(*args, **kwargs)
-            return self.__conn
-        return self.do_open(connection_factory, req)
+    def __init__(self, *args, **kwargs):
+        super(CleanableConnectionPoolMixin, self).__init__(*args, **kwargs)
+        self._all_connections = []
+        self._all_connections_mutex = Lock()
 
-    def reset_connection(self):
-        """Reset the underlying HTTP connection."""
-        try:
-            self.__conn.sock.shutdown(socket.SHUT_RDWR)
-        except AttributeError:
-            # It's possible that the other thread closed the socket
-            # beforehand.
-            pass
-        self.__conn.close()
+    def _new_conn(self):
+        with self._all_connections_mutex:
+            if self._all_connections is None:
+                raise ClosedPoolError(self, "Pool is closed.")
+            conn = super(CleanableConnectionPoolMixin, self)._new_conn()
+            self._all_connections.append(conn)
+            return conn
+
+    def close(self):
+        with self._all_connections_mutex:
+            if self._all_connections is None:
+                return
+            for conn in self._all_connections:
+                sock = getattr(conn, "sock", None)
+                if sock is not None:
+                    sock.shutdown(socket.SHUT_RDWR)
+                    sock.close()
+                    conn.sock = None
+            self._all_connections = None
+        super(CleanableConnectionPoolMixin, self).close()
+
+
+class CleanableHTTPConnectionPool(
+    CleanableConnectionPoolMixin, HTTPConnectionPool):
+    pass
+
+
+class CleanableHTTPSConnectionPool(
+    CleanableConnectionPoolMixin, HTTPSConnectionPool):
+    pass
+
+
+cleanable_pool_classes_by_scheme = {
+    "http": CleanableHTTPConnectionPool,
+    "https": CleanableHTTPSConnectionPool,
+    }
+
+
+class CleanablePoolManager(PoolManager):
+    """A version of urllib3's PoolManager supporting forced socket cleanup."""
+
+    # XXX cjwatson 2015-03-11: Reimplements PoolManager._new_pool; check
+    # this when upgrading requests.
+    def _new_pool(self, scheme, host, port):
+        if scheme not in cleanable_pool_classes_by_scheme:
+            raise ValueError("Unhandled scheme: %s" % scheme)
+        pool_cls = cleanable_pool_classes_by_scheme[scheme]
+        kwargs = self.connection_pool_kw
+        if scheme == 'http':
+            kwargs = self.connection_pool_kw.copy()
+            for kw in ('key_file', 'cert_file', 'cert_reqs', 'ca_certs',
+                       'ssl_version'):
+                kwargs.pop(kw, None)
+
+        return pool_cls(host, port, **kwargs)
+
+
+class CleanableHTTPAdapter(HTTPAdapter):
+    """Enhance HTTPAdapter to use CleanablePoolManager."""
+
+    # XXX cjwatson 2015-03-11: Reimplements HTTPAdapter.init_poolmanager;
+    # check this when upgrading requests.
+    def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK,
+                         **pool_kwargs):
+        # save these values for pickling
+        self._pool_connections = connections
+        self._pool_maxsize = maxsize
+        self._pool_block = block
+
+        self.poolmanager = CleanablePoolManager(
+            num_pools=connections, maxsize=maxsize, block=block, strict=True,
+            **pool_kwargs)
 
 
 class URLFetcher:
     """Object fetching remote URLs with a time out."""
 
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, data=None):
+    def fetch(self, url, **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout."""
-        assert url.startswith('http://'), "only http is supported."
-        self.handler = CleanableHTTPHandler()
-        opener = urllib2.build_opener(self.handler)
-        return opener.open(url, data).read()
+        request_kwargs.setdefault("method", "GET")
+        self.session = Session()
+        # Mount our custom adapters.
+        self.session.mount("https://", CleanableHTTPAdapter())
+        self.session.mount("http://", CleanableHTTPAdapter())
+        response = self.session.request(url=url, **request_kwargs)
+        response.raise_for_status()
+        # Make sure the content has been consumed before returning.
+        response.content
+        return response
 
     def cleanup(self):
         """Reset the connection when the operation timed out."""
-        self.handler.reset_connection()
+        self.session.close()
 
 
-def urlfetch(url, data=None):
-    """Wrapper for `urllib2.urlopen()` that times out."""
-    return URLFetcher().fetch(url, data)
+def urlfetch(url, **request_kwargs):
+    """Wrapper for `requests.get()` that times out."""
+    return URLFetcher().fetch(url, **request_kwargs)
 
 
 class TransportWithTimeout(Transport):

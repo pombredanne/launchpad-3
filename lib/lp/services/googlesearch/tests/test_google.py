@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the google search service."""
@@ -6,16 +6,17 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-from urllib2 import (
+
+from requests.exceptions import (
+    ConnectionError,
     HTTPError,
-    URLError,
     )
 
 from lp.services.googlesearch import GoogleSearchService
 from lp.services.googlesearch.interfaces import GoogleResponseError
 from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
-from lp.testing.layers import FunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 @contextmanager
@@ -41,7 +42,7 @@ def urlfetch_exception(test_error, *args):
 class TestGoogleSearchService(TestCase):
     """Test GoogleSearchService."""
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestGoogleSearchService, self).setUp()
@@ -54,9 +55,9 @@ class TestGoogleSearchService(TestCase):
             self.assertRaises(
                 GoogleResponseError, self.search_service.search, 'fnord')
 
-    def test_search_converts_URLError(self):
-        # The method converts URLError to GoogleResponseError.
-        with urlfetch_exception(URLError, 'oops'):
+    def test_search_converts_ConnectionError(self):
+        # The method converts ConnectionError to GoogleResponseError.
+        with urlfetch_exception(ConnectionError, 'oops'):
             self.assertRaises(
                 GoogleResponseError, self.search_service.search, 'fnord')
 

@@ -17,7 +17,7 @@
        tal:define="
         distributions context/fetchDistrosForDisplay;
         projectgroups context/fetchProjectGroupsForDisplay;
-        projects context/fetchProjectsForDisplay">
+        projects view/fetchProjectsForDisplay">
     <div tal:condition="distributions" style="margin-top:1em;">
       <h3 style="display: inline;">Distributions:</h3>
       <tal:distribution repeat="distribution distributions">

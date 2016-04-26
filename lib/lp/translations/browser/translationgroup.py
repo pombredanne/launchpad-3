@@ -102,6 +102,9 @@ class TranslationGroupView(LaunchpadView):
             self._makeTranslatorDict(*data)
             for data in self.context.fetchTranslatorData()]
 
+    def fetchProjectsForDisplay(self):
+        return self.context.fetchProjectsForDisplay(self.user)
+
 
 class TranslationGroupAddTranslatorView(LaunchpadFormView):
     """View class for the "appoint a translator" page"""
