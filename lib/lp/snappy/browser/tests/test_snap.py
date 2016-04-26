@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package views."""
@@ -591,7 +591,7 @@ class TestSnapDeleteView(BrowserTestCase):
         browser = self.getViewBrowser(snap, user=self.person)
         browser.getLink("Delete snap package").click()
         browser.getControl("Delete snap package").click()
-        self.assertEqual(owner_url, browser.url)
+        self.assertEqual(owner_url + "/+snaps", browser.url)
         self.assertRaises(NotFound, browser.open, snap_url)
 
     def test_delete_snap_with_builds(self):
@@ -605,7 +605,7 @@ class TestSnapDeleteView(BrowserTestCase):
         browser = self.getViewBrowser(snap, user=self.person)
         browser.getLink("Delete snap package").click()
         browser.getControl("Delete snap package").click()
-        self.assertEqual(owner_url, browser.url)
+        self.assertEqual(owner_url + "/+snaps", browser.url)
         self.assertRaises(NotFound, browser.open, snap_url)
 
 

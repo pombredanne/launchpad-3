@@ -176,9 +176,9 @@ class OpenIDLogin(LaunchpadView):
         return Consumer(session, openid_store)
 
     def render(self):
-        # Reauthentication is called for by a query string parameter.
-        reauth_qs = self.request.query_string_params.get('reauth', ['0'])
-        do_reauth = int(reauth_qs[0])
+        # Reauthentication is called for by a parameter, usually passed in
+        # the query string.
+        do_reauth = int(self.request.form.get('reauth', '0'))
         if self.account is not None and not do_reauth:
             return AlreadyLoggedInView(self.context, self.request)()
 
@@ -230,49 +230,41 @@ class OpenIDLogin(LaunchpadView):
     @property
     def starting_url(self):
         starting_url = self.request.getURL(1)
-        query_string = "&".join([arg for arg in self.form_args])
-        if query_string and query_string != 'reauth=1':
+        params = list(self.form_args)
+        query_string = urllib.urlencode(params, doseq=True)
+        if query_string:
             starting_url += "?%s" % query_string
         return starting_url
 
     @property
     def form_args(self):
-        """Iterate over form args, yielding 'key=value' strings for them.
+        """Iterate over form args, yielding (key, value) tuples for them.
 
-        Exclude things such as 'loggingout' and starting with 'openid.', which
-        we don't want.
+        Exclude arguments used by the login views or by the OpenID exchange.
 
-        Coerces all keys and values to be ascii decode safe - either by making
-        them unicode or by url quoting them. keys are known to be urldecoded
-        bytestrings, so are simply re urlencoded.
+        All keys and values are UTF-8-encoded.
         """
         for name, value in self.request.form.items():
-            if name == 'loggingout' or name.startswith('openid.'):
+            if name in ('loggingout', 'reauth'):
+                continue
+            if name.startswith('openid.'):
                 continue
             if isinstance(value, list):
                 value_list = value
             else:
                 value_list = [value]
 
-            def restore_url(element):
-                """Restore a form item to its original url representation.
-
-                The form items are byte strings simply url decoded and
-                sometimes utf8 decoded (for special confusion). They may fail
-                to coerce to unicode as they can include arbitrary
-                bytesequences after url decoding. We can restore their
-                original url value by url quoting them again if they are a
-                bytestring, with a pre-step of utf8 encoding if they were
-                successfully decoded to unicode.
-                """
+            def encode_utf8(element):
+                # urllib.urlencode will just encode unicode values to ASCII.
+                # For our purposes, we can be a little more liberal and
+                # allow UTF-8.
                 if isinstance(element, unicode):
-                    element = element.encode('utf8')
-                return urllib.quote(element)
+                    element = element.encode('UTF-8')
+                return element
 
-            for value_list_item in value_list:
-                value_list_item = restore_url(value_list_item)
-                name = restore_url(name)
-                yield "%s=%s" % (name, value_list_item)
+            yield (
+                encode_utf8(name),
+                [encode_utf8(value) for value in value_list])
 
 
 class OpenIDCallbackView(OpenIDLogin):
@@ -306,13 +298,14 @@ class OpenIDCallbackView(OpenIDLogin):
         return requested_url
 
     def initialize(self):
-        params = self._gather_params(self.request)
+        self.params = self._gather_params(self.request)
         requested_url = self._get_requested_url(self.request)
         consumer = self._getConsumer()
         timeline_action = get_request_timeline(self.request).start(
             "openid-association-complete", '', allow_nested=True)
         try:
-            self.openid_response = consumer.complete(params, requested_url)
+            self.openid_response = consumer.complete(
+                self.params, requested_url)
         finally:
             timeline_action.finish()
 
@@ -424,15 +417,9 @@ class OpenIDCallbackView(OpenIDLogin):
         return retval
 
     def _redirect(self):
-        target = self.request.form.get('starting_url')
+        target = self.params.get('starting_url')
         if target is None:
-            # If this was a POST, then the starting_url won't be in the form
-            # values, but in the query parameters instead.
-            target = self.request.query_string_params.get('starting_url')
-            if target is None:
-                target = self.request.getApplicationURL()
-            else:
-                target = target[0]
+            target = self.request.getApplicationURL()
         self.request.response.redirect(target, temporary_if_possible=True)
 
 

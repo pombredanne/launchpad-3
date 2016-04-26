@@ -153,6 +153,7 @@ class LaunchpadCelebrities:
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
+    ubuntu_sso = PersonCelebrityDescriptor('ubuntu-sso')
     ubuntu_techboard = PersonCelebrityDescriptor('techboard')
     vcs_imports = PersonCelebrityDescriptor('vcs-imports')
 

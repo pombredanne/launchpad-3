@@ -243,14 +243,21 @@ class CleanableHTTPAdapter(HTTPAdapter):
 class URLFetcher:
     """Object fetching remote URLs with a time out."""
 
+    @staticmethod
+    def _makeSession(trust_env=None):
+        session = Session()
+        if trust_env is not None:
+            session.trust_env = trust_env
+        # Mount our custom adapters.
+        session.mount("https://", CleanableHTTPAdapter())
+        session.mount("http://", CleanableHTTPAdapter())
+        return session
+
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, **request_kwargs):
+    def fetch(self, url, trust_env=None, **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout."""
         request_kwargs.setdefault("method", "GET")
-        self.session = Session()
-        # Mount our custom adapters.
-        self.session.mount("https://", CleanableHTTPAdapter())
-        self.session.mount("http://", CleanableHTTPAdapter())
+        self.session = self._makeSession(trust_env=trust_env)
         response = self.session.request(url=url, **request_kwargs)
         response.raise_for_status()
         # Make sure the content has been consumed before returning.
@@ -262,9 +269,9 @@ class URLFetcher:
         self.session.close()
 
 
-def urlfetch(url, **request_kwargs):
+def urlfetch(url, trust_env=None, **request_kwargs):
     """Wrapper for `requests.get()` that times out."""
-    return URLFetcher().fetch(url, **request_kwargs)
+    return URLFetcher().fetch(url, trust_env=trust_env, **request_kwargs)
 
 
 class TransportWithTimeout(Transport):
