@@ -518,6 +518,4 @@ class SnapDeleteView(BaseSnapEditView):
     def delete_action(self, action, data):
         owner = self.context.owner
         self.context.destroySelf()
-        # XXX cjwatson 2015-07-17: This should go to Person:+snaps or
-        # similar (or something on SnapSet?) once that exists.
-        self.next_url = canonical_url(owner)
+        self.next_url = canonical_url(owner, view_name='+snaps')
