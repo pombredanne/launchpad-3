@@ -108,10 +108,18 @@ class UefiUpload(CustomUpload):
             common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
 
             os.umask(0o077)
-            cmdl = ['openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-                    '-subj', common_name, '-keyout', self.key,
-                    '-out', self.cert, '-days', '3650', '-nodes', '-sha256']
-            self.execute_cmd(cmdl)
+            new_key_cmd = [
+                'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
+                '-subj', common_name, '-keyout', self.key, '-out', self.cert,
+                '-days', '3650', '-nodes', '-sha256'
+                ]
+            if subprocess.call(new_key_cmd) != 0:
+                # Just log this rather than failing, since custom upload errors
+                # tend to make the publisher rather upset.
+                if self.logger is not None:
+                    self.logger.warning(
+                        "Failed to generate UEFI signing keys for %s" %
+                        common_name)
 
             if os.path.exists(self.cert):
                 os.chmod(self.cert, 0o644)
@@ -143,27 +151,21 @@ class UefiUpload(CustomUpload):
 
         return (self.key, self.cert)
 
-    def getSigningCommand(self, image):
-        """Return the command used to sign an image."""
-
-        (key, cert) = self.getUefiKeys()
-        if not key or not cert:
-            return None
-
-        return ["sbsign", "--key", key, "--cert", cert, image]
-
-    def execute_cmd(self, cmdl):
-        """Execute a signing command."""
-        return subprocess.call(cmdl)
-
-    def sign(self, image):
-        """Sign an image."""
-        cmdl = self.getSigningCommand(image)
-        if cmdl == None or self.execute_cmd(cmdl) != 0:
+    def signUefiCall(self, cmdl):
+        if subprocess.call(cmdl) != 0:
             # Just log this rather than failing, since custom upload errors
             # tend to make the publisher rather upset.
             if self.logger is not None:
-                self.logger.warning("Failed to sign %s" % image)
+                self.logger.warning("UEFI Signing Failed '%s'" %
+                    " ".join(cmdl))
+
+    def signUefi(self, image):
+        """Attempt to sign an image."""
+        (key, cert) = self.getUefiKeys()
+        if not key or not cert:
+            return
+        cmdl = ["sbsign", "--key", key, "--cert", cert, image]
+        self.signUefiCall(cmdl)
 
     def extract(self):
         """Copy the custom upload to a temporary directory, and sign it.
@@ -174,7 +176,7 @@ class UefiUpload(CustomUpload):
         efi_filenames = list(self.findEfiFilenames())
         for efi_filename in efi_filenames:
             remove_if_exists("%s.signed" % efi_filename)
-            self.sign(efi_filename)
+            self.signUefi(efi_filename)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
