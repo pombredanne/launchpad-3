@@ -7,12 +7,17 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+from testtools.matchers import (
+    MatchesSetwise,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapseries import (
+    ISnapDistroSeriesSet,
     ISnapSeries,
     ISnapSeriesSet,
     NoSuchSnapSeries,
@@ -219,3 +224,51 @@ class TestSnapSeriesWebservice(TestCaseWithFactory):
         self.assertContentEqual(
             ["ss-0", "ss-1", "ss-2"],
             [entry["name"] for entry in response.jsonBody()["entries"]])
+
+
+class TestSnapDistroSeriesSet(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestSnapDistroSeriesSet, self).setUp()
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+
+    def test_getByDistroSeries(self):
+        dses = [self.factory.makeDistroSeries() for _ in range(3)]
+        snap_serieses = [self.factory.makeSnapSeries() for _ in range(3)]
+        snap_serieses[0].usable_distro_series = dses
+        snap_serieses[1].usable_distro_series = [dses[0], dses[1]]
+        snap_serieses[2].usable_distro_series = [dses[1], dses[2]]
+        sds_set = getUtility(ISnapDistroSeriesSet)
+        self.assertThat(
+            sds_set.getByDistroSeries(dses[0]),
+            MatchesSetwise(*(
+                MatchesStructure.byEquality(
+                    snap_series=ss, distro_series=dses[0])
+                for ss in (snap_serieses[0], snap_serieses[1]))))
+        self.assertThat(
+            sds_set.getByDistroSeries(dses[1]),
+            MatchesSetwise(*(
+                MatchesStructure.byEquality(
+                    snap_series=ss, distro_series=dses[1])
+                for ss in snap_serieses)))
+        self.assertThat(
+            sds_set.getByDistroSeries(dses[2]),
+            MatchesSetwise(*(
+                MatchesStructure.byEquality(
+                    snap_series=ss, distro_series=dses[2])
+                for ss in (snap_serieses[0], snap_serieses[2]))))
+
+    def test_getByBothSeries(self):
+        dses = [self.factory.makeDistroSeries() for _ in range(2)]
+        snap_serieses = [self.factory.makeSnapSeries() for _ in range(2)]
+        snap_serieses[0].usable_distro_series = [dses[0]]
+        sds_set = getUtility(ISnapDistroSeriesSet)
+        self.assertThat(
+            sds_set.getByBothSeries(snap_serieses[0], dses[0]),
+            MatchesStructure.byEquality(
+                snap_series=snap_serieses[0], distro_series=dses[0]))
+        self.assertIsNone(sds_set.getByBothSeries(snap_serieses[0], dses[1]))
+        self.assertIsNone(sds_set.getByBothSeries(snap_serieses[1], dses[0]))
+        self.assertIsNone(sds_set.getByBothSeries(snap_serieses[1], dses[1]))

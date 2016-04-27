@@ -26,4 +26,26 @@
         <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
     </class>
 
+    <securedutility
+        name="SnapDistroSeries"
+        component="lp.snappy.vocabularies.SnapDistroSeriesVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory" />
+    </securedutility>
+
+    <class class="lp.snappy.vocabularies.SnapDistroSeriesVocabulary">
+        <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
+    </class>
+
+    <securedutility
+        name="BuildableSnapDistroSeries"
+        component="lp.snappy.vocabularies.BuildableSnapDistroSeriesVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory" />
+    </securedutility>
+
+    <class class="lp.snappy.vocabularies.BuildableSnapDistroSeriesVocabulary">
+        <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
+    </class>
+
 </configure>

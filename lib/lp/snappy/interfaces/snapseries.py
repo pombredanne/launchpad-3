@@ -7,6 +7,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'ISnapDistroSeries',
+    'ISnapDistroSeriesSet',
     'ISnapSeries',
     'ISnapSeriesSet',
     'NoSuchSnapSeries',
@@ -122,6 +124,16 @@ class ISnapSeries(ISnapSeriesView, ISnapSeriesEditableAttributes):
     export_as_webservice_entry(plural_name="snap_serieses", as_of="beta")
 
 
+class ISnapDistroSeries(Interface):
+    """A snap/distro series link."""
+
+    snap_series = Reference(ISnapSeries, title=_("Snap series"), readonly=True)
+    distro_series = Reference(
+        IDistroSeries, title=_("Distro series"), readonly=True)
+
+    title = Title(title=_("Title"), required=True, readonly=True)
+
+
 class ISnapSeriesSetEdit(Interface):
     """`ISnapSeriesSet` methods that require launchpad.Edit permission."""
 
@@ -166,3 +178,13 @@ class ISnapSeriesSet(ISnapSeriesSetEdit):
     @collection_default_content()
     def getAll():
         """Return all `ISnapSeries`."""
+
+
+class ISnapDistroSeriesSet(Interface):
+    """Interface representing the set of snap/distro series links."""
+
+    def getByDistroSeries(distro_series):
+        """Return all `SnapDistroSeries` for this `IDistroSeries`."""
+
+    def getByBothSeries(snap_series, distro_series):
+        """Return a `SnapDistroSeries` for this pair of series, or None."""

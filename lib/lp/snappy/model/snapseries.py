@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'SnapDistroSeries',
     'SnapSeries',
     ]
 
@@ -30,6 +31,8 @@ from lp.services.database.interfaces import (
     IStore,
     )
 from lp.snappy.interfaces.snapseries import (
+    ISnapDistroSeries,
+    ISnapDistroSeriesSet,
     ISnapSeries,
     ISnapSeriesSet,
     NoSuchSnapSeries,
@@ -88,12 +91,11 @@ class SnapSeries(Storm):
                 Store.of(self).remove(enablements[distro_series])
         for distro_series in value:
             if distro_series not in enablements:
-                link = SnapDistroSeries()
-                link.snap_series = self
-                link.distro_series = distro_series
+                link = SnapDistroSeries(self, distro_series)
                 Store.of(self).add(link)
 
 
+@implementer(ISnapDistroSeries)
 class SnapDistroSeries(Storm):
     """Link table between `SnapSeries` and `DistroSeries`."""
 
@@ -105,6 +107,16 @@ class SnapDistroSeries(Storm):
 
     distro_series_id = Int(name='distro_series', allow_none=False)
     distro_series = Reference(distro_series_id, 'DistroSeries.id')
+
+    def __init__(self, snap_series, distro_series):
+        super(SnapDistroSeries, self).__init__()
+        self.snap_series = snap_series
+        self.distro_series = distro_series
+
+    @property
+    def title(self):
+        return "%s, for %s" % (
+            self.distro_series.display_name, self.snap_series.title)
 
 
 @implementer(ISnapSeriesSet)
@@ -147,3 +159,24 @@ class SnapSeriesSet:
     def getAll(self):
         """See `ISnapSeriesSet`."""
         return IStore(SnapSeries).find(SnapSeries).order_by(SnapSeries.name)
+
+
+@implementer(ISnapDistroSeriesSet)
+class SnapDistroSeriesSet:
+    """See `ISnapDistroSeriesSet`."""
+
+    def getByDistroSeries(self, distro_series):
+        """See `ISnapDistroSeriesSet`."""
+        store = IStore(SnapDistroSeries)
+        rows = store.using(SnapDistroSeries, SnapSeries).find(
+            SnapDistroSeries,
+            SnapDistroSeries.snap_series_id == SnapSeries.id,
+            SnapDistroSeries.distro_series == distro_series)
+        return rows.order_by(SnapSeries.name)
+
+    def getByBothSeries(self, snap_series, distro_series):
+        """See `ISnapDistroSeriesSet`."""
+        return IStore(SnapDistroSeries).find(
+            SnapDistroSeries,
+            SnapDistroSeries.snap_series == snap_series,
+            SnapDistroSeries.distro_series == distro_series).one()

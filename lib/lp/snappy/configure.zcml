@@ -92,6 +92,12 @@
             set_schema="lp.snappy.interfaces.snapseries.ISnapSeriesEditableAttributes" />
     </class>
 
+    <!-- SnapDistroSeries -->
+    <class class="lp.snappy.model.snapseries.SnapDistroSeries">
+        <allow
+            interface="lp.snappy.interfaces.snapseries.ISnapDistroSeries" />
+    </class>
+
     <!-- SnapSeriesSet -->
     <securedutility
         class="lp.snappy.model.snapseries.SnapSeriesSet"
@@ -101,6 +107,14 @@
         <require
             permission="launchpad.Edit"
             interface="lp.snappy.interfaces.snapseries.ISnapSeriesSetEdit" />
+    </securedutility>
+
+    <!-- SnapDistroSeriesSet -->
+    <securedutility
+        class="lp.snappy.model.snapseries.SnapDistroSeriesSet"
+        provides="lp.snappy.interfaces.snapseries.ISnapDistroSeriesSet">
+        <allow
+            interface="lp.snappy.interfaces.snapseries.ISnapDistroSeriesSet" />
     </securedutility>
 
     <webservice:register module="lp.snappy.interfaces.webservice" />
