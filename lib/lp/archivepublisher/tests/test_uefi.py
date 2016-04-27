@@ -17,6 +17,7 @@ from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 
+
 class FakeMethodExecuteCmd(FakeMethod):
     """A fake command executer."""
     def __call__(self, *args, **kwargs):
@@ -28,9 +29,10 @@ class FakeMethodExecuteCmd(FakeMethod):
         if (cmdl[0] == 'openssl' and
             cmdl[8] == '-keyout' and cmdl[9].startswith('/tmp/') and
             cmdl[10] == '-out' and cmdl[11].startswith('/tmp/')):
-            
+
             write_file(cmdl[9], "")
             write_file(cmdl[11], "")
+
 
 class FakeConfig:
     """A fake publisher configuration."""
@@ -71,14 +73,14 @@ class TestUefi(TestCase):
     def validateCmdUefiKeygen(self, call):
         args = call[0][0]
 
-        archive_name = os.path.basename(self.pubconf.archiveroot)
-        owner_name   = os.path.basename(os.path.dirname(self.pubconf.archiveroot))
-        common_name  = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
-        
-        cmd_gen  = ['openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-                    '-subj', common_name,
-                    '-keyout', self.key, '-out', self.cert,
-                    '-days', '3650', '-nodes', '-sha256']
+        archive_root = self.pubconf.archiveroot
+        archive_name = os.path.basename(archive_root)
+        owner_name = os.path.basename(os.path.dirname(archive_root))
+        common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
+
+        cmd_gen = ['openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
+                   '-subj', common_name, '-keyout', self.key,
+                   '-out', self.cert, '-days', '3650', '-nodes', '-sha256']
         return args == cmd_gen
 
     def validateCmdSbsign(self, call, filename):
@@ -87,7 +89,7 @@ class TestUefi(TestCase):
         if len(args) >= 6 and args[5].startswith('/'):
             args[5] = os.path.basename(args[5])
 
-        cmd_sign = ['sbsign', '--key', self.key, '--cert', self.cert, filename ]
+        cmd_sign = ['sbsign', '--key', self.key, '--cert', self.cert, filename]
 
         return args == cmd_sign
 
@@ -170,8 +172,8 @@ class TestUefi(TestCase):
         upload = self.process()
         self.assertEqual(1, upload.execute_cmd.call_count)
         self.assertEqual(1, len(upload.execute_cmd.calls[0][0]))
-        self.assertEqual(
-            "empty.efi", os.path.basename(upload.execute_cmd.calls[0][0][0][5]))
+        self.assertEqual("empty.efi",
+            os.path.basename(upload.execute_cmd.calls[0][0][0][5]))
 
     def test_installed(self):
         # Files in the tarball are installed correctly.
@@ -205,5 +207,7 @@ class TestUefi(TestCase):
             self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
         self.assertTrue(self.validateKeyAndCert())
         self.assertEqual(2, upload.execute_cmd.call_count)
-        self.assertTrue(self.validateCmdUefiKeygen(upload.execute_cmd.calls[0]))
-        self.assertTrue(self.validateCmdSbsign(upload.execute_cmd.calls[1], "empty.efi"))
+        self.assertTrue(
+            self.validateCmdUefiKeygen(upload.execute_cmd.calls[0]))
+        self.assertTrue(
+            self.validateCmdSbsign(upload.execute_cmd.calls[1], "empty.efi"))

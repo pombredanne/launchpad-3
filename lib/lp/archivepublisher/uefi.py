@@ -104,13 +104,13 @@ class UefiUpload(CustomUpload):
 
             # XXX: pull out the PPA owner and name to seed key CN
             archive_name = os.path.basename(self.archiveroot)
-            owner_name   = os.path.basename(os.path.dirname(self.archiveroot))
-            common_name  = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
+            owner_name = os.path.basename(os.path.dirname(self.archiveroot))
+            common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
 
             os.umask(0o077)
-            cmdl = [ 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-                     '-subj', common_name, '-keyout', self.key,
-                     '-out', self.cert, '-days', '3650', '-nodes', '-sha256' ]
+            cmdl = ['openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
+                    '-subj', common_name, '-keyout', self.key,
+                    '-out', self.cert, '-days', '3650', '-nodes', '-sha256']
             self.execute_cmd(cmdl)
 
             if os.path.exists(self.cert):
@@ -128,7 +128,7 @@ class UefiUpload(CustomUpload):
             if (self.autokey and not os.path.exists(self.key)
                 and not os.path.exists(self.cert)):
                 self.genUefiKeys()
-                
+
             # If we have keys, but cannot read them they are dead to us.
             if not os.access(self.key, os.R_OK):
                 if self.logger is not None:
