@@ -68,14 +68,17 @@ class UefiUpload(CustomUpload):
                 self.logger.warning("No UEFI root configured for this archive")
             self.key = None
             self.cert = None
+            self.autokey = False
         else:
             self.key = os.path.join(pubconf.uefiroot, "uefi.key")
             self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
+            self.autokey = pubconf.uefiautokey
 
         self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
             pubconf.archiveroot, "dists", distroseries, "main", "uefi",
             "%s-%s" % (self.loader_type, self.arch))
+        self.archiveroot = pubconf.archiveroot
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
@@ -92,10 +95,41 @@ class UefiUpload(CustomUpload):
                 if filename.endswith(".efi"):
                     yield os.path.join(dirpath, filename)
 
+    def genUefiKeys(self):
+        old_mask = os.umask(0o022)
+        try:
+            directory = os.path.dirname(self.key)
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+            # XXX: pull out the PPA owner and name to seed key CN
+            archive_name = os.path.basename(self.archiveroot)
+            owner_name   = os.path.basename(os.path.dirname(directory))
+            common_name  = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
+
+            os.umask(0o077)
+            cmdl = [ 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
+                     '-subj', common_name, '-keyout', self.key,
+                     '-out', self.cert, '-days', '3650', '-nodes', '-sha256' ]
+            self.execute_cmd(cmdl)
+
+            if os.path.exists(self.cert):
+                os.chmod(self.cert, 0o644)
+
+        finally:
+            os.umask(old_mask)
+
     def getUefiKeys(self):
         """Validate and return the uefi key and cert for encryption."""
 
         if self.key and self.cert:
+            # If neither of the key files exists then attempt to
+            # generate them.
+            if (self.autokey and not os.path.exists(self.key)
+                and not os.path.exists(self.cert)):
+                self.genUefiKeys()
+                
+            # If we have keys, but cannot read them they are dead to us.
             if not os.access(self.key, os.R_OK):
                 if self.logger is not None:
                     self.logger.warning(
