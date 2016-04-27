@@ -758,18 +758,10 @@ class Publisher(object):
             distroseries, pocket = self.distro.getDistroSeriesAndPocket(
                 container[len(u"release:"):])
             archive_file_suites.add((distroseries, pocket))
-            self.release_files_needed.add((distroseries.name, pocket))
 
         for distroseries in self.distro:
             for pocket in self.archive.getPockets():
-                if not is_careful:
-                    if (not self.isDirty(distroseries, pocket) and
-                            (distroseries, pocket) not in archive_file_suites):
-                        self.log.debug("Skipping release files for %s/%s" %
-                                       (distroseries.name, pocket.name))
-                        continue
-                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
-                else:
+                if is_careful:
                     if not self.isAllowed(distroseries, pocket):
                         continue
                     # If we were asked for careful Release file generation
@@ -783,7 +775,27 @@ class Publisher(object):
                     if file_exists(release_path):
                         self.release_files_needed.add(
                             (distroseries.name, pocket))
-                self._writeSuite(distroseries, pocket)
+
+                if (distroseries.name, pocket) in self.release_files_needed:
+                    if not is_careful:
+                        if not self.isDirty(distroseries, pocket):
+                            self.log.debug("Skipping release files for %s/%s" %
+                                           (distroseries.name, pocket.name))
+                            continue
+                        self.checkDirtySuiteBeforePublishing(
+                            distroseries, pocket)
+                    self._writeSuite(distroseries, pocket)
+                elif ((distroseries, pocket) in archive_file_suites and
+                      distroseries.publish_by_hash):
+                    # We aren't publishing a new Release file for this
+                    # suite, probably because it's immutable, but we still
+                    # need to prune by-hash files from it.
+                    suite = distroseries.getSuite(pocket)
+                    release_path = os.path.join(
+                        self._config.distsroot, suite, "Release")
+                    with open(release_path) as release_file:
+                        release_data = Release(release_file)
+                    self._updateByHash(suite, release_data)
 
     def _allIndexFiles(self, distroseries):
         """Return all index files on disk for a distroseries.
@@ -1131,16 +1143,6 @@ class Publisher(object):
     def _writeSuite(self, distroseries, pocket):
         """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
-
-        # As we generate file lists for apt-ftparchive we record which
-        # distroseriess and so on we need to generate Release files for.
-        # We store this in release_files_needed and consume the information
-        # when writeReleaseFiles is called.
-        if (distroseries.name, pocket) not in self.release_files_needed:
-            # If we don't need to generate a release for this release
-            # and pocket, don't!
-            return
-
         suite = distroseries.getSuite(pocket)
         suite_dir = os.path.join(self._config.distsroot, suite)
         all_components = [
