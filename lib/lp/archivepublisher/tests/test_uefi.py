@@ -17,12 +17,27 @@ from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 
+class FakeMethodExecuteCmd(FakeMethod):
+    """A fake command executer."""
+    def __call__(self, *args, **kwargs):
+        super(FakeMethodExecuteCmd, self).__call__(*args, **kwargs)
+
+        cmdl = args[0]
+
+        # keygen command for UEFI keys:
+        if (cmdl[0] == 'openssl' and
+            cmdl[8] == '-keyout' and cmdl[9].startswith('/tmp/') and
+            cmdl[10] == '-out' and cmdl[11].startswith('/tmp/')):
+            
+            write_file(cmdl[9], "")
+            write_file(cmdl[11], "")
 
 class FakeConfig:
     """A fake publisher configuration."""
     def __init__(self, archiveroot, uefiroot):
         self.archiveroot = archiveroot
         self.uefiroot = uefiroot
+        self.uefiautokey = False
 
 
 class TestUefi(TestCase):
@@ -37,11 +52,44 @@ class TestUefi(TestCase):
         old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
 
-    def setUpKeyAndCert(self):
+    def setUpAutoKey(self):
+        self.pubconf.uefiautokey = True
+
+    def setUpKeyAndCert(self, create=True):
         self.key = os.path.join(self.uefi_dir, "uefi.key")
         self.cert = os.path.join(self.uefi_dir, "uefi.crt")
-        write_file(self.key, "")
-        write_file(self.cert, "")
+        if create:
+            write_file(self.key, "")
+            write_file(self.cert, "")
+
+    def validateKeyAndCert(self):
+        if os.path.exists(self.key) and os.path.exists(self.cert):
+            return True
+        else:
+            return False
+
+    def validateCmdUefiKeygen(self, call):
+        args = call[0][0]
+
+        archive_name = os.path.basename(self.pubconf.archiveroot)
+        owner_name   = os.path.basename(os.path.dirname(self.pubconf.archiveroot))
+        common_name  = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
+        
+        cmd_gen  = ['openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
+                    '-subj', common_name,
+                    '-keyout', self.key, '-out', self.cert,
+                    '-days', '3650', '-nodes', '-sha256']
+        return args == cmd_gen
+
+    def validateCmdSbsign(self, call, filename):
+        args = call[0][0]
+
+        if len(args) >= 6 and args[5].startswith('/'):
+            args[5] = os.path.basename(args[5])
+
+        cmd_sign = ['sbsign', '--key', self.key, '--cert', self.cert, filename ]
+
+        return args == cmd_sign
 
     def openArchive(self, loader_type, version, arch):
         self.path = os.path.join(
@@ -53,7 +101,7 @@ class TestUefi(TestCase):
         self.archive.close()
         self.buffer.close()
         upload = UefiUpload()
-        upload.execute_cmd = FakeMethod()
+        upload.execute_cmd = FakeMethodExecuteCmd()
         upload.process(self.pubconf, self.path, self.suite)
         return upload
 
@@ -133,3 +181,29 @@ class TestUefi(TestCase):
         self.process()
         self.assertTrue(os.path.exists(os.path.join(
             self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
+
+    def test_create_uefi_keys_autokey_off(self):
+        # Keys are not created.
+        self.setUpKeyAndCert(create=False)
+        self.assertFalse(self.validateKeyAndCert())
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.process()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertFalse(self.validateKeyAndCert())
+
+    def test_create_uefi_keys_autokey_on(self):
+        # Keys are created as needed.
+        self.setUpAutoKey()
+        self.setUpKeyAndCert(create=False)
+        self.assertFalse(self.validateKeyAndCert())
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        upload = self.process()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(self.validateKeyAndCert())
+        self.assertEqual(2, upload.execute_cmd.call_count)
+        self.assertTrue(self.validateCmdUefiKeygen(upload.execute_cmd.calls[0]))
+        self.assertTrue(self.validateCmdSbsign(upload.execute_cmd.calls[1], "empty.efi"))
