@@ -104,7 +104,7 @@ class UefiUpload(CustomUpload):
 
             # XXX: pull out the PPA owner and name to seed key CN
             archive_name = os.path.basename(self.archiveroot)
-            owner_name   = os.path.basename(os.path.dirname(directory))
+            owner_name   = os.path.basename(os.path.dirname(self.archiveroot))
             common_name  = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
 
             os.umask(0o077)
