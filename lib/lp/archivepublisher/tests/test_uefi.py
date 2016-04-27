@@ -64,12 +64,6 @@ class TestUefi(TestCase):
             write_file(self.key, "")
             write_file(self.cert, "")
 
-    def validateKeyAndCert(self):
-        if os.path.exists(self.key) and os.path.exists(self.cert):
-            return True
-        else:
-            return False
-
     def validateCmdUefiKeygen(self, call):
         args = call[0][0]
 
@@ -187,25 +181,29 @@ class TestUefi(TestCase):
     def test_create_uefi_keys_autokey_off(self):
         # Keys are not created.
         self.setUpKeyAndCert(create=False)
-        self.assertFalse(self.validateKeyAndCert())
+        self.assertFalse(os.path.exists(self.key))
+        self.assertFalse(os.path.exists(self.cert))
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.process()
         self.assertTrue(os.path.exists(os.path.join(
             self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertFalse(self.validateKeyAndCert())
+        self.assertFalse(os.path.exists(self.key))
+        self.assertFalse(os.path.exists(self.cert))
 
     def test_create_uefi_keys_autokey_on(self):
         # Keys are created as needed.
         self.setUpAutoKey()
         self.setUpKeyAndCert(create=False)
-        self.assertFalse(self.validateKeyAndCert())
+        self.assertFalse(os.path.exists(self.key))
+        self.assertFalse(os.path.exists(self.cert))
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
         self.assertTrue(os.path.exists(os.path.join(
             self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(self.validateKeyAndCert())
+        self.assertTrue(os.path.exists(self.key))
+        self.assertTrue(os.path.exists(self.cert))
         self.assertEqual(2, upload.execute_cmd.call_count)
         self.assertTrue(
             self.validateCmdUefiKeygen(upload.execute_cmd.calls[0]))
