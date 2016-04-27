@@ -96,18 +96,18 @@ class UefiUpload(CustomUpload):
                     yield os.path.join(dirpath, filename)
 
     def genUefiKeys(self):
-        old_mask = os.umask(0o022)
+        """Generate new UEFI Keys for this archive."""
+        directory = os.path.dirname(self.key)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # XXX: pull out the PPA owner and name to seed key CN
+        archive_name = os.path.basename(self.archiveroot)
+        owner_name = os.path.basename(os.path.dirname(self.archiveroot))
+        common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
+
+        old_mask = os.umask(0o077)
         try:
-            directory = os.path.dirname(self.key)
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-
-            # XXX: pull out the PPA owner and name to seed key CN
-            archive_name = os.path.basename(self.archiveroot)
-            owner_name = os.path.basename(os.path.dirname(self.archiveroot))
-            common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
-
-            os.umask(0o077)
             new_key_cmd = [
                 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
                 '-subj', common_name, '-keyout', self.key, '-out', self.cert,
@@ -120,12 +120,11 @@ class UefiUpload(CustomUpload):
                     self.logger.warning(
                         "Failed to generate UEFI signing keys for %s" %
                         common_name)
-
-            if os.path.exists(self.cert):
-                os.chmod(self.cert, 0o644)
-
         finally:
             os.umask(old_mask)
+
+        if os.path.exists(self.cert):
+            os.chmod(self.cert, 0o644)
 
     def getUefiKeys(self):
         """Validate and return the uefi key and cert for encryption."""
