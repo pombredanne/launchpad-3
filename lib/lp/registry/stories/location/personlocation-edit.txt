@@ -20,7 +20,8 @@ A user cannot set another user's +editlocation page.
 A user can set their own time zone:
 
     >>> self_browser = setupBrowser(auth="Basic zzz@foo.com:test")
-    >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> self_browser.open('http://launchpad.dev/~zzz')
+    >>> self_browser.getLink('Set location and time zone').click()
     >>> self_browser.getControl(name='field.time_zone').value = [
     ...     'Europe/Madrid']
     >>> self_browser.getControl('Update').click()
@@ -33,6 +34,7 @@ A user can set their own time zone:
 And when they come back to change it later, they'll see it there as the
 selected value.
 
-    >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> self_browser.open('http://launchpad.dev/~zzz')
+    >>> self_browser.getLink('Set location and time zone').click()
     >>> print self_browser.getControl(name='field.time_zone').value
     ['Europe/Madrid']

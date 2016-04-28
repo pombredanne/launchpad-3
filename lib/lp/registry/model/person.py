@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -768,7 +768,7 @@ class Person(
     def time_zone(self):
         """See `IHasLocation`."""
         if self.location is None:
-            return None
+            return u'UTC'
         # Wrap the location with a security proxy to make sure the user has
         # enough rights to see it.
         return ProxyFactory(self.location).time_zone

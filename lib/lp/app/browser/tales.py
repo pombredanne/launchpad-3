@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -1199,9 +1199,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def local_time(self):
         """Return the local time for this person."""
-        time_zone = 'UTC'
-        if self._context.time_zone is not None:
-            time_zone = self._context.time_zone
+        time_zone = self._context.time_zone
         return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
     def url(self, view_name=None, rootsite='mainsite'):
