@@ -245,6 +245,9 @@ class AccountStatusChoice(Choice):
 
     def constraint(self, value):
         """See `IField`."""
+        if not IAccount.providedBy(self.context):
+            # Not an account, eg. validating Person.setAccountStatus.
+            return True
         if removeSecurityProxy(self.context)._SO_creating:
             # This object is initializing.
             return True
