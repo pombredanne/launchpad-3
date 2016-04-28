@@ -6,7 +6,10 @@
 __metaclass__ = type
 
 
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    GreaterThan,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -423,6 +426,25 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
             PersonCreationRationale.UNKNOWN, 'No Comment')
         self.assertEqual(AccountStatus.ACTIVE, self.person.account_status)
         self.assertEqual(addr, self.person.preferredemail.email)
+
+    def testPlaceholderAccount(self):
+        # Logging into a username placeholder account activates the
+        # account and adds the email address.
+        email = u'placeholder@example.com'
+        openid = u'placeholder-id'
+        name = u'placeholder'
+        person = self.person_set.createPlaceholderPerson(openid, name)
+        self.assertEqual(AccountStatus.PLACEHOLDER, person.account.status)
+        original_created = person.datecreated
+        transaction.commit()
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            openid, email, 'New Name', PersonCreationRationale.UNKNOWN,
+            'No Comment')
+        self.assertEqual(person, found)
+        self.assertEqual(AccountStatus.ACTIVE, person.account.status)
+        self.assertEqual(name, person.name)
+        self.assertEqual('New Name', person.display_name)
+        self.assertThat(person.datecreated, GreaterThan(original_created))
 
 
 class TestCreatePersonAndEmail(TestCase):

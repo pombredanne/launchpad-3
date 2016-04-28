@@ -3397,7 +3397,13 @@ class PersonSet:
                 raise NameAlreadyTaken(
                     "The account matching the identifier is inactive.")
             elif person.account.status in [AccountStatus.DEACTIVATED,
-                                           AccountStatus.NOACCOUNT]:
+                                           AccountStatus.NOACCOUNT,
+                                           AccountStatus.PLACEHOLDER]:
+                if person.account.status == AccountStatus.PLACEHOLDER:
+                    # Placeholder accounts were never visible to anyone
+                    # before, so make them appear fresh to the user.
+                    removeSecurityProxy(person).display_name = full_name
+                    removeSecurityProxy(person).datecreated = UTC_NOW
                 removeSecurityProxy(person.account).reactivate(comment)
                 if email is None:
                     email = getUtility(IEmailAddressSet).new(
@@ -3489,6 +3495,17 @@ class PersonSet:
         return self._newPerson(
             name, displayname, hide_email_addresses=True, rationale=rationale,
             comment=comment, registrant=registrant)
+
+    def createPlaceholderPerson(self, openid_identifier, name):
+        """See `IPersonSet`."""
+        account = getUtility(IAccountSet).new(
+            AccountCreationRationale.USERNAME_PLACEHOLDER, name,
+            openid_identifier=openid_identifier,
+            status=AccountStatus.PLACEHOLDER)
+        return self._newPerson(
+            name, name, True,
+            rationale=PersonCreationRationale.USERNAME_PLACEHOLDER,
+            comment="when setting a username in SSO", account=account)
 
     def _newPerson(self, name, displayname, hide_email_addresses,
                    rationale, comment=None, registrant=None, account=None):
