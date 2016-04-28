@@ -633,11 +633,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param longitude: This person's longitude, as a float.
         :param selfgenerated_bugnotifications: Receive own bugmail.
         """
-        if email is None:
-            email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
+        if account_status == AccountStatus.PLACEHOLDER:
+            # Placeholder people are pretty special, so just create and
+            # bail out.
+            openid = self.getUniqueUnicode(u'%s-openid' % name)
+            person = getUtility(IPersonSet).createPlaceholderPerson(
+                openid, name)
+            return person
         # By default, make the email address preferred.
+        if email is None:
+            email = self.getUniqueEmailAddress()
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
