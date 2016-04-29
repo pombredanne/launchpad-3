@@ -757,10 +757,11 @@ class Publisher(object):
                 self.archive, container_prefix=u"release:"):
             distroseries, pocket = self.distro.getDistroSeriesAndPocket(
                 container[len(u"release:"):])
-            archive_file_suites.add((distroseries, pocket))
+            archive_file_suites.add((distroseries.name, pocket))
 
         for distroseries in self.distro:
             for pocket in self.archive.getPockets():
+                ds_pocket = (distroseries.name, pocket)
                 suite = distroseries.getSuite(pocket)
                 release_path = os.path.join(
                     self._config.distsroot, suite, "Release")
@@ -774,19 +775,21 @@ class Publisher(object):
                     # suites.  Only force those suites that already have
                     # Release files.
                     if file_exists(release_path):
-                        self.release_files_needed.add(
-                            (distroseries.name, pocket))
+                        self.release_files_needed.add(ds_pocket)
 
-                if (distroseries.name, pocket) in self.release_files_needed:
-                    if not is_careful:
-                        if not self.isDirty(distroseries, pocket):
-                            self.log.debug("Skipping release files for %s/%s" %
-                                           (distroseries.name, pocket.name))
-                            continue
+                write_release = ds_pocket in self.release_files_needed
+                if not is_careful:
+                    if not self.isDirty(distroseries, pocket):
+                        self.log.debug("Skipping release files for %s/%s" %
+                                       (distroseries.name, pocket.name))
+                        write_release = False
+                    else:
                         self.checkDirtySuiteBeforePublishing(
                             distroseries, pocket)
+
+                if write_release:
                     self._writeSuite(distroseries, pocket)
-                elif ((distroseries, pocket) in archive_file_suites and
+                elif (ds_pocket in archive_file_suites and
                       distroseries.publish_by_hash):
                     # We aren't publishing a new Release file for this
                     # suite, probably because it's immutable, but we still
