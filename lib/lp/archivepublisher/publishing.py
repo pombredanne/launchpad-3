@@ -791,9 +791,7 @@ class Publisher(object):
                     # We aren't publishing a new Release file for this
                     # suite, probably because it's immutable, but we still
                     # need to prune by-hash files from it.
-                    with open(release_path) as release_file:
-                        release_data = Release(release_file)
-                    self._updateByHash(suite, release_data)
+                    self._updateByHash(suite, "Release")
 
     def _allIndexFiles(self, distroseries):
         """Return all index files on disk for a distroseries.
@@ -1015,7 +1013,7 @@ class Publisher(object):
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
-    def _updateByHash(self, suite, release_data):
+    def _updateByHash(self, suite, release_file_name):
         """Update by-hash files for a suite.
 
         This takes Release file data which references a set of on-disk
@@ -1024,6 +1022,10 @@ class Publisher(object):
         directories to be in sync with ArchiveFile.  Any on-disk by-hash
         entries that ceased to be current sufficiently long ago are removed.
         """
+        release_path = os.path.join(
+            self._config.distsroot, suite, release_file_name)
+        with open(release_path) as release_file:
+            release_data = Release(release_file)
         archive_file_set = getUtility(IArchiveFileSet)
         by_hashes = ByHashes(self._config.distsroot, self.log)
         suite_dir = os.path.relpath(
@@ -1042,7 +1044,7 @@ class Publisher(object):
         for current_entry in release_data["SHA256"]:
             path = os.path.join(suite_dir, current_entry["name"])
             current_files[path] = (
-                current_entry["size"], current_entry["sha256"])
+                int(current_entry["size"]), current_entry["sha256"])
             current_sha256_checksums.add(current_entry["sha256"])
         uncondemned_files = set()
         for db_file in archive_file_set.getByArchive(
@@ -1118,14 +1120,15 @@ class Publisher(object):
         by_hashes.prune()
 
     def _writeReleaseFile(self, suite, release_data):
-        """Write a Release file to the archive.
+        """Write a Release file to the archive (as Release.new).
 
         :param suite: The name of the suite whose Release file is to be
             written.
         :param release_data: A `debian.deb822.Release` object to write
             to the filesystem.
         """
-        release_path = os.path.join(self._config.distsroot, suite, "Release")
+        release_path = os.path.join(
+            self._config.distsroot, suite, "Release.new")
         with open_for_writing(release_path, "w") as release_file:
             release_data.dump(release_file, "utf-8")
 
@@ -1219,13 +1222,18 @@ class Publisher(object):
                 release_file.setdefault(archive_hash.apt_name, []).append(
                     hashes[archive_hash.deb822_name])
 
-        if distroseries.publish_by_hash:
-            self._updateByHash(suite, release_file)
-            if distroseries.advertise_by_hash:
-                release_file["Acquire-By-Hash"] = "yes"
+        if distroseries.publish_by_hash and distroseries.advertise_by_hash:
+            release_file["Acquire-By-Hash"] = "yes"
 
         self._writeReleaseFile(suite, release_file)
         core_files.add("Release")
+
+        if distroseries.publish_by_hash:
+            self._updateByHash(suite, "Release.new")
+
+        os.rename(
+            os.path.join(suite_dir, "Release.new"),
+            os.path.join(suite_dir, "Release"))
 
         if self.archive.signing_key is not None:
             # Sign the repository.

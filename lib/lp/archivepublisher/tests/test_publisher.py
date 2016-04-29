@@ -3104,13 +3104,13 @@ class TestPublisherLite(TestCaseWithFactory):
         releases_dir = self.getReleaseFileDir(root, series, suite)
         os.makedirs(releases_dir)
         release_data = self.makeFakeReleaseData()
-        release_path = os.path.join(releases_dir, "Release")
+        release_path = os.path.join(releases_dir, "Release.new")
 
         self.makePublisher(series)._writeReleaseFile(suite, release_data)
 
         self.assertTrue(file_exists(release_path))
-        self.assertEqual(
-            release_data.encode('utf-8'), file(release_path).read())
+        with open(release_path) as release_file:
+            self.assertEqual(release_data.encode('utf-8'), release_file.read())
 
     def test_writeReleaseFile_creates_directory_if_necessary(self):
         # If the suite is new and its release directory does not exist
@@ -3121,7 +3121,7 @@ class TestPublisherLite(TestCaseWithFactory):
         suite = series.name + pocketsuffix[spph.pocket]
         release_data = self.makeFakeReleaseData()
         release_path = os.path.join(
-            self.getReleaseFileDir(root, series, suite), "Release")
+            self.getReleaseFileDir(root, series, suite), "Release.new")
 
         self.makePublisher(series)._writeReleaseFile(suite, release_data)
 
