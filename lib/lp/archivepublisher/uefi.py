@@ -95,7 +95,7 @@ class UefiUpload(CustomUpload):
                 if filename.endswith(".efi"):
                     yield os.path.join(dirpath, filename)
 
-    def genUefiKeys(self):
+    def generateUefiKeys(self):
         """Generate new UEFI Keys for this archive."""
         directory = os.path.dirname(self.key)
         if not os.path.exists(directory):
@@ -111,7 +111,7 @@ class UefiUpload(CustomUpload):
             new_key_cmd = [
                 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
                 '-subj', common_name, '-keyout', self.key, '-out', self.cert,
-                '-days', '3650', '-nodes', '-sha256'
+                '-days', '3650', '-nodes', '-sha256',
                 ]
             if subprocess.call(new_key_cmd) != 0:
                 # Just log this rather than failing, since custom upload errors
@@ -134,7 +134,7 @@ class UefiUpload(CustomUpload):
             # generate them.
             if (self.autokey and not os.path.exists(self.key)
                 and not os.path.exists(self.cert)):
-                self.genUefiKeys()
+                self.generateUefiKeys()
 
             # If we have keys, but cannot read them they are dead to us.
             if not os.access(self.key, os.R_OK):
