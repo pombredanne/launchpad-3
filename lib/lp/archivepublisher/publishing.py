@@ -761,6 +761,10 @@ class Publisher(object):
 
         for distroseries in self.distro:
             for pocket in self.archive.getPockets():
+                suite = distroseries.getSuite(pocket)
+                release_path = os.path.join(
+                    self._config.distsroot, suite, "Release")
+
                 if is_careful:
                     if not self.isAllowed(distroseries, pocket):
                         continue
@@ -769,9 +773,6 @@ class Publisher(object):
                     # material needed to generate Release files for all
                     # suites.  Only force those suites that already have
                     # Release files.
-                    release_path = os.path.join(
-                        self._config.distsroot, distroseries.getSuite(pocket),
-                        "Release")
                     if file_exists(release_path):
                         self.release_files_needed.add(
                             (distroseries.name, pocket))
@@ -790,9 +791,6 @@ class Publisher(object):
                     # We aren't publishing a new Release file for this
                     # suite, probably because it's immutable, but we still
                     # need to prune by-hash files from it.
-                    suite = distroseries.getSuite(pocket)
-                    release_path = os.path.join(
-                        self._config.distsroot, suite, "Release")
                     with open(release_path) as release_file:
                         release_data = Release(release_file)
                     self._updateByHash(suite, release_data)
