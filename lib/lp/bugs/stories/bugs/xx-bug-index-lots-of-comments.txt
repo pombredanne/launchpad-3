@@ -5,8 +5,8 @@ When a bug has a very large number of comments, only some of them are
 displayed. A notice is added at the end of the comment list to tell
 the user about this.
 
-Bug 11 has quite a few comments. Note that the "Add comment" form also has
-the comment-text CSS class, increasing all the find_tags_by_class counts
+Bug 11 has quite a few comments. Note that the "Add comment" text area also
+has the comment-text CSS class, increasing all the find_tags_by_class counts
 below by one.
 
     >>> user_browser.open('http://launchpad.dev/bugs/11')
