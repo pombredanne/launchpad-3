@@ -89,7 +89,7 @@ class IGitHostingClient(Interface):
         :param logger: An optional logger.
         """
 
-    def getBlob(self, path, filename, rev=None, logger=None):
+    def getBlob(path, filename, rev=None, logger=None):
         """Get a blob by file name from a repository.
 
         :param path: Physical path of the repository on the hosting service.

@@ -8,6 +8,7 @@ __all__ = [
     'GitHostingClient',
     ]
 
+from urllib import quote
 from urlparse import urljoin
 
 import requests
@@ -114,10 +115,9 @@ class GitHostingClient:
                 logger.info(
                     "Requesting merge diff for %s from %s to %s" % (
                         path, base, head))
-            url = "/repo/%s/compare-merge/%s:%s" % (path, base, head)
-            if prerequisite is not None:
-                url += "?sha1_prerequisite=%s" % prerequisite
-            return self._get(url)
+            url = "/repo/%s/compare-merge/%s:%s" % (
+                path, quote(base), quote(head))
+            return self._get(url, params={"sha1_prerequisite": prerequisite})
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get merge diff from Git repository: %s" %
@@ -132,7 +132,7 @@ class GitHostingClient:
                     "Detecting merges for %s from %s to %s" % (
                         path, sources, target))
             return self._post(
-                "/repo/%s/detect-merges/%s" % (path, target),
+                "/repo/%s/detect-merges/%s" % (path, quote(target)),
                 json={"sources": sources})
         except Exception as e:
             raise GitRepositoryScanFault(
@@ -154,9 +154,8 @@ class GitHostingClient:
             if logger is not None:
                 logger.info(
                     "Fetching file %s from repository %s" % (filename, path))
-            return self._get(
-                "/repo/%s/blob/%s%s" % (
-                    path, filename, '?rev=%s' % rev if rev else ''))
+            url = "/repo/%s/blob/%s" % (path, quote(filename))
+            return self._get(url, params={"rev": rev})
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get file from Git repository: %s" % unicode(e))

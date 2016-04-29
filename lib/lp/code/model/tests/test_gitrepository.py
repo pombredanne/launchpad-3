@@ -2033,7 +2033,6 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
                 for event in events[:2]))
 
 
-
 class TestGitRepositoryGetBlob(TestCaseWithFactory):
     """Tests for retrieving files from a Git repository."""
 
@@ -2049,7 +2048,7 @@ class TestGitRepositoryGetBlob(TestCaseWithFactory):
         hosting_client.getBlob = FakeMethod(result=expected_result)
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         ret = repository.getBlob('src/README.txt')
-        self.assertEqual(ret, expected_result)
+        self.assertEqual(expected_result, ret)
 
     def test_getBlob_with_rev(self):
         repository = self.factory.makeGitRepository()
@@ -2061,7 +2060,7 @@ class TestGitRepositoryGetBlob(TestCaseWithFactory):
         hosting_client.getBlob = FakeMethod(result=expected_result)
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         ret = repository.getBlob('src/README.txt', 'some-rev')
-        self.assertEqual(ret, expected_result)
+        self.assertEqual(expected_result, ret)
 
 
 class TestGitRepositorySet(TestCaseWithFactory):
