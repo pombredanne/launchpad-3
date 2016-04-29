@@ -20,11 +20,11 @@ import subprocess
 import sys
 import tempfile
 import urllib
-import urllib2
 
 import gpgme
 from gpgservice_client import GPGClient
 from lazr.restful.utils import get_current_browser_request
+import requests
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
@@ -490,21 +490,20 @@ class GPGHandler:
         # minutes." The details of the error do not matter for users
         # (and for the code in callsites), but we should be able to see
         # if this problem occurs too often.
-        except urllib2.HTTPError as exc:
+        except requests.HTTPError as exc:
             # Old versions of SKS return a 500 error when queried for a
             # non-existent key. Production was upgraded in 2013/01, but
             # let's leave this here for a while.
             #
             # We can extract the fact that the key is unknown by looking
             # into the response's content.
-            if exc.code in (404, 500) and exc.fp is not None:
-                content = exc.fp.read()
+            if exc.response.status_code in (404, 500):
                 no_key_message = 'No results found: No keys found'
-                if content.find(no_key_message) >= 0:
+                if exc.response.content.find(no_key_message) >= 0:
                     raise GPGKeyDoesNotExistOnServer(fingerprint)
                 errorlog.globalErrorUtility.raising(sys.exc_info(), request)
                 raise GPGKeyTemporarilyNotFoundError(fingerprint)
-        except (TimeoutError, urllib2.URLError) as exc:
+        except (TimeoutError, requests.RequestException) as exc:
             errorlog.globalErrorUtility.raising(sys.exc_info(), request)
             raise GPGKeyTemporarilyNotFoundError(fingerprint)
         finally:
@@ -513,7 +512,7 @@ class GPGHandler:
     def _grabPage(self, action, fingerprint):
         """Wrapper to collect KeyServer Pages."""
         url = self.getURLForKeyInServer(fingerprint, action)
-        return urlfetch(url)
+        return urlfetch(url).content
 
 
 @implementer(IPymeSignature)

@@ -13,7 +13,6 @@ import urllib
 
 from storm.expr import (
     And,
-    Or,
     SQL,
     )
 
@@ -69,18 +68,12 @@ class Library:
             # forcibly decodes it in any URL that it sees.
             #
             # This needs to match url_path_quote.
-            plain_tilde_path = urllib.quote(urllib.unquote(path), safe='/~+')
-            # XXX wgrant 2015-12-09: We used to generate URLs with
-            # escaped tildes, so support those until the tokens are all
-            # expired.
-            encoded_tilde_path = urllib.quote(urllib.unquote(path), safe='/')
+            normalised_path = urllib.quote(urllib.unquote(path), safe='/~+')
             store = session_store()
             token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
                 TimeLimitedToken.token == hashlib.sha256(token).hexdigest(),
-                Or(
-                    TimeLimitedToken.path == plain_tilde_path,
-                    TimeLimitedToken.path == encoded_tilde_path)).is_empty()
+                TimeLimitedToken.path == normalised_path).is_empty()
             store.reset()
             if token_found:
                 raise LookupError("Token stale/pruned/path mismatch")

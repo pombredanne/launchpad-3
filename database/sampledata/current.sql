@@ -85,6 +85,7 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, status_comment) VALUES (2436241, '2008-11-04 12:59:26.965843', 8, 20, '2008-11-04 13:09:43.807125', 'PPA key guard', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, status_comment) VALUES (2436242, '2009-03-17 07:26:14.024613', 1, 20, '2009-03-17 07:26:14.024613', 'Ubuntu-branches-owner', 'Activated when the preferred email was set.');
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, status_comment) VALUES (2436243, '2009-08-04 10:50:39.383407', 1, 20, '2009-08-04 10:50:39.383407', 'Techboard Owner', 'Activated when the preferred email was set.');
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, status_comment) VALUES (2436244, '2016-03-11 08:24:55.495042', 1, 20, '2016-03-11 08:24:55.495042', 'Ubuntu Single Sign On', NULL);
 
 
 ALTER TABLE account ENABLE TRIGGER ALL;
@@ -944,6 +945,7 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243651, 'Software-center-agent', NULL, NULL, 'software-center-agent', NULL, NULL, NULL, NULL, 1, NULL, '2010-07-12 09:48:27.198885', NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243652, 'Launchpad PPA Self Admins', 243621, NULL, 'launchpad-ppa-self-admins', NULL, NULL, NULL, NULL, 3, NULL, '2013-05-10 05:43:04.018122', NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243653, 'Launchpad PPA Admins', 243621, NULL, 'launchpad-ppa-admins', NULL, NULL, NULL, NULL, 3, NULL, '2015-11-25 11:06:11.767934', NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL, NULL);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account, description) VALUES (243654, 'Ubuntu Single Sign On', NULL, NULL, 'ubuntu-sso', NULL, NULL, NULL, NULL, 3, NULL, '2016-03-11 08:24:55.495042', NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 2436244, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -1698,6 +1700,16 @@ ALTER TABLE archivedependency DISABLE TRIGGER ALL;
 
 
 ALTER TABLE archivedependency ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE archivefile DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE archivefile ENABLE TRIGGER ALL;
 
 
 
@@ -3599,6 +3611,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (79, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (80, 'ppa-key-guard@launchpad.net', 243625, 4, '2008-11-04 12:59:26.965843');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (82, 'techboard-owner@example.com', 243631, 4, '2009-08-04 10:50:39.383407');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (93, 'software-center-agent@example.com', 243651, 4, '2010-07-12 09:48:27.198885');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (94, 'ubuntu-sso@example.com', 243654, 4, '2016-03-11 08:24:55.495042');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -4667,6 +4680,7 @@ INSERT INTO lp_account (id, openid_identifier) VALUES (2436231, 'mTmeENb');
 INSERT INTO lp_account (id, openid_identifier) VALUES (2436241, 'cF4PNk3');
 INSERT INTO lp_account (id, openid_identifier) VALUES (2436242, 'GMX7shE');
 INSERT INTO lp_account (id, openid_identifier) VALUES (2436243, 'kYFxQYP');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436244, 'ubuntu-sso_oid');
 
 
 ALTER TABLE lp_account ENABLE TRIGGER ALL;
@@ -4739,6 +4753,7 @@ INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('ste
 INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('stub_oid', 221, '2005-06-06 08:59:51.59276');
 INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('team-membership-janitor_oid', 671, '2006-10-04 16:20:51.19954');
 INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('tsukimi_oid', 501, '2005-06-06 08:59:51.569518');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('ubuntu-sso_oid', 2436244, '2016-03-11 08:24:55.495042');
 INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('valyag_oid', 441, '2005-06-06 08:59:51.562857');
 INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('yEzBPbd', 2436151, '2007-12-18 16:31:34.790641');
 INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('zRtPxw8', 243637, '2010-07-12 09:48:27.198885');
@@ -4846,6 +4861,7 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243651, 'Software-center-agent', NULL, NULL, 'software-center-agent', NULL, NULL, NULL, NULL, 1, NULL, '2010-07-12 09:48:27.198885', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243652, 'Launchpad PPA Self Admins', 243621, NULL, 'launchpad-ppa-self-admins', NULL, NULL, NULL, NULL, 3, NULL, '2013-05-10 05:43:04.018122', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243653, 'Launchpad PPA Admins', 243621, NULL, 'launchpad-ppa-admins', NULL, NULL, NULL, NULL, 3, NULL, '2015-11-25 11:06:11.767934', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
+INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243654, 'Ubuntu Single Sign On', NULL, NULL, 'ubuntu-sso', NULL, NULL, NULL, NULL, 3, NULL, '2016-03-11 08:24:55.495042', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 2436244);
 
 
 ALTER TABLE lp_person ENABLE TRIGGER ALL;
@@ -5069,6 +5085,7 @@ INSERT INTO lp_teamparticipation (id, team, person) VALUES (257, 243652, 243622)
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (258, 243653, 243653);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (259, 243653, 243621);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (260, 243653, 243622);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (261, 243654, 243654);
 
 
 ALTER TABLE lp_teamparticipation ENABLE TRIGGER ALL;
@@ -5769,6 +5786,7 @@ INSERT INTO openididentifier (identifier, account, date_created) VALUES ('stevea
 INSERT INTO openididentifier (identifier, account, date_created) VALUES ('stub_oid', 221, '2005-06-06 08:59:51.59276');
 INSERT INTO openididentifier (identifier, account, date_created) VALUES ('team-membership-janitor_oid', 671, '2006-10-04 16:20:51.19954');
 INSERT INTO openididentifier (identifier, account, date_created) VALUES ('tsukimi_oid', 501, '2005-06-06 08:59:51.569518');
+INSERT INTO openididentifier (identifier, account, date_created) VALUES ('ubuntu-sso_oid', 2436244, '2016-03-11 08:24:55.495042');
 INSERT INTO openididentifier (identifier, account, date_created) VALUES ('valyag_oid', 441, '2005-06-06 08:59:51.562857');
 INSERT INTO openididentifier (identifier, account, date_created) VALUES ('yEzBPbd', 2436151, '2007-12-18 16:31:34.790641');
 INSERT INTO openididentifier (identifier, account, date_created) VALUES ('zRtPxw8', 243637, '2010-07-12 09:48:27.198885');
@@ -6063,101 +6081,102 @@ ALTER TABLE personnotification ENABLE TRIGGER ALL;
 
 ALTER TABLE personsettings DISABLE TRIGGER ALL;
 
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (1, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (2, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (3, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (4, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (5, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (6, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (7, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (8, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (9, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (10, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (11, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (12, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (13, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (14, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (16, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (17, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (18, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (19, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (20, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (21, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (22, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (23, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (24, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (25, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (26, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (27, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (28, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (29, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (30, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (31, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (32, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (33, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (34, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (35, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (36, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (37, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (38, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (39, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (40, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (41, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (42, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (43, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (44, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (45, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (46, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (47, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (48, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (49, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (50, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (51, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (52, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (53, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (55, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (56, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (57, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (58, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (59, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (60, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (61, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (62, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (63, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (64, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (65, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (66, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (67, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (68, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (69, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (70, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243602, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243603, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243604, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243606, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243607, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243608, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243609, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243610, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243611, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243612, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243613, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243614, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243615, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243616, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243617, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243620, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243621, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243622, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243623, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243624, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243625, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243626, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243629, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243630, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243631, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243632, true, NULL);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243651, true, NULL);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (1, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (2, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (3, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (4, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (5, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (6, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (7, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (8, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (9, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (10, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (11, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (12, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (13, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (14, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (16, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (17, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (18, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (19, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (20, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (21, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (22, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (23, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (24, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (25, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (26, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (27, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (28, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (29, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (30, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (31, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (32, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (33, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (34, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (35, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (36, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (37, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (38, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (39, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (40, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (41, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (42, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (43, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (44, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (45, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (46, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (47, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (48, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (49, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (50, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (51, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (52, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (53, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (55, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (56, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (57, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (58, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (59, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (60, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (61, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (62, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (63, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (64, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (65, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (66, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (67, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (68, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (69, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (70, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243602, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243603, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243604, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243606, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243607, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243608, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243609, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243610, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243611, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243612, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243613, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243614, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243615, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243616, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243617, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243620, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243621, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243622, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243623, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243624, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243625, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243626, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243629, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243630, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243631, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243632, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243651, true, false);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications, expanded_notification_footers) VALUES (243654, false, false);
 
 
 ALTER TABLE personsettings ENABLE TRIGGER ALL;
@@ -9884,7 +9903,7 @@ ALTER TABLE spokenin ENABLE TRIGGER ALL;
 ALTER TABLE sprint DISABLE TRIGGER ALL;
 
 INSERT INTO sprint (id, owner, name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver, homepage_content, icon, mugshot, logo, is_physical) VALUES (1, 12, 'ubz', 'Ubuntu Below Zero', 'This is the next Ubuntu developer Summit. Join us in Montreal for discussions around Ubuntu and Launchpad. The focus will be the road to Dapper, our April 2006 release, focused on the enterprise.', 'http://wiki.ubuntu.com/UbuntuBelowZero', 'Montreal, Canada', 'US/Eastern', '2005-10-07 23:30:00', '2005-11-17 00:11:00', '2005-09-15 09:04:01.762108', NULL, NULL, NULL, NULL, NULL, true);
-INSERT INTO sprint (id, owner, name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver, homepage_content, icon, mugshot, logo, is_physical) VALUES (2, 1, 'uds-guacamole', 'Ubuntu DevSummit Guacamole', 'This is the ubuntu Developer Summit in the town of Guacamole. Expected to be a big hit with the avocado crowd, UDS-Guacamole is going down in future as a way of ensuring that tests continue to pass for a decent length of time.', NULL, NULL, 'UTC', '2014-05-24 14:00:00', '2016-04-23 15:00:00', '2006-06-24 14:16:51.130113', NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO sprint (id, owner, name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver, homepage_content, icon, mugshot, logo, is_physical) VALUES (2, 1, 'uds-guacamole', 'Ubuntu DevSummit Guacamole', 'This is the ubuntu Developer Summit in the town of Guacamole. Expected to be a big hit with the avocado crowd, UDS-Guacamole is going down in future as a way of ensuring that tests continue to pass for a decent length of time.', NULL, NULL, 'UTC', '2024-05-24 14:00:00', '2026-04-23 15:00:00', '2006-06-24 14:16:51.130113', NULL, NULL, NULL, NULL, NULL, true);
 INSERT INTO sprint (id, owner, name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver, homepage_content, icon, mugshot, logo, is_physical) VALUES (3, 1, 'paris', 'Ubuntu Summit - Paris', 'This is the ubuntu Developer Summit in Paris, which will be our second visit to the CDG airport.', NULL, NULL, 'UTC', '2011-05-24 14:00:00', '2011-05-28 15:00:00', '2006-07-24 14:16:51.130113', 12, NULL, NULL, NULL, NULL, true);
 INSERT INTO sprint (id, owner, name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver, homepage_content, icon, mugshot, logo, is_physical) VALUES (4, 16, 'futurista', 'Future Mega Meeting', 'This very large meeting will cover work on Firefox as well as Ubuntu and Kubuntu. We will use this sprint to test the ability to generate lists of future events for products, projects and distributions.', NULL, NULL, 'Australia/Tasmania', '2025-08-16 23:00:00', '2025-08-23 07:00:00', '2007-02-23 11:14:08.888996', NULL, NULL, NULL, NULL, NULL, true);
 
@@ -10259,6 +10278,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (257, 243652, 243622);
 INSERT INTO teamparticipation (id, team, person) VALUES (258, 243653, 243653);
 INSERT INTO teamparticipation (id, team, person) VALUES (259, 243653, 243621);
 INSERT INTO teamparticipation (id, team, person) VALUES (260, 243653, 243622);
+INSERT INTO teamparticipation (id, team, person) VALUES (261, 243654, 243654);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
