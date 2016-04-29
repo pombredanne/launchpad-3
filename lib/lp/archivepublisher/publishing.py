@@ -758,18 +758,14 @@ class Publisher(object):
             distroseries, pocket = self.distro.getDistroSeriesAndPocket(
                 container[len(u"release:"):])
             archive_file_suites.add((distroseries, pocket))
-            self.release_files_needed.add((distroseries.name, pocket))
 
         for distroseries in self.distro:
             for pocket in self.archive.getPockets():
-                if not is_careful:
-                    if (not self.isDirty(distroseries, pocket) and
-                            (distroseries, pocket) not in archive_file_suites):
-                        self.log.debug("Skipping release files for %s/%s" %
-                                       (distroseries.name, pocket.name))
-                        continue
-                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
-                else:
+                suite = distroseries.getSuite(pocket)
+                release_path = os.path.join(
+                    self._config.distsroot, suite, "Release")
+
+                if is_careful:
                     if not self.isAllowed(distroseries, pocket):
                         continue
                     # If we were asked for careful Release file generation
@@ -777,13 +773,25 @@ class Publisher(object):
                     # material needed to generate Release files for all
                     # suites.  Only force those suites that already have
                     # Release files.
-                    release_path = os.path.join(
-                        self._config.distsroot, distroseries.getSuite(pocket),
-                        "Release")
                     if file_exists(release_path):
                         self.release_files_needed.add(
                             (distroseries.name, pocket))
-                self._writeSuite(distroseries, pocket)
+
+                if (distroseries.name, pocket) in self.release_files_needed:
+                    if not is_careful:
+                        if not self.isDirty(distroseries, pocket):
+                            self.log.debug("Skipping release files for %s/%s" %
+                                           (distroseries.name, pocket.name))
+                            continue
+                        self.checkDirtySuiteBeforePublishing(
+                            distroseries, pocket)
+                    self._writeSuite(distroseries, pocket)
+                elif ((distroseries, pocket) in archive_file_suites and
+                      distroseries.publish_by_hash):
+                    # We aren't publishing a new Release file for this
+                    # suite, probably because it's immutable, but we still
+                    # need to prune by-hash files from it.
+                    self._updateByHash(suite, "Release")
 
     def _allIndexFiles(self, distroseries):
         """Return all index files on disk for a distroseries.
@@ -1005,7 +1013,7 @@ class Publisher(object):
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
-    def _updateByHash(self, suite, release_data):
+    def _updateByHash(self, suite, release_file_name):
         """Update by-hash files for a suite.
 
         This takes Release file data which references a set of on-disk
@@ -1014,6 +1022,10 @@ class Publisher(object):
         directories to be in sync with ArchiveFile.  Any on-disk by-hash
         entries that ceased to be current sufficiently long ago are removed.
         """
+        release_path = os.path.join(
+            self._config.distsroot, suite, release_file_name)
+        with open(release_path) as release_file:
+            release_data = Release(release_file)
         archive_file_set = getUtility(IArchiveFileSet)
         by_hashes = ByHashes(self._config.distsroot, self.log)
         suite_dir = os.path.relpath(
@@ -1032,7 +1044,7 @@ class Publisher(object):
         for current_entry in release_data["SHA256"]:
             path = os.path.join(suite_dir, current_entry["name"])
             current_files[path] = (
-                current_entry["size"], current_entry["sha256"])
+                int(current_entry["size"]), current_entry["sha256"])
             current_sha256_checksums.add(current_entry["sha256"])
         uncondemned_files = set()
         for db_file in archive_file_set.getByArchive(
@@ -1108,14 +1120,15 @@ class Publisher(object):
         by_hashes.prune()
 
     def _writeReleaseFile(self, suite, release_data):
-        """Write a Release file to the archive.
+        """Write a Release file to the archive (as Release.new).
 
         :param suite: The name of the suite whose Release file is to be
             written.
         :param release_data: A `debian.deb822.Release` object to write
             to the filesystem.
         """
-        release_path = os.path.join(self._config.distsroot, suite, "Release")
+        release_path = os.path.join(
+            self._config.distsroot, suite, "Release.new")
         with open_for_writing(release_path, "w") as release_file:
             release_data.dump(release_file, "utf-8")
 
@@ -1131,16 +1144,6 @@ class Publisher(object):
     def _writeSuite(self, distroseries, pocket):
         """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
-
-        # As we generate file lists for apt-ftparchive we record which
-        # distroseriess and so on we need to generate Release files for.
-        # We store this in release_files_needed and consume the information
-        # when writeReleaseFiles is called.
-        if (distroseries.name, pocket) not in self.release_files_needed:
-            # If we don't need to generate a release for this release
-            # and pocket, don't!
-            return
-
         suite = distroseries.getSuite(pocket)
         suite_dir = os.path.join(self._config.distsroot, suite)
         all_components = [
@@ -1219,13 +1222,18 @@ class Publisher(object):
                 release_file.setdefault(archive_hash.apt_name, []).append(
                     hashes[archive_hash.deb822_name])
 
-        if distroseries.publish_by_hash:
-            self._updateByHash(suite, release_file)
-            if distroseries.advertise_by_hash:
-                release_file["Acquire-By-Hash"] = "yes"
+        if distroseries.publish_by_hash and distroseries.advertise_by_hash:
+            release_file["Acquire-By-Hash"] = "yes"
 
         self._writeReleaseFile(suite, release_file)
         core_files.add("Release")
+
+        if distroseries.publish_by_hash:
+            self._updateByHash(suite, "Release.new")
+
+        os.rename(
+            os.path.join(suite_dir, "Release.new"),
+            os.path.join(suite_dir, "Release"))
 
         if self.archive.signing_key is not None:
             # Sign the repository.
