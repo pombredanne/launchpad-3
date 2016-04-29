@@ -533,6 +533,22 @@ class IGitRepositoryView(IHasRecipes):
         :param logger: An optional logger.
         """
 
+    @operation_parameters(
+        filename=TextLine(
+            title=_("Relative path of file in the repository."),
+            required=True),
+        rev=TextLine(title=_("An optional revision. Defaults to 'HEAD'.")),
+        )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBlob(filename, rev=None):
+        """Get a blob by file name from this repository.
+
+        :param filename: Relative path of a file in the repository.
+        :param rev: An optional revision. Defaults to 'HEAD'.
+        :return: A dict with keys 'data' and 'size'.
+        """
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.

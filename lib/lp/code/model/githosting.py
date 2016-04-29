@@ -147,3 +147,16 @@ class GitHostingClient:
         except Exception as e:
             raise GitRepositoryDeletionFault(
                 "Failed to delete Git repository: %s" % unicode(e))
+
+    def getBlob(self, path, filename, rev=None, logger=None):
+        """See `IGitHostingClient`."""
+        try:
+            if logger is not None:
+                logger.info(
+                    "Fetching file %s from repository %s" % (filename, path))
+            return self._get(
+                "/repo/%s/blob/%s%s" % (
+                    path, filename, '?rev=%s' % rev if rev else ''))
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get file from Git repository: %s" % unicode(e))

@@ -2033,6 +2033,37 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
                 for event in events[:2]))
 
 
+
+class TestGitRepositoryGetBlob(TestCaseWithFactory):
+    """Tests for retrieving files from a Git repository."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getBlob_with_default_rev(self):
+        repository = self.factory.makeGitRepository()
+        hosting_client = FakeMethod()
+        expected_result = {
+            'data': u'Some text'.encode('base64'),
+            'size': len(u'Some Text'),
+            }
+        hosting_client.getBlob = FakeMethod(result=expected_result)
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        ret = repository.getBlob('src/README.txt')
+        self.assertEqual(ret, expected_result)
+
+    def test_getBlob_with_rev(self):
+        repository = self.factory.makeGitRepository()
+        hosting_client = FakeMethod()
+        expected_result = {
+            'data': u'Some text'.encode('base64'),
+            'size': len(u'Some Text'),
+            }
+        hosting_client.getBlob = FakeMethod(result=expected_result)
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        ret = repository.getBlob('src/README.txt', 'some-rev')
+        self.assertEqual(ret, expected_result)
+
+
 class TestGitRepositorySet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

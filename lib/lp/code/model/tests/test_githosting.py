@@ -183,3 +183,19 @@ class TestGitHostingClient(TestCase):
                 GitRepositoryDeletionFault,
                 "Failed to delete Git repository: Bad request",
                 self.client.delete, "123")
+
+    def test_getBlob(self):
+        blob = b''.join(chr(i) for i in range(256)).encode("base64")
+        content = {"data": blob, "size": len(blob)}
+        with self.mockRequests(content=json.dumps(content)):
+            response = self.client.getBlob("123", "dir/path/file/name")
+        self.assertEqual(content, response)
+        self.assertRequest(
+            "repo/123/blob/dir/path/file/name", method="GET")
+
+    def test_getBlob_failure(self):
+        with self.mockRequests(status_code=400, content=b"Bad request"):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get file from Git repository: Bad request",
+                self.client.getBlob, "123", "dir/path/file/name")
