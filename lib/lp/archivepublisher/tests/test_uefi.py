@@ -99,12 +99,9 @@ class TestUefi(TestCase):
         self.buffer.close()
         fake_call = FakeMethod()
         upload = UefiUpload()
-        upload.signUefiCall = FakeMethod()
-        upload.generateUefiKeys = FakeMethodGenUefiKeys(testcase=self)
+        upload.signUefi = FakeMethod()
         with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
             upload.process(self.pubconf, self.path, self.suite)
-        # Under no circumstances is it safe to exectute actual commands.
-        self.assertEqual(0, fake_call.call_count)
 
         return upload
 
@@ -115,33 +112,31 @@ class TestUefi(TestCase):
 
     def test_unconfigured(self):
         # If there is no key/cert configuration, processing succeeds but
-        # nothing is signed.
+        # nothing is signed.  Signing is attempted.
         self.pubconf = FakeConfig(self.temp_dir, None)
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
-        self.assertEqual(0, upload.generateUefiKeys.call_count)
-        self.assertEqual(0, upload.signUefiCall.call_count)
+        self.assertEqual(1, upload.signUefi.call_count)
 
     def test_missing_key_and_cert(self):
         # If the configured key/cert are missing, processing succeeds but
-        # nothing is signed.
+        # nothing is signed.  Signing is attempted.
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
-        self.assertEqual(0, upload.generateUefiKeys.call_count)
-        self.assertEqual(0, upload.signUefiCall.call_count)
+        self.assertEqual(1, upload.signUefi.call_count)
 
     def test_no_efi_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.
+        # Nothing is signed.
         self.setUpKeyAndCert()
         self.openArchive("empty", "1.0", "amd64")
         self.archive.add_file("1.0/hello", "world")
         upload = self.process()
         self.assertTrue(os.path.exists(os.path.join(
             self.getUefiPath("empty", "amd64"), "1.0", "hello")))
-        self.assertEqual(0, upload.generateUefiKeys.call_count)
-        self.assertEqual(0, upload.signUefiCall.call_count)
+        self.assertEqual(0, upload.signUefi.call_count)
 
     def test_already_exists(self):
         # If the target directory already exists, processing fails.
@@ -160,19 +155,37 @@ class TestUefi(TestCase):
         self.assertRaises(CustomUploadBadUmask, self.process)
 
     def test_correct_uefi_signing_command_executed(self):
-        # Check that calling sign() will generate the expected command.
+        # Check that calling signUefi() will generate the expected command
+        # when appropriate keys are present.
         self.setUpKeyAndCert()
         fake_call = FakeMethod()
         with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
             upload = UefiUpload()
+            upload.generateUefiKeys = FakeMethod()
             upload.setTargetDirectory(
                 self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
             upload.signUefi('t.efi')
         self.assertEqual(1, fake_call.call_count)
         self.assertCmdSbsign(fake_call.calls[0], 't.efi')
+        self.assertEqual(0, upload.generateUefiKeys.call_count)
+
+    def test_correct_uefi_signing_command_executed_no_keys(self):
+        # Check that calling signUefi() will generate no commands when
+        # no keys are present.
+        self.setUpKeyAndCert(create=False)
+        fake_call = FakeMethod()
+        with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
+            upload = UefiUpload()
+            upload.generateUefiKeys = FakeMethod()
+            upload.setTargetDirectory(
+                self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            upload.signUefi('t.efi')
+        self.assertEqual(0, fake_call.call_count)
+        self.assertEqual(0, upload.generateUefiKeys.call_count)
 
     def test_correct_uefi_keygen_command_executed(self):
-        # Check that calling generateUefiKeys() will generate the expected command.
+        # Check that calling generateUefiKeys() will generate the
+        # expected command.
         self.setUpKeyAndCert(create=False)
         fake_call = FakeMethod()
         with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
@@ -189,8 +202,7 @@ class TestUefi(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
-        self.assertEqual(1, upload.signUefiCall.call_count)
-        self.assertCmdSbsign(upload.signUefiCall.calls[0], "empty.efi")
+        self.assertEqual(1, upload.signUefi.call_count)
 
     def test_installed(self):
         # Files in the tarball are installed correctly.
@@ -206,28 +218,30 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert(create=False)
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
-        self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        upload = self.process()
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertEqual(0, upload.signUefiCall.call_count)
+        fake_call = FakeMethod()
+        with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
+            upload = UefiUpload()
+            upload.generateUefiKeys = FakeMethodGenUefiKeys(testcase=self)
+            upload.setTargetDirectory(
+                self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            upload.signUefi('t.efi')
         self.assertEqual(0, upload.generateUefiKeys.call_count)
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
 
     def test_create_uefi_keys_autokey_on(self):
-        # Keys are created as needed.
+        # Keys are created on demand.
         self.setUpAutoKey()
         self.setUpKeyAndCert(create=False)
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
-        self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        upload = self.process()
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertEqual(1, upload.signUefiCall.call_count)
+        fake_call = FakeMethod()
+        with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
+            upload = UefiUpload()
+            upload.generateUefiKeys = FakeMethodGenUefiKeys(testcase=self)
+            upload.setTargetDirectory(
+                self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            upload.signUefi('t.efi')
         self.assertEqual(1, upload.generateUefiKeys.call_count)
         self.assertTrue(os.path.exists(self.key))
         self.assertTrue(os.path.exists(self.cert))

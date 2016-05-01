@@ -150,21 +150,18 @@ class UefiUpload(CustomUpload):
 
         return (self.key, self.cert)
 
-    def signUefiCall(self, cmdl):
-        if subprocess.call(cmdl) != 0:
-            # Just log this rather than failing, since custom upload errors
-            # tend to make the publisher rather upset.
-            if self.logger is not None:
-                self.logger.warning("UEFI Signing Failed '%s'" %
-                    " ".join(cmdl))
-
     def signUefi(self, image):
         """Attempt to sign an image."""
         (key, cert) = self.getUefiKeys()
         if not key or not cert:
             return
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
-        self.signUefiCall(cmdl)
+        if subprocess.call(cmdl) != 0:
+            # Just log this rather than failing, since custom upload errors
+            # tend to make the publisher rather upset.
+            if self.logger is not None:
+                self.logger.warning("UEFI Signing Failed '%s'" %
+                    " ".join(cmdl))
 
     def extract(self):
         """Copy the custom upload to a temporary directory, and sign it.
