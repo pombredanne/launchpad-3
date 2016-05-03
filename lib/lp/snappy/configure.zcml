@@ -117,6 +117,13 @@
             interface="lp.snappy.interfaces.snapseries.ISnapDistroSeriesSet" />
     </securedutility>
 
+    <!-- Store interaction -->
+    <securedutility
+        class="lp.snappy.model.snapstoreclient.SnapStoreClient"
+        provides="lp.snappy.interfaces.snapstoreclient.ISnapStoreClient">
+        <allow interface="lp.snappy.interfaces.snapstoreclient.ISnapStoreClient" />
+    </securedutility>
+
     <webservice:register module="lp.snappy.interfaces.webservice" />
 
 </configure>
