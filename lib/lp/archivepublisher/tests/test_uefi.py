@@ -89,6 +89,8 @@ class TestUefi(TestCase):
         upload.signUefi = FakeMethod()
         with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
             upload.process(self.pubconf, self.path, self.suite)
+        # Under no circumstances is it safe to execute actual commands.
+        self.assertEqual(0, fake_call.call_count)
 
         return upload
 
