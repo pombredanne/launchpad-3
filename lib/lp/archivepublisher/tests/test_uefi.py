@@ -35,10 +35,20 @@ class FakeMethodGenUefiKeys(FakeMethod):
 
 class FakeConfig:
     """A fake publisher configuration."""
-    def __init__(self, archiveroot, uefiroot):
-        self.archiveroot = archiveroot
+    def __init__(self, distroroot, uefiroot):
+        self.distroroot = distroroot
         self.uefiroot = uefiroot
+        self.archiveroot = os.path.join(distroroot, 'ubuntu')
         self.uefiautokey = False
+
+
+class FakeConfigPPA:
+    """A fake publisher configuration for a PPA."""
+    def __init__(self, distroroot, uefiroot, owner, ppa):
+        self.distroroot = distroroot
+        self.uefiroot = uefiroot
+        self.archiveroot = os.path.join(self.distroroot, owner, ppa, 'ubuntu')
+        self.uefiautokey = True
 
 
 class TestUefi(TestCase):
@@ -53,8 +63,10 @@ class TestUefi(TestCase):
         old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
 
-    def setUpAutoKey(self):
-        self.pubconf.uefiautokey = True
+    def setUpPPA(self):
+        self.pubconf = FakeConfigPPA(self.temp_dir, self.uefi_dir,
+            'ubuntu-archive', 'testing')
+        self.testcase_cn = '/CN=PPA ubuntu-archive testing/'
 
     def setUpKeyAndCert(self, create=True):
         self.key = os.path.join(self.uefi_dir, "uefi.key")
@@ -66,14 +78,9 @@ class TestUefi(TestCase):
     def assertCmdUefiKeygen(self, call):
         args = call[0][0]
 
-        archive_root = self.pubconf.archiveroot
-        archive_name = os.path.basename(archive_root)
-        owner_name = os.path.basename(os.path.dirname(archive_root))
-        common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
-
         expected_cmd = [
             'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-            '-subj', common_name, '-keyout', self.key, '-out', self.cert,
+            '-subj', self.testcase_cn, '-keyout', self.key, '-out', self.cert,
             '-days', '3650', '-nodes', '-sha256',
             ]
         self.assertEqual(expected_cmd, args)
@@ -107,7 +114,7 @@ class TestUefi(TestCase):
 
     def getUefiPath(self, loader_type, arch):
         return os.path.join(
-            self.temp_dir, "dists", self.suite, "main", "uefi",
+            self.pubconf.archiveroot, "dists", self.suite, "main", "uefi",
             "%s-%s" % (loader_type, arch))
 
     def test_unconfigured(self):
@@ -186,6 +193,7 @@ class TestUefi(TestCase):
     def test_correct_uefi_keygen_command_executed(self):
         # Check that calling generateUefiKeys() will generate the
         # expected command.
+        self.setUpPPA()
         self.setUpKeyAndCert(create=False)
         fake_call = FakeMethod()
         with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
@@ -231,7 +239,7 @@ class TestUefi(TestCase):
 
     def test_create_uefi_keys_autokey_on(self):
         # Keys are created on demand.
-        self.setUpAutoKey()
+        self.setUpPPA()
         self.setUpKeyAndCert(create=False)
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
