@@ -21,7 +21,7 @@ from lp.testing.fakemethod import FakeMethod
 
 
 class FakeMethodGenUefiKeys(FakeMethod):
-    """A fake command executor."""
+    """Fake execution of generation of Uefi keys pairs."""
     def __init__(self, upload=None, *args, **kwargs):
         super(FakeMethodGenUefiKeys, self).__init__(*args, **kwargs)
         self.upload = upload
@@ -34,7 +34,7 @@ class FakeMethodGenUefiKeys(FakeMethod):
 
 
 class FakeConfig:
-    """A fake publisher configuration."""
+    """A fake publisher configuration for the main archive."""
     def __init__(self, distroroot, uefiroot):
         self.distroroot = distroroot
         self.uefiroot = uefiroot
