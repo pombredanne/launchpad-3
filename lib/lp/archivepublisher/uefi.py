@@ -1,7 +1,7 @@
 # Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""The processing of UEFI boot loader images.
+"""The processing of Signing tarballs.
 
 UEFI Secure Boot requires boot loader images to be signed, and we want to
 have signed images in the archive so that they can be used for upgrades.
@@ -24,21 +24,21 @@ from lp.services.osutils import remove_if_exists
 
 
 class SigningUpload(CustomUpload):
-    """UEFI boot loader custom upload.
+    """Signing custom upload.
 
     The filename must be of the form:
 
-        <TYPE>_<VERSION>_<ARCH>.tar.gz
+        <PACKAGE>_<VERSION>_<ARCH>.tar.gz
 
     where:
 
-      * TYPE: loader type (e.g. 'efilinux');
+      * PACKAGE: source package of the contents;
       * VERSION: encoded version;
       * ARCH: targeted architecture tag (e.g. 'amd64').
 
     The contents are extracted in the archive in the following path:
 
-        <ARCHIVE>/dists/<SUITE>/main/uefi/<TYPE>-<ARCH>/<VERSION>
+        <ARCHIVE>/dists/<SUITE>/main/signed/<PACKAGE>-<ARCH>/<VERSION>
 
     A 'current' symbolic link points to the most recent version.  The
     tarfile must contain at least one file matching the wildcard *.efi, and
