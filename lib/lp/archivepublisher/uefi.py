@@ -13,7 +13,7 @@ __metaclass__ = type
 
 __all__ = [
     "process_signing",
-    "UefiUpload",
+    "SigningUpload",
     ]
 
 import os
@@ -23,7 +23,7 @@ from lp.archivepublisher.customupload import CustomUpload
 from lp.services.osutils import remove_if_exists
 
 
-class UefiUpload(CustomUpload):
+class SigningUpload(CustomUpload):
     """UEFI boot loader custom upload.
 
     The filename must be of the form:
@@ -169,7 +169,7 @@ class UefiUpload(CustomUpload):
 
         No actual extraction is required.
         """
-        super(UefiUpload, self).extract()
+        super(SigningUpload, self).extract()
         efi_filenames = list(self.findEfiFilenames())
         for efi_filename in efi_filenames:
             remove_if_exists("%s.signed" % efi_filename)
@@ -186,5 +186,5 @@ def process_signing(pubconf, tarfile_path, distroseries, logger=None):
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = UefiUpload(logger=logger)
+    upload = SigningUpload(logger=logger)
     upload.process(pubconf, tarfile_path, distroseries)

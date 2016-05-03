@@ -18,7 +18,7 @@ from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
-from lp.archivepublisher.uefi import UefiUpload
+from lp.archivepublisher.uefi import SigningUpload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.soyuz.enums import PackageUploadCustomFormat
@@ -40,7 +40,7 @@ class CustomUploadsCopier:
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
         PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
             RosettaTranslationsUpload,
-        PackageUploadCustomFormat.SIGNING: UefiUpload,
+        PackageUploadCustomFormat.SIGNING: SigningUpload,
         }
 
     def __init__(self, target_series,

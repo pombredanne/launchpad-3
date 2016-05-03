@@ -13,7 +13,7 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
-from lp.archivepublisher.uefi import UefiUpload
+from lp.archivepublisher.uefi import SigningUpload
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
@@ -85,7 +85,7 @@ class TestUefi(TestCase):
         self.archive.close()
         self.buffer.close()
         fake_call = FakeMethod()
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.signUefi = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload.process(self.pubconf, self.path, self.suite)
@@ -149,7 +149,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert()
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
@@ -169,7 +169,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert(create=False)
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
@@ -184,7 +184,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert(create=False)
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
         upload.generateUefiKeys()
@@ -222,7 +222,7 @@ class TestUefi(TestCase):
         self.assertFalse(os.path.exists(self.cert))
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
@@ -239,7 +239,7 @@ class TestUefi(TestCase):
         self.assertFalse(os.path.exists(self.cert))
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
