@@ -180,7 +180,7 @@ class UefiUpload(CustomUpload):
 
 
 def process_uefi(pubconf, tarfile_path, distroseries, logger=None):
-    """Process a raw-uefi tarfile.
+    """Process a raw-uefi/raw-signing tarfile.
 
     Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if anything goes

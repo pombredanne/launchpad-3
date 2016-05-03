@@ -258,7 +258,8 @@ class CustomUploadFile(NascentUploadFile):
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
-        'raw-uefi': PackageUploadCustomFormat.UEFI,
+        'raw-signing': PackageUploadCustomFormat.UEFI,
+        'raw-uefi': PackageUploadCustomFormat.UEFI,  # Backwards compatibility
         }
 
     custom_handlers = {
