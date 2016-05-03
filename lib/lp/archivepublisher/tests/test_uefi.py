@@ -156,7 +156,8 @@ class TestUefi(TestCase):
         # Assert command form.
         args = fake_call.calls[0][0][0]
         expected_cmd = [
-            'sbsign', '--key', self.key, '--cert', self.cert, 't.efi']
+            'sbsign', '--key', self.key, '--cert', self.cert, 't.efi',
+        ]
         self.assertEqual(expected_cmd, args)
         self.assertEqual(0, upload.generateUefiKeys.call_count)
 
