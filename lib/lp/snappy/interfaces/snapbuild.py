@@ -36,6 +36,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import DEFAULT
 from lp.services.librarian.interfaces import ILibraryFileAlias
+from lp.snappy.enums import SnapStoreUploadStatus
 from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
@@ -102,6 +103,10 @@ class ISnapBuildView(IPackageBuild):
         title=_("Can be cancelled"),
         required=True, readonly=True,
         description=_("Whether this build record can be cancelled.")))
+
+    store_upload_status = Choice(
+        title=_("The status of uploading this build to the store."),
+        vocabulary=SnapStoreUploadStatus, required=True, readonly=True)
 
     def getFiles():
         """Retrieve the build's `ISnapFile` records.

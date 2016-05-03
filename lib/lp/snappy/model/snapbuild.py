@@ -53,6 +53,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.snappy.enums import SnapStoreUploadStatus
 from lp.snappy.interfaces.snap import (
     ISnapSet,
     SNAP_FEATURE_FLAG,
@@ -149,6 +150,10 @@ class SnapBuild(PackageBuildMixin, Storm):
     dependencies = Unicode(name='dependencies')
 
     failure_count = Int(name='failure_count', allow_none=False)
+
+    store_upload_status = DBEnum(
+        name='store_upload_status', enum=SnapStoreUploadStatus,
+        allow_none=True)
 
     def __init__(self, build_farm_job, requester, snap, archive,
                  distro_arch_series, pocket, processor, virtualized,
