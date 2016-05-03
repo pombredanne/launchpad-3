@@ -75,16 +75,6 @@ class TestUefi(TestCase):
             write_file(self.key, "")
             write_file(self.cert, "")
 
-    def assertCmdSbsign(self, call, filename):
-        args = call[0][0]
-
-        if len(args) >= 6:
-            args[5] = os.path.basename(args[5])
-
-        expected_cmd = [
-            'sbsign', '--key', self.key, '--cert', self.cert, filename]
-        self.assertEqual(expected_cmd, args)
-
     def openArchive(self, loader_type, version, arch):
         self.path = os.path.join(
             self.temp_dir, "%s_%s_%s.tar.gz" % (loader_type, version, arch))
@@ -163,7 +153,11 @@ class TestUefi(TestCase):
                 self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
             upload.signUefi('t.efi')
         self.assertEqual(1, fake_call.call_count)
-        self.assertCmdSbsign(fake_call.calls[0], 't.efi')
+        # Assert command form.
+        args = fake_call.calls[0][0][0]
+        expected_cmd = [
+            'sbsign', '--key', self.key, '--cert', self.cert, 't.efi']
+        self.assertEqual(expected_cmd, args)
         self.assertEqual(0, upload.generateUefiKeys.call_count)
 
     def test_correct_uefi_signing_command_executed_no_keys(self):
