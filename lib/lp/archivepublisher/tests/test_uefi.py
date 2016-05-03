@@ -22,15 +22,15 @@ from lp.testing.fakemethod import FakeMethod
 
 class FakeMethodGenUefiKeys(FakeMethod):
     """A fake command executor."""
-    def __init__(self, testcase=None, *args, **kwargs):
+    def __init__(self, upload=None, *args, **kwargs):
         super(FakeMethodGenUefiKeys, self).__init__(*args, **kwargs)
-        self.testcase = testcase
+        self.upload = upload
 
     def __call__(self, *args, **kwargs):
         super(FakeMethodGenUefiKeys, self).__call__(*args, **kwargs)
 
-        write_file(self.testcase.key, "")
-        write_file(self.testcase.cert, "")
+        write_file(self.upload.key, "")
+        write_file(self.upload.cert, "")
 
 
 class FakeConfig:
@@ -229,7 +229,7 @@ class TestUefi(TestCase):
         fake_call = FakeMethod()
         with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
             upload = UefiUpload()
-            upload.generateUefiKeys = FakeMethodGenUefiKeys(testcase=self)
+            upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
             upload.setTargetDirectory(
                 self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
             upload.signUefi('t.efi')
@@ -246,7 +246,7 @@ class TestUefi(TestCase):
         fake_call = FakeMethod()
         with self.useFixture(MonkeyPatch("subprocess.call", fake_call)):
             upload = UefiUpload()
-            upload.generateUefiKeys = FakeMethodGenUefiKeys(testcase=self)
+            upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
             upload.setTargetDirectory(
                 self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
             upload.signUefi('t.efi')
