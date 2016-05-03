@@ -258,8 +258,8 @@ class CustomUploadFile(NascentUploadFile):
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
-        'raw-signing': PackageUploadCustomFormat.UEFI,
-        'raw-uefi': PackageUploadCustomFormat.UEFI,  # Backwards compatibility
+        'raw-signing': PackageUploadCustomFormat.SIGNING,
+        'raw-uefi': PackageUploadCustomFormat.SIGNING,  # Compatibility
         }
 
     custom_handlers = {
@@ -268,7 +268,7 @@ class CustomUploadFile(NascentUploadFile):
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
         PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
             RosettaTranslationsUpload,
-        PackageUploadCustomFormat.UEFI: UefiUpload,
+        PackageUploadCustomFormat.SIGNING: UefiUpload,
         }
 
     @property
@@ -307,8 +307,9 @@ class CustomUploadFile(NascentUploadFile):
 
     def autoApprove(self):
         """Return whether this custom upload can be automatically approved."""
-        # UEFI uploads are signed, and must therefore be approved by a human.
-        if self.custom_type == PackageUploadCustomFormat.UEFI:
+        # Signing uploads will be signed, and must therefore be approved
+        # by a human.
+        if self.custom_type == PackageUploadCustomFormat.SIGNING:
             return False
         return True
 

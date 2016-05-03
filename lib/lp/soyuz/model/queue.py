@@ -667,7 +667,7 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def contains_uefi(self):
         """See `IPackageUpload`."""
-        return PackageUploadCustomFormat.UEFI in self._customFormats
+        return PackageUploadCustomFormat.SIGNING in self._customFormats
 
     @property
     def package_name(self):
@@ -1479,7 +1479,7 @@ class PackageUploadCustom(SQLBase):
         PackageUploadCustomFormat.STATIC_TRANSLATIONS:
             publishStaticTranslations,
         PackageUploadCustomFormat.META_DATA: publishMetaData,
-        PackageUploadCustomFormat.UEFI: publishUefi,
+        PackageUploadCustomFormat.SIGNING: publishUefi,
         }
 
     # publisher_dispatch must have an entry for each value of

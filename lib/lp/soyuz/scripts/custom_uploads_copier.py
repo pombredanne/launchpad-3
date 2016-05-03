@@ -40,7 +40,7 @@ class CustomUploadsCopier:
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
         PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
             RosettaTranslationsUpload,
-        PackageUploadCustomFormat.UEFI: UefiUpload,
+        PackageUploadCustomFormat.SIGNING: UefiUpload,
         }
 
     def __init__(self, target_series,
@@ -61,8 +61,9 @@ class CustomUploadsCopier:
         if (custom.packageupload.archive.is_ppa or
             custom.packageupload.archive == source_archive):
             return True
-        # UEFI uploads are signed, and must therefore be approved by a human.
-        if custom.customformat == PackageUploadCustomFormat.UEFI:
+        # Signing uploads will be signed, and must therefore be approved
+        # by a human.
+        if custom.customformat == PackageUploadCustomFormat.SIGNING:
             return False
         return True
 

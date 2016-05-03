@@ -408,36 +408,36 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         copied_pu = copier.copyUpload(original_upload).packageupload
         self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
 
-    def test_copyUpload_unapproves_uefi_from_different_archive(self):
+    def test_copyUpload_unapproves_signing_from_different_archive(self):
         # Copies of UEFI custom uploads to a primary archive are set to
         # UNAPPROVED, since they will normally end up being signed.
         target_series = self.factory.makeDistroSeries()
         archive = self.factory.makeArchive(
             distribution=target_series.distribution)
         original_upload = self.makeUpload(
-            archive=archive, custom_type=PackageUploadCustomFormat.UEFI)
+            archive=archive, custom_type=PackageUploadCustomFormat.SIGNING)
         copier = CustomUploadsCopier(
             target_series, target_archive=target_series.main_archive)
         copied_pu = copier.copyUpload(original_upload).packageupload
         self.assertEqual(PackageUploadStatus.UNAPPROVED, copied_pu.status)
 
-    def test_copyUpload_approves_uefi_from_same_archive(self):
+    def test_copyUpload_approves_signing_from_same_archive(self):
         # Copies of UEFI custom uploads within the same archive are
         # automatically accepted, since they have already been signed.
         original_upload = self.makeUpload(
-            custom_type=PackageUploadCustomFormat.UEFI)
+            custom_type=PackageUploadCustomFormat.SIGNING)
         target_series = self.factory.makeDistroSeries()
         copier = CustomUploadsCopier(target_series)
         copied_pu = copier.copyUpload(original_upload).packageupload
         self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
 
-    def test_copyUpload_approves_uefi_to_ppa(self):
+    def test_copyUpload_approves_signing_to_ppa(self):
         # Copies of UEFI custom uploads to a PPA are automatically accepted,
         # since PPAs have much more limited upload permissions than the main
         # archive, and in any case PPAs do not have an upload approval
         # workflow.
         original_upload = self.makeUpload(
-            custom_type=PackageUploadCustomFormat.UEFI)
+            custom_type=PackageUploadCustomFormat.SIGNING)
         target_series = self.factory.makeDistroSeries()
         target_archive = self.factory.makeArchive(
             distribution=target_series.distribution)
