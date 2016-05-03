@@ -2041,26 +2041,18 @@ class TestGitRepositoryGetBlob(TestCaseWithFactory):
     def test_getBlob_with_default_rev(self):
         repository = self.factory.makeGitRepository()
         hosting_client = FakeMethod()
-        expected_result = {
-            'data': u'Some text'.encode('base64'),
-            'size': len(u'Some Text'),
-            }
-        hosting_client.getBlob = FakeMethod(result=expected_result)
+        hosting_client.getBlob = FakeMethod(result='Some text')
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         ret = repository.getBlob('src/README.txt')
-        self.assertEqual(expected_result, ret)
+        self.assertEqual('Some text', ret)
 
     def test_getBlob_with_rev(self):
         repository = self.factory.makeGitRepository()
         hosting_client = FakeMethod()
-        expected_result = {
-            'data': u'Some text'.encode('base64'),
-            'size': len(u'Some Text'),
-            }
-        hosting_client.getBlob = FakeMethod(result=expected_result)
+        hosting_client.getBlob = FakeMethod(result='Some text')
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         ret = repository.getBlob('src/README.txt', 'some-rev')
-        self.assertEqual(expected_result, ret)
+        self.assertEqual('Some text', ret)
 
 
 class TestGitRepositorySet(TestCaseWithFactory):
