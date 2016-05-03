@@ -2246,7 +2246,7 @@ class IPersonSet(Interface):
         openid_identifier=TextLine(
             title=_("OpenID identifier suffix"), required=True),
         name=copy_field(IPerson['name']),
-        dry_run=Bool(_("Save changes")))
+        dry_run=Bool(_("Don't save changes")))
     @export_write_operation()
     @operation_for_version("devel")
     def setUsernameFromSSO(user, openid_identifier, name, dry_run=False):
