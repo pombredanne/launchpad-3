@@ -46,7 +46,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-misc", primary_config.miscroot)
         self.assertEqual(
             self.root + "/ubuntutest-temp", primary_config.temproot)
-        self.assertEqual(archiveroot + "-uefi", primary_config.uefiroot)
+        self.assertEqual(archiveroot + "-uefi", primary_config.signingroot)
         self.assertFalse(primary_config.uefiautokey)
         self.assertIs(None, primary_config.metaroot)
         self.assertEqual(archiveroot + "-staging", primary_config.stagingroot)
@@ -70,7 +70,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertIsNone(partner_config.miscroot)
         self.assertEqual(
             self.root + "/ubuntutest-temp", partner_config.temproot)
-        self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
+        self.assertEqual(archiveroot + "-uefi", partner_config.signingroot)
         self.assertFalse(partner_config.uefiautokey)
         self.assertIs(None, partner_config.metaroot)
         self.assertEqual(archiveroot + "-staging", partner_config.stagingroot)
@@ -93,7 +93,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-cache", copy_config.cacheroot)
         self.assertEqual(archiveroot + "-misc", copy_config.miscroot)
         self.assertEqual(archiveroot + "-temp", copy_config.temproot)
-        self.assertIsNone(copy_config.uefiroot)
+        self.assertIsNone(copy_config.signingroot)
         self.assertFalse(copy_config.uefiautokey)
         self.assertIs(None, copy_config.metaroot)
         self.assertIs(None, copy_config.stagingroot)
@@ -131,9 +131,9 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(self.ppa_config.miscroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", self.ppa_config.temproot)
-        uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
+        signingroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
             self.ppa.owner.name, self.ppa.name)
-        self.assertEqual(uefiroot, self.ppa_config.uefiroot)
+        self.assertEqual(signingroot, self.ppa_config.signingroot)
         self.assertTrue(self.ppa_config.uefiautokey)
         self.assertIs(None, self.ppa_config.metaroot)
         self.assertIs(None, self.ppa_config.stagingroot)
@@ -166,9 +166,9 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
             "/var/tmp/archive/ubuntutest-temp", p3a_config.temproot)
         # It's OK for the signing keys to be in the same location as for
         # public PPAs, as the owner/name namespace is shared.
-        uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
+        signingroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
             p3a.owner.name, p3a.name)
-        self.assertEqual(uefiroot, p3a_config.uefiroot)
+        self.assertEqual(signingroot, p3a_config.signingroot)
         self.assertTrue(self.ppa_config.uefiautokey)
         self.assertIs(None, p3a_config.metaroot)
         self.assertIs(None, p3a_config.stagingroot)

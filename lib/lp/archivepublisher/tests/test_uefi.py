@@ -35,18 +35,18 @@ class FakeMethodGenUefiKeys(FakeMethod):
 
 class FakeConfig:
     """A fake publisher configuration for the main archive."""
-    def __init__(self, distroroot, uefiroot):
+    def __init__(self, distroroot, signingroot):
         self.distroroot = distroroot
-        self.uefiroot = uefiroot
+        self.signingroot = signingroot
         self.archiveroot = os.path.join(self.distroroot, 'ubuntu')
         self.uefiautokey = False
 
 
 class FakeConfigPPA:
     """A fake publisher configuration for a PPA."""
-    def __init__(self, distroroot, uefiroot, owner, ppa):
+    def __init__(self, distroroot, signingroot, owner, ppa):
         self.distroroot = distroroot
-        self.uefiroot = uefiroot
+        self.signingroot = signingroot
         self.archiveroot = os.path.join(self.distroroot, owner, ppa, 'ubuntu')
         self.uefiautokey = True
 
@@ -56,21 +56,21 @@ class TestUefi(TestCase):
     def setUp(self):
         super(TestUefi, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
-        self.uefi_dir = self.makeTemporaryDirectory()
-        self.pubconf = FakeConfig(self.temp_dir, self.uefi_dir)
+        self.signing_dir = self.makeTemporaryDirectory()
+        self.pubconf = FakeConfig(self.temp_dir, self.signing_dir)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 0o022.
         old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
 
     def setUpPPA(self):
-        self.pubconf = FakeConfigPPA(self.temp_dir, self.uefi_dir,
+        self.pubconf = FakeConfigPPA(self.temp_dir, self.signing_dir,
             'ubuntu-archive', 'testing')
         self.testcase_cn = '/CN=PPA ubuntu-archive testing/'
 
     def setUpKeyAndCert(self, create=True):
-        self.key = os.path.join(self.uefi_dir, "uefi.key")
-        self.cert = os.path.join(self.uefi_dir, "uefi.crt")
+        self.key = os.path.join(self.signing_dir, "uefi.key")
+        self.cert = os.path.join(self.signing_dir, "uefi.crt")
         if create:
             write_file(self.key, "")
             write_file(self.cert, "")

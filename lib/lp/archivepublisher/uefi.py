@@ -44,7 +44,7 @@ class SigningUpload(CustomUpload):
     tarfile must contain at least one file matching the wildcard *.efi, and
     any such files are signed using the archive's UEFI signing key.
 
-    Signing keys may be installed in the "uefiroot" directory specified in
+    Signing keys may be installed in the "signingroot" directory specified in
     publisher configuration.  In this directory, the private key is
     "uefi.key" and the certificate is "uefi.crt".
     """
@@ -63,15 +63,16 @@ class SigningUpload(CustomUpload):
             tarfile_path)
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
-        if pubconf.uefiroot is None:
+        if pubconf.signingroot is None:
             if self.logger is not None:
-                self.logger.warning("No UEFI root configured for this archive")
+                self.logger.warning(
+                    "No SIGNING root configured for this archive")
             self.key = None
             self.cert = None
             self.autokey = False
         else:
-            self.key = os.path.join(pubconf.uefiroot, "uefi.key")
-            self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
+            self.key = os.path.join(pubconf.signingroot, "uefi.key")
+            self.cert = os.path.join(pubconf.signingroot, "uefi.crt")
             self.autokey = pubconf.uefiautokey
 
         self.setComponents(tarfile_path)
