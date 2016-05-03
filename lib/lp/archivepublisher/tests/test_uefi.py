@@ -38,7 +38,7 @@ class FakeConfig:
     def __init__(self, distroroot, uefiroot):
         self.distroroot = distroroot
         self.uefiroot = uefiroot
-        self.archiveroot = os.path.join(distroroot, 'ubuntu')
+        self.archiveroot = os.path.join(self.distroroot, 'ubuntu')
         self.uefiautokey = False
 
 
