@@ -1011,6 +1011,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                     self._markProposalMerged(
                         proposal, merged_revision_id, logger=logger)
 
+    def getBlob(self, filename, rev=None):
+        """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
+        return hosting_client.getBlob(self.getInternalPath(), filename, rev)
+
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.
