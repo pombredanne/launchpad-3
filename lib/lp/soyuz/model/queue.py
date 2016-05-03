@@ -1466,9 +1466,9 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.uefi import process_uefi
+        from lp.archivepublisher.uefi import process_signing
 
-        self._publishCustom(process_uefi, logger=logger)
+        self._publishCustom(process_signing, logger=logger)
 
     publisher_dispatch = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,

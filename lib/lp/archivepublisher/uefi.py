@@ -12,7 +12,7 @@ secure to hold signing keys, so we sign them as a custom upload instead.
 __metaclass__ = type
 
 __all__ = [
-    "process_uefi",
+    "process_signing",
     "UefiUpload",
     ]
 
@@ -179,7 +179,7 @@ class UefiUpload(CustomUpload):
         return filename.startswith("%s/" % self.version)
 
 
-def process_uefi(pubconf, tarfile_path, distroseries, logger=None):
+def process_signing(pubconf, tarfile_path, distroseries, logger=None):
     """Process a raw-uefi/raw-signing tarfile.
 
     Unpacking it into the given archive for the given distroseries.
