@@ -1462,7 +1462,7 @@ class PackageUploadCustom(SQLBase):
         self.libraryfilealias.open()
         copy_and_close(self.libraryfilealias, file_obj)
 
-    def publishUefi(self, logger=None):
+    def publishSigning(self, logger=None):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
@@ -1479,7 +1479,7 @@ class PackageUploadCustom(SQLBase):
         PackageUploadCustomFormat.STATIC_TRANSLATIONS:
             publishStaticTranslations,
         PackageUploadCustomFormat.META_DATA: publishMetaData,
-        PackageUploadCustomFormat.SIGNING: publishUefi,
+        PackageUploadCustomFormat.SIGNING: publishSigning,
         }
 
     # publisher_dispatch must have an entry for each value of
