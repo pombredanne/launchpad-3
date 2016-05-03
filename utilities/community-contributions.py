@@ -164,6 +164,7 @@ known_canonical_lp_devs = \
                               u'jonathan.knowles {_AT_} canonical.com',
                               u'Julian Edwards',
                               u'Karl Fogel',
+                              u'Kit Randel',
                               u'Launch Pad',
                               u'Launchpad APA',
                               u'Launchpad Developers',
@@ -217,15 +218,19 @@ known_canonical_non_lp_devs = \
     [wiki_encode(x) for x in (u'Adam Conrad',
                               u'Andrew Bennetts',
                               u'Anthony Lenton',
+                              u'Chris Johnston',
                               u'Cody Somerville',
                               u'Cody A.W. Somerville',
                               u'David Murphy',
                               u'Didier Roche',
+                              u'Dustin Kirkland',
                               u'Elliot Murphy',
                               u'Gabriel Neuman gneuman {_AT_} async.com',
                               u'Gustavo Niemeyer',
+                              u'Iain Lane',
                               u'James Henstridge',
                               u'James Westby',
+                              u'John Arbash Meinel',
                               u'John Lenton',
                               u'Kees Cook',
                               u'LaMont Jones',
@@ -238,9 +243,7 @@ known_canonical_non_lp_devs = \
                               u'Michael Vogt',
                               u'Sidnei da Silva',
                               u'Steve Langasek',
-                              u'Dustin Kirkland',
-                              u'John Arbash Meinel',
-                              u'Chris Johnston',
+                              u'Vincent Ladeuil',
                               )]
 
 # Some people have made commits using various names and/or email
@@ -300,6 +303,12 @@ merge_names_pairs = (
      u'Andrea Corbellini <andrea.corbellini {_AT_} beeseek.org>'),
     (u'Luke Faraone <luke {_AT_} faraone.cc',
      u'Luke Faraone <luke {_AT_} faraone.cc>'),
+    (u'cjwatson {_AT_} chiark.greenend.org.uk',
+     u'Colin Watson <cjwatson {_AT_} canonical.com'),
+    (u'Kit Randel <kit {_AT_} nocturne.net.nz>',
+     u'Kit Randel <kit.randel {_AT_} canonical.com>'),
+    (u'william.grant {_AT_} canonical.com',
+     u'William Grant <william.grant {_AT_} canonical.com>'),
     )
 # Then put it in dictionary form with the correct encodings.
 merge_names_map = dict((wiki_encode(a), wiki_encode(b))
