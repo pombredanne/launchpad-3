@@ -48,7 +48,7 @@ class SigningUpload(CustomUpload):
     publisher configuration.  In this directory, the private key is
     "uefi.key" and the certificate is "uefi.crt".
     """
-    custom_type = "UEFI"
+    custom_type = "SIGNING"
 
     @staticmethod
     def parsePath(tarfile_path):
