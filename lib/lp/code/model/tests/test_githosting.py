@@ -186,8 +186,7 @@ class TestGitHostingClient(TestCase):
 
     def test_getBlob(self):
         blob = b''.join(chr(i) for i in range(256))
-        encoded_blob = blob.encode("base64")
-        content = {"data": encoded_blob, "size": len(encoded_blob)}
+        content = {"data": blob.encode("base64"), "size": len(blob)}
         with self.mockRequests(content=json.dumps(content)):
             response = self.client.getBlob("123", "dir/path/file/name")
         self.assertEqual(blob, response)
@@ -196,8 +195,7 @@ class TestGitHostingClient(TestCase):
 
     def test_getBlob_revision(self):
         blob = b''.join(chr(i) for i in range(256))
-        encoded_blob = blob.encode("base64")
-        content = {"data": encoded_blob, "size": len(encoded_blob)}
+        content = {"data": blob.encode("base64"), "size": len(blob)}
         with self.mockRequests(content=json.dumps(content)):
             response = self.client.getBlob("123", "dir/path/file/name", "dev")
         self.assertEqual(blob, response)
@@ -213,10 +211,41 @@ class TestGitHostingClient(TestCase):
 
     def test_getBlob_url_quoting(self):
         blob = b''.join(chr(i) for i in range(256))
-        encoded_blob = blob.encode("base64")
-        content = {"data": encoded_blob, "size": len(encoded_blob)}
+        content = {"data": blob.encode("base64"), "size": len(blob)}
         with self.mockRequests(content=json.dumps(content)):
             self.client.getBlob("123", "dir/+file name?.txt", "+rev/ no?")
         self.assertRequest(
             "repo/123/blob/dir/%2Bfile%20name%3F.txt?rev=%2Brev%2F+no%3F",
             method="GET")
+
+    def test_getBlob_no_data(self):
+        with self.mockRequests(content=json.dumps({"size": 1})):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get file from Git repository: 'data'",
+                self.client.getBlob, "123", "dir/path/file/name")
+
+    def test_getBlob_no_size(self):
+        with self.mockRequests(content=json.dumps({"data": "data"})):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get file from Git repository: 'size'",
+                self.client.getBlob, "123", "dir/path/file/name")
+
+    def test_getBlob_bad_encoding(self):
+        content = {"data": "x", "size": 1}
+        with self.mockRequests(content=json.dumps(content)):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get file from Git repository: Incorrect padding",
+                self.client.getBlob, "123", "dir/path/file/name")
+
+    def test_getBlob_wrong_size(self):
+        blob = b''.join(chr(i) for i in range(256))
+        content = {"data": blob.encode("base64"), "size": 0}
+        with self.mockRequests(content=json.dumps(content)):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get file from Git repository: Unexpected size"
+                " (256 vs 0)",
+                self.client.getBlob, "123", "dir/path/file/name")

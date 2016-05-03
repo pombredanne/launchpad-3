@@ -156,7 +156,12 @@ class GitHostingClient:
                     "Fetching file %s from repository %s" % (filename, path))
             url = "/repo/%s/blob/%s" % (path, quote(filename))
             response = self._get(url, params={"rev": rev})
-            return response["data"].decode("base64")
+            blob = response["data"].decode("base64")
+            if len(blob) != response["size"]:
+                raise GitRepositoryScanFault(
+                    "Unexpected size (%s vs %s)" % (
+                        len(blob), response["size"]))
+            return blob
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get file from Git repository: %s" % unicode(e))
