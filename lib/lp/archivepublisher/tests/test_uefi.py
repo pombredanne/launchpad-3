@@ -75,16 +75,6 @@ class TestUefi(TestCase):
             write_file(self.key, "")
             write_file(self.cert, "")
 
-    def assertCmdUefiKeygen(self, call):
-        args = call[0][0]
-
-        expected_cmd = [
-            'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-            '-subj', self.testcase_cn, '-keyout', self.key, '-out', self.cert,
-            '-days', '3650', '-nodes', '-sha256',
-            ]
-        self.assertEqual(expected_cmd, args)
-
     def assertCmdSbsign(self, call, filename):
         args = call[0][0]
 
@@ -202,7 +192,14 @@ class TestUefi(TestCase):
                 self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
             upload.generateUefiKeys()
         self.assertEqual(1, fake_call.call_count)
-        self.assertCmdUefiKeygen(fake_call.calls[0])
+        # Assert the actual command matches.
+        args = fake_call.calls[0][0][0]
+        expected_cmd = [
+            'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
+            '-subj', self.testcase_cn, '-keyout', self.key, '-out', self.cert,
+            '-days', '3650', '-nodes', '-sha256',
+            ]
+        self.assertEqual(expected_cmd, args)
 
     def test_signs_image(self):
         # Each image in the tarball is signed.
