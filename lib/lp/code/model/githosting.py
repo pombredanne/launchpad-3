@@ -155,7 +155,8 @@ class GitHostingClient:
                 logger.info(
                     "Fetching file %s from repository %s" % (filename, path))
             url = "/repo/%s/blob/%s" % (path, quote(filename))
-            return self._get(url, params={"rev": rev})
+            response = self._get(url, params={"rev": rev})
+            return response["data"].decode("base64")
         except Exception as e:
             raise GitRepositoryScanFault(
                 "Failed to get file from Git repository: %s" % unicode(e))

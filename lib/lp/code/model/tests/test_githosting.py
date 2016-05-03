@@ -185,20 +185,22 @@ class TestGitHostingClient(TestCase):
                 self.client.delete, "123")
 
     def test_getBlob(self):
-        blob = b''.join(chr(i) for i in range(256)).encode("base64")
-        content = {"data": blob, "size": len(blob)}
+        blob = b''.join(chr(i) for i in range(256))
+        encoded_blob = blob.encode("base64")
+        content = {"data": encoded_blob, "size": len(encoded_blob)}
         with self.mockRequests(content=json.dumps(content)):
             response = self.client.getBlob("123", "dir/path/file/name")
-        self.assertEqual(content, response)
+        self.assertEqual(blob, response)
         self.assertRequest(
             "repo/123/blob/dir/path/file/name", method="GET")
 
     def test_getBlob_revision(self):
-        blob = b''.join(chr(i) for i in range(256)).encode("base64")
-        content = {"data": blob, "size": len(blob)}
+        blob = b''.join(chr(i) for i in range(256))
+        encoded_blob = blob.encode("base64")
+        content = {"data": encoded_blob, "size": len(encoded_blob)}
         with self.mockRequests(content=json.dumps(content)):
             response = self.client.getBlob("123", "dir/path/file/name", "dev")
-        self.assertEqual(content, response)
+        self.assertEqual(blob, response)
         self.assertRequest(
             "repo/123/blob/dir/path/file/name?rev=dev", method="GET")
 
@@ -210,7 +212,10 @@ class TestGitHostingClient(TestCase):
                 self.client.getBlob, "123", "dir/path/file/name")
 
     def test_getBlob_url_quoting(self):
-        with self.mockRequests():
+        blob = b''.join(chr(i) for i in range(256))
+        encoded_blob = blob.encode("base64")
+        content = {"data": encoded_blob, "size": len(encoded_blob)}
+        with self.mockRequests(content=json.dumps(content)):
             self.client.getBlob("123", "dir/+file name?.txt", "+rev/ no?")
         self.assertRequest(
             "repo/123/blob/dir/%2Bfile%20name%3F.txt?rev=%2Brev%2F+no%3F",

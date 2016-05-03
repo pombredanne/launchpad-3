@@ -96,5 +96,5 @@ class IGitHostingClient(Interface):
         :param filename: Relative path of a file in the repository.
         :param rev: An optional revision. Defaults to 'HEAD'.
         :param logger: An optional logger.
-        :return: A dict with keys 'data' and 'size'.
+        :return: A binary string with the blob content.
         """
