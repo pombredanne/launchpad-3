@@ -39,7 +39,7 @@ class FakeConfig:
         self.distroroot = distroroot
         self.signingroot = signingroot
         self.archiveroot = os.path.join(self.distroroot, 'ubuntu')
-        self.uefiautokey = False
+        self.signingautokey = False
 
 
 class FakeConfigPPA:
@@ -48,7 +48,7 @@ class FakeConfigPPA:
         self.distroroot = distroroot
         self.signingroot = signingroot
         self.archiveroot = os.path.join(self.distroroot, owner, ppa, 'ubuntu')
-        self.uefiautokey = True
+        self.signingautokey = True
 
 
 class TestUefi(TestCase):

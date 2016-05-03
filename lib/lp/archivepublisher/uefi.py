@@ -73,7 +73,7 @@ class SigningUpload(CustomUpload):
         else:
             self.key = os.path.join(pubconf.signingroot, "uefi.key")
             self.cert = os.path.join(pubconf.signingroot, "uefi.crt")
-            self.autokey = pubconf.uefiautokey
+            self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
