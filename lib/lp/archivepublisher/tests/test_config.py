@@ -8,9 +8,9 @@ Publisher configuration provides archive-dependent filesystem paths.
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
 import os
+
+from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
