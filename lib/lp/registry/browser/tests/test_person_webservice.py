@@ -13,7 +13,10 @@ from lp.registry.interfaces.person import (
     TeamMembershipStatus,
     )
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
-from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
@@ -367,3 +370,114 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             sca = getUtility(IPersonSet).getByName('software-center-agent')
         response = self.getOrCreateSoftwareCenterCustomer(sca)
         self.assertEqual(400, response.status)
+
+    def test_getUsernameForSSO(self):
+        # canonical-identity-provider (SSO) can get the username for an
+        # OpenID identifier suffix.
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+            existing = self.factory.makePerson(name='username')
+            taken_openid = (
+                existing.account.openid_identifiers.any().identifier)
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getUsernameForSSO',
+            openid_identifier=taken_openid, api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertEqual('username', response.jsonBody())
+
+    def test_getUsernameForSSO_nonexistent(self):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getUsernameForSSO',
+            openid_identifier='doesnotexist', api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertEqual(None, response.jsonBody())
+
+    def setUsernameFromSSO(self, user, openid_identifier, name,
+                           dry_run=False):
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            '/people', 'setUsernameFromSSO',
+            openid_identifier=openid_identifier, name=name, dry_run=dry_run,
+            api_version='devel')
+        return response
+
+    def test_setUsernameFromSSO(self):
+        # canonical-identity-provider (SSO) can create a placeholder
+        # Person to give a username to a non-LP user.
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        response = self.setUsernameFromSSO(sso, 'foo', 'bar')
+        self.assertEqual(200, response.status)
+        with admin_logged_in():
+            by_name = getUtility(IPersonSet).getByName('bar')
+            by_openid = getUtility(IPersonSet).getByOpenIDIdentifier(
+                u'http://testopenid.dev/+id/foo')
+            self.assertEqual(by_name, by_openid)
+            self.assertEqual(
+                AccountStatus.PLACEHOLDER, by_name.account_status)
+
+    def test_setUsernameFromSSO_dry_run(self):
+        # setUsernameFromSSO provides a dry run mode that performs all
+        # the checks but doesn't actually make changes. Useful for input
+        # validation in SSO.
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        response = self.setUsernameFromSSO(sso, 'foo', 'bar', dry_run=True)
+        self.assertEqual(200, response.status)
+        with admin_logged_in():
+            self.assertIs(None, getUtility(IPersonSet).getByName('bar'))
+            self.assertRaises(
+                LookupError,
+                getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
+
+    def test_setUsernameFromSSO_is_restricted(self):
+        # The method may only be invoked by the ~ubuntu-sso celebrity
+        # user, as it is security-sensitive.
+        with admin_logged_in():
+            random = self.factory.makePerson()
+        response = self.setUsernameFromSSO(random, 'foo', 'bar')
+        self.assertEqual(401, response.status)
+
+    def test_setUsernameFromSSO_rejects_bad_input(self, dry_run=False):
+        # The method returns meaningful errors on bad input, so SSO can
+        # give advice to users.
+        # Check canonical-identity-provider before changing these!
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+            self.factory.makePerson(name='taken-name')
+            existing = self.factory.makePerson()
+            taken_openid = (
+                existing.account.openid_identifiers.any().identifier)
+
+        response = self.setUsernameFromSSO(
+            sso, 'foo', 'taken-name', dry_run=dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            'name: taken-name is already in use by another person or team.',
+            response.body)
+
+        response = self.setUsernameFromSSO(
+            sso, 'foo', 'private-name', dry_run=dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            'name: The name &#x27;private-name&#x27; has been blocked by the '
+            'Launchpad administrators. Contact Launchpad Support if you want '
+            'to use this name.',
+            response.body)
+
+        response = self.setUsernameFromSSO(
+            sso, taken_openid, 'bar', dry_run=dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            'An account for that OpenID identifier already exists.',
+            response.body)
+
+    def test_setUsernameFromSSO_rejects_bad_input_in_dry_run(self):
+        self.test_setUsernameFromSSO_rejects_bad_input(dry_run=True)

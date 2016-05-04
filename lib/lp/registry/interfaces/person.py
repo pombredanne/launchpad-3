@@ -2223,6 +2223,51 @@ class IPersonSet(Interface):
         :param full_name: the full name of the user.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getUsernameForSSO(user, openid_identifier):
+        """Restricted person creation API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It
+        finds the username for an account by OpenID identifier.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        name=copy_field(IPerson['name']),
+        dry_run=Bool(_("Don't save changes")))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setUsernameFromSSO(user, openid_identifier, name, dry_run=False):
+        """Restricted person creation API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It
+        reserves a username for an account by OpenID identifier, as long as
+        the user has no Launchpad account.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param name: the desired username.
+        :raises: `InvalidName` if the username doesn't meet character
+            constraints.
+        :raises: `NameAlreadyTaken` if the username is already in use.
+        :raises: `NotPlaceholderAccount` if the OpenID identifier has a
+            non-placeholder Launchpad account.
+        """
+
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         teamdescription='team_description',
