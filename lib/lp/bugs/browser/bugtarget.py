@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -35,7 +35,10 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib.form import Fields
 from zope.formlib.interfaces import InputErrors
-from zope.formlib.widgets import TextWidget
+from zope.formlib.widgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.interface import (
     alsoProvides,
     implementer,
@@ -221,6 +224,7 @@ class FileBugViewBase(LaunchpadFormView):
     schema = IBug
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     extra_data_token = None
 
