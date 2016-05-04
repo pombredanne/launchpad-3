@@ -59,7 +59,7 @@ class SigningUpload(CustomUpload):
         return bits[0], bits[1], bits[2].split(".")[0]
 
     def setComponents(self, tarfile_path):
-        self.loader_type, self.version, self.arch = self.parsePath(
+        self.package, self.version, self.arch = self.parsePath(
             tarfile_path)
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
@@ -93,14 +93,14 @@ class SigningUpload(CustomUpload):
 
         # Extract into the "signed" path regardless of linking.
         self.targetdir = os.path.join(
-            dists_signing, "%s-%s" % (self.loader_type, self.arch))
+            dists_signing, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
-            loader_type, _, arch = cls.parsePath(tarfile_path)
-            return loader_type, arch
+            package, _, arch = cls.parsePath(tarfile_path)
+            return package, arch
         except ValueError:
             return None
 
