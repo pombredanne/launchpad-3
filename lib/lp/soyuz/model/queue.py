@@ -665,9 +665,11 @@ class PackageUpload(SQLBase):
         return PackageUploadCustomFormat.DDTP_TARBALL in self._customFormats
 
     @cachedproperty
-    def contains_uefi(self):
+    def contains_signing(self):
         """See `IPackageUpload`."""
         return PackageUploadCustomFormat.SIGNING in self._customFormats
+
+    contains_uefi = contains_signing
 
     @property
     def package_name(self):
