@@ -49,26 +49,20 @@ COMMENT ON COLUMN Snap.store_tokens IS 'Serialized tokens issued by the store an
 CREATE INDEX snap__store_series__idx
     ON Snap(store_series) WHERE store_series IS NOT NULL;
 
-ALTER TABLE SnapBuild ADD COLUMN store_upload_status integer;
-
-CREATE INDEX snapbuild__store_upload_status__idx ON SnapBuild(store_upload_status) WHERE store_upload_status IS NOT NULL;
-
-COMMENT ON COLUMN SnapBuild.store_upload_status IS 'The status of uploading this build to the store.';
-
-CREATE TABLE SnapJob (
+CREATE TABLE SnapBuildJob (
     job integer PRIMARY KEY REFERENCES Job ON DELETE CASCADE NOT NULL,
-    snap integer REFERENCES Snap NOT NULL,
+    snapbuild integer REFERENCES SnapBuild NOT NULL,
     job_type integer NOT NULL,
     json_data text
 );
 
-CREATE INDEX snapjob__snap__job_type__job__idx
-    ON SnapJob(snap, job_type, job);
+CREATE INDEX snapbuildjob__snapbuild__job_type__job__idx
+    ON SnapBuildJob(snapbuild, job_type, job);
 
-COMMENT ON TABLE SnapJob IS 'Contains references to jobs that are executed for a snap package.';
-COMMENT ON COLUMN SnapJob.job IS 'A reference to a Job row that has all the common job details.';
-COMMENT ON COLUMN SnapJob.snap IS 'The snap package that this job is for.';
-COMMENT ON COLUMN SnapJob.job_type IS 'The type of a job, such as a store upload.';
-COMMENT ON COLUMN SnapJob.json_data IS 'Data that is specific to a particular job type.';
+COMMENT ON TABLE SnapBuildJob IS 'Contains references to jobs that are executed for a build of a snap package.';
+COMMENT ON COLUMN SnapBuildJob.job IS 'A reference to a Job row that has all the common job details.';
+COMMENT ON COLUMN SnapBuildJob.snapbuild IS 'The snap build that this job is for.';
+COMMENT ON COLUMN SnapBuildJob.job_type IS 'The type of a job, such as a store upload.';
+COMMENT ON COLUMN SnapBuildJob.json_data IS 'Data that is specific to a particular job type.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 69, 3);
