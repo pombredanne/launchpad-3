@@ -94,6 +94,11 @@ class TestUefi(TestCase):
 
         return upload
 
+    def getSignedPath(self, loader_type, arch):
+        return os.path.join(
+            self.pubconf.archiveroot, "dists", self.suite, "main", "signed",
+            "%s-%s" % (loader_type, arch))
+
     def getUefiPath(self, loader_type, arch):
         return os.path.join(
             self.pubconf.archiveroot, "dists", self.suite, "main", "uefi",
@@ -124,7 +129,7 @@ class TestUefi(TestCase):
         self.archive.add_file("1.0/hello", "world")
         upload = self.process()
         self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("empty", "amd64"), "1.0", "hello")))
+            self.getSignedPath("empty", "amd64"), "1.0", "hello")))
         self.assertEqual(0, upload.signUefi.call_count)
 
     def test_already_exists(self):
@@ -132,7 +137,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
-        os.makedirs(os.path.join(self.getUefiPath("test", "amd64"), "1.0"))
+        os.makedirs(os.path.join(self.getSignedPath("test", "amd64"), "1.0"))
         self.assertRaises(CustomUploadAlreadyExists, self.process)
 
     def test_bad_umask(self):
@@ -212,6 +217,8 @@ class TestUefi(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.process()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 

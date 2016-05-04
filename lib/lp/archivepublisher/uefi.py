@@ -76,9 +76,24 @@ class SigningUpload(CustomUpload):
             self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
+
+        # Ensure we expose the results via uefi and signed in dists.
+        # For compatibility if efi already exists create a symlink
+        # to it from signed.  Otherwise create the link the other way.
+        dists_signing = os.path.join(
+            pubconf.archiveroot, "dists", distroseries, "main", "signed")
+        dists_uefi = os.path.join(
+            pubconf.archiveroot, "dists", distroseries, "main", "uefi")
+        if not os.path.exists(dists_signing):
+            if os.path.isdir(dists_uefi):
+                os.symlink("uefi", dists_signing)
+            else:
+                os.makedirs(dists_signing, 0o755)
+                os.symlink("signed", dists_uefi)
+
+        # Extract into the "signed" path regardless of linking.
         self.targetdir = os.path.join(
-            pubconf.archiveroot, "dists", distroseries, "main", "uefi",
-            "%s-%s" % (self.loader_type, self.arch))
+            dists_signing, "%s-%s" % (self.loader_type, self.arch))
         self.archiveroot = pubconf.archiveroot
 
     @classmethod
