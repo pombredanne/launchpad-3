@@ -79,10 +79,15 @@ def getPubConfig(archive):
 
     if archive.is_main:
         pubconf.signingroot = pubconf.archiveroot + '-uefi'
+        if not os.path.exists(pubconf.signingroot):
+            pubconf.signingroot = pubconf.archiveroot + '-signing'
         pubconf.signingautokey = False
     elif archive.is_ppa:
-        pubconf.signingroot = os.path.join(
-            ppa_config.signing_keys_root, "uefi",
+        signing_keys_root = os.path.join(ppa_config.signing_keys_root, "uefi")
+        if not os.path.exists(signing_keys_root):
+            signing_keys_root = os.path.join(
+                ppa_config.signing_keys_root, "signing")
+        pubconf.signingroot = os.path.join(signing_keys_root,
             archive.owner.name, archive.name)
         pubconf.signingautokey = True
     else:
