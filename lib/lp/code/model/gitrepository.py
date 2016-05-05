@@ -1221,7 +1221,7 @@ class GitRepositorySet:
     def getRepositories(self, user, target):
         """See `IGitRepositorySet`."""
         collection = IGitCollection(target).visibleByUser(user)
-        return collection.getRepositories(eager_load=True)
+        return collection.getRepositories(eager_load=True, order_by_id=True)
 
     def getRepositoryVisibilityInfo(self, user, person, repository_names):
         """See `IGitRepositorySet`."""
