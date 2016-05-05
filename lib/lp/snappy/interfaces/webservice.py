@@ -12,8 +12,8 @@ which tells `lazr.restful` that it should look for webservice exports here.
 __all__ = [
     'ISnap',
     'ISnapBuild',
-    'ISnapSeries',
-    'ISnapSeriesSet',
+    'ISnappySeries',
+    'ISnappySeriesSet',
     'ISnapSet',
     ]
 
@@ -31,9 +31,9 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
     ISnapFile,
     )
-from lp.snappy.interfaces.snapseries import (
-    ISnapSeries,
-    ISnapSeriesSet,
+from lp.snappy.interfaces.snappyseries import (
+    ISnappySeries,
+    ISnappySeriesSet,
     )
 
 
