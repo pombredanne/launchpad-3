@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IGitCollection`."""
@@ -199,15 +199,18 @@ class GenericGitCollection:
         load_related(Product, repositories, ['project_id'])
 
     def getRepositories(self, find_expr=GitRepository, eager_load=False,
-                        order_by_date=False):
+                        order_by_date=False, order_by_id=False):
         """See `IGitCollection`."""
         all_tables = set(
             self._tables.values() + self._asymmetric_tables.values())
         tables = [GitRepository] + list(all_tables)
         expressions = self._getRepositoryExpressions()
         resultset = self.store.using(*tables).find(find_expr, *expressions)
+        assert not order_by_date or not order_by_id
         if order_by_date:
             resultset.order_by(Desc(GitRepository.date_last_modified))
+        elif order_by_id:
+            resultset.order_by(GitRepository.id)
 
         def do_eager_load(rows):
             repository_ids = set(repository.id for repository in rows)
