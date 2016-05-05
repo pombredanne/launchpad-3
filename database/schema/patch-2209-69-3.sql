@@ -53,7 +53,7 @@ CREATE TABLE SnapBuildJob (
     job integer PRIMARY KEY REFERENCES Job ON DELETE CASCADE NOT NULL,
     snapbuild integer REFERENCES SnapBuild NOT NULL,
     job_type integer NOT NULL,
-    json_data text
+    json_data text NOT NULL
 );
 
 CREATE INDEX snapbuildjob__snapbuild__job_type__job__idx
