@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE SnapSeries (
+CREATE TABLE SnappySeries (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     registrant integer NOT NULL REFERENCES person,
@@ -12,29 +12,29 @@ CREATE TABLE SnapSeries (
     status integer NOT NULL
 );
 
-CREATE UNIQUE INDEX snapseries__name__key ON SnapSeries(name);
-CREATE INDEX snapseries__status__idx ON SnapSeries(status);
+CREATE UNIQUE INDEX snappyseries__name__key ON SnappySeries(name);
+CREATE INDEX snappyseries__status__idx ON SnappySeries(status);
 
-COMMENT ON TABLE SnapSeries IS 'A series for snap packages in the store.';
-COMMENT ON COLUMN SnapSeries.date_created IS 'The date on which this series was created in Launchpad.';
-COMMENT ON COLUMN SnapSeries.registrant IS 'The user who registered this series.';
-COMMENT ON COLUMN SnapSeries.name IS 'The unique name of this series.';
-COMMENT ON COLUMN SnapSeries.display_name IS 'The display name of this series.';
-COMMENT ON COLUMN SnapSeries.status IS 'The current status of this series.';
+COMMENT ON TABLE SnappySeries IS 'A series for snap packages in the store.';
+COMMENT ON COLUMN SnappySeries.date_created IS 'The date on which this series was created in Launchpad.';
+COMMENT ON COLUMN SnappySeries.registrant IS 'The user who registered this series.';
+COMMENT ON COLUMN SnappySeries.name IS 'The unique name of this series.';
+COMMENT ON COLUMN SnappySeries.display_name IS 'The display name of this series.';
+COMMENT ON COLUMN SnappySeries.status IS 'The current status of this series.';
 
-CREATE TABLE SnapDistroSeries (
-    snap_series integer NOT NULL REFERENCES snapseries,
+CREATE TABLE SnappyDistroSeries (
+    snappy_series integer NOT NULL REFERENCES snappyseries,
     distro_series integer NOT NULL REFERENCES distroseries,
-    PRIMARY KEY (snap_series, distro_series)
+    PRIMARY KEY (snappy_series, distro_series)
 );
 
-COMMENT ON TABLE SnapDistroSeries IS 'A record indicating that a particular snap series is valid for builds from a particular distribution series.';
-COMMENT ON COLUMN SnapDistroSeries.snap_series IS 'The snap series which is valid for builds from this distribution series.';
-COMMENT ON COLUMN SnapDistroSeries.distro_series IS 'The distribution series whose builds are valid for this snap series.';
+COMMENT ON TABLE SnappyDistroSeries IS 'A record indicating that a particular snappy series is valid for builds from a particular distribution series.';
+COMMENT ON COLUMN SnappyDistroSeries.snappy_series IS 'The snappy series which is valid for builds from this distribution series.';
+COMMENT ON COLUMN SnappyDistroSeries.distro_series IS 'The distribution series whose builds are valid for this snappy series.';
 
 ALTER TABLE Snap
     ADD COLUMN store_upload boolean DEFAULT false NOT NULL,
-    ADD COLUMN store_series integer REFERENCES snapseries,
+    ADD COLUMN store_series integer REFERENCES snappyseries,
     ADD COLUMN store_name text,
     ADD COLUMN store_tokens text,
     ADD CONSTRAINT consistent_store_upload CHECK (
