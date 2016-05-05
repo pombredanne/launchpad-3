@@ -224,6 +224,21 @@ class TestBugTaskCreation(TestCaseWithFactory):
         self.assertContentEqual(
             expected_policies, get_policies_for_artifact(bug))
 
+    def test_incomplete_mapped_for_storage(self):
+        """A task is never actually "Incomplete" in the DB.
+
+        Incomplete is automatically mapped to (with response) or
+        (without response) as appropriate.
+        """
+        task = getUtility(IBugTaskSet).createTask(
+            self.factory.makeBug(), self.factory.makePerson(),
+            self.factory.makeProduct(),
+            status=BugTaskStatus.INCOMPLETE)
+        self.assertEqual(
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, task._status)
+        self.assertEqual(
+            BugTaskStatus.INCOMPLETE, task.status)
+
 
 class TestBugTaskCreationPackageComponent(TestCaseWithFactory):
     """IBugTask contains a convenience method to look up archive component
