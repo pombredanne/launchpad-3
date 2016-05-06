@@ -9,16 +9,18 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from lp.buildmaster.enums import BuildStatus
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.payload import compose_webhook_payload
 from lp.snappy.interfaces.snap import SNAP_WEBHOOKS_FEATURE_FLAG
 from lp.snappy.interfaces.snapbuild import ISnapBuild
+from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 
 
 def snap_build_status_changed(snapbuild, event):
-    """Trigger webhooks when snap package build statuses change."""
+    """Trigger events when snap package build statuses change."""
     if getFeatureFlag(SNAP_WEBHOOKS_FEATURE_FLAG):
         payload = {
             "snap_build": canonical_url(snapbuild, force_local_path=True),
@@ -28,3 +30,8 @@ def snap_build_status_changed(snapbuild, event):
             ISnapBuild, snapbuild, ["snap", "status"]))
         getUtility(IWebhookSet).trigger(
             snapbuild.snap, "snap:build:0.1", payload)
+
+    if (snapbuild.snap.store_upload and
+            snapbuild.snap.store_secrets is not None and
+            snapbuild.status == BuildStatus.FULLYBUILT):
+        getUtility(ISnapStoreUploadJobSource).create(snapbuild)
