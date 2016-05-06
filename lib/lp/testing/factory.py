@@ -4601,7 +4601,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                  name=None, branch=None, git_ref=None,
                  require_virtualized=True, processors=None,
                  date_created=DEFAULT, private=False, store_upload=False,
-                 store_series=None, store_name=None, store_tokens=None):
+                 store_series=None, store_name=None, store_secrets=None):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4619,7 +4619,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created, branch=branch, git_ref=git_ref,
             private=private, store_upload=store_upload,
             store_series=store_series, store_name=store_name,
-            store_tokens=store_tokens)
+            store_secrets=store_secrets)
         IStore(snap).flush()
         return snap
 
