@@ -152,7 +152,7 @@ class Snap(Storm, WebhookTargetMixin):
     store_upload = Bool(name='store_upload', allow_none=False)
 
     store_series_id = Int(name='store_series', allow_none=True)
-    store_series = Reference(store_series_id, 'SnapSeries.id')
+    store_series = Reference(store_series_id, 'SnappySeries.id')
 
     store_name = Unicode(name='store_name', allow_none=True)
 

@@ -275,7 +275,7 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
-from lp.snappy.interfaces.snapseries import ISnapSeriesSet
+from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -4676,20 +4676,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             SnapFile(snapbuild=snapbuild, libraryfile=libraryfile))
 
-    def makeSnapSeries(self, registrant=None, name=None, display_name=None,
-                       status=SeriesStatus.DEVELOPMENT, date_created=DEFAULT):
-        """Make a new SnapSeries."""
+    def makeSnappySeries(self, registrant=None, name=None, display_name=None,
+                         status=SeriesStatus.DEVELOPMENT,
+                         date_created=DEFAULT, usable_distro_series=None):
+        """Make a new SnappySeries."""
         if registrant is None:
             registrant = self.makePerson()
         if name is None:
-            name = self.getUniqueString(u"snap-series-name")
+            name = self.getUniqueString(u"snappy-series-name")
         if display_name is None:
             display_name = SPACE.join(
                 word.capitalize() for word in name.split('-'))
-        snap_series = getUtility(ISnapSeriesSet).new(
+        snappy_series = getUtility(ISnappySeriesSet).new(
             registrant, name, display_name, status, date_created=date_created)
-        IStore(snap_series).flush()
-        return snap_series
+        if usable_distro_series is not None:
+            snappy_series.usable_distro_series = usable_distro_series
+        IStore(snappy_series).flush()
+        return snappy_series
 
 
 # Some factory methods return simple Python types. We don't add

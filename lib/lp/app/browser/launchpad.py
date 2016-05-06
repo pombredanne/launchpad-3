@@ -158,7 +158,7 @@ from lp.services.webapp.url import urlappend
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
-from lp.snappy.interfaces.snapseries import ISnapSeriesSet
+from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.livefs import ILiveFSSet
@@ -804,7 +804,7 @@ class LaunchpadRootNavigation(Navigation):
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,
         '+snaps': ISnapSet,
-        '+snap-series': ISnapSeriesSet,
+        '+snappy-series': ISnappySeriesSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,

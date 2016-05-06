@@ -16,35 +16,35 @@
     </class>
 
     <securedutility
-        name="SnapSeries"
-        component="lp.snappy.vocabularies.SnapSeriesVocabulary"
+        name="SnappySeries"
+        component="lp.snappy.vocabularies.SnappySeriesVocabulary"
         provides="zope.schema.interfaces.IVocabularyFactory">
         <allow interface="zope.schema.interfaces.IVocabularyFactory" />
     </securedutility>
 
-    <class class="lp.snappy.vocabularies.SnapSeriesVocabulary">
+    <class class="lp.snappy.vocabularies.SnappySeriesVocabulary">
         <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
     </class>
 
     <securedutility
-        name="SnapDistroSeries"
-        component="lp.snappy.vocabularies.SnapDistroSeriesVocabulary"
+        name="SnappyDistroSeries"
+        component="lp.snappy.vocabularies.SnappyDistroSeriesVocabulary"
         provides="zope.schema.interfaces.IVocabularyFactory">
         <allow interface="zope.schema.interfaces.IVocabularyFactory" />
     </securedutility>
 
-    <class class="lp.snappy.vocabularies.SnapDistroSeriesVocabulary">
+    <class class="lp.snappy.vocabularies.SnappyDistroSeriesVocabulary">
         <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
     </class>
 
     <securedutility
-        name="BuildableSnapDistroSeries"
-        component="lp.snappy.vocabularies.BuildableSnapDistroSeriesVocabulary"
+        name="BuildableSnappyDistroSeries"
+        component="lp.snappy.vocabularies.BuildableSnappyDistroSeriesVocabulary"
         provides="zope.schema.interfaces.IVocabularyFactory">
         <allow interface="zope.schema.interfaces.IVocabularyFactory" />
     </securedutility>
 
-    <class class="lp.snappy.vocabularies.BuildableSnapDistroSeriesVocabulary">
+    <class class="lp.snappy.vocabularies.BuildableSnappyDistroSeriesVocabulary">
         <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
     </class>
 

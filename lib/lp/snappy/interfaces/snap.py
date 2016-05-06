@@ -86,7 +86,7 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.services.webhooks.interfaces import IWebhookTarget
-from lp.snappy.interfaces.snapseries import ISnapSeries
+from lp.snappy.interfaces.snappyseries import ISnappySeries
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -364,7 +364,7 @@ class ISnapEditableAttributes(IHasOwner):
 
     store_series = ReferenceChoice(
         title=_("Store series"),
-        schema=ISnapSeries, vocabulary="SnapSeries",
+        schema=ISnappySeries, vocabulary="SnappySeries",
         required=False, readonly=False,
         description=_(
             "The series in which this snap package should be published in the "
