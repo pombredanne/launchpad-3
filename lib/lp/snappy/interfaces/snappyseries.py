@@ -76,7 +76,7 @@ class SnappySeriesNameField(ContentNameField):
 
 
 class ISnappySeriesView(Interface):
-    """`ISnappySeries` attributes that require launchpad.View permission."""
+    """`ISnappySeries` attributes that anyone can view."""
 
     id = Int(title=_("ID"), required=True, readonly=True)
 
@@ -92,7 +92,7 @@ class ISnappySeriesView(Interface):
 class ISnappySeriesEditableAttributes(Interface):
     """`ISnappySeries` attributes that can be edited.
 
-    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    Anyone can view these attributes, but they need launchpad.Edit to change.
     """
 
     name = exported(SnappySeriesNameField(
