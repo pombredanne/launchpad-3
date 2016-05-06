@@ -39,7 +39,7 @@ ALTER TABLE Snap
     ADD COLUMN store_upload boolean DEFAULT false NOT NULL,
     ADD COLUMN store_series integer REFERENCES snappyseries,
     ADD COLUMN store_name text,
-    ADD COLUMN store_tokens text,
+    ADD COLUMN store_secrets text,
     ADD CONSTRAINT consistent_store_upload CHECK (
         NOT store_upload
         OR (store_series IS NOT NULL AND store_name IS NOT NULL));
@@ -47,7 +47,7 @@ ALTER TABLE Snap
 COMMENT ON COLUMN Snap.store_upload IS 'Whether builds of this snap package are automatically uploaded to the store.';
 COMMENT ON COLUMN Snap.store_series IS 'The series in which this snap package should be published in the store.';
 COMMENT ON COLUMN Snap.store_name IS 'The registered name of this snap package in the store.';
-COMMENT ON COLUMN Snap.store_tokens IS 'Serialized tokens issued by the store and the login service to authorize uploads of this snap package.';
+COMMENT ON COLUMN Snap.store_secrets IS 'Serialized secrets issued by the store and the login service to authorize uploads of this snap package.';
 
 CREATE INDEX snap__store_series__idx
     ON Snap(store_series) WHERE store_series IS NOT NULL;
