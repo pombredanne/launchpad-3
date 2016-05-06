@@ -86,7 +86,7 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.services.webhooks.interfaces import IWebhookTarget
-from lp.snappy.interfaces.snapseries import ISnapSeries
+from lp.snappy.interfaces.snappyseries import ISnappySeries
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -364,7 +364,7 @@ class ISnapEditableAttributes(IHasOwner):
 
     store_series = ReferenceChoice(
         title=_("Store series"),
-        schema=ISnapSeries, vocabulary="SnapSeries",
+        schema=ISnappySeries, vocabulary="SnappySeries",
         required=False, readonly=False,
         description=_(
             "The series in which this snap package should be published in the "
@@ -376,11 +376,11 @@ class ISnapEditableAttributes(IHasOwner):
         description=_(
             "The registered name of this snap package in the store."))
 
-    store_tokens = List(
+    store_secrets = List(
         value_type=TextLine(), title=_("Store upload tokens"),
         required=False, readonly=False,
         description=_(
-            "Serialized tokens issued by the store and the login service to "
+            "Serialized secrets issued by the store and the login service to "
             "authorize uploads of this snap package."))
 
 
@@ -432,7 +432,7 @@ class ISnapSet(Interface):
             branch=None, git_ref=None, require_virtualized=True,
             processors=None, date_created=None, private=False,
             store_upload=False, store_series=None, store_name=None,
-            store_tokens=None):
+            store_secrets=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):

@@ -69,18 +69,18 @@ class MacaroonAuth(requests.auth.AuthBase):
 class SnapStoreClient:
     """A client for the API provided by the snap store."""
 
-    def requestPackageUpload(self, snap_series, snap_name):
+    def requestPackageUpload(self, snappy_series, snap_name):
         assert config.snappy.store_url is not None
         request_url = urlappend(
             config.snappy.store_url, "api/2.0/acl/package_upload/")
         request = get_current_browser_request()
         timeline_action = get_request_timeline(request).start(
             "request-snap-upload-macaroon",
-            "%s/%s" % (snap_series.name, snap_name), allow_nested=True)
+            "%s/%s" % (snappy_series.name, snap_name), allow_nested=True)
         try:
             response = urlfetch(
                 request_url, method="POST",
-                json={"name": snap_name, "series": snap_series.name})
+                json={"name": snap_name, "series": snappy_series.name})
             response_data = response.json()
             if "macaroon" not in response_data:
                 raise BadRequestPackageUploadResponse(response.text)
@@ -129,10 +129,10 @@ class SnapStoreClient:
             }
         # XXX cjwatson 2016-04-20: handle refresh
         try:
-            assert snap.store_tokens is not None
+            assert snap.store_secrets is not None
             urlfetch(
                 upload_url, method="POST", data=data,
-                auth=MacaroonAuth(snap.store_tokens))
+                auth=MacaroonAuth(snap.store_secrets))
         except requests.HTTPError as e:
             raise BadUploadResponse(e.response.text)
 

@@ -26,11 +26,11 @@ class BadUploadResponse(Exception):
 class ISnapStoreClient(Interface):
     """Interface for the API provided by the snap store."""
 
-    def requestPackageUpload(snap_series, snap_name):
+    def requestPackageUpload(snappy_series, snap_name):
         """Request permission from the store to upload builds of a snap.
 
-        :param snap_series: The `ISnapSeries` in which this snap should be
-            published on the store.
+        :param snappy_series: The `ISnappySeries` in which this snap should
+            be published on the store.
         :param snap_name: The registered name of this snap on the store.
         :return: A serialized macaroon appropriate for uploading builds of
             this snap.

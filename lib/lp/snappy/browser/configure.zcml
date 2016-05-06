@@ -118,18 +118,16 @@
             factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public" />
         <browser:url
-            for="lp.snappy.interfaces.snapseries.ISnapSeries"
+            for="lp.snappy.interfaces.snappyseries.ISnappySeries"
             path_expression="name"
-            parent_utility="lp.snappy.interfaces.snapseries.ISnapSeriesSet" />
+            parent_utility="lp.snappy.interfaces.snappyseries.ISnappySeriesSet" />
         <browser:url
-            for="lp.snappy.interfaces.snapseries.ISnapSeriesSet"
-            path_expression="string:+snap-series"
+            for="lp.snappy.interfaces.snappyseries.ISnappySeriesSet"
+            path_expression="string:+snappy-series"
             parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot" />
         <browser:navigation
-            module="lp.snappy.browser.snapseries"
-            classes="
-                SnapSeriesNavigation
-                SnapSeriesSetNavigation" />
+            module="lp.snappy.browser.snappyseries"
+            classes="SnappySeriesSetNavigation" />
 
         <browser:page
             for="*"

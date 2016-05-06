@@ -82,39 +82,39 @@
         <allow interface="lp.snappy.interfaces.snapbuild.ISnapFile" />
     </class>
 
-    <!-- SnapSeries -->
-    <class class="lp.snappy.model.snapseries.SnapSeries">
+    <!-- SnappySeries -->
+    <class class="lp.snappy.model.snappyseries.SnappySeries">
         <allow
-            interface="lp.snappy.interfaces.snapseries.ISnapSeriesView
-                       lp.snappy.interfaces.snapseries.ISnapSeriesEditableAttributes" />
+            interface="lp.snappy.interfaces.snappyseries.ISnappySeriesView
+                       lp.snappy.interfaces.snappyseries.ISnappySeriesEditableAttributes" />
         <require
             permission="launchpad.Edit"
-            set_schema="lp.snappy.interfaces.snapseries.ISnapSeriesEditableAttributes" />
+            set_schema="lp.snappy.interfaces.snappyseries.ISnappySeriesEditableAttributes" />
     </class>
 
-    <!-- SnapDistroSeries -->
-    <class class="lp.snappy.model.snapseries.SnapDistroSeries">
+    <!-- SnappyDistroSeries -->
+    <class class="lp.snappy.model.snappyseries.SnappyDistroSeries">
         <allow
-            interface="lp.snappy.interfaces.snapseries.ISnapDistroSeries" />
+            interface="lp.snappy.interfaces.snappyseries.ISnappyDistroSeries" />
     </class>
 
-    <!-- SnapSeriesSet -->
+    <!-- SnappySeriesSet -->
     <securedutility
-        class="lp.snappy.model.snapseries.SnapSeriesSet"
-        provides="lp.snappy.interfaces.snapseries.ISnapSeriesSet">
+        class="lp.snappy.model.snappyseries.SnappySeriesSet"
+        provides="lp.snappy.interfaces.snappyseries.ISnappySeriesSet">
         <allow
-            interface="lp.snappy.interfaces.snapseries.ISnapSeriesSet" />
+            interface="lp.snappy.interfaces.snappyseries.ISnappySeriesSet" />
         <require
             permission="launchpad.Edit"
-            interface="lp.snappy.interfaces.snapseries.ISnapSeriesSetEdit" />
+            interface="lp.snappy.interfaces.snappyseries.ISnappySeriesSetEdit" />
     </securedutility>
 
-    <!-- SnapDistroSeriesSet -->
+    <!-- SnappyDistroSeriesSet -->
     <securedutility
-        class="lp.snappy.model.snapseries.SnapDistroSeriesSet"
-        provides="lp.snappy.interfaces.snapseries.ISnapDistroSeriesSet">
+        class="lp.snappy.model.snappyseries.SnappyDistroSeriesSet"
+        provides="lp.snappy.interfaces.snappyseries.ISnappyDistroSeriesSet">
         <allow
-            interface="lp.snappy.interfaces.snapseries.ISnapDistroSeriesSet" />
+            interface="lp.snappy.interfaces.snappyseries.ISnappyDistroSeriesSet" />
     </securedutility>
 
     <!-- Store interaction -->

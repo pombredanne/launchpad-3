@@ -152,17 +152,17 @@ class Snap(Storm, WebhookTargetMixin):
     store_upload = Bool(name='store_upload', allow_none=False)
 
     store_series_id = Int(name='store_series', allow_none=True)
-    store_series = Reference(store_series_id, 'SnapSeries.id')
+    store_series = Reference(store_series_id, 'SnappySeries.id')
 
     store_name = Unicode(name='store_name', allow_none=True)
 
-    store_tokens = JSON('store_tokens', allow_none=True)
+    store_secrets = JSON('store_secrets', allow_none=True)
 
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None,
                  require_virtualized=True, date_created=DEFAULT,
                  private=False, store_upload=False, store_series=None,
-                 store_name=None, store_tokens=None):
+                 store_name=None, store_secrets=None):
         """Construct a `Snap`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
@@ -182,7 +182,7 @@ class Snap(Storm, WebhookTargetMixin):
         self.store_upload = store_upload
         self.store_series = store_series
         self.store_name = store_name
-        self.store_tokens = store_tokens
+        self.store_secrets = store_secrets
 
     @property
     def valid_webhook_event_types(self):
@@ -406,7 +406,7 @@ class SnapSet:
             branch=None, git_ref=None, require_virtualized=True,
             processors=None, date_created=DEFAULT, private=False,
             store_upload=False, store_series=None, store_name=None,
-            store_tokens=None):
+            store_secrets=None):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -433,7 +433,7 @@ class SnapSet:
             require_virtualized=require_virtualized, date_created=date_created,
             private=private, store_upload=store_upload,
             store_series=store_series, store_name=store_name,
-            store_tokens=store_tokens)
+            store_secrets=store_secrets)
         store.add(snap)
 
         if processors is None:

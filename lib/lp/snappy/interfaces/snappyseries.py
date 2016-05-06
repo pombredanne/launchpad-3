@@ -1,17 +1,17 @@
 # Copyright 2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Snap series interfaces."""
+"""Snappy series interfaces."""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
-    'ISnapDistroSeries',
-    'ISnapDistroSeriesSet',
-    'ISnapSeries',
-    'ISnapSeriesSet',
-    'NoSuchSnapSeries',
+    'ISnappyDistroSeries',
+    'ISnappyDistroSeriesSet',
+    'ISnappySeries',
+    'ISnappySeriesSet',
+    'NoSuchSnappySeries',
     ]
 
 from lazr.restful.declarations import (
@@ -51,32 +51,32 @@ from lp.services.fields import (
     )
 
 
-class NoSuchSnapSeries(NameLookupFailed):
-    """The requested `SnapSeries` does not exist."""
+class NoSuchSnappySeries(NameLookupFailed):
+    """The requested `SnappySeries` does not exist."""
 
-    _message_prefix = "No such snap series"
+    _message_prefix = "No such snappy series"
 
 
-class SnapSeriesNameField(ContentNameField):
-    """Ensure that `ISnapSeries` has unique names."""
+class SnappySeriesNameField(ContentNameField):
+    """Ensure that `ISnappySeries` has unique names."""
 
     errormessage = _("%s is already in use by another series.")
 
     @property
     def _content_iface(self):
         """See `UniqueField`."""
-        return ISnapSeries
+        return ISnappySeries
 
     def _getByName(self, name):
         """See `ContentNameField`."""
         try:
-            return getUtility(ISnapSeriesSet).getByName(name)
-        except NoSuchSnapSeries:
+            return getUtility(ISnappySeriesSet).getByName(name)
+        except NoSuchSnappySeries:
             return None
 
 
-class ISnapSeriesView(Interface):
-    """`ISnapSeries` attributes that require launchpad.View permission."""
+class ISnappySeriesView(Interface):
+    """`ISnappySeries` attributes that anyone can view."""
 
     id = Int(title=_("ID"), required=True, readonly=True)
 
@@ -89,13 +89,13 @@ class ISnapSeriesView(Interface):
         description=_("The person who registered this snap package.")))
 
 
-class ISnapSeriesEditableAttributes(Interface):
-    """`ISnapSeries` attributes that can be edited.
+class ISnappySeriesEditableAttributes(Interface):
+    """`ISnappySeries` attributes that can be edited.
 
-    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    Anyone can view these attributes, but they need launchpad.Edit to change.
     """
 
-    name = exported(SnapSeriesNameField(
+    name = exported(SnappySeriesNameField(
         title=_("Name"), required=True, readonly=False,
         constraint=name_validator))
 
@@ -110,81 +110,83 @@ class ISnapSeriesEditableAttributes(Interface):
     usable_distro_series = exported(List(
         title=_("Usable distro series"),
         description=_(
-            "The distro series that can be used for this snap series."),
+            "The distro series that can be used for this snappy series."),
         value_type=Reference(schema=IDistroSeries),
         required=True, readonly=False))
 
 
-class ISnapSeries(ISnapSeriesView, ISnapSeriesEditableAttributes):
+class ISnappySeries(ISnappySeriesView, ISnappySeriesEditableAttributes):
     """A series for snap packages in the store."""
 
     # XXX cjwatson 2016-04-13 bug=760849: "beta" is a lie to get WADL
     # generation working.  Individual attributes must set their version to
     # "devel".
-    export_as_webservice_entry(plural_name="snap_serieses", as_of="beta")
+    export_as_webservice_entry(plural_name="snappy_serieses", as_of="beta")
 
 
-class ISnapDistroSeries(Interface):
-    """A snap/distro series link."""
+class ISnappyDistroSeries(Interface):
+    """A snappy/distro series link."""
 
-    snap_series = Reference(ISnapSeries, title=_("Snap series"), readonly=True)
+    snappy_series = Reference(
+        ISnappySeries, title=_("Snappy series"), readonly=True)
     distro_series = Reference(
         IDistroSeries, title=_("Distro series"), readonly=True)
 
     title = Title(title=_("Title"), required=True, readonly=True)
 
 
-class ISnapSeriesSetEdit(Interface):
-    """`ISnapSeriesSet` methods that require launchpad.Edit permission."""
+class ISnappySeriesSetEdit(Interface):
+    """`ISnappySeriesSet` methods that require launchpad.Edit permission."""
 
     @call_with(registrant=REQUEST_USER)
-    @export_factory_operation(ISnapSeries, ["name", "display_name", "status"])
+    @export_factory_operation(
+        ISnappySeries, ["name", "display_name", "status"])
     @operation_for_version("devel")
     def new(registrant, name, display_name, status, date_created=None):
-        """Create an `ISnapSeries`."""
+        """Create an `ISnappySeries`."""
 
 
-class ISnapSeriesSet(ISnapSeriesSetEdit):
-    """Interface representing the set of snap series."""
+class ISnappySeriesSet(ISnappySeriesSetEdit):
+    """Interface representing the set of snappy series."""
 
-    export_as_webservice_collection(ISnapSeries)
+    export_as_webservice_collection(ISnappySeries)
 
     def __iter__():
-        """Iterate over `ISnapSeries`."""
+        """Iterate over `ISnappySeries`."""
 
     def __getitem__(name):
-        """Return the `ISnapSeries` with this name."""
+        """Return the `ISnappySeries` with this name."""
 
     @operation_parameters(
-        name=TextLine(title=_("Snap series name"), required=True))
-    @operation_returns_entry(ISnapSeries)
+        name=TextLine(title=_("Snappy series name"), required=True))
+    @operation_returns_entry(ISnappySeries)
     @export_read_operation()
     @operation_for_version("devel")
     def getByName(name):
-        """Return the `ISnapSeries` with this name.
+        """Return the `ISnappySeries` with this name.
 
-        :raises NoSuchSnapSeries: if no snap series exists with this name.
+        :raises NoSuchSnappySeries: if no snappy series exists with this name.
         """
 
     @operation_parameters(
         distro_series=Reference(
             IDistroSeries, title=_("Distro series"), required=True))
-    @operation_returns_collection_of(ISnapSeries)
+    @operation_returns_collection_of(ISnappySeries)
     @export_read_operation()
     @operation_for_version("devel")
     def getByDistroSeries(distro_series):
-        """Return all `ISnapSeries` usable with this `IDistroSeries`."""
+        """Return all `ISnappySeries` usable with this `IDistroSeries`."""
 
     @collection_default_content()
     def getAll():
-        """Return all `ISnapSeries`."""
+        """Return all `ISnappySeries`."""
 
 
-class ISnapDistroSeriesSet(Interface):
-    """Interface representing the set of snap/distro series links."""
+class ISnappyDistroSeriesSet(Interface):
+    """Interface representing the set of snappy/distro series links."""
 
     def getByDistroSeries(distro_series):
-        """Return all `SnapDistroSeries` for this `IDistroSeries`."""
+        """Return all `SnappyDistroSeries` for this `IDistroSeries`."""
 
-    def getByBothSeries(snap_series, distro_series):
-        """Return a `SnapDistroSeries` for this pair of series, or None."""
+    def getByBothSeries(snappy_series, distro_series):
+        """Return a `SnappyDistroSeries` for this pair of series, or None."""

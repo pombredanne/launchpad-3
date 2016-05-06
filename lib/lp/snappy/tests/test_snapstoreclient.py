@@ -104,10 +104,10 @@ class TestSnapStoreClient(TestCaseWithFactory):
             self.request = request
             return {"status_code": 200, "content": {"macaroon": "dummy"}}
 
-        snap_series = self.factory.makeSnapSeries(name="rolling")
+        snappy_series = self.factory.makeSnappySeries(name="rolling")
         with HTTMock(handler):
             macaroon = self.client.requestPackageUpload(
-                snap_series, "test-snap")
+                snappy_series, "test-snap")
         self.assertThat(self.request, RequestMatches(
             url=Equals(urlappend(
                 config.snappy.store_url, "api/2.0/acl/package_upload/")),
@@ -120,22 +120,22 @@ class TestSnapStoreClient(TestCaseWithFactory):
         def handler(url, request):
             return {"status_code": 200, "content": {}}
 
-        snap_series = self.factory.makeSnapSeries()
+        snappy_series = self.factory.makeSnappySeries()
         with HTTMock(handler):
             self.assertRaises(
                 BadRequestPackageUploadResponse,
-                self.client.requestPackageUpload, snap_series, "test-snap")
+                self.client.requestPackageUpload, snappy_series, "test-snap")
 
     def test_requestPackageUpload_404(self):
         @all_requests
         def handler(url, request):
             return {"status_code": 404}
 
-        snap_series = self.factory.makeSnapSeries()
+        snappy_series = self.factory.makeSnappySeries()
         with HTTMock(handler):
             self.assertRaises(
                 BadRequestPackageUploadResponse,
-                self.client.requestPackageUpload, snap_series, "test-snap")
+                self.client.requestPackageUpload, snappy_series, "test-snap")
 
     def test_upload(self):
         @urlmatch(path=r".*/unscanned-upload/$")
@@ -151,11 +151,11 @@ class TestSnapStoreClient(TestCaseWithFactory):
             self.snap_upload_request = request
             return {"status_code": 202, "content": {"success": True}}
 
-        store_tokens = {"root": "dummy-root", "discharge": "dummy-discharge"}
+        store_secrets = {"root": "dummy-root", "discharge": "dummy-discharge"}
         snap = self.factory.makeSnap(
             store_upload=True,
-            store_series=self.factory.makeSnapSeries(name="rolling"),
-            store_name="test-snap", store_tokens=store_tokens)
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=store_secrets)
         snapbuild = self.factory.makeSnapBuild(snap=snap)
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
@@ -175,7 +175,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertThat(self.snap_upload_request, RequestMatches(
             url=Equals(urlappend(
                 config.snappy.store_url, "dev/api/snap-upload/test-snap/")),
-            method=Equals("POST"), auth=("Macaroon", store_tokens),
+            method=Equals("POST"), auth=("Macaroon", store_secrets),
             form_data={
                 "updown_id": MatchesStructure.byEquality(
                     name="updown_id", value="1"),
