@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for job-running facilities."""
@@ -42,6 +42,10 @@ from lp.services.job.runner import (
     TwistedJobRunner,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from lp.services.webapp import errorlog
 from lp.testing import (
     TestCaseWithFactory,
@@ -359,6 +363,26 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.FAILED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
+
+    def test_runJob_sets_default_timeout_function(self):
+        """runJob sets a default timeout function for urlfetch."""
+        class RecordDefaultTimeoutJob(NullJob):
+            def __init__(self):
+                super(RecordDefaultTimeoutJob, self).__init__("")
+
+            def run(self):
+                self.default_timeout = get_default_timeout_function()()
+
+        original_timeout_function = get_default_timeout_function()
+        set_default_timeout_function(None)
+        try:
+            job = RecordDefaultTimeoutJob()
+            job.job.acquireLease()
+            JobRunner([job]).runJob(job, None)
+            self.assertEqual(JobStatus.COMPLETED, job.job.status)
+            self.assertThat(job.default_timeout, GreaterThan(0))
+        finally:
+            set_default_timeout_function(original_timeout_function)
 
     def test_runJobHandleErrors_oops_generated_notify_fails(self):
         """A second oops is logged if the notification of the oops fails."""

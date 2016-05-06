@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
@@ -74,6 +74,10 @@ from lp.services.job.interfaces.job import (
 from lp.services.mail.sendmail import (
     MailController,
     set_immediate_mail_delivery,
+    )
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
     )
 from lp.services.twistedsupport import run_reactor
 from lp.services.webapp import errorlog
@@ -299,7 +303,13 @@ class BaseJobRunner(LazrJobRunner):
         return True
 
     def runJob(self, job, fallback):
-        super(BaseJobRunner, self).runJob(IRunnableJob(job), fallback)
+        original_timeout_function = get_default_timeout_function()
+        if job.lease_expires is not None:
+            set_default_timeout_function(lambda: job.getTimeout())
+        try:
+            super(BaseJobRunner, self).runJob(IRunnableJob(job), fallback)
+        finally:
+            set_default_timeout_function(original_timeout_function)
 
     def userErrorTypes(self, job):
         return removeSecurityProxy(job).user_error_types
