@@ -4675,7 +4675,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSnappySeries(self, registrant=None, name=None, display_name=None,
                          status=SeriesStatus.DEVELOPMENT,
-                         date_created=DEFAULT):
+                         date_created=DEFAULT, usable_distro_series=None):
         """Make a new SnappySeries."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4686,6 +4686,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 word.capitalize() for word in name.split('-'))
         snappy_series = getUtility(ISnappySeriesSet).new(
             registrant, name, display_name, status, date_created=date_created)
+        if usable_distro_series is not None:
+            snappy_series.usable_distro_series = usable_distro_series
         IStore(snappy_series).flush()
         return snappy_series
 
