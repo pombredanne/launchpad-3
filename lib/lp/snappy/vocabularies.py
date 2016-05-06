@@ -91,5 +91,4 @@ class BuildableSnappyDistroSeriesVocabulary(SnappyDistroSeriesVocabulary):
 
     _clauses = SnappyDistroSeriesVocabulary._clauses + [
         SnappySeries.status.is_in(ACTIVE_STATUSES),
-        DistroSeries.status.is_in(ACTIVE_STATUSES),
         ]
