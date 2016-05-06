@@ -81,7 +81,7 @@ expected_body = """\
  * Archive: distro
  * Distroseries: distro unstable
  * Architecture: i386
- * Pocket: RELEASE
+ * Pocket: UPDATES
  * State: Failed to build
  * Duration: 10 minutes
  * Build Log: %s
@@ -285,7 +285,7 @@ class TestSnapBuild(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual(
             "[Snap build #%d] i386 build of snap-1 snap package in distro "
-            "unstable" % build.id, subject)
+            "unstable-updates" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(person.name, notification["X-Launchpad-Message-For"])
@@ -377,7 +377,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(db_build.distro_arch_series),
                 build["distro_arch_series_link"])
-            self.assertEqual("Release", build["pocket"])
+            self.assertEqual("Updates", build["pocket"])
             self.assertIsNone(build["score"])
             self.assertFalse(build["can_be_rescored"])
             self.assertFalse(build["can_be_cancelled"])
