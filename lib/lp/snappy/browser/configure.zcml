@@ -127,9 +127,7 @@
             parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot" />
         <browser:navigation
             module="lp.snappy.browser.snappyseries"
-            classes="
-                SnappySeriesNavigation
-                SnappySeriesSetNavigation" />
+            classes="SnappySeriesSetNavigation" />
 
         <browser:page
             for="*"
