@@ -29,6 +29,8 @@ CREATE TABLE SnappyDistroSeries (
     PRIMARY KEY (snappy_series, distro_series)
 );
 
+CREATE INDEX snappydistroseries__distro_series__idx ON SnappyDistroSeries(distro_series);
+
 COMMENT ON TABLE SnappyDistroSeries IS 'A record indicating that a particular snappy series is valid for builds from a particular distribution series.';
 COMMENT ON COLUMN SnappyDistroSeries.snappy_series IS 'The snappy series which is valid for builds from this distribution series.';
 COMMENT ON COLUMN SnappyDistroSeries.distro_series IS 'The distribution series whose builds are valid for this snappy series.';
