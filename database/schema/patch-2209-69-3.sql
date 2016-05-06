@@ -13,6 +13,7 @@ CREATE TABLE SnappySeries (
 );
 
 CREATE UNIQUE INDEX snappyseries__name__key ON SnappySeries(name);
+CREATE INDEX snappyseries__registrant__idx ON SnappySeries(registrant);
 CREATE INDEX snappyseries__status__idx ON SnappySeries(status);
 
 COMMENT ON TABLE SnappySeries IS 'A series for snap packages in the store.';
