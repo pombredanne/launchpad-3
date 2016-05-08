@@ -116,7 +116,7 @@ class SnappyDistroSeries(Storm):
     @property
     def title(self):
         return "%s, for %s" % (
-            self.distro_series.display_name, self.snappy_series.title)
+            self.distro_series.fullseriesname, self.snappy_series.title)
 
 
 @implementer(ISnappySeriesSet)
