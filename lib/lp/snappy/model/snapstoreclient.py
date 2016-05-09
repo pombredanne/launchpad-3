@@ -10,6 +10,7 @@ __all__ = [
     'SnapStoreClient',
     ]
 
+import string
 try:
     from urllib.parse import quote_plus
 except ImportError:
@@ -55,13 +56,20 @@ class LibraryFileAliasWrapper:
 class MacaroonAuth(requests.auth.AuthBase):
     """Attaches macaroon authentication to a given Request object."""
 
+    # The union of the base64 and URL-safe base64 alphabets.
+    allowed_chars = set(string.digits + string.letters + "+/=-_")
+
     def __init__(self, tokens):
         self.tokens = tokens
 
     def __call__(self, r):
-        r.headers["Authorization"] = (
-            "Macaroon " +
-            ", ".join('%s="%s"' % (k, v) for k, v in self.tokens.items()))
+        params = []
+        for k, v in self.tokens.items():
+            # Check framing.
+            assert set(k).issubset(self.allowed_chars)
+            assert set(v).issubset(self.allowed_chars)
+            params.append('%s="%s"' % (k, v))
+        r.headers["Authorization"] = "Macaroon " + ", ".join(params)
         return r
 
 

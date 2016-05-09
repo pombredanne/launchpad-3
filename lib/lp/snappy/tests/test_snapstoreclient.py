@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 from cgi import FieldStorage
+from collections import OrderedDict
 import io
 import json
 
@@ -16,6 +17,7 @@ from httmock import (
     HTTMock,
     urlmatch,
     )
+from requests import Request
 from requests.utils import parse_dict_header
 from testtools.matchers import (
     Contains,
@@ -36,8 +38,25 @@ from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     ISnapStoreClient,
     )
-from lp.testing import TestCaseWithFactory
+from lp.snappy.model.snapstoreclient import MacaroonAuth
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
+
+
+class TestMacaroonAuth(TestCase):
+
+    def test_good(self):
+        r = Request()
+        MacaroonAuth(OrderedDict([("root", "abc"), ("discharge", "def")]))(r)
+        self.assertEqual(
+            'Macaroon root="abc", discharge="def"', r.headers["Authorization"])
+
+    def test_bad_framing(self):
+        r = Request()
+        self.assertRaises(AssertionError, MacaroonAuth({"root": 'ev"il'}), r)
 
 
 class RequestMatches(Matcher):
