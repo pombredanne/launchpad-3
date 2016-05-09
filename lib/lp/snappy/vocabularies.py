@@ -85,6 +85,23 @@ class SnappyDistroSeriesVocabulary(StormVocabularyBase):
             raise LookupError(value)
         return self.toTerm(value)
 
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        try:
+            distribution_name, distro_series_name, snappy_series_name = (
+                token.split("/", 2))
+        except ValueError:
+            raise LookupError(token)
+        entry = IStore(self._table).find(
+            self._table,
+            Distribution.name == distribution_name,
+            DistroSeries.name == distro_series_name,
+            SnappySeries.name == snappy_series_name,
+            *self._clauses).one()
+        if entry is None:
+            raise LookupError(token)
+        return self.toTerm(entry)
+
 
 class BuildableSnappyDistroSeriesVocabulary(SnappyDistroSeriesVocabulary):
     """A vocabulary for searching active snappy/distro series combinations."""
