@@ -304,7 +304,7 @@ class TestUploadPolicy(TestCaseWithFactory):
         upload.changes = FakeChangesFile(custom_files=[uploadfile])
         self.assertFalse(buildd_policy.autoApprove(upload))
 
-    def test_buildd_does_not_approve_signed(self):
+    def test_buildd_does_not_approve_signing(self):
         # Uploads to the primary archive containing files for signing are
         # not approved.
         buildd_policy = findPolicyByName("buildd")
