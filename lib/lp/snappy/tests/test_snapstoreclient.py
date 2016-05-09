@@ -141,20 +141,21 @@ class TestSnapStoreClient(TestCaseWithFactory):
 
         snappy_series = self.factory.makeSnappySeries()
         with HTTMock(handler):
-            self.assertRaises(
-                BadRequestPackageUploadResponse,
+            self.assertRaisesWithContent(
+                BadRequestPackageUploadResponse, b"{}",
                 self.client.requestPackageUploadPermission,
                 snappy_series, "test-snap")
 
     def test_requestPackageUploadPermission_404(self):
         @all_requests
         def handler(url, request):
-            return {"status_code": 404}
+            return {"status_code": 404, "reason": b"Not found"}
 
         snappy_series = self.factory.makeSnappySeries()
         with HTTMock(handler):
-            self.assertRaises(
+            self.assertRaisesWithContent(
                 BadRequestPackageUploadResponse,
+                b"404 Client Error: Not found",
                 self.client.requestPackageUploadPermission,
                 snappy_series, "test-snap")
 

@@ -94,7 +94,7 @@ class SnapStoreClient:
                 raise BadRequestPackageUploadResponse(response.text)
             return response_data["macaroon"]
         except requests.HTTPError as e:
-            raise BadRequestPackageUploadResponse(e.response.text)
+            raise BadRequestPackageUploadResponse(e.args[0])
         finally:
             timeline_action.finish()
 
@@ -120,7 +120,7 @@ class SnapStoreClient:
                     raise BadUploadResponse(response.text)
                 return {"upload_id": response_data["upload_id"]}
             except requests.HTTPError as e:
-                raise BadUploadResponse(e.response.text)
+                raise BadUploadResponse(e.args[0])
         finally:
             lfa.close()
 
@@ -142,7 +142,7 @@ class SnapStoreClient:
                 upload_url, method="POST", data=data,
                 auth=MacaroonAuth(snap.store_secrets))
         except requests.HTTPError as e:
-            raise BadUploadResponse(e.response.text)
+            raise BadUploadResponse(e.args[0])
 
     def upload(self, snapbuild):
         """See `ISnapStoreClient`."""
