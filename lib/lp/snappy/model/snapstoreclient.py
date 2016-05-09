@@ -111,6 +111,8 @@ class SnapStoreClient:
                     "binary": (
                         "filename", lfa_wrapper, "application/octet-stream"),
                     })
+            # XXX cjwatson 2016-05-09: This should add timeline information,
+            # but that's currently difficult in jobs.
             try:
                 response = urlfetch(
                     unscanned_upload_url, method="POST", data=encoder,
@@ -136,6 +138,8 @@ class SnapStoreClient:
             "series": snap.store_series.name,
             }
         # XXX cjwatson 2016-04-20: handle refresh
+        # XXX cjwatson 2016-05-09: This should add timeline information, but
+        # that's currently difficult in jobs.
         try:
             assert snap.store_secrets is not None
             urlfetch(
