@@ -69,7 +69,7 @@ class MacaroonAuth(requests.auth.AuthBase):
 class SnapStoreClient:
     """A client for the API provided by the snap store."""
 
-    def requestPackageUpload(self, snappy_series, snap_name):
+    def requestPackageUploadPermission(self, snappy_series, snap_name):
         assert config.snappy.store_url is not None
         request_url = urlappend(
             config.snappy.store_url, "api/2.0/acl/package_upload/")

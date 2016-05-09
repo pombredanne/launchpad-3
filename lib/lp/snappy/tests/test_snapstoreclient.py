@@ -98,7 +98,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_upload_url="http://updown.example/")
         self.client = getUtility(ISnapStoreClient)
 
-    def test_requestPackageUpload(self):
+    def test_requestPackageUploadPermission(self):
         @all_requests
         def handler(url, request):
             self.request = request
@@ -106,7 +106,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
 
         snappy_series = self.factory.makeSnappySeries(name="rolling")
         with HTTMock(handler):
-            macaroon = self.client.requestPackageUpload(
+            macaroon = self.client.requestPackageUploadPermission(
                 snappy_series, "test-snap")
         self.assertThat(self.request, RequestMatches(
             url=Equals(urlappend(
@@ -115,7 +115,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
             json_data={"name": "test-snap", "series": "rolling"}))
         self.assertEqual("dummy", macaroon)
 
-    def test_requestPackageUpload_missing_macaroon(self):
+    def test_requestPackageUploadPermission_missing_macaroon(self):
         @all_requests
         def handler(url, request):
             return {"status_code": 200, "content": {}}
@@ -124,9 +124,10 @@ class TestSnapStoreClient(TestCaseWithFactory):
         with HTTMock(handler):
             self.assertRaises(
                 BadRequestPackageUploadResponse,
-                self.client.requestPackageUpload, snappy_series, "test-snap")
+                self.client.requestPackageUploadPermission,
+                snappy_series, "test-snap")
 
-    def test_requestPackageUpload_404(self):
+    def test_requestPackageUploadPermission_404(self):
         @all_requests
         def handler(url, request):
             return {"status_code": 404}
@@ -135,7 +136,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
         with HTTMock(handler):
             self.assertRaises(
                 BadRequestPackageUploadResponse,
-                self.client.requestPackageUpload, snappy_series, "test-snap")
+                self.client.requestPackageUploadPermission,
+                snappy_series, "test-snap")
 
     def test_upload(self):
         @urlmatch(path=r".*/unscanned-upload/$")
