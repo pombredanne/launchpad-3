@@ -80,20 +80,20 @@ class SigningUpload(CustomUpload):
         # Ensure we expose the results via uefi and signed in dists.
         # For compatibility if efi already exists create a symlink
         # to it from signed.  Otherwise create the link the other way.
-        dists_signing = os.path.join(
+        dists_signed = os.path.join(
             pubconf.archiveroot, "dists", distroseries, "main", "signed")
         dists_uefi = os.path.join(
             pubconf.archiveroot, "dists", distroseries, "main", "uefi")
-        if not os.path.exists(dists_signing):
+        if not os.path.exists(dists_signed):
             if os.path.isdir(dists_uefi):
-                os.symlink("uefi", dists_signing)
+                os.symlink("uefi", dists_signed)
             else:
-                os.makedirs(dists_signing, 0o755)
+                os.makedirs(dists_signed, 0o755)
                 os.symlink("signed", dists_uefi)
 
         # Extract into the "signed" path regardless of linking.
         self.targetdir = os.path.join(
-            dists_signing, "%s-%s" % (self.package, self.arch))
+            dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
 
     @classmethod
