@@ -66,7 +66,7 @@ class SigningUpload(CustomUpload):
         if pubconf.signingroot is None:
             if self.logger is not None:
                 self.logger.warning(
-                    "No SIGNING root configured for this archive")
+                    "No signing root configured for this archive")
             self.key = None
             self.cert = None
             self.autokey = False
