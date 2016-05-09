@@ -161,13 +161,13 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
             "bla.txt", "data", "main/raw-installer", "extra")
         self.assertTrue(uploadfile.autoApprove())
 
-    def test_uefi_not_auto_approved_compat(self):
+    def test_uefi_not_auto_approved(self):
         # UEFI uploads are auto-approved.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-uefi", "extra")
         self.assertFalse(uploadfile.autoApprove())
 
-    def test_uefi_not_auto_approved(self):
+    def test_signing_not_auto_approved(self):
         # UEFI uploads are auto-approved.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-signing", "extra")
