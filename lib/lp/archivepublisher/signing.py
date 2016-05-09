@@ -88,7 +88,7 @@ class SigningUpload(CustomUpload):
             pubconf.archiveroot, "dists", distroseries, "main", "uefi")
         if not os.path.exists(dists_signed):
             if os.path.isdir(dists_uefi):
-                os.rename(dists_efi, dists_signed)
+                os.rename(dists_uefi, dists_signed)
             else:
                 os.makedirs(dists_signed, 0o755)
         if not os.path.exists(dists_uefi):
