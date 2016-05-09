@@ -94,14 +94,16 @@ class TestUefi(TestCase):
 
         return upload
 
+    def getDistsPath(self):
+        return os.path.join(self.pubconf.archiveroot, "dists",
+            self.suite, "main")
+
     def getSignedPath(self, loader_type, arch):
-        return os.path.join(
-            self.pubconf.archiveroot, "dists", self.suite, "main", "signed",
+        return os.path.join(self.getDistsPath(), "signed",
             "%s-%s" % (loader_type, arch))
 
     def getUefiPath(self, loader_type, arch):
-        return os.path.join(
-            self.pubconf.archiveroot, "dists", self.suite, "main", "uefi",
+        return os.path.join(self.getDistsPath(), "uefi",
             "%s-%s" % (loader_type, arch))
 
     def test_unconfigured(self):
@@ -217,6 +219,42 @@ class TestUefi(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.process()
+        self.assertTrue(os.path.isdir(os.path.join(
+            self.getDistsPath(), "signed")))
+        self.assertTrue(os.path.islink(os.path.join(
+            self.getDistsPath(), "uefi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
+
+    def test_installed_existing_uefi(self):
+        # Files in the tarball are installed correctly.
+        os.makedirs(os.path.join(self.getDistsPath(), "uefi"))
+        self.setUpKeyAndCert()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.process()
+        self.assertTrue(os.path.isdir(os.path.join(
+            self.getDistsPath(), "signed")))
+        self.assertTrue(os.path.islink(os.path.join(
+            self.getDistsPath(), "uefi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
+
+    def test_installed_existing_signing(self):
+        # Files in the tarball are installed correctly.
+        os.makedirs(os.path.join(self.getDistsPath(), "signing"))
+        self.setUpKeyAndCert()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.process()
+        self.assertTrue(os.path.isdir(os.path.join(
+            self.getDistsPath(), "signed")))
+        self.assertTrue(os.path.islink(os.path.join(
+            self.getDistsPath(), "uefi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
         self.assertTrue(os.path.exists(os.path.join(
