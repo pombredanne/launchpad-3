@@ -1,4 +1,4 @@
-<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -117,6 +117,17 @@
             for="lp.snappy.interfaces.snapbuild.ISnapBuild"
             factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public" />
+        <browser:url
+            for="lp.snappy.interfaces.snappyseries.ISnappySeries"
+            path_expression="name"
+            parent_utility="lp.snappy.interfaces.snappyseries.ISnappySeriesSet" />
+        <browser:url
+            for="lp.snappy.interfaces.snappyseries.ISnappySeriesSet"
+            path_expression="string:+snappy-series"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot" />
+        <browser:navigation
+            module="lp.snappy.browser.snappyseries"
+            classes="SnappySeriesSetNavigation" />
 
         <browser:page
             for="*"
