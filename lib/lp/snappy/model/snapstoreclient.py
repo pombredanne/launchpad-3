@@ -10,6 +10,7 @@ __all__ = [
     'SnapStoreClient',
     ]
 
+import string
 try:
     from urllib.parse import quote_plus
 except ImportError:
@@ -55,13 +56,20 @@ class LibraryFileAliasWrapper:
 class MacaroonAuth(requests.auth.AuthBase):
     """Attaches macaroon authentication to a given Request object."""
 
+    # The union of the base64 and URL-safe base64 alphabets.
+    allowed_chars = set(string.digits + string.letters + "+/=-_")
+
     def __init__(self, tokens):
         self.tokens = tokens
 
     def __call__(self, r):
-        r.headers["Authorization"] = (
-            "Macaroon " +
-            ", ".join('%s="%s"' % (k, v) for k, v in self.tokens.items()))
+        params = []
+        for k, v in self.tokens.items():
+            # Check framing.
+            assert set(k).issubset(self.allowed_chars)
+            assert set(v).issubset(self.allowed_chars)
+            params.append('%s="%s"' % (k, v))
+        r.headers["Authorization"] = "Macaroon " + ", ".join(params)
         return r
 
 
@@ -69,7 +77,7 @@ class MacaroonAuth(requests.auth.AuthBase):
 class SnapStoreClient:
     """A client for the API provided by the snap store."""
 
-    def requestPackageUpload(self, snappy_series, snap_name):
+    def requestPackageUploadPermission(self, snappy_series, snap_name):
         assert config.snappy.store_url is not None
         request_url = urlappend(
             config.snappy.store_url, "api/2.0/acl/package_upload/")
@@ -86,7 +94,7 @@ class SnapStoreClient:
                 raise BadRequestPackageUploadResponse(response.text)
             return response_data["macaroon"]
         except requests.HTTPError as e:
-            raise BadRequestPackageUploadResponse(e.response.text)
+            raise BadRequestPackageUploadResponse(e.args[0])
         finally:
             timeline_action.finish()
 
@@ -103,6 +111,8 @@ class SnapStoreClient:
                     "binary": (
                         "filename", lfa_wrapper, "application/octet-stream"),
                     })
+            # XXX cjwatson 2016-05-09: This should add timeline information,
+            # but that's currently difficult in jobs.
             try:
                 response = urlfetch(
                     unscanned_upload_url, method="POST", data=encoder,
@@ -112,7 +122,7 @@ class SnapStoreClient:
                     raise BadUploadResponse(response.text)
                 return {"upload_id": response_data["upload_id"]}
             except requests.HTTPError as e:
-                raise BadUploadResponse(e.response.text)
+                raise BadUploadResponse(e.args[0])
         finally:
             lfa.close()
 
@@ -128,13 +138,15 @@ class SnapStoreClient:
             "series": snap.store_series.name,
             }
         # XXX cjwatson 2016-04-20: handle refresh
+        # XXX cjwatson 2016-05-09: This should add timeline information, but
+        # that's currently difficult in jobs.
         try:
             assert snap.store_secrets is not None
             urlfetch(
                 upload_url, method="POST", data=data,
                 auth=MacaroonAuth(snap.store_secrets))
         except requests.HTTPError as e:
-            raise BadUploadResponse(e.response.text)
+            raise BadUploadResponse(e.args[0])
 
     def upload(self, snapbuild):
         """See `ISnapStoreClient`."""

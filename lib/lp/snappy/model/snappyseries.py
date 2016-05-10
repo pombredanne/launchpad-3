@@ -14,6 +14,7 @@ __all__ = [
 import pytz
 from storm.locals import (
     DateTime,
+    Desc,
     Int,
     Reference,
     Store,
@@ -116,7 +117,7 @@ class SnappyDistroSeries(Storm):
     @property
     def title(self):
         return "%s, for %s" % (
-            self.distro_series.display_name, self.snappy_series.title)
+            self.distro_series.fullseriesname, self.snappy_series.title)
 
 
 @implementer(ISnappySeriesSet)
@@ -154,7 +155,7 @@ class SnappySeriesSet:
             SnappySeries,
             SnappyDistroSeries.snappy_series_id == SnappySeries.id,
             SnappyDistroSeries.distro_series == distro_series)
-        return rows.order_by(SnappySeries.name)
+        return rows.order_by(Desc(SnappySeries.name))
 
     def getAll(self):
         """See `ISnappySeriesSet`."""
@@ -173,7 +174,7 @@ class SnappyDistroSeriesSet:
             SnappyDistroSeries,
             SnappyDistroSeries.snappy_series_id == SnappySeries.id,
             SnappyDistroSeries.distro_series == distro_series)
-        return rows.order_by(SnappySeries.name)
+        return rows.order_by(Desc(SnappySeries.name))
 
     def getByBothSeries(self, snappy_series, distro_series):
         """See `ISnappyDistroSeriesSet`."""

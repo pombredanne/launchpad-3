@@ -26,8 +26,12 @@ class BadUploadResponse(Exception):
 class ISnapStoreClient(Interface):
     """Interface for the API provided by the snap store."""
 
-    def requestPackageUpload(snappy_series, snap_name):
+    def requestPackageUploadPermission(snappy_series, snap_name):
         """Request permission from the store to upload builds of a snap.
+
+        The returned macaroon will include a third-party caveat that must be
+        discharged by the login service.  This method does not acquire that
+        discharge; it must be acquired separately.
 
         :param snappy_series: The `ISnappySeries` in which this snap should
             be published on the store.

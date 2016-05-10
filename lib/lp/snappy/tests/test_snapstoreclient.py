@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 from cgi import FieldStorage
+from collections import OrderedDict
 import io
 import json
 
@@ -16,6 +17,7 @@ from httmock import (
     HTTMock,
     urlmatch,
     )
+from requests import Request
 from requests.utils import parse_dict_header
 from testtools.matchers import (
     Contains,
@@ -36,8 +38,25 @@ from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     ISnapStoreClient,
     )
-from lp.testing import TestCaseWithFactory
+from lp.snappy.model.snapstoreclient import MacaroonAuth
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
+
+
+class TestMacaroonAuth(TestCase):
+
+    def test_good(self):
+        r = Request()
+        MacaroonAuth(OrderedDict([("root", "abc"), ("discharge", "def")]))(r)
+        self.assertEqual(
+            'Macaroon root="abc", discharge="def"', r.headers["Authorization"])
+
+    def test_bad_framing(self):
+        r = Request()
+        self.assertRaises(AssertionError, MacaroonAuth({"root": 'ev"il'}), r)
 
 
 class RequestMatches(Matcher):
@@ -98,7 +117,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_upload_url="http://updown.example/")
         self.client = getUtility(ISnapStoreClient)
 
-    def test_requestPackageUpload(self):
+    def test_requestPackageUploadPermission(self):
         @all_requests
         def handler(url, request):
             self.request = request
@@ -106,7 +125,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
 
         snappy_series = self.factory.makeSnappySeries(name="rolling")
         with HTTMock(handler):
-            macaroon = self.client.requestPackageUpload(
+            macaroon = self.client.requestPackageUploadPermission(
                 snappy_series, "test-snap")
         self.assertThat(self.request, RequestMatches(
             url=Equals(urlappend(
@@ -115,27 +134,30 @@ class TestSnapStoreClient(TestCaseWithFactory):
             json_data={"name": "test-snap", "series": "rolling"}))
         self.assertEqual("dummy", macaroon)
 
-    def test_requestPackageUpload_missing_macaroon(self):
+    def test_requestPackageUploadPermission_missing_macaroon(self):
         @all_requests
         def handler(url, request):
             return {"status_code": 200, "content": {}}
 
         snappy_series = self.factory.makeSnappySeries()
         with HTTMock(handler):
-            self.assertRaises(
-                BadRequestPackageUploadResponse,
-                self.client.requestPackageUpload, snappy_series, "test-snap")
+            self.assertRaisesWithContent(
+                BadRequestPackageUploadResponse, b"{}",
+                self.client.requestPackageUploadPermission,
+                snappy_series, "test-snap")
 
-    def test_requestPackageUpload_404(self):
+    def test_requestPackageUploadPermission_404(self):
         @all_requests
         def handler(url, request):
-            return {"status_code": 404}
+            return {"status_code": 404, "reason": b"Not found"}
 
         snappy_series = self.factory.makeSnappySeries()
         with HTTMock(handler):
-            self.assertRaises(
+            self.assertRaisesWithContent(
                 BadRequestPackageUploadResponse,
-                self.client.requestPackageUpload, snappy_series, "test-snap")
+                b"404 Client Error: Not found",
+                self.client.requestPackageUploadPermission,
+                snappy_series, "test-snap")
 
     def test_upload(self):
         @urlmatch(path=r".*/unscanned-upload/$")
