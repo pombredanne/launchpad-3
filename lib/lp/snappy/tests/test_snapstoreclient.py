@@ -17,6 +17,7 @@ from httmock import (
     HTTMock,
     urlmatch,
     )
+from lazr.restful.utils import get_current_browser_request
 from requests import Request
 from requests.utils import parse_dict_header
 from testtools.matchers import (
@@ -32,6 +33,7 @@ from zope.component import getUtility
 
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.url import urlappend
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapstoreclient import (
@@ -133,6 +135,12 @@ class TestSnapStoreClient(TestCaseWithFactory):
             method=Equals("POST"),
             json_data={"name": "test-snap", "series": "rolling"}))
         self.assertEqual("dummy", macaroon)
+        request = get_current_browser_request()
+        start, stop = get_request_timeline(request).actions[-2:]
+        self.assertEqual("request-snap-upload-macaroon-start", start.category)
+        self.assertEqual("rolling/test-snap", start.detail)
+        self.assertEqual("request-snap-upload-macaroon-stop", stop.category)
+        self.assertEqual("rolling/test-snap", stop.detail)
 
     def test_requestPackageUploadPermission_missing_macaroon(self):
         @all_requests
