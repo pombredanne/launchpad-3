@@ -249,6 +249,10 @@ class ISnapView(Interface):
         :return: Sequence of `IDistroArchSeries` instances.
         """
 
+    can_upload_to_store = Attribute(
+        "Whether everything is set up to allow uploading builds of this snap "
+        "package to the store.")
+
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
         archive=Reference(schema=IArchive),
