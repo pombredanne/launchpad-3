@@ -51,10 +51,10 @@ class FakeConfigPPA:
         self.signingautokey = True
 
 
-class TestUefi(TestCase):
+class TestSigning(TestCase):
 
     def setUp(self):
-        super(TestUefi, self).setUp()
+        super(TestSigning, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
         self.signing_dir = self.makeTemporaryDirectory()
         self.pubconf = FakeConfig(self.temp_dir, self.signing_dir)
