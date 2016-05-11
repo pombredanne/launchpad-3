@@ -574,6 +574,7 @@ class SnapAuthorizeView(LaunchpadEditFormView):
         sso_caveat = cls.extractSSOCaveat(
             Macaroon.deserialize(root_macaroon_raw))
         snap.store_secrets = {'root': root_macaroon_raw}
+        transaction.commit()
         base_url = canonical_url(snap, view_name='+authorize')
         login_url = urlappend(base_url, '+login')
         login_url += '?%s' % urlencode([

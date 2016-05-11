@@ -27,6 +27,7 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
+import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -614,6 +615,7 @@ class TestSnapAuthorizeView(BrowserTestCase):
         self.assertEqual(
             {"name": snap.store_name, "series": snap.store_series.name},
             json.loads(self.request.body))
+        transaction.abort()
         self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
         return ret
 
@@ -704,6 +706,7 @@ class TestSnapAuthorizeView(BrowserTestCase):
             self.assertEqual(
                 "Uploads of %s to the store are now authorized." % snap.name,
                 view.request.response.notifications[0].message)
+            transaction.abort()
             self.assertEqual(
                 {"root": "root", "discharge": "discharge"}, snap.store_secrets)
 
