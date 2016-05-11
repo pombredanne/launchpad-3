@@ -134,7 +134,7 @@
         </li>
       </tal:started>
       <tal:finish condition="not: context/date_finished">
-        <li tal:define="eta view/eta" tal:condition="view/eta">
+        <li tal:define="eta context/eta" tal:condition="context/eta">
           Estimated finish <tal:eta replace="eta/fmt:approximatedate"/>
         </li>
       </tal:finish>

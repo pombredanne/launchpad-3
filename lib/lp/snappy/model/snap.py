@@ -75,7 +75,6 @@ from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
-from lp.snappy.browser.snapbuild import SnapBuildView
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotModifySnapProcessor,
@@ -322,10 +321,8 @@ class Snap(Storm, WebhookTargetMixin):
         builds = self._getBuilds(filter_term, order_by)
 
         for build in builds:
-            build_view = SnapBuildView(build, None)
-            if build_view.date is not None:
-                when_complete = DateTimeFormatterAPI(build_view.date)
-                when_complete = when_complete.displaydate()
+            if build.date is not None:
+                when_complete = DateTimeFormatterAPI(build.date).displaydate()
             else:
                 when_complete = None
 
@@ -338,7 +335,7 @@ class Snap(Storm, WebhookTargetMixin):
             result[build.id]["status"] = build.status.name
             result[build.id]["buildstate"] = build.status
             result[build.id]["when_complete"] = when_complete
-            result[build.id]["when_complete_estimate"] = build_view.estimate
+            result[build.id]["when_complete_estimate"] = build.estimate
             result[build.id]["build_log_url"] = build.log_url
             result[build.id]["build_log_size"] = build_log_size
 

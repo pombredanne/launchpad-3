@@ -313,6 +313,23 @@ class TestSnapBuild(TestCaseWithFactory):
                 self.build.id),
             self.build.log_url)
 
+    def test_eta(self):
+        # SnapBuild.eta returns a non-None value when it should, or None
+        # when there's no start time.
+        self.build.queueBuild()
+        self.assertIsNone(self.build.eta)
+        self.factory.makeBuilder(processors=[self.build.processor])
+        self.assertIsNotNone(self.build.eta)
+
+    def test_estimate(self):
+        # SnapBuild.estimate returns True until the job is completed.
+        self.build.queueBuild()
+        self.factory.makeBuilder(processors=[self.build.processor])
+        self.build.updateStatus(BuildStatus.BUILDING)
+        self.assertTrue(self.build.estimate)
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertFalse(self.build.estimate)
+
 
 class TestSnapBuildSet(TestCaseWithFactory):
 

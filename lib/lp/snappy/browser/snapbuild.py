@@ -16,7 +16,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.buildmaster.enums import BuildQueueStatus
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -68,39 +67,6 @@ class SnapBuildView(LaunchpadView):
         return self.context.title
 
     page_title = label
-
-    @cachedproperty
-    def eta(self):
-        """The datetime when the build job is estimated to complete.
-
-        This is the BuildQueue.estimated_duration plus the
-        Job.date_started or BuildQueue.getEstimatedJobStartTime.
-        """
-        if self.context.buildqueue_record is None:
-            return None
-        queue_record = self.context.buildqueue_record
-        if queue_record.status == BuildQueueStatus.WAITING:
-            start_time = queue_record.getEstimatedJobStartTime()
-        else:
-            start_time = queue_record.date_started
-        if start_time is None:
-            return None
-        duration = queue_record.estimated_duration
-        return start_time + duration
-
-    @cachedproperty
-    def estimate(self):
-        """If true, the date value is an estimate."""
-        if self.context.date_finished is not None:
-            return False
-        return self.eta is not None
-
-    @cachedproperty
-    def date(self):
-        """The date when the build completed or is estimated to complete."""
-        if self.estimate:
-            return self.eta
-        return self.context.date_finished
 
     @cachedproperty
     def files(self):

@@ -29,6 +29,7 @@ from zope.interface import implementer
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
+    BuildQueueStatus,
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
@@ -345,6 +346,39 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     def getFileUrls(self):
         return [self.lfaUrl(lfa) for _, lfa, _ in self.getFiles()]
+
+    @property
+    def eta(self):
+        """The datetime when the build job is estimated to complete.
+
+        This is the BuildQueue.estimated_duration plus the
+        Job.date_started or BuildQueue.getEstimatedJobStartTime.
+        """
+        if self.buildqueue_record is None:
+            return None
+        queue_record = self.buildqueue_record
+        if queue_record.status == BuildQueueStatus.WAITING:
+            start_time = queue_record.getEstimatedJobStartTime()
+        else:
+            start_time = queue_record.date_started
+        if start_time is None:
+            return None
+        duration = queue_record.estimated_duration
+        return start_time + duration
+
+    @property
+    def estimate(self):
+        """If true, the date value is an estimate."""
+        if self.date_finished is not None:
+            return False
+        return self.eta is not None
+
+    @property
+    def date(self):
+        """The date when the build completed or is estimated to complete."""
+        if self.estimate:
+            return self.eta
+        return self.date_finished
 
 
 @implementer(ISnapBuildSet)
