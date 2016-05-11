@@ -552,9 +552,10 @@ class TestFTPArchive(TestCaseWithFactory):
         self._addRepositoryFile("main", "tiny", "tiny_0.1.tar.gz")
         self._addRepositoryFile("main", "tiny", "tiny_0.1_i386.deb")
         comp_dir = os.path.join(self._distsdir, "hoary-test", "main")
-        os.makedirs(os.path.join(comp_dir, "uefi"))
-        with open(os.path.join(comp_dir, "uefi", "stuff"), "w"):
+        os.makedirs(os.path.join(comp_dir, "signed"))
+        with open(os.path.join(comp_dir, "signed", "stuff"), "w"):
             pass
+        os.symlink("signed", os.path.join(comp_dir, "uefi"))
         os.makedirs(os.path.join(comp_dir, "i18n"))
         for name in ("Translation-de", "Translation-de.gz", "Translation-en",
                      "Translation-en.Z"):
@@ -602,6 +603,9 @@ class TestFTPArchive(TestCaseWithFactory):
         self.assertContentEqual(
             ["Sources.gz", "Sources.xz"],
             os.listdir(os.path.join(comp_dir, "source")))
+        self.assertEqual(
+            ["stuff"],
+            os.listdir(os.path.join(comp_dir, "signed")))
         self.assertEqual(["stuff"], os.listdir(os.path.join(comp_dir, "uefi")))
         self.assertContentEqual(
             ["Translation-de", "Translation-de.gz", "Translation-en.gz",

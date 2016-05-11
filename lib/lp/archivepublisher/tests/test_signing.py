@@ -13,7 +13,7 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
-from lp.archivepublisher.uefi import UefiUpload
+from lp.archivepublisher.signing import SigningUpload
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
@@ -35,42 +35,42 @@ class FakeMethodGenUefiKeys(FakeMethod):
 
 class FakeConfig:
     """A fake publisher configuration for the main archive."""
-    def __init__(self, distroroot, uefiroot):
+    def __init__(self, distroroot, signingroot):
         self.distroroot = distroroot
-        self.uefiroot = uefiroot
+        self.signingroot = signingroot
         self.archiveroot = os.path.join(self.distroroot, 'ubuntu')
-        self.uefiautokey = False
+        self.signingautokey = False
 
 
 class FakeConfigPPA:
     """A fake publisher configuration for a PPA."""
-    def __init__(self, distroroot, uefiroot, owner, ppa):
+    def __init__(self, distroroot, signingroot, owner, ppa):
         self.distroroot = distroroot
-        self.uefiroot = uefiroot
+        self.signingroot = signingroot
         self.archiveroot = os.path.join(self.distroroot, owner, ppa, 'ubuntu')
-        self.uefiautokey = True
+        self.signingautokey = True
 
 
-class TestUefi(TestCase):
+class TestSigning(TestCase):
 
     def setUp(self):
-        super(TestUefi, self).setUp()
+        super(TestSigning, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
-        self.uefi_dir = self.makeTemporaryDirectory()
-        self.pubconf = FakeConfig(self.temp_dir, self.uefi_dir)
+        self.signing_dir = self.makeTemporaryDirectory()
+        self.pubconf = FakeConfig(self.temp_dir, self.signing_dir)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 0o022.
         old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
 
     def setUpPPA(self):
-        self.pubconf = FakeConfigPPA(self.temp_dir, self.uefi_dir,
+        self.pubconf = FakeConfigPPA(self.temp_dir, self.signing_dir,
             'ubuntu-archive', 'testing')
         self.testcase_cn = '/CN=PPA ubuntu-archive testing/'
 
     def setUpKeyAndCert(self, create=True):
-        self.key = os.path.join(self.uefi_dir, "uefi.key")
-        self.cert = os.path.join(self.uefi_dir, "uefi.crt")
+        self.key = os.path.join(self.signing_dir, "uefi.key")
+        self.cert = os.path.join(self.signing_dir, "uefi.crt")
         if create:
             write_file(self.key, "")
             write_file(self.cert, "")
@@ -85,7 +85,7 @@ class TestUefi(TestCase):
         self.archive.close()
         self.buffer.close()
         fake_call = FakeMethod()
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.signUefi = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload.process(self.pubconf, self.path, self.suite)
@@ -94,9 +94,16 @@ class TestUefi(TestCase):
 
         return upload
 
+    def getDistsPath(self):
+        return os.path.join(self.pubconf.archiveroot, "dists",
+            self.suite, "main")
+
+    def getSignedPath(self, loader_type, arch):
+        return os.path.join(self.getDistsPath(), "signed",
+            "%s-%s" % (loader_type, arch))
+
     def getUefiPath(self, loader_type, arch):
-        return os.path.join(
-            self.pubconf.archiveroot, "dists", self.suite, "main", "uefi",
+        return os.path.join(self.getDistsPath(), "uefi",
             "%s-%s" % (loader_type, arch))
 
     def test_unconfigured(self):
@@ -124,7 +131,7 @@ class TestUefi(TestCase):
         self.archive.add_file("1.0/hello", "world")
         upload = self.process()
         self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("empty", "amd64"), "1.0", "hello")))
+            self.getSignedPath("empty", "amd64"), "1.0", "hello")))
         self.assertEqual(0, upload.signUefi.call_count)
 
     def test_already_exists(self):
@@ -132,7 +139,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
-        os.makedirs(os.path.join(self.getUefiPath("test", "amd64"), "1.0"))
+        os.makedirs(os.path.join(self.getSignedPath("test", "amd64"), "1.0"))
         self.assertRaises(CustomUploadAlreadyExists, self.process)
 
     def test_bad_umask(self):
@@ -149,7 +156,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert()
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
@@ -169,7 +176,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert(create=False)
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
@@ -184,7 +191,7 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert(create=False)
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
         upload.generateUefiKeys()
@@ -212,6 +219,44 @@ class TestUefi(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.process()
+        self.assertTrue(os.path.isdir(os.path.join(
+            self.getDistsPath(), "signed")))
+        self.assertTrue(os.path.islink(os.path.join(
+            self.getDistsPath(), "uefi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
+
+    def test_installed_existing_uefi(self):
+        # Files in the tarball are installed correctly.
+        os.makedirs(os.path.join(self.getDistsPath(), "uefi"))
+        self.setUpKeyAndCert()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.process()
+        self.assertTrue(os.path.isdir(os.path.join(
+            self.getDistsPath(), "signed")))
+        self.assertTrue(os.path.islink(os.path.join(
+            self.getDistsPath(), "uefi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
+
+    def test_installed_existing_signing(self):
+        # Files in the tarball are installed correctly.
+        os.makedirs(os.path.join(self.getDistsPath(), "signing"))
+        self.setUpKeyAndCert()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.process()
+        self.assertTrue(os.path.isdir(os.path.join(
+            self.getDistsPath(), "signed")))
+        self.assertTrue(os.path.islink(os.path.join(
+            self.getDistsPath(), "uefi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 
@@ -222,7 +267,7 @@ class TestUefi(TestCase):
         self.assertFalse(os.path.exists(self.cert))
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
@@ -239,7 +284,7 @@ class TestUefi(TestCase):
         self.assertFalse(os.path.exists(self.cert))
         fake_call = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload = UefiUpload()
+        upload = SigningUpload()
         upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")

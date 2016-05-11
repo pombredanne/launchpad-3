@@ -1,7 +1,7 @@
-# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""The processing of UEFI boot loader images.
+"""The processing of Signing tarballs.
 
 UEFI Secure Boot requires boot loader images to be signed, and we want to
 have signed images in the archive so that they can be used for upgrades.
@@ -12,8 +12,8 @@ secure to hold signing keys, so we sign them as a custom upload instead.
 __metaclass__ = type
 
 __all__ = [
-    "process_uefi",
-    "UefiUpload",
+    "process_signing",
+    "SigningUpload",
     ]
 
 import os
@@ -23,32 +23,32 @@ from lp.archivepublisher.customupload import CustomUpload
 from lp.services.osutils import remove_if_exists
 
 
-class UefiUpload(CustomUpload):
-    """UEFI boot loader custom upload.
+class SigningUpload(CustomUpload):
+    """Signing custom upload.
 
     The filename must be of the form:
 
-        <TYPE>_<VERSION>_<ARCH>.tar.gz
+        <PACKAGE>_<VERSION>_<ARCH>.tar.gz
 
     where:
 
-      * TYPE: loader type (e.g. 'efilinux');
+      * PACKAGE: source package of the contents;
       * VERSION: encoded version;
       * ARCH: targeted architecture tag (e.g. 'amd64').
 
     The contents are extracted in the archive in the following path:
 
-        <ARCHIVE>/dists/<SUITE>/main/uefi/<TYPE>-<ARCH>/<VERSION>
+        <ARCHIVE>/dists/<SUITE>/main/signed/<PACKAGE>-<ARCH>/<VERSION>
 
     A 'current' symbolic link points to the most recent version.  The
     tarfile must contain at least one file matching the wildcard *.efi, and
     any such files are signed using the archive's UEFI signing key.
 
-    Signing keys may be installed in the "uefiroot" directory specified in
+    Signing keys may be installed in the "signingroot" directory specified in
     publisher configuration.  In this directory, the private key is
     "uefi.key" and the certificate is "uefi.crt".
     """
-    custom_type = "UEFI"
+    custom_type = "signing"
 
     @staticmethod
     def parsePath(tarfile_path):
@@ -59,32 +59,51 @@ class UefiUpload(CustomUpload):
         return bits[0], bits[1], bits[2].split(".")[0]
 
     def setComponents(self, tarfile_path):
-        self.loader_type, self.version, self.arch = self.parsePath(
+        self.package, self.version, self.arch = self.parsePath(
             tarfile_path)
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
-        if pubconf.uefiroot is None:
+        if pubconf.signingroot is None:
             if self.logger is not None:
-                self.logger.warning("No UEFI root configured for this archive")
+                self.logger.warning(
+                    "No signing root configured for this archive")
             self.key = None
             self.cert = None
             self.autokey = False
         else:
-            self.key = os.path.join(pubconf.uefiroot, "uefi.key")
-            self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
-            self.autokey = pubconf.uefiautokey
+            self.key = os.path.join(pubconf.signingroot, "uefi.key")
+            self.cert = os.path.join(pubconf.signingroot, "uefi.crt")
+            self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
+
+        # Ensure we expose the results via uefi and signed in dists.
+        # If we already have a uefi directory move it to signed else
+        # make a new signed.  For compatibility ensure we have uefi
+        # symlink to signed.
+        # NOTE: we rely on "signed" and "uefi"  being in the same directory.
+        dists_signed = os.path.join(
+            pubconf.archiveroot, "dists", distroseries, "main", "signed")
+        dists_uefi = os.path.join(
+            pubconf.archiveroot, "dists", distroseries, "main", "uefi")
+        if not os.path.exists(dists_signed):
+            if os.path.isdir(dists_uefi):
+                os.rename(dists_uefi, dists_signed)
+            else:
+                os.makedirs(dists_signed, 0o755)
+        if not os.path.exists(dists_uefi):
+            os.symlink("signed", dists_uefi)
+
+        # Extract into the "signed" path regardless of linking.
         self.targetdir = os.path.join(
-            pubconf.archiveroot, "dists", distroseries, "main", "uefi",
-            "%s-%s" % (self.loader_type, self.arch))
+            dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
-            loader_type, _, arch = cls.parsePath(tarfile_path)
-            return loader_type, arch
+            package, _, arch = cls.parsePath(tarfile_path)
+            return package, arch
         except ValueError:
             return None
 
@@ -169,7 +188,7 @@ class UefiUpload(CustomUpload):
 
         No actual extraction is required.
         """
-        super(UefiUpload, self).extract()
+        super(SigningUpload, self).extract()
         efi_filenames = list(self.findEfiFilenames())
         for efi_filename in efi_filenames:
             remove_if_exists("%s.signed" % efi_filename)
@@ -179,12 +198,12 @@ class UefiUpload(CustomUpload):
         return filename.startswith("%s/" % self.version)
 
 
-def process_uefi(pubconf, tarfile_path, distroseries, logger=None):
-    """Process a raw-uefi tarfile.
+def process_signing(pubconf, tarfile_path, distroseries, logger=None):
+    """Process a raw-uefi/raw-signing tarfile.
 
     Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = UefiUpload(logger=logger)
+    upload = SigningUpload(logger=logger)
     upload.process(pubconf, tarfile_path, distroseries)
