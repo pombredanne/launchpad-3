@@ -142,6 +142,7 @@ class SnapStoreClient:
         # that's currently difficult in jobs.
         try:
             assert snap.store_secrets is not None
+            assert "discharge" in snap.store_secrets
             urlfetch(
                 upload_url, method="POST", data=data,
                 auth=MacaroonAuth(snap.store_secrets))
@@ -150,6 +151,7 @@ class SnapStoreClient:
 
     def upload(self, snapbuild):
         """See `ISnapStoreClient`."""
+        assert snapbuild.snap.can_upload_to_store
         for _, lfa, lfc in snapbuild.getFiles():
             upload_data = self._uploadFile(lfa, lfc)
             self._uploadApp(snapbuild.snap, upload_data)

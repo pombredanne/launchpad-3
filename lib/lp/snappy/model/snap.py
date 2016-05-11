@@ -57,6 +57,7 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     IPersonRoles,
     )
+from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
@@ -280,6 +281,17 @@ class Snap(Storm, WebhookTargetMixin):
                 and (
                     das.processor.supports_virtualized
                     or not self.require_virtualized))]
+
+    @property
+    def can_upload_to_store(self):
+        return (
+            config.snappy.store_upload_url is not None and
+            config.snappy.store_url is not None and
+            self.store_upload and
+            self.store_series is not None and
+            self.store_name is not None and
+            self.store_secrets is not None and
+            "discharge" in self.store_secrets)
 
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
