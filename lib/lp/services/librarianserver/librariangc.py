@@ -323,6 +323,7 @@ class ExpireAliases:
                     content IS NOT NULL
                     AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                         - interval '1 week'
+                ORDER BY expires
                 LIMIT %d)
             """ % chunksize)
         self.total_expired += cur.rowcount

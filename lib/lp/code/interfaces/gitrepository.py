@@ -533,6 +533,14 @@ class IGitRepositoryView(IHasRecipes):
         :param logger: An optional logger.
         """
 
+    def getBlob(filename, rev=None):
+        """Get a blob by file name from this repository.
+
+        :param filename: Relative path of a file in the repository.
+        :param rev: An optional revision. Defaults to 'HEAD'.
+        :return: A binary string with the blob content.
+        """
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.

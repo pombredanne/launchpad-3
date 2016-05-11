@@ -79,8 +79,7 @@ class SnapStoreClient:
 
     def requestPackageUploadPermission(self, snappy_series, snap_name):
         assert config.snappy.store_url is not None
-        request_url = urlappend(
-            config.snappy.store_url, "api/2.0/acl/package_upload/")
+        request_url = urlappend(config.snappy.store_url, "dev/api/acl/")
         request = get_current_browser_request()
         timeline_action = get_request_timeline(request).start(
             "request-snap-upload-macaroon",
@@ -88,7 +87,11 @@ class SnapStoreClient:
         try:
             response = urlfetch(
                 request_url, method="POST",
-                json={"name": snap_name, "series": snappy_series.name})
+                json={
+                    "packages": [
+                        {"name": snap_name, "series": snappy_series.name}],
+                    "permissions": ["package_upload"],
+                    })
             response_data = response.json()
             if "macaroon" not in response_data:
                 raise BadRequestPackageUploadResponse(response.text)

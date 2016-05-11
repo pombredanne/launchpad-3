@@ -14,9 +14,11 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
 import pytz
 from simplejson import dumps
+from testtools.matchers import EndsWith
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.answers.enums import QuestionStatus
 from lp.answers.errors import (
     AddAnswerContactError,
     FAQTargetError,
@@ -26,6 +28,7 @@ from lp.answers.errors import (
     NotQuestionOwnerError,
     QuestionTargetError,
     )
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
     celebrity_logged_in,
@@ -146,6 +149,31 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         self.assertEqual(
             self.findQuestionTitle(response),
             "<p>No, this is a question</p>")
+
+    def test_reject(self):
+        # A question can be rejected via the API.
+        question_url = '/%s/+question/%d' % (
+            self.target_name, self.question.id)
+        response = self.webservice.named_post(
+            question_url, 'reject', comment='A rejection message')
+        self.assertEqual(201, response.status)
+        self.assertThat(
+            response.getheader('location'),
+            EndsWith('%s/messages/1' % question_url))
+        self.assertEqual(QuestionStatus.INVALID, self.question.status)
+
+    def test_reject_not_answer_contact(self):
+        # If the requesting user is not an answer contact, the API returns a
+        # suitable error.
+        with celebrity_logged_in('admin'):
+            random_person = self.factory.makePerson()
+        webservice = webservice_for_person(
+            random_person, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = 'devel'
+        response = webservice.named_post(
+            '/%s/+question/%d' % (self.target_name, self.question.id),
+            'reject', comment='A rejection message')
+        self.assertEqual(401, response.status)
 
 
 class TestSetCommentVisibility(TestCaseWithFactory):

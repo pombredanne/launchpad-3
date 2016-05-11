@@ -375,6 +375,8 @@ class InitializeDistroSeries:
         self.distroseries.include_long_descriptions = any(
             parent.include_long_descriptions
                 for parent in self.derivation_parents)
+        self.distroseries.index_compressors = list(
+            self.derivation_parents[0].index_compressors)
         self.distroseries.publish_by_hash = any(
             parent.publish_by_hash
                 for parent in self.derivation_parents)

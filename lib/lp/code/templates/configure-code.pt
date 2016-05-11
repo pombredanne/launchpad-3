@@ -141,9 +141,11 @@
 
                   <h3>Link an existing repository</h3>
                   <p>Link to an existing Git repository already on Launchpad</p>
-                  <tal:widget define="widget nocall:view/widgets/git_repository_location">
-                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                  </tal:widget>
+                  <table>
+                    <tal:widget define="widget nocall:view/widgets/git_repository_location">
+                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                    </tal:widget>
+                  </table>
                 </div>
               </div>
             </div>

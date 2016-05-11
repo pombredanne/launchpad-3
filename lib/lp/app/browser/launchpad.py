@@ -859,12 +859,15 @@ class LaunchpadRootNavigation(Navigation):
                 # team membership or Launchpad administration.
                 if (person.is_team and
                     not check_permission('launchpad.LimitedView', person)):
-                    raise NotFound(self.context, name)
+                    return None
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
                     if not check_permission('launchpad.Moderate', person):
                         raise GoneError(
                             'User is suspended: %s' % name)
+                if person.account_status == AccountStatus.PLACEHOLDER:
+                    if not check_permission('launchpad.Moderate', person):
+                        return None
                 return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
