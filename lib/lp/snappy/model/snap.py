@@ -26,6 +26,8 @@ from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
@@ -73,6 +75,7 @@ from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.browser.snapbuild import SnapBuildView
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotModifySnapProcessor,
@@ -309,6 +312,36 @@ class Snap(Storm, WebhookTargetMixin):
             query_args.append(filter_term)
         result = Store.of(self).find(SnapBuild, *query_args)
         result.order_by(order_by)
+        return result
+
+    def getBuildSummariesForSnapBuildIds(self, snap_build_ids):
+        """See `ISnap`."""
+        result = {}
+        filter_term = SnapBuild.id.is_in(snap_build_ids)
+        order_by = Desc(SnapBuild.id)
+        builds = self._getBuilds(filter_term, order_by)
+
+        for build in builds:
+            build_view = SnapBuildView(build, None)
+            if build_view.date is not None:
+                when_complete = DateTimeFormatterAPI(build_view.date)
+                when_complete = when_complete.displaydate()
+            else:
+                when_complete = None
+
+            if build.log:
+                build_log_size = build.log.content.filesize
+            else:
+                build_log_size = None
+
+            result[build.id] = {}
+            result[build.id]["status"] = build.status.name
+            result[build.id]["buildstate"] = build.status
+            result[build.id]["when_complete"] = when_complete
+            result[build.id]["when_complete_estimate"] = build_view.estimate
+            result[build.id]["build_log_url"] = build.log_url
+            result[build.id]["build_log_size"] = build_log_size
+
         return result
 
     @property

@@ -8,6 +8,12 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript" id="snap-update-build-statuses">
+      LPJS.use('lp.snappy.snap.update_build_statuses');
+    </script>
+  </metal:block>
+
   <metal:registering fill-slot="registering">
     Created by
       <tal:registrant replace="structure context/registrant/fmt:link"/>
@@ -66,12 +72,12 @@
         <tal:snap-builds repeat="build view/builds">
           <tal:build-view define="buildview nocall:build/@@+index">
             <tr tal:attributes="id string:build-${build/id}">
-              <td>
+              <td tal:attributes="class string:build_status ${build/status/name}">
                 <span tal:replace="structure build/image:icon"/>
                 <a tal:content="build/status/title"
                    tal:attributes="href build/fmt:url"/>
               </td>
-              <td>
+              <td class="datebuilt">
                 <tal:date replace="buildview/date/fmt:displaydate"/>
                 <tal:estimate condition="buildview/estimate">
                   (estimated)
