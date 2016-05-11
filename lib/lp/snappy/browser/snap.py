@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'SnapAddView',
+    'SnapAuthorizeView',
     'SnapContextMenu',
     'SnapDeleteView',
     'SnapEditView',
@@ -15,18 +16,26 @@ __all__ = [
     'SnapView',
     ]
 
+from urllib import urlencode
+from urlparse import urlsplit
+
 from lazr.restful.fields import Reference
 from lazr.restful.interface import (
     copy_field,
     use_template,
     )
+from pymacaroons import Macaroon
+import transaction
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     List,
+    TextLine,
     )
 
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -49,6 +58,7 @@ from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -59,6 +69,7 @@ from lp.services.webapp import (
     NavigationMenu,
     stepthrough,
     structured,
+    urlappend,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import (
@@ -78,6 +89,7 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.soyuz.browser.archive import EnableProcessorsMixin
 from lp.soyuz.browser.build import get_build_by_id_str
 from lp.soyuz.interfaces.archive import IArchive
@@ -501,6 +513,110 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
                         # This processor is restricted and currently
                         # enabled.  Leave it untouched.
                         data['processors'].append(processor)
+
+
+class SnapAuthorizationException(Exception):
+    pass
+
+
+class SnapAuthorizeView(LaunchpadEditFormView):
+    """View for authorizing snap package uploads to the store."""
+
+    class schema(Interface):
+        """Schema for authorizing snap package uploads to the store."""
+
+        callback = Bool()
+        discharge_macaroon = TextLine(
+            title=u'Serialized discharge macaroon', required=True)
+
+    render_context = False
+
+    @staticmethod
+    def extractSSOCaveat(macaroon):
+        locations = [
+            urlsplit(root).netloc
+            for root in CurrentOpenIDEndPoint.getAllRootURLs()]
+        sso_caveats = [
+            c for c in macaroon.third_party_caveats()
+            if c.location in locations]
+        # We must have exactly one SSO caveat; more than one should never be
+        # required and could be an attempt to substitute weaker caveats.  We
+        # might as well OOPS here, even though the cause of this is probably
+        # in some other service, since the user can't do anything about it
+        # and it should show up in our OOPS reports.
+        if not sso_caveats:
+            raise SnapAuthorizationException(
+                "Macaroon '%s' has no SSO caveats" % macaroon.serialize())
+        elif len(sso_caveats) > 1:
+            raise SnapAuthorizationException(
+                "Macaroon '%s' has multiple SSO caveats" %
+                macaroon.serialize())
+        return sso_caveats[0]
+
+    @classmethod
+    def requestAuthorization(cls, snap, request):
+        """Begin the process of authorizing uploads of a snap package."""
+        if snap.store_series is None:
+            request.response.addInfoNotification(
+                _(u'Cannot authorize uploads of a snap package with no '
+                  u'store series.'))
+            request.response.redirect(canonical_url(snap))
+            return
+        if snap.store_name is None:
+            request.response.addInfoNotification(
+                _(u'Cannot authorize uploads of a snap package with no '
+                  u'store name.'))
+            request.response.redirect(canonical_url(snap))
+            return
+        snap_store_client = getUtility(ISnapStoreClient)
+        root_macaroon_raw = snap_store_client.requestPackageUploadPermission(
+            snap.store_series, snap.store_name)
+        sso_caveat = cls.extractSSOCaveat(
+            Macaroon.deserialize(root_macaroon_raw))
+        snap.store_secrets = {'root': root_macaroon_raw}
+        base_url = canonical_url(snap, view_name='+authorize')
+        login_url = urlappend(base_url, '+login')
+        login_url += '?%s' % urlencode([
+            ('field.callback', 'on'),
+            ('macaroon_caveat_id', sso_caveat.caveat_id),
+            ('discharge_macaroon_field', 'field.discharge_macaroon'),
+            ])
+        return login_url
+
+    def render(self):
+        data = {}
+        self.validate_widgets(data)
+        if not data.get('callback') or self.context.store_secrets is None:
+            login_url = self.requestAuthorization(self.context, self.request)
+            if login_url is not None:
+                self.request.response.redirect(login_url)
+            return
+        if not data.get('discharge_macaroon'):
+            self.request.response.addInfoNotification(structured(
+                _(u'Uploads of %(snap)s to the store were not authorized.'),
+                snap=self.context.name))
+            self.request.response.redirect(canonical_url(self.context))
+            return
+        # We have to set a whole new dict here to avoid problems with
+        # security proxies.
+        new_store_secrets = dict(self.context.store_secrets)
+        new_store_secrets['discharge'] = data['discharge_macaroon']
+        self.context.store_secrets = new_store_secrets
+        # XXX cjwatson 2016-04-18: This may be a GET request due to coming
+        # from a redirection at the end of the OpenID exchange, but we need
+        # to store the macaroons.  Perhaps we should return an
+        # auto-submitting form instead?  The operation performed by this
+        # view is at least idempotent.
+        transaction.commit()
+        self.request.response.addInfoNotification(structured(
+            _(u'Uploads of %(snap)s to the store are now authorized.'),
+            snap=self.context.name))
+        self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`."""
+        return {self.schema: self.context}
 
 
 class SnapDeleteView(BaseSnapEditView):

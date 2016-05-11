@@ -78,6 +78,7 @@ setup(
         'pgbouncer',
         'psycopg2',
         'pyasn1',
+        'pymacaroons',
         'pystache',
         'python-memcached',
         'python-openid',

@@ -9,11 +9,18 @@ from datetime import (
     datetime,
     timedelta,
     )
+import json
 import re
 from textwrap import dedent
+from urlparse import urlsplit
 
 from fixtures import FakeLogger
+from httmock import (
+    all_requests,
+    HTTMock,
+    )
 from mechanize import LinkNotFoundError
+from pymacaroons import Macaroon
 import pytz
 import soupmatchers
 from testtools.matchers import (
@@ -31,12 +38,15 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.url import urlappend
 from lp.snappy.browser.snap import (
     SnapAdminView,
+    SnapAuthorizeView,
     SnapEditView,
     SnapView,
     )
@@ -48,6 +58,7 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     feature_flags,
     login,
@@ -557,6 +568,152 @@ class TestSnapEditView(BrowserTestCase):
         browser.getControl("Update snap package").click()
         login_person(self.person)
         self.assertSnapProcessors(snap, ["386", "armhf"])
+
+
+class TestSnapAuthorizeView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapAuthorizeView, self).setUp()
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+        self.distroseries = self.factory.makeUbuntuDistroSeries()
+        with admin_logged_in():
+            self.snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.distroseries])
+        self.snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=self.distroseries, store_upload=True,
+            store_series=self.snappyseries,
+            store_name=self.factory.getUniqueUnicode())
+
+    def assertRequestsAuthorization(self, snap, func, *args, **kwargs):
+        root_macaroon = Macaroon()
+        root_macaroon.add_third_party_caveat(
+            urlsplit(config.launchpad.openid_provider_root).netloc, '',
+            'dummy')
+        root_macaroon_raw = root_macaroon.serialize()
+
+        @all_requests
+        def handler(url, request):
+            self.request = request
+            return {
+                "status_code": 200,
+                "content": {"macaroon": root_macaroon_raw},
+                }
+
+        self.pushConfig("snappy", store_url="http://sca.example/")
+        with HTTMock(handler):
+            ret = func(*args, **kwargs)
+        self.assertThat(self.request, MatchesStructure.byEquality(
+            url=urlappend(
+                config.snappy.store_url, "api/2.0/acl/package_upload/"),
+            method="POST"))
+        self.assertEqual(
+            {"name": snap.store_name, "series": snap.store_series.name},
+            json.loads(self.request.body))
+        self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
+        return ret
+
+    def test_requestAuthorization(self):
+        with person_logged_in(self.snap.owner):
+            login_url = self.assertRequestsAuthorization(
+                self.snap, SnapAuthorizeView.requestAuthorization,
+                self.snap, LaunchpadTestRequest())
+        self.assertEqual(
+            canonical_url(self.snap) +
+            "/+authorize/+login?field.callback=on&"
+            "macaroon_caveat_id=dummy&"
+            "discharge_macaroon_field=field.discharge_macaroon",
+            login_url)
+
+    def test_unauthorized(self):
+        # A user without edit access cannot authorize snap package uploads.
+        self.useFixture(FakeLogger())
+        other_person = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser,
+            canonical_url(self.snap) + "/+authorize", user=other_person)
+
+    def test_no_callback_parameter(self):
+        # If the field.callback parameter is missing, we begin
+        # authorization.  This allows (re-)authorizing uploads of an
+        # existing snap package without having to edit it.
+        with person_logged_in(self.snap.owner):
+            view = create_initialized_view(self.snap, "+authorize", form={})
+            self.assertRequestsAuthorization(self.snap, view)
+            self.assertEqual(302, view.request.response.getStatus())
+            self.assertEqual(
+                canonical_url(self.snap) +
+                "/+authorize/+login?field.callback=on&"
+                "macaroon_caveat_id=dummy&"
+                "discharge_macaroon_field=field.discharge_macaroon",
+                view.request.response.getHeader("Location"))
+            self.assertEqual([], view.request.response.notifications)
+
+    def test_missing_root_macaroon(self):
+        # If the snap package has no root macaroon set, we begin
+        # authorization.  This allows (re-)authorizing uploads of an
+        # existing snap package without having to edit it.
+        with person_logged_in(self.snap.owner):
+            view = create_initialized_view(
+                self.snap, "+authorize", form={"field.callback": "on"})
+            self.assertRequestsAuthorization(self.snap, view)
+            self.assertEqual(302, view.request.response.getStatus())
+            self.assertEqual(
+                canonical_url(self.snap) +
+                "/+authorize/+login?field.callback=on&"
+                "macaroon_caveat_id=dummy&"
+                "discharge_macaroon_field=field.discharge_macaroon",
+                view.request.response.getHeader("Location"))
+            self.assertEqual([], view.request.response.notifications)
+
+    def test_missing_discharge_macaroon(self):
+        # If field.callback is set but the discharge macaroon is missing, we
+        # indicate an authorization failure.
+        with person_logged_in(self.snap.owner):
+            self.snap.store_secrets = {"root": "root"}
+            view = create_initialized_view(
+                self.snap, "+authorize", form={"field.callback": "on"})
+            self.assertIsNone(view())
+            self.assertEqual(302, view.request.response.getStatus())
+            self.assertEqual(
+                canonical_url(self.snap),
+                view.request.response.getHeader("Location"))
+            self.assertEqual(
+                "Uploads of %s to the store were not authorized." %
+                self.snap.name,
+                view.request.response.notifications[0].message)
+
+    def assertAuthorizationWorks(self, snap, method):
+        with person_logged_in(snap.owner):
+            snap.store_secrets = {"root": "root"}
+            form = {
+                "field.callback": "on",
+                "field.discharge_macaroon": "discharge",
+                }
+            view = create_initialized_view(
+                snap, "+authorize", form=form, method=method)
+            self.assertIsNone(view())
+            self.assertEqual(302, view.request.response.getStatus())
+            self.assertEqual(
+                canonical_url(snap),
+                view.request.response.getHeader("Location"))
+            self.assertEqual(
+                "Uploads of %s to the store are now authorized." % snap.name,
+                view.request.response.notifications[0].message)
+            self.assertEqual(
+                {"root": "root", "discharge": "discharge"}, snap.store_secrets)
+
+    def test_authorize(self):
+        # Normal authorization works.
+        self.assertAuthorizationWorks(self.snap, "POST")
+
+    def test_authorize_GET(self):
+        # Authorization via a GET request (due to OpenID redirection) works.
+        self.assertAuthorizationWorks(self.snap, "GET")
 
 
 class TestSnapDeleteView(BrowserTestCase):

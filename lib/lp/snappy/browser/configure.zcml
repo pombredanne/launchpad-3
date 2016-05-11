@@ -68,6 +68,11 @@
             template="../templates/snap-edit.pt" />
         <browser:page
             for="lp.snappy.interfaces.snap.ISnap"
+            class="lp.snappy.browser.snap.SnapAuthorizeView"
+            permission="launchpad.Edit"
+            name="+authorize" />
+        <browser:page
+            for="lp.snappy.interfaces.snap.ISnap"
             class="lp.snappy.browser.snap.SnapDeleteView"
             permission="launchpad.Edit"
             name="+delete"
