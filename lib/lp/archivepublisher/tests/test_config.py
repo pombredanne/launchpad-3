@@ -47,6 +47,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(
             self.root + "/ubuntutest-temp", primary_config.temproot)
         self.assertEqual(archiveroot + "-uefi", primary_config.uefiroot)
+        self.assertFalse(primary_config.uefiautokey)
         self.assertIs(None, primary_config.metaroot)
         self.assertEqual(archiveroot + "-staging", primary_config.stagingroot)
 
@@ -70,6 +71,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(
             self.root + "/ubuntutest-temp", partner_config.temproot)
         self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
+        self.assertFalse(partner_config.uefiautokey)
         self.assertIs(None, partner_config.metaroot)
         self.assertEqual(archiveroot + "-staging", partner_config.stagingroot)
 
@@ -92,6 +94,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-misc", copy_config.miscroot)
         self.assertEqual(archiveroot + "-temp", copy_config.temproot)
         self.assertIsNone(copy_config.uefiroot)
+        self.assertFalse(copy_config.uefiautokey)
         self.assertIs(None, copy_config.metaroot)
         self.assertIs(None, copy_config.stagingroot)
 
@@ -131,6 +134,7 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
             self.ppa.owner.name, self.ppa.name)
         self.assertEqual(uefiroot, self.ppa_config.uefiroot)
+        self.assertTrue(self.ppa_config.uefiautokey)
         self.assertIs(None, self.ppa_config.metaroot)
         self.assertIs(None, self.ppa_config.stagingroot)
 
@@ -165,6 +169,7 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
             p3a.owner.name, p3a.name)
         self.assertEqual(uefiroot, p3a_config.uefiroot)
+        self.assertTrue(self.ppa_config.uefiautokey)
         self.assertIs(None, p3a_config.metaroot)
         self.assertIs(None, p3a_config.stagingroot)
 
