@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A collection of Git repositories.
@@ -54,7 +54,8 @@ class IGitCollection(Interface):
             collection.
         """
 
-    def getRepositories(eager_load=False, order_by_date=False):
+    def getRepositories(eager_load=False, order_by_date=False,
+                        order_by_id=False):
         """Return a result set of all repositories in this collection.
 
         The returned result set will also join across the specified tables
@@ -66,6 +67,7 @@ class IGitCollection(Interface):
             objects in the collection.
         :param order_by_date: If True, order results by descending
             modification date.
+        :param order_by_id: If True, order results by ascending ID.
         """
 
     def getRepositoryIds():

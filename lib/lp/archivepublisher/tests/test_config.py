@@ -8,6 +8,8 @@ Publisher configuration provides archive-dependent filesystem paths.
 
 __metaclass__ = type
 
+import os
+
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -46,9 +48,18 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-misc", primary_config.miscroot)
         self.assertEqual(
             self.root + "/ubuntutest-temp", primary_config.temproot)
-        self.assertEqual(archiveroot + "-uefi", primary_config.uefiroot)
+        self.assertEqual(archiveroot + "-signing", primary_config.signingroot)
+        self.assertFalse(primary_config.signingautokey)
         self.assertIs(None, primary_config.metaroot)
         self.assertEqual(archiveroot + "-staging", primary_config.stagingroot)
+
+    def test_primary_config_compat(self):
+        # Primary archive configuration is correct.
+        archiveroot = self.root + "/ubuntutest"
+        self.addCleanup(os.rmdir, archiveroot + "-uefi")
+        os.makedirs(archiveroot + "-uefi")
+        primary_config = getPubConfig(self.ubuntutest.main_archive)
+        self.assertEqual(archiveroot + "-uefi", primary_config.signingroot)
 
     def test_partner_config(self):
         # Partner archive configuration is correct.
@@ -69,7 +80,8 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertIsNone(partner_config.miscroot)
         self.assertEqual(
             self.root + "/ubuntutest-temp", partner_config.temproot)
-        self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
+        self.assertEqual(archiveroot + "-signing", partner_config.signingroot)
+        self.assertFalse(partner_config.signingautokey)
         self.assertIs(None, partner_config.metaroot)
         self.assertEqual(archiveroot + "-staging", partner_config.stagingroot)
 
@@ -91,7 +103,8 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(archiveroot + "-cache", copy_config.cacheroot)
         self.assertEqual(archiveroot + "-misc", copy_config.miscroot)
         self.assertEqual(archiveroot + "-temp", copy_config.temproot)
-        self.assertIsNone(copy_config.uefiroot)
+        self.assertIsNone(copy_config.signingroot)
+        self.assertFalse(copy_config.signingautokey)
         self.assertIs(None, copy_config.metaroot)
         self.assertIs(None, copy_config.stagingroot)
 
@@ -128,9 +141,10 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(self.ppa_config.miscroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", self.ppa_config.temproot)
-        uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
+        signingroot = "/var/tmp/ppa-signing-keys.test/signing/%s/%s" % (
             self.ppa.owner.name, self.ppa.name)
-        self.assertEqual(uefiroot, self.ppa_config.uefiroot)
+        self.assertEqual(signingroot, self.ppa_config.signingroot)
+        self.assertTrue(self.ppa_config.signingautokey)
         self.assertIs(None, self.ppa_config.metaroot)
         self.assertIs(None, self.ppa_config.stagingroot)
 
@@ -162,9 +176,10 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
             "/var/tmp/archive/ubuntutest-temp", p3a_config.temproot)
         # It's OK for the signing keys to be in the same location as for
         # public PPAs, as the owner/name namespace is shared.
-        uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
+        signingroot = "/var/tmp/ppa-signing-keys.test/signing/%s/%s" % (
             p3a.owner.name, p3a.name)
-        self.assertEqual(uefiroot, p3a_config.uefiroot)
+        self.assertEqual(signingroot, p3a_config.signingroot)
+        self.assertTrue(self.ppa_config.signingautokey)
         self.assertIs(None, p3a_config.metaroot)
         self.assertIs(None, p3a_config.stagingroot)
 
@@ -181,3 +196,23 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
                 ubuntu_ppa.owner.name, ubuntu_ppa.name),
             getPubConfig(ubuntu_ppa).metaroot)
         self.assertIs(None, getPubConfig(test_ppa).metaroot)
+
+
+class TestGetPubConfigPPACompatUefi(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestGetPubConfigPPACompatUefi, self).setUp()
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, purpose=ArchivePurpose.PPA)
+        signingroot = "/var/tmp/ppa-signing-keys.test/uefi"
+        self.addCleanup(os.rmdir, signingroot)
+        os.makedirs(signingroot)
+        self.ppa_config = getPubConfig(self.ppa)
+
+    def test_ppa_uefi_config(self):
+        signingroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
+            self.ppa.owner.name, self.ppa.name)
+        self.assertEqual(signingroot, self.ppa_config.signingroot)

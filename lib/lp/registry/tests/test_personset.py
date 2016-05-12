@@ -6,7 +6,10 @@
 __metaclass__ = type
 
 
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    GreaterThan,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -14,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.errors import (
+    NotPlaceholderAccount,
     InvalidName,
     NameAlreadyTaken,
     )
@@ -38,6 +42,7 @@ from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
     AccountSuspendedError,
+    IAccountSet,
     )
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
@@ -62,6 +67,13 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
+
+
+def make_openid_identifier(account, identifier):
+    openid_identifier = OpenIdIdentifier()
+    openid_identifier.identifier = identifier
+    openid_identifier.account = account
+    return IStore(OpenIdIdentifier).add(openid_identifier)
 
 
 class TestPersonSet(TestCaseWithFactory):
@@ -245,7 +257,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
 
         # Generate some valid test data.
         self.account = self.makeAccount()
-        self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
+        self.identifier = make_openid_identifier(self.account, u'whatever')
         self.person = self.makePerson(self.account)
         self.email = self.makeEmailAddress(
             email='whatever@example.com', person=self.person)
@@ -255,12 +267,6 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
             displayname='Displayname',
             creation_rationale=AccountCreationRationale.UNKNOWN,
             status=AccountStatus.ACTIVE))
-
-    def makeOpenIdIdentifier(self, account, identifier):
-        openid_identifier = OpenIdIdentifier()
-        openid_identifier.identifier = identifier
-        openid_identifier.account = account
-        return self.store.add(openid_identifier)
 
     def makePerson(self, account):
         return self.store.add(Person(
@@ -423,6 +429,25 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
             PersonCreationRationale.UNKNOWN, 'No Comment')
         self.assertEqual(AccountStatus.ACTIVE, self.person.account_status)
         self.assertEqual(addr, self.person.preferredemail.email)
+
+    def testPlaceholderAccount(self):
+        # Logging into a username placeholder account activates the
+        # account and adds the email address.
+        email = u'placeholder@example.com'
+        openid = u'placeholder-id'
+        name = u'placeholder'
+        person = self.person_set.createPlaceholderPerson(openid, name)
+        self.assertEqual(AccountStatus.PLACEHOLDER, person.account.status)
+        original_created = person.datecreated
+        transaction.commit()
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            openid, email, 'New Name', PersonCreationRationale.UNKNOWN,
+            'No Comment')
+        self.assertEqual(person, found)
+        self.assertEqual(AccountStatus.ACTIVE, person.account.status)
+        self.assertEqual(name, person.name)
+        self.assertEqual('New Name', person.display_name)
+        self.assertThat(person.datecreated, GreaterThan(original_created))
 
 
 class TestCreatePersonAndEmail(TestCase):
@@ -605,12 +630,6 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
         super(TestPersonSetGetOrCreateSoftwareCenterCustomer, self).setUp()
         self.sca = getUtility(IPersonSet).getByName('software-center-agent')
 
-    def makeOpenIdIdentifier(self, account, identifier):
-        openid_identifier = OpenIdIdentifier()
-        openid_identifier.identifier = identifier
-        openid_identifier.account = account
-        return IStore(OpenIdIdentifier).add(openid_identifier)
-
     def test_restricted_to_sca(self):
         # Only the software-center-agent celebrity can invoke this
         # privileged method.
@@ -637,7 +656,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
     def test_finds_by_openid(self):
         # A Person with the requested OpenID identifier is returned.
         somebody = self.factory.makePerson()
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         with person_logged_in(self.sca):
             got = getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
                 self.sca, u'somebody', 'somebody@example.com', 'Example')
@@ -670,7 +689,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
         somebody = self.factory.makePerson(
             email='existing@example.com',
             account_status=AccountStatus.NOACCOUNT)
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         self.assertEqual(AccountStatus.NOACCOUNT, somebody.account.status)
         with person_logged_in(self.sca):
             got = getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer(
@@ -703,7 +722,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
     def test_fails_if_account_is_suspended(self):
         # Suspended accounts cannot be returned.
         somebody = self.factory.makePerson()
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         with admin_logged_in():
             somebody.setAccountStatus(
                 AccountStatus.SUSPENDED, None, "Go away!")
@@ -718,7 +737,7 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
         # nor do we want to potentially compromise them with a bad email
         # address.
         somebody = self.factory.makePerson()
-        self.makeOpenIdIdentifier(somebody.account, u'somebody')
+        make_openid_identifier(somebody.account, u'somebody')
         with admin_logged_in():
             somebody.setAccountStatus(
                 AccountStatus.DEACTIVATED, None, "Goodbye cruel world.")
@@ -727,3 +746,149 @@ class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):
                 NameAlreadyTaken,
                 getUtility(IPersonSet).getOrCreateSoftwareCenterCustomer,
                 self.sca, u'somebody', 'somebody@example.com', 'Example')
+
+
+class TestPersonGetUsernameForSSO(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonGetUsernameForSSO, self).setUp()
+        self.sso = getUtility(IPersonSet).getByName(u'ubuntu-sso')
+
+    def test_restricted_to_sca(self):
+        # Only the ubuntu-sso celebrity can invoke this
+        # privileged method.
+        target = self.factory.makePerson(name='username')
+        make_openid_identifier(target.account, u'openid')
+
+        def do_it():
+            return getUtility(IPersonSet).getUsernameForSSO(
+                getUtility(ILaunchBag).user, u'openid')
+        random = self.factory.makePerson()
+        admin = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName(u'admins')])
+
+        # Anonymous, random or admin users can't invoke the method.
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(random):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(admin):
+            self.assertRaises(Unauthorized, do_it)
+
+        with person_logged_in(self.sso):
+            self.assertEqual('username', do_it())
+
+
+class TestPersonSetUsernameFromSSO(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetUsernameFromSSO, self).setUp()
+        self.sso = getUtility(IPersonSet).getByName(u'ubuntu-sso')
+
+    def test_restricted_to_sca(self):
+        # Only the ubuntu-sso celebrity can invoke this
+        # privileged method.
+        def do_it():
+            getUtility(IPersonSet).setUsernameFromSSO(
+                getUtility(ILaunchBag).user, u'openid', u'username')
+        random = self.factory.makePerson()
+        admin = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName(u'admins')])
+
+        # Anonymous, random or admin users can't invoke the method.
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(random):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(admin):
+            self.assertRaises(Unauthorized, do_it)
+
+        with person_logged_in(self.sso):
+            do_it()
+
+    def test_creates_new_placeholder(self):
+        # If an unknown OpenID identifier and email address are
+        # provided, a new account is created with the given username and
+        # returned.
+        with person_logged_in(self.sso):
+            getUtility(IPersonSet).setUsernameFromSSO(
+                self.sso, u'openid', u'username')
+        person = getUtility(IPersonSet).getByName(u'username')
+        self.assertEqual(u'username', person.name)
+        self.assertEqual(u'username', person.displayname)
+        self.assertEqual(AccountStatus.PLACEHOLDER, person.account.status)
+        with admin_logged_in():
+            self.assertContentEqual(
+                [u'openid'],
+                [oid.identifier for oid in person.account.openid_identifiers])
+            self.assertContentEqual([], person.validatedemails)
+            self.assertContentEqual([], person.guessedemails)
+
+    def test_creates_new_placeholder_dry_run(self):
+        with person_logged_in(self.sso):
+            getUtility(IPersonSet).setUsernameFromSSO(
+                self.sso, u'openid', u'username', dry_run=True)
+        self.assertRaises(
+            LookupError,
+            getUtility(IAccountSet).getByOpenIDIdentifier, u'openid')
+        self.assertIs(None, getUtility(IPersonSet).getByName(u'username'))
+
+    def test_updates_existing_placeholder(self):
+        # An existing placeholder Person with the request OpenID
+        # identifier has its name updated.
+        getUtility(IPersonSet).setUsernameFromSSO(
+            self.sso, u'openid', u'username')
+        person = getUtility(IPersonSet).getByName(u'username')
+
+        # Another call for the same OpenID identifier updates the
+        # existing Person.
+        getUtility(IPersonSet).setUsernameFromSSO(
+            self.sso, u'openid', u'newsername')
+        self.assertEqual(u'newsername', person.name)
+        self.assertEqual(u'newsername', person.displayname)
+        self.assertEqual(AccountStatus.PLACEHOLDER, person.account.status)
+        with admin_logged_in():
+            self.assertContentEqual([], person.validatedemails)
+            self.assertContentEqual([], person.guessedemails)
+
+    def test_updates_existing_placeholder_dry_run(self):
+        getUtility(IPersonSet).setUsernameFromSSO(
+            self.sso, u'openid', u'username')
+        person = getUtility(IPersonSet).getByName(u'username')
+
+        getUtility(IPersonSet).setUsernameFromSSO(
+            self.sso, u'openid', u'newsername', dry_run=True)
+        self.assertEqual(u'username', person.name)
+
+    def test_validation(self, dry_run=False):
+        # An invalid username is rejected with an InvalidName exception.
+        self.assertRaises(
+            InvalidName,
+            getUtility(IPersonSet).setUsernameFromSSO,
+            self.sso, u'openid', u'username!!', dry_run=dry_run)
+        transaction.abort()
+
+        # A username that's already in use is rejected with a
+        # NameAlreadyTaken exception.
+        self.factory.makePerson(name='taken')
+        self.assertRaises(
+            NameAlreadyTaken,
+            getUtility(IPersonSet).setUsernameFromSSO,
+            self.sso, u'openid', u'taken', dry_run=dry_run)
+        transaction.abort()
+
+        # setUsernameFromSSO can't be used to set an OpenID
+        # identifier's username if a non-placeholder account exists.
+        somebody = self.factory.makePerson()
+        make_openid_identifier(somebody.account, u'openid-taken')
+        self.assertRaises(
+            NotPlaceholderAccount,
+            getUtility(IPersonSet).setUsernameFromSSO,
+            self.sso, u'openid-taken', u'username', dry_run=dry_run)
+
+    def test_validation_dry_run(self):
+        self.test_validation(dry_run=True)

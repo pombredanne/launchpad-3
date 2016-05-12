@@ -154,6 +154,7 @@ from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
+    NotPlaceholderAccount,
     PPACreationError,
     TeamMembershipPolicyError,
     )
@@ -3392,7 +3393,13 @@ class PersonSet:
                 raise NameAlreadyTaken(
                     "The account matching the identifier is inactive.")
             elif person.account.status in [AccountStatus.DEACTIVATED,
-                                           AccountStatus.NOACCOUNT]:
+                                           AccountStatus.NOACCOUNT,
+                                           AccountStatus.PLACEHOLDER]:
+                if person.account.status == AccountStatus.PLACEHOLDER:
+                    # Placeholder accounts were never visible to anyone
+                    # before, so make them appear fresh to the user.
+                    removeSecurityProxy(person).display_name = full_name
+                    removeSecurityProxy(person).datecreated = UTC_NOW
                 removeSecurityProxy(person.account).reactivate(comment)
                 if email is None:
                     email = getUtility(IEmailAddressSet).new(
@@ -3417,6 +3424,38 @@ class PersonSet:
                 "when purchasing an application via Software Center.",
                 trust_email=False)
         return person
+
+    def getUsernameForSSO(self, user, openid_identifier):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            return None
+        return IPerson(account).name
+
+    def setUsernameFromSSO(self, user, openid_identifier, name,
+                           dry_run=False):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        self._validateName(name)
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            if not dry_run:
+                person = self.createPlaceholderPerson(openid_identifier, name)
+        else:
+            if account.status != AccountStatus.PLACEHOLDER:
+                raise NotPlaceholderAccount(
+                    "An account for that OpenID identifier already exists.")
+            if not dry_run:
+                account = removeSecurityProxy(account)
+                person = IPerson(account)
+                person.name = person.display_name = account.displayname = name
 
     def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
@@ -3485,9 +3524,18 @@ class PersonSet:
             name, displayname, hide_email_addresses=True, rationale=rationale,
             comment=comment, registrant=registrant)
 
-    def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, registrant=None, account=None):
-        """Create and return a new Person with the given attributes."""
+    def createPlaceholderPerson(self, openid_identifier, name):
+        """See `IPersonSet`."""
+        account = getUtility(IAccountSet).new(
+            AccountCreationRationale.USERNAME_PLACEHOLDER, name,
+            openid_identifier=openid_identifier,
+            status=AccountStatus.PLACEHOLDER)
+        return self._newPerson(
+            name, name, True,
+            rationale=PersonCreationRationale.USERNAME_PLACEHOLDER,
+            comment="when setting a username in SSO", account=account)
+
+    def _validateName(self, name):
         if not valid_name(name):
             raise InvalidName(
                 "%s is not a valid name for a person." % name)
@@ -3497,6 +3545,11 @@ class PersonSet:
         if self.getByName(name, ignore_merged=False) is not None:
             raise NameAlreadyTaken(
                 "The name '%s' is already taken." % name)
+
+    def _newPerson(self, name, displayname, hide_email_addresses,
+                   rationale, comment=None, registrant=None, account=None):
+        """Create and return a new Person with the given attributes."""
+        self._validateName(name)
 
         if not displayname:
             displayname = name.capitalize()
