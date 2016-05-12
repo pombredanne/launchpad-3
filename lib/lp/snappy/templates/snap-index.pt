@@ -51,6 +51,28 @@
       </dl>
     </div>
 
+    <div id="store_upload" class="two-column-list"
+         tal:condition="context/store_upload">
+      <dl id="store_series">
+        <dt>Store series:</dt>
+        <dd>
+          <a tal:replace="structure context/store_series/fmt:link"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
+      <dl id="store_name">
+        <dt>Registered store package name:</dt>
+        <dd>
+          <span tal:content="context/store_name"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
+    </div>
+    <p id="store_upload" tal:condition="not: context/store_upload">
+      Builds of this snap package are not automatically uploaded to the store.
+      <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+    </p>
+
     <h2>Latest builds</h2>
     <table id="latest-builds-listing" class="listing"
            style="margin-bottom: 1em;">
