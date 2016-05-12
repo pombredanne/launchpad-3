@@ -92,11 +92,13 @@ class Account(SQLBase):
 class AccountSet:
     """See `IAccountSet`."""
 
-    def new(self, rationale, displayname, openid_identifier=None):
+    def new(self, rationale, displayname, openid_identifier=None,
+            status=AccountStatus.NOACCOUNT):
         """See `IAccountSet`."""
-
+        assert status in (AccountStatus.NOACCOUNT, AccountStatus.PLACEHOLDER)
         account = Account(
-            displayname=displayname, creation_rationale=rationale)
+            displayname=displayname, creation_rationale=rationale,
+            status=status)
 
         # Create an OpenIdIdentifier record if requested.
         if openid_identifier is not None:

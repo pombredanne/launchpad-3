@@ -2797,9 +2797,7 @@ class TestUpdateByHash(TestPublisherBase):
                 MatchesStructure(scheduled_deletion_date=Not(Is(None))),
                 ]))
 
-    def test_prune(self):
-        # The publisher prunes files from by-hash that were condemned more
-        # than a day ago.
+    def setUpPruneableSuite(self):
         self.breezy_autotest.publish_by_hash = True
         self.breezy_autotest.advertise_by_hash = True
         publisher = Publisher(
@@ -2843,6 +2841,15 @@ class TestUpdateByHash(TestPublisherBase):
             suite_path('main', 'source', 'by-hash'),
             Not(ByHashHasContents(main_contents)))
 
+        return main_contents
+
+    def test_prune(self):
+        # The publisher prunes files from by-hash that were condemned more
+        # than a day ago.
+        main_contents = self.setUpPruneableSuite()
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+
         # Use a fresh Publisher instance to ensure that it doesn't have
         # dirty-pocket state left over from the last run.
         publisher = Publisher(
@@ -2850,9 +2857,28 @@ class TestUpdateByHash(TestPublisherBase):
             self.ubuntutest.main_archive)
         self.runSteps(publisher, step_a2=True, step_c=True, step_d=True)
         self.assertEqual(set(), publisher.dirty_pockets)
-        self.assertContentEqual(
-            [('breezy-autotest', PackagePublishingPocket.RELEASE)],
-            publisher.release_files_needed)
+        self.assertThat(
+            suite_path('main', 'source', 'by-hash'),
+            ByHashHasContents(main_contents))
+
+    def test_prune_immutable(self):
+        # The publisher prunes by-hash files from immutable suites, but
+        # doesn't regenerate the Release file in that case.
+        main_contents = self.setUpPruneableSuite()
+        suite_path = partial(
+            os.path.join, self.config.distsroot, 'breezy-autotest')
+        release_path = suite_path('Release')
+        release_mtime = os.stat(release_path).st_mtime
+
+        self.breezy_autotest.status = SeriesStatus.CURRENT
+        # Use a fresh Publisher instance to ensure that it doesn't have
+        # dirty-pocket state left over from the last run.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        self.runSteps(publisher, step_a2=True, step_c=True, step_d=True)
+        self.assertEqual(set(), publisher.dirty_pockets)
+        self.assertEqual(release_mtime, os.stat(release_path).st_mtime)
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
@@ -3078,13 +3104,13 @@ class TestPublisherLite(TestCaseWithFactory):
         releases_dir = self.getReleaseFileDir(root, series, suite)
         os.makedirs(releases_dir)
         release_data = self.makeFakeReleaseData()
-        release_path = os.path.join(releases_dir, "Release")
+        release_path = os.path.join(releases_dir, "Release.new")
 
         self.makePublisher(series)._writeReleaseFile(suite, release_data)
 
         self.assertTrue(file_exists(release_path))
-        self.assertEqual(
-            release_data.encode('utf-8'), file(release_path).read())
+        with open(release_path) as release_file:
+            self.assertEqual(release_data.encode('utf-8'), release_file.read())
 
     def test_writeReleaseFile_creates_directory_if_necessary(self):
         # If the suite is new and its release directory does not exist
@@ -3095,7 +3121,7 @@ class TestPublisherLite(TestCaseWithFactory):
         suite = series.name + pocketsuffix[spph.pocket]
         release_data = self.makeFakeReleaseData()
         release_path = os.path.join(
-            self.getReleaseFileDir(root, series, suite), "Release")
+            self.getReleaseFileDir(root, series, suite), "Release.new")
 
         self.makePublisher(series)._writeReleaseFile(suite, release_data)
 

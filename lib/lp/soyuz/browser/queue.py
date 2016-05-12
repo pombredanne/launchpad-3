@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -574,7 +574,7 @@ class CompletePackageUpload:
             (self.contains_installer, ("Installer", 'ubuntu-icon')),
             (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),
             (self.contains_ddtp, (ddtp, 'ubuntu-icon')),
-            (self.contains_uefi, ("Signed UEFI boot loader", 'ubuntu-icon')),
+            (self.contains_signing, ("Objects for Signing", 'ubuntu-icon')),
             ]
         return [
             self.composeIcon(*details)

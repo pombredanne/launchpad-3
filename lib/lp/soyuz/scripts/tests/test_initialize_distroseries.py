@@ -22,6 +22,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackageUploadStatus,
     SourcePackageFormat,
     )
@@ -83,6 +84,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             spfss_utility.add(parent, format_selection)
         parent.backports_not_automatic = True
         parent.include_long_descriptions = False
+        parent.index_compressors = [IndexCompressionType.XZ]
         parent.publish_by_hash = True
         parent.advertise_by_hash = True
         parent.strict_supported_component_dependencies = False
@@ -613,6 +615,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
         self.assertFalse(child.include_long_descriptions)
+        self.assertEqual([IndexCompressionType.XZ], child.index_compressors)
         self.assertTrue(child.publish_by_hash)
         self.assertTrue(child.advertise_by_hash)
         self.assertFalse(child.strict_supported_component_dependencies)

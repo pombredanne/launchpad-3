@@ -31,10 +31,8 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 
-from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.webapp.url import urlappend
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
@@ -130,10 +128,12 @@ class TestSnapStoreClient(TestCaseWithFactory):
             macaroon = self.client.requestPackageUploadPermission(
                 snappy_series, "test-snap")
         self.assertThat(self.request, RequestMatches(
-            url=Equals(urlappend(
-                config.snappy.store_url, "api/2.0/acl/package_upload/")),
+            url=Equals("http://sca.example/dev/api/acl/"),
             method=Equals("POST"),
-            json_data={"name": "test-snap", "series": "rolling"}))
+            json_data={
+                "packages": [{"name": "test-snap", "series": "rolling"}],
+                "permissions": ["package_upload"],
+                }))
         self.assertEqual("dummy", macaroon)
         request = get_current_browser_request()
         start, stop = get_request_timeline(request).actions[-2:]
@@ -176,7 +176,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "content": {"successful": True, "upload_id": 1},
                 }
 
-        @urlmatch(path=r".*/snap-upload/.*")
+        @urlmatch(path=r".*/snap-upload/$")
         def snap_upload_handler(url, request):
             self.snap_upload_request = request
             return {"status_code": 202, "content": {"success": True}}
@@ -193,8 +193,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         with HTTMock(unscanned_upload_handler, snap_upload_handler):
             self.client.upload(snapbuild)
         self.assertThat(self.unscanned_upload_request, RequestMatches(
-            url=Equals(urlappend(
-                config.snappy.store_upload_url, "unscanned-upload/")),
+            url=Equals("http://updown.example/unscanned-upload/"),
             method=Equals("POST"),
             form_data={
                 "binary": MatchesStructure.byEquality(
@@ -203,10 +202,11 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     type="application/octet-stream",
                     )}))
         self.assertThat(self.snap_upload_request, RequestMatches(
-            url=Equals(urlappend(
-                config.snappy.store_url, "dev/api/snap-upload/test-snap/")),
+            url=Equals("http://sca.example/dev/api/snap-upload/"),
             method=Equals("POST"), auth=("Macaroon", store_secrets),
             form_data={
+                "name": MatchesStructure.byEquality(
+                    name="name", value="test-snap"),
                 "updown_id": MatchesStructure.byEquality(
                     name="updown_id", value="1"),
                 "series": MatchesStructure.byEquality(
