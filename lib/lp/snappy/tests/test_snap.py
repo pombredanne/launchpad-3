@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from mock import patch
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.exceptions import LostObjectError
@@ -64,6 +65,7 @@ from lp.testing import (
     login,
     logout,
     person_logged_in,
+    record_two_runs,
     set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -363,6 +365,65 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(snap.owner):
             snap.destroySelf()
         self.assertFalse(getUtility(ISnapSet).exists(owner, u"condemned"))
+
+    def test_getBuildSummariesForSnapBuildIds(self):
+        snap1 = self.factory.makeSnap()
+        snap2 = self.factory.makeSnap()
+        build11 = self.factory.makeSnapBuild(snap=snap1)
+        build12 = self.factory.makeSnapBuild(snap=snap1)
+        build2 = self.factory.makeSnapBuild(snap=snap2)
+        build3 = self.factory.makeSnapBuild()
+        summary1 = snap1.getBuildSummariesForSnapBuildIds(
+            [build11.id, build12.id])
+        summary2 = snap2.getBuildSummariesForSnapBuildIds([build2.id])
+        self.assertEqual([build11.id, build12.id], summary1.keys())
+        self.assertEqual([build2.id], summary2.keys())
+
+    def test_getBuildSummariesForSnapBuildIds_empty_input(self):
+        snap1 = self.factory.makeSnap()
+        build1 = self.factory.makeSnapBuild(snap=snap1)
+        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds(None))
+        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds([]))
+        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds(()))
+        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds([None]))
+
+    def test_getBuildSummariesForSnapBuildIds_not_matching_snap(self):
+        snap1 = self.factory.makeSnap()
+        snap2 = self.factory.makeSnap()
+        build1 = self.factory.makeSnapBuild(snap=snap1)
+        build2 = self.factory.makeSnapBuild(snap=snap2)
+        summary1 = snap1.getBuildSummariesForSnapBuildIds([build2.id])
+        self.assertEqual({}, summary1)
+
+    def test_getBuildSummariesForSnapBuildIds_when_complete_field(self):
+        snap = self.factory.makeSnap()
+        build = self.factory.makeSnapBuild(snap=snap)
+        self.assertIsNone(build.date)
+        summary = snap.getBuildSummariesForSnapBuildIds([build.id])
+        self.assertIsNone(summary[build.id]["when_complete"])
+        removeSecurityProxy(build).date_finished = UTC_NOW
+        summary = snap.getBuildSummariesForSnapBuildIds([build.id])
+        self.assertEqual("a moment ago", summary[build.id]["when_complete"])
+
+    def test_getBuildSummariesForSnapBuildIds_log_size_field(self):
+        snap = self.factory.makeSnap()
+        build = self.factory.makeSnapBuild(snap=snap)
+        self.assertIsNone(build.log)
+        summary = snap.getBuildSummariesForSnapBuildIds([build.id])
+        self.assertIsNone(summary[build.id]["build_log_size"])
+        with patch("lp.snappy.model.snapbuild.SnapBuild.log") as mock_log:
+            mock_log.content.filesize = 12345
+            summary = snap.getBuildSummariesForSnapBuildIds([build.id])
+        self.assertEqual(12345, summary[build.id]["build_log_size"])
+
+    def test_getBuildSummariesForSnapBuildIds_query_count(self):
+        snap = self.factory.makeSnap()
+        recorder1, recorder2 = record_two_runs(
+            lambda: snap.getBuildSummariesForSnapBuildIds(
+                build.id for build in snap.builds),
+            lambda: self.factory.makeSnapBuild(snap=snap),
+            1, 5)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestSnapDeleteWithBuilds(TestCaseWithFactory):
