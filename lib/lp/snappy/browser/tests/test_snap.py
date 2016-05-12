@@ -44,7 +44,6 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.url import urlappend
 from lp.snappy.browser.snap import (
     SnapAdminView,
     SnapAuthorizeView,
@@ -609,12 +608,15 @@ class TestSnapAuthorizeView(BrowserTestCase):
         with HTTMock(handler):
             ret = func(*args, **kwargs)
         self.assertThat(self.request, MatchesStructure.byEquality(
-            url=urlappend(
-                config.snappy.store_url, "api/2.0/acl/package_upload/"),
-            method="POST"))
-        self.assertEqual(
-            {"name": snap.store_name, "series": snap.store_series.name},
-            json.loads(self.request.body))
+            url="http://sca.example/dev/api/acl/", method="POST"))
+        expected_body = {
+            "packages": [{
+                "name": snap.store_name,
+                "series": snap.store_series.name,
+                }],
+            "permissions": ["package_upload"],
+            }
+        self.assertEqual(expected_body, json.loads(self.request.body))
         transaction.abort()
         self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
         return ret
