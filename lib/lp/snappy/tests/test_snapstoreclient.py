@@ -176,7 +176,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "content": {"successful": True, "upload_id": 1},
                 }
 
-        @urlmatch(path=r".*/snap-upload/.*")
+        @urlmatch(path=r".*/snap-upload/$")
         def snap_upload_handler(url, request):
             self.snap_upload_request = request
             return {"status_code": 202, "content": {"success": True}}
@@ -202,9 +202,11 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     type="application/octet-stream",
                     )}))
         self.assertThat(self.snap_upload_request, RequestMatches(
-            url=Equals("http://sca.example/dev/api/snap-upload/test-snap/"),
+            url=Equals("http://sca.example/dev/api/snap-upload/"),
             method=Equals("POST"), auth=("Macaroon", store_secrets),
             form_data={
+                "name": MatchesStructure.byEquality(
+                    name="name", value="test-snap"),
                 "updown_id": MatchesStructure.byEquality(
                     name="updown_id", value="1"),
                 "series": MatchesStructure.byEquality(
