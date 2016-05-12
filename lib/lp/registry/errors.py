@@ -21,6 +21,7 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
+    'NotPlaceholderAccount',
     'InclusiveTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
@@ -58,6 +59,11 @@ class NameAlreadyTaken(Exception):
 
 class InvalidName(Exception):
     """The name given for a person is not valid."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class NotPlaceholderAccount(Exception):
+    """A non-placeholder account already exists for that OpenID identifier."""
 
 
 @error_status(httplib.BAD_REQUEST)

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Queue interfaces."""
@@ -264,8 +264,11 @@ class IPackageUpload(Interface):
         "whether or not this upload contains upgrader images")
     contains_ddtp = Attribute(
         "whether or not this upload contains DDTP images")
+    contains_signing = Attribute(
+        "whether or not this upload contains signing images")
     contains_uefi = Attribute(
-        "whether or not this upload contains a signed UEFI boot loader image")
+        "whether or not this upload contains a signed UEFI boot loader image"
+        " (deprecated)")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
 

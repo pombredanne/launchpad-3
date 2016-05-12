@@ -97,6 +97,9 @@ class TestSnapBuild(TestCaseWithFactory):
     def setUp(self):
         super(TestSnapBuild, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
         self.build = self.factory.makeSnapBuild()
 
     def test_implements_interfaces(self):

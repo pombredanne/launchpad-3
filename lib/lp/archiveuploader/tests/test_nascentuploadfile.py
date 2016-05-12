@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUploadFile functionality."""
@@ -165,6 +165,12 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         # UEFI uploads are auto-approved.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-uefi", "extra")
+        self.assertFalse(uploadfile.autoApprove())
+
+    def test_signing_not_auto_approved(self):
+        # UEFI uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-signing", "extra")
         self.assertFalse(uploadfile.autoApprove())
 
 

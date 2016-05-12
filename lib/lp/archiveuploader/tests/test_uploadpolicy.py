@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from zope.component import getUtility
@@ -304,11 +304,32 @@ class TestUploadPolicy(TestCaseWithFactory):
         upload.changes = FakeChangesFile(custom_files=[uploadfile])
         self.assertFalse(buildd_policy.autoApprove(upload))
 
+    def test_buildd_does_not_approve_signing(self):
+        # Uploads to the primary archive containing files for signing are
+        # not approved.
+        buildd_policy = findPolicyByName("buildd")
+        uploadfile = CustomUploadFile(
+            "uefi.tar.gz", None, 0, "main/raw-signing", "extra", buildd_policy,
+            None)
+        upload = make_fake_upload(binaryful=True)
+        upload.changes = FakeChangesFile(custom_files=[uploadfile])
+        self.assertFalse(buildd_policy.autoApprove(upload))
+
     def test_buildd_approves_uefi_ppa(self):
         # Uploads to PPAs containing UEFI custom files are auto-approved.
         buildd_policy = findPolicyByName("buildd")
         uploadfile = CustomUploadFile(
             "uefi.tar.gz", None, 0, "main/raw-uefi", "extra", buildd_policy,
+            None)
+        upload = make_fake_upload(binaryful=True, is_ppa=True)
+        upload.changes = FakeChangesFile(custom_files=[uploadfile])
+        self.assertTrue(buildd_policy.autoApprove(upload))
+
+    def test_buildd_approves_signing_ppa(self):
+        # Uploads to PPAs containing UEFI custom files are auto-approved.
+        buildd_policy = findPolicyByName("buildd")
+        uploadfile = CustomUploadFile(
+            "uefi.tar.gz", None, 0, "main/raw-signing", "extra", buildd_policy,
             None)
         upload = make_fake_upload(binaryful=True, is_ppa=True)
         upload.changes = FakeChangesFile(custom_files=[uploadfile])

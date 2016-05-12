@@ -79,8 +79,7 @@ class SnapStoreClient:
 
     def requestPackageUploadPermission(self, snappy_series, snap_name):
         assert config.snappy.store_url is not None
-        request_url = urlappend(
-            config.snappy.store_url, "api/2.0/acl/package_upload/")
+        request_url = urlappend(config.snappy.store_url, "dev/api/acl/")
         request = get_current_browser_request()
         timeline_action = get_request_timeline(request).start(
             "request-snap-upload-macaroon",
@@ -88,7 +87,11 @@ class SnapStoreClient:
         try:
             response = urlfetch(
                 request_url, method="POST",
-                json={"name": snap_name, "series": snappy_series.name})
+                json={
+                    "packages": [
+                        {"name": snap_name, "series": snappy_series.name}],
+                    "permissions": ["package_upload"],
+                    })
             response_data = response.json()
             if "macaroon" not in response_data:
                 raise BadRequestPackageUploadResponse(response.text)
@@ -130,10 +133,9 @@ class SnapStoreClient:
         """Create a new store upload based on the uploaded file."""
         assert config.snappy.store_url is not None
         assert snap.store_name is not None
-        upload_url = urlappend(
-            config.snappy.store_url,
-            "dev/api/snap-upload/%s/" % quote_plus(snap.store_name))
+        upload_url = urlappend(config.snappy.store_url, "dev/api/snap-upload/")
         data = {
+            "name": snap.store_name,
             "updown_id": upload_data["upload_id"],
             "series": snap.store_series.name,
             }

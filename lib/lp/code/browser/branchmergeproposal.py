@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -350,11 +350,6 @@ class UnmergedRevisionsMixin:
         """Needed to make the branch-revisions metal macro work."""
         return False
 
-    @property
-    def codebrowse_url(self):
-        """Return the link to codebrowse for this branch."""
-        return self.context.merge_source.getCodebrowseUrl()
-
 
 class BranchMergeProposalRevisionIdMixin:
     """A mixin class to provide access to the revision ids."""
@@ -562,15 +557,6 @@ class CodeReviewNewRevisions:
 
     def download(self, request):
         pass
-
-
-class CodeReviewNewRevisionsView(LaunchpadView):
-    """The view for rendering the new revisions."""
-
-    @property
-    def codebrowse_url(self):
-        """Return the link to codebrowse for this branch."""
-        return self.context.branch.getCodebrowseUrl()
 
 
 @implementer(IBranchMergeProposalActionMenu)

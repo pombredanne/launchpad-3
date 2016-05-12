@@ -370,6 +370,23 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         login_person(self.any_user)
         self.assertRaises(GoneError, self.traverse, segment, segment)
 
+    def test_placeholder_person_visibility(self):
+        # Verify a placeholder user is only traversable by an admin.
+        name = u'placeholder-person'
+        person = getUtility(IPersonSet).createPlaceholderPerson(name, name)
+        login_person(self.admin)
+        segment = '~%s' % name
+        # Admins can see the placeholder user.
+        traversed = self.traverse(segment, segment)
+        self.assertEqual(person, traversed)
+        # Registry experts can see the placeholder user.
+        login_person(self.registry_expert)
+        traversed = self.traverse(segment, segment)
+        self.assertEqual(person, traversed)
+        # Regular users cannot see the placeholder user.
+        login_person(self.any_user)
+        self.assertRaises(NotFound, self.traverse, segment, segment)
+
     def test_public_team(self):
         # Verify a public team is returned.
         name = 'public-team'

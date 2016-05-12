@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -466,11 +466,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     def is_empty_directory(self):
         """True if the branch is an empty directory without even a '.bzr'."""
         return self.context.control_format is None
-
-    @property
-    def codebrowse_url(self):
-        """Return the link to codebrowse for this branch."""
-        return self.context.getCodebrowseUrl()
 
     @property
     def pending_writes(self):
