@@ -64,3 +64,31 @@ class TestSnapBuildUploads(TestUploadProcessorBase):
             "Snap upload failed\nGot: %s" % self.log.getLogBuffer())
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
         self.assertTrue(self.build.verifySuccessfulUpload())
+
+    def test_triggers_store_uploads(self):
+        # The upload processor triggers store uploads if appropriate.
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
+        self.switchToAdmin()
+        self.snap.store_series = self.factory.makeSnappySeries(
+            usable_distro_series=[self.snap.distro_series])
+        self.snap.store_name = self.snap.name
+        self.snap.store_upload = True
+        self.snap.store_secrets = {
+            "root": "dummy-root", "discharge": "dummy-discharge"}
+        Store.of(self.snap).flush()
+        self.switchToUploader()
+        self.assertFalse(self.build.verifySuccessfulUpload())
+        upload_dir = os.path.join(
+            self.incoming_folder, "test", str(self.build.id), "ubuntu")
+        write_file(os.path.join(upload_dir, "wget_0_all.snap"), "snap")
+        handler = UploadHandler.forProcessor(
+            self.uploadprocessor, self.incoming_folder, "test", self.build)
+        result = handler.processSnap(self.log)
+        self.assertEqual(
+            UploadStatusEnum.ACCEPTED, result,
+            "Snap upload failed\nGot: %s" % self.log.getLogBuffer())
+        self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
+        self.assertTrue(self.build.verifySuccessfulUpload())
+        self.assertEqual(1, len(list(self.build.store_upload_jobs)))

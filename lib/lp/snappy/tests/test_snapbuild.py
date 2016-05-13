@@ -97,6 +97,9 @@ class TestSnapBuild(TestCaseWithFactory):
     def setUp(self):
         super(TestSnapBuild, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
         self.build = self.factory.makeSnapBuild()
 
     def test_implements_interfaces(self):
@@ -249,6 +252,26 @@ class TestSnapBuild(TestCaseWithFactory):
                 "<WebhookDeliveryJob for webhook %d on %r>" % (
                     hook.id, hook.target),
                 repr(delivery))
+
+    def test_updateStatus_failure_does_not_trigger_store_uploads(self):
+        # A failed SnapBuild does not trigger store uploads.
+        self.build.snap.store_series = self.factory.makeSnappySeries()
+        self.build.snap.store_name = self.factory.getUniqueUnicode()
+        self.build.snap.store_upload = True
+        self.build.snap.store_secrets = {
+            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        self.assertContentEqual([], self.build.store_upload_jobs)
+
+    def test_updateStatus_fullybuilt_triggers_store_uploads(self):
+        # A completed SnapBuild triggers store uploads.
+        self.build.snap.store_series = self.factory.makeSnappySeries()
+        self.build.snap.store_name = self.factory.getUniqueUnicode()
+        self.build.snap.store_upload = True
+        self.build.snap.store_secrets = {
+            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(1, len(list(self.build.store_upload_jobs)))
 
     def test_notify_fullybuilt(self):
         # notify does not send mail when a SnapBuild completes normally.
