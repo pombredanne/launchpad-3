@@ -18,6 +18,7 @@ __all__ = [
 
 import os
 import subprocess
+import inspect
 
 from lp.archivepublisher.customupload import CustomUpload
 from lp.services.osutils import remove_if_exists
@@ -69,10 +70,14 @@ class SigningUpload(CustomUpload):
                     "No signing root configured for this archive")
             self.uefi_key = None
             self.uefi_cert = None
+            self.kmod_pem = None
+            self.kmod_x509 = None
             self.autokey = False
         else:
             self.uefi_key = os.path.join(pubconf.signingroot, "uefi.key")
             self.uefi_cert = os.path.join(pubconf.signingroot, "uefi.crt")
+            self.kmod_pem = os.path.join(pubconf.signingroot, "kmod.pem")
+            self.kmod_x509 = os.path.join(pubconf.signingroot, "kmod.x509")
             self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
@@ -121,6 +126,8 @@ class SigningUpload(CustomUpload):
             for filename in filenames:
                 if filename.endswith(".efi"):
                     yield (os.path.join(dirpath, filename), self.signUefi)
+                elif filename.endswith(".ko"):
+                    yield (os.path.join(dirpath, filename), self.signKmod)
 
     def getKeys(self, which, generate, *keynames):
         """Validate and return the uefi key and cert for encryption."""
@@ -184,6 +191,78 @@ class SigningUpload(CustomUpload):
             # tend to make the publisher rather upset.
             if self.logger is not None:
                 self.logger.warning("UEFI Signing Failed '%s'" %
+                    " ".join(cmdl))
+
+    def generateKmodKeys(self):
+        """Generate new Kernel Signing Keys for this archive."""
+        directory = os.path.dirname(self.kmod_pem)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        genkey_text = inspect.cleandoc("""\
+            [ req ]
+            default_bits = 4096
+            prompt = no
+            string_mask = utf8only
+            x509_extensions = myexts
+
+            [ myexts ]
+            basicConstraints=critical,CA:FALSE
+            keyUsage=digitalSignature
+            subjectKeyIdentifier=hash
+            authorityKeyIdentifier=keyid
+            """)
+
+        common_name = '/CN=PPA ' + self.getArchiveOwner() + ' kmod/'
+
+        genkey_filename = os.path.join(directory, "kmod.genkey")
+        with open(genkey_filename, "w") as genkey_fd:
+            print >> genkey_fd, genkey_text
+
+        old_mask = os.umask(0o077)
+        try:
+            new_key_cmd = [
+                'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
+                '-days', '3650', '-batch', '-x509', '-subj', common_name,
+                '-config', genkey_filename,
+                '-outform', 'PEM', '-out', self.kmod_pem,
+                '-keyout', self.kmod_pem
+                ]
+            if subprocess.call(new_key_cmd) != 0:
+                # Just log this rather than failing, since custom upload errors
+                # tend to make the publisher rather upset.
+                if self.logger is not None:
+                    self.logger.warning(
+                        "Failed to generate Kmod signing key for %s" %
+                        common_name)
+            else:
+                new_x509_cmd = [
+                    'openssl', 'x509', '-in', self.kmod_pem,
+                    '-outform', 'DER', '-out', self.kmod_x509
+                    ]
+                if subprocess.call(new_x509_cmd) != 0:
+                    # Just log this rather than failing (as above).
+                    if self.logger is not None:
+                        self.logger.warning(
+                            "Failed to generate Kmod x509 certificate for %s" %
+                            common_name)
+                    os.unlink(self.kmod_pem)
+        finally:
+            os.umask(old_mask)
+
+    def signKmod(self, image):
+        """Attempt to sign a kernel module."""
+        remove_if_exists("%s.p7s" % image)
+        (pem, cert) = self.getKeys('Kernel Module', self.generateKmodKeys,
+            self.kmod_pem, self.kmod_x509)
+        if not pem or not cert:
+            return
+        cmdl = ["kmodsign", "-d", pem, cert, image]
+        if subprocess.call(cmdl) != 0:
+            # Just log this rather than failing, since custom upload errors
+            # tend to make the publisher rather upset.
+            if self.logger is not None:
+                self.logger.warning("Kmod Signing Failed '%s'" %
                     " ".join(cmdl))
 
     def extract(self):
