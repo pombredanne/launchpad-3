@@ -9,12 +9,14 @@ from datetime import datetime
 import hashlib
 import re
 
+from BeautifulSoup import BeautifulSoup
 import pytz
 import soupmatchers
 from zope.component import getUtility
 
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
@@ -132,6 +134,26 @@ class TestGitRefView(BrowserTestCase):
             for i in range(5)]))
         self.assertEqual(
             expected_urls, [detail.a["href"] for detail in details])
+
+    def test_recent_commits_with_merge(self):
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
+        log = self.makeCommitLog()
+        self.hosting_client.getLog.result = list(reversed(log))
+        mp = self.factory.makeBranchMergeProposalForGit(target_ref=ref)
+        mp.markAsMerged(merged_revision_id=log[0]["sha1"])
+        view = create_initialized_view(ref, "+index")
+        soup = BeautifulSoup(view())
+        details = soup.findAll(
+            attrs={"class": re.compile(r"commit-details|commit-comment")})
+        expected_texts = list(reversed([
+            "%.7s...\nby\n%s\non 2015-01-%02d" % (
+                log[i]["sha1"], log[i]["author"]["name"], i + 1)
+            for i in range(5)]))
+        expected_texts.append(
+            "Merged branch\n%s" % mp.merge_source.display_name)
+        self.assertEqual(
+            expected_texts, [extract_text(detail) for detail in details])
+        self.assertEqual(canonical_url(mp), details[5].a["href"])
 
     def test_all_commits_link(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])

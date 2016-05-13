@@ -104,7 +104,7 @@
     This macro requires the following defined variables:
       ref - the ref that has the revisions
       commit_infos - a list of dicts of commit information (sha1, author,
-                     author_date, commit_message)
+                     author_date, commit_message, merge_proposal)
   </tal:comment>
   <style type="text/css">
     .subordinate {
@@ -124,7 +124,8 @@
   <tal:comment condition="nothing">
     This macro requires the following defined variable:
       commit_info - a dict of the commit information (sha1, author,
-                    author_date, commit_message) to be displayed.
+                    author_date, commit_message, merge_proposal) to be
+                    displayed
 
     It is expected that this macro is called from within a definition list
     (<dl></dl>).
@@ -151,6 +152,14 @@
     <tal:commit-message
       replace="structure commit_message/fmt:obfuscate-email/fmt:text-to-html" />
   </dd>
+
+  <div tal:define="merge_proposal python:commit_info['merge_proposal']"
+       tal:condition="merge_proposal">
+    <dd class="subordinate commit-comment">
+      <a tal:attributes="href merge_proposal/fmt:url">Merged</a> branch
+      <a tal:replace="structure merge_proposal/merge_source/fmt:link">source branch</a>
+    </dd>
+  </div>
 
 </metal:commit-text>
 
