@@ -1,7 +1,7 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Database class for branch merge prosals."""
+"""Database class for branch merge proposals."""
 
 __metaclass__ = type
 __all__ = [
@@ -36,10 +36,7 @@ from storm.locals import (
     Int,
     Reference,
     )
-from storm.store import (
-    EmptyResultSet,
-    Store,
-    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implementer
@@ -70,8 +67,8 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     )
-from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewinlinecomment import (
     ICodeReviewInlineCommentSet,
     )
@@ -785,26 +782,38 @@ class BranchMergeProposal(SQLBase):
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
-        if self.source_branch is None:
-            # XXX cjwatson 2015-04-16: Implement for Git somehow, perhaps by
-            # calling turnip via memcached.
-            return []
-        store = Store.of(self)
-        source = SQL("""source AS (SELECT BranchRevision.branch,
-            BranchRevision.revision, Branchrevision.sequence FROM
-            BranchRevision WHERE BranchRevision.branch = %s and
-            BranchRevision.sequence IS NOT NULL ORDER BY BranchRevision.branch
-            DESC, BranchRevision.sequence DESC
-            LIMIT 10)""" % self.source_branch.id)
-        where = SQL("""BranchRevision.revision NOT IN (SELECT revision from
-            BranchRevision AS target where target.branch = %s and
-            BranchRevision.revision = target.revision)""" %
-            self.target_branch.id)
-        using = SQL("""source as BranchRevision""")
-        revisions = store.with_(source).using(using).find(
-            BranchRevision, where)
-        return list(revisions.order_by(
-            Desc(BranchRevision.sequence)).config(limit=10))
+        if self.source_branch is not None:
+            store = Store.of(self)
+            source = SQL("""
+                source AS (
+                    SELECT
+                        BranchRevision.branch, BranchRevision.revision,
+                        Branchrevision.sequence
+                    FROM BranchRevision
+                    WHERE
+                        BranchRevision.branch = %s
+                        AND BranchRevision.sequence IS NOT NULL
+                    ORDER BY
+                        BranchRevision.branch DESC,
+                        BranchRevision.sequence DESC
+                    LIMIT 10)""" % self.source_branch.id)
+            where = SQL("""
+                BranchRevision.revision NOT IN (
+                    SELECT revision
+                    FROM BranchRevision AS target
+                    WHERE
+                        target.branch = %s
+                        AND BranchRevision.revision = target.revision)""" %
+                self.target_branch.id)
+            using = SQL("""source AS BranchRevision""")
+            revisions = store.with_(source).using(using).find(
+                BranchRevision, where)
+            return list(revisions.order_by(
+                Desc(BranchRevision.sequence)).config(limit=10))
+        else:
+            return self.source_git_ref.getCommits(
+                self.source_git_commit_sha1, limit=10,
+                stop=self.target_git_commit_sha1)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
@@ -1031,34 +1040,39 @@ class BranchMergeProposal(SQLBase):
         return None
 
     def _getNewerRevisions(self):
-        if self.source_branch is None:
-            # XXX cjwatson 2015-04-16: Implement for Git.
-            return EmptyResultSet()
         start_date = self.date_review_requested
         if start_date is None:
             start_date = self.date_created
-        return self.source_branch.getMainlineBranchRevisions(
-            start_date, self.revision_end_date, oldest_first=True)
+        if self.source_branch is not None:
+            revisions = self.source_branch.getMainlineBranchRevisions(
+                start_date, self.revision_end_date, oldest_first=True)
+            return [
+                ((revision.date_created, branch_revision.sequence),
+                 branch_revision)
+                for branch_revision, revision in revisions]
+        else:
+            commits = reversed(self.source_git_ref.getCommits(
+                self.source_git_commit_sha1, stop=self.target_git_commit_sha1,
+                start_date=start_date, end_date=self.revision_end_date))
+            return [
+                ((commit["author_date"], count), commit)
+                for count, commit in enumerate(commits)]
 
     def getRevisionsSinceReviewStart(self):
         """Get the grouped revisions since the review started."""
         entries = [
             ((comment.date_created, -1), comment) for comment
             in self.all_comments]
-        revisions = self._getNewerRevisions()
-        entries.extend(
-            ((revision.date_created, branch_revision.sequence),
-                branch_revision)
-            for branch_revision, revision in revisions)
+        entries.extend(self._getNewerRevisions())
         entries.sort()
         current_group = []
         for sortkey, entry in entries:
-            if IBranchRevision.providedBy(entry):
-                current_group.append(entry)
-            else:
+            if ICodeReviewComment.providedBy(entry):
                 if current_group != []:
                     yield current_group
                     current_group = []
+            else:
+                current_group.append(entry)
         if current_group != []:
             yield current_group
 

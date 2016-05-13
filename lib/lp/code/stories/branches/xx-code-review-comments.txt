@@ -188,6 +188,58 @@ shown as part of the conversation at the time they were pushed to Launchpad.
     4. By ... on 2009-09-12
     and it works!
 
+The same thing works for Git.  Note that the hosting client returns newest
+log entries first.
+
+    >>> from lp.code.interfaces.githosting import IGitHostingClient
+    >>> from lp.testing.fakemethod import FakeMethod
+    >>> from lp.testing.fixture import ZopeUtilityFixture
+
+    >>> login('admin@canonical.com')
+    >>> bmp = factory.makeBranchMergeProposalForGit()
+    >>> bmp.requestReview(review_date)
+    >>> epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+    >>> commit_date = review_date + timedelta(days=1)
+    >>> hosting_client = FakeMethod()
+    >>> hosting_client.getLog = FakeMethod(result=[])
+    >>> for i in range(2):
+    ...     hosting_client.getLog.result.extend([
+    ...         {
+    ...             u'sha1': unicode(i * 2 + 1) * 40,
+    ...             u'message': u'and it works!',
+    ...             u'author': {
+    ...                 u'name': bmp.registrant.display_name,
+    ...                 u'email': bmp.registrant.preferredemail.email,
+    ...                 u'time': int((commit_date - epoch).total_seconds()),
+    ...                 },
+    ...             },
+    ...         {
+    ...             u'sha1': unicode(i * 2) * 40,
+    ...             u'message': u'Testing commits in conversation',
+    ...             u'author': {
+    ...                 u'name': bmp.registrant.display_name,
+    ...                 u'email': bmp.registrant.preferredemail.email,
+    ...                 u'time': int((commit_date - epoch).total_seconds()),
+    ...                 },
+    ...             },
+    ...         ])
+    ...     commit_date += timedelta(days=1)
+    >>> url = canonical_url(bmp)
+    >>> logout()
+
+    >>> with ZopeUtilityFixture(hosting_client, IGitHostingClient):
+    ...     browser.open(url)
+    >>> print_tag_with_id(browser.contents, 'conversation')
+    ~.../+git/...:... updated on 2009-09-12 ...
+    0000000... by ... on 2009-09-11
+    Testing commits in conversation
+    1111111... by ... on 2009-09-11
+    and it works!
+    2222222... by ... on 2009-09-12
+    Testing commits in conversation
+    3333333... by ... on 2009-09-12
+    and it works!
+
 
 Inline Comments
 ---------------

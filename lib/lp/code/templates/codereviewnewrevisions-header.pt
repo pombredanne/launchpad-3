@@ -3,7 +3,7 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <tal:branch replace="structure context/branch/fmt:link"/>
+  <tal:source replace="structure context/source/fmt:link"/>
   updated
   <tal:date replace="context/date/fmt:displaydate" />
 
