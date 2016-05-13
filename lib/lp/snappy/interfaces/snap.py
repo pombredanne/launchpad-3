@@ -86,6 +86,7 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.services.webhooks.interfaces import IWebhookTarget
+from lp.snappy.interfaces.snappyseries import ISnappySeries
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -248,6 +249,10 @@ class ISnapView(Interface):
         :return: Sequence of `IDistroArchSeries` instances.
         """
 
+    can_upload_to_store = Attribute(
+        "Whether everything is set up to allow uploading builds of this snap "
+        "package to the store.")
+
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
         archive=Reference(schema=IArchive),
@@ -369,6 +374,34 @@ class ISnapEditableAttributes(IHasOwner):
             "The Git branch containing a snapcraft.yaml recipe at the top "
             "level.")))
 
+    store_upload = Bool(
+        title=_("Automatically upload to store"),
+        required=True, readonly=False,
+        description=_(
+            "Whether builds of this snap package are automatically uploaded "
+            "to the store."))
+
+    store_series = ReferenceChoice(
+        title=_("Store series"),
+        schema=ISnappySeries, vocabulary="SnappySeries",
+        required=False, readonly=False,
+        description=_(
+            "The series in which this snap package should be published in the "
+            "store."))
+
+    store_name = TextLine(
+        title=_("Registered store package name"),
+        required=False, readonly=False,
+        description=_(
+            "The registered name of this snap package in the store."))
+
+    store_secrets = List(
+        value_type=TextLine(), title=_("Store upload tokens"),
+        required=False, readonly=False,
+        description=_(
+            "Serialized secrets issued by the store and the login service to "
+            "authorize uploads of this snap package."))
+
 
 class ISnapAdminAttributes(Interface):
     """`ISnap` attributes that can be edited by admins.
@@ -416,7 +449,9 @@ class ISnapSet(Interface):
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=None, private=False):
+            processors=None, date_created=None, private=False,
+            store_upload=False, store_series=None, store_name=None,
+            store_secrets=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):

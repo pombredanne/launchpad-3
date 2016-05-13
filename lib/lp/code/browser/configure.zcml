@@ -566,7 +566,7 @@
 
     <browser:pages
         for="lp.code.browser.branchmergeproposal.ICodeReviewNewRevisions"
-        class="lp.code.browser.branchmergeproposal.CodeReviewNewRevisionsView"
+        class="lp.services.webapp.LaunchpadView"
         permission="zope.Public">
         <browser:page
             name="+comment-header"

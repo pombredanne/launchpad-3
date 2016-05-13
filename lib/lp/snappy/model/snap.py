@@ -12,6 +12,7 @@ from storm.locals import (
     DateTime,
     Desc,
     Int,
+    JSON,
     Not,
     Reference,
     Store,
@@ -59,6 +60,7 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     IPersonRoles,
     )
+from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
@@ -151,10 +153,20 @@ class Snap(Storm, WebhookTargetMixin):
 
     private = Bool(name='private')
 
+    store_upload = Bool(name='store_upload', allow_none=False)
+
+    store_series_id = Int(name='store_series', allow_none=True)
+    store_series = Reference(store_series_id, 'SnappySeries.id')
+
+    store_name = Unicode(name='store_name', allow_none=True)
+
+    store_secrets = JSON('store_secrets', allow_none=True)
+
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None,
                  require_virtualized=True, date_created=DEFAULT,
-                 private=False):
+                 private=False, store_upload=False, store_series=None,
+                 store_name=None, store_secrets=None):
         """Construct a `Snap`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
@@ -171,6 +183,10 @@ class Snap(Storm, WebhookTargetMixin):
         self.date_created = date_created
         self.date_last_modified = date_created
         self.private = private
+        self.store_upload = store_upload
+        self.store_series = store_series
+        self.store_name = store_name
+        self.store_secrets = store_secrets
 
     @property
     def valid_webhook_event_types(self):
@@ -268,6 +284,17 @@ class Snap(Storm, WebhookTargetMixin):
                 and (
                     das.processor.supports_virtualized
                     or not self.require_virtualized))]
+
+    @property
+    def can_upload_to_store(self):
+        return (
+            config.snappy.store_upload_url is not None and
+            config.snappy.store_url is not None and
+            self.store_upload and
+            self.store_series is not None and
+            self.store_name is not None and
+            self.store_secrets is not None and
+            "discharge" in self.store_secrets)
 
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
@@ -425,7 +452,9 @@ class SnapSet:
 
     def new(self, registrant, owner, distro_series, name, description=None,
             branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=DEFAULT, private=False):
+            processors=None, date_created=DEFAULT, private=False,
+            store_upload=False, store_series=None, store_name=None,
+            store_secrets=None):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -450,7 +479,9 @@ class SnapSet:
             registrant, owner, distro_series, name, description=description,
             branch=branch, git_ref=git_ref,
             require_virtualized=require_virtualized, date_created=date_created,
-            private=private)
+            private=private, store_upload=store_upload,
+            store_series=store_series, store_name=store_name,
+            store_secrets=store_secrets)
         store.add(snap)
 
         if processors is None:

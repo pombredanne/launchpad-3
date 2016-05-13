@@ -49,6 +49,7 @@ from lp.services.database.interfaces import (
     IStore,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -66,6 +67,10 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapFile,
     )
 from lp.snappy.mail.snapbuild import SnapBuildMailer
+from lp.snappy.model.snapbuildjob import (
+    SnapBuildJob,
+    SnapBuildJobType,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -379,6 +384,20 @@ class SnapBuild(PackageBuildMixin, Storm):
         if self.estimate:
             return self.eta
         return self.date_finished
+
+    @property
+    def store_upload_jobs(self):
+        jobs = Store.of(self).find(
+            SnapBuildJob,
+            SnapBuildJob.snapbuild == self,
+            SnapBuildJob.job_type == SnapBuildJobType.STORE_UPLOAD)
+        jobs.order_by(Desc(SnapBuildJob.job_id))
+
+        def preload_jobs(rows):
+            load_related(Job, rows, ["job_id"])
+
+        return DecoratedResultSet(
+            jobs, lambda job: job.makeDerived(), pre_iter_hook=preload_jobs)
 
 
 @implementer(ISnapBuildSet)

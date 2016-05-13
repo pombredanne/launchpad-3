@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -158,6 +158,7 @@ from lp.services.webapp.url import urlappend
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.livefs import ILiveFSSet
@@ -803,6 +804,7 @@ class LaunchpadRootNavigation(Navigation):
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,
         '+snaps': ISnapSet,
+        '+snappy-series': ISnappySeriesSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,

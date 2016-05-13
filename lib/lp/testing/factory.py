@@ -275,6 +275,7 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -4606,7 +4607,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSnap(self, registrant=None, owner=None, distroseries=None,
                  name=None, branch=None, git_ref=None,
                  require_virtualized=True, processors=None,
-                 date_created=DEFAULT, private=False):
+                 date_created=DEFAULT, private=False, store_upload=False,
+                 store_series=None, store_name=None, store_secrets=None):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4622,7 +4624,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             registrant, owner, distroseries, name,
             require_virtualized=require_virtualized, processors=processors,
             date_created=date_created, branch=branch, git_ref=git_ref,
-            private=private)
+            private=private, store_upload=store_upload,
+            store_series=store_series, store_name=store_name,
+            store_secrets=store_secrets)
         IStore(snap).flush()
         return snap
 
@@ -4678,6 +4682,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             libraryfile = self.makeLibraryFileAlias()
         return ProxyFactory(
             SnapFile(snapbuild=snapbuild, libraryfile=libraryfile))
+
+    def makeSnappySeries(self, registrant=None, name=None, display_name=None,
+                         status=SeriesStatus.DEVELOPMENT,
+                         date_created=DEFAULT, usable_distro_series=None):
+        """Make a new SnappySeries."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if name is None:
+            name = self.getUniqueString(u"snappy-series-name")
+        if display_name is None:
+            display_name = SPACE.join(
+                word.capitalize() for word in name.split('-'))
+        snappy_series = getUtility(ISnappySeriesSet).new(
+            registrant, name, display_name, status, date_created=date_created)
+        if usable_distro_series is not None:
+            snappy_series.usable_distro_series = usable_distro_series
+        IStore(snappy_series).flush()
+        return snappy_series
 
 
 # Some factory methods return simple Python types. We don't add
