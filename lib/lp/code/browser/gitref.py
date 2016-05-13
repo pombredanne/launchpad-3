@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import json
+from urllib import quote_plus
 
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
@@ -65,14 +66,27 @@ class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
     usedfor = IGitRef
     facet = 'branches'
     links = [
-        'create_recipe', 'create_snap', 'register_merge', 'source',
-        'view_recipes']
+        'browse_commits',
+        'create_recipe',
+        'create_snap',
+        'register_merge',
+        'source',
+        'view_recipes',
+        ]
 
     def source(self):
         """Return a link to the branch's browsing interface."""
         text = "Browse the code"
         url = self.context.getCodebrowseUrl()
         return Link(url, text, icon="info")
+
+    def browse_commits(self):
+        """Return a link to the branch's commit log."""
+        text = "All commits"
+        url = "%s/log/?h=%s" % (
+            self.context.repository.getCodebrowseUrl(),
+            quote_plus(self.context.name))
+        return Link(url, text)
 
     def register_merge(self):
         text = 'Propose for merging'
@@ -102,15 +116,6 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     def user_can_push(self):
         """Whether the user can push to this branch."""
         return check_permission("launchpad.Edit", self.context)
-
-    @property
-    def tip_commit_info(self):
-        return {
-            "sha1": self.context.commit_sha1,
-            "author": self.context.author,
-            "author_date": self.context.author_date,
-            "commit_message": self.context.commit_message,
-            }
 
     @property
     def show_merge_links(self):
@@ -161,6 +166,10 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def dependent_landing_count_text(self):
         return self._getBranchCountText(len(self.dependent_landings))
+
+    @cachedproperty
+    def commit_infos(self):
+        return self.context.getLatestCommits()
 
     @property
     def recipes_link(self):

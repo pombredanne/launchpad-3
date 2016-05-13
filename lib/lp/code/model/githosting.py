@@ -108,6 +108,22 @@ class GitHostingClient:
                 "Failed to get commit details from Git repository: %s" %
                 unicode(e))
 
+    def getLog(self, path, start, limit=None, stop=None, logger=None):
+        """See `IGitHostingClient`."""
+        try:
+            if logger is not None:
+                logger.info(
+                    "Requesting commit log for %s: "
+                    "start %s, limit %s, stop %s" %
+                    (path, start, limit, stop))
+            return self._get(
+                "/repo/%s/log/%s" % (path, quote(start)),
+                params={"limit": limit, "stop": stop})
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get commit log from Git repository: %s" %
+                unicode(e))
+
     def getMergeDiff(self, path, base, head, prerequisite=None, logger=None):
         """See `IGitHostingClient`."""
         try:

@@ -98,6 +98,27 @@
 
 </div>
 
+<metal:ref-commits define-macro="ref-commits">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      ref - the ref that has the revisions
+      commit_infos - a list of dicts of commit information (sha1, author,
+                     author_date, commit_message)
+  </tal:comment>
+  <style type="text/css">
+    .subordinate {
+      margin-left: 1em;
+    }
+  </style>
+  <dl class="commit">
+    <tal:commit repeat="commit_info commit_infos">
+      <metal:commit-text use-macro="ref/@@+macros/commit-text"/>
+    </tal:commit>
+  </dl>
+
+</metal:ref-commits>
+
 <metal:commit-text define-macro="commit-text">
 
   <tal:comment condition="nothing">
@@ -113,7 +134,7 @@
         sha1 python:commit_info['sha1'];
         author python:commit_info['author'];
         author_date python:commit_info['author_date']">
-    <a tal:attributes="href string:${context/repository/getCodebrowseUrl}/commit/?id=${sha1}"
+    <a tal:attributes="href python: context.getCodebrowseUrlForRevision(sha1)"
        tal:content="sha1/fmt:shorten/10" />
     by
     <tal:known-person condition="author/person">

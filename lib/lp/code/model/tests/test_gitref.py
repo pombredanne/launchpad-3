@@ -1,26 +1,48 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git references."""
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import hashlib
+import json
 
-from testtools.matchers import EndsWith
+import pytz
+from testtools.matchers import (
+    ContainsDict,
+    EndsWith,
+    Equals,
+    MatchesListwise,
+    MatchesStructure,
+    )
+from zope.component import getUtility
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
+from lp.code.interfaces.githosting import IGitHostingClient
+from lp.services.config import config
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     api_url,
     person_logged_in,
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.pages import webservice_for_person
 
 
@@ -63,6 +85,132 @@ class TestGitRef(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         self.assertTrue(ref.private)
         self.assertEqual(InformationType.USERDATA, ref.information_type)
+
+
+class TestGitRefGetCommits(TestCaseWithFactory):
+    """Tests for retrieving commit information from a Git reference."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRefGetCommits, self).setUp()
+        [self.ref] = self.factory.makeGitRefs()
+        self.authors = [self.factory.makePerson() for _ in range(2)]
+        with admin_logged_in():
+            self.author_emails = [
+                author.preferredemail.email for author in self.authors]
+        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+        self.dates = [
+            datetime(2015, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
+            datetime(2015, 1, 2, 0, 0, 0, tzinfo=pytz.UTC),
+            ]
+        self.sha1_tip = unicode(hashlib.sha1("tip").hexdigest())
+        self.sha1_root = unicode(hashlib.sha1("root").hexdigest())
+        self.log = [
+            {
+                u"sha1": self.sha1_tip,
+                u"message": u"tip",
+                u"author": {
+                    u"name": self.authors[0].display_name,
+                    u"email": self.author_emails[0],
+                    u"time": int((self.dates[1] - epoch).total_seconds()),
+                    },
+                u"committer": {
+                    u"name": self.authors[1].display_name,
+                    u"email": self.author_emails[1],
+                    u"time": int((self.dates[1] - epoch).total_seconds()),
+                    },
+                u"parents": [self.sha1_root],
+                u"tree": unicode(hashlib.sha1("").hexdigest()),
+                },
+            {
+                u"sha1": self.sha1_root,
+                u"message": u"root",
+                u"author": {
+                    u"name": self.authors[1].display_name,
+                    u"email": self.author_emails[1],
+                    u"time": int((self.dates[0] - epoch).total_seconds()),
+                    },
+                u"committer": {
+                    u"name": self.authors[0].display_name,
+                    u"email": self.author_emails[0],
+                    u"time": int((self.dates[0] - epoch).total_seconds()),
+                    },
+                u"parents": [],
+                u"tree": unicode(hashlib.sha1("").hexdigest()),
+                },
+            ]
+        self.hosting_client = FakeMethod()
+        self.hosting_client.getLog = FakeMethod(result=self.log)
+        self.useFixture(
+            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
+
+    def test_basic(self):
+        revisions = self.ref.getCommits(self.sha1_tip)
+        path = self.ref.repository.getInternalPath()
+        self.assertEqual(
+            [((path, self.sha1_tip),
+              {"limit": None, "stop": None, "logger": None})],
+            self.hosting_client.getLog.calls)
+        self.assertThat(revisions, MatchesListwise([
+            ContainsDict({
+                "sha1": Equals(self.sha1_tip),
+                "author": MatchesStructure.byEquality(person=self.authors[0]),
+                "author_date": Equals(self.dates[1]),
+                "commit_message": Equals(u"tip"),
+                }),
+            ContainsDict({
+                "sha1": Equals(self.sha1_root),
+                "author": MatchesStructure.byEquality(person=self.authors[1]),
+                "author_date": Equals(self.dates[0]),
+                "commit_message": Equals(u"root"),
+                }),
+            ]))
+        key = u"%s:git-revisions:%s:%s" % (
+            config.instance_name, path, self.sha1_tip)
+        self.assertEqual(
+            json.dumps(self.log),
+            getUtility(IMemcacheClient).get(key.encode("UTF-8")))
+
+    def test_cache(self):
+        path = self.ref.repository.getInternalPath()
+        key = u"%s:git-revisions:%s:%s" % (
+            config.instance_name, path, self.sha1_tip)
+        getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
+        self.assertEqual([], self.ref.getCommits(self.sha1_tip))
+
+    def test_limit_stop(self):
+        self.ref.getCommits(self.sha1_tip, limit=10, stop=self.sha1_root)
+        path = self.ref.repository.getInternalPath()
+        self.assertEqual(
+            [((path, self.sha1_tip),
+              {"limit": 10, "stop": self.sha1_root, "logger": None})],
+            self.hosting_client.getLog.calls)
+        key = u"%s:git-revisions:%s:%s:limit=10:stop=%s" % (
+            config.instance_name, path, self.sha1_tip, self.sha1_root)
+        self.assertEqual(
+            json.dumps(self.log),
+            getUtility(IMemcacheClient).get(key.encode("UTF-8")))
+
+    def test_start_date(self):
+        revisions = self.ref.getCommits(
+            self.sha1_tip, start_date=(self.dates[1] - timedelta(seconds=1)))
+        path = self.ref.repository.getInternalPath()
+        self.assertThat(revisions, MatchesListwise([
+            ContainsDict({"sha1": Equals(self.sha1_tip)}),
+            ]))
+        key = u"%s:git-revisions:%s:%s" % (
+            config.instance_name, path, self.sha1_tip)
+        self.assertEqual(
+            json.dumps(self.log),
+            getUtility(IMemcacheClient).get(key.encode("UTF-8")))
+
+    def test_end_date(self):
+        revisions = self.ref.getCommits(
+            self.sha1_tip, end_date=(self.dates[1] - timedelta(seconds=1)))
+        self.assertThat(revisions, MatchesListwise([
+            ContainsDict({"sha1": Equals(self.sha1_root)}),
+            ]))
 
 
 class TestGitRefWebservice(TestCaseWithFactory):

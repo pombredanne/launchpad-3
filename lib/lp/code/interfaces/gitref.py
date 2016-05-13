@@ -314,6 +314,24 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
 
+    def getCommits(start, limit=None, stop=None,
+                   start_date=None, end_date=None, logger=None):
+        """Get commit information from this reference.
+
+        :param start: The commit to start listing from.
+        :param limit: If not None, return no more than this many commits.
+        :param stop: If not None, ignore this commit and its ancestors.
+        :param start_date: If not None, ignore commits before this date.
+        :param end_date: If not None, ignore commits after this date.
+        :param logger: An optional logger.
+        :return: An iterable of commit information dicts.
+        """
+
+    def getLatestCommits(quantity=10):
+        """Return a specific number of the latest commits in this ref."""
+
+    has_commits = Attribute("Whether this reference has any commits.")
+
 
 class IGitRefBatchNavigator(ITableBatchNavigator):
     pass

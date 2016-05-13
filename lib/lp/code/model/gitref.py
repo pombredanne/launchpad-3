@@ -7,6 +7,7 @@ __all__ = [
     'GitRefFrozen',
     ]
 
+import json
 from urllib import quote_plus
 
 from lazr.lifecycle.event import ObjectCreatedEvent
@@ -22,6 +23,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
@@ -40,17 +42,20 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
     )
+from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.memcache.interfaces import IMemcacheClient
 
 
 class GitRefMixin:
@@ -241,6 +246,63 @@ class GitRefMixin:
     def pending_writes(self):
         """See `IGitRef`."""
         return self.repository.pending_writes
+
+    def _getLog(self, start, limit=None, stop=None, logger=None):
+        hosting_client = getUtility(IGitHostingClient)
+        memcache_client = getUtility(IMemcacheClient)
+        path = self.repository.getInternalPath()
+        memcache_key = "%s:git-revisions:%s:%s" % (
+            config.instance_name, path, start)
+        if limit is not None:
+            memcache_key += ":limit=%s" % limit
+        if stop is not None:
+            memcache_key += ":stop=%s" % stop
+        if isinstance(memcache_key, unicode):
+            memcache_key = memcache_key.encode("UTF-8")
+        log = None
+        cached_log = memcache_client.get(memcache_key)
+        if cached_log is not None:
+            try:
+                log = json.loads(cached_log)
+            except Exception as e:
+                logger.info(
+                    "Cannot load cached log information for %s:%s (%s); "
+                    "deleting" % (path, start, str(e)))
+                memcache_client.delete(memcache_key)
+        if log is None:
+            log = removeSecurityProxy(hosting_client.getLog(
+                path, start, limit=limit, stop=stop, logger=logger))
+            memcache_client.set(memcache_key, json.dumps(log))
+        return log
+
+    def getCommits(self, start, limit=None, stop=None,
+                   start_date=None, end_date=None, logger=None):
+        # Circular import.
+        from lp.code.model.gitrepository import parse_git_commits
+
+        log = self._getLog(start, limit=limit, stop=stop, logger=logger)
+        parsed_commits = parse_git_commits(log)
+        revisions = []
+        for commit in log:
+            if "sha1" not in commit:
+                continue
+            parsed_commit = parsed_commits[commit["sha1"]]
+            author_date = parsed_commit.get("author_date")
+            if start_date is not None:
+                if author_date is None or author_date < start_date:
+                    continue
+            if end_date is not None:
+                if author_date is None or author_date > end_date:
+                    continue
+            revisions.append(parsed_commit)
+        return revisions
+
+    def getLatestCommits(self, quantity=10):
+        return self.getCommits(self.commit_sha1, limit=quantity)
+
+    @property
+    def has_commits(self):
+        return len(self.getLatestCommits())
 
     @property
     def recipes(self):
