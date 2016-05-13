@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import timedelta
-from mock import patch
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.exceptions import LostObjectError
@@ -380,12 +379,12 @@ class TestSnap(TestCaseWithFactory):
         self.assertEqual([build2.id], summary2.keys())
 
     def test_getBuildSummariesForSnapBuildIds_empty_input(self):
-        snap1 = self.factory.makeSnap()
-        build1 = self.factory.makeSnapBuild(snap=snap1)
-        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds(None))
-        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds([]))
-        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds(()))
-        self.assertEqual({}, snap1.getBuildSummariesForSnapBuildIds([None]))
+        snap = self.factory.makeSnap()
+        self.factory.makeSnapBuild(snap=snap)
+        self.assertEqual({}, snap.getBuildSummariesForSnapBuildIds(None))
+        self.assertEqual({}, snap.getBuildSummariesForSnapBuildIds([]))
+        self.assertEqual({}, snap.getBuildSummariesForSnapBuildIds(()))
+        self.assertEqual({}, snap.getBuildSummariesForSnapBuildIds([None]))
 
     def test_getBuildSummariesForSnapBuildIds_not_matching_snap(self):
         snap1 = self.factory.makeSnap()
@@ -411,9 +410,9 @@ class TestSnap(TestCaseWithFactory):
         self.assertIsNone(build.log)
         summary = snap.getBuildSummariesForSnapBuildIds([build.id])
         self.assertIsNone(summary[build.id]["build_log_size"])
-        with patch("lp.snappy.model.snapbuild.SnapBuild.log") as mock_log:
-            mock_log.content.filesize = 12345
-            summary = snap.getBuildSummariesForSnapBuildIds([build.id])
+        removeSecurityProxy(build).log = self.factory.makeLibraryFileAlias(
+            content='x' * 12345, db_only=True)
+        summary = snap.getBuildSummariesForSnapBuildIds([build.id])
         self.assertEqual(12345, summary[build.id]["build_log_size"])
 
     def test_getBuildSummariesForSnapBuildIds_query_count(self):

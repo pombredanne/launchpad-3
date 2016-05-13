@@ -32,7 +32,7 @@ from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
-from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.processor import Processor
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
@@ -73,7 +73,6 @@ from lp.services.database.stormexpr import (
     NullsLast,
     )
 from lp.services.features import getFeatureFlag
-from lp.services.propertycache import get_property_cache
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
@@ -325,14 +324,7 @@ class Snap(Storm, WebhookTargetMixin):
         builds = self._getBuilds(filter_term, order_by)
 
         # Prefetch data to keep DB query count constant
-        build_queues = list(Store.of(self).find(
-            BuildQueue,
-            BuildQueue._build_farm_job_id.is_in(
-                build.build_farm_job_id for build in builds)))
-        prefetched_data = dict((bq._build_farm_job_id) for bq in build_queues)
-        for build in builds:
-            bq = prefetched_data.get(build.build_farm_job_id)
-            get_property_cache(build).buildqueue_record = bq
+        getUtility(IBuildQueueSet).preloadForBuildFarmJobs(builds)
 
         for build in builds:
             if build.date is not None:
