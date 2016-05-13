@@ -33,6 +33,19 @@ class FakeMethodGenUefiKeys(FakeMethod):
         write_file(self.upload.uefi_cert, "")
 
 
+class FakeMethodGenkmodKeys(FakeMethod):
+    """Fake execution of generation of Uefi keys pairs."""
+    def __init__(self, upload=None, *args, **kwargs):
+        super(FakeMethodGenUefiKeys, self).__init__(*args, **kwargs)
+        self.upload = upload
+
+    def __call__(self, *args, **kwargs):
+        super(FakeMethodGenUefiKeys, self).__call__(*args, **kwargs)
+
+        write_file(self.upload.kmod_pem, "")
+        write_file(self.upload.kmod_x509, "")
+
+
 class FakeConfig:
     """A fake publisher configuration for the main archive."""
     def __init__(self, distroroot, signingroot):
@@ -68,12 +81,20 @@ class TestSigning(TestCase):
             'ubuntu-archive', 'testing')
         self.testcase_cn = '/CN=PPA ubuntu-archive testing/'
 
-    def setUpKeyAndCert(self, create=True):
+    def setUpUefiKeys(self, create=True):
         self.key = os.path.join(self.signing_dir, "uefi.key")
         self.cert = os.path.join(self.signing_dir, "uefi.crt")
         if create:
             write_file(self.key, "")
             write_file(self.cert, "")
+
+    def setUpKmodKeys(self, create=True):
+        self.kmod_pem = os.path.join(self.signing_dir, "kmod.pem")
+        self.kmod_x509 = os.path.join(self.signing_dir, "kmod.x509")
+        self.kmod_genkey = os.path.join(self.signing_dir, "kmod.genkey")
+        if create:
+            write_file(self.kmod_pem, "")
+            write_file(self.kmod_x509, "")
 
     def openArchive(self, loader_type, version, arch):
         self.path = os.path.join(
@@ -84,9 +105,10 @@ class TestSigning(TestCase):
     def process(self):
         self.archive.close()
         self.buffer.close()
-        fake_call = FakeMethod()
+        fake_call = FakeMethod(result=0)
         upload = SigningUpload()
         upload.signUefi = FakeMethod()
+        upload.signKmod = FakeMethod()
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload.process(self.pubconf, self.path, self.suite)
         # Under no circumstances is it safe to execute actual commands.
@@ -112,21 +134,25 @@ class TestSigning(TestCase):
         self.pubconf = FakeConfig(self.temp_dir, None)
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
+        self.assertEqual(1, upload.signKmod.call_count)
 
     def test_missing_key_and_cert(self):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.  Signing is attempted.
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
+        self.assertEqual(1, upload.signKmod.call_count)
 
     def test_no_efi_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.
         # Nothing is signed.
-        self.setUpKeyAndCert()
+        self.setUpUefiKeys()
         self.openArchive("empty", "1.0", "amd64")
         self.archive.add_file("1.0/hello", "world")
         upload = self.process()
@@ -136,7 +162,7 @@ class TestSigning(TestCase):
 
     def test_already_exists(self):
         # If the target directory already exists, processing fails.
-        self.setUpKeyAndCert()
+        self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         os.makedirs(os.path.join(self.getSignedPath("test", "amd64"), "1.0"))
@@ -144,7 +170,7 @@ class TestSigning(TestCase):
 
     def test_bad_umask(self):
         # The umask must be 0o022 to avoid incorrect permissions.
-        self.setUpKeyAndCert()
+        self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/dir/file.efi", "foo")
         os.umask(0o002)  # cleanup already handled by setUp
@@ -153,8 +179,8 @@ class TestSigning(TestCase):
     def test_correct_uefi_signing_command_executed(self):
         # Check that calling signUefi() will generate the expected command
         # when appropriate keys are present.
-        self.setUpKeyAndCert()
-        fake_call = FakeMethod()
+        self.setUpUefiKeys()
+        fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
@@ -173,8 +199,8 @@ class TestSigning(TestCase):
     def test_correct_uefi_signing_command_executed_no_keys(self):
         # Check that calling signUefi() will generate no commands when
         # no keys are present.
-        self.setUpKeyAndCert(create=False)
-        fake_call = FakeMethod()
+        self.setUpUefiKeys(create=False)
+        fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
@@ -188,8 +214,8 @@ class TestSigning(TestCase):
         # Check that calling generateUefiKeys() will generate the
         # expected command.
         self.setUpPPA()
-        self.setUpKeyAndCert(create=False)
-        fake_call = FakeMethod()
+        self.setUpUefiKeys(create=False)
+        fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
         upload.setTargetDirectory(
@@ -205,17 +231,99 @@ class TestSigning(TestCase):
             ]
         self.assertEqual(expected_cmd, args)
 
-    def test_signs_image(self):
+    def test_correct_kmod_signing_command_executed(self):
+        # Check that calling signKmod() will generate the expected command
+        # when appropriate keys are present.
+        self.setUpKmodKeys()
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.generateKmodKeys = FakeMethod()
+        upload.setTargetDirectory(
+            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signKmod('t.ko')
+        self.assertEqual(1, fake_call.call_count)
+        # Assert command form.
+        args = fake_call.calls[0][0][0]
+        expected_cmd = [
+            'kmodsign', '-d', self.kmod_pem, self.kmod_x509, 't.ko'
+            ]
+        self.assertEqual(expected_cmd, args)
+        self.assertEqual(0, upload.generateKmodKeys.call_count)
+
+    def test_correct_kmod_signing_command_executed_no_keys(self):
+        # Check that calling signKmod() will generate no commands when
+        # no keys are present.
+        self.setUpKmodKeys(create=False)
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.generateKmodKeys = FakeMethod()
+        upload.setTargetDirectory(
+            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signUefi('t.ko')
+        self.assertEqual(0, fake_call.call_count)
+        self.assertEqual(0, upload.generateKmodKeys.call_count)
+
+    def test_correct_kmod_keygen_command_executed(self):
+        # Check that calling generateUefiKeys() will generate the
+        # expected command.
+        self.setUpPPA()
+        self.setUpKmodKeys(create=False)
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.setTargetDirectory(
+            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.generateKmodKeys()
+        self.assertEqual(2, fake_call.call_count)
+        # Assert the actual command matches.
+        args = fake_call.calls[0][0][0]
+        expected_cmd = [
+            'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
+            '-days', '3650', '-batch', '-x509',
+            '-subj', '/CN=PPA ubuntu-archive testing kmod/',
+            '-config', self.kmod_genkey, '-outform', 'PEM',
+            '-out', self.kmod_pem, '-keyout', self.kmod_pem
+            ]
+        self.assertEqual(expected_cmd, args)
+        args = fake_call.calls[1][0][0]
+        expected_cmd = [
+            'openssl', 'x509', '-in', self.kmod_pem, '-outform', 'DER',
+            '-out', self.kmod_x509
+            ]
+        self.assertEqual(expected_cmd, args)
+
+    def test_signs_uefi_image(self):
         # Each image in the tarball is signed.
-        self.setUpKeyAndCert()
+        self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
 
+    def test_signs_kmod_image(self):
+        # Each image in the tarball is signed.
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.ko", "")
+        upload = self.process()
+        self.assertEqual(1, upload.signKmod.call_count)
+
+    def test_signs_combo_image(self):
+        # Each image in the tarball is signed.
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.archive.add_file("1.0/empty2.ko", "")
+        upload = self.process()
+        self.assertEqual(1, upload.signUefi.call_count)
+        self.assertEqual(2, upload.signKmod.call_count)
+
     def test_installed(self):
         # Files in the tarball are installed correctly.
-        self.setUpKeyAndCert()
+        self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.process()
@@ -231,7 +339,7 @@ class TestSigning(TestCase):
     def test_installed_existing_uefi(self):
         # Files in the tarball are installed correctly.
         os.makedirs(os.path.join(self.getDistsPath(), "uefi"))
-        self.setUpKeyAndCert()
+        self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.process()
@@ -247,7 +355,7 @@ class TestSigning(TestCase):
     def test_installed_existing_signing(self):
         # Files in the tarball are installed correctly.
         os.makedirs(os.path.join(self.getDistsPath(), "signing"))
-        self.setUpKeyAndCert()
+        self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.process()
@@ -262,10 +370,10 @@ class TestSigning(TestCase):
 
     def test_create_uefi_keys_autokey_off(self):
         # Keys are not created.
-        self.setUpKeyAndCert(create=False)
+        self.setUpUefiKeys(create=False)
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
-        fake_call = FakeMethod()
+        fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
         upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
@@ -279,10 +387,10 @@ class TestSigning(TestCase):
     def test_create_uefi_keys_autokey_on(self):
         # Keys are created on demand.
         self.setUpPPA()
-        self.setUpKeyAndCert(create=False)
+        self.setUpUefiKeys(create=False)
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
-        fake_call = FakeMethod()
+        fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
         upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
