@@ -203,26 +203,24 @@ log entries first.
     >>> hosting_client = FakeMethod()
     >>> hosting_client.getLog = FakeMethod(result=[])
     >>> for i in range(2):
-    ...     hosting_client.getLog.result.extend([
-    ...         {
-    ...             u'sha1': unicode(i * 2 + 1) * 40,
-    ...             u'message': u'and it works!',
-    ...             u'author': {
-    ...                 u'name': bmp.registrant.display_name,
-    ...                 u'email': bmp.registrant.preferredemail.email,
-    ...                 u'time': int((commit_date - epoch).total_seconds()),
-    ...                 },
+    ...     hosting_client.getLog.result.insert(0, {
+    ...         u'sha1': unicode(i * 2) * 40,
+    ...         u'message': u'Testing commits in conversation',
+    ...         u'author': {
+    ...             u'name': bmp.registrant.display_name,
+    ...             u'email': bmp.registrant.preferredemail.email,
+    ...             u'time': int((commit_date - epoch).total_seconds()),
     ...             },
-    ...         {
-    ...             u'sha1': unicode(i * 2) * 40,
-    ...             u'message': u'Testing commits in conversation',
-    ...             u'author': {
-    ...                 u'name': bmp.registrant.display_name,
-    ...                 u'email': bmp.registrant.preferredemail.email,
-    ...                 u'time': int((commit_date - epoch).total_seconds()),
-    ...                 },
+    ...         })
+    ...     hosting_client.getLog.result.insert(0, {
+    ...         u'sha1': unicode(i * 2 + 1) * 40,
+    ...         u'message': u'and it works!',
+    ...         u'author': {
+    ...             u'name': bmp.registrant.display_name,
+    ...             u'email': bmp.registrant.preferredemail.email,
+    ...             u'time': int((commit_date - epoch).total_seconds()),
     ...             },
-    ...         ])
+    ...         })
     ...     commit_date += timedelta(days=1)
     >>> url = canonical_url(bmp)
     >>> logout()
