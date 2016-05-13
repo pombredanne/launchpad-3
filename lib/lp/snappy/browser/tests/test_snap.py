@@ -850,7 +850,7 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             ["amd64", "i386"],
             [build.distro_arch_series.architecturetag for build in builds])
         self.assertContentEqual(
-            [PackagePublishingPocket.RELEASE],
+            [PackagePublishingPocket.UPDATES],
             set(build.pocket for build in builds))
         self.assertContentEqual(
             [2505], set(build.buildqueue_record.lastscore for build in builds))
@@ -886,7 +886,7 @@ class TestSnapRequestBuildsView(BrowserTestCase):
         # A duplicate build request causes a notification.
         self.snap.requestBuild(
             self.person, self.ubuntu.main_archive, self.distroseries["amd64"],
-            PackagePublishingPocket.RELEASE)
+            PackagePublishingPocket.UPDATES)
         browser = self.getViewBrowser(
             self.snap, "+request-builds", user=self.person)
         self.assertTrue(browser.getControl("amd64").selected)
