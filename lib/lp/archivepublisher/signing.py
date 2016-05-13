@@ -122,6 +122,27 @@ class SigningUpload(CustomUpload):
                 if filename.endswith(".efi"):
                     yield (os.path.join(dirpath, filename), self.signUefi)
 
+    def getKeys(self, which, generate, *keynames):
+        """Validate and return the uefi key and cert for encryption."""
+
+        if self.autokey:
+            for keyfile in keynames:
+                if not os.path.exists(keyfile):
+                    generate()
+                    break
+
+        valid = True
+        for keyfile in keynames:
+            if not os.access(keyfile, os.R_OK):
+                if self.logger is not None:
+                    self.logger.warning(
+                        "%s key %s not readable" % (which, keyfile))
+                valid = False
+
+        if not valid:
+            return [None for k in keynames]
+        return keynames
+
     def generateUefiKeys(self):
         """Generate new UEFI Keys for this archive."""
         directory = os.path.dirname(self.uefi_key)
@@ -149,27 +170,6 @@ class SigningUpload(CustomUpload):
 
         if os.path.exists(self.uefi_cert):
             os.chmod(self.uefi_cert, 0o644)
-
-    def getKeys(self, which, generate, *keynames):
-        """Validate and return the uefi key and cert for encryption."""
-
-        if self.autokey:
-            for keyfile in keynames:
-                if not os.path.exists(keyfile):
-                    generate()
-                    break
-
-        valid = True
-        for keyfile in keynames:
-            if not os.access(keyfile, os.R_OK):
-                if self.logger is not None:
-                    self.logger.warning(
-                        "%s key %s not readable" % (which, keyfile))
-                valid = False
-
-        if not valid:
-            return [None for k in keynames]
-        return keynames
 
     def signUefi(self, image):
         """Attempt to sign an image."""
