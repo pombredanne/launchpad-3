@@ -67,12 +67,12 @@ class SigningUpload(CustomUpload):
             if self.logger is not None:
                 self.logger.warning(
                     "No signing root configured for this archive")
-            self.key = None
-            self.cert = None
+            self.uefi_key = None
+            self.uefi_cert = None
             self.autokey = False
         else:
-            self.key = os.path.join(pubconf.signingroot, "uefi.key")
-            self.cert = os.path.join(pubconf.signingroot, "uefi.crt")
+            self.uefi_key = os.path.join(pubconf.signingroot, "uefi.key")
+            self.uefi_cert = os.path.join(pubconf.signingroot, "uefi.crt")
             self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
@@ -116,7 +116,7 @@ class SigningUpload(CustomUpload):
 
     def generateUefiKeys(self):
         """Generate new UEFI Keys for this archive."""
-        directory = os.path.dirname(self.key)
+        directory = os.path.dirname(self.uefi_key)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -130,8 +130,8 @@ class SigningUpload(CustomUpload):
         try:
             new_key_cmd = [
                 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-                '-subj', common_name, '-keyout', self.key, '-out', self.cert,
-                '-days', '3650', '-nodes', '-sha256',
+                '-subj', common_name, '-keyout', self.uefi_key,
+                '-out', self.uefi_cert, '-days', '3650', '-nodes', '-sha256',
                 ]
             if subprocess.call(new_key_cmd) != 0:
                 # Just log this rather than failing, since custom upload errors
@@ -143,32 +143,32 @@ class SigningUpload(CustomUpload):
         finally:
             os.umask(old_mask)
 
-        if os.path.exists(self.cert):
-            os.chmod(self.cert, 0o644)
+        if os.path.exists(self.uefi_cert):
+            os.chmod(self.uefi_cert, 0o644)
 
     def getUefiKeys(self):
         """Validate and return the uefi key and cert for encryption."""
 
-        if self.key and self.cert:
+        if self.uefi_key and self.uefi_cert:
             # If neither of the key files exists then attempt to
             # generate them.
-            if (self.autokey and not os.path.exists(self.key)
-                and not os.path.exists(self.cert)):
+            if (self.autokey and not os.path.exists(self.uefi_key)
+                and not os.path.exists(self.uefi_cert)):
                 self.generateUefiKeys()
 
             # If we have keys, but cannot read them they are dead to us.
-            if not os.access(self.key, os.R_OK):
+            if not os.access(self.uefi_key, os.R_OK):
                 if self.logger is not None:
                     self.logger.warning(
-                        "UEFI private key %s not readable" % self.key)
-                self.key = None
-            if not os.access(self.cert, os.R_OK):
+                        "UEFI private key %s not readable" % self.uefi_key)
+                self.uefi_key = None
+            if not os.access(self.uefi_cert, os.R_OK):
                 if self.logger is not None:
                     self.logger.warning(
-                        "UEFI certificate %s not readable" % self.cert)
-                self.cert = None
+                        "UEFI certificate %s not readable" % self.uefi_cert)
+                self.uefi_cert = None
 
-        return (self.key, self.cert)
+        return (self.uefi_key, self.uefi_cert)
 
     def signUefi(self, image):
         """Attempt to sign an image."""

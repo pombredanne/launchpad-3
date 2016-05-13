@@ -29,8 +29,8 @@ class FakeMethodGenUefiKeys(FakeMethod):
     def __call__(self, *args, **kwargs):
         super(FakeMethodGenUefiKeys, self).__call__(*args, **kwargs)
 
-        write_file(self.upload.key, "")
-        write_file(self.upload.cert, "")
+        write_file(self.upload.uefi_key, "")
+        write_file(self.upload.uefi_cert, "")
 
 
 class FakeConfig:
