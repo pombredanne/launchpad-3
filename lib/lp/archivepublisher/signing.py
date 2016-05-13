@@ -107,12 +107,12 @@ class SigningUpload(CustomUpload):
         except ValueError:
             return None
 
-    def findEfiFilenames(self):
-        """Find all the *.efi files in an extracted tarball."""
+    def findSigningHandlers(self):
+        """Find all the signable files in an extracted tarball."""
         for dirpath, dirnames, filenames in os.walk(self.tmpdir):
             for filename in filenames:
                 if filename.endswith(".efi"):
-                    yield os.path.join(dirpath, filename)
+                    yield (os.path.join(dirpath, filename), self.signUefi)
 
     def generateUefiKeys(self):
         """Generate new UEFI Keys for this archive."""
@@ -172,6 +172,7 @@ class SigningUpload(CustomUpload):
 
     def signUefi(self, image):
         """Attempt to sign an image."""
+        remove_if_exists("%s.signed" % image)
         (key, cert) = self.getUefiKeys()
         if not key or not cert:
             return
@@ -189,10 +190,9 @@ class SigningUpload(CustomUpload):
         No actual extraction is required.
         """
         super(SigningUpload, self).extract()
-        efi_filenames = list(self.findEfiFilenames())
-        for efi_filename in efi_filenames:
-            remove_if_exists("%s.signed" % efi_filename)
-            self.signUefi(efi_filename)
+        filehandlers = list(self.findSigningHandlers())
+        for (filename, handler) in filehandlers:
+            handler(filename)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
