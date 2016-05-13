@@ -146,34 +146,32 @@ class SigningUpload(CustomUpload):
         if os.path.exists(self.uefi_cert):
             os.chmod(self.uefi_cert, 0o644)
 
-    def getUefiKeys(self):
+    def getKeys(self, which, generate, *keynames):
         """Validate and return the uefi key and cert for encryption."""
 
-        if self.uefi_key and self.uefi_cert:
-            # If neither of the key files exists then attempt to
-            # generate them.
-            if (self.autokey and not os.path.exists(self.uefi_key)
-                and not os.path.exists(self.uefi_cert)):
-                self.generateUefiKeys()
+        if self.autokey:
+            for keyfile in keynames:
+                if not os.path.exists(keyfile):
+                    generate()
+                    break
 
-            # If we have keys, but cannot read them they are dead to us.
-            if not os.access(self.uefi_key, os.R_OK):
+        valid = True
+        for keyfile in keynames:
+            if not os.access(keyfile, os.R_OK):
                 if self.logger is not None:
                     self.logger.warning(
-                        "UEFI private key %s not readable" % self.uefi_key)
-                self.uefi_key = None
-            if not os.access(self.uefi_cert, os.R_OK):
-                if self.logger is not None:
-                    self.logger.warning(
-                        "UEFI certificate %s not readable" % self.uefi_cert)
-                self.uefi_cert = None
+                        "%s key %s not readable" % (which, keyfile))
+                valid = False
 
-        return (self.uefi_key, self.uefi_cert)
+        if not valid:
+            return [None for k in keynames]
+        return keynames
 
     def signUefi(self, image):
         """Attempt to sign an image."""
         remove_if_exists("%s.signed" % image)
-        (key, cert) = self.getUefiKeys()
+        (key, cert) = self.getKeys('UEFI', self.generateUefiKeys,
+            self.uefi_key, self.uefi_cert)
         if not key or not cert:
             return
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
