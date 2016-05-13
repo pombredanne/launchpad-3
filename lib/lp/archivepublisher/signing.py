@@ -107,6 +107,14 @@ class SigningUpload(CustomUpload):
         except ValueError:
             return None
 
+    def getArchiveOwner(self):
+        # XXX: pull out the PPA owner and name to seed key CN
+        archive_name = os.path.dirname(self.archiveroot)
+        owner_name = os.path.basename(os.path.dirname(archive_name))
+        archive_name = os.path.basename(archive_name)
+
+        return owner_name + ' ' + archive_name
+
     def findSigningHandlers(self):
         """Find all the signable files in an extracted tarball."""
         for dirpath, dirnames, filenames in os.walk(self.tmpdir):
@@ -120,11 +128,7 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        # XXX: pull out the PPA owner and name to seed key CN
-        archive_name = os.path.dirname(self.archiveroot)
-        owner_name = os.path.basename(os.path.dirname(archive_name))
-        archive_name = os.path.basename(archive_name)
-        common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
+        common_name = '/CN=PPA ' + self.getArchiveOwner() + '/'
 
         old_mask = os.umask(0o077)
         try:
