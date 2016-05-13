@@ -134,13 +134,13 @@ class SigningUpload(CustomUpload):
 
         if self.autokey:
             for keyfile in keynames:
-                if not os.path.exists(keyfile):
+                if keyfile and not os.path.exists(keyfile):
                     generate()
                     break
 
         valid = True
         for keyfile in keynames:
-            if not os.access(keyfile, os.R_OK):
+            if keyfile and not os.access(keyfile, os.R_OK):
                 if self.logger is not None:
                     self.logger.warning(
                         "%s key %s not readable" % (which, keyfile))
