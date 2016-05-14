@@ -387,6 +387,7 @@ class TestSnap(TestCaseWithFactory):
         self.assertEqual({}, snap.getBuildSummariesForSnapBuildIds([None]))
 
     def test_getBuildSummariesForSnapBuildIds_not_matching_snap(self):
+        # Should not return build summaries of other snaps.
         snap1 = self.factory.makeSnap()
         snap2 = self.factory.makeSnap()
         build1 = self.factory.makeSnapBuild(snap=snap1)
@@ -395,6 +396,8 @@ class TestSnap(TestCaseWithFactory):
         self.assertEqual({}, summary1)
 
     def test_getBuildSummariesForSnapBuildIds_when_complete_field(self):
+        # Summary "when_complete" should be None unless estimate date or
+        # finish date is available.
         snap = self.factory.makeSnap()
         build = self.factory.makeSnapBuild(snap=snap)
         self.assertIsNone(build.date)
@@ -405,6 +408,7 @@ class TestSnap(TestCaseWithFactory):
         self.assertEqual("a moment ago", summary[build.id]["when_complete"])
 
     def test_getBuildSummariesForSnapBuildIds_log_size_field(self):
+        # Summary "build_log_size" should be None unless the build has a log.
         snap = self.factory.makeSnap()
         build = self.factory.makeSnapBuild(snap=snap)
         self.assertIsNone(build.log)
@@ -416,6 +420,7 @@ class TestSnap(TestCaseWithFactory):
         self.assertEqual(12345, summary[build.id]["build_log_size"])
 
     def test_getBuildSummariesForSnapBuildIds_query_count(self):
+        # DB query count should remain constant regardless of number of builds.
         snap = self.factory.makeSnap()
         recorder1, recorder2 = record_two_runs(
             lambda: snap.getBuildSummariesForSnapBuildIds(
