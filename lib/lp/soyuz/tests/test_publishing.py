@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -592,9 +592,14 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
         self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
-        """Tear down blows the pool dir away."""
+        """Tear down blows the pool dirs away."""
         super(TestNativePublishingBase, self).tearDown()
-        shutil.rmtree(self.config.distroroot)
+        for root in (
+                self.config.distroroot,
+                config.personalpackagearchive.root,
+                config.personalpackagearchive.private_root):
+            if os.path.exists(root):
+                shutil.rmtree(root)
 
     def getPubSource(self, *args, **kwargs):
         """Overrides `SoyuzTestPublisher.getPubSource`.
