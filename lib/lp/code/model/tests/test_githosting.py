@@ -180,6 +180,32 @@ class TestGitHostingClient(TestCase):
                 "Failed to get commit log from Git repository: Bad request",
                 self.client.getLog, "123", "refs/heads/master")
 
+    def test_getDiff(self):
+        with self.mockRequests(content=b'{"patch": ""}'):
+            diff = self.client.getDiff("123", "a", "b")
+        self.assertEqual({"patch": ""}, diff)
+        self.assertRequest("repo/123/compare/a..b", method="GET")
+
+    def test_getDiff_common_ancestor(self):
+        with self.mockRequests(content=b'{"patch": ""}'):
+            diff = self.client.getDiff("123", "a", "b", common_ancestor=True)
+        self.assertEqual({"patch": ""}, diff)
+        self.assertRequest("repo/123/compare/a...b", method="GET")
+
+    def test_getDiff_context_lines(self):
+        with self.mockRequests(content=b'{"patch": ""}'):
+            diff = self.client.getDiff("123", "a", "b", context_lines=4)
+        self.assertEqual({"patch": ""}, diff)
+        self.assertRequest(
+            "repo/123/compare/a..b?context_lines=4", method="GET")
+
+    def test_getDiff_failure(self):
+        with self.mockRequests(status_code=400, content=b"Bad request"):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get diff from Git repository: Bad request",
+                self.client.getDiff, "123", "a", "b")
+
     def test_getMergeDiff(self):
         with self.mockRequests(content=b'{"patch": ""}'):
             diff = self.client.getMergeDiff("123", "a", "b")

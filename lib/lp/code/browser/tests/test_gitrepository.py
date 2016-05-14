@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRepositoryView."""
@@ -754,6 +754,32 @@ class TestGitRepositoryEditViewInformationTypes(TestCaseWithFactory):
                 owner=owner, target=product,
                 information_type=InformationType.PROPRIETARY)
         self.assertShownTypes([InformationType.PROPRIETARY], repository)
+
+
+class TestGitRepositoryDiffView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_render(self):
+        hosting_client = FakeMethod()
+        diff = u"A fake diff\n"
+        hosting_client.getDiff = FakeMethod(result={"patch": diff})
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+diff/0123456/0123456^")
+        with person_logged_in(person):
+            self.assertEqual(
+                [((repository.getInternalPath(), "0123456^", "0123456"), {})],
+                hosting_client.getDiff.calls)
+        self.assertEqual(
+            'text/x-patch;charset=UTF-8', browser.headers["Content-Type"])
+        self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
+        self.assertEqual(
+            "attachment; filename=0123456^_0123456.diff",
+            browser.headers["Content-Disposition"])
+        self.assertEqual("A fake diff\n", browser.contents)
 
 
 class TestGitRepositoryDeletionView(BrowserTestCase):
