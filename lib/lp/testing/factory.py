@@ -4658,7 +4658,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=snap.distro_series)
         if pocket is None:
-            pocket = PackagePublishingPocket.RELEASE
+            pocket = PackagePublishingPocket.UPDATES
         snapbuild = getUtility(ISnapBuildSet).new(
             requester, snap, archive, distroarchseries, pocket,
             date_created=date_created)

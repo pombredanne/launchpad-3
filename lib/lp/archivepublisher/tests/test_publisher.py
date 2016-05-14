@@ -2913,9 +2913,9 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
     def tearDown(self):
         """Purge the archive root location. """
-        super(TestPublisherRepositorySignatures, self).tearDown()
         if self.archive_publisher is not None:
             shutil.rmtree(self.archive_publisher._config.distsroot)
+        super(TestPublisherRepositorySignatures, self).tearDown()
 
     def setupPublisher(self, archive):
         """Setup a `Publisher` instance for the given archive."""
