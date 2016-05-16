@@ -45,6 +45,9 @@ class FakeMethodCallers(FakeMethod):
 
         return 0
 
+    def caller_call_count(self, caller):
+        return self.callers.get(caller, 0)
+
 
 class FakeMethodGenerateKeys(FakeMethodCallers):
     """ Fake UEFI/Kmod key Generators."""
@@ -151,7 +154,7 @@ class TestSigning(TestCase):
         self.archive = LaunchpadWriteTarFile(self.buffer)
 
     def assertCallCount(self, count, call):
-        self.assertEqual(count, self.fake_call.callers.get(call, 0))
+        self.assertEqual(count, self.fake_call.caller_call_count(call))
 
     def process_emulate(self):
         self.archive.close()
