@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+import tarfile
 
 from fixtures import MonkeyPatch
 
@@ -59,6 +60,18 @@ class FakeMethodGenerateKeys(FakeMethodCallers):
     def generateKmodKeys(self, *args, **kwargs):
             write_file(self.upload.kmod_pem, "")
             write_file(self.upload.kmod_x509, "")
+            return 0
+
+    def signUefi(self, *args, **kwargs):
+            filename = args[0][-1]
+            if filename.endswith(".efi"):
+                write_file(filename + ".signed", "")
+            return 0
+
+    def signKmod(self, *args, **kwargs):
+            filename = args[0][-1]
+            if filename.endswith(".ko"):
+                write_file(filename + ".p7s", "")
             return 0
 
 
@@ -269,6 +282,33 @@ class TestSigning(TestCase):
         upload = self.process_emulate()
         self.assertEqual(['first', 'second'],
             sorted(upload.signing_options.keys()))
+
+    def test_options_tarball(self):
+        # Specifying the "tarball" option should create an tarball in
+        # the tmpdir.
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/raw-signing.options", "tarball")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        self.assertFalse(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "signed.tar.gz")))
+        with tarfile.open(os.path.join(self.getSignedPath("test", "amd64"),
+            "1.0", "signed.tar.gz")) as tarball:
+            self.assertEqual([
+                '1.0',
+                '1.0/empty.efi',
+                '1.0/empty.efi.signed',
+                '1.0/empty.ko',
+                '1.0/empty.ko.p7s',
+                '1.0/raw-signing.options',
+                ], sorted(tarball.getnames()))
 
     def test_no_signed_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.

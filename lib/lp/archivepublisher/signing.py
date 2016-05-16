@@ -19,9 +19,21 @@ __all__ = [
 import os
 import subprocess
 import inspect
+import tarfile
+import shutil
 
-from lp.archivepublisher.customupload import CustomUpload
+from lp.archivepublisher.customupload import (
+    CustomUpload,
+    CustomUploadError,
+    )
 from lp.services.osutils import remove_if_exists
+
+
+class SigningUploadPackError(CustomUploadError):
+    def __init__(self, tarfile_path, exc):
+        message = "Problem building tarball '%s': %s" % (
+            tarfile_path, str(exc))
+        CustomUploadError.__init__(self, message)
 
 
 class SigningUpload(CustomUpload):
@@ -278,6 +290,27 @@ class SigningUpload(CustomUpload):
                 self.logger.warning("Kmod Signing Failed '%s'" %
                     " ".join(cmdl))
 
+    def convertToTarball(self):
+        tarfilename = os.path.join(self.tmpdir, "signed.tar.gz")
+        versiondir = os.path.join(self.tmpdir, self.version)
+
+        try:
+            try:
+                tarball = tarfile.open(tarfilename, "w:gz")
+                tarball.add(versiondir, arcname=self.version)
+            finally:
+                tarball.close()
+        except tarfile.TarError as exc:
+            raise SigningUploadPackError(tarfilename, exc)
+
+        # Clean out the original tree and move the signing tarball in.
+        try:
+            shutil.rmtree(versiondir)
+            os.mkdir(versiondir)
+            os.rename(tarfilename, os.path.join(versiondir, "signed.tar.gz"))
+        except os.OSError as exc:
+            raise SigningUploadPackError(tarfilename, exc)
+
     def extract(self):
         """Copy the custom upload to a temporary directory, and sign it.
 
@@ -288,6 +321,10 @@ class SigningUpload(CustomUpload):
         filehandlers = list(self.findSigningHandlers())
         for (filename, handler) in filehandlers:
             handler(filename)
+
+        # If tarball output is requested, tar up the results.
+        if 'tarball' in self.signing_options:
+            self.convertToTarball()
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
