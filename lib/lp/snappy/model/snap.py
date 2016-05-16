@@ -27,9 +27,11 @@ from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.processor import Processor
 from lp.code.interfaces.branch import IBranch
@@ -72,6 +74,10 @@ from lp.services.database.stormexpr import (
     NullsLast,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
@@ -338,6 +344,41 @@ class Snap(Storm, WebhookTargetMixin):
         result.order_by(order_by)
         return result
 
+    def getBuildSummariesForSnapBuildIds(self, snap_build_ids):
+        """See `ISnap`."""
+        result = {}
+        if snap_build_ids is None:
+            return result
+        filter_term = SnapBuild.id.is_in(snap_build_ids)
+        order_by = Desc(SnapBuild.id)
+        builds = self._getBuilds(filter_term, order_by)
+
+        # Prefetch data to keep DB query count constant
+        getUtility(IBuildQueueSet).preloadForBuildFarmJobs(builds)
+        lfas = load_related(LibraryFileAlias, builds, ["log_id"])
+        load_related(LibraryFileContent, lfas, ["contentID"])
+
+        for build in builds:
+            if build.date is not None:
+                when_complete = DateTimeFormatterAPI(build.date).displaydate()
+            else:
+                when_complete = None
+
+            if build.log:
+                build_log_size = build.log.content.filesize
+            else:
+                build_log_size = None
+
+            result[build.id] = {
+                "status": build.status.name,
+                "buildstate": build.status,
+                "when_complete": when_complete,
+                "when_complete_estimate": build.estimate,
+                "build_log_url": build.log_url,
+                "build_log_size": build_log_size,
+                }
+        return result
+
     @property
     def builds(self):
         """See `ISnap`."""
@@ -569,14 +610,8 @@ class SnapSet:
         """See `ISnapSet`."""
         snaps = [removeSecurityProxy(snap) for snap in snaps]
 
-        branch_ids = set()
-        git_repository_ids = set()
         person_ids = set()
         for snap in snaps:
-            if snap.branch_id is not None:
-                branch_ids.add(snap.branch_id)
-            if snap.git_repository_id is not None:
-                git_repository_ids.add(snap.git_repository_id)
             person_ids.add(snap.registrant_id)
             person_ids.add(snap.owner_id)
 

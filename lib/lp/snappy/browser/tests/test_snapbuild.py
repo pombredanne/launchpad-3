@@ -81,25 +81,6 @@ class TestSnapBuildView(TestCaseWithFactory):
         build_view = create_initialized_view(build, "+index")
         self.assertEqual([], build_view.files)
 
-    def test_eta(self):
-        # SnapBuildView.eta returns a non-None value when it should, or None
-        # when there's no start time.
-        build = self.factory.makeSnapBuild()
-        build.queueBuild()
-        self.assertIsNone(create_initialized_view(build, "+index").eta)
-        self.factory.makeBuilder(processors=[build.processor])
-        self.assertIsNotNone(create_initialized_view(build, "+index").eta)
-
-    def test_estimate(self):
-        # SnapBuildView.estimate returns True until the job is completed.
-        build = self.factory.makeSnapBuild()
-        build.queueBuild()
-        self.factory.makeBuilder(processors=[build.processor])
-        build.updateStatus(BuildStatus.BUILDING)
-        self.assertTrue(create_initialized_view(build, "+index").estimate)
-        build.updateStatus(BuildStatus.FULLYBUILT)
-        self.assertFalse(create_initialized_view(build, "+index").estimate)
-
 
 class TestSnapBuildOperations(BrowserTestCase):
 

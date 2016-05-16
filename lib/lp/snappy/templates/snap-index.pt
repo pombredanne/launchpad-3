@@ -8,6 +8,18 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript" id="snap-update-build-statuses">
+      LPJS.use('lp.snappy.snap.update_build_statuses', function(Y) {
+        Y.on('domready', function(e) {
+          var table = Y.one('table#latest-builds-listing');
+          var uri = LP.cache.context.self_link;
+          Y.lp.snappy.snap.update_build_statuses.setup(table, uri);
+        });
+      });
+    </script>
+  </metal:block>
+
   <metal:registering fill-slot="registering">
     Created by
       <tal:registrant replace="structure context/registrant/fmt:link"/>
@@ -64,36 +76,34 @@
       </thead>
       <tbody>
         <tal:snap-builds repeat="build view/builds">
-          <tal:build-view define="buildview nocall:build/@@+index">
-            <tr tal:attributes="id string:build-${build/id}">
-              <td>
-                <span tal:replace="structure build/image:icon"/>
-                <a tal:content="build/status/title"
-                   tal:attributes="href build/fmt:url"/>
-              </td>
-              <td>
-                <tal:date replace="buildview/date/fmt:displaydate"/>
-                <tal:estimate condition="buildview/estimate">
-                  (estimated)
-                </tal:estimate>
+          <tr tal:attributes="id string:build-${build/id}">
+            <td tal:attributes="class string:build_status ${build/status/name}">
+              <span tal:replace="structure build/image:icon"/>
+              <a tal:content="build/status/title"
+                 tal:attributes="href build/fmt:url"/>
+            </td>
+            <td class="datebuilt">
+              <tal:date replace="build/date/fmt:displaydate"/>
+              <tal:estimate condition="build/estimate">
+                (estimated)
+              </tal:estimate>
 
-                <tal:build-log define="file build/log" tal:condition="file">
-                  <a class="sprite download"
-                     tal:attributes="href build/log_url">buildlog</a>
-                  (<span tal:replace="file/content/filesize/fmt:bytes"/>)
-                </tal:build-log>
-              </td>
-              <td>
-                <a class="sprite distribution"
-                   tal:define="archseries build/distro_arch_series"
-                   tal:attributes="href archseries/fmt:url"
-                   tal:content="archseries/architecturetag"/>
-              </td>
-              <td>
-                <tal:archive replace="structure build/archive/fmt:link"/>
-              </td>
-            </tr>
-          </tal:build-view>
+              <tal:build-log define="file build/log" tal:condition="file">
+                <a class="sprite download"
+                   tal:attributes="href build/log_url">buildlog</a>
+                (<span tal:replace="file/content/filesize/fmt:bytes"/>)
+              </tal:build-log>
+            </td>
+            <td>
+              <a class="sprite distribution"
+                 tal:define="archseries build/distro_arch_series"
+                 tal:attributes="href archseries/fmt:url"
+                 tal:content="archseries/architecturetag"/>
+            </td>
+            <td>
+              <tal:archive replace="structure build/archive/fmt:link"/>
+            </td>
+          </tr>
         </tal:snap-builds>
       </tbody>
     </table>

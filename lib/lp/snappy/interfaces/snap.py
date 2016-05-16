@@ -271,6 +271,21 @@ class ISnapView(Interface):
         :return: `ISnapBuild`.
         """
 
+    @operation_parameters(
+        snap_build_ids=List(
+            title=_("A list of snap build ids."),
+            value_type=Int()))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBuildSummariesForSnapBuildIds(snap_build_ids):
+        """Return a dictionary containing a summary of the build statuses.
+
+        :param snap_build_ids: A list of snap build ids.
+        :type source_ids: ``list``
+        :return: A dict consisting of the overall status summaries for the
+            given snap builds.
+        """
+
     builds = exported(doNotSnapshot(CollectionField(
         title=_("All builds of this snap package."),
         description=_(
