@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -300,6 +300,19 @@ def validate_status(self, attr, value):
         return validate_conjoined_attribute(self, attr, value)
     else:
         return value
+
+
+def map_status_for_storage(bug, status, when=None):
+    if status == BugTaskStatus.INCOMPLETE:
+        # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it
+        # can be queried on efficiently.
+        if (when is None or bug.date_last_message is None or
+            when > bug.date_last_message):
+            return BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+        else:
+            return BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
+    else:
+        return status
 
 
 def validate_assignee(self, attr, value):
@@ -868,15 +881,7 @@ class BugTask(SQLBase):
                 "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
-        if new_status == BugTaskStatus.INCOMPLETE:
-            # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it
-            # can be queried on efficiently.
-            if (when is None or self.bug.date_last_message is None or
-                when > self.bug.date_last_message):
-                new_status = BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
-            else:
-                new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
-
+        new_status = map_status_for_storage(self.bug, new_status, when=when)
         self._setStatusDateProperties(self.status, new_status, when=when)
 
     def _setStatusDateProperties(self, old_status, new_status, when=None):
@@ -1573,6 +1578,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         if status is None:
             status = IBugTask['status'].default
+        status = map_status_for_storage(bug, status)
         if importance is None:
             importance = IBugTask['importance'].default
         target_keys = []

@@ -83,7 +83,10 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
@@ -1876,7 +1879,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
+                    status=None):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1945,8 +1949,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        task = removeSecurityProxy(bug).addTask(
-            owner, removeSecurityProxy(target))
+        task = getUtility(IBugTaskSet).createTask(
+            bug, owner, target, status=status)
         removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return task
 
