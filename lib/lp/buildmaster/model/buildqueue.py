@@ -260,7 +260,6 @@ class BuildQueueSet(object):
     def preloadForBuildFarmJobs(self, builds):
         """See `IBuildQueueSet`."""
         from lp.buildmaster.model.builder import Builder
-        prefetched_data = dict()
         bqs = list(IStore(BuildQueue).find(
             BuildQueue,
             BuildQueue._build_farm_job_id.is_in(
