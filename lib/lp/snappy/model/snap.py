@@ -27,13 +27,12 @@ from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.processor import Processor
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
@@ -75,6 +74,10 @@ from lp.services.database.stormexpr import (
     NullsLast,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
@@ -352,6 +355,8 @@ class Snap(Storm, WebhookTargetMixin):
 
         # Prefetch data to keep DB query count constant
         getUtility(IBuildQueueSet).preloadForBuildFarmJobs(builds)
+        lfas = load_related(LibraryFileAlias, builds, ["log_id"])
+        load_related(LibraryFileContent, lfas, ["contentID"])
 
         for build in builds:
             if build.date is not None:
@@ -364,14 +369,14 @@ class Snap(Storm, WebhookTargetMixin):
             else:
                 build_log_size = None
 
-            result[build.id] = {}
-            result[build.id]["status"] = build.status.name
-            result[build.id]["buildstate"] = build.status
-            result[build.id]["when_complete"] = when_complete
-            result[build.id]["when_complete_estimate"] = build.estimate
-            result[build.id]["build_log_url"] = build.log_url
-            result[build.id]["build_log_size"] = build_log_size
-
+            result[build.id] = {
+                "status": build.status.name,
+                "buildstate": build.status,
+                "when_complete": when_complete,
+                "when_complete_estimate": build.estimate,
+                "build_log_url": build.log_url,
+                "build_log_size": build_log_size,
+                }
         return result
 
     @property

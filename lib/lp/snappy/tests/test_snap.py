@@ -375,8 +375,8 @@ class TestSnap(TestCaseWithFactory):
         summary1 = snap1.getBuildSummariesForSnapBuildIds(
             [build11.id, build12.id])
         summary2 = snap2.getBuildSummariesForSnapBuildIds([build2.id])
-        self.assertEqual([build11.id, build12.id], summary1.keys())
-        self.assertEqual([build2.id], summary2.keys())
+        self.assertContentEqual([build11.id, build12.id], summary1.keys())
+        self.assertContentEqual([build2.id], summary2.keys())
 
     def test_getBuildSummariesForSnapBuildIds_empty_input(self):
         snap = self.factory.makeSnap()
@@ -421,11 +421,17 @@ class TestSnap(TestCaseWithFactory):
 
     def test_getBuildSummariesForSnapBuildIds_query_count(self):
         # DB query count should remain constant regardless of number of builds.
+        def snap_build_creator(snap):
+            build = self.factory.makeSnapBuild(snap=snap)
+            removeSecurityProxy(build).log = self.factory.makeLibraryFileAlias(
+                db_only=True)
+            return build
+
         snap = self.factory.makeSnap()
         recorder1, recorder2 = record_two_runs(
             lambda: snap.getBuildSummariesForSnapBuildIds(
                 build.id for build in snap.builds),
-            lambda: self.factory.makeSnapBuild(snap=snap),
+            lambda: snap_build_creator(snap),
             1, 5)
         self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
