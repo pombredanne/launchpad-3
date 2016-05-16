@@ -310,6 +310,45 @@ class TestSigning(TestCase):
                 '1.0/raw-signing.options',
                 ], sorted(tarball.getnames()))
 
+    def test_options_sigonly(self):
+        # Specifying the "sigonly" option should trigger removal of
+        # the source files leaving signatures only.
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/raw-signing.options", "sigonly")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        self.assertFalse(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi.signed")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko.p7s")))
+
+    def test_options_tarball_sigonly(self):
+        # Specifying the "tarball" option should create an tarball in
+        # the tmpdir.  Adding sigonly should trigger removal of the
+        # original files.
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/raw-signing.options", "tarball\nsigonly")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        with tarfile.open(os.path.join(self.getSignedPath("test", "amd64"),
+            "1.0", "signed.tar.gz")) as tarball:
+            self.assertEqual([
+                '1.0',
+                '1.0/empty.efi.signed',
+                '1.0/empty.ko.p7s',
+                '1.0/raw-signing.options',
+                ], sorted(tarball.getnames()))
+
     def test_no_signed_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.
         # Nothing is signed.

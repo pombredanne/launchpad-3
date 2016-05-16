@@ -211,12 +211,14 @@ class SigningUpload(CustomUpload):
         if not key or not cert:
             return
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
-        if subprocess.call(cmdl) != 0:
+        status = subprocess.call(cmdl)
+        if status != 0:
             # Just log this rather than failing, since custom upload errors
             # tend to make the publisher rather upset.
             if self.logger is not None:
                 self.logger.warning("UEFI Signing Failed '%s'" %
                     " ".join(cmdl))
+        return status
 
     def generateKmodKeys(self):
         """Generate new Kernel Signing Keys for this archive."""
@@ -283,12 +285,14 @@ class SigningUpload(CustomUpload):
         if not pem or not cert:
             return
         cmdl = ["kmodsign", "-d", pem, cert, image]
-        if subprocess.call(cmdl) != 0:
+        status = subprocess.call(cmdl)
+        if status != 0:
             # Just log this rather than failing, since custom upload errors
             # tend to make the publisher rather upset.
             if self.logger is not None:
                 self.logger.warning("Kmod Signing Failed '%s'" %
                     " ".join(cmdl))
+        return status
 
     def convertToTarball(self):
         tarfilename = os.path.join(self.tmpdir, "signed.tar.gz")
@@ -320,7 +324,9 @@ class SigningUpload(CustomUpload):
         self.setSigningOptions()
         filehandlers = list(self.findSigningHandlers())
         for (filename, handler) in filehandlers:
-            handler(filename)
+            if (handler(filename) == 0 and
+                'sigonly' in self.signing_options):
+                os.unlink(filename)
 
         # If tarball output is requested, tar up the results.
         if 'tarball' in self.signing_options:
