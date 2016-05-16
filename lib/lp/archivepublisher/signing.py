@@ -104,6 +104,19 @@ class SigningUpload(CustomUpload):
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
 
+    def setSigningOptions(self):
+        """ find and extract raw-signing.options from the tarball."""
+        self.signing_options = {}
+
+        options_file = os.path.join(self.tmpdir, self.version,
+            "raw-signing.options")
+        if not os.path.exists(options_file):
+            return
+
+        with open(options_file) as options_fd:
+            for option in options_fd:
+                self.signing_options[option.strip()] = True
+
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
@@ -271,6 +284,7 @@ class SigningUpload(CustomUpload):
         No actual extraction is required.
         """
         super(SigningUpload, self).extract()
+        self.setSigningOptions()
         filehandlers = list(self.findSigningHandlers())
         for (filename, handler) in filehandlers:
             handler(filename)

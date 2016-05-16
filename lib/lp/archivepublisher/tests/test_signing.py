@@ -245,6 +245,31 @@ class TestSigning(TestCase):
         self.assertCallCount(1, 'signUefi')
         self.assertCallCount(1, 'signKmod')
 
+    def test_options_handling_none(self):
+        # If the configured key/cert are missing, processing succeeds but
+        # nothing is signed.
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/raw-signing.options", "")
+        upload = self.process_emulate()
+        self.assertEqual([], sorted(upload.signing_options.keys()))
+
+    def test_options_handling_single(self):
+        # If the configured key/cert are missing, processing succeeds but
+        # nothing is signed.
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/raw-signing.options", "first\n")
+        upload = self.process_emulate()
+        self.assertEqual(['first'], sorted(upload.signing_options.keys()))
+
+    def test_options_handling_multiple(self):
+        # If the configured key/cert are missing, processing succeeds but
+        # nothing is signed.
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/raw-signing.options", "first\nsecond\n")
+        upload = self.process_emulate()
+        self.assertEqual(['first', 'second'],
+            sorted(upload.signing_options.keys()))
+
     def test_no_signed_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.
         # Nothing is signed.
