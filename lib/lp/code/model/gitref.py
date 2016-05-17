@@ -273,10 +273,10 @@ class GitRefMixin:
             if cached_log is not None:
                 try:
                     log = json.loads(cached_log)
-                except Exception as e:
-                    logger.info(
-                        "Cannot load cached log information for %s:%s (%s); "
-                        "deleting" % (path, start, str(e)))
+                except Exception:
+                    logger.exception(
+                        "Cannot load cached log information for %s:%s; "
+                        "deleting" % (path, start))
                     memcache_client.delete(memcache_key)
         if log is None:
             if enable_hosting:
