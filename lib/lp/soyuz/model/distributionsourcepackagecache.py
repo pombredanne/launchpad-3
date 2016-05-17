@@ -43,6 +43,7 @@ class DistributionSourcePackageCache(SQLBase):
     binpkgnames = StringCol(notNull=False, default=None)
     binpkgsummaries = StringCol(notNull=False, default=None)
     binpkgdescriptions = StringCol(notNull=False, default=None)
+    changelog = StringCol(notNull=False, default=None)
 
     @property
     def distributionsourcepackage(self):
@@ -184,6 +185,8 @@ class DistributionSourcePackageCache(SQLBase):
         cache.binpkgnames = ' '.join(sorted(binpkgnames))
         cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
+        # Column due for deletion.
+        cache.changelog = None
 
     @classmethod
     def updateAll(cls, distro, archive, log, ztm, commit_chunk=500):

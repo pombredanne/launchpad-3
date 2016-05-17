@@ -15,7 +15,6 @@ import logging
 from StringIO import StringIO
 import time
 
-from psycopg2 import ProgrammingError
 from pytz import UTC
 from storm.exceptions import LostObjectError
 from storm.expr import (
@@ -116,9 +115,6 @@ from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache,
-    )
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
@@ -1389,47 +1385,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # retained.
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
-
-    def test_DistributionSourcePackageCacheChangelogPruner(self):
-        # Garbo prunes old changelog columns from
-        # DistributionSourcePackageCache.
-        switch_dbuser('testadmin')
-        store = IMasterStore(DistributionSourcePackageCache)
-        distribution = self.factory.makeDistribution()
-        dsps = [
-            self.factory.makeDSPCache(
-                distro_name=distribution.name,
-                package_name=self.factory.getUniqueUnicode(),
-                make_distro=False, official=False)[1]
-            for _ in range(3)]
-        store.flush()
-        try:
-            store.execute("""
-                UPDATE DistributionSourcePackageCache
-                SET changelog = 'placeholder'
-                WHERE
-                    distribution = %s
-                    AND sourcepackagename IN (%s, %s)
-                """ % (
-                    sqlbase.quote(distribution),
-                    sqlbase.quote(dsps[0].sourcepackagename),
-                    sqlbase.quote(dsps[1].sourcepackagename)))
-        except ProgrammingError:
-            # The column must have been removed from the database.
-            return
-
-        self.assertEqual(
-            3, distribution.searchSourcePackageCaches(u"").count())
-        self.assertEqual(
-            2, distribution.searchSourcePackageCaches(u"placeholder").count())
-
-        transaction.commit()
-        self.runDaily()
-
-        self.assertEqual(
-            3, distribution.searchSourcePackageCaches(u"").count())
-        self.assertEqual(
-            0, distribution.searchSourcePackageCaches(u"placeholder").count())
 
 
 class TestGarboTasks(TestCaseWithFactory):

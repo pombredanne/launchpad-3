@@ -29,6 +29,9 @@ class IDistributionSourcePackageCache(Interface):
     binpkgdescriptions = Attribute("A concatenation of the descriptions "
         "of the binary packages from this source package name in the "
         "distro.")
+    changelog = Attribute("A concatenation of the source package release "
+        "changelog entries for this source package, where the status is "
+        "not REMOVED.  (Deprecated; due to be removed.)")
 
     distributionsourcepackage = Attribute("The DistributionSourcePackage "
         "for which this is a cache.")
