@@ -166,16 +166,14 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "commit_message": Equals(u"root"),
                 }),
             ]))
-        key = u"%s:git-revisions:%s:%s" % (
-            config.instance_name, path, self.sha1_tip)
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_cache(self):
         path = self.ref.repository.getInternalPath()
-        key = u"%s:git-revisions:%s:%s" % (
-            config.instance_name, path, self.sha1_tip)
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
         getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
         self.assertEqual([], self.ref.getCommits(self.sha1_tip))
 
@@ -186,7 +184,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             [((path, self.sha1_tip),
               {"limit": 10, "stop": self.sha1_root, "logger": None})],
             self.hosting_client.getLog.calls)
-        key = u"%s:git-revisions:%s:%s:limit=10:stop=%s" % (
+        key = u"%s:git-log:%s:%s:limit=10:stop=%s" % (
             config.instance_name, path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
             json.dumps(self.log),
@@ -199,8 +197,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertThat(revisions, MatchesListwise([
             ContainsDict({"sha1": Equals(self.sha1_tip)}),
             ]))
-        key = u"%s:git-revisions:%s:%s" % (
-            config.instance_name, path, self.sha1_tip)
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))

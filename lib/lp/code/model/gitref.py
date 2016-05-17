@@ -251,8 +251,7 @@ class GitRefMixin:
         hosting_client = getUtility(IGitHostingClient)
         memcache_client = getUtility(IMemcacheClient)
         path = self.repository.getInternalPath()
-        memcache_key = "%s:git-revisions:%s:%s" % (
-            config.instance_name, path, start)
+        memcache_key = "%s:git-log:%s:%s" % (config.instance_name, path, start)
         if limit is not None:
             memcache_key += ":limit=%s" % limit
         if stop is not None:
