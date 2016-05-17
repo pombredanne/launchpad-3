@@ -298,6 +298,7 @@ class SigningUpload(CustomUpload):
         return status
 
     def convertToTarball(self):
+        """Convert unpacked output to signing tarball."""
         tarfilename = os.path.join(self.tmpdir, "signed.tar.gz")
         versiondir = os.path.join(self.tmpdir, self.version)
 
