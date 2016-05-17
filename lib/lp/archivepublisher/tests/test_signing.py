@@ -484,7 +484,6 @@ class TestSigning(TestCase):
         expected_cmd = [
             'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
             '-days', '3650', '-batch', '-x509',
-            '-subj', '/CN=PPA ubuntu-archive testing kmod/',
             '-config', self.kmod_genkey, '-outform', 'PEM',
             '-out', self.kmod_pem, '-keyout', self.kmod_pem
             ]

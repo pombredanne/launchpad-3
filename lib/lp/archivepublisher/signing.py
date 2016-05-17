@@ -226,12 +226,18 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+        common_name = self.getArchiveOwner()
+
         genkey_text = inspect.cleandoc("""\
             [ req ]
             default_bits = 4096
+            distinguished_name = req_distinguished_name
             prompt = no
             string_mask = utf8only
             x509_extensions = myexts
+
+            [ req_distinguished_name ]
+            CN = /CN=PPA """ + common_name + """ kmod/
 
             [ myexts ]
             basicConstraints=critical,CA:FALSE
@@ -239,8 +245,6 @@ class SigningUpload(CustomUpload):
             subjectKeyIdentifier=hash
             authorityKeyIdentifier=keyid
             """)
-
-        common_name = '/CN=PPA ' + self.getArchiveOwner() + ' kmod/'
 
         genkey_filename = os.path.join(directory, "kmod.genkey")
         with open(genkey_filename, "w") as genkey_fd:
@@ -250,8 +254,7 @@ class SigningUpload(CustomUpload):
         try:
             new_key_cmd = [
                 'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
-                '-days', '3650', '-batch', '-x509', '-subj', common_name,
-                '-config', genkey_filename,
+                '-days', '3650', '-batch', '-x509', '-config', genkey_filename,
                 '-outform', 'PEM', '-out', self.kmod_pem,
                 '-keyout', self.kmod_pem
                 ]
