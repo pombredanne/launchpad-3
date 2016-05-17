@@ -17,6 +17,7 @@ from testtools.matchers import (
     ContainsDict,
     EndsWith,
     Equals,
+    Is,
     MatchesListwise,
     MatchesStructure,
     )
@@ -27,6 +28,7 @@ from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -176,6 +178,31 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
         getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
         self.assertEqual([], self.ref.getCommits(self.sha1_tip))
+
+    def test_disable_hosting(self):
+        self.useFixture(
+            FeatureFixture({u"code.git.log.disable_hosting": u"on"}))
+        revisions = self.ref.getCommits(self.sha1_tip)
+        self.assertThat(revisions, MatchesListwise([
+            ContainsDict({
+                "sha1": Equals(self.ref.commit_sha1),
+                "commit_message": Is(None),
+                }),
+            ]))
+        self.assertEqual([], self.hosting_client.getLog.calls)
+        path = self.ref.repository.getInternalPath()
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        self.assertIsNone(getUtility(IMemcacheClient).get(key.encode("UTF-8")))
+
+    def test_disable_memcache(self):
+        self.useFixture(
+            FeatureFixture({u"code.git.log.disable_memcache": u"on"}))
+        path = self.ref.repository.getInternalPath()
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
+        self.assertNotEqual([], self.ref.getCommits(self.sha1_tip))
+        self.assertEqual(
+            "[]", getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_limit_stop(self):
         self.ref.getCommits(self.sha1_tip, limit=10, stop=self.sha1_root)

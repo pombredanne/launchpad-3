@@ -7,6 +7,7 @@ __all__ = [
     'GitRefFrozen',
     ]
 
+from datetime import datetime
 import json
 from urllib import quote_plus
 
@@ -55,6 +56,7 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 
 
@@ -247,7 +249,14 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.repository.pending_writes
 
-    def _getLog(self, start, limit=None, stop=None, logger=None):
+    def _getLog(self, start, limit=None, stop=None,
+                enable_hosting=None, enable_memcache=None, logger=None):
+        if enable_hosting is None:
+            enable_hosting = not getFeatureFlag(
+                u"code.git.log.disable_hosting")
+        if enable_memcache is None:
+            enable_memcache = not getFeatureFlag(
+                u"code.git.log.disable_memcache")
         hosting_client = getUtility(IGitHostingClient)
         memcache_client = getUtility(IMemcacheClient)
         path = self.repository.getInternalPath()
@@ -259,19 +268,40 @@ class GitRefMixin:
         if isinstance(memcache_key, unicode):
             memcache_key = memcache_key.encode("UTF-8")
         log = None
-        cached_log = memcache_client.get(memcache_key)
-        if cached_log is not None:
-            try:
-                log = json.loads(cached_log)
-            except Exception as e:
-                logger.info(
-                    "Cannot load cached log information for %s:%s (%s); "
-                    "deleting" % (path, start, str(e)))
-                memcache_client.delete(memcache_key)
+        if enable_memcache:
+            cached_log = memcache_client.get(memcache_key)
+            if cached_log is not None:
+                try:
+                    log = json.loads(cached_log)
+                except Exception as e:
+                    logger.info(
+                        "Cannot load cached log information for %s:%s (%s); "
+                        "deleting" % (path, start, str(e)))
+                    memcache_client.delete(memcache_key)
         if log is None:
-            log = removeSecurityProxy(hosting_client.getLog(
-                path, start, limit=limit, stop=stop, logger=logger))
-            memcache_client.set(memcache_key, json.dumps(log))
+            if enable_hosting:
+                log = removeSecurityProxy(hosting_client.getLog(
+                    path, start, limit=limit, stop=stop, logger=logger))
+                if enable_memcache:
+                    memcache_client.set(memcache_key, json.dumps(log))
+            else:
+                # Fall back to synthesising something reasonable based on
+                # information in our own database.
+                epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+                log = [{
+                    "sha1": self.commit_sha1,
+                    "message": self.commit_message,
+                    "author": None if self.author is None else {
+                        "name": self.author.name_without_email,
+                        "email": self.author.email,
+                        "time": (self.author_date - epoch).total_seconds(),
+                        },
+                    "committer": None if self.committer is None else {
+                        "name": self.committer.name_without_email,
+                        "email": self.committer.email,
+                        "time": (self.committer_date - epoch).total_seconds(),
+                        },
+                    }]
         return log
 
     def getCommits(self, start, limit=None, stop=None,
