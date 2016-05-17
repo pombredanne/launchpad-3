@@ -14,12 +14,14 @@ from textwrap import dedent
 
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
+import mock
 import pytz
 import soupmatchers
 from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
+import yaml
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -28,6 +30,7 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.code.errors import GitRepositoryScanFault
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -57,6 +60,7 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -68,8 +72,8 @@ from lp.testing.matchers import (
 from lp.testing.pages import (
     extract_text,
     find_main_content,
-    find_tags_by_class,
     find_tag_by_id,
+    find_tags_by_class,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
@@ -269,6 +273,41 @@ class TestSnapAddView(BrowserTestCase):
             'This snap contains Private information',
             extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
+
+    def test_initial_name_extraction_git(self):
+        [git_ref] = self.factory.makeGitRefs()
+        git_ref.getBlob = FakeMethod(result='name: test-snap')
+        view = create_initialized_view(git_ref, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('name', initial_values)
+        self.assertEqual('test-snap', initial_values['name'])
+
+    def test_initial_name_extraction_git_repo_error(self):
+        [git_ref] = self.factory.makeGitRefs()
+        git_ref.getBlob = FakeMethod(failure=GitRepositoryScanFault)
+        view = create_initialized_view(git_ref, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('name', initial_values)
+        self.assertEqual(None, initial_values['name'])
+
+    def test_initial_name_extraction_git_invalid_data(self):
+        for invalid_result in (None, 123, '', '[][]', '#name:test', ']'):
+            [git_ref] = self.factory.makeGitRefs()
+            git_ref.getBlob = FakeMethod(result=invalid_result)
+            view = create_initialized_view(git_ref, "+new-snap")
+            initial_values = view.initial_values
+            self.assertIn('name', initial_values)
+            self.assertEqual(None, initial_values['name'])
+
+    def test_initial_name_extraction_git_safe_yaml(self):
+        [git_ref] = self.factory.makeGitRefs()
+        git_ref.getBlob = FakeMethod(result='Malicious code encoded in YAML!')
+        view = create_initialized_view(git_ref, "+new-snap")
+        with mock.patch('yaml.load') as unsafe_load:
+            with mock.patch('yaml.safe_load') as safe_load:
+                initial_values = view.initial_values
+        self.assertEqual(0, unsafe_load.call_count)
+        self.assertEqual(1, safe_load.call_count)
 
 
 class TestSnapAdminView(BrowserTestCase):

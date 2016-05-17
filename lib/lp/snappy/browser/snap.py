@@ -20,6 +20,7 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
+import yaml
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import (
@@ -44,11 +45,13 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     )
 from lp.code.browser.widgets.gitref import GitRefWidget
+from lp.code.errors import GitRepositoryScanFault
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
+from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -326,11 +329,31 @@ class SnapAddView(LaunchpadFormView):
 
     @property
     def initial_values(self):
+        name = None
+        if IGitRef.providedBy(self.context):
+            # Try to extract Snap name from snapcraft.yaml file.
+            try:
+                blob = self.context.getBlob('snapcraft.yaml')
+                # Beware of unsafe yaml.load()!
+                name = yaml.safe_load(blob).get('name')
+            except GitRepositoryScanFault:
+                log.info("Failed to get Snap manifest from Git %s",
+                          self.context.unique_name)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                log.debug("Failed to parse Snap manifest at %s",
+                          self.context.unique_name)
+            if name is None:
+                self.widget_errors['name'] = (
+                    "Failed to find a valid snapcraft.yaml file.")
+
         # XXX cjwatson 2015-09-18: Hack to ensure that we don't end up
         # accidentally selecting ubuntu-rtm/14.09 or similar.
         # ubuntu.currentseries will always be in BuildableDistroSeries.
         series = getUtility(ILaunchpadCelebrities).ubuntu.currentseries
         return {
+            'name': name,
             'owner': self.user,
             'distro_series': series,
             }

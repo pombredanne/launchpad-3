@@ -257,6 +257,10 @@ class GitRefMixin:
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
+    def getBlob(self, filename):
+        """See `IGitRef`."""
+        return self.repository.getBlob(filename, self.name)
+
 
 @implementer(IGitRef)
 class GitRef(StormBase, GitRefMixin):

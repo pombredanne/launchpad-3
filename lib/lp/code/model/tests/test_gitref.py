@@ -12,6 +12,7 @@ from testtools.matchers import EndsWith
 from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     ANONYMOUS,
@@ -20,6 +21,8 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import webservice_for_person
 
@@ -63,6 +66,13 @@ class TestGitRef(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         self.assertTrue(ref.private)
         self.assertEqual(InformationType.USERDATA, ref.information_type)
+
+    def test_getBlob(self):
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/foo"])
+        ref.repository.getBlob = FakeMethod()
+        ref.getBlob('src/README.txt')
+        self.assertEqual(
+            ref.repository.getBlob.calls, [(('src/README.txt', 'foo'), {})])
 
 
 class TestGitRefWebservice(TestCaseWithFactory):
