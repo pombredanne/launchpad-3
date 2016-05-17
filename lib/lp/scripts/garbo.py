@@ -119,6 +119,9 @@ from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webhooks.interfaces import IWebhookJobSource
 from lp.services.webhooks.model import WebhookJob
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
@@ -1435,6 +1438,36 @@ class LiveFSFilePruner(BulkPruner):
         """
 
 
+class DistributionSourcePackageCacheChangelogPruner(BulkPruner):
+    """Set DistributionSourcePackageCache.changelog to NULL and update fti.
+
+    This column is due to be deleted, but we force an fti rebuild without it
+    first to avoid leaving debris in the fti column.
+    """
+
+    target_table_class = DistributionSourcePackageCache
+    ids_to_prune_query = """
+        SELECT id
+        FROM DistributionSourcePackageCache
+        WHERE changelog IS NOT NULL
+        """
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        result = self.store.execute("""
+            UPDATE %s
+            SET changelog = NULL, fti = NULL
+            WHERE (%s) IN (
+                SELECT * FROM
+                cursor_fetch('%s', %d) AS f(%s))
+            """
+            % (
+                self.target_table_name, self.target_table_key,
+                self.cursor_name, chunk_size, self.target_table_key_type))
+        self._num_removed = result.rowcount
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1713,6 +1746,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         DiffPruner,
+        DistributionSourcePackageCacheChangelogPruner,
         GitJobPruner,
         HWSubmissionEmailLinker,
         LiveFSFilePruner,

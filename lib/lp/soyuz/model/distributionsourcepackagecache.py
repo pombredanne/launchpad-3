@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -43,7 +43,6 @@ class DistributionSourcePackageCache(SQLBase):
     binpkgnames = StringCol(notNull=False, default=None)
     binpkgsummaries = StringCol(notNull=False, default=None)
     binpkgdescriptions = StringCol(notNull=False, default=None)
-    changelog = StringCol(notNull=False, default=None)
 
     @property
     def distributionsourcepackage(self):
@@ -167,13 +166,8 @@ class DistributionSourcePackageCache(SQLBase):
         binpkgnames = set()
         binpkgsummaries = set()
         binpkgdescriptions = set()
-        sprchangelog = set()
         for spr in sprs:
             log.debug("Considering source version %s" % spr.version)
-            # changelog may be empty, in which case we don't want to add it
-            # to the set as the join would fail below.
-            if spr.changelog_entry is not None:
-                sprchangelog.add(spr.changelog_entry)
         binpkgs = IStore(BinaryPackageRelease).find(
             (BinaryPackageName.name, BinaryPackageRelease.summary,
              BinaryPackageRelease.description),
@@ -190,7 +184,6 @@ class DistributionSourcePackageCache(SQLBase):
         cache.binpkgnames = ' '.join(sorted(binpkgnames))
         cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
-        cache.changelog = ' '.join(sorted(sprchangelog))
 
     @classmethod
     def updateAll(cls, distro, archive, log, ztm, commit_chunk=500):
