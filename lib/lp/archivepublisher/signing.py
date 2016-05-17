@@ -279,12 +279,12 @@ class SigningUpload(CustomUpload):
 
     def signKmod(self, image):
         """Attempt to sign a kernel module."""
-        remove_if_exists("%s.p7s" % image)
+        remove_if_exists("%s.sig" % image)
         (pem, cert) = self.getKeys('Kernel Module', self.generateKmodKeys,
             self.kmod_pem, self.kmod_x509)
         if not pem or not cert:
             return
-        cmdl = ["kmodsign", "-d", pem, cert, image]
+        cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
         status = subprocess.call(cmdl)
         if status != 0:
             # Just log this rather than failing, since custom upload errors

@@ -70,8 +70,8 @@ class FakeMethodGenerateKeys(FakeMethodCallers):
 
     def signKmod(self, *args, **kwargs):
             filename = args[0][-1]
-            if filename.endswith(".ko"):
-                write_file(filename + ".p7s", "")
+            if filename.endswith(".ko.sig"):
+                write_file(filename, "")
             return 0
 
 
@@ -306,7 +306,7 @@ class TestSigning(TestCase):
                 '1.0/empty.efi',
                 '1.0/empty.efi.signed',
                 '1.0/empty.ko',
-                '1.0/empty.ko.p7s',
+                '1.0/empty.ko.sig',
                 '1.0/raw-signing.options',
                 ], sorted(tarball.getnames()))
 
@@ -327,7 +327,7 @@ class TestSigning(TestCase):
         self.assertFalse(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
         self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.ko.p7s")))
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko.sig")))
 
     def test_options_tarball_sigonly(self):
         # Specifying the "tarball" option should create an tarball in
@@ -345,7 +345,7 @@ class TestSigning(TestCase):
             self.assertEqual([
                 '1.0',
                 '1.0/empty.efi.signed',
-                '1.0/empty.ko.p7s',
+                '1.0/empty.ko.sig',
                 '1.0/raw-signing.options',
                 ], sorted(tarball.getnames()))
 
@@ -447,7 +447,8 @@ class TestSigning(TestCase):
         # Assert command form.
         args = fake_call.calls[0][0][0]
         expected_cmd = [
-            'kmodsign', '-d', self.kmod_pem, self.kmod_x509, 't.ko'
+            'kmodsign', '-D', 'sha512', self.kmod_pem, self.kmod_x509,
+            't.ko', 't.ko.sig'
             ]
         self.assertEqual(expected_cmd, args)
         self.assertEqual(0, upload.generateKmodKeys.call_count)
