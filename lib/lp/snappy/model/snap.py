@@ -395,9 +395,7 @@ class Snap(Storm, WebhookTargetMixin):
         for buildqueue_record in buildqueue_records:
             buildqueue_record.destroySelf()
         build_farm_job_ids = list(store.find(
-            BuildFarmJob.id,
-            BuildFarmJob.id == SnapBuild.build_farm_job_id,
-            SnapBuild.snap == self))
+            SnapBuild.build_farm_job_id, SnapBuild.snap == self))
         # XXX cjwatson 2016-02-27 bug=322972: Requires manual SQL due to
         # lack of support for DELETE FROM ... USING ... in Storm.
         store.execute("""
