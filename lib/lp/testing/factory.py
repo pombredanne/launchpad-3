@@ -1950,7 +1950,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         task = getUtility(IBugTaskSet).createTask(
-            bug, owner, target, status=status)
+            removeSecurityProxy(bug), owner, target, status=status)
         removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return task
 
