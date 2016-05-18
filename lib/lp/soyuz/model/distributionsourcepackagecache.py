@@ -120,10 +120,11 @@ class DistributionSourcePackageCache(SQLBase):
 
     @classmethod
     def _update(cls, distro, sourcepackagenames, archive, log):
-        """Update cached source package details.
+        """Update the package cache for a given set of `ISourcePackageName`s.
 
-        Update cache details for a given ISourcePackageName, including
-        generated binarypackage names, summary and description fti.
+        Cached details include generated binarypackage names, summary
+        and description fti.
+
         'log' is required and only prints debug level information.
         """
 

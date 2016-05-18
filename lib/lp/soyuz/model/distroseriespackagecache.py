@@ -113,7 +113,7 @@ class DistroSeriesPackageCache(SQLBase):
 
     @classmethod
     def _update(cls, distroseries, binarypackagenames, archive, log):
-        """Update the package cache for a given IBinaryPackageName
+        """Update the package cache for a given set of `IBinaryPackageName`s.
 
         'log' is required, it should be a logger object able to print
         DEBUG level messages.
