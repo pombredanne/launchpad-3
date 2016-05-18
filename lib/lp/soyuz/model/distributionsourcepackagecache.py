@@ -168,6 +168,11 @@ class DistributionSourcePackageCache(SQLBase):
         # separately, since the big and inconsistent intermediates can
         # confuse postgres into a seq scan over BPR, which never ends
         # well for anybody.
+        #
+        # Beware: the sets expand much faster than you might expect for
+        # the primary archive; COPY archive builds are caught too, of
+        # which there are dozens for most SPRs, and there's no easy way
+        # to exclude them!
         all_builds = list(IStore(BinaryPackageBuild).find(
             (BinaryPackageBuild.source_package_release_id,
              BinaryPackageBuild.id),
