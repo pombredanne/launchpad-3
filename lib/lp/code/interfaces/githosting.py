@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for communication with the Git hosting service."""
@@ -53,6 +53,18 @@ class IGitHostingClient(Interface):
         :param logger: An optional logger.
         :return: A list of dicts each of which represents one of the
             requested commits.  Non-existent commits will be omitted.
+        """
+
+    def getLog(path, start, limit=None, stop=None, logger=None):
+        """Get commit log information.
+
+        :param path: Physical path of the repository on the hosting service.
+        :param start: The commit to start listing from.
+        :param limit: If not None, return no more than this many commits.
+        :param stop: If not None, ignore this commit and its ancestors.
+        :param logger: An optional logger.
+        :return: A list of dicts each of which represents a commit from the
+            start commit's history.
         """
 
     def getMergeDiff(path, base, head, logger=None):

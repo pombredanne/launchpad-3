@@ -28,6 +28,7 @@ valid_imports_not_in_all = {
     'bzrlib.lsprof': set(['BzrProfiler']),
     'cookielib': set(['domain_match']),
     'openid.fetchers': set(['Urllib2Fetcher']),
+    'openid.message': set(['NamespaceAliasRegistrationError']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
     'testtools.testresult.real': set(['_details_to_str']),

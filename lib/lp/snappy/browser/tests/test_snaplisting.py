@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package listings."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 import soupmatchers
 from testtools.matchers import Not
 
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.database.constants import (
     ONE_DAY_AGO,
     UTC_NOW,
@@ -22,13 +23,15 @@ from lp.testing import (
     person_logged_in,
     record_two_runs,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
 class TestSnapListing(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def makeSnap(self, **kwargs):
         """Create a snap package, enabling the feature flag.
@@ -65,6 +68,9 @@ class TestSnapListing(BrowserTestCase):
         self.assertSnapsLink(repository, "2 snap packages", git_ref=ref)
 
     def test_git_ref_links_to_snaps(self):
+        hosting_client = FakeMethod()
+        hosting_client.getLog = FakeMethod(result=[])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         [ref] = self.factory.makeGitRefs()
         self.assertSnapsLink(ref, "2 snap packages", git_ref=ref)
 
