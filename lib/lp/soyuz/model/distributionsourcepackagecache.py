@@ -205,7 +205,7 @@ class DistributionSourcePackageCache(SQLBase):
             binpkgsummaries = set()
             binpkgdescriptions = set()
             for spr_id, spr_version in sprs:
-                log.debug("Considering source version %s" % spr_version)
+                log.debug("Considering source %s %s", spn.name, spr_version)
                 binpkgs = binaries_by_spr.get(spr_id, [])
                 for bpn, summary, description in binpkgs:
                     binpkgnames.add(bpn.name)
