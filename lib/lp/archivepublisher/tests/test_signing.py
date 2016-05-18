@@ -155,7 +155,6 @@ class TestSigning(TestCase):
     def setUpKmodKeys(self, create=True):
         self.kmod_pem = os.path.join(self.signing_dir, "kmod.pem")
         self.kmod_x509 = os.path.join(self.signing_dir, "kmod.x509")
-        self.kmod_genkey = os.path.join(self.signing_dir, "kmod.genkey")
         if create:
             write_file(self.kmod_pem, "")
             write_file(self.kmod_x509, "")
@@ -481,10 +480,13 @@ class TestSigning(TestCase):
         self.assertEqual(2, fake_call.call_count)
         # Assert the actual command matches.
         args = fake_call.calls[0][0][0]
+        # Sanitise the keygen tmp file.
+        if args[11] .endswith('.keygen'):
+            args[11] = 'XXX.keygen'
         expected_cmd = [
             'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
             '-days', '3650', '-batch', '-x509',
-            '-config', self.kmod_genkey, '-outform', 'PEM',
+            '-config', 'XXX.keygen', '-outform', 'PEM',
             '-out', self.kmod_pem, '-keyout', self.kmod_pem
             ]
         self.assertEqual(expected_cmd, args)

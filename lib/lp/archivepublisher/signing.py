@@ -9,6 +9,8 @@ This cannot be done on the build daemons because they are insufficiently
 secure to hold signing keys, so we sign them as a custom upload instead.
 """
 
+from __future__ import print_function
+
 __metaclass__ = type
 
 __all__ = [
@@ -20,6 +22,7 @@ import os
 import shutil
 import subprocess
 import tarfile
+import tempfile
 import textwrap
 
 from lp.archivepublisher.customupload import (
@@ -226,57 +229,59 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        common_name = self.getArchiveOwnerAndName()
-
-        genkey_text = textwrap.dedent("""\
-            [ req ]
-            default_bits = 4096
-            distinguished_name = req_distinguished_name
-            prompt = no
-            string_mask = utf8only
-            x509_extensions = myexts
-
-            [ req_distinguished_name ]
-            CN = /CN=PPA """ + common_name + """ kmod/
-
-            [ myexts ]
-            basicConstraints=critical,CA:FALSE
-            keyUsage=digitalSignature
-            subjectKeyIdentifier=hash
-            authorityKeyIdentifier=keyid
-            """)
-
-        genkey_filename = os.path.join(directory, "kmod.genkey")
-        with open(genkey_filename, "w") as genkey_fd:
-            print >> genkey_fd, genkey_text
-
         old_mask = os.umask(0o077)
         try:
-            new_key_cmd = [
-                'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
-                '-days', '3650', '-batch', '-x509', '-config', genkey_filename,
-                '-outform', 'PEM', '-out', self.kmod_pem,
-                '-keyout', self.kmod_pem
-                ]
-            if subprocess.call(new_key_cmd) != 0:
-                # Just log this rather than failing, since custom upload errors
-                # tend to make the publisher rather upset.
-                if self.logger is not None:
-                    self.logger.warning(
-                        "Failed to generate Kmod signing key for %s" %
-                        common_name)
-            else:
-                new_x509_cmd = [
-                    'openssl', 'x509', '-in', self.kmod_pem,
-                    '-outform', 'DER', '-out', self.kmod_x509
+            with tempfile.NamedTemporaryFile(suffix='.keygen') as tf:
+                common_name = self.getArchiveOwnerAndName()
+
+                genkey_text = textwrap.dedent("""\
+                    [ req ]
+                    default_bits = 4096
+                    distinguished_name = req_distinguished_name
+                    prompt = no
+                    string_mask = utf8only
+                    x509_extensions = myexts
+
+                    [ req_distinguished_name ]
+                    CN = /CN=PPA """ + common_name + """ kmod/
+
+                    [ myexts ]
+                    basicConstraints=critical,CA:FALSE
+                    keyUsage=digitalSignature
+                    subjectKeyIdentifier=hash
+                    authorityKeyIdentifier=keyid
+                    """)
+
+                print(genkey_text, file=tf)
+
+                # Close out the underlying file so we know it is complete.
+                tf.file.close()
+
+                new_key_cmd = [
+                    'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
+                    '-days', '3650', '-batch', '-x509', '-config', tf.name,
+                    '-outform', 'PEM', '-out', self.kmod_pem,
+                    '-keyout', self.kmod_pem
                     ]
-                if subprocess.call(new_x509_cmd) != 0:
-                    # Just log this rather than failing (as above).
+                if subprocess.call(new_key_cmd) != 0:
+                    # Just log this rather than failing, since custom upload
+                    # errors tend to make the publisher rather upset.
                     if self.logger is not None:
                         self.logger.warning(
-                            "Failed to generate Kmod x509 certificate for %s" %
+                            "Failed to generate Kmod signing key for %s" %
                             common_name)
-                    os.unlink(self.kmod_pem)
+                else:
+                    new_x509_cmd = [
+                        'openssl', 'x509', '-in', self.kmod_pem,
+                        '-outform', 'DER', '-out', self.kmod_x509
+                        ]
+                    if subprocess.call(new_x509_cmd) != 0:
+                        # Just log this rather than failing (as above).
+                        if self.logger is not None:
+                            self.logger.warning(
+                                "Failed to generate Kmod x509 cert for %s" %
+                                common_name)
+                        os.unlink(self.kmod_pem)
         finally:
             os.umask(old_mask)
 
