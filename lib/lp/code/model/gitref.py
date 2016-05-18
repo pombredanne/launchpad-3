@@ -326,8 +326,22 @@ class GitRefMixin:
             commits.append(parsed_commit)
         return commits
 
-    def getLatestCommits(self, quantity=10):
-        return self.getCommits(self.commit_sha1, limit=quantity)
+    def getLatestCommits(self, quantity=10, extended_details=False, user=None):
+        commits = self.getCommits(self.commit_sha1, limit=quantity)
+        if extended_details:
+            # XXX cjwatson 2016-05-09: Add support for linked bugtasks once
+            # those are supported for Git.
+            collection = getUtility(IAllGitRepositories).visibleByUser(user)
+            merge_proposals = collection.getMergeProposals(
+                target_repository=self.repository, target_path=self.path,
+                merged_revision_ids=[commit["sha1"] for commit in commits],
+                statuses=[BranchMergeProposalStatus.MERGED])
+            merge_proposal_commits = {
+                mp.merged_revision_id: mp for mp in merge_proposals}
+            for commit in commits:
+                commit["merge_proposal"] = merge_proposal_commits.get(
+                    commit["sha1"])
+        return commits
 
     @property
     def recipes(self):

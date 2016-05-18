@@ -236,6 +236,22 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             ContainsDict({"sha1": Equals(self.sha1_root)}),
             ]))
 
+    def test_extended_details_with_merge(self):
+        mp = self.factory.makeBranchMergeProposalForGit(target_ref=self.ref)
+        mp.markAsMerged(merged_revision_id=self.sha1_tip)
+        revisions = self.ref.getLatestCommits(
+            self.sha1_tip, extended_details=True, user=self.ref.owner)
+        self.assertThat(revisions, MatchesListwise([
+            ContainsDict({
+                "sha1": Equals(self.sha1_tip),
+                "merge_proposal": Equals(mp),
+                }),
+            ContainsDict({
+                "sha1": Equals(self.sha1_root),
+                "merge_proposal": Is(None),
+                }),
+            ]))
+
 
 class TestGitRefWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
