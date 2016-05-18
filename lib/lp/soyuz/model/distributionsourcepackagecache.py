@@ -4,7 +4,10 @@
 __metaclass__ = type
 __all__ = ['DistributionSourcePackageCache', ]
 
-from operator import itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 from sqlobject import (
     ForeignKey,
@@ -13,18 +16,21 @@ from sqlobject import (
 from zope.interface import implementer
 
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
     IDistributionSourcePackageCache,
     )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -55,6 +61,18 @@ class DistributionSourcePackageCache(SQLBase):
 
         return DistributionSourcePackage(self.distribution,
             self.sourcepackagename)
+
+    @classmethod
+    def findCurrentSourcePackageNames(cls, archive):
+        spn_ids = IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory.sourcepackagenameID,
+            SourcePackagePublishingHistory.archive == archive,
+            SourcePackagePublishingHistory.status.is_in((
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED))).config(
+                    distinct=True)
+        return list(sorted(
+            bulk.load(SourcePackageName, spn_ids), key=attrgetter('name')))
 
     @classmethod
     def _find(cls, distro, archive=None):
@@ -89,22 +107,11 @@ class DistributionSourcePackageCache(SQLBase):
         """
 
         # Get the set of source package names to deal with.
-        spns = set(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            Archive.id = %s AND
-            SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL AND
-            Archive.enabled = TRUE
-            """ % sqlvalues(distro, archive),
-            distinct=True,
-            clauseTables=[
-                'Archive',
-                'DistroSeries',
-                'SourcePackagePublishingHistory']))
+        if not archive.enabled:
+            spns = set()
+        else:
+            spns = set(
+                cls.findCurrentSourcePackageNames(archive))
 
         # Remove the cache entries for packages we no longer publish.
         for cache in cls._find(distro, archive):
@@ -208,18 +215,7 @@ class DistributionSourcePackageCache(SQLBase):
             return
 
         # Get the set of source package names to deal with.
-        spns = list(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(distro, archive),
-            distinct=True,
-            orderBy="name",
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries']))
+        spns = cls.findCurrentSourcePackageNames(archive)
 
         number_of_updates = 0
         chunk_size = 0
