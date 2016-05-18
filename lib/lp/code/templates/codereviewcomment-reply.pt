@@ -8,8 +8,8 @@
 
  <body>
    <h1 metal:fill-slot="heading"
-      tal:define="branch view/branch_merge_proposal/merge_source">
-    Code review comment for <tal:source content="branch/identity"/>
+      tal:define="source view/branch_merge_proposal/merge_source">
+    Code review comment for <tal:source content="source/identity"/>
   </h1>
 
   <div metal:fill-slot="main">

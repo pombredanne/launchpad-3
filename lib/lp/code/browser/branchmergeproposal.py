@@ -534,9 +534,15 @@ class CodeReviewNewRevisions:
     particular time.
     """
 
-    def __init__(self, revisions, date, branch, diff):
+    def __init__(self, revisions, date, source, diff):
         self.revisions = revisions
-        self.branch = branch
+        self.source = source
+        if IBranch.providedBy(source):
+            self.branch = source
+            self.git_ref = None
+        else:
+            self.branch = None
+            self.git_ref = source
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
@@ -613,7 +619,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         if IBranch.providedBy(source):
             source = DecoratedBranch(source)
         comments = []
-        if getFeatureFlag('code.incremental_diffs.enabled'):
+        if (getFeatureFlag('code.incremental_diffs.enabled') and
+                merge_proposal.source_branch is not None):
+            # XXX cjwatson 2016-05-09: Implement for Git.
             ranges = [
                 (revisions[0].revision.getLefthandParent(),
                  revisions[-1].revision)
@@ -622,8 +630,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         else:
             diffs = [None] * len(groups)
         for revisions, diff in zip(groups, diffs):
+            if merge_proposal.source_branch is not None:
+                last_date_created = revisions[-1].revision.date_created
+            else:
+                last_date_created = revisions[-1]["author_date"]
             newrevs = CodeReviewNewRevisions(
-                revisions, revisions[-1].revision.date_created, source, diff)
+                revisions, last_date_created, source, diff)
             comments.append(newrevs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context

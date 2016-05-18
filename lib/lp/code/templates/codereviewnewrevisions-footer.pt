@@ -3,11 +3,19 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <tal:revisions define="branch context/branch;
-                         revisions context/revisions;
-                         show_diff_expander python:True;">
-    <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
-  </tal:revisions>
+  <tal:bzr-revisions condition="context/branch">
+    <tal:revisions define="branch context/branch;
+                           revisions context/revisions;
+                           show_diff_expander python:True;">
+      <metal:revisions use-macro="branch/@@+macros/branch-revisions"/>
+    </tal:revisions>
+  </tal:bzr-revisions>
+  <tal:git-revisions condition="context/git_ref">
+    <tal:revisions define="ref context/git_ref;
+                           commit_infos context/revisions;">
+      <metal:commits use-macro="ref/@@+macros/ref-commits"/>
+    </tal:revisions>
+  </tal:git-revisions>
   <tal:has-diff condition="context/diff">
     <tal:diff condition="not: request/ss|nothing"
               replace="structure context/diff/text/fmt:diff" />

@@ -135,7 +135,7 @@
         sha1 python:commit_info['sha1'];
         author python:commit_info['author'];
         author_date python:commit_info['author_date']">
-    <a tal:attributes="href python: context.getCodebrowseUrlForRevision(sha1)"
+    <a tal:attributes="href python: ref.getCodebrowseUrlForRevision(sha1)"
        tal:content="sha1/fmt:shorten/10" />
     by
     <tal:known-person condition="author/person">
@@ -153,7 +153,7 @@
       replace="structure commit_message/fmt:obfuscate-email/fmt:text-to-html" />
   </dd>
 
-  <div tal:define="merge_proposal python:commit_info['merge_proposal']"
+  <div tal:define="merge_proposal python:commit_info.get('merge_proposal')"
        tal:condition="merge_proposal">
     <dd class="subordinate commit-comment"
         tal:define="committer_date merge_proposal/merge_source/committer_date|nothing">

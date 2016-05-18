@@ -11,6 +11,7 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
+import hashlib
 import re
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -1031,8 +1032,11 @@ class TestBranchMergeProposalRequestReviewViewBzr(
 
 
 class TestBranchMergeProposalRequestReviewViewGit(
-    TestBranchMergeProposalRequestReviewViewMixin, BrowserTestCase):
+    TestBranchMergeProposalRequestReviewViewMixin, GitHostingClientMixin,
+    BrowserTestCase):
     """Test `BranchMergeProposalRequestReviewView` for Git."""
+
+    layer = LaunchpadFunctionalLayer
 
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
@@ -1261,10 +1265,10 @@ class TestResubmitBrowserBzr(BrowserTestCase):
             self.assertEqual('flibble', bmp.superseded_by.description)
 
 
-class TestResubmitBrowserGit(BrowserTestCase):
+class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
     """Browser tests for resubmitting branch merge proposals for Git."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_resubmit_text(self):
         """The text of the resubmit page is as expected."""
@@ -1441,7 +1445,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             [diff],
             [comment.diff for comment in comments])
 
-    def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
+    def test_CodeReviewNewRevisions_implements_interface_bzr(self):
         # The browser helper class implements its interface.
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
         revision_date = review_date + timedelta(days=1)
@@ -1453,6 +1457,36 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         new_revisions = view.conversation.comments[0]
 
         self.assertTrue(verifyObject(ICodeReviewNewRevisions, new_revisions))
+
+    def test_CodeReviewNewRevisions_implements_interface_git(self):
+        # The browser helper class implements its interface.
+        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        author = self.factory.makePerson()
+        with person_logged_in(author):
+            author_email = author.preferredemail.email
+        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+        review_date = self.factory.getUniqueDate()
+        commit_date = self.factory.getUniqueDate()
+        bmp = self.factory.makeBranchMergeProposalForGit(
+            date_created=review_date)
+        hosting_client = FakeMethod()
+        hosting_client.getLog = FakeMethod(result=[
+            {
+                u'sha1': unicode(hashlib.sha1(b'0').hexdigest()),
+                u'message': u'0',
+                u'author': {
+                    u'name': author.display_name,
+                    u'email': author_email,
+                    u'time': int((commit_date - epoch).total_seconds()),
+                    },
+                }
+            ])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+
+        view = create_initialized_view(bmp, '+index')
+        new_commits = view.conversation.comments[0]
+
+        self.assertTrue(verifyObject(ICodeReviewNewRevisions, new_commits))
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
@@ -1527,9 +1561,10 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertThat(browser.contents, HTMLContains(expected_meta))
 
 
-class TestBranchMergeProposalBrowserView(BrowserTestCase):
+class TestBranchMergeProposalBrowserView(
+    GitHostingClientMixin, BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_prerequisite_bzr(self):
         # A prerequisite branch is rendered in the Bazaar case.
@@ -1727,7 +1762,7 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
         self.assertEqual('Eric on 2008-09-10', view.status_title)
 
 
-class TestBranchMergeProposal(BrowserTestCase):
+class TestBranchMergeProposal(GitHostingClientMixin, BrowserTestCase):
 
     layer = LaunchpadFunctionalLayer
 
