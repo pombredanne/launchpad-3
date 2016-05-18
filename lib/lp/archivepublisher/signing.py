@@ -16,11 +16,11 @@ __all__ = [
     "SigningUpload",
     ]
 
-import inspect
 import os
 import shutil
 import subprocess
 import tarfile
+import textwrap
 
 from lp.archivepublisher.customupload import (
     CustomUpload,
@@ -228,7 +228,7 @@ class SigningUpload(CustomUpload):
 
         common_name = self.getArchiveOwnerAndName()
 
-        genkey_text = inspect.cleandoc("""\
+        genkey_text = textwrap.dedent("""\
             [ req ]
             default_bits = 4096
             distinguished_name = req_distinguished_name
