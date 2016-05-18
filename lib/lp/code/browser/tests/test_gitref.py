@@ -12,13 +12,17 @@ import re
 import pytz
 import soupmatchers
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.services.job.runner import JobRunner
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import LaunchpadFunctionalLayer
@@ -114,10 +118,24 @@ class TestGitRefView(BrowserTestCase):
                 }
             for i in range(5)]
 
+    def scanRef(self, ref, tip):
+        self.hosting_client.getRefs = FakeMethod(
+            result={
+                ref.path: {"object": {"sha1": tip["sha1"], "type": "commit"}},
+                })
+        self.hosting_client.getCommits = FakeMethod(result=[tip])
+        self.hosting_client.getProperties = FakeMethod(
+            result={"default_branch": ref.path})
+        job = getUtility(IGitRefScanJobSource).create(
+            removeSecurityProxy(ref.repository))
+        with dbuser("branchscanner"):
+            JobRunner([job]).runAll()
+
     def test_recent_commits(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
         log = self.makeCommitLog()
         self.hosting_client.getLog.result = list(reversed(log))
+        self.scanRef(ref, log[-1])
         view = create_initialized_view(ref, "+index")
         expected_texts = list(reversed([
             "%.7s...\nby\n%s\non 2015-01-%02d" % (
@@ -135,7 +153,9 @@ class TestGitRefView(BrowserTestCase):
 
     def test_all_commits_link(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
-        self.hosting_client.getLog.result = self.makeCommitLog()
+        log = self.makeCommitLog()
+        self.hosting_client.getLog.result = list(reversed(log))
+        self.scanRef(ref, log[-1])
         view = create_initialized_view(ref, "+index")
         recent_commits_tag = soupmatchers.Tag(
             'recent commits', 'div', attrs={'id': 'recent-commits'})

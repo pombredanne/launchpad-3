@@ -330,10 +330,6 @@ class GitRefMixin:
         return self.getCommits(self.commit_sha1, limit=quantity)
 
     @property
-    def has_commits(self):
-        return len(self.getLatestCommits())
-
-    @property
     def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
@@ -380,6 +376,10 @@ class GitRef(StormBase, GitRefMixin):
     @property
     def commit_message_first_line(self):
         return self.commit_message.split("\n", 1)[0]
+
+    @property
+    def has_commits(self):
+        return self.commit_message is not None
 
     def addLandingTarget(self, registrant, merge_target,
                          merge_prerequisite=None, whiteboard=None,
