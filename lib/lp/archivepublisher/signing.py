@@ -117,7 +117,7 @@ class SigningUpload(CustomUpload):
         self.archiveroot = pubconf.archiveroot
 
     def setSigningOptions(self):
-        """ find and extract raw-signing.options from the tarball."""
+        """Find and extract raw-signing.options from the tarball."""
         self.signing_options = {}
 
         options_file = os.path.join(self.tmpdir, self.version,
