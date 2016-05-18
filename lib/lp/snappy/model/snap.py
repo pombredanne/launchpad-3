@@ -100,6 +100,7 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.model.snapbuild import SnapBuild
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import (
@@ -287,6 +288,18 @@ class Snap(Storm, WebhookTargetMixin):
                 and (
                     das.processor.supports_virtualized
                     or not self.require_virtualized))]
+
+    @property
+    def store_distro_series(self):
+        if self.store_series is None:
+            return None
+        return getUtility(ISnappyDistroSeriesSet).getByBothSeries(
+            self.store_series, self.distro_series)
+
+    @store_distro_series.setter
+    def store_distro_series(self, value):
+        self.distro_series = value.distro_series
+        self.store_series = value.snappy_series
 
     @property
     def can_upload_to_store(self):
