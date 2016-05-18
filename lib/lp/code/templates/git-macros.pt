@@ -155,9 +155,13 @@
 
   <div tal:define="merge_proposal python:commit_info['merge_proposal']"
        tal:condition="merge_proposal">
-    <dd class="subordinate commit-comment">
+    <dd class="subordinate commit-comment"
+        tal:define="committer_date merge_proposal/merge_source/committer_date|nothing">
       <a tal:attributes="href merge_proposal/fmt:url">Merged</a> branch
-      <a tal:replace="structure merge_proposal/merge_source/fmt:link">source branch</a>
+      <a tal:condition="committer_date"
+         tal:replace="structure merge_proposal/merge_source/fmt:link">source branch</a>
+      <span tal:condition="not: committer_date"
+            tal:content="merge_proposal/merge_source/display_name" />
     </dd>
   </div>
 
