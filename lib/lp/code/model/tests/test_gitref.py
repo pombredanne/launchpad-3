@@ -148,13 +148,13 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
 
     def test_basic(self):
-        revisions = self.ref.getCommits(self.sha1_tip)
+        commits = self.ref.getCommits(self.sha1_tip)
         path = self.ref.repository.getInternalPath()
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": None, "stop": None, "logger": None})],
             self.hosting_client.getLog.calls)
-        self.assertThat(revisions, MatchesListwise([
+        self.assertThat(commits, MatchesListwise([
             ContainsDict({
                 "sha1": Equals(self.sha1_tip),
                 "author": MatchesStructure.byEquality(person=self.authors[0]),
@@ -182,8 +182,8 @@ class TestGitRefGetCommits(TestCaseWithFactory):
     def test_disable_hosting(self):
         self.useFixture(
             FeatureFixture({u"code.git.log.disable_hosting": u"on"}))
-        revisions = self.ref.getCommits(self.sha1_tip)
-        self.assertThat(revisions, MatchesListwise([
+        commits = self.ref.getCommits(self.sha1_tip)
+        self.assertThat(commits, MatchesListwise([
             ContainsDict({
                 "sha1": Equals(self.ref.commit_sha1),
                 "commit_message": Is(None),
@@ -218,10 +218,10 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_start_date(self):
-        revisions = self.ref.getCommits(
+        commits = self.ref.getCommits(
             self.sha1_tip, start_date=(self.dates[1] - timedelta(seconds=1)))
         path = self.ref.repository.getInternalPath()
-        self.assertThat(revisions, MatchesListwise([
+        self.assertThat(commits, MatchesListwise([
             ContainsDict({"sha1": Equals(self.sha1_tip)}),
             ]))
         key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
@@ -230,9 +230,9 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_end_date(self):
-        revisions = self.ref.getCommits(
+        commits = self.ref.getCommits(
             self.sha1_tip, end_date=(self.dates[1] - timedelta(seconds=1)))
-        self.assertThat(revisions, MatchesListwise([
+        self.assertThat(commits, MatchesListwise([
             ContainsDict({"sha1": Equals(self.sha1_root)}),
             ]))
 

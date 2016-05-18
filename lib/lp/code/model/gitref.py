@@ -311,7 +311,7 @@ class GitRefMixin:
 
         log = self._getLog(start, limit=limit, stop=stop, logger=logger)
         parsed_commits = parse_git_commits(log)
-        revisions = []
+        commits = []
         for commit in log:
             if "sha1" not in commit:
                 continue
@@ -323,8 +323,8 @@ class GitRefMixin:
             if end_date is not None:
                 if author_date is None or author_date > end_date:
                     continue
-            revisions.append(parsed_commit)
-        return revisions
+            commits.append(parsed_commit)
+        return commits
 
     def getLatestCommits(self, quantity=10):
         return self.getCommits(self.commit_sha1, limit=quantity)

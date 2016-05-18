@@ -102,7 +102,7 @@
 
   <tal:comment condition="nothing">
     This macro requires the following defined variables:
-      ref - the ref that has the revisions
+      ref - the ref that has the commits
       commit_infos - a list of dicts of commit information (sha1, author,
                      author_date, commit_message)
   </tal:comment>
