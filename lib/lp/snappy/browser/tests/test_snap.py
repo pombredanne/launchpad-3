@@ -356,32 +356,32 @@ class TestSnapAddView(BrowserTestCase):
 
     def test_initial_name_extraction_git(self):
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.getBlob = FakeMethod(result='name: test-snap')
+        git_ref.repository.getBlob = FakeMethod(result='name: test-snap')
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
-        self.assertIn('name', initial_values)
-        self.assertEqual('test-snap', initial_values['name'])
+        self.assertIn('store_name', initial_values)
+        self.assertEqual('test-snap', initial_values['store_name'])
 
     def test_initial_name_extraction_git_repo_error(self):
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.getBlob = FakeMethod(failure=GitRepositoryScanFault)
+        git_ref.repository.getBlob = FakeMethod(failure=GitRepositoryScanFault)
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
-        self.assertIn('name', initial_values)
-        self.assertEqual(None, initial_values['name'])
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
 
     def test_initial_name_extraction_git_invalid_data(self):
         for invalid_result in (None, 123, '', '[][]', '#name:test', ']'):
             [git_ref] = self.factory.makeGitRefs()
-            git_ref.getBlob = FakeMethod(result=invalid_result)
+            git_ref.repository.getBlob = FakeMethod(result=invalid_result)
             view = create_initialized_view(git_ref, "+new-snap")
             initial_values = view.initial_values
-            self.assertIn('name', initial_values)
-            self.assertEqual(None, initial_values['name'])
+            self.assertIn('store_name', initial_values)
+            self.assertIsNone(initial_values['store_name'])
 
     def test_initial_name_extraction_git_safe_yaml(self):
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.getBlob = FakeMethod(result='Malicious code encoded in YAML!')
+        git_ref.repository.getBlob = FakeMethod(result='Malicious YAML!')
         view = create_initialized_view(git_ref, "+new-snap")
         with mock.patch('yaml.load') as unsafe_load:
             with mock.patch('yaml.safe_load') as safe_load:

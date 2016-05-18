@@ -360,24 +360,20 @@ class SnapAddView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        name = None
-        if IGitRef.providedBy(self.context):
-            # Try to extract Snap name from snapcraft.yaml file.
+        store_name = None
+        if self.has_snappy_series and IGitRef.providedBy(self.context):
+            # Try to extract Snap store name from snapcraft.yaml file.
             try:
-                blob = self.context.getBlob('snapcraft.yaml')
+                blob = self.context.repository.getBlob(
+                    'snapcraft.yaml', self.context.name)
                 # Beware of unsafe yaml.load()!
-                name = yaml.safe_load(blob).get('name')
+                store_name = yaml.safe_load(blob).get('name')
             except GitRepositoryScanFault:
                 log.info("Failed to get Snap manifest from Git %s",
                           self.context.unique_name)
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except:
+            except Exception:
                 log.debug("Failed to parse Snap manifest at %s",
                           self.context.unique_name)
-            if name is None:
-                self.widget_errors['name'] = (
-                    "Failed to find a valid snapcraft.yaml file.")
 
         # XXX cjwatson 2015-09-18: Hack to ensure that we don't end up
         # accidentally selecting ubuntu-rtm/14.09 or similar.
@@ -385,7 +381,7 @@ class SnapAddView(LaunchpadFormView):
         series = getUtility(ILaunchpadCelebrities).ubuntu.currentseries
         sds_set = getUtility(ISnappyDistroSeriesSet)
         return {
-            'name': name,
+            'store_name': store_name,
             'owner': self.user,
             'store_distro_series': sds_set.getByDistroSeries(series).first(),
             }

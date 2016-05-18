@@ -314,14 +314,6 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
 
-    def getBlob(filename):
-        """Get a blob by file name from the related Git repository at this
-        specific Git revision.
-
-        :param filename: Relative path of a file in the repository.
-        :return: A binary string with the blob content.
-        """
-
 
 class IGitRefBatchNavigator(ITableBatchNavigator):
     pass
