@@ -164,16 +164,27 @@ class DistributionSourcePackageCache(SQLBase):
                 archive=archive, distribution=distro,
                 sourcepackagename=spn)
 
-        all_binaries = list(IStore(BinaryPackageRelease).find(
+        # Query BinaryPackageBuilds and their BinaryPackageReleases
+        # separately, since the big and inconsistent intermediates can
+        # confuse postgres into a seq scan over BPR, which never ends
+        # well for anybody.
+        all_builds = list(IStore(BinaryPackageBuild).find(
             (BinaryPackageBuild.source_package_release_id,
-             BinaryPackageRelease.binarypackagenameID,
-             BinaryPackageRelease.summary, BinaryPackageRelease.description),
-            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
+             BinaryPackageBuild.id),
             BinaryPackageBuild.source_package_release_id.is_in(
                 [row[1] for row in all_sprs])))
+        all_binaries = list(IStore(BinaryPackageRelease).find(
+            (BinaryPackageRelease.buildID,
+             BinaryPackageRelease.binarypackagenameID,
+             BinaryPackageRelease.summary, BinaryPackageRelease.description),
+            BinaryPackageRelease.buildID.is_in(
+                [row[1] for row in all_builds])))
+        sprs_by_build = {build_id: spr_id for spr_id, build_id in all_builds}
+
         bulk.load(BinaryPackageName, [row[1] for row in all_binaries])
         binaries_by_spr = {}
-        for spr_id, bpn_id, summary, description in all_binaries:
+        for bpb_id, bpn_id, summary, description in all_binaries:
+            spr_id = sprs_by_build[bpb_id]
             binaries_by_spr.setdefault(spr_id, [])
             binaries_by_spr[spr_id].append((
                 IStore(BinaryPackageName).get(BinaryPackageName, bpn_id),
