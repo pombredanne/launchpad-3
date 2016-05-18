@@ -137,7 +137,7 @@ class SigningUpload(CustomUpload):
         except ValueError:
             return None
 
-    def getArchiveOwner(self):
+    def getArchiveOwnerAndName(self):
         # XXX: pull out the PPA owner and name to seed key CN
         archive_name = os.path.dirname(self.archiveroot)
         owner_name = os.path.basename(os.path.dirname(archive_name))
@@ -181,7 +181,7 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        common_name = '/CN=PPA ' + self.getArchiveOwner() + '/'
+        common_name = '/CN=PPA ' + self.getArchiveOwnerAndName() + '/'
 
         old_mask = os.umask(0o077)
         try:
@@ -226,7 +226,7 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        common_name = self.getArchiveOwner()
+        common_name = self.getArchiveOwnerAndName()
 
         genkey_text = inspect.cleandoc("""\
             [ req ]
