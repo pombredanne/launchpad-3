@@ -138,7 +138,7 @@ class SigningUpload(CustomUpload):
             return None
 
     def getArchiveOwnerAndName(self):
-        # XXX: pull out the PPA owner and name to seed key CN
+        # XXX apw 2016-05-18: pull out the PPA owner and name to seed key CN
         archive_name = os.path.dirname(self.archiveroot)
         owner_name = os.path.basename(os.path.dirname(archive_name))
         archive_name = os.path.basename(archive_name)
