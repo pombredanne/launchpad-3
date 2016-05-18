@@ -19,10 +19,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import IStore
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
     IDistributionSourcePackageCache,
