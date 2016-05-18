@@ -1036,6 +1036,8 @@ class TestBranchMergeProposalRequestReviewViewGit(
     BrowserTestCase):
     """Test `BranchMergeProposalRequestReviewView` for Git."""
 
+    layer = LaunchpadFunctionalLayer
+
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
 
@@ -1266,7 +1268,7 @@ class TestResubmitBrowserBzr(BrowserTestCase):
 class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
     """Browser tests for resubmitting branch merge proposals for Git."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_resubmit_text(self):
         """The text of the resubmit page is as expected."""
@@ -1562,7 +1564,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
 class TestBranchMergeProposalBrowserView(
     GitHostingClientMixin, BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_prerequisite_bzr(self):
         # A prerequisite branch is rendered in the Bazaar case.
