@@ -1265,10 +1265,10 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             u"refs/heads/master": {
                 u"sha1": master_sha1,
                 u"type": GitObjectType.COMMIT,
-                u"author": expected_author.id,
+                u"author": expected_author,
                 u"author_addr": expected_author_addr,
                 u"author_date": author_date,
-                u"committer": expected_committer.id,
+                u"committer": expected_committer,
                 u"committer_addr": expected_committer_addr,
                 u"committer_date": committer_date,
                 u"commit_message": u"tip of master",

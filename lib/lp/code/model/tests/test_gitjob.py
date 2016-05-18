@@ -119,7 +119,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
         epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         dates = {path: next(author_date_gen) for path in paths}
         return [{
-            "sha1": hashlib.sha1(path).hexdigest(),
+            "sha1": unicode(hashlib.sha1(path).hexdigest()),
             "message": "tip of %s" % path,
             "author": {
                 "name": author.displayname,
@@ -132,7 +132,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
                 "time": int((dates[path] - epoch).total_seconds()),
                 },
             "parents": [],
-            "tree": hashlib.sha1("").hexdigest(),
+            "tree": unicode(hashlib.sha1("").hexdigest()),
             } for path in paths]
 
     def assertRefsMatch(self, refs, repository, paths):

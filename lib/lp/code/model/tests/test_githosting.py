@@ -158,6 +158,28 @@ class TestGitHostingClient(TestCase):
                 "Bad request",
                 self.client.getCommits, "123", ["0"])
 
+    def test_getLog(self):
+        with self.mockRequests(content=b'[{"sha1": "0"}]'):
+            log = self.client.getLog("123", "refs/heads/master")
+        self.assertEqual([{"sha1": "0"}], log)
+        self.assertRequest("repo/123/log/refs/heads/master", method="GET")
+
+    def test_getLog_limit_stop(self):
+        with self.mockRequests(content=b'[{"sha1": "0"}]'):
+            log = self.client.getLog(
+                "123", "refs/heads/master", limit=10, stop="refs/heads/old")
+        self.assertEqual([{"sha1": "0"}], log)
+        self.assertRequest(
+            "repo/123/log/refs/heads/master?limit=10&stop=refs%2Fheads%2Fold",
+            method="GET")
+
+    def test_getLog_failure(self):
+        with self.mockRequests(status_code=400, content=b"Bad request"):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get commit log from Git repository: Bad request",
+                self.client.getLog, "123", "refs/heads/master")
+
     def test_getMergeDiff(self):
         with self.mockRequests(content=b'{"patch": ""}'):
             diff = self.client.getMergeDiff("123", "a", "b")
