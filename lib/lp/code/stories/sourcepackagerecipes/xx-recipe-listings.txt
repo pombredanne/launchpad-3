@@ -125,7 +125,14 @@ is a base for.
 If we start from one of the branches instead, then only two recipes are
 listed.
 
-    >>> nopriv_browser.open(ref1_url)
+    >>> from lp.code.interfaces.githosting import IGitHostingClient
+    >>> from lp.testing.fakemethod import FakeMethod
+    >>> from lp.testing.fixture import ZopeUtilityFixture
+
+    >>> hosting_client = FakeMethod()
+    >>> hosting_client.getLog = FakeMethod(result=[])
+    >>> with ZopeUtilityFixture(hosting_client, IGitHostingClient):
+    ...     nopriv_browser.open(ref1_url)
     >>> nopriv_browser.getLink('2 recipes').click()
     >>> print nopriv_browser.url
     http://code.launchpad.dev/%7Eperson-name.../product-name.../+git/gitrepository.../+ref/a/+recipes

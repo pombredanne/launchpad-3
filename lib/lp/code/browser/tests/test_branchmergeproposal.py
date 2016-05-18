@@ -237,6 +237,8 @@ class TestBranchMergeProposalMergedViewGit(
     BrowserTestCase):
     """Tests for `BranchMergeProposalMergedView` for Git."""
 
+    layer = LaunchpadFunctionalLayer
+
     arbitrary_revisions = ("0" * 40, "1" * 40, "2" * 40)
     merged_revision_text = 'Merged Revision ID'
 
@@ -1953,6 +1955,8 @@ class TestBranchMergeProposalDeleteViewGit(
     TestBranchMergeProposalDeleteViewMixin, GitHostingClientMixin,
     BrowserTestCase):
     """Test the BranchMergeProposal deletion view for Git."""
+
+    layer = LaunchpadFunctionalLayer
 
     def _makeBranchMergeProposal(self, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(**kwargs)

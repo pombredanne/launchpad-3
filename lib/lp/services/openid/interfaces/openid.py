@@ -24,3 +24,5 @@ class IOpenIDPersistentIdentity(Interface):
         'The OpenID identity URL for the user.')
     openid_identifier = Attribute(
         'The OpenID identifier used with the request.')
+    openid_canonical_url = Attribute(
+        'The OpenId canonical URL for the user.')
