@@ -6,22 +6,27 @@ __all__ = [
     'DistroSeriesPackageCache',
     ]
 
+from operator import attrgetter
+
 from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.locals import (
+from storm.expr import (
     Desc,
     Max,
-    RawStr,
+    Select,
     )
+from storm.locals import RawStr
 from zope.interface import implementer
 
+from lp.services.database import bulk
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroseriespackagecache import (
     IDistroSeriesPackageCache,
     )
@@ -48,6 +53,22 @@ class DistroSeriesPackageCache(SQLBase):
     description = StringCol(notNull=False, default=None)
     summaries = StringCol(notNull=False, default=None)
     descriptions = StringCol(notNull=False, default=None)
+
+    @classmethod
+    def findCurrentBinaryPackageNames(cls, archive, distroseries):
+        bpn_ids = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory.binarypackagenameID,
+            BinaryPackagePublishingHistory.distroarchseriesID.is_in(
+                Select(
+                    DistroArchSeries.id, tables=[DistroArchSeries],
+                    where=DistroArchSeries.distroseries == distroseries)),
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.status.is_in((
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED))).config(
+                    distinct=True)
+        return list(sorted(
+            bulk.load(BinaryPackageName, bpn_ids), key=attrgetter('name')))
 
     @classmethod
     def _find(cls, distroseries, archive=None):
@@ -79,25 +100,11 @@ class DistroSeriesPackageCache(SQLBase):
             messages.
         """
         # get the set of package names that should be there
-        bpns = set(BinaryPackageName.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            Archive.id = %s AND
-            BinaryPackagePublishingHistory.archive = Archive.id AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.binarypackagename =
-                BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.dateremoved is NULL AND
-            Archive.enabled = TRUE
-            """ % sqlvalues(distroseries.id, archive.id),
-            distinct=True,
-            clauseTables=[
-                'Archive',
-                'DistroArchSeries',
-                'BinaryPackagePublishingHistory',
-                'BinaryPackageRelease']))
+        if not archive.enabled:
+            bpns = set()
+        else:
+            bpns = set(
+                cls.findCurrentBinaryPackageNames(archive, distroseries))
 
         # remove the cache entries for binary packages we no longer want
         for cache in cls._find(distroseries, archive):
@@ -190,16 +197,7 @@ class DistroSeriesPackageCache(SQLBase):
             return
 
         # Get the set of package names to deal with.
-        bpns = IStore(BinaryPackageName).find(
-            BinaryPackageName,
-            DistroArchSeries.distroseries == distroseries,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.archive == archive,
-            BinaryPackagePublishingHistory.binarypackagename ==
-                BinaryPackageName.id,
-            BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True).order_by(BinaryPackageName.name)
+        bpns = cls.findCurrentBinaryPackageNames(archive, distroseries)
 
         number_of_updates = 0
         chunk_size = 0
