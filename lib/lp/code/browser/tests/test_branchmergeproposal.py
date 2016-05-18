@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -59,6 +59,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
@@ -87,6 +88,8 @@ from lp.testing import (
     time_counter,
     verifyObject,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -97,6 +100,16 @@ from lp.testing.pages import (
     get_feedback_messages,
     )
 from lp.testing.views import create_initialized_view
+
+
+class GitHostingClientMixin:
+
+    def setUp(self):
+        super(GitHostingClientMixin, self).setUp()
+        self.hosting_client = FakeMethod()
+        self.hosting_client.getLog = FakeMethod(result=[])
+        self.useFixture(
+            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
 
 
 class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
@@ -219,8 +232,11 @@ class TestBranchMergeProposalMergedViewBzr(
 
 
 class TestBranchMergeProposalMergedViewGit(
-    TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
+    TestBranchMergeProposalMergedViewMixin, GitHostingClientMixin,
+    BrowserTestCase):
     """Tests for `BranchMergeProposalMergedView` for Git."""
+
+    layer = LaunchpadFunctionalLayer
 
     arbitrary_revisions = ("0" * 40, "1" * 40, "2" * 40)
     merged_revision_text = 'Merged Revision ID'
@@ -1903,8 +1919,11 @@ class TestBranchMergeProposalDeleteViewBzr(
 
 
 class TestBranchMergeProposalDeleteViewGit(
-    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    TestBranchMergeProposalDeleteViewMixin, GitHostingClientMixin,
+    BrowserTestCase):
     """Test the BranchMergeProposal deletion view for Git."""
+
+    layer = LaunchpadFunctionalLayer
 
     def _makeBranchMergeProposal(self, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(**kwargs)
