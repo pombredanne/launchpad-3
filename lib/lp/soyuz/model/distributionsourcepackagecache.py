@@ -131,7 +131,9 @@ class DistributionSourcePackageCache(SQLBase):
         """
 
         # Get the set of published sourcepackage releases.
-        all_sprs = list(IStore(SourcePackageRelease).find(SourcePackageRelease,
+        all_sprs = list(IStore(SourcePackageRelease).find(
+            (SourcePackageRelease.sourcepackagenameID,
+             SourcePackageRelease.id, SourcePackageRelease.version),
             SourcePackageRelease.id ==
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
             SourcePackagePublishingHistory.sourcepackagenameID.is_in(
@@ -146,9 +148,10 @@ class DistributionSourcePackageCache(SQLBase):
             return
 
         spr_map = {}
-        for spr in all_sprs:
-            spr_map.setdefault(spr.sourcepackagename, [])
-            spr_map[spr.sourcepackagename].append(spr)
+        for spn_id, spr_id, spr_version in all_sprs:
+            spn = IStore(SourcePackageName).get(SourcePackageName, spn_id)
+            spr_map.setdefault(spn, [])
+            spr_map[spn].append((spr_id, spr_version))
 
         all_caches = IStore(cls).find(
             cls, cls.distribution == distro, cls.archive == archive,
@@ -167,7 +170,7 @@ class DistributionSourcePackageCache(SQLBase):
              BinaryPackageRelease.summary, BinaryPackageRelease.description),
             BinaryPackageRelease.buildID == BinaryPackageBuild.id,
             BinaryPackageBuild.source_package_release_id.is_in(
-                [spr.id for spr in all_sprs])))
+                [row[1] for row in all_sprs])))
         bulk.load(BinaryPackageName, [row[1] for row in all_binaries])
         binaries_by_spr = {}
         for spr_id, bpn_id, summary, description in all_binaries:
@@ -185,10 +188,9 @@ class DistributionSourcePackageCache(SQLBase):
             binpkgnames = set()
             binpkgsummaries = set()
             binpkgdescriptions = set()
-            for spr in sprs:
-                log.debug("Considering source version %s" % spr.version)
-            for spr in sprs:
-                binpkgs = binaries_by_spr.get(spr.id, [])
+            for spr_id, spr_version in sprs:
+                log.debug("Considering source version %s" % spr_version)
+                binpkgs = binaries_by_spr.get(spr_id, [])
                 for bpn, summary, description in binpkgs:
                     binpkgnames.add(bpn.name)
                     binpkgsummaries.add(summary)
