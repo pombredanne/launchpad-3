@@ -32,7 +32,7 @@ from lp.services.osutils import remove_if_exists
 class SigningUploadPackError(CustomUploadError):
     def __init__(self, tarfile_path, exc):
         message = "Problem building tarball '%s': %s" % (
-            tarfile_path, str(exc))
+            tarfile_path, exc)
         CustomUploadError.__init__(self, message)
 
 
