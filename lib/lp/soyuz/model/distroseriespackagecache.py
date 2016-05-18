@@ -115,7 +115,7 @@ class DistroSeriesPackageCache(SQLBase):
                 cache.destroySelf()
 
     @classmethod
-    def _update(cls, distroseries, binarypackagename, archive, log):
+    def _update(cls, distroseries, binarypackagenames, archive, log):
         """Update the package cache for a given IBinaryPackageName
 
         'log' is required, it should be a logger object able to print
@@ -124,58 +124,70 @@ class DistroSeriesPackageCache(SQLBase):
         (in full batches of 100 elements)
         """
         # get the set of published binarypackagereleases
-        details = list(IStore(BinaryPackageRelease).find(
-            (BinaryPackageRelease.summary, BinaryPackageRelease.description,
+        all_details = list(IStore(BinaryPackageRelease).find(
+            (BinaryPackageRelease.binarypackagenameID,
+             BinaryPackageRelease.summary, BinaryPackageRelease.description,
              Max(BinaryPackageRelease.datecreated)),
             BinaryPackageRelease.id ==
                 BinaryPackagePublishingHistory.binarypackagereleaseID,
-            BinaryPackagePublishingHistory.binarypackagename ==
-                binarypackagename,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            DistroArchSeries.distroseries == distroseries,
+            BinaryPackagePublishingHistory.binarypackagenameID.is_in(
+                [bpn.id for bpn in binarypackagenames]),
+            BinaryPackagePublishingHistory.distroarchseriesID.is_in(
+                Select(
+                    DistroArchSeries.id, tables=[DistroArchSeries],
+                    where=DistroArchSeries.distroseries == distroseries)),
             BinaryPackagePublishingHistory.archive == archive,
-            BinaryPackagePublishingHistory.dateremoved == None
+            BinaryPackagePublishingHistory.status.is_in((
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED))
             ).group_by(
+                BinaryPackageRelease.binarypackagenameID,
                 BinaryPackageRelease.summary,
                 BinaryPackageRelease.description
             ).order_by(
+                BinaryPackageRelease.binarypackagenameID,
                 Desc(Max(BinaryPackageRelease.datecreated))))
-
-        if not details:
+        if not all_details:
             log.debug("No binary releases found.")
             return
 
-        # find or create the cache entry
-        cache = cls.selectOne("""
-            distroseries = %s AND
-            archive = %s AND
-            binarypackagename = %s
-            """ % sqlvalues(distroseries, archive, binarypackagename))
-        if cache is None:
-            log.debug("Creating new binary cache entry.")
-            cache = cls(
-                archive=archive,
-                distroseries=distroseries,
-                binarypackagename=binarypackagename)
+        details_map = {}
+        for (bpn_id, summary, description, datecreated) in all_details:
+            bpn = IStore(BinaryPackageName).get(BinaryPackageName, bpn_id)
+            details_map.setdefault(bpn, [])
+            details_map[bpn].append((summary, description))
 
-        # make sure the cached name, summary and description are correct
-        cache.name = binarypackagename.name
-        cache.summary = details[0][0]
-        cache.description = details[0][1]
+        all_caches = IStore(cls).find(
+            cls, cls.distroseries == distroseries, cls.archive == archive,
+            cls.binarypackagenameID.is_in(
+                [bpn.id for bpn in binarypackagenames]))
+        cache_map = {cache.binarypackagename: cache for cache in all_caches}
 
-        # get the sets of binary package summaries, descriptions. there is
-        # likely only one, but just in case...
+        for bpn in set(binarypackagenames) - set(cache_map.keys()):
+            cache_map[bpn] = cls(
+                archive=archive, distroseries=distroseries,
+                binarypackagename=bpn)
 
-        summaries = set()
-        descriptions = set()
-        for summary, description, datecreated in details:
-            summaries.add(summary)
-            descriptions.add(description)
+        for bpn in binarypackagenames:
+            cache = cache_map[bpn]
+            details = details_map[bpn]
+            # make sure the cached name, summary and description are correct
+            cache.name = bpn.name
+            cache.summary = details[0][0]
+            cache.description = details[0][1]
 
-        # and update the caches
-        cache.summaries = ' '.join(sorted(summaries))
-        cache.descriptions = ' '.join(sorted(descriptions))
+            # get the sets of binary package summaries, descriptions. there is
+            # likely only one, but just in case...
+
+            summaries = set()
+            descriptions = set()
+            for summary, description in details:
+                summaries.add(summary)
+                descriptions.add(description)
+
+            # and update the caches
+            cache.summaries = ' '.join(sorted(summaries))
+            cache.descriptions = ' '.join(sorted(descriptions))
 
     @classmethod
     def updateAll(cls, distroseries, archive, log, ztm, commit_chunk=500):
@@ -200,15 +212,22 @@ class DistroSeriesPackageCache(SQLBase):
         bpns = cls.findCurrentBinaryPackageNames(archive, distroseries)
 
         number_of_updates = 0
-        chunk_size = 0
+        chunks = []
+        chunk = []
         for bpn in bpns:
-            log.debug("Considering binary '%s'" % bpn.name)
-            cls._update(distroseries, bpn, archive, log)
-            number_of_updates += 1
-            chunk_size += 1
-            if chunk_size == commit_chunk:
-                chunk_size = 0
-                log.debug("Committing")
-                ztm.commit()
+            chunk.append(bpn)
+            if len(chunk) == commit_chunk:
+                chunks.append(chunk)
+                chunk = []
+        if chunk:
+            chunks.append(chunk)
+        for chunk in chunks:
+            log.debug(
+                "Considering binaries %s",
+                ', '.join([bpn.name for bpn in chunk]))
+            cls._update(distroseries, chunk, archive, log)
+            number_of_updates += len(chunk)
+            log.debug("Committing")
+            ztm.commit()
 
         return number_of_updates
