@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = ['DistributionSourcePackageCache', ]
 
+from collections import defaultdict
 from operator import (
     attrgetter,
     itemgetter,
@@ -68,8 +69,7 @@ class DistributionSourcePackageCache(SQLBase):
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED))).config(
                     distinct=True)
-        return list(sorted(
-            bulk.load(SourcePackageName, spn_ids), key=attrgetter('name')))
+        return bulk.load(SourcePackageName, spn_ids)
 
     @classmethod
     def _find(cls, distro, archive=None):
@@ -145,10 +145,9 @@ class DistributionSourcePackageCache(SQLBase):
             log.debug("No sources releases found.")
             return
 
-        spr_map = {}
+        spr_map = defaultdict(list)
         for spn_id, spr_id, spr_version in all_sprs:
             spn = IStore(SourcePackageName).get(SourcePackageName, spn_id)
-            spr_map.setdefault(spn, [])
             spr_map[spn].append((spr_id, spr_version))
 
         all_caches = IStore(cls).find(
@@ -185,10 +184,9 @@ class DistributionSourcePackageCache(SQLBase):
         sprs_by_build = {build_id: spr_id for spr_id, build_id in all_builds}
 
         bulk.load(BinaryPackageName, [row[1] for row in all_binaries])
-        binaries_by_spr = {}
+        binaries_by_spr = defaultdict(list)
         for bpb_id, bpn_id, summary, description in all_binaries:
             spr_id = sprs_by_build[bpb_id]
-            binaries_by_spr.setdefault(spr_id, [])
             binaries_by_spr[spr_id].append((
                 IStore(BinaryPackageName).get(BinaryPackageName, bpn_id),
                 summary, description))
@@ -237,7 +235,9 @@ class DistributionSourcePackageCache(SQLBase):
             return
 
         # Get the set of source package names to deal with.
-        spns = cls.findCurrentSourcePackageNames(archive)
+        spns = list(sorted(
+            cls.findCurrentSourcePackageNames(archive),
+            key=attrgetter('name')))
 
         number_of_updates = 0
         chunks = []

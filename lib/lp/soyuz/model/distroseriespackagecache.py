@@ -6,6 +6,7 @@ __all__ = [
     'DistroSeriesPackageCache',
     ]
 
+from collections import defaultdict
 from operator import attrgetter
 
 from sqlobject import (
@@ -64,8 +65,7 @@ class DistroSeriesPackageCache(SQLBase):
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED))).config(
                     distinct=True)
-        return list(sorted(
-            bulk.load(BinaryPackageName, bpn_ids), key=attrgetter('name')))
+        return bulk.load(BinaryPackageName, bpn_ids)
 
     @classmethod
     def _find(cls, distroseries, archive=None):
@@ -148,10 +148,9 @@ class DistroSeriesPackageCache(SQLBase):
             log.debug("No binary releases found.")
             return
 
-        details_map = {}
+        details_map = defaultdict(list)
         for (bpn_id, summary, description, datecreated) in all_details:
             bpn = IStore(BinaryPackageName).get(BinaryPackageName, bpn_id)
-            details_map.setdefault(bpn, [])
             details_map[bpn].append((summary, description))
 
         all_caches = IStore(cls).find(
@@ -160,7 +159,7 @@ class DistroSeriesPackageCache(SQLBase):
                 [bpn.id for bpn in binarypackagenames]))
         cache_map = {cache.binarypackagename: cache for cache in all_caches}
 
-        for bpn in set(binarypackagenames) - set(cache_map.keys()):
+        for bpn in set(binarypackagenames) - set(cache_map):
             cache_map[bpn] = cls(
                 archive=archive, distroseries=distroseries,
                 binarypackagename=bpn)
@@ -206,7 +205,9 @@ class DistroSeriesPackageCache(SQLBase):
             return
 
         # Get the set of package names to deal with.
-        bpns = cls.findCurrentBinaryPackageNames(archive, distroseries)
+        bpns = list(sorted(
+            cls.findCurrentBinaryPackageNames(archive, distroseries),
+            key=attrgetter('name')))
 
         number_of_updates = 0
         chunks = []
