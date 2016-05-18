@@ -222,6 +222,7 @@ class DistroSeriesPackageCache(SQLBase):
         if chunk:
             chunks.append(chunk)
         for chunk in chunks:
+            bulk.load(BinaryPackageName, [bpn.id for bpn in chunk])
             log.debug(
                 "Considering binaries %s",
                 ', '.join([bpn.name for bpn in chunk]))

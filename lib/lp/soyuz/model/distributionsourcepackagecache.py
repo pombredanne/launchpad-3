@@ -236,9 +236,10 @@ class DistributionSourcePackageCache(SQLBase):
         if chunk:
             chunks.append(chunk)
         for chunk in chunks:
+            bulk.load(SourcePackageName, [spn.id for spn in chunk])
             log.debug(
                 "Considering sources %s",
-                ', '.join([bpn.name for bpn in chunk]))
+                ', '.join([spn.name for spn in chunk]))
             cls._update(distro, chunk, archive, log)
             number_of_updates += len(chunk)
             log.debug("Committing")
