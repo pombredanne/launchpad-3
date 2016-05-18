@@ -16,11 +16,11 @@ __all__ = [
     "SigningUpload",
     ]
 
-import os
-import subprocess
 import inspect
-import tarfile
+import os
 import shutil
+import subprocess
+import tarfile
 
 from lp.archivepublisher.customupload import (
     CustomUpload,
