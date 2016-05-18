@@ -257,7 +257,7 @@ class GPGKeySet:
 
     def getOwnerIdForPerson(self, owner):
         """See IGPGKeySet."""
-        url = IOpenIDPersistentIdentity(owner).openid_identity_url
+        url = IOpenIDPersistentIdentity(owner).openid_canonical_url
         assert url is not None
         return url
 

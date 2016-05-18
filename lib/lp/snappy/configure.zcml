@@ -124,6 +124,20 @@
         <allow interface="lp.snappy.interfaces.snapstoreclient.ISnapStoreClient" />
     </securedutility>
 
+    <!-- Snap-related jobs -->
+    <class class="lp.snappy.model.snapbuildjob.SnapBuildJob">
+        <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapBuildJob" />
+    </class>
+    <securedutility
+        component="lp.snappy.model.snapbuildjob.SnapStoreUploadJob"
+        provides="lp.snappy.interfaces.snapbuildjob.ISnapStoreUploadJobSource">
+        <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapStoreUploadJobSource" />
+    </securedutility>
+    <class class="lp.snappy.model.snapbuildjob.SnapStoreUploadJob">
+        <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapBuildJob" />
+        <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapStoreUploadJob" />
+    </class>
+
     <webservice:register module="lp.snappy.interfaces.webservice" />
 
 </configure>

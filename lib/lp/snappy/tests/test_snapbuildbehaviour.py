@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
@@ -62,7 +62,7 @@ class TestSnapBuildBehaviourBase(TestCaseWithFactory):
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.pushConfig("snappy", tools_source=None)
 
-    def makeJob(self, pocket=PackagePublishingPocket.RELEASE, **kwargs):
+    def makeJob(self, pocket=PackagePublishingPocket.UPDATES, **kwargs):
         """Create a sample `ISnapBuildBehaviour`."""
         distribution = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(

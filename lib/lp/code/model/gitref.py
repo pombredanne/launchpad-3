@@ -7,6 +7,7 @@ __all__ = [
     'GitRefFrozen',
     ]
 
+from datetime import datetime
 import json
 from urllib import quote_plus
 
@@ -55,6 +56,7 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 
 
@@ -247,12 +249,18 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.repository.pending_writes
 
-    def _getLog(self, start, limit=None, stop=None, logger=None):
+    def _getLog(self, start, limit=None, stop=None,
+                enable_hosting=None, enable_memcache=None, logger=None):
+        if enable_hosting is None:
+            enable_hosting = not getFeatureFlag(
+                u"code.git.log.disable_hosting")
+        if enable_memcache is None:
+            enable_memcache = not getFeatureFlag(
+                u"code.git.log.disable_memcache")
         hosting_client = getUtility(IGitHostingClient)
         memcache_client = getUtility(IMemcacheClient)
         path = self.repository.getInternalPath()
-        memcache_key = "%s:git-revisions:%s:%s" % (
-            config.instance_name, path, start)
+        memcache_key = "%s:git-log:%s:%s" % (config.instance_name, path, start)
         if limit is not None:
             memcache_key += ":limit=%s" % limit
         if stop is not None:
@@ -260,19 +268,40 @@ class GitRefMixin:
         if isinstance(memcache_key, unicode):
             memcache_key = memcache_key.encode("UTF-8")
         log = None
-        cached_log = memcache_client.get(memcache_key)
-        if cached_log is not None:
-            try:
-                log = json.loads(cached_log)
-            except Exception as e:
-                logger.info(
-                    "Cannot load cached log information for %s:%s (%s); "
-                    "deleting" % (path, start, str(e)))
-                memcache_client.delete(memcache_key)
+        if enable_memcache:
+            cached_log = memcache_client.get(memcache_key)
+            if cached_log is not None:
+                try:
+                    log = json.loads(cached_log)
+                except Exception:
+                    logger.exception(
+                        "Cannot load cached log information for %s:%s; "
+                        "deleting" % (path, start))
+                    memcache_client.delete(memcache_key)
         if log is None:
-            log = removeSecurityProxy(hosting_client.getLog(
-                path, start, limit=limit, stop=stop, logger=logger))
-            memcache_client.set(memcache_key, json.dumps(log))
+            if enable_hosting:
+                log = removeSecurityProxy(hosting_client.getLog(
+                    path, start, limit=limit, stop=stop, logger=logger))
+                if enable_memcache:
+                    memcache_client.set(memcache_key, json.dumps(log))
+            else:
+                # Fall back to synthesising something reasonable based on
+                # information in our own database.
+                epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+                log = [{
+                    "sha1": self.commit_sha1,
+                    "message": self.commit_message,
+                    "author": None if self.author is None else {
+                        "name": self.author.name_without_email,
+                        "email": self.author.email,
+                        "time": (self.author_date - epoch).total_seconds(),
+                        },
+                    "committer": None if self.committer is None else {
+                        "name": self.committer.name_without_email,
+                        "email": self.committer.email,
+                        "time": (self.committer_date - epoch).total_seconds(),
+                        },
+                    }]
         return log
 
     def getCommits(self, start, limit=None, stop=None,
@@ -282,7 +311,7 @@ class GitRefMixin:
 
         log = self._getLog(start, limit=limit, stop=stop, logger=logger)
         parsed_commits = parse_git_commits(log)
-        revisions = []
+        commits = []
         for commit in log:
             if "sha1" not in commit:
                 continue
@@ -294,8 +323,8 @@ class GitRefMixin:
             if end_date is not None:
                 if author_date is None or author_date > end_date:
                     continue
-            revisions.append(parsed_commit)
-        return revisions
+            commits.append(parsed_commit)
+        return commits
 
     def getLatestCommits(self, quantity=10, extended_details=False, user=None):
         commits = self.getCommits(self.commit_sha1, limit=quantity)
@@ -313,10 +342,6 @@ class GitRefMixin:
                 commit["merge_proposal"] = merge_proposal_commits.get(
                     commit["sha1"])
         return commits
-
-    @property
-    def has_commits(self):
-        return len(self.getLatestCommits())
 
     @property
     def recipes(self):
@@ -365,6 +390,10 @@ class GitRef(StormBase, GitRefMixin):
     @property
     def commit_message_first_line(self):
         return self.commit_message.split("\n", 1)[0]
+
+    @property
+    def has_commits(self):
+        return self.commit_message is not None
 
     def addLandingTarget(self, registrant, merge_target,
                          merge_prerequisite=None, whiteboard=None,

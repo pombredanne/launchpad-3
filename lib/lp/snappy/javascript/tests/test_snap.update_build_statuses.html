@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<!--
+Copyright 2016 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<html>
+  <head>
+      <title>lp.snappy.snap.update_build_statuses Tests</title>
+
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test-console/assets/skins/sam/test-console.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
+
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/helpers.js"></script>
+
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+
+      <!-- Dependencies -->
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/client.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/anim/anim.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/extras/extras.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/soyuz/lp_dynamic_dom_updater.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/testing/assert.js"></script>
+
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../snap.update_build_statuses.js"></script>
+
+      <!-- The test suite -->
+      <script type="text/javascript" src="test_snap.update_build_statuses.js"></script>
+
+    </head>
+    <body class="yui3-skin-sam">
+      <ul id="suites">
+        <li>lp.snappy.snap.update_build_statuses.test</li>
+      </ul>
+
+      <table id="latest-builds-listing" class="listing">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>When complete</th>
+            <th>Architecture</th>
+            <th>Archive</th>
+          </tr>
+        </thead>
+        <tbody>
+            <tr id="build-1">
+              <td class="build_status NEEDSBUILD">
+                <img width="14" height="14" alt="[NEEDSBUILD]" title="Needs building" src="/@@/build-needed" />
+                <a href="snap/+build/1">Needs building</a>
+              </td>
+              <td class="datebuilt">
+                in 1 minute (estimated)
+              </td>
+              <td>
+                <a class="sprite distribution" href="/ubuntu/hoary/i386">i386</a>
+              </td>
+              <td>
+                <a href="/ubuntu" class="sprite distribution">Primary Archive for Ubuntu Linux</a>
+              </td>
+            </tr>
+            <tr id="build-2">
+              <td class="build_status FAILEDTOBUILD">
+                <img width="16" height="14" alt="[FAILEDTOBUILD]" title="Failed to build" src="/@@/build-failed" />
+                <a href="/~max/+snap/project3-snapo/+build/2">Failed to build</a>
+              </td>
+              <td class="datebuilt">
+                on 2016-05-10
+                <a class="sprite download" href="snap/+build/2/+files/build2.txt.gz">buildlog</a>
+                (23456 bytes)
+              </td>
+              <td>
+                <a class="sprite distribution" href="/ubuntu/hoary/i386">i386</a>
+              </td>
+              <td>
+                <a href="/ubuntu" class="sprite distribution">Primary Archive for Ubuntu Linux</a>
+              </td>
+            </tr>
+        </tbody>
+      </table>
+
+    </body>
+</html>

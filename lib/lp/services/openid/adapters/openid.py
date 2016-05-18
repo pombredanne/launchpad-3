@@ -62,6 +62,15 @@ class OpenIDPersistentIdentity:
         else:
             return '+id/' + identifier.identifier
 
+    @property
+    def openid_canonical_url(self):
+        openid_identifier = self.openid_identifier
+        if openid_identifier is None:
+            return None
+        return (
+            config.launchpad.openid_canonical_root +
+            openid_identifier.encode('ascii'))
+
 
 @adapter(IPerson)
 @implementer(IOpenIDPersistentIdentity)

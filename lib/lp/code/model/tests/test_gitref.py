@@ -28,6 +28,7 @@ from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -147,13 +148,13 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
 
     def test_basic(self):
-        revisions = self.ref.getCommits(self.sha1_tip)
+        commits = self.ref.getCommits(self.sha1_tip)
         path = self.ref.repository.getInternalPath()
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": None, "stop": None, "logger": None})],
             self.hosting_client.getLog.calls)
-        self.assertThat(revisions, MatchesListwise([
+        self.assertThat(commits, MatchesListwise([
             ContainsDict({
                 "sha1": Equals(self.sha1_tip),
                 "author": MatchesStructure.byEquality(person=self.authors[0]),
@@ -167,18 +168,41 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "commit_message": Equals(u"root"),
                 }),
             ]))
-        key = u"%s:git-revisions:%s:%s" % (
-            config.instance_name, path, self.sha1_tip)
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_cache(self):
         path = self.ref.repository.getInternalPath()
-        key = u"%s:git-revisions:%s:%s" % (
-            config.instance_name, path, self.sha1_tip)
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
         getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
         self.assertEqual([], self.ref.getCommits(self.sha1_tip))
+
+    def test_disable_hosting(self):
+        self.useFixture(
+            FeatureFixture({u"code.git.log.disable_hosting": u"on"}))
+        commits = self.ref.getCommits(self.sha1_tip)
+        self.assertThat(commits, MatchesListwise([
+            ContainsDict({
+                "sha1": Equals(self.ref.commit_sha1),
+                "commit_message": Is(None),
+                }),
+            ]))
+        self.assertEqual([], self.hosting_client.getLog.calls)
+        path = self.ref.repository.getInternalPath()
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        self.assertIsNone(getUtility(IMemcacheClient).get(key.encode("UTF-8")))
+
+    def test_disable_memcache(self):
+        self.useFixture(
+            FeatureFixture({u"code.git.log.disable_memcache": u"on"}))
+        path = self.ref.repository.getInternalPath()
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
+        self.assertNotEqual([], self.ref.getCommits(self.sha1_tip))
+        self.assertEqual(
+            "[]", getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_limit_stop(self):
         self.ref.getCommits(self.sha1_tip, limit=10, stop=self.sha1_root)
@@ -187,29 +211,28 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             [((path, self.sha1_tip),
               {"limit": 10, "stop": self.sha1_root, "logger": None})],
             self.hosting_client.getLog.calls)
-        key = u"%s:git-revisions:%s:%s:limit=10:stop=%s" % (
+        key = u"%s:git-log:%s:%s:limit=10:stop=%s" % (
             config.instance_name, path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_start_date(self):
-        revisions = self.ref.getCommits(
+        commits = self.ref.getCommits(
             self.sha1_tip, start_date=(self.dates[1] - timedelta(seconds=1)))
         path = self.ref.repository.getInternalPath()
-        self.assertThat(revisions, MatchesListwise([
+        self.assertThat(commits, MatchesListwise([
             ContainsDict({"sha1": Equals(self.sha1_tip)}),
             ]))
-        key = u"%s:git-revisions:%s:%s" % (
-            config.instance_name, path, self.sha1_tip)
+        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_end_date(self):
-        revisions = self.ref.getCommits(
+        commits = self.ref.getCommits(
             self.sha1_tip, end_date=(self.dates[1] - timedelta(seconds=1)))
-        self.assertThat(revisions, MatchesListwise([
+        self.assertThat(commits, MatchesListwise([
             ContainsDict({"sha1": Equals(self.sha1_root)}),
             ]))
 
