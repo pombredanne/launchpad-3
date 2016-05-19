@@ -113,6 +113,11 @@ from lp.services.session.model import (
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
+from lp.snappy.model.snapbuildjob import (
+    SnapBuildJob,
+    SnapStoreUploadJob,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.soyuz.model.livefsbuild import LiveFSFile
@@ -977,6 +982,26 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         switch_dbuser('testadmin')
         self.assertEqual(1, store.find(GitJob).count())
+
+    def test_SnapBuildJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+
+        snapbuild2 = self.factory.makeSnapBuild()
+        snapbuild_job2 = SnapStoreUploadJob.create(snapbuild2)
+        snapbuild_job2.job.date_finished = THIRTY_DAYS_AGO
+
+        self.assertEqual(2, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(snapbuild_job.context, store.find(SnapBuildJob).one())
 
     def test_WebhookJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
