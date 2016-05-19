@@ -98,6 +98,7 @@ from lp.testing.layers import (
 from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
+    first_tag_by_class,
     get_feedback_messages,
     )
 from lp.testing.views import create_initialized_view
@@ -1559,6 +1560,33 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 name='description',
                 content=description[:497] + '...'))
         self.assertThat(browser.contents, HTMLContains(expected_meta))
+
+    def test_unmerged_commits_from_deleted_git_ref(self):
+        # Even if the source Git ref has been deleted, we still know its tip
+        # SHA-1 and can ask the repository for its unmerged commits.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        sha1 = unicode(hashlib.sha1(b'0').hexdigest())
+        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+        commit_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
+        hosting_client = FakeMethod()
+        hosting_client.getLog = FakeMethod(result=[
+            {
+                u'sha1': sha1,
+                u'message': u'Sample message',
+                u'author': {
+                    u'name': 'Example Person',
+                    u'email': 'person@example.org',
+                    u'time': int((commit_date - epoch).total_seconds()),
+                    },
+                }
+            ])
+        bmp.source_git_repository.removeRefs([bmp.source_git_path])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        browser = self.getUserBrowser(canonical_url(bmp, rootsite='code'))
+        tag = first_tag_by_class(browser.contents, 'commit-details')
+        self.assertEqual(
+            "%.7s...\nby\nExample Person &lt;person@example.org&gt;\n"
+            "on 2015-01-01" % sha1, extract_text(tag))
 
 
 class TestBranchMergeProposalBrowserView(
