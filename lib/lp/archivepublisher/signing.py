@@ -148,6 +148,16 @@ class SigningUpload(CustomUpload):
 
         return owner_name + ' ' + archive_name
 
+    def callLog(self, description, cmdl):
+        status = subprocess.call(cmdl)
+        if status != 0:
+            # Just log this rather than failing, since custom upload errors
+            # tend to make the publisher rather upset.
+            if self.logger is not None:
+                self.logger.warning("%s Failed (cmd='%s')" %
+                    (description, " ".join(cmdl)))
+        return status
+        
     def findSigningHandlers(self):
         """Find all the signable files in an extracted tarball."""
         for dirpath, dirnames, filenames in os.walk(self.tmpdir):
@@ -193,13 +203,7 @@ class SigningUpload(CustomUpload):
                 '-subj', common_name, '-keyout', self.uefi_key,
                 '-out', self.uefi_cert, '-days', '3650', '-nodes', '-sha256',
                 ]
-            if subprocess.call(new_key_cmd) != 0:
-                # Just log this rather than failing, since custom upload errors
-                # tend to make the publisher rather upset.
-                if self.logger is not None:
-                    self.logger.warning(
-                        "Failed to generate UEFI signing keys for %s" %
-                        common_name)
+            self.callLog("UEFI keygen", new_key_cmd)
         finally:
             os.umask(old_mask)
 
@@ -214,14 +218,7 @@ class SigningUpload(CustomUpload):
         if not key or not cert:
             return
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
-        status = subprocess.call(cmdl)
-        if status != 0:
-            # Just log this rather than failing, since custom upload errors
-            # tend to make the publisher rather upset.
-            if self.logger is not None:
-                self.logger.warning("UEFI Signing Failed '%s'" %
-                    " ".join(cmdl))
-        return status
+        return self.callLog("UEFI signing", cmdl)
 
     def generateKmodKeys(self):
         """Generate new Kernel Signing Keys for this archive."""
@@ -263,24 +260,12 @@ class SigningUpload(CustomUpload):
                     '-outform', 'PEM', '-out', self.kmod_pem,
                     '-keyout', self.kmod_pem
                     ]
-                if subprocess.call(new_key_cmd) != 0:
-                    # Just log this rather than failing, since custom upload
-                    # errors tend to make the publisher rather upset.
-                    if self.logger is not None:
-                        self.logger.warning(
-                            "Failed to generate Kmod signing key for %s" %
-                            common_name)
-                else:
+                if self.callLog("Kmod keygen key", new_key_cmd) == 0:
                     new_x509_cmd = [
                         'openssl', 'x509', '-in', self.kmod_pem,
                         '-outform', 'DER', '-out', self.kmod_x509
                         ]
-                    if subprocess.call(new_x509_cmd) != 0:
-                        # Just log this rather than failing (as above).
-                        if self.logger is not None:
-                            self.logger.warning(
-                                "Failed to generate Kmod x509 cert for %s" %
-                                common_name)
+                    if self.callLog("Kmod keygen cert", new_x509_cmd) != 0:
                         os.unlink(self.kmod_pem)
         finally:
             os.umask(old_mask)
@@ -293,14 +278,7 @@ class SigningUpload(CustomUpload):
         if not pem or not cert:
             return
         cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
-        status = subprocess.call(cmdl)
-        if status != 0:
-            # Just log this rather than failing, since custom upload errors
-            # tend to make the publisher rather upset.
-            if self.logger is not None:
-                self.logger.warning("Kmod Signing Failed '%s'" %
-                    " ".join(cmdl))
-        return status
+        return self.callLog("Kmod signing", cmdl)
 
     def convertToTarball(self):
         """Convert unpacked output to signing tarball."""
