@@ -991,6 +991,24 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         snapbuild = self.factory.makeSnapBuild()
         snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        snapbuild_job.job.date_finished = THIRTY_DAYS_AGO
+
+        self.assertEqual(1, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(0, store.find(SnapBuildJob).count())
+
+    def test_SnapBuildJobPruner_doesnt_prune_recent_jobs(self):
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
 
         snapbuild2 = self.factory.makeSnapBuild()
         snapbuild_job2 = SnapStoreUploadJob.create(snapbuild2)
