@@ -26,53 +26,46 @@ class FakeMethodCallers(FakeMethod):
     def __init__(self, upload=None, *args, **kwargs):
         super(FakeMethodCallers, self).__init__(*args, **kwargs)
         self.upload = upload
-        self.callers = {}
+        self.callers = {
+            'signUefi': 0,
+            'signKmod': 0,
+            'generateUefiKeys': 0,
+            'generateKmodKeys': 0,
+            }
 
     def __call__(self, *args, **kwargs):
         super(FakeMethodCallers, self).__call__(*args, **kwargs)
 
-        import inspect
-        frame = inspect.currentframe()
-        try:
-            frame = frame.f_back
-            caller = frame.f_code.co_name
-        finally:
-            del frame  # As per no-leak stack inspection in Python reference.
+        cmd = args[0]
+        if cmd[0] == "sbsign":
+            self.callers['signUefi'] += 1
+            filename = cmd[-1]
+            if filename.endswith(".efi"):
+                write_file(filename + ".signed", "")
 
-        self.callers[caller] = self.callers.get(caller, 0) + 1
+        elif cmd[0] == "kmodsign":
+            self.callers['signKmod'] += 1
+            filename = cmd[-1]
+            if filename.endswith(".ko.sig"):
+                write_file(filename, "")
 
-        if hasattr(self, caller):
-            return getattr(self, caller)(*args, **kwargs)
+        elif cmd[0] == "openssl" and cmd.count(self.upload.kmod_x509) > 0:
+            self.callers['generateKmodKeys'] += 1
+            write_file(self.upload.kmod_x509, "")
+
+        elif cmd[0] == "openssl" and cmd.count(self.upload.kmod_pem) > 0:
+            self.callers['generateKmodKeys'] += 1
+            write_file(self.upload.kmod_pem, "")
+
+        elif cmd[0] == "openssl" and cmd.count(self.upload.uefi_key) > 0:
+            self.callers['generateUefiKeys'] += 1
+            write_file(self.upload.uefi_key, "")
+            write_file(self.upload.uefi_cert, "")
 
         return 0
 
     def caller_call_count(self, caller):
         return self.callers.get(caller, 0)
-
-
-class FakeMethodGenerateKeys(FakeMethodCallers):
-    """ Fake UEFI/Kmod key Generators."""
-    def generateUefiKeys(self, *args, **kwargs):
-            write_file(self.upload.uefi_key, "")
-            write_file(self.upload.uefi_cert, "")
-            return 0
-
-    def generateKmodKeys(self, *args, **kwargs):
-            write_file(self.upload.kmod_pem, "")
-            write_file(self.upload.kmod_x509, "")
-            return 0
-
-    def signUefi(self, *args, **kwargs):
-            filename = args[0][-1]
-            if filename.endswith(".efi"):
-                write_file(filename + ".signed", "")
-            return 0
-
-    def signKmod(self, *args, **kwargs):
-            filename = args[0][-1]
-            if filename.endswith(".ko.sig"):
-                write_file(filename, "")
-            return 0
 
 
 class FakeMethodGenUefiKeys(FakeMethod):
@@ -88,14 +81,14 @@ class FakeMethodGenUefiKeys(FakeMethod):
         write_file(self.upload.uefi_cert, "")
 
 
-class FakeMethodGenkmodKeys(FakeMethod):
+class FakeMethodGenKmodKeys(FakeMethod):
     """Fake execution of generation of Uefi keys pairs."""
     def __init__(self, upload=None, *args, **kwargs):
-        super(FakeMethodGenUefiKeys, self).__init__(*args, **kwargs)
+        super(FakeMethodGenKmodKeys, self).__init__(*args, **kwargs)
         self.upload = upload
 
     def __call__(self, *args, **kwargs):
-        super(FakeMethodGenUefiKeys, self).__call__(*args, **kwargs)
+        super(FakeMethodGenKmodKeys, self).__call__(*args, **kwargs)
 
         write_file(self.upload.kmod_pem, "")
         write_file(self.upload.kmod_x509, "")
@@ -173,7 +166,7 @@ class TestSigning(TestCase):
         self.buffer.close()
         upload = SigningUpload()
         # Under no circumstances is it safe to execute actual commands.
-        self.fake_call = FakeMethodGenerateKeys(upload=upload)
+        self.fake_call = FakeMethodCallers(upload=upload)
         self.useFixture(MonkeyPatch("subprocess.call", self.fake_call))
         upload.process(self.pubconf, self.path, self.suite)
 
