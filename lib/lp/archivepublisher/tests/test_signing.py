@@ -21,50 +21,51 @@ from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 
 
-class FakeMethodCallers(FakeMethod):
+class FakeMethodCallLog(FakeMethod):
     """Fake execution general commands."""
     def __init__(self, upload=None, *args, **kwargs):
-        super(FakeMethodCallers, self).__init__(*args, **kwargs)
+        super(FakeMethodCallLog, self).__init__(*args, **kwargs)
         self.upload = upload
         self.callers = {
-            'signUefi': 0,
-            'signKmod': 0,
-            'generateUefiKeys': 0,
-            'generateKmodKeys': 0,
+            "UEFI signing": 0,
+            "Kmod signing": 0,
+            "UEFI keygen": 0,
+            "Kmod keygen key": 0,
+            "Kmod keygen cert": 0,
             }
 
     def __call__(self, *args, **kwargs):
-        super(FakeMethodCallers, self).__call__(*args, **kwargs)
+        super(FakeMethodCallLog, self).__call__(*args, **kwargs)
 
-        cmd = args[0]
-        if cmd[0] == "sbsign":
-            self.callers['signUefi'] += 1
-            filename = cmd[-1]
+        description = args[0]
+        cmdl = args[1]
+        self.callers[description] += 1
+        if description == "UEFI signing":
+            filename = cmdl[-1]
             if filename.endswith(".efi"):
                 write_file(filename + ".signed", "")
 
-        elif cmd[0] == "kmodsign":
-            self.callers['signKmod'] += 1
-            filename = cmd[-1]
+        elif description == "Kmod signing":
+            filename = cmdl[-1]
             if filename.endswith(".ko.sig"):
                 write_file(filename, "")
 
-        elif cmd[0] == "openssl" and cmd.count(self.upload.kmod_x509) > 0:
-            self.callers['generateKmodKeys'] += 1
+        elif description == "Kmod keygen cert":
             write_file(self.upload.kmod_x509, "")
 
-        elif cmd[0] == "openssl" and cmd.count(self.upload.kmod_pem) > 0:
-            self.callers['generateKmodKeys'] += 1
+        elif description == "Kmod keygen key":
             write_file(self.upload.kmod_pem, "")
 
-        elif cmd[0] == "openssl" and cmd.count(self.upload.uefi_key) > 0:
-            self.callers['generateUefiKeys'] += 1
+        elif description == "UEFI keygen":
             write_file(self.upload.uefi_key, "")
             write_file(self.upload.uefi_cert, "")
 
+        else:
+            self.fail()
+
         return 0
 
-    def caller_call_count(self, caller):
+    def caller_count(self, caller):
         return self.callers.get(caller, 0)
 
 
@@ -158,15 +159,13 @@ class TestSigning(TestCase):
         self.buffer = open(self.path, "wb")
         self.archive = LaunchpadWriteTarFile(self.buffer)
 
-    def assertCallCount(self, count, call):
-        self.assertEqual(count, self.fake_call.caller_call_count(call))
-
     def process_emulate(self):
         self.archive.close()
         self.buffer.close()
         upload = SigningUpload()
         # Under no circumstances is it safe to execute actual commands.
-        self.fake_call = FakeMethodCallers(upload=upload)
+        self.fake_call = FakeMethod(result=0)
+        upload.callLog = FakeMethodCallLog(upload=upload)
         self.useFixture(MonkeyPatch("subprocess.call", self.fake_call))
         upload.process(self.pubconf, self.path, self.suite)
 
@@ -205,11 +204,12 @@ class TestSigning(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
-        self.process_emulate()
-        self.assertCallCount(0, 'generateUefiKeys')
-        self.assertCallCount(0, 'generateKmodKeys')
-        self.assertCallCount(0, 'signUefi')
-        self.assertCallCount(0, 'signKmod')
+        upload = self.process_emulate()
+        self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen cert'))
+        self.assertEqual(0, upload.callLog.caller_count('UEFI signing'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod signing'))
 
     def test_archive_primary_no_keys(self):
         # If the configured key/cert are missing, processing succeeds but
@@ -217,11 +217,12 @@ class TestSigning(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
-        self.process_emulate()
-        self.assertCallCount(0, 'generateUefiKeys')
-        self.assertCallCount(0, 'generateKmodKeys')
-        self.assertCallCount(0, 'signUefi')
-        self.assertCallCount(0, 'signKmod')
+        upload = self.process_emulate()
+        self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen cert'))
+        self.assertEqual(0, upload.callLog.caller_count('UEFI signing'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod signing'))
 
     def test_archive_primary_keys(self):
         # If the configured key/cert are missing, processing succeeds but
@@ -231,11 +232,12 @@ class TestSigning(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
-        self.process_emulate()
-        self.assertCallCount(0, 'generateUefiKeys')
-        self.assertCallCount(0, 'generateKmodKeys')
-        self.assertCallCount(1, 'signUefi')
-        self.assertCallCount(1, 'signKmod')
+        upload = self.process_emulate()
+        self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen cert'))
+        self.assertEqual(1, upload.callLog.caller_count('UEFI signing'))
+        self.assertEqual(1, upload.callLog.caller_count('Kmod signing'))
 
     def test_PPA_creates_keys(self):
         # If the configured key/cert are missing, processing succeeds but
@@ -244,11 +246,12 @@ class TestSigning(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
-        self.process_emulate()
-        self.assertCallCount(1, 'generateUefiKeys')
-        self.assertCallCount(2, 'generateKmodKeys')
-        self.assertCallCount(1, 'signUefi')
-        self.assertCallCount(1, 'signKmod')
+        upload = self.process_emulate()
+        self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
+        self.assertEqual(1, upload.callLog.caller_count('Kmod keygen key'))
+        self.assertEqual(1, upload.callLog.caller_count('Kmod keygen cert'))
+        self.assertEqual(1, upload.callLog.caller_count('UEFI signing'))
+        self.assertEqual(1, upload.callLog.caller_count('Kmod signing'))
 
     def test_options_handling_none(self):
         # If the configured key/cert are missing, processing succeeds but
