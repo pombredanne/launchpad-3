@@ -309,7 +309,7 @@ class SigningUpload(CustomUpload):
         filehandlers = list(self.findSigningHandlers())
         for (filename, handler) in filehandlers:
             if (handler(filename) == 0 and
-                'sigonly' in self.signing_options):
+                'signed-only' in self.signing_options):
                 os.unlink(filename)
 
         # If tarball output is requested, tar up the results.

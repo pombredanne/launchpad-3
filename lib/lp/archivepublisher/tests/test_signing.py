@@ -275,13 +275,13 @@ class TestSigning(TestCase):
                 '1.0/empty.ko.sig', '1.0/raw-signing.options',
                 ], tarball.getnames())
 
-    def test_options_sigonly(self):
-        # Specifying the "sigonly" option should trigger removal of
+    def test_options_signed_only(self):
+        # Specifying the "signed-only" option should trigger removal of
         # the source files leaving signatures only.
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "sigonly")
+        self.archive.add_file("1.0/raw-signing.options", "signed-only")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
         self.process_emulate()
@@ -294,14 +294,15 @@ class TestSigning(TestCase):
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.ko.sig")))
 
-    def test_options_tarball_sigonly(self):
+    def test_options_tarball_signed_only(self):
         # Specifying the "tarball" option should create an tarball in
-        # the tmpdir.  Adding sigonly should trigger removal of the
+        # the tmpdir.  Adding signed-only should trigger removal of the
         # original files.
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "tarball\nsigonly")
+        self.archive.add_file("1.0/raw-signing.options",
+            "tarball\nsigned-only")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
         self.process_emulate()
