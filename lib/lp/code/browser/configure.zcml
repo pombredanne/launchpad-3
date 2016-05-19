@@ -838,6 +838,10 @@
         permission="launchpad.Edit"
         name="+edit"
         template="../templates/gitrepository-edit.pt"/>
+    <class class="lp.code.browser.gitrepository.GitRepositoryDiffView">
+        <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+               attributes="__call__"/>
+    </class>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryDeletionView"

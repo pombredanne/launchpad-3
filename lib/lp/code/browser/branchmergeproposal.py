@@ -585,10 +585,11 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                         self.context.source_branch.unique_name),
                 })
         else:
-            # XXX cjwatson 2015-04-29: Unimplemented for Git; this would
-            # require something in the webapp which proxies diff requests to
-            # the code browser, or an integrated code browser.
-            pass
+            cache.objects.update({
+                'branch_diff_link':
+                    canonical_url(self.context.source_git_repository) +
+                    '/+diff/',
+                })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key

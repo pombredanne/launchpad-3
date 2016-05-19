@@ -12,7 +12,8 @@
   </tal:bzr-revisions>
   <tal:git-revisions condition="context/git_ref">
     <tal:revisions define="ref context/git_ref;
-                           commit_infos context/revisions;">
+                           commit_infos context/revisions;
+                           show_diff_expander python:True;">
       <metal:commits use-macro="ref/@@+macros/ref-commits"/>
     </tal:revisions>
   </tal:git-revisions>
