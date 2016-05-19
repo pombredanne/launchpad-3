@@ -8,9 +8,11 @@ __all__ = [
     'GitHostingClient',
     ]
 
+import json
 from urllib import quote
 from urlparse import urljoin
 
+from lazr.restful.utils import get_current_browser_request
 import requests
 from zope.interface import implementer
 
@@ -21,6 +23,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import urlfetch
 
 
@@ -35,13 +38,18 @@ class GitHostingClient:
     def __init__(self):
         self.endpoint = config.codehosting.internal_git_api_endpoint
 
-    def _request(self, method, path, json_data=None, **kwargs):
+    def _request(self, method, path, **kwargs):
+        timeline = get_request_timeline(get_current_browser_request())
+        action = timeline.start(
+            "git-hosting-%s" % method, "%s %s" % (path, json.dumps(kwargs)))
         try:
             response = urlfetch(
                 urljoin(self.endpoint, path), trust_env=False, method=method,
                 **kwargs)
         except requests.HTTPError as e:
             raise HTTPResponseNotOK(e.response.content)
+        finally:
+            action.finish()
         if response.content:
             return response.json()
         else:

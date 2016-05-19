@@ -18,6 +18,7 @@ from httmock import (
     all_requests,
     HTTMock,
     )
+from lazr.restful.utils import get_current_browser_request
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.interface import implementer
@@ -38,6 +39,7 @@ from lp.services.job.runner import (
     BaseRunnableJob,
     JobRunner,
     )
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -75,11 +77,16 @@ class TestGitHostingClient(TestCase):
             finally:
                 set_default_timeout_function(original_timeout_function)
 
-    def assertRequest(self, url_suffix, json_data=None, **kwargs):
+    def assertRequest(self, url_suffix, json_data=None, method=None, **kwargs):
         self.assertThat(self.request, MatchesStructure.byEquality(
-            url=urlappend(self.endpoint, url_suffix), **kwargs))
+            url=urlappend(self.endpoint, url_suffix), method=method, **kwargs))
         if json_data is not None:
             self.assertEqual(json_data, json.loads(self.request.body))
+        timeline = get_request_timeline(get_current_browser_request())
+        action = timeline.actions[-1]
+        self.assertEqual("git-hosting-%s" % method.lower(), action.category)
+        self.assertEqual(
+            "/" + url_suffix.split("?", 1)[0], action.detail.split(" ", 1)[0])
 
     def test_create(self):
         with self.mockRequests():
