@@ -157,7 +157,7 @@ class SigningUpload(CustomUpload):
                 self.logger.warning("%s Failed (cmd='%s')" %
                     (description, " ".join(cmdl)))
         return status
-        
+
     def findSigningHandlers(self):
         """Find all the signable files in an extracted tarball."""
         for dirpath, dirnames, filenames in os.walk(self.tmpdir):
