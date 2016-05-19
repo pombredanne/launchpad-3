@@ -573,3 +573,38 @@ class TestSigning(TestCase):
         self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
         self.assertTrue(os.path.exists(self.key))
         self.assertTrue(os.path.exists(self.cert))
+
+    def test_create_kmod_keys_autokey_off(self):
+        # Keys are not created.
+        self.setUpKmodKeys(create=False)
+        self.assertFalse(os.path.exists(self.kmod_pem))
+        self.assertFalse(os.path.exists(self.kmod_x509))
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.callLog = FakeMethodCallLog(upload=upload)
+        upload.setTargetDirectory(
+            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signKmod('t.ko')
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
+        self.assertEqual(0, upload.callLog.caller_count('Kmod keygen cert'))
+        self.assertFalse(os.path.exists(self.kmod_pem))
+        self.assertFalse(os.path.exists(self.kmod_x509))
+
+    def test_create_kmod_keys_autokey_on(self):
+        # Keys are created on demand.
+        self.setUpPPA()
+        self.setUpKmodKeys(create=False)
+        self.assertFalse(os.path.exists(self.kmod_pem))
+        self.assertFalse(os.path.exists(self.kmod_x509))
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.callLog = FakeMethodCallLog(upload=upload)
+        upload.setTargetDirectory(
+            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signKmod('t.ko')
+        self.assertEqual(1, upload.callLog.caller_count('Kmod keygen key'))
+        self.assertEqual(1, upload.callLog.caller_count('Kmod keygen cert'))
+        self.assertTrue(os.path.exists(self.kmod_pem))
+        self.assertTrue(os.path.exists(self.kmod_x509))
