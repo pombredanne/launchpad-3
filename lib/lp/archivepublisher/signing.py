@@ -286,11 +286,8 @@ class SigningUpload(CustomUpload):
         versiondir = os.path.join(self.tmpdir, self.version)
 
         try:
-            try:
-                tarball = tarfile.open(tarfilename, "w:gz")
+            with tarfile.open(tarfilename, "w:gz") as tarball:
                 tarball.add(versiondir, arcname=self.version)
-            finally:
-                tarball.close()
         except tarfile.TarError as exc:
             raise SigningUploadPackError(tarfilename, exc)
 
