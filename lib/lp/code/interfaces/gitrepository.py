@@ -541,6 +541,14 @@ class IGitRepositoryView(IHasRecipes):
         :return: A binary string with the blob content.
         """
 
+    def getDiff(old, new):
+        """Get the diff between two commits in this repository.
+
+        :param old: The OID of the old commit.
+        :param new: The OID of the new commit.
+        :return: The diff as a binary string.
+        """
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.

@@ -1036,6 +1036,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         hosting_client = getUtility(IGitHostingClient)
         return hosting_client.getBlob(self.getInternalPath(), filename, rev)
 
+    def getDiff(self, old, new):
+        """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
+        diff = hosting_client.getDiff(self.getInternalPath(), old, new)
+        return diff["patch"]
+
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.

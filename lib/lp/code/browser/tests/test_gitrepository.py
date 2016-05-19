@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRepositoryView."""
@@ -16,6 +16,7 @@ import transaction
 from zope.component import getUtility
 from zope.formlib.itemswidgets import ItemDisplayWidget
 from zope.publisher.interfaces import NotFound
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -754,6 +755,55 @@ class TestGitRepositoryEditViewInformationTypes(TestCaseWithFactory):
                 owner=owner, target=product,
                 information_type=InformationType.PROPRIETARY)
         self.assertShownTypes([InformationType.PROPRIETARY], repository)
+
+
+class TestGitRepositoryDiffView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_render(self):
+        hosting_client = FakeMethod()
+        diff = u"A fake diff\n"
+        hosting_client.getDiff = FakeMethod(result={"patch": diff})
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + "/+diff/0123456/0123456^")
+        with person_logged_in(person):
+            self.assertEqual(
+                [((repository.getInternalPath(), "0123456^", "0123456"), {})],
+                hosting_client.getDiff.calls)
+        self.assertEqual(
+            'text/x-patch;charset=UTF-8', browser.headers["Content-Type"])
+        self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
+        self.assertEqual(
+            "attachment; filename=0123456^_0123456.diff",
+            browser.headers["Content-Disposition"])
+        self.assertEqual("A fake diff\n", browser.contents)
+
+    def test_security(self):
+        # A user who can see a private repository can fetch diffs from it,
+        # but other users cannot.
+        hosting_client = FakeMethod()
+        diff = u"A fake diff\n"
+        hosting_client.getDiff = FakeMethod(result={"patch": diff})
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct(
+            owner=person, information_type=InformationType.PROPRIETARY)
+        with person_logged_in(person):
+            repository = self.factory.makeGitRepository(
+                owner=person, target=project,
+                information_type=InformationType.PROPRIETARY)
+            repository_url = canonical_url(repository)
+        browser = self.getUserBrowser(
+            repository_url + "/+diff/0123456/0123456^", user=person)
+        self.assertEqual("A fake diff\n", browser.contents)
+        self.useFixture(FakeLogger())
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser,
+            repository_url + "/+diff/0123456/0123456^")
 
 
 class TestGitRepositoryDeletionView(BrowserTestCase):

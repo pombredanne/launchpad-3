@@ -115,6 +115,24 @@
     <tal:commit repeat="commit_info commit_infos">
       <metal:commit-text use-macro="ref/@@+macros/commit-text"/>
     </tal:commit>
+    <tal:ajax-revision-diffs
+        condition="request/features/code.ajax_revision_diffs.enabled">
+      <tal:diff-expander condition="show_diff_expander | nothing">
+        <div class="revision-group-diff">
+          <a href="#" class="hidden expander-icon js-action"
+              tal:define="start_revision python:commit_infos[0]['sha1'];
+                          prev_revision python:commit_infos[0]['sha1'] + '^';
+                          last_revision python:commit_infos[-1]['sha1']"
+              tal:attributes="id string:expandable-${prev_revision}-${last_revision}"
+          >Changes added by commit
+          <tal:sha1 replace="start_revision/fmt:shorten/10"/>
+          <tal:plural condition="python: start_revision!=last_revision">
+            to commit <tal:sha1 replace="last_revision/fmt:shorten/10"/>
+          </tal:plural></a>
+          <div class="hidden expander-content">Loading diff <img src="/@@/spinner"/></div>
+        </div>
+      </tal:diff-expander>
+    </tal:ajax-revision-diffs>
   </dl>
 
 </metal:ref-commits>

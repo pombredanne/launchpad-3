@@ -67,6 +67,24 @@ class IGitHostingClient(Interface):
             start commit's history.
         """
 
+    def getDiff(path, old, new, common_ancestor=False, context_lines=None,
+                logger=None):
+        """Get the diff between two commits.
+
+        :param path: Physical path of the repository on the hosting service.
+        :param old: The OID of the old commit.
+        :param new: The OID of the new commit.
+        :param common_ancestor: If True, return the symmetric or common
+            ancestor diff, equivalent to
+            `git diff $(git-merge-base OLD NEW) NEW`.
+        :param context_lines: Include this number of lines of context around
+            each hunk.
+        :param logger: An optional logger.
+        :return: A dict mapping 'commits' to a list of commits between 'old'
+            and 'new' (formatted as with `getCommits`) and 'patch' to the
+            text of the diff between 'old' and 'new'.
+        """
+
     def getMergeDiff(path, base, head, logger=None):
         """Get the merge preview diff between two commits.
 

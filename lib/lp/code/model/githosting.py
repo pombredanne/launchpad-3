@@ -132,6 +132,21 @@ class GitHostingClient:
                 "Failed to get commit log from Git repository: %s" %
                 unicode(e))
 
+    def getDiff(self, path, old, new, common_ancestor=False,
+                context_lines=None, logger=None):
+        """See `IGitHostingClient`."""
+        try:
+            if logger is not None:
+                logger.info(
+                    "Requesting diff for %s from %s to %s" % (path, old, new))
+            separator = "..." if common_ancestor else ".."
+            url = "/repo/%s/compare/%s%s%s" % (
+                path, quote(old), separator, quote(new))
+            return self._get(url, params={"context_lines": context_lines})
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get diff from Git repository: %s" % unicode(e))
+
     def getMergeDiff(self, path, base, head, prerequisite=None, logger=None):
         """See `IGitHostingClient`."""
         try:

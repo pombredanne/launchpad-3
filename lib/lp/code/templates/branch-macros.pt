@@ -204,8 +204,9 @@
   <div class="revision-group-diff" tal:condition="revisions | nothing">
         <a href="#" class="hidden expander-icon js-action"
             tal:define="start_revno python:revisions[0].sequence;
-       last_revno python:revisions[-1].sequence"
-       tal:attributes="id string:expandable-${start_revno}-${last_revno}"
+                        prev_revno python:revisions[0].sequence - 1;
+                        last_revno python:revisions[-1].sequence"
+       tal:attributes="id string:expandable-${prev_revno}-${last_revno}"
     >Changes added by revision <tal:revno replace="start_revno">1</tal:revno>
       <tal:plural condition="python: start_revno!=last_revno">
         to revision <tal:revno replace="last_revno">2</tal:revno>
