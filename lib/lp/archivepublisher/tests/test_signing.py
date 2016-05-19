@@ -449,7 +449,7 @@ class TestSigning(TestCase):
         # Assert the actual command matches.
         args = fake_call.calls[0][0][0]
         # Sanitise the keygen tmp file.
-        if args[11] .endswith('.keygen'):
+        if args[11].endswith('.keygen'):
             args[11] = 'XXX.keygen'
         expected_cmd = [
             'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
