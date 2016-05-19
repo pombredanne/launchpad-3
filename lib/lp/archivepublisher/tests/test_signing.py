@@ -61,7 +61,8 @@ class FakeMethodCallLog(FakeMethod):
             write_file(self.upload.uefi_cert, "")
 
         else:
-            self.fail()
+            raise AssertionError("unknown command executed cmd=(%s)" %
+                " ".join(cmdl))
 
         return 0
 
