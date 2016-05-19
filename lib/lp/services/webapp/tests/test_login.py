@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test harness for running the new-login.txt tests."""
 
@@ -33,7 +33,12 @@ from openid.extensions import (
     sreg,
     )
 from openid.yadis.discover import DiscoveryFailure
-from testtools.matchers import Contains
+from testtools.matchers import (
+    Contains,
+    ContainsDict,
+    Equals,
+    MatchesListwise,
+    )
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -481,8 +486,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             main_content)
 
     def test_discharge_macaroon(self):
-        # If a discharge macaroon was requested and received, it is added to
-        # the starting URL as a query string parameter.
+        # If a discharge macaroon was requested and received, the view
+        # returns a form that submits it to the starting URL.
         test_email = 'test-example@example.com'
         person = self.factory.makePerson(email=test_email)
         identifier = ITestOpenIDPersistentIdentity(
@@ -492,6 +497,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             full_name='Foo User', discharge_macaroon_raw='dummy discharge')
         form = {
             'starting_url': 'http://launchpad.dev/after-login',
+            'discharge_macaroon_action': 'field.actions.complete',
             'discharge_macaroon_field': 'field.discharge_macaroon',
             }
         with SRegResponse_fromSuccessResponse_stubbed():
@@ -500,12 +506,20 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                     openid_response, form=form)
         self.assertTrue(view.login_called)
         self.assertEqual('dummy discharge', view.discharge_macaroon_raw)
-        response = view.request.response
-        self.assertEqual(httplib.TEMPORARY_REDIRECT, response.getStatus())
-        self.assertEqual(
-            form['starting_url'] +
-            '?field.discharge_macaroon=dummy+discharge',
-            response.getHeader('Location'))
+        discharge_form = find_tag_by_id(html, 'discharge-form')
+        self.assertEqual(form['starting_url'], discharge_form['action'])
+        self.assertThat(
+            [dict(tag.attrs) for tag in discharge_form.findAll('input')],
+            MatchesListwise([
+                ContainsDict({
+                    'name': Equals('field.actions.complete'),
+                    'value': Equals('1'),
+                    }),
+                ContainsDict({
+                    'name': Equals('field.discharge_macaroon'),
+                    'value': Equals('dummy discharge'),
+                    }),
+                ]))
 
     def test_discharge_macaroon_missing(self):
         # If a discharge macaroon was requested but not received, the login
@@ -519,6 +533,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             full_name='Foo User')
         form = {
             'starting_url': 'http://launchpad.dev/after-login',
+            'discharge_macaroon_action': 'field.actions.complete',
             'discharge_macaroon_field': 'field.discharge_macaroon',
             }
         with SRegResponse_fromSuccessResponse_stubbed():
@@ -852,8 +867,8 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # extension.
         caveat_id = 'ask SSO'
         form = {
-            'field.callback': '1',
             'macaroon_caveat_id': caveat_id,
+            'discharge_macaroon_action': 'field.actions.complete',
             'discharge_macaroon_field': 'field.discharge_macaroon',
             }
         request = LaunchpadTestRequest(form=form, method='POST')
@@ -871,11 +886,11 @@ class TestOpenIDLogin(TestCaseWithFactory):
         return_to_args = dict(urlparse.parse_qsl(
             urlparse.urlsplit(view.openid_request.return_to).query))
         self.assertEqual(
+            'field.actions.complete',
+            return_to_args['discharge_macaroon_action'])
+        self.assertEqual(
             'field.discharge_macaroon',
             return_to_args['discharge_macaroon_field'])
-        starting_url_args = dict(urlparse.parse_qsl(
-            urlparse.urlsplit(return_to_args['starting_url']).query))
-        self.assertEqual('1', starting_url_args['field.callback'])
 
     def test_logs_to_timeline(self):
         # Beginning an OpenID association makes an HTTP request to the
