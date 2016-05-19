@@ -266,17 +266,13 @@ class TestSigning(TestCase):
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
         self.assertFalse(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "signed.tar.gz")))
-        with tarfile.open(os.path.join(self.getSignedPath("test", "amd64"),
-            "1.0", "signed.tar.gz")) as tarball:
+        tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
+            "1.0", "signed.tar.gz")
+        self.assertTrue(os.path.exists(tarfilename))
+        with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0',
-                '1.0/empty.efi',
-                '1.0/empty.efi.signed',
-                '1.0/empty.ko',
-                '1.0/empty.ko.sig',
-                '1.0/raw-signing.options',
+                '1.0', '1.0/empty.efi', '1.0/empty.efi.signed', '1.0/empty.ko',
+                '1.0/empty.ko.sig', '1.0/raw-signing.options',
                 ], tarball.getnames())
 
     def test_options_sigonly(self):
@@ -309,12 +305,12 @@ class TestSigning(TestCase):
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
         self.process_emulate()
-        with tarfile.open(os.path.join(self.getSignedPath("test", "amd64"),
-            "1.0", "signed.tar.gz")) as tarball:
+        tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
+            "1.0", "signed.tar.gz")
+        self.assertTrue(os.path.exists(tarfilename))
+        with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0',
-                '1.0/empty.efi.signed',
-                '1.0/empty.ko.sig',
+                '1.0', '1.0/empty.efi.signed', '1.0/empty.ko.sig',
                 '1.0/raw-signing.options',
                 ], tarball.getnames())
 
