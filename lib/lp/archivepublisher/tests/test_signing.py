@@ -233,7 +233,7 @@ class TestSigning(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/raw-signing.options", "")
         upload = self.process_emulate()
-        self.assertEqual([], sorted(upload.signing_options.keys()))
+        self.assertContentEqual([], upload.signing_options.keys())
 
     def test_options_handling_single(self):
         # If the configured key/cert are missing, processing succeeds but
@@ -241,7 +241,7 @@ class TestSigning(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/raw-signing.options", "first\n")
         upload = self.process_emulate()
-        self.assertEqual(['first'], sorted(upload.signing_options.keys()))
+        self.assertContentEqual(['first'], upload.signing_options.keys())
 
     def test_options_handling_multiple(self):
         # If the configured key/cert are missing, processing succeeds but
@@ -249,8 +249,8 @@ class TestSigning(TestCase):
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/raw-signing.options", "first\nsecond\n")
         upload = self.process_emulate()
-        self.assertEqual(['first', 'second'],
-            sorted(upload.signing_options.keys()))
+        self.assertContentEqual(['first', 'second'],
+            upload.signing_options.keys())
 
     def test_options_tarball(self):
         # Specifying the "tarball" option should create an tarball in
@@ -270,14 +270,14 @@ class TestSigning(TestCase):
             self.getSignedPath("test", "amd64"), "1.0", "signed.tar.gz")))
         with tarfile.open(os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")) as tarball:
-            self.assertEqual([
+            self.assertContentEqual([
                 '1.0',
                 '1.0/empty.efi',
                 '1.0/empty.efi.signed',
                 '1.0/empty.ko',
                 '1.0/empty.ko.sig',
                 '1.0/raw-signing.options',
-                ], sorted(tarball.getnames()))
+                ], tarball.getnames())
 
     def test_options_sigonly(self):
         # Specifying the "sigonly" option should trigger removal of
@@ -311,12 +311,12 @@ class TestSigning(TestCase):
         self.process_emulate()
         with tarfile.open(os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")) as tarball:
-            self.assertEqual([
+            self.assertContentEqual([
                 '1.0',
                 '1.0/empty.efi.signed',
                 '1.0/empty.ko.sig',
                 '1.0/raw-signing.options',
-                ], sorted(tarball.getnames()))
+                ], tarball.getnames())
 
     def test_no_signed_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.
