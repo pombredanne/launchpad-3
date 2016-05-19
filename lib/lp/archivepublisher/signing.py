@@ -296,7 +296,7 @@ class SigningUpload(CustomUpload):
             shutil.rmtree(versiondir)
             os.mkdir(versiondir)
             os.rename(tarfilename, os.path.join(versiondir, "signed.tar.gz"))
-        except os.OSError as exc:
+        except OSError as exc:
             raise SigningUploadPackError(tarfilename, exc)
 
     def extract(self):
