@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `DistroSeriesBinaryPackage`."""
@@ -61,12 +61,12 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
         logger = BufferLogger()
         with dbuser(config.statistician.dbuser):
             DistroSeriesPackageCache._update(
-                self.distroseries, self.binary_package_name, distro_archive_1,
-                logger)
+                self.distroseries, [self.binary_package_name],
+                distro_archive_1, logger)
 
             DistroSeriesPackageCache._update(
-                self.distroseries, self.binary_package_name, distro_archive_2,
-                logger)
+                self.distroseries, [self.binary_package_name],
+                distro_archive_2, logger)
 
         self.failUnlessEqual(
             'Foo is the best', self.distroseries_binary_package.summary)
