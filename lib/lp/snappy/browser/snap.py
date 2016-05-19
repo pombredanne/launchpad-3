@@ -369,11 +369,11 @@ class SnapAddView(LaunchpadFormView):
                 # Beware of unsafe yaml.load()!
                 store_name = yaml.safe_load(blob).get('name')
             except GitRepositoryScanFault:
-                log.info("Failed to get Snap manifest from Git %s",
-                          self.context.unique_name)
-            except Exception:
-                log.debug("Failed to parse Snap manifest at %s",
-                          self.context.unique_name)
+                log.exception("Failed to get Snap manifest from Git %s",
+                              self.context.unique_name)
+            except Exception as e:
+                log.debug("Failed to parse Snap manifest at Git %s: %s",
+                          self.context.unique_name, unicode(e))
 
         # XXX cjwatson 2015-09-18: Hack to ensure that we don't end up
         # accidentally selecting ubuntu-rtm/14.09 or similar.
