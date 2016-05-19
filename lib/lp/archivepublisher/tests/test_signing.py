@@ -69,32 +69,6 @@ class FakeMethodCallLog(FakeMethod):
         return self.callers.get(caller, 0)
 
 
-class FakeMethodGenUefiKeys(FakeMethod):
-    """Fake execution of generation of Uefi keys pairs."""
-    def __init__(self, upload=None, *args, **kwargs):
-        super(FakeMethodGenUefiKeys, self).__init__(*args, **kwargs)
-        self.upload = upload
-
-    def __call__(self, *args, **kwargs):
-        super(FakeMethodGenUefiKeys, self).__call__(*args, **kwargs)
-
-        write_file(self.upload.uefi_key, "")
-        write_file(self.upload.uefi_cert, "")
-
-
-class FakeMethodGenKmodKeys(FakeMethod):
-    """Fake execution of generation of Uefi keys pairs."""
-    def __init__(self, upload=None, *args, **kwargs):
-        super(FakeMethodGenKmodKeys, self).__init__(*args, **kwargs)
-        self.upload = upload
-
-    def __call__(self, *args, **kwargs):
-        super(FakeMethodGenKmodKeys, self).__call__(*args, **kwargs)
-
-        write_file(self.upload.kmod_pem, "")
-        write_file(self.upload.kmod_x509, "")
-
-
 class FakeConfigPrimary:
     """A fake publisher configuration for the main archive."""
     def __init__(self, distroroot, signingroot):
@@ -575,11 +549,11 @@ class TestSigning(TestCase):
         fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
-        upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
+        upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signUefi('t.efi')
-        self.assertEqual(0, upload.generateUefiKeys.call_count)
+        self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
 
@@ -592,10 +566,10 @@ class TestSigning(TestCase):
         fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
-        upload.generateUefiKeys = FakeMethodGenUefiKeys(upload=upload)
+        upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signUefi('t.efi')
-        self.assertEqual(1, upload.generateUefiKeys.call_count)
+        self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
         self.assertTrue(os.path.exists(self.key))
         self.assertTrue(os.path.exists(self.cert))
