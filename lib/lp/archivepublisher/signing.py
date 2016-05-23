@@ -14,7 +14,6 @@ from __future__ import print_function
 __metaclass__ = type
 
 __all__ = [
-    "process_signing",
     "SigningUpload",
     ]
 
@@ -25,11 +24,9 @@ import tarfile
 import tempfile
 import textwrap
 
-from lp.archivepublisher.customupload import (
-    CustomUpload,
-    CustomUploadError,
-    )
+from lp.archivepublisher.customupload import CustomUpload
 from lp.services.osutils import remove_if_exists
+from lp.soyuz.interfaces.queue import CustomUploadError
 
 
 class SigningUploadPackError(CustomUploadError):
@@ -78,7 +75,7 @@ class SigningUpload(CustomUpload):
         self.package, self.version, self.arch = self.parsePath(
             tarfile_path)
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, suite):
         if pubconf.signingroot is None:
             if self.logger is not None:
                 self.logger.warning(
@@ -103,9 +100,9 @@ class SigningUpload(CustomUpload):
         # symlink to signed.
         # NOTE: we rely on "signed" and "uefi"  being in the same directory.
         dists_signed = os.path.join(
-            pubconf.archiveroot, "dists", distroseries, "main", "signed")
+            pubconf.archiveroot, "dists", suite, "main", "signed")
         dists_uefi = os.path.join(
-            pubconf.archiveroot, "dists", distroseries, "main", "uefi")
+            pubconf.archiveroot, "dists", suite, "main", "uefi")
         if not os.path.exists(dists_signed):
             if os.path.isdir(dists_uefi):
                 os.rename(dists_uefi, dists_signed)
@@ -318,14 +315,3 @@ class SigningUpload(CustomUpload):
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
-
-
-def process_signing(pubconf, tarfile_path, distroseries, logger=None):
-    """Process a raw-uefi/raw-signing tarfile.
-
-    Unpacking it into the given archive for the given distroseries.
-    Raises CustomUploadError (or some subclass thereof) if anything goes
-    wrong.
-    """
-    upload = SigningUpload(logger=logger)
-    upload.process(pubconf, tarfile_path, distroseries)

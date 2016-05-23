@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of debian installer tarballs."""
@@ -10,7 +10,6 @@ __metaclass__ = type
 
 __all__ = [
     'DebianInstallerUpload',
-    'process_debian_installer',
     ]
 
 import os
@@ -51,10 +50,10 @@ class DebianInstallerUpload(CustomUpload):
     def setComponents(self, tarfile_path):
         _, self.version, self.arch = self.parsePath(tarfile_path)
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, suite):
         self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
-            pubconf.archiveroot, 'dists', distroseries, 'main',
+            pubconf.archiveroot, 'dists', suite, 'main',
             'installer-%s' % self.arch)
 
     @classmethod
@@ -75,14 +74,3 @@ class DebianInstallerUpload(CustomUpload):
 
     def shouldInstall(self, filename):
         return filename.startswith('%s/' % self.version)
-
-
-def process_debian_installer(pubconf, tarfile_path, distroseries, logger=None):
-    """Process a raw-installer tarfile.
-
-    Unpacking it into the given archive for the given distroseries.
-    Raises CustomUploadError (or some subclass thereof) if anything goes
-    wrong.
-    """
-    upload = DebianInstallerUpload(logger=logger)
-    upload.process(pubconf, tarfile_path, distroseries)

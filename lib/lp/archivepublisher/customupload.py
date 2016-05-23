@@ -13,21 +13,25 @@ DDTP (Debian Description Translation Project) tarballs.
 
 __metaclass__ = type
 
-__all__ = ['CustomUpload', 'CustomUploadError']
+__all__ = ['CustomUpload']
 
 import os
 import shutil
 import tarfile
 import tempfile
 
+from zope.interface import implementer
+
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
     )
-
-
-class CustomUploadError(Exception):
-    """Base class for all errors associated with publishing custom uploads."""
+from lp.services.librarian.utils import copy_and_close
+from lp.soyuz.interfaces.queue import (
+    CustomUploadError,
+    ICustomUploadHandler,
+    )
 
 
 class CustomUploadTarballTarError(CustomUploadError):
@@ -88,11 +92,28 @@ class CustomUploadAlreadyExists(CustomUploadError):
         CustomUploadError.__init__(self, message)
 
 
+@implementer(ICustomUploadHandler)
 class CustomUpload:
     """Base class for custom upload handlers"""
 
     # This should be set as a class property on each subclass.
     custom_type = None
+
+    @classmethod
+    def publish(cls, packageupload, libraryfilealias, logger=None):
+        """See `ICustomUploadHandler`."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            tarfile_path = os.path.join(temp_dir, libraryfilealias.filename)
+            temp_file = open(tarfile_path, "wb")
+            libraryfilealias.open()
+            copy_and_close(libraryfilealias, temp_file)
+            pubconf = getPubConfig(packageupload.archive)
+            suite = packageupload.distroseries.getSuite(packageupload.pocket)
+            upload = cls(logger=logger)
+            upload.process(pubconf, tarfile_path, suite)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def __init__(self, logger=None):
         self.targetdir = None
@@ -102,11 +123,11 @@ class CustomUpload:
         self.tmpdir = None
         self.logger = logger
 
-    def process(self, pubconf, tarfile_path, distroseries):
+    def process(self, pubconf, tarfile_path, suite):
         """Process the upload and install it into the archive."""
         self.tarfile_path = tarfile_path
         try:
-            self.setTargetDirectory(pubconf, tarfile_path, distroseries)
+            self.setTargetDirectory(pubconf, tarfile_path, suite)
             self.checkForConflicts()
             self.extract()
             self.installFiles()
@@ -126,7 +147,7 @@ class CustomUpload:
         """Set instance variables based on decomposing the filename."""
         raise NotImplementedError
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, suite):
         """Set self.targetdir based on parameters.
 
         This should also set self.version and self.arch (if applicable) as a
