@@ -9,6 +9,8 @@ This cannot be done on the build daemons because they are insufficiently
 secure to hold signing keys, so we sign them as a custom upload instead.
 """
 
+from __future__ import print_function
+
 __metaclass__ = type
 
 __all__ = [
@@ -17,10 +19,24 @@ __all__ = [
     ]
 
 import os
+import shutil
 import subprocess
+import tarfile
+import tempfile
+import textwrap
 
-from lp.archivepublisher.customupload import CustomUpload
+from lp.archivepublisher.customupload import (
+    CustomUpload,
+    CustomUploadError,
+    )
 from lp.services.osutils import remove_if_exists
+
+
+class SigningUploadPackError(CustomUploadError):
+    def __init__(self, tarfile_path, exc):
+        message = "Problem building tarball '%s': %s" % (
+            tarfile_path, exc)
+        CustomUploadError.__init__(self, message)
 
 
 class SigningUpload(CustomUpload):
@@ -67,12 +83,16 @@ class SigningUpload(CustomUpload):
             if self.logger is not None:
                 self.logger.warning(
                     "No signing root configured for this archive")
-            self.key = None
-            self.cert = None
+            self.uefi_key = None
+            self.uefi_cert = None
+            self.kmod_pem = None
+            self.kmod_x509 = None
             self.autokey = False
         else:
-            self.key = os.path.join(pubconf.signingroot, "uefi.key")
-            self.cert = os.path.join(pubconf.signingroot, "uefi.crt")
+            self.uefi_key = os.path.join(pubconf.signingroot, "uefi.key")
+            self.uefi_cert = os.path.join(pubconf.signingroot, "uefi.crt")
+            self.kmod_pem = os.path.join(pubconf.signingroot, "kmod.pem")
+            self.kmod_x509 = os.path.join(pubconf.signingroot, "kmod.x509")
             self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
@@ -99,6 +119,19 @@ class SigningUpload(CustomUpload):
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
 
+    def setSigningOptions(self):
+        """Find and extract raw-signing.options from the tarball."""
+        self.signing_options = {}
+
+        options_file = os.path.join(self.tmpdir, self.version,
+            "raw-signing.options")
+        if not os.path.exists(options_file):
+            return
+
+        with open(options_file) as options_fd:
+            for option in options_fd:
+                self.signing_options[option.strip()] = True
+
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
@@ -107,81 +140,164 @@ class SigningUpload(CustomUpload):
         except ValueError:
             return None
 
-    def findEfiFilenames(self):
-        """Find all the *.efi files in an extracted tarball."""
-        for dirpath, dirnames, filenames in os.walk(self.tmpdir):
-            for filename in filenames:
-                if filename.endswith(".efi"):
-                    yield os.path.join(dirpath, filename)
-
-    def generateUefiKeys(self):
-        """Generate new UEFI Keys for this archive."""
-        directory = os.path.dirname(self.key)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        # XXX: pull out the PPA owner and name to seed key CN
+    def getArchiveOwnerAndName(self):
+        # XXX apw 2016-05-18: pull out the PPA owner and name to seed key CN
         archive_name = os.path.dirname(self.archiveroot)
         owner_name = os.path.basename(os.path.dirname(archive_name))
         archive_name = os.path.basename(archive_name)
-        common_name = '/CN=PPA ' + owner_name + ' ' + archive_name + '/'
+
+        return owner_name + ' ' + archive_name
+
+    def callLog(self, description, cmdl):
+        status = subprocess.call(cmdl)
+        if status != 0:
+            # Just log this rather than failing, since custom upload errors
+            # tend to make the publisher rather upset.
+            if self.logger is not None:
+                self.logger.warning("%s Failed (cmd='%s')" %
+                    (description, " ".join(cmdl)))
+        return status
+
+    def findSigningHandlers(self):
+        """Find all the signable files in an extracted tarball."""
+        for dirpath, dirnames, filenames in os.walk(self.tmpdir):
+            for filename in filenames:
+                if filename.endswith(".efi"):
+                    yield (os.path.join(dirpath, filename), self.signUefi)
+                elif filename.endswith(".ko"):
+                    yield (os.path.join(dirpath, filename), self.signKmod)
+
+    def getKeys(self, which, generate, *keynames):
+        """Validate and return the uefi key and cert for encryption."""
+
+        if self.autokey:
+            for keyfile in keynames:
+                if keyfile and not os.path.exists(keyfile):
+                    generate()
+                    break
+
+        valid = True
+        for keyfile in keynames:
+            if keyfile and not os.access(keyfile, os.R_OK):
+                if self.logger is not None:
+                    self.logger.warning(
+                        "%s key %s not readable" % (which, keyfile))
+                valid = False
+
+        if not valid:
+            return [None for k in keynames]
+        return keynames
+
+    def generateUefiKeys(self):
+        """Generate new UEFI Keys for this archive."""
+        directory = os.path.dirname(self.uefi_key)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        common_name = '/CN=PPA ' + self.getArchiveOwnerAndName() + '/'
 
         old_mask = os.umask(0o077)
         try:
             new_key_cmd = [
                 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-                '-subj', common_name, '-keyout', self.key, '-out', self.cert,
-                '-days', '3650', '-nodes', '-sha256',
+                '-subj', common_name, '-keyout', self.uefi_key,
+                '-out', self.uefi_cert, '-days', '3650', '-nodes', '-sha256',
                 ]
-            if subprocess.call(new_key_cmd) != 0:
-                # Just log this rather than failing, since custom upload errors
-                # tend to make the publisher rather upset.
-                if self.logger is not None:
-                    self.logger.warning(
-                        "Failed to generate UEFI signing keys for %s" %
-                        common_name)
+            self.callLog("UEFI keygen", new_key_cmd)
         finally:
             os.umask(old_mask)
 
-        if os.path.exists(self.cert):
-            os.chmod(self.cert, 0o644)
-
-    def getUefiKeys(self):
-        """Validate and return the uefi key and cert for encryption."""
-
-        if self.key and self.cert:
-            # If neither of the key files exists then attempt to
-            # generate them.
-            if (self.autokey and not os.path.exists(self.key)
-                and not os.path.exists(self.cert)):
-                self.generateUefiKeys()
-
-            # If we have keys, but cannot read them they are dead to us.
-            if not os.access(self.key, os.R_OK):
-                if self.logger is not None:
-                    self.logger.warning(
-                        "UEFI private key %s not readable" % self.key)
-                self.key = None
-            if not os.access(self.cert, os.R_OK):
-                if self.logger is not None:
-                    self.logger.warning(
-                        "UEFI certificate %s not readable" % self.cert)
-                self.cert = None
-
-        return (self.key, self.cert)
+        if os.path.exists(self.uefi_cert):
+            os.chmod(self.uefi_cert, 0o644)
 
     def signUefi(self, image):
         """Attempt to sign an image."""
-        (key, cert) = self.getUefiKeys()
+        remove_if_exists("%s.signed" % image)
+        (key, cert) = self.getKeys('UEFI', self.generateUefiKeys,
+            self.uefi_key, self.uefi_cert)
         if not key or not cert:
             return
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
-        if subprocess.call(cmdl) != 0:
-            # Just log this rather than failing, since custom upload errors
-            # tend to make the publisher rather upset.
-            if self.logger is not None:
-                self.logger.warning("UEFI Signing Failed '%s'" %
-                    " ".join(cmdl))
+        return self.callLog("UEFI signing", cmdl)
+
+    def generateKmodKeys(self):
+        """Generate new Kernel Signing Keys for this archive."""
+        directory = os.path.dirname(self.kmod_pem)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        old_mask = os.umask(0o077)
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.keygen') as tf:
+                common_name = self.getArchiveOwnerAndName()
+
+                genkey_text = textwrap.dedent("""\
+                    [ req ]
+                    default_bits = 4096
+                    distinguished_name = req_distinguished_name
+                    prompt = no
+                    string_mask = utf8only
+                    x509_extensions = myexts
+
+                    [ req_distinguished_name ]
+                    CN = /CN=PPA """ + common_name + """ kmod/
+
+                    [ myexts ]
+                    basicConstraints=critical,CA:FALSE
+                    keyUsage=digitalSignature
+                    subjectKeyIdentifier=hash
+                    authorityKeyIdentifier=keyid
+                    """)
+
+                print(genkey_text, file=tf)
+
+                # Close out the underlying file so we know it is complete.
+                tf.file.close()
+
+                new_key_cmd = [
+                    'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
+                    '-days', '3650', '-batch', '-x509', '-config', tf.name,
+                    '-outform', 'PEM', '-out', self.kmod_pem,
+                    '-keyout', self.kmod_pem
+                    ]
+                if self.callLog("Kmod keygen key", new_key_cmd) == 0:
+                    new_x509_cmd = [
+                        'openssl', 'x509', '-in', self.kmod_pem,
+                        '-outform', 'DER', '-out', self.kmod_x509
+                        ]
+                    if self.callLog("Kmod keygen cert", new_x509_cmd) != 0:
+                        os.unlink(self.kmod_pem)
+        finally:
+            os.umask(old_mask)
+
+    def signKmod(self, image):
+        """Attempt to sign a kernel module."""
+        remove_if_exists("%s.sig" % image)
+        (pem, cert) = self.getKeys('Kernel Module', self.generateKmodKeys,
+            self.kmod_pem, self.kmod_x509)
+        if not pem or not cert:
+            return
+        cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
+        return self.callLog("Kmod signing", cmdl)
+
+    def convertToTarball(self):
+        """Convert unpacked output to signing tarball."""
+        tarfilename = os.path.join(self.tmpdir, "signed.tar.gz")
+        versiondir = os.path.join(self.tmpdir, self.version)
+
+        try:
+            with tarfile.open(tarfilename, "w:gz") as tarball:
+                tarball.add(versiondir, arcname=self.version)
+        except tarfile.TarError as exc:
+            raise SigningUploadPackError(tarfilename, exc)
+
+        # Clean out the original tree and move the signing tarball in.
+        try:
+            shutil.rmtree(versiondir)
+            os.mkdir(versiondir)
+            os.rename(tarfilename, os.path.join(versiondir, "signed.tar.gz"))
+        except OSError as exc:
+            raise SigningUploadPackError(tarfilename, exc)
 
     def extract(self):
         """Copy the custom upload to a temporary directory, and sign it.
@@ -189,10 +305,16 @@ class SigningUpload(CustomUpload):
         No actual extraction is required.
         """
         super(SigningUpload, self).extract()
-        efi_filenames = list(self.findEfiFilenames())
-        for efi_filename in efi_filenames:
-            remove_if_exists("%s.signed" % efi_filename)
-            self.signUefi(efi_filename)
+        self.setSigningOptions()
+        filehandlers = list(self.findSigningHandlers())
+        for (filename, handler) in filehandlers:
+            if (handler(filename) == 0 and
+                'signed-only' in self.signing_options):
+                os.unlink(filename)
+
+        # If tarball output is requested, tar up the results.
+        if 'tarball' in self.signing_options:
+            self.convertToTarball()
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
