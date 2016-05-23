@@ -44,7 +44,6 @@ from lp.app.errors import NotFoundError
 # This should not import from archivepublisher, but to avoid
 # that it needs a bit of redesigning here around the publication stuff.
 from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -101,6 +100,7 @@ from lp.soyuz.interfaces.publishing import (
     name_priority_map,
     )
 from lp.soyuz.interfaces.queue import (
+    CustomUploadError,
     ICustomUploadHandler,
     IPackageUpload,
     IPackageUploadBuild,

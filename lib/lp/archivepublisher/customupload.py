@@ -13,7 +13,7 @@ DDTP (Debian Description Translation Project) tarballs.
 
 __metaclass__ = type
 
-__all__ = ['CustomUpload', 'CustomUploadError']
+__all__ = ['CustomUpload']
 
 import os
 import shutil
@@ -26,11 +26,10 @@ from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
     )
-from lp.soyuz.interfaces.queue import ICustomUploadHandler
-
-
-class CustomUploadError(Exception):
-    """Base class for all errors associated with publishing custom uploads."""
+from lp.soyuz.interfaces.queue import (
+    CustomUploadError,
+    ICustomUploadHandler,
+    )
 
 
 class CustomUploadTarballTarError(CustomUploadError):

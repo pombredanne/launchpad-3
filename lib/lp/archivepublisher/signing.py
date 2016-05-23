@@ -24,11 +24,9 @@ import tarfile
 import tempfile
 import textwrap
 
-from lp.archivepublisher.customupload import (
-    CustomUpload,
-    CustomUploadError,
-    )
+from lp.archivepublisher.customupload import CustomUpload
 from lp.services.osutils import remove_if_exists
+from lp.soyuz.interfaces.queue import CustomUploadError
 
 
 class SigningUploadPackError(CustomUploadError):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CustomUploadError',
     'ICustomUploadHandler',
     'IHasQueueItems',
     'IPackageUploadQueue',
@@ -803,6 +804,10 @@ class IHasQueueItems(Interface):
 
     def getPackageUploadQueue(state):
         """Return an IPackageUploadQueue according to the given state."""
+
+
+class CustomUploadError(Exception):
+    """Base class for all errors associated with publishing custom uploads."""
 
 
 class ICustomUploadHandler(Interface):

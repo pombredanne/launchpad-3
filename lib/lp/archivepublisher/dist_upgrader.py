@@ -11,14 +11,12 @@ __all__ = [
 
 import os
 
-from lp.archivepublisher.customupload import (
-    CustomUpload,
-    CustomUploadError,
-    )
+from lp.archivepublisher.customupload import CustomUpload
 from lp.archivepublisher.debversion import (
     BadUpstreamError,
     Version as make_version,
     )
+from lp.soyuz.interfaces.queue import CustomUploadError
 
 
 class DistUpgraderBadVersion(CustomUploadError):
