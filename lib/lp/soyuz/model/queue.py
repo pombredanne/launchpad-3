@@ -13,8 +13,6 @@ __all__ = [
 
 from itertools import chain
 import os
-import shutil
-import tempfile
 
 from sqlobject import (
     ForeignKey,
@@ -1372,46 +1370,23 @@ class PackageUploadCustom(SQLBase):
 
         self.publisher_dispatch[self.customformat](self, logger)
 
-    def temp_filename(self):
-        """See `IPackageUploadCustom`."""
-        temp_dir = tempfile.mkdtemp()
-        temp_file_name = os.path.join(
-            temp_dir, self.libraryfilealias.filename)
-        temp_file = file(temp_file_name, "wb")
-        self.libraryfilealias.open()
-        copy_and_close(self.libraryfilealias, temp_file)
-        return temp_file_name
-
-    def _publishCustom(self, action_method, logger=None):
-        """Publish custom formats.
-
-        Publish Either an installer, an upgrader or a ddtp upload using the
-        supplied action method.
-        """
-        temp_filename = self.temp_filename()
-        suite = self.packageupload.distroseries.getSuite(
-            self.packageupload.pocket)
-        try:
-            # See the XXX near the import for getPubConfig.
-            archive_config = getPubConfig(self.packageupload.archive)
-            action_method(archive_config, temp_filename, suite, logger=logger)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
-
     def publishDebianInstaller(self, logger=None):
         """See `IPackageUploadCustom`."""
         handler = getUtility(ICustomUploadHandler, "DEBIAN_INSTALLER")
-        self._publishCustom(handler.publish, logger=logger)
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
     def publishDistUpgrader(self, logger=None):
         """See `IPackageUploadCustom`."""
         handler = getUtility(ICustomUploadHandler, "DIST_UPGRADER")
-        self._publishCustom(handler.publish, logger=logger)
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
     def publishDdtpTarball(self, logger=None):
         """See `IPackageUploadCustom`."""
         handler = getUtility(ICustomUploadHandler, "DDTP_TARBALL")
-        self._publishCustom(handler.publish, logger=logger)
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
     def publishRosettaTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
@@ -1456,7 +1431,8 @@ class PackageUploadCustom(SQLBase):
     def publishSigning(self, logger=None):
         """See `IPackageUploadCustom`."""
         handler = getUtility(ICustomUploadHandler, "SIGNING")
-        self._publishCustom(handler.publish, logger=logger)
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
     publisher_dispatch = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,

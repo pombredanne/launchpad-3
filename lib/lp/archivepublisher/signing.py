@@ -75,7 +75,7 @@ class SigningUpload(CustomUpload):
         self.package, self.version, self.arch = self.parsePath(
             tarfile_path)
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, suite):
         if pubconf.signingroot is None:
             if self.logger is not None:
                 self.logger.warning(
@@ -100,9 +100,9 @@ class SigningUpload(CustomUpload):
         # symlink to signed.
         # NOTE: we rely on "signed" and "uefi"  being in the same directory.
         dists_signed = os.path.join(
-            pubconf.archiveroot, "dists", distroseries, "main", "signed")
+            pubconf.archiveroot, "dists", suite, "main", "signed")
         dists_uefi = os.path.join(
-            pubconf.archiveroot, "dists", distroseries, "main", "uefi")
+            pubconf.archiveroot, "dists", suite, "main", "uefi")
         if not os.path.exists(dists_signed):
             if os.path.isdir(dists_uefi):
                 os.rename(dists_uefi, dists_signed)

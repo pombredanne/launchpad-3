@@ -22,10 +22,12 @@ import tempfile
 
 from zope.interface import implementer
 
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
     )
+from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.interfaces.queue import (
     CustomUploadError,
     ICustomUploadHandler,
@@ -98,10 +100,20 @@ class CustomUpload:
     custom_type = None
 
     @classmethod
-    def publish(cls, pubconf, tarfile_path, distroseries, logger=None):
+    def publish(cls, packageupload, libraryfilealias, logger=None):
         """See `ICustomUploadHandler`."""
-        upload = cls(logger=logger)
-        upload.process(pubconf, tarfile_path, distroseries)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            tarfile_path = os.path.join(temp_dir, libraryfilealias.filename)
+            temp_file = open(tarfile_path, "wb")
+            libraryfilealias.open()
+            copy_and_close(libraryfilealias, temp_file)
+            pubconf = getPubConfig(packageupload.archive)
+            suite = packageupload.distroseries.getSuite(packageupload.pocket)
+            upload = cls(logger=logger)
+            upload.process(pubconf, tarfile_path, suite)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def __init__(self, logger=None):
         self.targetdir = None
@@ -111,11 +123,11 @@ class CustomUpload:
         self.tmpdir = None
         self.logger = logger
 
-    def process(self, pubconf, tarfile_path, distroseries):
+    def process(self, pubconf, tarfile_path, suite):
         """Process the upload and install it into the archive."""
         self.tarfile_path = tarfile_path
         try:
-            self.setTargetDirectory(pubconf, tarfile_path, distroseries)
+            self.setTargetDirectory(pubconf, tarfile_path, suite)
             self.checkForConflicts()
             self.extract()
             self.installFiles()
@@ -135,7 +147,7 @@ class CustomUpload:
         """Set instance variables based on decomposing the filename."""
         raise NotImplementedError
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, suite):
         """Set self.targetdir based on parameters.
 
         This should also set self.version and self.arch (if applicable) as a

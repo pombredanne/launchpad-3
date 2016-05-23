@@ -50,10 +50,10 @@ class DebianInstallerUpload(CustomUpload):
     def setComponents(self, tarfile_path):
         _, self.version, self.arch = self.parsePath(tarfile_path)
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, suite):
         self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
-            pubconf.archiveroot, 'dists', distroseries, 'main',
+            pubconf.archiveroot, 'dists', suite, 'main',
             'installer-%s' % self.arch)
 
     @classmethod

@@ -58,10 +58,10 @@ class DdtpTarballUpload(CustomUpload):
         _, self.component, self.version = self.parsePath(tarfile_path)
         self.arch = None
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, suite):
         self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
-            pubconf.archiveroot, 'dists', distroseries, self.component)
+            pubconf.archiveroot, 'dists', suite, self.component)
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
