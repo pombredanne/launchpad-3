@@ -207,7 +207,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyAdditionError,
     SSHKeyCompromisedError,
     SSHKeyType,
-    SSHKeyTypeToText,
+    SSH_KEY_TYPE_TO_TEXT,
     )
 from lp.registry.interfaces.teammembership import (
     IJoinTeamEvent,
@@ -4057,7 +4057,7 @@ class SSHKey(SQLBase):
 
     def getFullKeyText(self):
         return "%s %s %s" % (
-            SSHKeyTypeToText[self.keytype], self.keytext, self.comment)
+            SSH_KEY_TYPE_TO_TEXT[self.keytype], self.keytext, self.comment)
 
 
 @implementer(ISSHKeySet)

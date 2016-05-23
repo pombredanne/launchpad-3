@@ -51,7 +51,7 @@ class SSHKeyType(DBEnumeratedType):
         """)
 
 
-SSHKeyTypeToText = {
+SSH_KEY_TYPE_TO_TEXT = {
     SSHKeyType.RSA: "ssh-rsa",
     SSHKeyType.DSA: "ssh-dss",
 }

@@ -194,8 +194,6 @@ from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSHKeyAdditionError,
     SSHKeyCompromisedError,
-    SSHKeyType,
-    SSHKeyTypeToText,
     )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
