@@ -550,7 +550,7 @@ class TestSigning(TestCase):
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
-        upload.signUefi('t.efi')
+        upload.signUefi(os.path.join(self.makeTemporaryDirectory(), 't.efi'))
         self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
         self.assertFalse(os.path.exists(self.key))
         self.assertFalse(os.path.exists(self.cert))
@@ -567,7 +567,7 @@ class TestSigning(TestCase):
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
-        upload.signUefi('t.efi')
+        upload.signUefi(os.path.join(self.makeTemporaryDirectory(), 't.efi'))
         self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
         self.assertTrue(os.path.exists(self.key))
         self.assertTrue(os.path.exists(self.cert))
@@ -583,7 +583,7 @@ class TestSigning(TestCase):
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
-        upload.signKmod('t.ko')
+        upload.signKmod(os.path.join(self.makeTemporaryDirectory(), 't.ko'))
         self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
         self.assertEqual(0, upload.callLog.caller_count('Kmod keygen cert'))
         self.assertFalse(os.path.exists(self.kmod_pem))
@@ -601,7 +601,7 @@ class TestSigning(TestCase):
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
             self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
-        upload.signKmod('t.ko')
+        upload.signKmod(os.path.join(self.makeTemporaryDirectory(), 't.ko'))
         self.assertEqual(1, upload.callLog.caller_count('Kmod keygen key'))
         self.assertEqual(1, upload.callLog.caller_count('Kmod keygen cert'))
         self.assertTrue(os.path.exists(self.kmod_pem))
