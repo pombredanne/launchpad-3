@@ -115,10 +115,6 @@ from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.section import Section
 
-# There are imports below in PackageUploadCustom for various bits
-# of the archivepublisher which cause circular import errors if they
-# are placed here.
-
 
 def debug(logger, msg):
     """Shorthand debug notation for publish() methods."""
@@ -1351,76 +1347,13 @@ class PackageUploadCustom(SQLBase):
 
     def publish(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # This is a marker as per the comment in lib/lp/soyuz/enums.py:
-        ##CUSTOMFORMAT##
-        # Essentially, if you alter anything to do with what custom formats
-        # are, what their tags are, or anything along those lines, you should
-        # grep for the marker in the source tree and fix it up in every place
-        # so marked.
         debug(logger, "Publishing custom %s to %s/%s" % (
             self.packageupload.displayname,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
-
-        self.publisher_dispatch[self.customformat](self, logger)
-
-    def publishDebianInstaller(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        handler = getUtility(ICustomUploadHandler, "DEBIAN_INSTALLER")
+        handler = getUtility(ICustomUploadHandler, self.customformat.name)
         handler.publish(
             self.packageupload, self.libraryfilealias, logger=logger)
-
-    def publishDistUpgrader(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        handler = getUtility(ICustomUploadHandler, "DIST_UPGRADER")
-        handler.publish(
-            self.packageupload, self.libraryfilealias, logger=logger)
-
-    def publishDdtpTarball(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        handler = getUtility(ICustomUploadHandler, "DDTP_TARBALL")
-        handler.publish(
-            self.packageupload, self.libraryfilealias, logger=logger)
-
-    def publishRosettaTranslations(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        handler = getUtility(ICustomUploadHandler, "ROSETTA_TRANSLATIONS")
-        handler.publish(
-            self.packageupload, self.libraryfilealias, logger=logger)
-
-    def publishStaticTranslations(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        handler = getUtility(ICustomUploadHandler, "STATIC_TRANSLATIONS")
-        handler.publish(
-            self.packageupload, self.libraryfilealias, logger=logger)
-
-    def publishMetaData(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        handler = getUtility(ICustomUploadHandler, "META_DATA")
-        handler.publish(
-            self.packageupload, self.libraryfilealias, logger=logger)
-
-    def publishSigning(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        handler = getUtility(ICustomUploadHandler, "SIGNING")
-        handler.publish(
-            self.packageupload, self.libraryfilealias, logger=logger)
-
-    publisher_dispatch = {
-        PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,
-        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
-            publishRosettaTranslations,
-        PackageUploadCustomFormat.DIST_UPGRADER: publishDistUpgrader,
-        PackageUploadCustomFormat.DDTP_TARBALL: publishDdtpTarball,
-        PackageUploadCustomFormat.STATIC_TRANSLATIONS:
-            publishStaticTranslations,
-        PackageUploadCustomFormat.META_DATA: publishMetaData,
-        PackageUploadCustomFormat.SIGNING: publishSigning,
-        }
-
-    # publisher_dispatch must have an entry for each value of
-    # PackageUploadCustomFormat.
-    assert len(publisher_dispatch) == len(PackageUploadCustomFormat)
 
 
 @implementer(IPackageUploadSet)

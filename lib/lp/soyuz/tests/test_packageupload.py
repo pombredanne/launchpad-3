@@ -16,7 +16,10 @@ from lazr.restfulclient.errors import (
     )
 from testtools.matchers import Equals
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    getUtility,
+    queryUtility,
+    )
 from zope.schema import getFields
 from zope.security.interfaces import Unauthorized as ZopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -39,6 +42,7 @@ from lp.soyuz.interfaces.archivejob import IPackageUploadNotificationJobSource
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
+    ICustomUploadHandler,
     IPackageUpload,
     IPackageUploadSet,
     QueueAdminUnauthorizedError,
@@ -54,12 +58,14 @@ from lp.testing import (
     person_logged_in,
     record_two_runs,
     StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessLayer,
     )
 from lp.testing.matchers import (
     HasQueryCount,
@@ -571,6 +577,18 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         # SourcePackageRelease.
         pu, pcj = self.makeUploadWithPackageCopyJob()
         self.assertIs(None, pu.sourcepackagerelease)
+
+
+class TestPackageUploadCustom(TestCase):
+    """Unit tests for `PackageUploadCustom`."""
+
+    layer = ZopelessLayer
+
+    def test_handlers(self):
+        # Each element of `PackageUploadCustomFormat` has a handler.
+        for customformat in PackageUploadCustomFormat.items:
+            self.assertIsNotNone(
+                queryUtility(ICustomUploadHandler, customformat.name))
 
 
 class TestPackageUploadSet(TestCaseWithFactory):
