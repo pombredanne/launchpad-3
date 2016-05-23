@@ -37,7 +37,14 @@
             set_schema="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"/>
     </class>
 
-    <!-- Custom upload handlers -->
+    <!-- Custom upload handlers
+
+         This is a marker as per the comment in lib/lp/soyuz/enums.py:
+         ##CUSTOMFORMAT##
+         If you change anything to do with custom formats, grep for the
+         marker in the codebase and make sure the same changes are made
+         everywhere which needs them.
+    -->
     <securedutility
         class="lp.archivepublisher.debian_installer.DebianInstallerUpload"
         provides="lp.soyuz.interfaces.queue.ICustomUploadHandler"
