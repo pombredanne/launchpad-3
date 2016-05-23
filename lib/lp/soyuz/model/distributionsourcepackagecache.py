@@ -119,13 +119,11 @@ class DistributionSourcePackageCache(SQLBase):
                 cache.destroySelf()
 
     @classmethod
-    def _update(cls, distro, sourcepackagenames, archive, log):
+    def update(cls, distro, sourcepackagenames, archive, log=None):
         """Update the package cache for a given set of `ISourcePackageName`s.
 
         Cached details include generated binarypackage names, summary
         and description fti.
-
-        'log' is required and only prints debug level information.
         """
 
         # Get the set of published sourcepackage releases.
@@ -142,7 +140,8 @@ class DistributionSourcePackageCache(SQLBase):
                 PackagePublishingStatus.PUBLISHED))
             ).config(distinct=True).order_by(SourcePackageRelease.id))
         if len(all_sprs) == 0:
-            log.debug("No sources releases found.")
+            if log is not None:
+                log.debug("No sources releases found.")
             return
 
         spr_map = defaultdict(list)
@@ -201,7 +200,9 @@ class DistributionSourcePackageCache(SQLBase):
             binpkgsummaries = set()
             binpkgdescriptions = set()
             for spr_id, spr_version in sprs:
-                log.debug("Considering source %s %s", spn.name, spr_version)
+                if log is not None:
+                    log.debug(
+                        "Considering source %s %s", spn.name, spr_version)
                 binpkgs = binaries_by_spr.get(spr_id, [])
                 for bpn, summary, description in binpkgs:
                     binpkgnames.add(bpn.name)
@@ -254,7 +255,7 @@ class DistributionSourcePackageCache(SQLBase):
             log.debug(
                 "Considering sources %s",
                 ', '.join([spn.name for spn in chunk]))
-            cls._update(distro, chunk, archive, log)
+            cls.update(distro, chunk, archive, log)
             number_of_updates += len(chunk)
             log.debug("Committing")
             ztm.commit()
