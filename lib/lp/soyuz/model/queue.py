@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from itertools import chain
-import os
 
 from sqlobject import (
     ForeignKey,
@@ -38,10 +37,6 @@ from zope.component import getUtility
 from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
-# XXX 2009-05-10 julian
-# This should not import from archivepublisher, but to avoid
-# that it needs a bit of redesigning here around the publication stuff.
-from lp.archivepublisher.config import getPubConfig
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -73,7 +68,6 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.librarian.utils import copy_and_close
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import (
     cachedproperty,
@@ -1396,37 +1390,15 @@ class PackageUploadCustom(SQLBase):
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # Static translations are not published.  Currently, they're
-        # only exposed via webservice methods so that third parties can
-        # retrieve them from the librarian.
-        debug(logger, "Skipping publishing of static translations.")
-        return
+        handler = getUtility(ICustomUploadHandler, "STATIC_TRANSLATIONS")
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
     def publishMetaData(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # In the future this could use the existing custom upload file
-        # processing which deals with versioning, etc., but that's too
-        # complicated for our needs right now.  Also, the existing code
-        # assumes that everything is a tarball and tries to unpack it.
-
-        # See the XXX near the import for getPubConfig.
-        archive_config = getPubConfig(self.packageupload.archive)
-        if archive_config.metaroot is None:
-            debug(logger, "Skipping meta-data for archive without metaroot.")
-            return
-
-        dest_file = os.path.join(
-            archive_config.metaroot, self.libraryfilealias.filename)
-        if not os.path.isdir(archive_config.metaroot):
-            os.makedirs(archive_config.metaroot, 0o755)
-
-        # At this point we now have a directory of the format:
-        # <person_name>/meta/<ppa_name>
-        # We're ready to copy the file out of the librarian into it.
-
-        file_obj = file(dest_file, "wb")
-        self.libraryfilealias.open()
-        copy_and_close(self.libraryfilealias, file_obj)
+        handler = getUtility(ICustomUploadHandler, "META_DATA")
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
     def publishSigning(self, logger=None):
         """See `IPackageUploadCustom`."""
