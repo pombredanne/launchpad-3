@@ -195,6 +195,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyAdditionError,
     SSHKeyCompromisedError,
     SSHKeyType,
+    SSHKeyTypeToText,
     )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -1978,15 +1979,7 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     def showSSHKeys(self):
         """Return a data structure used for display of raw SSH keys"""
         self.request.response.setHeader('Content-Type', 'text/plain')
-        keys = []
-        for key in self.context.sshkeys:
-            if key.keytype == SSHKeyType.DSA:
-                type_name = 'ssh-dss'
-            elif key.keytype == SSHKeyType.RSA:
-                type_name = 'ssh-rsa'
-            else:
-                type_name = 'Unknown key type'
-            keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
+        keys = [key.getFullKeyText() for key in self.context.sshkeys]
         return "\n".join(keys)
 
     @cachedproperty

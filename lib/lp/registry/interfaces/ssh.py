@@ -51,6 +51,12 @@ class SSHKeyType(DBEnumeratedType):
         """)
 
 
+SSHKeyTypeToText = {
+    SSHKeyType.RSA: "ssh-rsa",
+    SSHKeyType.DSA: "ssh-dss",
+}
+
+
 class ISSHKey(Interface):
     """SSH public key"""
 

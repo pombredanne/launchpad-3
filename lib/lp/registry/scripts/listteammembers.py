@@ -11,7 +11,7 @@ import re
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.ssh import SSHKeyType
+from lp.registry.interfaces.ssh import SSHKeyTypeToText
 
 
 OUTPUT_TEMPLATES = {
@@ -62,12 +62,7 @@ def process_team(teamname, display_option='simple'):
         sshkey = '--none--'
         if display_option == 'sshkeys':
             for key in member.sshkeys:
-                if key.keytype == SSHKeyType.DSA:
-                    type_name = 'ssh-dss'
-                elif key.keytype == SSHKeyType.RSA:
-                    type_name = 'ssh-rsa'
-                else:
-                    type_name = 'Unknown key type'
+                type_name = SSHKeyTypeToText[key.keytype]
                 params = make_sshkey_params(member, type_name, key)
                 output.append(template % params)
         # Ubuntite
