@@ -74,6 +74,20 @@
             interface="lp.soyuz.interfaces.queue.ICustomUploadHandler"/>
     </securedutility>
     <securedutility
+        class="lp.archivepublisher.static_translations.StaticTranslationsUpload"
+        provides="lp.soyuz.interfaces.queue.ICustomUploadHandler"
+        name="STATIC_TRANSLATIONS">
+        <allow
+            interface="lp.soyuz.interfaces.queue.ICustomUploadHandler"/>
+    </securedutility>
+    <securedutility
+        class="lp.archivepublisher.meta_data.MetaDataUpload"
+        provides="lp.soyuz.interfaces.queue.ICustomUploadHandler"
+        name="META_DATA">
+        <allow
+            interface="lp.soyuz.interfaces.queue.ICustomUploadHandler"/>
+    </securedutility>
+    <securedutility
         class="lp.archivepublisher.signing.SigningUpload"
         provides="lp.soyuz.interfaces.queue.ICustomUploadHandler"
         name="SIGNING">
