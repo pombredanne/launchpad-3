@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ISSHKey',
     'ISSHKeySet',
+    'SSH_KEY_TYPE_TO_TEXT',
     'SSHKeyAdditionError',
     'SSHKeyCompromisedError',
     'SSHKeyType',
@@ -51,6 +52,12 @@ class SSHKeyType(DBEnumeratedType):
         """)
 
 
+SSH_KEY_TYPE_TO_TEXT = {
+    SSHKeyType.RSA: "ssh-rsa",
+    SSHKeyType.DSA: "ssh-dss",
+}
+
+
 class ISSHKey(Interface):
     """SSH public key"""
 
@@ -68,6 +75,9 @@ class ISSHKey(Interface):
 
     def destroySelf():
         """Remove this SSHKey from the database."""
+
+    def getFullKeyText():
+        """Get the full text of the SSH key."""
 
 
 class ISSHKeySet(Interface):

@@ -2268,6 +2268,25 @@ class IPersonSet(Interface):
             non-placeholder Launchpad account.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getSSHKeysForSSO(user, openid_identifier):
+        """Restricted SSH key creation API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It finds and
+        returns all the SSH keys belonging to the account identified by the
+        openid_identifier parameter.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        """
+
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         teamdescription='team_description',
