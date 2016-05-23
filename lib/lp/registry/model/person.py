@@ -3462,6 +3462,17 @@ class PersonSet:
                 person = IPerson(account)
                 person.name = person.display_name = account.displayname = name
 
+    def getSSHKeysForSSO(self, user, openid_identifier):
+        """See `IPersonSet`"""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            return None
+        return [s.getFullKeyText() for s in IPerson(account).sshkeys]
+
     def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None,
@@ -4042,6 +4053,13 @@ class SSHKey(SQLBase):
             "SSH Key removed from your Launchpad account.",
             "The SSH Key %s was removed from your account." % self.comment)
         super(SSHKey, self).destroySelf()
+
+    def getFullKeyText(self):
+        if self.keytype == SSHKeyType.RSA:
+            keytype = 'ssh-rsa'
+        elif self.keytype == SSHKeyType.DSA:
+            keytype = 'ssh-dss'
+        return "%s %s %s" % (keytype, self.keytext, self.comment)
 
 
 @implementer(ISSHKeySet)

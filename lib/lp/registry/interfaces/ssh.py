@@ -69,6 +69,9 @@ class ISSHKey(Interface):
     def destroySelf():
         """Remove this SSHKey from the database."""
 
+    def getFullKeyText():
+        """Get the full text of the SSH key."""
+
 
 class ISSHKeySet(Interface):
     """The set of SSHKeys."""
