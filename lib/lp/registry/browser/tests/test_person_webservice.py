@@ -481,3 +481,30 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
 
     def test_setUsernameFromSSO_rejects_bad_input_in_dry_run(self):
         self.test_setUsernameFromSSO_rejects_bad_input(dry_run=True)
+
+    def test_getSSHKeysForSSO(self):
+        with admin_logged_in():
+            target = self.factory.makePerson()
+            key = self.factory.makeSSHKey(target)
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+            taken_openid = (
+                target.account.openid_identifiers.any().identifier)
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getSSHKeysForSSO',
+            openid_identifier=taken_openid, api_version='devel')
+        expected = 'ssh-rsa %s %s' % (key.keytext, key.comment)
+        self.assertEqual(200, response.status)
+        self.assertEqual([expected], response.jsonBody())
+
+    def test_getSSHKeysForSSO_nonexistent(self):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getSSHKeysForSSO',
+            openid_identifier='doesnotexist', api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertEqual(None, response.jsonBody())

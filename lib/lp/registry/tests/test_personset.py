@@ -892,3 +892,36 @@ class TestPersonSetUsernameFromSSO(TestCaseWithFactory):
 
     def test_validation_dry_run(self):
         self.test_validation(dry_run=True)
+
+
+class TestPersonGetSSHKeysForSSO(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonGetSSHKeysForSSO, self).setUp()
+        self.sso = getUtility(IPersonSet).getByName(u'ubuntu-sso')
+
+    def test_restricted_to_sso(self):
+        # Only the ubuntu-sso celebrity can invoke this
+        # privileged method.
+        target = self.factory.makePerson(name='username')
+        make_openid_identifier(target.account, u'openid')
+
+        def do_it():
+            return getUtility(IPersonSet).getUsernameForSSO(
+                getUtility(ILaunchBag).user, u'openid')
+        random = self.factory.makePerson()
+        admin = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName(u'admins')])
+
+        # Anonymous, random or admin users can't invoke the method.
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(random):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(admin):
+            self.assertRaises(Unauthorized, do_it)
+
+        with person_logged_in(self.sso):
+            self.assertEqual('username', do_it())
