@@ -16,7 +16,6 @@ from lp.archivepublisher.customupload import (
 from lp.archivepublisher.dist_upgrader import (
     DistUpgraderBadVersion,
     DistUpgraderUpload,
-    process_dist_upgrader,
     )
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
@@ -48,7 +47,7 @@ class TestDistUpgrader(TestCase):
     def process(self):
         self.archive.close()
         self.buffer.close()
-        process_dist_upgrader(self.pubconf, self.path, self.suite)
+        DistUpgraderUpload().process(self.pubconf, self.path, self.suite)
 
     def getUpgraderPath(self):
         return os.path.join(
