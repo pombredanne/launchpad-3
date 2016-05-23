@@ -14,7 +14,6 @@ from __future__ import print_function
 __metaclass__ = type
 
 __all__ = [
-    "process_signing",
     "SigningUpload",
     ]
 
@@ -318,14 +317,3 @@ class SigningUpload(CustomUpload):
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
-
-
-def process_signing(pubconf, tarfile_path, distroseries, logger=None):
-    """Process a raw-uefi/raw-signing tarfile.
-
-    Unpacking it into the given archive for the given distroseries.
-    Raises CustomUploadError (or some subclass thereof) if anything goes
-    wrong.
-    """
-    upload = SigningUpload(logger=logger)
-    upload.process(pubconf, tarfile_path, distroseries)

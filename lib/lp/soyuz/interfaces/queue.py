@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ICustomUploadHandler',
     'IHasQueueItems',
     'IPackageUploadQueue',
     'IPackageUpload',
@@ -802,3 +803,15 @@ class IHasQueueItems(Interface):
 
     def getPackageUploadQueue(state):
         """Return an IPackageUploadQueue according to the given state."""
+
+
+class ICustomUploadHandler(Interface):
+    """A custom upload handler."""
+
+    def publish(pubconf, tarfile_path, distroseries, logger=None):
+        """Publish a custom upload tarfile.
+
+        Unpack it into the given archive for the given distroseries.
+
+        :raises CustomUploadError: if anything goes wrong.
+        """

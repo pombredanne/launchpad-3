@@ -20,10 +20,13 @@ import shutil
 import tarfile
 import tempfile
 
+from zope.interface import implementer
+
 from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
     )
+from lp.soyuz.interfaces.queue import ICustomUploadHandler
 
 
 class CustomUploadError(Exception):
@@ -88,11 +91,18 @@ class CustomUploadAlreadyExists(CustomUploadError):
         CustomUploadError.__init__(self, message)
 
 
+@implementer(ICustomUploadHandler)
 class CustomUpload:
     """Base class for custom upload handlers"""
 
     # This should be set as a class property on each subclass.
     custom_type = None
+
+    @classmethod
+    def publish(cls, pubconf, tarfile_path, distroseries, logger=None):
+        """See `ICustomUploadHandler`."""
+        upload = cls(logger=logger)
+        upload.process(pubconf, tarfile_path, distroseries)
 
     def __init__(self, logger=None):
         self.targetdir = None

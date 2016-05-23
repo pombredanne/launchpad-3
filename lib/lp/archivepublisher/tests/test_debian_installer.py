@@ -13,10 +13,7 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
-from lp.archivepublisher.debian_installer import (
-    DebianInstallerUpload,
-    process_debian_installer,
-    )
+from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
@@ -58,7 +55,7 @@ class TestDebianInstaller(TestCase):
     def process(self):
         self.archive.close()
         self.buffer.close()
-        process_debian_installer(self.pubconf, self.path, self.suite)
+        DebianInstallerUpload().process(self.pubconf, self.path, self.suite)
 
     def getInstallerPath(self, versioned_filename=None):
         installer_path = os.path.join(

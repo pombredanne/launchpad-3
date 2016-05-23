@@ -101,6 +101,7 @@ from lp.soyuz.interfaces.publishing import (
     name_priority_map,
     )
 from lp.soyuz.interfaces.queue import (
+    ICustomUploadHandler,
     IPackageUpload,
     IPackageUploadBuild,
     IPackageUploadCustom,
@@ -1399,36 +1400,24 @@ class PackageUploadCustom(SQLBase):
 
     def publishDebianInstaller(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.debian_installer import (
-            process_debian_installer)
-
-        self._publishCustom(process_debian_installer, logger=logger)
+        handler = getUtility(ICustomUploadHandler, "DEBIAN_INSTALLER")
+        self._publishCustom(handler.publish, logger=logger)
 
     def publishDistUpgrader(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.dist_upgrader import process_dist_upgrader
-
-        self._publishCustom(process_dist_upgrader, logger=logger)
+        handler = getUtility(ICustomUploadHandler, "DIST_UPGRADER")
+        self._publishCustom(handler.publish, logger=logger)
 
     def publishDdtpTarball(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.ddtp_tarball import process_ddtp_tarball
-
-        self._publishCustom(process_ddtp_tarball, logger=logger)
+        handler = getUtility(ICustomUploadHandler, "DDTP_TARBALL")
+        self._publishCustom(handler.publish, logger=logger)
 
     def publishRosettaTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
-        from lp.archivepublisher.rosetta_translations import (
-            process_rosetta_translations)
-
-        process_rosetta_translations(self.packageupload,
-                                     self.libraryfilealias, logger=logger)
+        handler = getUtility(ICustomUploadHandler, "ROSETTA_TRANSLATIONS")
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
@@ -1466,11 +1455,8 @@ class PackageUploadCustom(SQLBase):
 
     def publishSigning(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.signing import process_signing
-
-        self._publishCustom(process_signing, logger=logger)
+        handler = getUtility(ICustomUploadHandler, "SIGNING")
+        self._publishCustom(handler.publish, logger=logger)
 
     publisher_dispatch = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,
