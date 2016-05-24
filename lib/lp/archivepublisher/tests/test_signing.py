@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+import stat
 import tarfile
 
 from fixtures import MonkeyPatch
@@ -571,6 +572,8 @@ class TestSigning(TestCase):
         self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
         self.assertTrue(os.path.exists(self.key))
         self.assertTrue(os.path.exists(self.cert))
+        self.assertEqual(stat.S_IMODE(os.stat(self.key).st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(self.cert).st_mode), 0o644)
 
     def test_create_kmod_keys_autokey_off(self):
         # Keys are not created.
@@ -606,3 +609,5 @@ class TestSigning(TestCase):
         self.assertEqual(1, upload.callLog.caller_count('Kmod keygen cert'))
         self.assertTrue(os.path.exists(self.kmod_pem))
         self.assertTrue(os.path.exists(self.kmod_x509))
+        self.assertEqual(stat.S_IMODE(os.stat(self.kmod_pem).st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(self.kmod_x509).st_mode), 0o644)
