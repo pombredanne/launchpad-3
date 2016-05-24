@@ -368,8 +368,8 @@ class SnapAddView(LaunchpadFormView):
             }
 
     @property
-    def has_snappy_series(self):
-        return not getUtility(ISnappySeriesSet).getAll().is_empty()
+    def has_snappy_distro_series(self):
+        return not getUtility(ISnappyDistroSeriesSet).getAll().is_empty()
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
@@ -436,8 +436,8 @@ class BaseSnapEditView(LaunchpadEditFormView):
                 for value in (VCSType.BZR, VCSType.GIT)]
 
     @property
-    def has_snappy_series(self):
-        return not getUtility(ISnappySeriesSet).getAll().is_empty()
+    def has_snappy_distro_series(self):
+        return not getUtility(ISnappyDistroSeriesSet).getAll().is_empty()
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
