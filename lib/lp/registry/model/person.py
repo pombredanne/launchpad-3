@@ -290,6 +290,7 @@ from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
@@ -3281,13 +3282,7 @@ class PersonSet:
         # + is reserved, so is not allowed to be reencoded in transit, so
         # should never appear as its percent-encoded equivalent.
         identifier_suffix = None
-        roots = [config.launchpad.openid_provider_root]
-        if config.launchpad.openid_alternate_provider_roots:
-            roots.extend(
-                [root.strip() for root in
-                 config.launchpad.openid_alternate_provider_roots.split(',')
-                 if root.strip()])
-        for root in roots:
+        for root in CurrentOpenIDEndPoint.getAllRootURLs():
             base = '%s+id/' % root
             if identifier.startswith(base):
                 identifier_suffix = identifier.replace(base, '', 1)
