@@ -111,11 +111,13 @@ class BzrSync:
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         transaction.commit()
         # Synchronize the RevisionCache for this branch.
+        self.logger.info("Updating revision cache.")
         getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
         transaction.commit()
 
         # Notify any listeners that the tip of the branch has changed, but
         # before we've actually updated the database branch.
+        self.logger.info("Firing tip change event.")
         initial_scan = (len(db_history) == 0)
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
@@ -126,7 +128,9 @@ class BzrSync:
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
+        self.logger.info("Updating branch status.")
         self.updateBranchStatus(bzr_history)
+        self.logger.info("Firing scan completion event.")
         notify(
             events.ScanCompleted(
                 self.db_branch, bzr_branch, self.logger, new_ancestry))
@@ -157,6 +161,7 @@ class BzrSync:
         return bzr_branch.repository.get_graph(PPSource)
 
     def getAncestryDelta(self, bzr_branch):
+        self.logger.info("Calculating ancestry delta.")
         bzr_last = bzr_branch.last_revision()
         db_last = self.db_branch.last_scanned_id
         if db_last is None:
@@ -221,6 +226,7 @@ class BzrSync:
                 added_history, last_revno, added_ancestry))
         # We must remove any stray BranchRevisions that happen to already be
         # present.
+        self.logger.info("Finding stray BranchRevisions.")
         existing_branchrevisions = Store.of(self.db_branch).find(
             Revision.revision_id, BranchRevision.branch == self.db_branch,
             BranchRevision.revision_id == Revision.id,

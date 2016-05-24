@@ -10,6 +10,7 @@ __all__ = [
 from datetime import datetime
 import json
 from urllib import quote_plus
+from urlparse import urlsplit
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
@@ -257,21 +258,22 @@ class GitRefMixin:
         if enable_memcache is None:
             enable_memcache = not getFeatureFlag(
                 u"code.git.log.disable_memcache")
-        hosting_client = getUtility(IGitHostingClient)
-        memcache_client = getUtility(IMemcacheClient)
         path = self.repository.getInternalPath()
         if (union_repository is not None and
                 union_repository != self.repository):
             path = "%s:%s" % (union_repository.getInternalPath(), path)
-        memcache_key = "%s:git-log:%s:%s" % (config.instance_name, path, start)
-        if limit is not None:
-            memcache_key += ":limit=%s" % limit
-        if stop is not None:
-            memcache_key += ":stop=%s" % stop
-        if isinstance(memcache_key, unicode):
-            memcache_key = memcache_key.encode("UTF-8")
         log = None
         if enable_memcache:
+            memcache_client = getUtility(IMemcacheClient)
+            instance_name = urlsplit(
+                config.codehosting.internal_git_api_endpoint).hostname
+            memcache_key = "%s:git-log:%s:%s" % (instance_name, path, start)
+            if limit is not None:
+                memcache_key += ":limit=%s" % limit
+            if stop is not None:
+                memcache_key += ":stop=%s" % stop
+            if isinstance(memcache_key, unicode):
+                memcache_key = memcache_key.encode("UTF-8")
             cached_log = memcache_client.get(memcache_key)
             if cached_log is not None:
                 try:
@@ -283,6 +285,7 @@ class GitRefMixin:
                     memcache_client.delete(memcache_key)
         if log is None:
             if enable_hosting:
+                hosting_client = getUtility(IGitHostingClient)
                 log = removeSecurityProxy(hosting_client.getLog(
                     path, start, limit=limit, stop=stop, logger=logger))
                 if enable_memcache:
