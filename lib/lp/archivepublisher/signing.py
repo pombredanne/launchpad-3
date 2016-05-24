@@ -267,6 +267,9 @@ class SigningUpload(CustomUpload):
         finally:
             os.umask(old_mask)
 
+        if os.path.exists(self.kmod_x509):
+            os.chmod(self.kmod_x509, 0o644)
+
     def signKmod(self, image):
         """Attempt to sign a kernel module."""
         remove_if_exists("%s.sig" % image)
