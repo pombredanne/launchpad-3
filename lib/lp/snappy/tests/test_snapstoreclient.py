@@ -8,7 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 from cgi import FieldStorage
-from collections import OrderedDict
+import hashlib
 import io
 import json
 
@@ -18,14 +18,20 @@ from httmock import (
     urlmatch,
     )
 from lazr.restful.utils import get_current_browser_request
+from pymacaroons import (
+    Macaroon,
+    Verifier,
+    )
 from requests import Request
 from requests.utils import parse_dict_header
 from testtools.matchers import (
     Contains,
     Equals,
+    KeysEqual,
     Matcher,
     MatchesDict,
     MatchesStructure,
+    Mismatch,
     StartsWith,
     )
 import transaction
@@ -46,17 +52,49 @@ from lp.testing import (
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
+class MacaroonsVerify(Matcher):
+    """Matches if serialised macaroons pass verification."""
+
+    def __init__(self, key):
+        self.key = key
+
+    def match(self, macaroons):
+        mismatch = KeysEqual("root", "discharge").match(macaroons)
+        if mismatch is not None:
+            return mismatch
+        root_macaroon = Macaroon.deserialize(macaroons["root"])
+        discharge_macaroon = Macaroon.deserialize(macaroons["discharge"])
+        try:
+            Verifier().verify(root_macaroon, self.key, [discharge_macaroon])
+        except Exception as e:
+            return Mismatch("Macaroons do not verify: %s" % e)
+
+
 class TestMacaroonAuth(TestCase):
 
     def test_good(self):
         r = Request()
-        MacaroonAuth(OrderedDict([("root", "abc"), ("discharge", "def")]))(r)
-        self.assertEqual(
-            'Macaroon root="abc", discharge="def"', r.headers["Authorization"])
+        root_key = hashlib.sha256("root").hexdigest()
+        root_macaroon = Macaroon(key=root_key)
+        discharge_key = hashlib.sha256("discharge").hexdigest()
+        discharge_caveat_id = '{"secret": "thing"}'
+        root_macaroon.add_third_party_caveat(
+            "sso.example", discharge_key, discharge_caveat_id)
+        unbound_discharge_macaroon = Macaroon(
+            location="sso.example", key=discharge_key,
+            identifier=discharge_caveat_id)
+        MacaroonAuth(
+            root_macaroon.serialize(),
+            unbound_discharge_macaroon.serialize())(r)
+        auth_value = r.headers["Authorization"]
+        self.assertThat(auth_value, StartsWith("Macaroon "))
+        self.assertThat(
+            parse_dict_header(auth_value[len("Macaroon "):]),
+            MacaroonsVerify(root_key))
 
     def test_bad_framing(self):
         r = Request()
-        self.assertRaises(AssertionError, MacaroonAuth({"root": 'ev"il'}), r)
+        self.assertRaises(AssertionError, MacaroonAuth('ev"il', 'wic"ked'), r)
 
 
 class RequestMatches(Matcher):
@@ -79,11 +117,11 @@ class RequestMatches(Matcher):
             if mismatch is not None:
                 return mismatch
             auth_value = request.headers["Authorization"]
-            auth_scheme, auth_params = self.auth
+            auth_scheme, auth_params_matcher = self.auth
             mismatch = StartsWith(auth_scheme + " ").match(auth_value)
             if mismatch is not None:
                 return mismatch
-            mismatch = Equals(auth_params).match(
+            mismatch = auth_params_matcher.match(
                 parse_dict_header(auth_value[len(auth_scheme + " "):]))
             if mismatch is not None:
                 return mismatch
@@ -181,7 +219,20 @@ class TestSnapStoreClient(TestCaseWithFactory):
             self.snap_upload_request = request
             return {"status_code": 202, "content": {"success": True}}
 
-        store_secrets = {"root": "dummy-root", "discharge": "dummy-discharge"}
+        root_key = hashlib.sha256(self.factory.getUniqueString()).hexdigest()
+        root_macaroon = Macaroon(key=root_key)
+        discharge_key = hashlib.sha256(
+            self.factory.getUniqueString()).hexdigest()
+        discharge_caveat_id = self.factory.getUniqueString()
+        root_macaroon.add_third_party_caveat(
+            "sso.example", discharge_key, discharge_caveat_id)
+        unbound_discharge_macaroon = Macaroon(
+            location="sso.example", key=discharge_key,
+            identifier=discharge_caveat_id)
+        store_secrets = {
+            "root": root_macaroon.serialize(),
+            "discharge": unbound_discharge_macaroon.serialize(),
+            }
         snap = self.factory.makeSnap(
             store_upload=True,
             store_series=self.factory.makeSnappySeries(name="rolling"),
@@ -203,7 +254,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     )}))
         self.assertThat(self.snap_upload_request, RequestMatches(
             url=Equals("http://sca.example/dev/api/snap-upload/"),
-            method=Equals("POST"), auth=("Macaroon", store_secrets),
+            method=Equals("POST"),
+            auth=("Macaroon", MacaroonsVerify(root_key)),
             form_data={
                 "name": MatchesStructure.byEquality(
                     name="name", value="test-snap"),
