@@ -11,12 +11,9 @@ __all__ = [
     ]
 
 import string
-try:
-    from urllib.parse import quote_plus
-except ImportError:
-    from urllib import quote_plus
 
 from lazr.restful.utils import get_current_browser_request
+from pymacaroons import Macaroon
 import requests
 from requests_toolbelt import MultipartEncoder
 from zope.interface import implementer
@@ -59,16 +56,31 @@ class MacaroonAuth(requests.auth.AuthBase):
     # The union of the base64 and URL-safe base64 alphabets.
     allowed_chars = set(string.digits + string.letters + "+/=-_")
 
-    def __init__(self, tokens):
-        self.tokens = tokens
+    def __init__(self, root_macaroon_raw, unbound_discharge_macaroon_raw):
+        self.root_macaroon_raw = root_macaroon_raw
+        self.unbound_discharge_macaroon_raw = unbound_discharge_macaroon_raw
+
+    @classmethod
+    def _makeAuthParam(cls, key, value):
+        # Check framing.
+        assert set(key).issubset(cls.allowed_chars)
+        assert set(value).issubset(cls.allowed_chars)
+        return '%s="%s"' % (key, value)
+
+    @property
+    def discharge_macaroon_raw(self):
+        root_macaroon = Macaroon.deserialize(self.root_macaroon_raw)
+        unbound_discharge_macaroon = Macaroon.deserialize(
+            self.unbound_discharge_macaroon_raw)
+        discharge_macaroon = root_macaroon.prepare_for_request(
+            unbound_discharge_macaroon)
+        return discharge_macaroon.serialize()
 
     def __call__(self, r):
         params = []
-        for k, v in self.tokens.items():
-            # Check framing.
-            assert set(k).issubset(self.allowed_chars)
-            assert set(v).issubset(self.allowed_chars)
-            params.append('%s="%s"' % (k, v))
+        params.append(self._makeAuthParam("root", self.root_macaroon_raw))
+        params.append(
+            self._makeAuthParam("discharge", self.discharge_macaroon_raw))
         r.headers["Authorization"] = "Macaroon " + ", ".join(params)
         return r
 
@@ -144,10 +156,11 @@ class SnapStoreClient:
         # that's currently difficult in jobs.
         try:
             assert snap.store_secrets is not None
-            assert "discharge" in snap.store_secrets
             urlfetch(
                 upload_url, method="POST", data=data,
-                auth=MacaroonAuth(snap.store_secrets))
+                auth=MacaroonAuth(
+                    snap.store_secrets["root"],
+                    snap.store_secrets["discharge"]))
         except requests.HTTPError as e:
             raise BadUploadResponse(e.args[0])
 
