@@ -31,11 +31,6 @@ cache:
   >>> warty.searchPackages(u'foobar').count()
   1
 
-The obsolete changelog field is still present in the sampledata.
-
-  >>> ubuntu.searchSourcePackages(u'placeholder').count()
-  2
-
 Normal operation produces INFO level information about the
 distribution and respective distroseriess considered in stderr.
 
@@ -75,9 +70,6 @@ Now, search results are up to date:
   >>> ubuntu.searchSourcePackages(u'foobar').count()
   0
   >>> warty.searchPackages(u'foobar').count()
-  0
-
-  >>> ubuntu.searchSourcePackages(u'placeholder').count()
   0
 
 Explicitly mark the database as dirty so that it is cleaned (see bug 994158).
