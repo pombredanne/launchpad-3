@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,6 +19,7 @@ __all__ = [
     'MirrorHasNoHTTPURL',
     'MirrorNotProbed',
     'NameAlreadyTaken',
+    'NoSuchAccount',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
     'NotPlaceholderAccount',
@@ -64,6 +65,11 @@ class InvalidName(Exception):
 @error_status(httplib.BAD_REQUEST)
 class NotPlaceholderAccount(Exception):
     """A non-placeholder account already exists for that OpenID identifier."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class NoSuchAccount(Exception):
+    """No account exists for the specified openid identifier."""
 
 
 @error_status(httplib.BAD_REQUEST)

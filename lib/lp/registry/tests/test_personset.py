@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -17,9 +17,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.errors import (
-    NotPlaceholderAccount,
     InvalidName,
     NameAlreadyTaken,
+    NoSuchAccount,
+    NotPlaceholderAccount,
     )
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
@@ -28,6 +29,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     TeamEmailAddressError,
     )
+from lp.registry.interfaces.ssh import SSHKeyType
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.person import Person
 from lp.services.database.interfaces import (
@@ -922,6 +924,72 @@ class TestPersonGetSSHKeysForSSO(TestCaseWithFactory):
             self.assertRaises(Unauthorized, do_it)
         with person_logged_in(admin):
             self.assertRaises(Unauthorized, do_it)
-
         with person_logged_in(self.sso):
             self.assertEqual('username', do_it())
+
+
+class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonAddSSHKeyFromSSO, self).setUp()
+        self.sso = getUtility(IPersonSet).getByName(u'ubuntu-sso')
+
+    def test_restricted_to_sso(self):
+        # Only the ubuntu-sso celebrity can invoke this
+        # privileged method.
+        key_text = 'ssh-rsa keytext keycomment'
+        target = self.factory.makePerson(name='username')
+        make_openid_identifier(target.account, u'openid')
+
+        def do_it():
+            return getUtility(IPersonSet).addSSHKeyForPersonFromSSO(
+                getUtility(ILaunchBag).user, u'openid', key_text, False)
+        random = self.factory.makePerson()
+        admin = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName(u'admins')])
+
+        # Anonymous, random or admin users can't invoke the method.
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(random):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(admin):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(self.sso):
+            self.assertEqual(None, do_it())
+
+    def test_adds_new_ssh_key(self):
+        key_text = 'ssh-rsa keytext keycomment'
+        target = self.factory.makePerson(name='username')
+        make_openid_identifier(target.account, u'openid')
+
+        with person_logged_in(self.sso):
+            getUtility(IPersonSet).addSSHKeyForPersonFromSSO(
+                self.sso, u'openid', key_text, False)
+
+        with person_logged_in(target):
+            [key] = target.sshkeys
+            self.assertEqual(key.keytype, SSHKeyType.RSA)
+            self.assertEqual(key.keytext, 'keytext')
+            self.assertEqual(key.comment, 'keycomment')
+
+    def test_does_not_add_new_ssh_key_with_dry_run(self):
+        key_text = 'ssh-rsa keytext keycomment'
+        target = self.factory.makePerson(name='username')
+        make_openid_identifier(target.account, u'openid')
+
+        with person_logged_in(self.sso):
+            getUtility(IPersonSet).addSSHKeyForPersonFromSSO(
+                self.sso, u'openid', key_text, True)
+
+        with person_logged_in(target):
+            self.assertEqual(0, target.sshkeys.count())
+
+    def test_raises_with_noonexisting_account(self):
+        with person_logged_in(self.sso):
+            self.assertRaises(
+                NoSuchAccount,
+                getUtility(IPersonSet).addSSHKeyForPersonFromSSO,
+                self.sso, u'doesnotexist', 'ssh-rsa key comment', True)

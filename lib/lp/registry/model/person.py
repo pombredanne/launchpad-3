@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -154,6 +154,7 @@ from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
+    NoSuchAccount,
     NotPlaceholderAccount,
     PPACreationError,
     TeamMembershipPolicyError,
@@ -3474,6 +3475,20 @@ class PersonSet:
             return None
         return [s.getFullKeyText() for s in IPerson(account).sshkeys]
 
+    def addSSHKeyForPersonFromSSO(self, user, openid_identifier, key_text,
+                                  dry_run):
+        """See `IPersonSet`"""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            raise NoSuchAccount("No account found for openid identifier '%s'"
+                                % openid_identifier)
+        if not dry_run:
+            getUtility(ISSHKeySet).new(IPerson(account), key_text, False)
+
     def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None,
@@ -4051,7 +4066,7 @@ class SSHKey(SQLBase):
         # For security reasons we want to notify the preferred email address
         # that this sshkey has been removed.
         self.person.security_field_changed(
-            "SSH Key removed from your Launchpad account.",
+            "SSH Key removed SS your Launchpad account.",
             "The SSH Key %s was removed from your account." % self.comment)
         super(SSHKey, self).destroySelf()
 
@@ -4063,32 +4078,34 @@ class SSHKey(SQLBase):
 @implementer(ISSHKeySet)
 class SSHKeySet:
 
-    def new(self, person, sshkey):
+    def new(self, person, sshkey, send_notification=True):
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except (ValueError, AttributeError):
-            raise SSHKeyAdditionError
+            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
 
         if not (kind and keytext and comment):
-            raise SSHKeyAdditionError
+            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
 
         process = subprocess.Popen(
             '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = process.communicate(sshkey.encode('utf-8'))
         if 'compromised' in out.lower():
-            raise SSHKeyCompromisedError
+            raise SSHKeyCompromisedError(
+                "This key cannot be added as it is known to be compromised.")
 
         if kind == 'ssh-rsa':
             keytype = SSHKeyType.RSA
         elif kind == 'ssh-dss':
             keytype = SSHKeyType.DSA
         else:
-            raise SSHKeyAdditionError
+            raise SSHKeyAdditionError("Invalid SSH key type: '%s'" % kind)
 
-        person.security_field_changed(
-            "New SSH key added to your account.",
-            "The SSH key '%s' has been added to your account." % comment)
+        if send_notification:
+            person.security_field_changed(
+                "New SSH key added to your account.",
+                "The SSH key '%s' has been added to your account." % comment)
 
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)
