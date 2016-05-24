@@ -27,7 +27,6 @@ from storm.expr import (
     Coalesce,
     Count,
     Desc,
-    Insert,
     Join,
     NamedFunc,
     Not,
@@ -154,7 +153,7 @@ from lp.registry.model.accesspolicy import (
     )
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.bulk import load_related
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -499,7 +498,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         from lp.code.model.branchcollection import GenericBranchCollection
 
         def eager_load(rows):
-            branches = load_related(
+            branches = bulk.load_related(
                 Branch, rows, ['source_branchID', 'prerequisite_branchID'])
             GenericBranchCollection.preloadVisibleStackedOnBranches(
                 branches, user)
@@ -781,7 +780,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
         def eager_load(rows):
             revisions = map(operator.itemgetter(1), rows)
-            load_related(RevisionAuthor, revisions, ['revision_author_id'])
+            bulk.load_related(
+                RevisionAuthor, revisions, ['revision_author_id'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getRevisionsSince(self, timestamp):
@@ -1094,26 +1094,15 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         if not revision_id_sequence_pairs:
             return
         store = Store.of(self)
-        store.execute(
-            """
-            CREATE TEMPORARY TABLE RevidSequence
-            (revision_id text, sequence integer)
-            """)
-        # Force to Unicode or we will end up with bad quoting under
-        # PostgreSQL 9.1.
-        unicode_revid_sequence_pairs = [
-            (a and unicode(a) or None, b and unicode(b) or None)
-                for a, b in revision_id_sequence_pairs]
-        store.execute(Insert(('revision_id', 'sequence'),
-            table=['RevidSequence'], values=unicode_revid_sequence_pairs))
-        store.execute(
-            """
-            INSERT INTO BranchRevision (branch, revision, sequence)
-            SELECT %s, Revision.id, RevidSequence.sequence
-            FROM RevidSequence, Revision
-            WHERE Revision.revision_id = RevidSequence.revision_id
-            """ % sqlvalues(self))
-        store.execute("DROP TABLE RevidSequence")
+        rev_db_ids = dict(store.find(
+            (Revision.revision_id, Revision.id),
+            Revision.revision_id.is_in(
+                (revid for revid, _ in revision_id_sequence_pairs))))
+        bulk.create(
+            (BranchRevision.branch, BranchRevision.revision_id,
+             BranchRevision.sequence),
+            [(self, rev_db_ids[revid], seq)
+             for revid, seq in revision_id_sequence_pairs])
 
     def getTipRevision(self):
         """See `IBranch`."""
