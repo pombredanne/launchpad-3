@@ -249,7 +249,7 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.repository.pending_writes
 
-    def _getLog(self, start, limit=None, stop=None,
+    def _getLog(self, start, limit=None, stop=None, union_repository=None,
                 enable_hosting=None, enable_memcache=None, logger=None):
         if enable_hosting is None:
             enable_hosting = not getFeatureFlag(
@@ -260,6 +260,9 @@ class GitRefMixin:
         hosting_client = getUtility(IGitHostingClient)
         memcache_client = getUtility(IMemcacheClient)
         path = self.repository.getInternalPath()
+        if (union_repository is not None and
+                union_repository != self.repository):
+            path = "%s:%s" % (union_repository.getInternalPath(), path)
         memcache_key = "%s:git-log:%s:%s" % (config.instance_name, path, start)
         if limit is not None:
             memcache_key += ":limit=%s" % limit
@@ -304,12 +307,14 @@ class GitRefMixin:
                     }]
         return log
 
-    def getCommits(self, start, limit=None, stop=None,
+    def getCommits(self, start, limit=None, stop=None, union_repository=None,
                    start_date=None, end_date=None, logger=None):
         # Circular import.
         from lp.code.model.gitrepository import parse_git_commits
 
-        log = self._getLog(start, limit=limit, stop=stop, logger=logger)
+        log = self._getLog(
+            start, limit=limit, stop=stop, union_repository=union_repository,
+            logger=logger)
         parsed_commits = parse_git_commits(log)
         commits = []
         for commit in log:
