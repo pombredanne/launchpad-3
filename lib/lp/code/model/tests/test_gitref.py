@@ -27,7 +27,6 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.interfaces.githosting import IGitHostingClient
-from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
@@ -168,14 +167,14 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "commit_message": Equals(u"root"),
                 }),
             ]))
-        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_cache(self):
         path = self.ref.repository.getInternalPath()
-        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
         self.assertEqual([], self.ref.getCommits(self.sha1_tip))
 
@@ -191,14 +190,14 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             ]))
         self.assertEqual([], self.hosting_client.getLog.calls)
         path = self.ref.repository.getInternalPath()
-        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertIsNone(getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_disable_memcache(self):
         self.useFixture(
             FeatureFixture({u"code.git.log.disable_memcache": u"on"}))
         path = self.ref.repository.getInternalPath()
-        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
         self.assertNotEqual([], self.ref.getCommits(self.sha1_tip))
         self.assertEqual(
@@ -211,8 +210,8 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             [((path, self.sha1_tip),
               {"limit": 10, "stop": self.sha1_root, "logger": None})],
             self.hosting_client.getLog.calls)
-        key = u"%s:git-log:%s:%s:limit=10:stop=%s" % (
-            config.instance_name, path, self.sha1_tip, self.sha1_root)
+        key = u"git.launchpad.dev:git-log:%s:%s:limit=10:stop=%s" % (
+            path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
@@ -224,7 +223,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertThat(commits, MatchesListwise([
             ContainsDict({"sha1": Equals(self.sha1_tip)}),
             ]))
-        key = u"%s:git-log:%s:%s" % (config.instance_name, path, self.sha1_tip)
+        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
