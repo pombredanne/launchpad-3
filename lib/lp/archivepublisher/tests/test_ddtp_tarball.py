@@ -9,10 +9,7 @@ tests of ddtp-tarball upload and queue manipulation.
 
 import os
 
-from lp.archivepublisher.ddtp_tarball import (
-    DdtpTarballUpload,
-    process_ddtp_tarball,
-    )
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
@@ -43,7 +40,7 @@ class TestDdtpTarball(TestCase):
     def process(self):
         self.archive.close()
         self.buffer.close()
-        process_ddtp_tarball(self.pubconf, self.path, self.suite)
+        DdtpTarballUpload().process(self.pubconf, self.path, self.suite)
 
     def getTranslationsPath(self, filename):
         return os.path.join(

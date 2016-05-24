@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'CustomUploadError',
+    'ICustomUploadHandler',
     'IHasQueueItems',
     'IPackageUploadQueue',
     'IPackageUpload',
@@ -643,14 +645,6 @@ class IPackageUploadCustom(Interface):
             title=_("The file"), required=True, readonly=False,
             )
 
-    def temp_filename():
-        """Return a filename containing the libraryfile for this upload.
-
-        This filename will be in a temporary directory and can be the
-        ensure dir can be deleted once whatever needed the file is finished
-        with it.
-        """
-
     def publish(logger=None):
         """Publish this custom item directly into the filesystem.
 
@@ -802,3 +796,20 @@ class IHasQueueItems(Interface):
 
     def getPackageUploadQueue(state):
         """Return an IPackageUploadQueue according to the given state."""
+
+
+class CustomUploadError(Exception):
+    """Base class for all errors associated with publishing custom uploads."""
+
+
+class ICustomUploadHandler(Interface):
+    """A custom upload handler."""
+
+    def publish(packageupload, libraryfilealias, logger=None):
+        """Publish a custom upload tarfile.
+
+        Unpack it into the archive and suite indicated by the given
+        `IPackageUpload`.
+
+        :raises CustomUploadError: if anything goes wrong.
+        """

@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ISSHKey',
     'ISSHKeySet',
+    'SSH_KEY_TYPE_TO_TEXT',
     'SSHKeyAdditionError',
     'SSHKeyCompromisedError',
     'SSHKeyType',
