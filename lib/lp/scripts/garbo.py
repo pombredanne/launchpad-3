@@ -1080,7 +1080,7 @@ class AnswerContactPruner(BulkPruner):
 class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
-    When a BranchJob is completed, it gets set to a final state.  These jobs
+    When a BranchJob is completed, it gets set to a final state. These jobs
     should be pruned from the database after a month.
     """
     target_table_class = Job
@@ -1097,7 +1097,7 @@ class BranchJobPruner(BulkPruner):
 class GitJobPruner(BulkPruner):
     """Prune `GitJob`s that are in a final state and more than a month old.
 
-    When a GitJob is completed, it gets set to a final state.  These jobs
+    When a GitJob is completed, it gets set to a final state. These jobs
     should be pruned from the database after a month.
     """
     target_table_class = Job
@@ -1106,6 +1106,24 @@ class GitJobPruner(BulkPruner):
         FROM Job, GitJob
         WHERE
             Job.id = GitJob.job
+            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
+        """
+
+
+class SnapBuildJobPruner(BulkPruner):
+    """Prune `SnapBuildJob`s that are in a final state and more than a month
+    old.
+
+    When a SnapBuildJob is completed, it gets set to a final state. These jobs
+    should be pruned from the database after a month.
+    """
+    target_table_class = Job
+    ids_to_prune_query = """
+        SELECT DISTINCT Job.id
+        FROM Job, SnapBuildJob
+        WHERE
+            Job.id = SnapBuildJob.job
             AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                 - CAST('30 days' AS interval)
         """
@@ -1670,7 +1688,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ]
     experimental_tunable_loops = []
 
-    # 5 minmutes minus 20 seconds for cleanup. This helps ensure the
+    # 5 minutes minus 20 seconds for cleanup. This helps ensure the
     # script is fully terminated before the next scheduled hourly run
     # kicks in.
     default_abort_script_time = 60 * 5 - 20
@@ -1724,6 +1742,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ProductVCSPopulator,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
+        SnapBuildJobPruner,
         SuggestiveTemplatesCacheUpdater,
         TeamMembershipPruner,
         UnlinkedAccountPruner,
