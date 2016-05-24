@@ -49,7 +49,6 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
     )
-from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -260,7 +259,7 @@ class GitRefMixin:
         hosting_client = getUtility(IGitHostingClient)
         memcache_client = getUtility(IMemcacheClient)
         path = self.repository.getInternalPath()
-        memcache_key = "%s:git-log:%s:%s" % (config.instance_name, path, start)
+        memcache_key = "git-log:%s:%s" % (path, start)
         if limit is not None:
             memcache_key += ":limit=%s" % limit
         if stop is not None:
