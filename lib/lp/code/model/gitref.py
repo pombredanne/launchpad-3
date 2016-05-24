@@ -10,6 +10,7 @@ __all__ = [
 from datetime import datetime
 import json
 from urllib import quote_plus
+from urlparse import urlsplit
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
@@ -49,6 +50,7 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
     )
+from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -259,7 +261,9 @@ class GitRefMixin:
         hosting_client = getUtility(IGitHostingClient)
         memcache_client = getUtility(IMemcacheClient)
         path = self.repository.getInternalPath()
-        memcache_key = "git-log:%s:%s" % (path, start)
+        instance_name = urlsplit(
+            config.codehosting.internal_git_api_endpoint).hostname
+        memcache_key = "%s:git-log:%s:%s" % (instance_name, path, start)
         if limit is not None:
             memcache_key += ":limit=%s" % limit
         if stop is not None:
