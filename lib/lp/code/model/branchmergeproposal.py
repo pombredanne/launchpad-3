@@ -813,7 +813,8 @@ class BranchMergeProposal(SQLBase):
         else:
             return self.source_git_ref.getCommits(
                 self.source_git_commit_sha1, limit=10,
-                stop=self.target_git_commit_sha1)
+                stop=self.target_git_commit_sha1,
+                union_repository=self.target_git_repository)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,

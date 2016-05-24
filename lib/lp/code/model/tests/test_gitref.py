@@ -216,6 +216,24 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
+    def test_union_repository(self):
+        other_repository = self.factory.makeGitRepository()
+        self.ref.getCommits(
+            self.sha1_tip, stop=self.sha1_root,
+            union_repository=other_repository)
+        path = "%s:%s" % (
+            other_repository.getInternalPath(),
+            self.ref.repository.getInternalPath())
+        self.assertEqual(
+            [((path, self.sha1_tip),
+              {"limit": None, "stop": self.sha1_root, "logger": None})],
+            self.hosting_client.getLog.calls)
+        key = u"git.launchpad.dev:git-log:%s:%s:stop=%s" % (
+            path, self.sha1_tip, self.sha1_root)
+        self.assertEqual(
+            json.dumps(self.log),
+            getUtility(IMemcacheClient).get(key.encode("UTF-8")))
+
     def test_start_date(self):
         commits = self.ref.getCommits(
             self.sha1_tip, start_date=(self.dates[1] - timedelta(seconds=1)))
