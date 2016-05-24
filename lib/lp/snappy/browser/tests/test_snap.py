@@ -9,17 +9,26 @@ from datetime import (
     datetime,
     timedelta,
     )
+import json
 import re
 from textwrap import dedent
+from urllib2 import HTTPError
+from urlparse import urlsplit
 
 from fixtures import FakeLogger
+from httmock import (
+    all_requests,
+    HTTMock,
+    )
 from mechanize import LinkNotFoundError
+from pymacaroons import Macaroon
 import pytz
 import soupmatchers
 from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
+import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -31,12 +40,14 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.snap import (
     SnapAdminView,
+    SnapAuthorizeView,
     SnapEditView,
     SnapView,
     )
@@ -48,6 +59,7 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     feature_flags,
     login,
@@ -70,6 +82,7 @@ from lp.testing.pages import (
     find_main_content,
     find_tags_by_class,
     find_tag_by_id,
+    get_feedback_messages,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
@@ -557,6 +570,146 @@ class TestSnapEditView(BrowserTestCase):
         browser.getControl("Update snap package").click()
         login_person(self.person)
         self.assertSnapProcessors(snap, ["386", "armhf"])
+
+
+class TestSnapAuthorizeView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestSnapAuthorizeView, self).setUp()
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+        self.distroseries = self.factory.makeUbuntuDistroSeries()
+        with admin_logged_in():
+            self.snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.distroseries])
+        self.snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=self.distroseries, store_upload=True,
+            store_series=self.snappyseries,
+            store_name=self.factory.getUniqueUnicode())
+
+    def assertRequestsAuthorization(self, snap, func, *args, **kwargs):
+        owner = snap.owner
+        root_macaroon = Macaroon()
+        root_macaroon.add_third_party_caveat(
+            urlsplit(config.launchpad.openid_provider_root).netloc, '',
+            'dummy')
+        root_macaroon_raw = root_macaroon.serialize()
+
+        @all_requests
+        def handler(url, request):
+            self.request = request
+            return {
+                "status_code": 200,
+                "content": {"macaroon": root_macaroon_raw},
+                }
+
+        self.pushConfig("snappy", store_url="http://sca.example/")
+        with HTTMock(handler):
+            ret = func(*args, **kwargs)
+        self.assertThat(self.request, MatchesStructure.byEquality(
+            url="http://sca.example/dev/api/acl/", method="POST"))
+        with person_logged_in(owner):
+            expected_body = {
+                "packages": [{
+                    "name": snap.store_name,
+                    "series": snap.store_series.name,
+                    }],
+                "permissions": ["package_upload"],
+                }
+            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
+        return ret
+
+    def test_requestAuthorization(self):
+        def request_authorization():
+            with person_logged_in(self.snap.owner):
+                return SnapAuthorizeView.requestAuthorization(
+                    self.snap, LaunchpadTestRequest())
+
+        login_url = self.assertRequestsAuthorization(
+            self.snap, request_authorization)
+        self.assertEqual(
+            canonical_url(self.snap) +
+            "/+authorize/+login?macaroon_caveat_id=dummy&"
+            "discharge_macaroon_action=field.actions.complete&"
+            "discharge_macaroon_field=field.discharge_macaroon",
+            login_url)
+
+    def test_unauthorized(self):
+        # A user without edit access cannot authorize snap package uploads.
+        self.useFixture(FakeLogger())
+        other_person = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser,
+            canonical_url(self.snap) + "/+authorize", user=other_person)
+
+    def test_begin_authorization(self):
+        # With no special form actions, we return a form inviting the user
+        # to begin authorization.  This allows (re-)authorizing uploads of
+        # an existing snap package without having to edit it.
+        snap_url = canonical_url(self.snap)
+
+        def begin_authorization():
+            browser = self.getNonRedirectingBrowser(
+                url=snap_url + "/+authorize", user=self.snap.owner)
+            return self.assertRaises(
+                HTTPError, browser.getControl("Begin authorization").click)
+
+        redirection = self.assertRequestsAuthorization(
+            self.snap, begin_authorization)
+        self.assertEqual(303, redirection.code)
+        self.assertEqual(
+            snap_url + "/+authorize/+login?macaroon_caveat_id=dummy&"
+            "discharge_macaroon_action=field.actions.complete&"
+            "discharge_macaroon_field=field.discharge_macaroon",
+            redirection.hdrs["Location"])
+
+    def test_complete_authorization_missing_discharge_macaroon(self):
+        # If the form does not include a discharge macaroon, the "complete"
+        # action fails.
+        with person_logged_in(self.snap.owner):
+            self.snap.store_secrets = {"root": "root"}
+            transaction.commit()
+            form = {"field.actions.complete": "1"}
+            view = create_initialized_view(
+                self.snap, "+authorize", form=form, method="POST",
+                principal=self.snap.owner)
+            html = view()
+            self.assertEqual(
+                "Uploads of %s to the store were not authorized." %
+                self.snap.name,
+                get_feedback_messages(html)[1])
+            self.assertNotIn("discharge", self.snap.store_secrets)
+
+    def test_complete_authorization(self):
+        # If the form includes a discharge macaroon, the "complete" action
+        # succeeds and records the new secrets.
+        with person_logged_in(self.snap.owner):
+            self.snap.store_secrets = {"root": "root"}
+            transaction.commit()
+            form = {
+                "field.actions.complete": "1",
+                "field.discharge_macaroon": "discharge",
+                }
+            view = create_initialized_view(
+                self.snap, "+authorize", form=form, method="POST",
+                principal=self.snap.owner)
+            self.assertEqual("", view())
+            self.assertEqual(302, view.request.response.getStatus())
+            self.assertEqual(
+                canonical_url(self.snap),
+                view.request.response.getHeader("Location"))
+            self.assertEqual(
+                "Uploads of %s to the store are now authorized." %
+                self.snap.name,
+                view.request.response.notifications[0].message)
+            self.assertEqual(
+                {"root": "root", "discharge": "discharge"},
+                self.snap.store_secrets)
 
 
 class TestSnapDeleteView(BrowserTestCase):
