@@ -3475,7 +3475,7 @@ class PersonSet:
             return None
         return [s.getFullKeyText() for s in IPerson(account).sshkeys]
 
-    def addSSHKeyForPersonFromSSO(self, user, openid_identifier, key_text,
+    def addSSHKeyFromSSO(self, user, openid_identifier, key_text,
                                   dry_run):
         """See `IPersonSet`"""
         if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:

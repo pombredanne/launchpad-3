@@ -517,18 +517,18 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         webservice = webservice_for_person(
             sso, permission=OAuthPermission.WRITE_PRIVATE)
         return webservice.named_post(
-            '/people', 'addSSHKeyForPersonFromSSO',
+            '/people', 'addSSHKeyFromSSO',
             openid_identifier=openid_identifier, key_text=key_text,
             dry_run=dry_run, api_version='devel')
 
-    def test_addSSHKeyForPersonFromSSO_nonexistant(self):
+    def test_addSSHKeyFromSSO_nonexistant(self):
         response = self.addSSHKeyForPerson('doesnotexist', 'sdf')
         self.assertEqual(400, response.status)
         self.assertEqual(
             "No account found for openid identifier 'doesnotexist'",
             response.body)
 
-    def test_addSSHKeyForPersonFromSSO_rejects_bad_key_data(self):
+    def test_addSSHKeyFromSSO_rejects_bad_key_data(self):
         with admin_logged_in():
             person = self.factory.makePerson()
             openid_id = person.account.openid_identifiers.any().identifier
@@ -538,7 +538,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "Invalid SSH key data: 'bad_data'",
             response.body)
 
-    def test_addSSHKeyForPersonFromSSO_rejects_bad_key_type(self):
+    def test_addSSHKeyFromSSO_rejects_bad_key_type(self):
         with admin_logged_in():
             person = self.factory.makePerson()
             openid_id = person.account.openid_identifiers.any().identifier
@@ -548,7 +548,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "Invalid SSH key type: 'foo'",
             response.body)
 
-    def test_addSSHKeyForPersonFromSSO_rejects_bad_key_type_dry_run(self):
+    def test_addSSHKeyFromSSO_rejects_bad_key_type_dry_run(self):
         with admin_logged_in():
             person = self.factory.makePerson()
             openid_id = person.account.openid_identifiers.any().identifier
@@ -559,7 +559,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "Invalid SSH key type: 'foo'",
             response.body)
 
-    def test_addSSHKeyForPersonFromSSO_rejects_vulnerable_keys(self):
+    def test_addSSHKeyFromSSO_rejects_vulnerable_keys(self):
         with admin_logged_in():
             person = self.factory.makePerson()
             openid_id = person.account.openid_identifiers.any().identifier
@@ -569,7 +569,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "This key cannot be added as it is known to be compromised.",
             response.body)
 
-    def test_addSSHKeyForPersonFromSSO_rejects_vulnerable_keys_dry_run(self):
+    def test_addSSHKeyFromSSO_rejects_vulnerable_keys_dry_run(self):
         with admin_logged_in():
             person = self.factory.makePerson()
             openid_id = person.account.openid_identifiers.any().identifier
@@ -579,7 +579,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "This key cannot be added as it is known to be compromised.",
             response.body)
 
-    def test_addSSHKeyForPersonFromSSO_works(self):
+    def test_addSSHKeyFromSSO_works(self):
         with admin_logged_in():
             person = removeSecurityProxy(self.factory.makePerson())
             openid_id = person.account.openid_identifiers.any().identifier
@@ -592,7 +592,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         self.assertEqual('keydata', key.keytext)
         self.assertEqual('comment', key.comment)
 
-    def test_addSSHKeyForPersonFromSSO_dry_run(self):
+    def test_addSSHKeyFromSSO_dry_run(self):
         with admin_logged_in():
             person = removeSecurityProxy(self.factory.makePerson())
             openid_id = person.account.openid_identifiers.any().identifier
@@ -602,14 +602,14 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         self.assertEqual(0, person.sshkeys.count())
 
-    def test_addSSHKeyForPersonFromSSO_is_restricted(self):
+    def test_addSSHKeyFromSSO_is_restricted(self):
         with admin_logged_in():
             target = self.factory.makePerson()
             openid_id = target.account.openid_identifiers.any().identifier
         webservice = webservice_for_person(
             target, permission=OAuthPermission.WRITE_PRIVATE)
         response = webservice.named_post(
-            '/people', 'addSSHKeyForPersonFromSSO',
+            '/people', 'addSSHKeyFromSSO',
             openid_identifier=openid_id, key_text='ssh-rsa foo bar',
             dry_run=False, api_version='devel')
         self.assertEqual(401, response.status)

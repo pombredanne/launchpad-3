@@ -944,7 +944,7 @@ class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
         make_openid_identifier(target.account, u'openid')
 
         def do_it():
-            return getUtility(IPersonSet).addSSHKeyForPersonFromSSO(
+            return getUtility(IPersonSet).addSSHKeyFromSSO(
                 getUtility(ILaunchBag).user, u'openid', key_text, False)
         random = self.factory.makePerson()
         admin = self.factory.makePerson(
@@ -966,7 +966,7 @@ class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
         make_openid_identifier(target.account, u'openid')
 
         with person_logged_in(self.sso):
-            getUtility(IPersonSet).addSSHKeyForPersonFromSSO(
+            getUtility(IPersonSet).addSSHKeyFromSSO(
                 self.sso, u'openid', key_text, False)
 
         with person_logged_in(target):
@@ -981,7 +981,7 @@ class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
         make_openid_identifier(target.account, u'openid')
 
         with person_logged_in(self.sso):
-            getUtility(IPersonSet).addSSHKeyForPersonFromSSO(
+            getUtility(IPersonSet).addSSHKeyFromSSO(
                 self.sso, u'openid', key_text, True)
 
         with person_logged_in(target):
@@ -991,5 +991,5 @@ class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
         with person_logged_in(self.sso):
             self.assertRaises(
                 NoSuchAccount,
-                getUtility(IPersonSet).addSSHKeyForPersonFromSSO,
+                getUtility(IPersonSet).addSSHKeyFromSSO,
                 self.sso, u'doesnotexist', 'ssh-rsa key comment', True)
