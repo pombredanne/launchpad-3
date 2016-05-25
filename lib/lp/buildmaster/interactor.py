@@ -87,6 +87,36 @@ class FileWritingProtocol(Protocol):
                 self.finished.errback(reason)
 
 
+class LimitedHTTPConnectionPool(HTTPConnectionPool):
+    """A connection pool with an upper limit on open connections."""
+
+    # XXX cjwatson 2016-05-25: This actually only limits active connections,
+    # and doesn't count idle but open connections towards the limit; this is
+    # because it's very difficult to do the latter with HTTPConnectionPool's
+    # current design.  Users of this pool must therefore expect some
+    # additional file descriptors to be open for idle connections.
+
+    def __init__(self, reactor, limit, persistent=True):
+        super(LimitedHTTPConnectionPool, self).__init__(
+            reactor, persistent=persistent)
+        self._semaphore = defer.DeferredSemaphore(limit)
+
+    def getConnection(self, key, endpoint):
+        d = self._semaphore.acquire()
+        d.addCallback(
+            lambda _: super(LimitedHTTPConnectionPool, self).getConnection(
+                key, endpoint))
+        return d
+
+    def _putConnection(self, key, connection):
+        super(LimitedHTTPConnectionPool, self)._putConnection(key, connection)
+        # Only release the semaphore in the next main loop iteration; if we
+        # release it here then the next request may start using this
+        # connection's parser before this request has quite finished with
+        # it.
+        self._reactor.callLater(0, self._semaphore.release)
+
+
 _default_pool = None
 
 
@@ -99,7 +129,10 @@ def default_pool(reactor=None):
         from lp.buildmaster.manager import SlaveScanner
         # Short cached connection timeout to avoid potential weirdness with
         # virtual builders that reboot frequently.
-        _default_pool = HTTPConnectionPool(reactor)
+        _default_pool = LimitedHTTPConnectionPool(
+            reactor, config.builddmaster.download_connections)
+        _default_pool.maxPersistentPerHost = (
+            config.builddmaster.idle_download_connections_per_builder)
         _default_pool.cachedConnectionTimeout = SlaveScanner.SCAN_INTERVAL
     return _default_pool
 
