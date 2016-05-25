@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,7 +12,9 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipStatus,
     )
+from lp.registry.interfaces.ssh import SSHKeyType
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
+from lp.registry.tests.test_ssh import VULNERABLE_RSA_KEY
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
@@ -508,3 +510,106 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             openid_identifier='doesnotexist', api_version='devel')
         self.assertEqual(200, response.status)
         self.assertEqual(None, response.jsonBody())
+
+    def addSSHKeyForPerson(self, openid_identifier, key_text, dry_run=False):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.WRITE_PRIVATE)
+        return webservice.named_post(
+            '/people', 'addSSHKeyFromSSO',
+            openid_identifier=openid_identifier, key_text=key_text,
+            dry_run=dry_run, api_version='devel')
+
+    def test_addSSHKeyFromSSO_nonexistant(self):
+        response = self.addSSHKeyForPerson('doesnotexist', 'sdf')
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "No account found for openid identifier 'doesnotexist'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_bad_key_data(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, 'bad_data')
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key data: 'bad_data'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_bad_key_type(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, 'foo keydata comment')
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key type: 'foo'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_bad_key_type_dry_run(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(
+            openid_id, 'foo keydata comment', True)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key type: 'foo'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_vulnerable_keys(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This key cannot be added as it is known to be compromised.",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_vulnerable_keys_dry_run(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY, True)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This key cannot be added as it is known to be compromised.",
+            response.body)
+
+    def test_addSSHKeyFromSSO_works(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(
+            openid_id, 'ssh-rsa keydata comment')
+
+        self.assertEqual(200, response.status)
+        [key] = person.sshkeys
+        self.assertEqual(SSHKeyType.RSA, key.keytype)
+        self.assertEqual('keydata', key.keytext)
+        self.assertEqual('comment', key.comment)
+
+    def test_addSSHKeyFromSSO_dry_run(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(
+            openid_id, 'ssh-rsa keydata comment', dry_run=True)
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(0, person.sshkeys.count())
+
+    def test_addSSHKeyFromSSO_is_restricted(self):
+        with admin_logged_in():
+            target = self.factory.makePerson()
+            openid_id = target.account.openid_identifiers.any().identifier
+        webservice = webservice_for_person(
+            target, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            '/people', 'addSSHKeyFromSSO',
+            openid_identifier=openid_id, key_text='ssh-rsa foo bar',
+            dry_run=False, api_version='devel')
+        self.assertEqual(401, response.status)
