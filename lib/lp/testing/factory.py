@@ -220,6 +220,7 @@ from lp.registry.interfaces.sourcepackage import (
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
+    SSH_KEY_TYPE_TO_TEXT,
     SSHKeyType,
     )
 from lp.registry.model.commercialsubscription import CommercialSubscription
@@ -4284,7 +4285,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
-    def makeSSHKey(self, person=None, key_type=None):
+    def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA):
         """Create a new SSHKey.
 
         :param person: If specified, the person to attach the key to. If
@@ -4294,11 +4295,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if person is None:
             person = self.makePerson()
-        if key_type is None or key_type == SSHKeyType.RSA:
-            key_type_string = 'ssh-rsa'
-        elif key_type == SSHKeyType.DSA:
-            key_type_string = 'ssh-dss'
-        else:
+        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
+        if key_type is None:
             raise AssertionError(
                 "key_type must be a member of SSHKeyType, not %r" % key_type)
         public_key = "%s %s %s" % (
