@@ -10,12 +10,14 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
+    SSH_TEXT_TO_KEY_TYPE,
     SSHKeyAdditionError,
     SSHKeyCompromisedError,
     SSHKeyType,
     )
 from lp.testing import (
     person_logged_in,
+    admin_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -131,3 +133,56 @@ class TestSSHKeySet(TestCaseWithFactory):
                 keyset.getByPersonAndKeyText,
                 person, invalid_keytext
             )
+
+    def test_can_retrieve_keys_by_id(self):
+        keyset = getUtility(ISSHKeySet)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            new_key = self.factory.makeSSHKey(person)
+
+        retrieved_new_key = keyset.getByID(new_key.id)
+
+        self.assertEqual(retrieved_new_key, new_key)
+
+    def test_can_add_new_key(self):
+        keyset = getUtility(ISSHKeySet)
+        person = self.factory.makePerson()
+        keytype = 'ssh-rsa'
+        keytext = 'ThisIsAFakeSSHKey'
+        comment = 'This is a key comment.'
+        full_key = ' '.join((keytype, keytext, comment))
+        with person_logged_in(person):
+            key = keyset.new(person, full_key)
+            self.assertEqual([key], list(person.sshkeys))
+            self.assertEqual(SSH_TEXT_TO_KEY_TYPE[keytype], key.keytype)
+            self.assertEqual(keytext, key.keytext)
+            self.assertEqual(comment, key.comment)
+
+    def test_new_raises_KeyAdditionError_on_bad_key_data(self):
+        person = self.factory.makePerson()
+        keyset = getUtility(ISSHKeySet)
+        self.assertRaises(
+            SSHKeyAdditionError,
+            keyset.new,
+            person, 'thiskeyhasnospaces'
+        )
+        self.assertRaises(
+            SSHKeyAdditionError,
+            keyset.new,
+            person, 'bad_key_type keytext comment'
+        )
+
+    def test_can_retrieve_keys_for_multiple_people(self):
+        with admin_logged_in():
+            person1 = self.factory.makePerson()
+            person1_key1 = self.factory.makeSSHKey(person1)
+            person1_key2 = self.factory.makeSSHKey(person1)
+            person2 = self.factory.makePerson()
+            person2_key1 = self.factory.makeSSHKey(person2)
+
+        keyset = getUtility(ISSHKeySet)
+        keys = keyset.getByPeople([person1, person2])
+        self.assertEqual(3, keys.count())
+        self.assertIn(person1_key1, keys)
+        self.assertIn(person1_key2, keys)
+        self.assertIn(person2_key1, keys)
