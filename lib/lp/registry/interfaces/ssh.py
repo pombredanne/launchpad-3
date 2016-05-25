@@ -85,8 +85,17 @@ class ISSHKey(Interface):
 class ISSHKeySet(Interface):
     """The set of SSHKeys."""
 
-    def new(person, sshkey, send_notification=True):
-        """Create a new SSHKey pointing to the given Person."""
+    def new(person, sshkey, send_notification=True, dry_run=False):
+        """Create a new SSHKey pointing to the given Person.
+
+        :param person: The IPerson to add the ssh key to.
+        :param sshkey: The full ssh key text.
+        :param send_notification: Set to False to supress sending the user an
+            email about the change.
+        :param dry_run: Perform all the format and vaulnerability checks, but
+            don't actually add the key. Causes the method to return None,
+            rather than an instance of ISSHKey.
+        """
 
     def getByID(id, default=None):
         """Return the SSHKey object for the given id.
