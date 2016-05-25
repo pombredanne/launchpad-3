@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -3486,8 +3486,8 @@ class PersonSet:
         except LookupError:
             raise NoSuchAccount("No account found for openid identifier '%s'"
                                 % openid_identifier)
-        if not dry_run:
-            getUtility(ISSHKeySet).new(IPerson(account), key_text, False)
+        getUtility(ISSHKeySet).new(
+            IPerson(account), key_text, False, dry_run=dry_run)
 
     def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
@@ -4066,7 +4066,7 @@ class SSHKey(SQLBase):
         # For security reasons we want to notify the preferred email address
         # that this sshkey has been removed.
         self.person.security_field_changed(
-            "SSH Key removed SS your Launchpad account.",
+            "SSH Key removed from your Launchpad account.",
             "The SSH Key %s was removed from your account." % self.comment)
         super(SSHKey, self).destroySelf()
 
@@ -4078,7 +4078,7 @@ class SSHKey(SQLBase):
 @implementer(ISSHKeySet)
 class SSHKeySet:
 
-    def new(self, person, sshkey, send_notification=True):
+    def new(self, person, sshkey, send_notification=True, dry_run=False):
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except (ValueError, AttributeError):
@@ -4107,8 +4107,9 @@ class SSHKeySet:
                 "New SSH key added to your account.",
                 "The SSH key '%s' has been added to your account." % comment)
 
-        return SSHKey(person=person, keytype=keytype, keytext=keytext,
-                      comment=comment)
+        if not dry_run:
+            return SSHKey(person=person, keytype=keytype, keytext=keytext,
+                          comment=comment)
 
     def getByID(self, id, default=None):
         try:

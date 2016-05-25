@@ -548,11 +548,32 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "Invalid SSH key type: 'foo'",
             response.body)
 
+    def test_addSSHKeyForPersonFromSSO_rejects_bad_key_type_dry_run(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(
+            openid_id, 'foo keydata comment', True)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key type: 'foo'",
+            response.body)
+
     def test_addSSHKeyForPersonFromSSO_rejects_vulnerable_keys(self):
         with admin_logged_in():
             person = self.factory.makePerson()
             openid_id = person.account.openid_identifiers.any().identifier
         response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This key cannot be added as it is known to be compromised.",
+            response.body)
+
+    def test_addSSHKeyForPersonFromSSO_rejects_vulnerable_keys_dry_run(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY, True)
         self.assertEqual(400, response.status)
         self.assertEqual(
             "This key cannot be added as it is known to be compromised.",
