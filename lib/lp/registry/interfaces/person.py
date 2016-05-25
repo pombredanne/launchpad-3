@@ -2296,8 +2296,7 @@ class IPersonSet(Interface):
         dry_run=Bool(_("Don't save changes")))
     @export_write_operation()
     @operation_for_version("devel")
-    def addSSHKeyFromSSO(user, openid_identifier, key_text,
-                                  dry_run=False):
+    def addSSHKeyFromSSO(user, openid_identifier, key_text, dry_run=False):
         """Restricted SSH key creation API for SSO.
 
         This method can only be called by the Ubuntu SSO service. It adds a new
