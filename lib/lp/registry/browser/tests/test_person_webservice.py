@@ -683,7 +683,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             key = self.factory.makeSSHKey(person)
             openid_id = person.account.openid_identifiers.any().identifier
         response = self.deleteSSHKeyFromSSO(
-            openid_id, key.getFullKeyText())
+            openid_id, key.getFullKeyText(), dry_run=True)
 
         self.assertEqual(200, response.status)
         self.assertEqual(1, person.sshkeys.count())
