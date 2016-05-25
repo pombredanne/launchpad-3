@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -290,14 +290,14 @@ class SlaveTestHelpers(fixtures.Fixture):
                 lambda: open(tachandler.logfile, 'r').readlines()))
         return tachandler
 
-    def getClientSlave(self, reactor=None, proxy=None):
+    def getClientSlave(self, reactor=None, proxy=None, pool=None):
         """Return a `BuilderSlave` for use in testing.
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
         return BuilderSlave.makeBuilderSlave(
             self.BASE_URL, 'vmhost', config.builddmaster.socket_timeout,
-            reactor, proxy)
+            reactor=reactor, proxy=proxy, pool=pool)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
