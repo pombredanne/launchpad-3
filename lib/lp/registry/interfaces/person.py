@@ -2316,6 +2316,33 @@ class IPersonSet(Interface):
             compromised key.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        key_text=TextLine(
+            title=_("SSH key text"), required=True),
+        dry_run=Bool(_("Don't save changes")))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def deleteSSHKeyForPersonFromSSO(user, openid_identifier, key_text,
+                                     dry_run=False):
+        """Restricted SSH key deletion API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It deletes an
+        SSH key from the account identified by 'openid_identifier' based on the
+        'key_text' parameter.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param key_text: The full text of the SSH Key.
+        :raises NoSuchAccount: If the openid_identifier specified does not
+            match any account.
+        :raises KeyAdditionError: If the key text is invalid.
+        """
+
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         teamdescription='team_description',

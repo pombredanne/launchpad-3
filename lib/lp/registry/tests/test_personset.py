@@ -29,7 +29,10 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     TeamEmailAddressError,
     )
-from lp.registry.interfaces.ssh import SSHKeyType
+from lp.registry.interfaces.ssh import (
+    SSHKeyAdditionError,
+    SSHKeyType,
+    )
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.person import Person
 from lp.services.database.interfaces import (
@@ -987,9 +990,86 @@ class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
         with person_logged_in(target):
             self.assertEqual(0, target.sshkeys.count())
 
-    def test_raises_with_noonexisting_account(self):
+    def test_raises_with_nonexisting_account(self):
         with person_logged_in(self.sso):
             self.assertRaises(
                 NoSuchAccount,
                 getUtility(IPersonSet).addSSHKeyForPersonFromSSO,
                 self.sso, u'doesnotexist', 'ssh-rsa key comment', True)
+
+
+class TestPersonDeleteSSHKeyFromSSO(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonDeleteSSHKeyFromSSO, self).setUp()
+        self.sso = getUtility(IPersonSet).getByName(u'ubuntu-sso')
+
+    def test_restricted_to_sso(self):
+        # Only the ubuntu-sso celebrity can invoke this
+        # privileged method.
+        target = self.factory.makePerson(name='username')
+        with person_logged_in(target):
+            key = self.factory.makeSSHKey(target)
+        key_text = key.getFullKeyText()
+        make_openid_identifier(target.account, u'openid')
+
+        def do_it():
+            return getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO(
+                getUtility(ILaunchBag).user, u'openid', key_text, False)
+        random = self.factory.makePerson()
+        admin = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName(u'admins')])
+
+        # Anonymous, random or admin users can't invoke the method.
+        with anonymous_logged_in():
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(random):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(admin):
+            self.assertRaises(Unauthorized, do_it)
+        with person_logged_in(self.sso):
+            self.assertEqual(None, do_it())
+
+    def test_deletes_ssh_key(self):
+        target = self.factory.makePerson(name='username')
+        with person_logged_in(target):
+            key = self.factory.makeSSHKey(target)
+        make_openid_identifier(target.account, u'openid')
+
+        with person_logged_in(self.sso):
+            getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO(
+                self.sso, u'openid', key.getFullKeyText(), False)
+
+        with person_logged_in(target):
+            self.assertEqual(0, target.sshkeys.count())
+
+    def test_does_not_delete_ssh_key_with_dry_run(self):
+        target = self.factory.makePerson(name='username')
+        with person_logged_in(target):
+            key = self.factory.makeSSHKey(target)
+        make_openid_identifier(target.account, u'openid')
+
+        with person_logged_in(self.sso):
+            getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO(
+                self.sso, u'openid', key.getFullKeyText(), True)
+
+        with person_logged_in(target):
+            self.assertEqual([key], list(target.sshkeys))
+
+    def test_raises_with_nonexisting_account(self):
+        with person_logged_in(self.sso):
+            self.assertRaises(
+                NoSuchAccount,
+                getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO,
+                self.sso, u'doesnotexist', 'ssh-rsa key comment', False)
+
+    def test_raises_with_bad_key_type(self):
+        target = self.factory.makePerson(name='username')
+        make_openid_identifier(target.account, u'openid')
+        with person_logged_in(self.sso):
+            self.assertRaises(
+                SSHKeyAdditionError,
+                getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO,
+                self.sso, u'openid', 'badtype key comment', False)

@@ -613,3 +613,92 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             openid_identifier=openid_id, key_text='ssh-rsa foo bar',
             dry_run=False, api_version='devel')
         self.assertEqual(401, response.status)
+
+    def deleteSSHKeyForPersonFromSSO(self, openid_identifier, key_text,
+                                     dry_run=False):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.WRITE_PRIVATE)
+        return webservice.named_post(
+            '/people', 'deleteSSHKeyForPersonFromSSO',
+            openid_identifier=openid_identifier, key_text=key_text,
+            dry_run=dry_run, api_version='devel')
+
+    def test_deleteSSHKeyForPersonFromSSO_nonexistant(self, dry_run=False):
+        response = self.deleteSSHKeyForPersonFromSSO(
+            'doesnotexist', 'sdf', dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "No account found for openid identifier 'doesnotexist'",
+            response.body)
+
+    def test_deleteSSHKeyForPersonFromSSO_nonexistant_dry_run(self):
+        self.test_deleteSSHKeyForPersonFromSSO_nonexistant(True)
+
+    def test_deleteSSHKeyForPersonFromSSO_rejects_bad_key_data(self,
+                                                               dry_run=False):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyForPersonFromSSO(
+            openid_id, 'bad_data', dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key data: 'bad_data'",
+            response.body)
+
+    def test_deleteSSHKeyForPersonFromSSO_rejects_bad_key_data_dry_run(self):
+        self.test_deleteSSHKeyForPersonFromSSO_rejects_bad_key_data(True)
+
+    def test_deleteSSHKeyForPersonFromSSO_rejects_bad_key_type(self,
+                                                               dry_run=False):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyForPersonFromSSO(
+            openid_id, 'foo keydata comment', dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key type: 'foo'",
+            response.body)
+
+    def test_deleteSSHKeyForPersonFromSSO_rejects_bad_key_type_dry_run(self):
+        self.test_deleteSSHKeyForPersonFromSSO_rejects_bad_key_type(True)
+
+    def test_deleteSSHKeyForPersonFromSSO_works(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            key = self.factory.makeSSHKey(person)
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyForPersonFromSSO(
+            openid_id, key.getFullKeyText())
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(0, person.sshkeys.count())
+
+    def test_deleteSSHKeyForPersonFromSSO_works_dry_run(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            key = self.factory.makeSSHKey(person)
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyForPersonFromSSO(
+            openid_id, key.getFullKeyText())
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(1, person.sshkeys.count())
+
+    def test_deleteSSHKeyForPersonFromSSO_is_restricted(self, dry_run=False):
+        with admin_logged_in():
+            target = self.factory.makePerson()
+            openid_id = target.account.openid_identifiers.any().identifier
+        webservice = webservice_for_person(
+            target, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            '/people', 'deleteSSHKeyForPersonFromSSO',
+            openid_identifier=openid_id, key_text='ssh-rsa foo bar',
+            dry_run=dry_run, api_version='devel')
+        self.assertEqual(401, response.status)
+
+    def test_deleteSSHKeyForPersonFromSSO_is_restricted_dry_run(self):
+        self.test_deleteSSHKeyForPersonFromSSO_is_restricted(True)

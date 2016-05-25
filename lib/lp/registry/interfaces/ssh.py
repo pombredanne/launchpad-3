@@ -9,6 +9,7 @@ __all__ = [
     'ISSHKey',
     'ISSHKeySet',
     'SSH_KEY_TYPE_TO_TEXT',
+    'SSH_TEXT_TO_KEY_TYPE',
     'SSHKeyAdditionError',
     'SSHKeyCompromisedError',
     'SSHKeyType',
@@ -60,6 +61,9 @@ SSH_KEY_TYPE_TO_TEXT = {
 }
 
 
+SSH_TEXT_TO_KEY_TYPE = {v: k for k, v in SSH_KEY_TYPE_TO_TEXT.items()}
+
+
 class ISSHKey(Interface):
     """SSH public key"""
 
@@ -105,6 +109,14 @@ class ISSHKeySet(Interface):
 
     def getByPeople(people):
         """Return SSHKey object associated to the people provided."""
+
+    def getByPersonAndKeyText(person, sshkey):
+        """Get an SSH key for a person with a specific key text.
+
+        :param person: The person who owns the key.
+        :param sshkey: The full ssh key text.
+        :raises SSHKeyAdditionError: If 'sshkey' is invalid.
+        """
 
 
 @error_status(httplib.BAD_REQUEST)

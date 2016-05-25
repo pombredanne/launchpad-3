@@ -10,6 +10,7 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
+    SSHKeyAdditionError,
     SSHKeyCompromisedError,
     SSHKeyType,
     )
@@ -98,3 +99,35 @@ class TestSSHKeySet(TestCaseWithFactory):
             for key in (VULNERABLE_DSA_KEY, VULNERABLE_RSA_KEY):
                 self.assertRaises(SSHKeyCompromisedError,
                                   keyset.new, person, key,)
+
+    def test_getByPersonAndKeyText_retrieves_target_key(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            key = self.factory.makeSSHKey(person)
+            keytext = key.getFullKeyText()
+
+            results = getUtility(ISSHKeySet).getByPersonAndKeyText(
+                person, keytext)
+            self.assertEqual([key], list(results))
+
+    def test_getByPersonAndKeyText_raises_on_invalid_key_type(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            invalid_keytext = 'foo bar baz'
+            keyset = getUtility(ISSHKeySet)
+            self.assertRaises(
+                SSHKeyAdditionError,
+                keyset.getByPersonAndKeyText,
+                person, invalid_keytext
+            )
+
+    def test_getByPersonAndKeyText_raises_on_invalid_key_data(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            invalid_keytext = 'glorp!'
+            keyset = getUtility(ISSHKeySet)
+            self.assertRaises(
+                SSHKeyAdditionError,
+                keyset.getByPersonAndKeyText,
+                person, invalid_keytext
+            )
