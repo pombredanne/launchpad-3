@@ -39,13 +39,13 @@ Bad keys raise a SSHKeyAdditionError.
     >>> sshkeyset.new(foobar, None)
     Traceback (most recent call last):
       ...
-    SSHKeyAdditionError
+    SSHKeyAdditionError: Invalid SSH key data: 'None'
 
     >>> bad_key = "thiskeyhasnospaces"
     >>> sshkeyset.new(foobar, bad_key)
     Traceback (most recent call last):
       ...
-    SSHKeyAdditionError
+    SSHKeyAdditionError: Invalid SSH key data: 'thiskeyhasnospaces'
 
 
 There's also a convenience method for fetching multiple SSH keys at
