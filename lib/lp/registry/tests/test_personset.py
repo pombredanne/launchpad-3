@@ -1016,7 +1016,7 @@ class TestPersonDeleteSSHKeyFromSSO(TestCaseWithFactory):
         make_openid_identifier(target.account, u'openid')
 
         def do_it():
-            return getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO(
+            return getUtility(IPersonSet).deleteSSHKeyFromSSO(
                 getUtility(ILaunchBag).user, u'openid', key_text, False)
         random = self.factory.makePerson()
         admin = self.factory.makePerson(
@@ -1039,7 +1039,7 @@ class TestPersonDeleteSSHKeyFromSSO(TestCaseWithFactory):
         make_openid_identifier(target.account, u'openid')
 
         with person_logged_in(self.sso):
-            getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO(
+            getUtility(IPersonSet).deleteSSHKeyFromSSO(
                 self.sso, u'openid', key.getFullKeyText(), False)
 
         with person_logged_in(target):
@@ -1052,7 +1052,7 @@ class TestPersonDeleteSSHKeyFromSSO(TestCaseWithFactory):
         make_openid_identifier(target.account, u'openid')
 
         with person_logged_in(self.sso):
-            getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO(
+            getUtility(IPersonSet).deleteSSHKeyFromSSO(
                 self.sso, u'openid', key.getFullKeyText(), True)
 
         with person_logged_in(target):
@@ -1062,7 +1062,7 @@ class TestPersonDeleteSSHKeyFromSSO(TestCaseWithFactory):
         with person_logged_in(self.sso):
             self.assertRaises(
                 NoSuchAccount,
-                getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO,
+                getUtility(IPersonSet).deleteSSHKeyFromSSO,
                 self.sso, u'doesnotexist', 'ssh-rsa key comment', False)
 
     def test_raises_with_bad_key_type(self):
@@ -1071,5 +1071,5 @@ class TestPersonDeleteSSHKeyFromSSO(TestCaseWithFactory):
         with person_logged_in(self.sso):
             self.assertRaises(
                 SSHKeyAdditionError,
-                getUtility(IPersonSet).deleteSSHKeyForPersonFromSSO,
+                getUtility(IPersonSet).deleteSSHKeyFromSSO,
                 self.sso, u'openid', 'badtype key comment', False)

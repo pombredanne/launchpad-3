@@ -3490,7 +3490,7 @@ class PersonSet:
         getUtility(ISSHKeySet).new(
             IPerson(account), key_text, False, dry_run=dry_run)
 
-    def deleteSSHKeyForPersonFromSSO(self, user, openid_identifier, key_text,
+    def deleteSSHKeyFromSSO(self, user, openid_identifier, key_text,
                                      dry_run=False):
         """See `IPersonSet`."""
         if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
