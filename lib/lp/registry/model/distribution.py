@@ -1005,8 +1005,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         conditions = [
             DistributionSourcePackageCache.distribution == self,
-            DistributionSourcePackageCache.archiveID.is_in(
-                self.all_distro_archive_ids),
+            Or(
+                DistributionSourcePackageCache.archiveID.is_in(
+                    self.all_distro_archive_ids),
+                DistributionSourcePackageCache.archive == None),
             Or(
                 fti_search(DistributionSourcePackageCache, text),
                 DistributionSourcePackageCache.name.contains_string(

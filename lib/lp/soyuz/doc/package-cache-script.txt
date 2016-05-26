@@ -55,6 +55,7 @@ distribution and respective distroseriess considered in stderr.
   INFO    Updating ubuntu package counters
   INFO    Updating ubuntu main archives
   ...
+  INFO    Updating ubuntu official branch links
   INFO    Updating ubuntu PPAs
   ...
   INFO    redhat done

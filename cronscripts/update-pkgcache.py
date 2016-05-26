@@ -40,7 +40,8 @@ class PackageCacheUpdater(LaunchpadCronScript):
         """Update package caches for the given location.
 
         'archive' can be one of the main archives (PRIMARY, PARTNER or
-        EMBARGOED) or even a PPA.
+        EMBARGOED), a PPA, or None to update caches of official branch
+        links.
 
         This method commits the transaction frequently since it deal with
         a huge amount of data.
@@ -48,8 +49,9 @@ class PackageCacheUpdater(LaunchpadCronScript):
         PPA archives caches are consolidated in a Archive row to optimize
         searches across PPAs.
         """
-        for distroseries in distribution.series:
-            self.updateDistroSeriesCache(distroseries, archive)
+        if archive is not None:
+            for distroseries in distribution.series:
+                self.updateDistroSeriesCache(distroseries, archive)
 
         DistributionSourcePackageCache.removeOld(
             distribution, archive, log=self.logger)
@@ -89,6 +91,10 @@ class PackageCacheUpdater(LaunchpadCronScript):
                 'Updating %s main archives' % distribution.name)
             for archive in distribution.all_distro_archives:
                 self.updateDistributionCache(distribution, archive)
+
+            self.logger.info(
+                'Updating %s official branch links' % distribution.name)
+            self.updateDistributionCache(distribution, None)
 
             self.logger.info(
                 'Updating %s PPAs' % distribution.name)
