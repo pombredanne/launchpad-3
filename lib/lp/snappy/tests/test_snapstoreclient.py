@@ -153,7 +153,51 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.pushConfig(
             "snappy", store_url="http://sca.example/",
             store_upload_url="http://updown.example/")
+        self.pushConfig(
+            "launchpad", openid_provider_root="http://sso.example/")
         self.client = getUtility(ISnapStoreClient)
+
+    def _make_store_secrets(self):
+        self.root_key = hashlib.sha256(
+            self.factory.getUniqueString()).hexdigest()
+        root_macaroon = Macaroon(key=self.root_key)
+        self.discharge_key = hashlib.sha256(
+            self.factory.getUniqueString()).hexdigest()
+        self.discharge_caveat_id = self.factory.getUniqueString()
+        root_macaroon.add_third_party_caveat(
+            "sso.example", self.discharge_key, self.discharge_caveat_id)
+        unbound_discharge_macaroon = Macaroon(
+            location="sso.example", key=self.discharge_key,
+            identifier=self.discharge_caveat_id)
+        return {
+            "root": root_macaroon.serialize(),
+            "discharge": unbound_discharge_macaroon.serialize(),
+            }
+
+    @urlmatch(path=r".*/unscanned-upload/$")
+    def _unscanned_upload_handler(self, url, request):
+        self.unscanned_upload_request = request
+        return {
+            "status_code": 200,
+            "content": {"successful": True, "upload_id": 1},
+            }
+
+    @urlmatch(path=r".*/snap-upload/$")
+    def _snap_upload_handler(self, url, request):
+        self.snap_upload_request = request
+        return {"status_code": 202, "content": {"success": True}}
+
+    @urlmatch(path=r".*/api/v2/tokens/refresh$")
+    def _macaroon_refresh_handler(self, url, request):
+        self.refresh_request = request
+        new_macaroon = Macaroon(
+            location="sso.example", key=self.discharge_key,
+            identifier=self.discharge_caveat_id)
+        new_macaroon.add_first_party_caveat("sso|expires|tomorrow")
+        return {
+            "status_code": 200,
+            "content": {"discharge_macaroon": new_macaroon.serialize()},
+            }
 
     def test_requestPackageUploadPermission(self):
         @all_requests
@@ -206,42 +250,16 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 snappy_series, "test-snap")
 
     def test_upload(self):
-        @urlmatch(path=r".*/unscanned-upload/$")
-        def unscanned_upload_handler(url, request):
-            self.unscanned_upload_request = request
-            return {
-                "status_code": 200,
-                "content": {"successful": True, "upload_id": 1},
-                }
-
-        @urlmatch(path=r".*/snap-upload/$")
-        def snap_upload_handler(url, request):
-            self.snap_upload_request = request
-            return {"status_code": 202, "content": {"success": True}}
-
-        root_key = hashlib.sha256(self.factory.getUniqueString()).hexdigest()
-        root_macaroon = Macaroon(key=root_key)
-        discharge_key = hashlib.sha256(
-            self.factory.getUniqueString()).hexdigest()
-        discharge_caveat_id = self.factory.getUniqueString()
-        root_macaroon.add_third_party_caveat(
-            "sso.example", discharge_key, discharge_caveat_id)
-        unbound_discharge_macaroon = Macaroon(
-            location="sso.example", key=discharge_key,
-            identifier=discharge_caveat_id)
-        store_secrets = {
-            "root": root_macaroon.serialize(),
-            "discharge": unbound_discharge_macaroon.serialize(),
-            }
         snap = self.factory.makeSnap(
             store_upload=True,
             store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=store_secrets)
+            store_name="test-snap", store_secrets=self._make_store_secrets())
         snapbuild = self.factory.makeSnapBuild(snap=snap)
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-        with HTTMock(unscanned_upload_handler, snap_upload_handler):
+        with HTTMock(
+            self._unscanned_upload_handler, self._snap_upload_handler):
             self.client.upload(snapbuild)
         self.assertThat(self.unscanned_upload_request, RequestMatches(
             url=Equals("http://updown.example/unscanned-upload/"),
@@ -255,7 +273,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertThat(self.snap_upload_request, RequestMatches(
             url=Equals("http://sca.example/dev/api/snap-upload/"),
             method=Equals("POST"),
-            auth=("Macaroon", MacaroonsVerify(root_key)),
+            auth=("Macaroon", MacaroonsVerify(self.root_key)),
             form_data={
                 "name": MatchesStructure.byEquality(
                     name="name", value="test-snap"),
@@ -263,3 +281,53 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     name="updown_id", value="1"),
                 "series": MatchesStructure.byEquality(
                     name="series", value="rolling")}))
+
+    def test_upload_needs_discharge_macaroon_refresh(self):
+        @urlmatch(path=r".*/snap-upload/$")
+        def snap_upload_handler(url, request):
+            snap_upload_handler.call_count += 1
+            if snap_upload_handler.call_count == 1:
+                self.first_snap_upload_request = request
+                return {
+                    "status_code": 401,
+                    "headers": {
+                        "WWW-Authenticate": "Macaroon needs_refresh=1"}}
+            else:
+                return self._snap_upload_handler(url, request)
+        snap_upload_handler.call_count = 0
+
+        store_secrets = self._make_store_secrets()
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=store_secrets)
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
+        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
+        transaction.commit()
+
+        with HTTMock(self._unscanned_upload_handler, snap_upload_handler,
+                     self._macaroon_refresh_handler):
+            self.client.upload(snapbuild)
+        self.assertEqual(2, snap_upload_handler.call_count)
+        self.assertNotEqual(
+            store_secrets["discharge"], snap.store_secrets["discharge"])
+
+    def test_refresh_discharge_macaroon(self):
+        store_secrets = self._make_store_secrets()
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=store_secrets)
+
+        with HTTMock(self._macaroon_refresh_handler):
+            self.client.refresh_discharge_macaroon(snap)
+        self.assertThat(self.refresh_request, RequestMatches(
+            url=Equals("http://sso.example/api/v2/tokens/refresh"),
+            method=Equals("POST"),
+            form_data={
+                "discharge_macaroon": MatchesStructure.byEquality(
+                    name="discharge_macaroon",
+                    value=store_secrets["discharge"])}))
+        self.assertNotEqual(
+            store_secrets["discharge"], snap.store_secrets["discharge"])
