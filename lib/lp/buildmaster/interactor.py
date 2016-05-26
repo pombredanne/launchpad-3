@@ -57,10 +57,14 @@ class QuietQueryFactory(xmlrpc._QueryFactory):
 class FileWritingProtocol(Protocol):
     """A protocol that saves data to a file."""
 
-    def __init__(self, finished, filename):
+    def __init__(self, finished, file_to_write):
         self.finished = finished
-        self.filename = filename
-        self.file = None
+        if isinstance(file_to_write, (bytes, unicode)):
+            self.filename = file_to_write
+            self.file = None
+        else:
+            self.filename = None
+            self.file = file_to_write
 
     def dataReceived(self, data):
         if self.file is None:
@@ -77,7 +81,8 @@ class FileWritingProtocol(Protocol):
 
     def connectionLost(self, reason):
         try:
-            self.file.close()
+            if self.file is not None:
+                self.file.close()
         except IOError:
             self.finished.errback()
         else:
