@@ -862,3 +862,19 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             dl.append(d)
 
         return defer.DeferredList(dl).addCallback(finished_uploading)
+
+    @defer.inlineCallbacks
+    def test_getFiles_with_file_objects(self):
+        # getFiles works with file-like objects as well as file names.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        temp_fd, temp_name = tempfile.mkstemp()
+        self.addCleanup(os.remove, temp_name)
+        lf = self.factory.makeLibraryFileAlias(
+            'content.txt', content='content')
+        self.layer.txn.commit()
+        yield slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
+        yield slave.getFiles([(lf.content.sha1, os.fdopen(temp_fd, "w"))])
+        with open(temp_name) as f:
+            self.assertEqual('content', f.read())
+        yield slave.pool.closeCachedConnections()

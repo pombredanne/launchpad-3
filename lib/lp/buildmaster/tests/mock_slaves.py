@@ -37,6 +37,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interactor import BuilderSlave
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
+from lp.services.webapp import urlappend
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -135,6 +136,10 @@ class OkSlave:
                 raise CannotFetchFile(url, info)
 
         return d.addCallback(check_present)
+
+    def getURL(self, sha1):
+        return urlappend(
+            'http://localhost:8221/filecache/', sha1).encode('utf8')
 
     def getFiles(self, files):
         dl = defer.gatherResults([

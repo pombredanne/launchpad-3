@@ -57,10 +57,14 @@ class QuietQueryFactory(xmlrpc._QueryFactory):
 class FileWritingProtocol(Protocol):
     """A protocol that saves data to a file."""
 
-    def __init__(self, finished, filename):
+    def __init__(self, finished, file_to_write):
         self.finished = finished
-        self.filename = filename
-        self.file = None
+        if isinstance(file_to_write, (bytes, unicode)):
+            self.filename = file_to_write
+            self.file = None
+        else:
+            self.filename = None
+            self.file = file_to_write
 
     def dataReceived(self, data):
         if self.file is None:
@@ -77,7 +81,8 @@ class FileWritingProtocol(Protocol):
 
     def connectionLost(self, reason):
         try:
-            self.file.close()
+            if self.file is not None:
+                self.file.close()
         except IOError:
             self.finished.errback()
         else:
@@ -224,6 +229,10 @@ class BuilderSlave(object):
                 'ensurepresent', sha1sum, url, username, password),
             self.timeout * 5)
 
+    def getURL(self, sha1):
+        """Get the URL for a file on the builder with a given SHA-1."""
+        return urlappend(self._file_cache_url, sha1).encode('utf8')
+
     def getFile(self, sha_sum, file_to_write):
         """Fetch a file from the builder.
 
@@ -234,7 +243,7 @@ class BuilderSlave(object):
         :return: A Deferred that calls back when the download is done, or
             errback with the error string.
         """
-        file_url = urlappend(self._file_cache_url, sha_sum).encode('utf8')
+        file_url = self.getURL(sha_sum)
         d = Agent(self.reactor, pool=self.pool).request("GET", file_url)
 
         def got_response(response):
