@@ -15,7 +15,10 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
-from lp.archivepublisher.signing import SigningUpload
+from lp.archivepublisher.signing import (
+    UefiUpload,
+    SigningUpload,
+    )
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
@@ -98,10 +101,10 @@ class FakeConfigPPA:
         self.signingautokey = True
 
 
-class TestSigning(TestCase):
+class TestSigningHelpers(TestCase):
 
     def setUp(self):
-        super(TestSigning, self).setUp()
+        super(TestSigningHelpers, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
         self.signing_dir = self.makeTemporaryDirectory()
         self.pubconf = FakeConfigPrimary(self.temp_dir, self.signing_dir)
@@ -135,6 +138,17 @@ class TestSigning(TestCase):
         self.buffer = open(self.path, "wb")
         self.archive = LaunchpadWriteTarFile(self.buffer)
 
+    def getDistsPath(self):
+        return os.path.join(self.pubconf.archiveroot, "dists",
+            self.suite, "main")
+
+
+class TestSigning(TestSigningHelpers):
+
+    def getSignedPath(self, loader_type, arch):
+        return os.path.join(self.getDistsPath(), "signed",
+            "%s-%s" % (loader_type, arch))
+
     def process_emulate(self):
         self.archive.close()
         self.buffer.close()
@@ -160,18 +174,6 @@ class TestSigning(TestCase):
         self.assertEqual(0, fake_call.call_count)
 
         return upload
-
-    def getDistsPath(self):
-        return os.path.join(self.pubconf.archiveroot, "dists",
-            self.suite, "main")
-
-    def getSignedPath(self, loader_type, arch):
-        return os.path.join(self.getDistsPath(), "signed",
-            "%s-%s" % (loader_type, arch))
-
-    def getUefiPath(self, loader_type, arch):
-        return os.path.join(self.getDistsPath(), "uefi",
-            "%s-%s" % (loader_type, arch))
 
     def test_archive_copy(self):
         # If there is no key/cert configuration, processing succeeds but
@@ -599,3 +601,35 @@ class TestSigning(TestCase):
         self.assertTrue(os.path.exists(self.kmod_x509))
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_pem).st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_x509).st_mode), 0o644)
+
+
+class TestUefi(TestSigningHelpers):
+
+    def getSignedPath(self, loader_type, arch):
+        return os.path.join(self.getDistsPath(), "uefi",
+            "%s-%s" % (loader_type, arch))
+
+    def process(self):
+        self.archive.close()
+        self.buffer.close()
+        upload = UefiUpload()
+        upload.signUefi = FakeMethod()
+        upload.signKmod = FakeMethod()
+        # Under no circumstances is it safe to execute actual commands.
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload.process(self.pubconf, self.path, self.suite)
+        self.assertEqual(0, fake_call.call_count)
+
+        return upload
+
+    def test_installed(self):
+        # Files in the tarball are installed correctly.
+        self.setUpUefiKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.process()
+        self.assertTrue(os.path.isdir(os.path.join(
+            self.getDistsPath(), "uefi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))

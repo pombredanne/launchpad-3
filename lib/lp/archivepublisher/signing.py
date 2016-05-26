@@ -14,6 +14,7 @@ from __future__ import print_function
 __metaclass__ = type
 
 __all__ = [
+    "UefiUpload",
     "SigningUpload",
     ]
 
@@ -63,6 +64,9 @@ class SigningUpload(CustomUpload):
     """
     custom_type = "signing"
 
+    def distsDirectory(self):
+        return 'signed'
+
     @staticmethod
     def parsePath(tarfile_path):
         tarfile_base = os.path.basename(tarfile_path)
@@ -94,8 +98,8 @@ class SigningUpload(CustomUpload):
 
         self.setComponents(tarfile_path)
 
-        dists_signed = os.path.join(
-            pubconf.archiveroot, "dists", suite, "main", "signed")
+        dists_signed = os.path.join(pubconf.archiveroot, "dists",
+            suite, "main", self.distsDirectory())
         self.targetdir = os.path.join(
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
@@ -302,3 +306,11 @@ class SigningUpload(CustomUpload):
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
+
+
+class UefiUpload(SigningUpload):
+    """Legacy UEFI Signing custom upload."""
+    custom_type = "raw-uefi"
+
+    def distsDirectory(self):
+        return 'uefi'
