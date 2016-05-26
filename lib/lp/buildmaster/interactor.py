@@ -229,6 +229,10 @@ class BuilderSlave(object):
                 'ensurepresent', sha1sum, url, username, password),
             self.timeout * 5)
 
+    def getURL(self, sha1):
+        """Get the URL for a file on the builder with a given SHA-1."""
+        return urlappend(self._file_cache_url, sha1).encode('utf8')
+
     def getFile(self, sha_sum, file_to_write):
         """Fetch a file from the builder.
 
@@ -239,7 +243,7 @@ class BuilderSlave(object):
         :return: A Deferred that calls back when the download is done, or
             errback with the error string.
         """
-        file_url = urlappend(self._file_cache_url, sha_sum).encode('utf8')
+        file_url = self.getURL(sha_sum)
         d = Agent(self.reactor, pool=self.pool).request("GET", file_url)
 
         def got_response(response):
