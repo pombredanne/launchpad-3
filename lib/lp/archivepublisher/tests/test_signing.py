@@ -501,12 +501,8 @@ class TestSigning(TestCase):
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
-        self.assertTrue(os.path.islink(os.path.join(
-            self.getDistsPath(), "uefi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 
     def test_installed_existing_uefi(self):
         # Files in the tarball are installed correctly.
@@ -517,12 +513,8 @@ class TestSigning(TestCase):
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
-        self.assertTrue(os.path.islink(os.path.join(
-            self.getDistsPath(), "uefi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 
     def test_installed_existing_signing(self):
         # Files in the tarball are installed correctly.
@@ -533,12 +525,8 @@ class TestSigning(TestCase):
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
-        self.assertTrue(os.path.islink(os.path.join(
-            self.getDistsPath(), "uefi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 
     def test_create_uefi_keys_autokey_off(self):
         # Keys are not created.
