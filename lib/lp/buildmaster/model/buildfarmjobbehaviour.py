@@ -291,8 +291,9 @@ class BuildFarmJobBehaviourBase:
         os.makedirs(upload_path)
 
         filenames_to_download = []
-        for filename in filemap:
-            logger.info("Grabbing file: %s" % filename)
+        for filename, sha1 in filemap.items():
+            logger.info("Grabbing file: %s (%s)" % (
+                filename, self._slave.getURL(sha1)))
             out_file_name = os.path.join(upload_path, filename)
             # If the evaluated output file name is not within our
             # upload path, then we don't try to copy this or any
@@ -300,7 +301,7 @@ class BuildFarmJobBehaviourBase:
             if not os.path.realpath(out_file_name).startswith(upload_path):
                 raise BuildDaemonError(
                     "Build returned a file named %r." % filename)
-            filenames_to_download.append((filemap[filename], out_file_name))
+            filenames_to_download.append((sha1, out_file_name))
         yield self._slave.getFiles(filenames_to_download)
 
         transaction.commit()

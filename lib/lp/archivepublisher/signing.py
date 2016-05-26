@@ -94,24 +94,8 @@ class SigningUpload(CustomUpload):
 
         self.setComponents(tarfile_path)
 
-        # Ensure we expose the results via uefi and signed in dists.
-        # If we already have a uefi directory move it to signed else
-        # make a new signed.  For compatibility ensure we have uefi
-        # symlink to signed.
-        # NOTE: we rely on "signed" and "uefi"  being in the same directory.
         dists_signed = os.path.join(
             pubconf.archiveroot, "dists", suite, "main", "signed")
-        dists_uefi = os.path.join(
-            pubconf.archiveroot, "dists", suite, "main", "uefi")
-        if not os.path.exists(dists_signed):
-            if os.path.isdir(dists_uefi):
-                os.rename(dists_uefi, dists_signed)
-            else:
-                os.makedirs(dists_signed, 0o755)
-        if not os.path.exists(dists_uefi):
-            os.symlink("signed", dists_uefi)
-
-        # Extract into the "signed" path regardless of linking.
         self.targetdir = os.path.join(
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
@@ -266,6 +250,9 @@ class SigningUpload(CustomUpload):
                         os.unlink(self.kmod_pem)
         finally:
             os.umask(old_mask)
+
+        if os.path.exists(self.kmod_x509):
+            os.chmod(self.kmod_x509, 0o644)
 
     def signKmod(self, image):
         """Attempt to sign a kernel module."""

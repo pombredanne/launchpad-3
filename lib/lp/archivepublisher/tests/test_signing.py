@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+import stat
 import tarfile
 
 from fixtures import MonkeyPatch
@@ -500,12 +501,8 @@ class TestSigning(TestCase):
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
-        self.assertTrue(os.path.islink(os.path.join(
-            self.getDistsPath(), "uefi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 
     def test_installed_existing_uefi(self):
         # Files in the tarball are installed correctly.
@@ -516,12 +513,8 @@ class TestSigning(TestCase):
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
-        self.assertTrue(os.path.islink(os.path.join(
-            self.getDistsPath(), "uefi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 
     def test_installed_existing_signing(self):
         # Files in the tarball are installed correctly.
@@ -532,12 +525,8 @@ class TestSigning(TestCase):
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
-        self.assertTrue(os.path.islink(os.path.join(
-            self.getDistsPath(), "uefi")))
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getUefiPath("test", "amd64"), "1.0", "empty.efi")))
 
     def test_create_uefi_keys_autokey_off(self):
         # Keys are not created.
@@ -571,6 +560,8 @@ class TestSigning(TestCase):
         self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
         self.assertTrue(os.path.exists(self.key))
         self.assertTrue(os.path.exists(self.cert))
+        self.assertEqual(stat.S_IMODE(os.stat(self.key).st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(self.cert).st_mode), 0o644)
 
     def test_create_kmod_keys_autokey_off(self):
         # Keys are not created.
@@ -606,3 +597,5 @@ class TestSigning(TestCase):
         self.assertEqual(1, upload.callLog.caller_count('Kmod keygen cert'))
         self.assertTrue(os.path.exists(self.kmod_pem))
         self.assertTrue(os.path.exists(self.kmod_x509))
+        self.assertEqual(stat.S_IMODE(os.stat(self.kmod_pem).st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(self.kmod_x509).st_mode), 0o644)

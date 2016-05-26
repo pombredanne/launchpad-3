@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -37,6 +37,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interactor import BuilderSlave
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
+from lp.services.webapp import urlappend
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -135,6 +136,10 @@ class OkSlave:
                 raise CannotFetchFile(url, info)
 
         return d.addCallback(check_present)
+
+    def getURL(self, sha1):
+        return urlappend(
+            'http://localhost:8221/filecache/', sha1).encode('utf8')
 
     def getFiles(self, files):
         dl = defer.gatherResults([
@@ -290,14 +295,14 @@ class SlaveTestHelpers(fixtures.Fixture):
                 lambda: open(tachandler.logfile, 'r').readlines()))
         return tachandler
 
-    def getClientSlave(self, reactor=None, proxy=None):
+    def getClientSlave(self, reactor=None, proxy=None, pool=None):
         """Return a `BuilderSlave` for use in testing.
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
         return BuilderSlave.makeBuilderSlave(
             self.BASE_URL, 'vmhost', config.builddmaster.socket_timeout,
-            reactor, proxy)
+            reactor=reactor, proxy=proxy, pool=pool)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
