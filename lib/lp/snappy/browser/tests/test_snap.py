@@ -13,7 +13,10 @@ import json
 import re
 from textwrap import dedent
 from urllib2 import HTTPError
-from urlparse import urlsplit
+from urlparse import (
+    parse_qs,
+    urlsplit,
+    )
 
 from fixtures import FakeLogger
 from httmock import (
@@ -344,12 +347,18 @@ class TestSnapAddView(BrowserTestCase):
             }
         self.assertEqual(expected_body, json.loads(self.request.body))
         self.assertEqual(303, redirection.code)
+        parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
-            canonical_url(snap, rootsite="code") +
-            "/+authorize/+login?field.callback=on&"
-            "macaroon_caveat_id=dummy&"
-            "discharge_macaroon_field=field.discharge_macaroon",
-            redirection.hdrs["Location"])
+            urlsplit(
+                canonical_url(snap, rootsite="code") +
+                "/+authorize/+login")[:3],
+            parsed_location[:3])
+        expected_args = {
+            "discharge_macaroon_action": ["field.actions.complete"],
+            "discharge_macaroon_field": ["field.discharge_macaroon"],
+            "macaroon_caveat_id": ["dummy"],
+            }
+        self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
 
 class TestSnapAdminView(BrowserTestCase):
@@ -710,12 +719,16 @@ class TestSnapEditView(BrowserTestCase):
             }
         self.assertEqual(expected_body, json.loads(self.request.body))
         self.assertEqual(303, redirection.code)
+        parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
-            canonical_url(snap) +
-            "/+authorize/+login?field.callback=on&"
-            "macaroon_caveat_id=dummy&"
-            "discharge_macaroon_field=field.discharge_macaroon",
-            redirection.hdrs["Location"])
+            urlsplit(canonical_url(snap) + "/+authorize/+login")[:3],
+            parsed_location[:3])
+        expected_args = {
+            "discharge_macaroon_action": ["field.actions.complete"],
+            "discharge_macaroon_field": ["field.discharge_macaroon"],
+            "macaroon_caveat_id": ["dummy"],
+            }
+        self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
 
 class TestSnapAuthorizeView(BrowserTestCase):
