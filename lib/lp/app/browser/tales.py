@@ -1872,6 +1872,15 @@ class SnapFormatterAPI(CustomizableFormatter):
                 'owner': self._context.owner.displayname}
 
 
+class SnappySeriesFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISnappySeries objects."""
+
+    _link_summary_template = _('%(title)s')
+
+    def _link_summary_values(self):
+        return {'title': self._context.title}
+
+
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 

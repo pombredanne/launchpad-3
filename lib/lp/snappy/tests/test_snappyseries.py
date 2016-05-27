@@ -277,3 +277,20 @@ class TestSnappyDistroSeriesSet(TestCaseWithFactory):
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[0], dses[1]))
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], dses[0]))
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], dses[1]))
+
+    def test_getAll(self):
+        dses = [self.factory.makeDistroSeries() for _ in range(2)]
+        snappy_serieses = [self.factory.makeSnappySeries() for _ in range(2)]
+        snappy_serieses[0].usable_distro_series = dses
+        snappy_serieses[1].usable_distro_series = [dses[0]]
+        sds_set = getUtility(ISnappyDistroSeriesSet)
+        self.assertThat(
+            sds_set.getAll(),
+            MatchesSetwise(
+                MatchesStructure.byEquality(
+                    snappy_series=snappy_serieses[0], distro_series=dses[0]),
+                MatchesStructure.byEquality(
+                    snappy_series=snappy_serieses[0], distro_series=dses[1]),
+                MatchesStructure.byEquality(
+                    snappy_series=snappy_serieses[1], distro_series=dses[0]),
+                ))
