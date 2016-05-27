@@ -26,6 +26,7 @@ from lazr.restful.interface import (
     )
 from pymacaroons import Macaroon
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -87,7 +88,11 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
-from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
+from lp.snappy.interfaces.snapstoreclient import (
+    BadRequestPackageUploadResponse,
+    ISnapStoreClient,
+    )
 from lp.soyuz.browser.archive import EnableProcessorsMixin
 from lp.soyuz.browser.build import get_build_by_id_str
 from lp.soyuz.interfaces.archive import IArchive
@@ -296,9 +301,11 @@ class ISnapEditSchema(Interface):
         'name',
         'private',
         'require_virtualized',
+        'store_upload',
         ])
-    distro_series = Choice(
-        vocabulary='BuildableDistroSeries', title=u'Distribution series')
+    store_distro_series = Choice(
+        vocabulary='BuildableSnappyDistroSeries', required=True,
+        title=u'Series')
     vcs = Choice(vocabulary=VCSType, required=True, title=u'VCS')
 
     # Each of these is only required if vcs has an appropriate value.  Later
@@ -306,15 +313,44 @@ class ISnapEditSchema(Interface):
     branch = copy_field(ISnap['branch'], required=True)
     git_ref = copy_field(ISnap['git_ref'], required=True)
 
+    # These are only required if store_upload is True.  Later validation
+    # takes care of adjusting the required attribute.
+    store_name = copy_field(ISnap['store_name'], required=True)
 
-class SnapAddView(LaunchpadFormView):
+
+def log_oops(error, request):
+    """Log an oops report without raising an error."""
+    info = (error.__class__, error, None)
+    getUtility(IErrorReportingUtility).raising(info, request)
+
+
+class SnapAuthorizeMixin:
+
+    def requestAuthorization(self, snap):
+        try:
+            self.next_url = SnapAuthorizeView.requestAuthorization(
+                snap, self.request)
+        except BadRequestPackageUploadResponse as e:
+            self.setFieldError(
+                'store_upload',
+                'Cannot get permission from the store to upload this package.')
+            log_oops(e, self.request)
+
+
+class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
     """View for creating snap packages."""
 
     page_title = label = 'Create a new snap package'
 
     schema = ISnapEditSchema
-    field_names = ['owner', 'name', 'distro_series']
-    custom_widget('distro_series', LaunchpadRadioWidget)
+    field_names = [
+        'owner',
+        'name',
+        'store_distro_series',
+        'store_upload',
+        'store_name',
+        ]
+    custom_widget('store_distro_series', LaunchpadRadioWidget)
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -340,13 +376,28 @@ class SnapAddView(LaunchpadFormView):
         # accidentally selecting ubuntu-rtm/14.09 or similar.
         # ubuntu.currentseries will always be in BuildableDistroSeries.
         series = getUtility(ILaunchpadCelebrities).ubuntu.currentseries
+        sds_set = getUtility(ISnappyDistroSeriesSet)
         return {
             'owner': self.user,
-            'distro_series': series,
+            'store_distro_series': sds_set.getByDistroSeries(series).first(),
             }
 
+    @property
+    def has_snappy_distro_series(self):
+        return not getUtility(ISnappyDistroSeriesSet).getAll().is_empty()
+
+    def validate_widgets(self, data, names=None):
+        """See `LaunchpadFormView`."""
+        if self.widgets.get('store_upload') is not None:
+            # Set widgets as required or optional depending on the
+            # store_upload field.
+            super(SnapAddView, self).validate_widgets(data, ['store_upload'])
+            store_upload = data.get('store_upload', False)
+            self.widgets['store_name'].context.required = store_upload
+        super(SnapAddView, self).validate_widgets(data, names=names)
+
     @action('Create snap package', name='create')
-    def request_action(self, action, data):
+    def create_action(self, action, data):
         if IGitRef.providedBy(self.context):
             kwargs = {'git_ref': self.context}
         else:
@@ -354,9 +405,15 @@ class SnapAddView(LaunchpadFormView):
         private = not getUtility(
             ISnapSet).isValidPrivacy(False, data['owner'], **kwargs)
         snap = getUtility(ISnapSet).new(
-            self.user, data['owner'], data['distro_series'], data['name'],
-            private=private, **kwargs)
-        self.next_url = canonical_url(snap)
+            self.user, data['owner'],
+            data['store_distro_series'].distro_series, data['name'],
+            private=private, store_upload=data['store_upload'],
+            store_series=data['store_distro_series'].snappy_series,
+            store_name=data['store_name'], **kwargs)
+        if data['store_upload']:
+            self.requestAuthorization(snap)
+        else:
+            self.next_url = canonical_url(snap)
 
     def validate(self, data):
         super(SnapAddView, self).validate(data)
@@ -370,7 +427,7 @@ class SnapAddView(LaunchpadFormView):
                     'name.' % owner.displayname)
 
 
-class BaseSnapEditView(LaunchpadEditFormView):
+class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
 
     schema = ISnapEditSchema
 
@@ -388,6 +445,10 @@ class BaseSnapEditView(LaunchpadEditFormView):
                 render_radio_widget_part(widget, value, current_value)
                 for value in (VCSType.BZR, VCSType.GIT)]
 
+    @property
+    def has_snappy_distro_series(self):
+        return not getUtility(ISnappyDistroSeriesSet).getAll().is_empty()
+
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
         if self.widgets.get('vcs') is not None:
@@ -403,7 +464,28 @@ class BaseSnapEditView(LaunchpadEditFormView):
                 self.widgets['git_ref'].context.required = True
             else:
                 raise AssertionError("Unknown branch type %s" % vcs)
+        if self.widgets.get('store_upload') is not None:
+            # Set widgets as required or optional depending on the
+            # store_upload field.
+            super(BaseSnapEditView, self).validate_widgets(
+                data, ['store_upload'])
+            store_upload = data.get('store_upload', False)
+            self.widgets['store_name'].context.required = store_upload
         super(BaseSnapEditView, self).validate_widgets(data, names=names)
+
+    def _needStoreReauth(self, data):
+        """Does this change require reauthorizing to the store?"""
+        store_upload = data.get('store_upload', False)
+        store_distro_series = data.get('store_distro_series')
+        store_name = data.get('store_name')
+        if (not store_upload or
+                store_distro_series is None or store_name is None):
+            return False
+        if store_distro_series.snappy_series != self.context.store_series:
+            return True
+        if store_name != self.context.store_name:
+            return True
+        return False
 
     @action('Update snap package', name='update')
     def request_action(self, action, data):
@@ -418,8 +500,15 @@ class BaseSnapEditView(LaunchpadEditFormView):
                 self.context.setProcessors(
                     new_processors, check_permissions=True, user=self.user)
             del data['processors']
+        store_upload = data.get('store_upload', False)
+        if not store_upload:
+            data['store_name'] = None
+        need_store_reauth = self._needStoreReauth(data)
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+        if need_store_reauth:
+            self.requestAuthorization(self.context)
+        else:
+            self.next_url = canonical_url(self.context)
 
     @property
     def adapters(self):
@@ -462,8 +551,16 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     page_title = 'Edit'
 
     field_names = [
-        'owner', 'name', 'distro_series', 'vcs', 'branch', 'git_ref']
-    custom_widget('distro_series', LaunchpadRadioWidget)
+        'owner',
+        'name',
+        'store_distro_series',
+        'store_upload',
+        'store_name',
+        'vcs',
+        'branch',
+        'git_ref',
+        ]
+    custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
 
@@ -478,11 +575,18 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
 
     @property
     def initial_values(self):
+        initial_values = {}
+        if self.context.store_series is None:
+            # XXX cjwatson 2016-04-26: Remove this case once all existing
+            # Snaps have had a store_series backfilled.
+            sds_set = getUtility(ISnappyDistroSeriesSet)
+            initial_values['store_distro_series'] = sds_set.getByDistroSeries(
+                self.context.distro_series).first()
         if self.context.git_ref is not None:
-            vcs = VCSType.GIT
+            initial_values['vcs'] = VCSType.GIT
         else:
-            vcs = VCSType.BZR
-        return {'vcs': vcs}
+            initial_values['vcs'] = VCSType.BZR
+        return initial_values
 
     def validate(self, data):
         super(SnapEditView, self).validate(data)

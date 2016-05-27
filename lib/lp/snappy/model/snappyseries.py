@@ -182,3 +182,7 @@ class SnappyDistroSeriesSet:
             SnappyDistroSeries,
             SnappyDistroSeries.snappy_series == snappy_series,
             SnappyDistroSeries.distro_series == distro_series).one()
+
+    def getAll(self):
+        """See `ISnappyDistroSeriesSet`."""
+        return IStore(SnappyDistroSeries).find(SnappyDistroSeries)

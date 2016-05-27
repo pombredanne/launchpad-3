@@ -190,3 +190,6 @@ class ISnappyDistroSeriesSet(Interface):
 
     def getByBothSeries(snappy_series, distro_series):
         """Return a `SnappyDistroSeries` for this pair of series, or None."""
+
+    def getAll():
+        """Return all `SnappyDistroSeries`."""
