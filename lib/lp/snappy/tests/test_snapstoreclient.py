@@ -26,6 +26,7 @@ from requests import Request
 from requests.utils import parse_dict_header
 from testtools.matchers import (
     Contains,
+    ContainsDict,
     Equals,
     KeysEqual,
     Matcher,
@@ -168,6 +169,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertThat(self.request, RequestMatches(
             url=Equals("http://sca.example/dev/api/acl/"),
             method=Equals("POST"),
+            headers=ContainsDict({"Content-Type": Equals("application/json")}),
             json_data={
                 "packages": [{"name": "test-snap", "series": "rolling"}],
                 "permissions": ["package_upload"],
@@ -255,11 +257,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertThat(self.snap_upload_request, RequestMatches(
             url=Equals("http://sca.example/dev/api/snap-upload/"),
             method=Equals("POST"),
+            headers=ContainsDict({"Content-Type": Equals("application/json")}),
             auth=("Macaroon", MacaroonsVerify(root_key)),
-            form_data={
-                "name": MatchesStructure.byEquality(
-                    name="name", value="test-snap"),
-                "updown_id": MatchesStructure.byEquality(
-                    name="updown_id", value="1"),
-                "series": MatchesStructure.byEquality(
-                    name="series", value="rolling")}))
+            json_data={
+                "name": "test-snap", "updown_id": 1, "series": "rolling",
+                }))
