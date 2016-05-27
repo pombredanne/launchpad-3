@@ -16,8 +16,8 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.testing import (
-    person_logged_in,
     admin_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -171,6 +171,11 @@ class TestSSHKeySet(TestCaseWithFactory):
             keyset.new,
             person, 'bad_key_type keytext comment'
         )
+        self.assertRaises(
+            SSHKeyAdditionError,
+            keyset.new,
+            person, None
+        )
 
     def test_can_retrieve_keys_for_multiple_people(self):
         with admin_logged_in():
@@ -183,6 +188,5 @@ class TestSSHKeySet(TestCaseWithFactory):
         keyset = getUtility(ISSHKeySet)
         keys = keyset.getByPeople([person1, person2])
         self.assertEqual(3, keys.count())
-        self.assertIn(person1_key1, keys)
-        self.assertIn(person1_key2, keys)
-        self.assertIn(person2_key1, keys)
+        self.assertContentEqual(
+            [person1_key1, person1_key2, person2_key1], keys)
