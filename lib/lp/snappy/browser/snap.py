@@ -326,7 +326,20 @@ def log_oops(error, request):
     getUtility(IErrorReportingUtility).raising(info, request)
 
 
-class SnapAddView(LaunchpadFormView):
+class SnapAuthorizeMixin:
+
+    def requestAuthorization(self, snap):
+        try:
+            self.next_url = SnapAuthorizeView.requestAuthorization(
+                snap, self.request)
+        except BadRequestPackageUploadResponse as e:
+            self.setFieldError(
+                'store_upload',
+                'Cannot get permission from the store to upload this package.')
+            log_oops(e, self.request)
+
+
+class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
     """View for creating snap packages."""
 
     page_title = label = 'Create a new snap package'
@@ -400,15 +413,7 @@ class SnapAddView(LaunchpadFormView):
             store_series=data['store_distro_series'].snappy_series,
             store_name=data['store_name'], **kwargs)
         if data['store_upload']:
-            try:
-                self.next_url = SnapAuthorizeView.requestAuthorization(
-                    snap, self.request)
-            except BadRequestPackageUploadResponse as e:
-                self.setFieldError(
-                    'store_upload',
-                    'Cannot get permission from the store to upload this '
-                    'package.')
-                log_oops(e, self.request)
+            self.requestAuthorization(snap)
         else:
             self.next_url = canonical_url(snap)
 
@@ -424,7 +429,7 @@ class SnapAddView(LaunchpadFormView):
                     'name.' % owner.displayname)
 
 
-class BaseSnapEditView(LaunchpadEditFormView):
+class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
 
     schema = ISnapEditSchema
 
@@ -503,15 +508,7 @@ class BaseSnapEditView(LaunchpadEditFormView):
         need_store_reauth = self._needStoreReauth(data)
         self.updateContextFromData(data)
         if need_store_reauth:
-            try:
-                self.next_url = SnapAuthorizeView.requestAuthorization(
-                    self.context, self.request)
-            except BadRequestPackageUploadResponse as e:
-                self.setFieldError(
-                    'store_upload',
-                    'Cannot get permission from the store to upload this '
-                    'package.')
-                log_oops(e, self.request)
+            self.requestAuthorization(self.context)
         else:
             self.next_url = canonical_url(self.context)
 
