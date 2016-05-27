@@ -27,6 +27,7 @@ from lazr.restful.interface import (
 from pymacaroons import Macaroon
 import transaction
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -89,10 +90,7 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
-from lp.snappy.interfaces.snappyseries import (
-    ISnappyDistroSeriesSet,
-    ISnappySeriesSet,
-    )
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     ISnapStoreClient,
@@ -322,6 +320,12 @@ class ISnapEditSchema(Interface):
     store_name = copy_field(ISnap['store_name'], required=True)
 
 
+def log_oops(error, request):
+    """Log an oops report without raising an error."""
+    info = (error.__class__, error, None)
+    getUtility(IErrorReportingUtility).raising(info, request)
+
+
 class SnapAddView(LaunchpadFormView):
     """View for creating snap packages."""
 
@@ -401,7 +405,10 @@ class SnapAddView(LaunchpadFormView):
                     snap, self.request)
             except BadRequestPackageUploadResponse as e:
                 self.setFieldError(
-                    'store_upload', 'Cannot upload this package: %s' % e)
+                    'store_upload',
+                    'Cannot get permission from the store to upload this '
+                    'package.')
+                log_oops(e, self.request)
         else:
             self.next_url = canonical_url(snap)
 
@@ -501,7 +508,10 @@ class BaseSnapEditView(LaunchpadEditFormView):
                     self.context, self.request)
             except BadRequestPackageUploadResponse as e:
                 self.setFieldError(
-                    'store_upload', 'Cannot upload this package: %s' % e)
+                    'store_upload',
+                    'Cannot get permission from the store to upload this '
+                    'package.')
+                log_oops(e, self.request)
         else:
             self.next_url = canonical_url(self.context)
 
