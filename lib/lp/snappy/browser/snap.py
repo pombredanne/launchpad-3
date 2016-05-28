@@ -25,6 +25,7 @@ from lazr.restful.interface import (
     use_template,
     )
 from pymacaroons import Macaroon
+import yaml
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import Interface
@@ -52,12 +53,14 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     )
 from lp.code.browser.widgets.gitref import GitRefWidget
+from lp.code.errors import GitRepositoryScanFault
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -372,12 +375,32 @@ class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
 
     @property
     def initial_values(self):
+        store_name = None
+        if self.has_snappy_distro_series and IGitRef.providedBy(self.context):
+            # Try to extract Snap store name from snapcraft.yaml file.
+            try:
+                blob = self.context.repository.getBlob(
+                    'snapcraft.yaml', self.context.name)
+                # Beware of unsafe yaml.load()!
+                store_name = yaml.safe_load(blob).get('name')
+            except GitRepositoryScanFault:
+                log.exception("Failed to get Snap manifest from Git %s",
+                              self.context.unique_name)
+            except (AttributeError, yaml.YAMLError):
+                # Ignore parsing errors from invalid, user-supplied YAML
+                pass
+            except Exception as e:
+                log.exception(
+                    "Failed to extract name from Snap manifest at Git %s: %s",
+                    self.context.unique_name, unicode(e))
+
         # XXX cjwatson 2015-09-18: Hack to ensure that we don't end up
         # accidentally selecting ubuntu-rtm/14.09 or similar.
         # ubuntu.currentseries will always be in BuildableDistroSeries.
         series = getUtility(ILaunchpadCelebrities).ubuntu.currentseries
         sds_set = getUtility(ISnappyDistroSeriesSet)
         return {
+            'store_name': store_name,
             'owner': self.user,
             'store_distro_series': sds_set.getByDistroSeries(series).first(),
             }
