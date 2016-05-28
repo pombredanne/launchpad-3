@@ -26,6 +26,7 @@ from requests import Request
 from requests.utils import parse_dict_header
 from testtools.matchers import (
     Contains,
+    ContainsDict,
     Equals,
     KeysEqual,
     Matcher,
@@ -321,13 +322,11 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_name="test-snap", store_secrets=store_secrets)
 
         with HTTMock(self._macaroon_refresh_handler):
-            self.client.refresh_discharge_macaroon(snap)
+            self.client.refreshDischargeMacaroon(snap)
         self.assertThat(self.refresh_request, RequestMatches(
             url=Equals("http://sso.example/api/v2/tokens/refresh"),
             method=Equals("POST"),
-            form_data={
-                "discharge_macaroon": MatchesStructure.byEquality(
-                    name="discharge_macaroon",
-                    value=store_secrets["discharge"])}))
+            headers=ContainsDict({"Content-Type": Equals("application/json")}),
+            json_data={"discharge_macaroon": store_secrets["discharge"]}))
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])

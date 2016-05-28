@@ -165,7 +165,7 @@ class SnapStoreClient:
         except requests.HTTPError as e:
             if (e.response.status_code == 401 and
                 e.response.headers.get("WWW-Authenticate") ==
-                "Macaroon needs_refresh=1"):
+                    "Macaroon needs_refresh=1"):
                 raise NeedsRefreshResponse()
             raise BadUploadResponse(e.args[0])
 
@@ -179,18 +179,18 @@ class SnapStoreClient:
             except NeedsRefreshResponse:
                 # Try to automatically refresh the discharge macaroon and
                 # retry the upload.
-                self.refresh_discharge_macaroon(snapbuild.snap)
+                self.refreshDischargeMacaroon(snapbuild.snap)
                 self._uploadApp(snapbuild.snap, upload_data)
 
     @classmethod
-    def refresh_discharge_macaroon(cls, snap):
+    def refreshDischargeMacaroon(cls, snap):
         assert config.launchpad.openid_provider_root is not None
         assert snap.store_secrets is not None
         refresh_url = urlappend(
             config.launchpad.openid_provider_root, "api/v2/tokens/refresh")
         data = {"discharge_macaroon": snap.store_secrets["discharge"]}
         try:
-            response = urlfetch(refresh_url, method="POST", data=data)
+            response = urlfetch(refresh_url, method="POST", json=data)
             response_data = response.json()
             if "discharge_macaroon" not in response_data:
                 raise BadRefreshResponse(response.text)

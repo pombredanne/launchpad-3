@@ -56,7 +56,7 @@ class ISnapStoreClient(Interface):
         :param snapbuild: The `ISnapBuild` to upload.
         """
 
-    def refresh_discharge_macaroon(snap):
+    def refreshDischargeMacaroon(snap):
         """Refresh a snap's discharge macaroon.
 
         :param snap: An `ISnap` whose discharge macaroon needs to be refreshed.
