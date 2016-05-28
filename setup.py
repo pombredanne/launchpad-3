@@ -83,6 +83,7 @@ setup(
         'python-memcached',
         'python-openid',
         'pytz',
+        'PyYAML',
         'rabbitfixture',
         'requests',
         'requests-toolbelt',
