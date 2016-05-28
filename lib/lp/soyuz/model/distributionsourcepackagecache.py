@@ -1,10 +1,14 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = ['DistributionSourcePackageCache', ]
 
-from operator import itemgetter
+from collections import defaultdict
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 from sqlobject import (
     ForeignKey,
@@ -13,18 +17,18 @@ from sqlobject import (
 from zope.interface import implementer
 
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import IStore
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
     IDistributionSourcePackageCache,
     )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -55,6 +59,17 @@ class DistributionSourcePackageCache(SQLBase):
 
         return DistributionSourcePackage(self.distribution,
             self.sourcepackagename)
+
+    @classmethod
+    def findCurrentSourcePackageNames(cls, archive):
+        spn_ids = IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory.sourcepackagenameID,
+            SourcePackagePublishingHistory.archive == archive,
+            SourcePackagePublishingHistory.status.is_in((
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED))).config(
+                    distinct=True)
+        return bulk.load(SourcePackageName, spn_ids)
 
     @classmethod
     def _find(cls, distro, archive=None):
@@ -89,22 +104,11 @@ class DistributionSourcePackageCache(SQLBase):
         """
 
         # Get the set of source package names to deal with.
-        spns = set(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            Archive.id = %s AND
-            SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL AND
-            Archive.enabled = TRUE
-            """ % sqlvalues(distro, archive),
-            distinct=True,
-            clauseTables=[
-                'Archive',
-                'DistroSeries',
-                'SourcePackagePublishingHistory']))
+        if not archive.enabled:
+            spns = set()
+        else:
+            spns = set(
+                cls.findCurrentSourcePackageNames(archive))
 
         # Remove the cache entries for packages we no longer publish.
         for cache in cls._find(distro, archive):
@@ -115,82 +119,101 @@ class DistributionSourcePackageCache(SQLBase):
                 cache.destroySelf()
 
     @classmethod
-    def _update(cls, distro, sourcepackagename, archive, log):
-        """Update cached source package details.
+    def _update(cls, distro, sourcepackagenames, archive, log):
+        """Update the package cache for a given set of `ISourcePackageName`s.
 
-        Update cache details for a given ISourcePackageName, including
-        generated binarypackage names, summary and description fti.
+        Cached details include generated binarypackage names, summary
+        and description fti.
+
         'log' is required and only prints debug level information.
         """
 
         # Get the set of published sourcepackage releases.
-        sprs = list(SourcePackageRelease.select("""
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(sourcepackagename, distro, archive),
-            orderBy='id',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
-            distinct=True))
-
-        if len(sprs) == 0:
+        all_sprs = list(IStore(SourcePackageRelease).find(
+            (SourcePackageRelease.sourcepackagenameID,
+             SourcePackageRelease.id, SourcePackageRelease.version),
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackagePublishingHistory.sourcepackagenameID.is_in(
+                [spn.id for spn in sourcepackagenames]),
+            SourcePackagePublishingHistory.archive == archive,
+            SourcePackagePublishingHistory.status.is_in((
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED))
+            ).config(distinct=True).order_by(SourcePackageRelease.id))
+        if len(all_sprs) == 0:
             log.debug("No sources releases found.")
             return
 
-        # Find or create the cache entry.
-        cache = DistributionSourcePackageCache.selectOne("""
-            distribution = %s AND
-            archive = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(distro, archive, sourcepackagename))
-        if cache is None:
-            log.debug("Creating new source cache entry.")
-            cache = DistributionSourcePackageCache(
-                archive=archive,
-                distribution=distro,
-                sourcepackagename=sourcepackagename)
+        spr_map = defaultdict(list)
+        for spn_id, spr_id, spr_version in all_sprs:
+            spn = IStore(SourcePackageName).get(SourcePackageName, spn_id)
+            spr_map[spn].append((spr_id, spr_version))
 
-        # Make sure the name is correct.
-        cache.name = sourcepackagename.name
+        all_caches = IStore(cls).find(
+            cls, cls.distribution == distro, cls.archive == archive,
+            cls.sourcepackagenameID.is_in(
+                [spn.id for spn in sourcepackagenames]))
+        cache_map = {cache.sourcepackagename: cache for cache in all_caches}
 
-        # Get the sets of binary package names, summaries, descriptions.
+        for spn in set(sourcepackagenames) - set(cache_map.keys()):
+            cache_map[spn] = cls(
+                archive=archive, distribution=distro,
+                sourcepackagename=spn)
 
-        # XXX Julian 2007-04-03:
-        # This bit of code needs fixing up, it is doing stuff that
-        # really needs to be done in SQL, such as sorting and uniqueness.
-        # This would also improve the performance.
-        binpkgnames = set()
-        binpkgsummaries = set()
-        binpkgdescriptions = set()
-        sprchangelog = set()
-        for spr in sprs:
-            log.debug("Considering source version %s" % spr.version)
-            # changelog may be empty, in which case we don't want to add it
-            # to the set as the join would fail below.
-            if spr.changelog_entry is not None:
-                sprchangelog.add(spr.changelog_entry)
-        binpkgs = IStore(BinaryPackageRelease).find(
-            (BinaryPackageName.name, BinaryPackageRelease.summary,
-             BinaryPackageRelease.description),
-            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
+        # Query BinaryPackageBuilds and their BinaryPackageReleases
+        # separately, since the big and inconsistent intermediates can
+        # confuse postgres into a seq scan over BPR, which never ends
+        # well for anybody.
+        #
+        # Beware: the sets expand much faster than you might expect for
+        # the primary archive; COPY archive builds are caught too, of
+        # which there are dozens for most SPRs, and there's no easy way
+        # to exclude them!
+        all_builds = list(IStore(BinaryPackageBuild).find(
+            (BinaryPackageBuild.source_package_release_id,
+             BinaryPackageBuild.id),
             BinaryPackageBuild.source_package_release_id.is_in(
-                [spr.id for spr in sprs]),
-            BinaryPackageName.id == BinaryPackageRelease.binarypackagenameID)
-        for name, summary, description in binpkgs:
-            binpkgnames.add(name)
-            binpkgsummaries.add(summary)
-            binpkgdescriptions.add(description)
+                [row[1] for row in all_sprs])))
+        all_binaries = list(IStore(BinaryPackageRelease).find(
+            (BinaryPackageRelease.buildID,
+             BinaryPackageRelease.binarypackagenameID,
+             BinaryPackageRelease.summary, BinaryPackageRelease.description),
+            BinaryPackageRelease.buildID.is_in(
+                [row[1] for row in all_builds])))
+        sprs_by_build = {build_id: spr_id for spr_id, build_id in all_builds}
 
-        # Update the caches.
-        cache.binpkgnames = ' '.join(sorted(binpkgnames))
-        cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
-        cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
-        cache.changelog = ' '.join(sorted(sprchangelog))
+        bulk.load(BinaryPackageName, [row[1] for row in all_binaries])
+        binaries_by_spr = defaultdict(list)
+        for bpb_id, bpn_id, summary, description in all_binaries:
+            spr_id = sprs_by_build[bpb_id]
+            binaries_by_spr[spr_id].append((
+                IStore(BinaryPackageName).get(BinaryPackageName, bpn_id),
+                summary, description))
+
+        for spn in sourcepackagenames:
+            cache = cache_map[spn]
+            cache.name = spn.name
+
+            sprs = spr_map.get(spn, [])
+
+            binpkgnames = set()
+            binpkgsummaries = set()
+            binpkgdescriptions = set()
+            for spr_id, spr_version in sprs:
+                log.debug("Considering source %s %s", spn.name, spr_version)
+                binpkgs = binaries_by_spr.get(spr_id, [])
+                for bpn, summary, description in binpkgs:
+                    binpkgnames.add(bpn.name)
+                    binpkgsummaries.add(summary)
+                    binpkgdescriptions.add(description)
+
+            # Update the caches.
+            cache.binpkgnames = ' '.join(sorted(binpkgnames))
+            cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
+            cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
+            # Column due for deletion.
+            cache.changelog = None
 
     @classmethod
     def updateAll(cls, distro, archive, log, ztm, commit_chunk=500):
@@ -212,29 +235,28 @@ class DistributionSourcePackageCache(SQLBase):
             return
 
         # Get the set of source package names to deal with.
-        spns = list(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(distro, archive),
-            distinct=True,
-            orderBy="name",
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries']))
+        spns = list(sorted(
+            cls.findCurrentSourcePackageNames(archive),
+            key=attrgetter('name')))
 
         number_of_updates = 0
-        chunk_size = 0
+        chunks = []
+        chunk = []
         for spn in spns:
-            log.debug("Considering source '%s'" % spn.name)
-            cls._update(distro, spn, archive, log)
-            chunk_size += 1
-            number_of_updates += 1
-            if chunk_size == commit_chunk:
-                chunk_size = 0
-                log.debug("Committing")
-                ztm.commit()
+            chunk.append(spn)
+            if len(chunk) == commit_chunk:
+                chunks.append(chunk)
+                chunk = []
+        if chunk:
+            chunks.append(chunk)
+        for chunk in chunks:
+            bulk.load(SourcePackageName, [spn.id for spn in chunk])
+            log.debug(
+                "Considering sources %s",
+                ', '.join([spn.name for spn in chunk]))
+            cls._update(distro, chunk, archive, log)
+            number_of_updates += len(chunk)
+            log.debug("Committing")
+            ztm.commit()
 
         return number_of_updates

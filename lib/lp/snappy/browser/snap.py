@@ -25,12 +25,11 @@ from lazr.restful.interface import (
     use_template,
     )
 from pymacaroons import Macaroon
-import transaction
 import yaml
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import Interface
 from zope.schema import (
-    Bool,
     Choice,
     List,
     TextLine,
@@ -92,10 +91,7 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
-from lp.snappy.interfaces.snappyseries import (
-    ISnappyDistroSeriesSet,
-    ISnappySeriesSet,
-    )
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     ISnapStoreClient,
@@ -325,7 +321,26 @@ class ISnapEditSchema(Interface):
     store_name = copy_field(ISnap['store_name'], required=True)
 
 
-class SnapAddView(LaunchpadFormView):
+def log_oops(error, request):
+    """Log an oops report without raising an error."""
+    info = (error.__class__, error, None)
+    getUtility(IErrorReportingUtility).raising(info, request)
+
+
+class SnapAuthorizeMixin:
+
+    def requestAuthorization(self, snap):
+        try:
+            self.next_url = SnapAuthorizeView.requestAuthorization(
+                snap, self.request)
+        except BadRequestPackageUploadResponse as e:
+            self.setFieldError(
+                'store_upload',
+                'Cannot get permission from the store to upload this package.')
+            log_oops(e, self.request)
+
+
+class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
     """View for creating snap packages."""
 
     page_title = label = 'Create a new snap package'
@@ -361,7 +376,7 @@ class SnapAddView(LaunchpadFormView):
     @property
     def initial_values(self):
         store_name = None
-        if self.has_snappy_series and IGitRef.providedBy(self.context):
+        if self.has_snappy_distro_series and IGitRef.providedBy(self.context):
             # Try to extract Snap store name from snapcraft.yaml file.
             try:
                 blob = self.context.repository.getBlob(
@@ -391,8 +406,8 @@ class SnapAddView(LaunchpadFormView):
             }
 
     @property
-    def has_snappy_series(self):
-        return not getUtility(ISnappySeriesSet).getAll().is_empty()
+    def has_snappy_distro_series(self):
+        return not getUtility(ISnappyDistroSeriesSet).getAll().is_empty()
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
@@ -419,12 +434,7 @@ class SnapAddView(LaunchpadFormView):
             store_series=data['store_distro_series'].snappy_series,
             store_name=data['store_name'], **kwargs)
         if data['store_upload']:
-            try:
-                self.next_url = SnapAuthorizeView.requestAuthorization(
-                    snap, self.request)
-            except BadRequestPackageUploadResponse as e:
-                self.setFieldError(
-                    'store_upload', 'Cannot upload this package: %s' % e)
+            self.requestAuthorization(snap)
         else:
             self.next_url = canonical_url(snap)
 
@@ -440,7 +450,7 @@ class SnapAddView(LaunchpadFormView):
                     'name.' % owner.displayname)
 
 
-class BaseSnapEditView(LaunchpadEditFormView):
+class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
 
     schema = ISnapEditSchema
 
@@ -459,8 +469,8 @@ class BaseSnapEditView(LaunchpadEditFormView):
                 for value in (VCSType.BZR, VCSType.GIT)]
 
     @property
-    def has_snappy_series(self):
-        return not getUtility(ISnappySeriesSet).getAll().is_empty()
+    def has_snappy_distro_series(self):
+        return not getUtility(ISnappyDistroSeriesSet).getAll().is_empty()
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
@@ -519,12 +529,7 @@ class BaseSnapEditView(LaunchpadEditFormView):
         need_store_reauth = self._needStoreReauth(data)
         self.updateContextFromData(data)
         if need_store_reauth:
-            try:
-                self.next_url = SnapAuthorizeView.requestAuthorization(
-                    self.context, self.request)
-            except BadRequestPackageUploadResponse as e:
-                self.setFieldError(
-                    'store_upload', 'Cannot upload this package: %s' % e)
+            self.requestAuthorization(self.context)
         else:
             self.next_url = canonical_url(self.context)
 
@@ -642,14 +647,25 @@ class SnapAuthorizationException(Exception):
 class SnapAuthorizeView(LaunchpadEditFormView):
     """View for authorizing snap package uploads to the store."""
 
+    @property
+    def label(self):
+        return 'Authorize store uploads of %s' % self.context.name
+
+    page_title = 'Authorize store uploads'
+
     class schema(Interface):
         """Schema for authorizing snap package uploads to the store."""
 
-        callback = Bool()
         discharge_macaroon = TextLine(
             title=u'Serialized discharge macaroon', required=True)
 
     render_context = False
+
+    focusedElementScript = None
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     @staticmethod
     def extractSSOCaveat(macaroon):
@@ -665,12 +681,10 @@ class SnapAuthorizeView(LaunchpadEditFormView):
         # in some other service, since the user can't do anything about it
         # and it should show up in our OOPS reports.
         if not sso_caveats:
-            raise SnapAuthorizationException(
-                "Macaroon '%s' has no SSO caveats" % macaroon.serialize())
+            raise SnapAuthorizationException("Macaroon has no SSO caveats")
         elif len(sso_caveats) > 1:
             raise SnapAuthorizationException(
-                "Macaroon '%s' has multiple SSO caveats" %
-                macaroon.serialize())
+                "Macaroon has multiple SSO caveats")
         return sso_caveats[0]
 
     @classmethod
@@ -694,41 +708,33 @@ class SnapAuthorizeView(LaunchpadEditFormView):
         sso_caveat = cls.extractSSOCaveat(
             Macaroon.deserialize(root_macaroon_raw))
         snap.store_secrets = {'root': root_macaroon_raw}
-        transaction.commit()
         base_url = canonical_url(snap, view_name='+authorize')
         login_url = urlappend(base_url, '+login')
         login_url += '?%s' % urlencode([
-            ('field.callback', 'on'),
             ('macaroon_caveat_id', sso_caveat.caveat_id),
+            ('discharge_macaroon_action', 'field.actions.complete'),
             ('discharge_macaroon_field', 'field.discharge_macaroon'),
             ])
         return login_url
 
-    def render(self):
-        data = {}
-        self.validate_widgets(data)
-        if not data.get('callback') or self.context.store_secrets is None:
-            login_url = self.requestAuthorization(self.context, self.request)
-            if login_url is not None:
-                self.request.response.redirect(login_url)
-            return
+    @action('Begin authorization', name='begin')
+    def begin_action(self, action, data):
+        login_url = self.requestAuthorization(self.context, self.request)
+        if login_url is not None:
+            self.request.response.redirect(login_url)
+
+    @action('Complete authorization', name='complete')
+    def complete_action(self, action, data):
         if not data.get('discharge_macaroon'):
-            self.request.response.addInfoNotification(structured(
+            self.addError(structured(
                 _(u'Uploads of %(snap)s to the store were not authorized.'),
                 snap=self.context.name))
-            self.request.response.redirect(canonical_url(self.context))
             return
         # We have to set a whole new dict here to avoid problems with
         # security proxies.
         new_store_secrets = dict(self.context.store_secrets)
         new_store_secrets['discharge'] = data['discharge_macaroon']
         self.context.store_secrets = new_store_secrets
-        # XXX cjwatson 2016-04-18: This may be a GET request due to coming
-        # from a redirection at the end of the OpenID exchange, but we need
-        # to store the macaroons.  Perhaps we should return an
-        # auto-submitting form instead?  The operation performed by this
-        # view is at least idempotent.
-        transaction.commit()
         self.request.response.addInfoNotification(structured(
             _(u'Uploads of %(snap)s to the store are now authorized.'),
             snap=self.context.name))

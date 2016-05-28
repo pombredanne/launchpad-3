@@ -13,7 +13,10 @@ import json
 import re
 from textwrap import dedent
 from urllib2 import HTTPError
-from urlparse import urlsplit
+from urlparse import (
+    parse_qs,
+    urlsplit,
+    )
 
 from fixtures import FakeLogger
 from httmock import (
@@ -30,7 +33,6 @@ from testtools.matchers import (
     MatchesStructure,
     )
 import transaction
-import yaml
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -87,6 +89,7 @@ from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
     find_tags_by_class,
+    get_feedback_messages,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
@@ -347,12 +350,18 @@ class TestSnapAddView(BrowserTestCase):
             }
         self.assertEqual(expected_body, json.loads(self.request.body))
         self.assertEqual(303, redirection.code)
+        parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
-            canonical_url(snap, rootsite="code") +
-            "/+authorize/+login?field.callback=on&"
-            "macaroon_caveat_id=dummy&"
-            "discharge_macaroon_field=field.discharge_macaroon",
-            redirection.hdrs["Location"])
+            urlsplit(
+                canonical_url(snap, rootsite="code") +
+                "/+authorize/+login")[:3],
+            parsed_location[:3])
+        expected_args = {
+            "discharge_macaroon_action": ["field.actions.complete"],
+            "discharge_macaroon_field": ["field.discharge_macaroon"],
+            "macaroon_caveat_id": ["dummy"],
+            }
+        self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
     def test_initial_name_extraction_git(self):
         [git_ref] = self.factory.makeGitRefs()
@@ -748,12 +757,16 @@ class TestSnapEditView(BrowserTestCase):
             }
         self.assertEqual(expected_body, json.loads(self.request.body))
         self.assertEqual(303, redirection.code)
+        parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
-            canonical_url(snap) +
-            "/+authorize/+login?field.callback=on&"
-            "macaroon_caveat_id=dummy&"
-            "discharge_macaroon_field=field.discharge_macaroon",
-            redirection.hdrs["Location"])
+            urlsplit(canonical_url(snap) + "/+authorize/+login")[:3],
+            parsed_location[:3])
+        expected_args = {
+            "discharge_macaroon_action": ["field.actions.complete"],
+            "discharge_macaroon_field": ["field.discharge_macaroon"],
+            "macaroon_caveat_id": ["dummy"],
+            }
+        self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
 
 class TestSnapAuthorizeView(BrowserTestCase):
@@ -776,6 +789,7 @@ class TestSnapAuthorizeView(BrowserTestCase):
             store_name=self.factory.getUniqueUnicode())
 
     def assertRequestsAuthorization(self, snap, func, *args, **kwargs):
+        owner = snap.owner
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
             urlsplit(config.launchpad.openid_provider_root).netloc, '',
@@ -795,27 +809,30 @@ class TestSnapAuthorizeView(BrowserTestCase):
             ret = func(*args, **kwargs)
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
-        expected_body = {
-            "packages": [{
-                "name": snap.store_name,
-                "series": snap.store_series.name,
-                }],
-            "permissions": ["package_upload"],
-            }
-        self.assertEqual(expected_body, json.loads(self.request.body))
-        transaction.abort()
-        self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
+        with person_logged_in(owner):
+            expected_body = {
+                "packages": [{
+                    "name": snap.store_name,
+                    "series": snap.store_series.name,
+                    }],
+                "permissions": ["package_upload"],
+                }
+            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
         return ret
 
     def test_requestAuthorization(self):
-        with person_logged_in(self.snap.owner):
-            login_url = self.assertRequestsAuthorization(
-                self.snap, SnapAuthorizeView.requestAuthorization,
-                self.snap, LaunchpadTestRequest())
+        def request_authorization():
+            with person_logged_in(self.snap.owner):
+                return SnapAuthorizeView.requestAuthorization(
+                    self.snap, LaunchpadTestRequest())
+
+        login_url = self.assertRequestsAuthorization(
+            self.snap, request_authorization)
         self.assertEqual(
             canonical_url(self.snap) +
-            "/+authorize/+login?field.callback=on&"
-            "macaroon_caveat_id=dummy&"
+            "/+authorize/+login?macaroon_caveat_id=dummy&"
+            "discharge_macaroon_action=field.actions.complete&"
             "discharge_macaroon_field=field.discharge_macaroon",
             login_url)
 
@@ -827,84 +844,69 @@ class TestSnapAuthorizeView(BrowserTestCase):
             Unauthorized, self.getUserBrowser,
             canonical_url(self.snap) + "/+authorize", user=other_person)
 
-    def test_no_callback_parameter(self):
-        # If the field.callback parameter is missing, we begin
-        # authorization.  This allows (re-)authorizing uploads of an
-        # existing snap package without having to edit it.
-        with person_logged_in(self.snap.owner):
-            view = create_initialized_view(self.snap, "+authorize", form={})
-            self.assertRequestsAuthorization(self.snap, view)
-            self.assertEqual(302, view.request.response.getStatus())
-            self.assertEqual(
-                canonical_url(self.snap) +
-                "/+authorize/+login?field.callback=on&"
-                "macaroon_caveat_id=dummy&"
-                "discharge_macaroon_field=field.discharge_macaroon",
-                view.request.response.getHeader("Location"))
-            self.assertEqual([], view.request.response.notifications)
+    def test_begin_authorization(self):
+        # With no special form actions, we return a form inviting the user
+        # to begin authorization.  This allows (re-)authorizing uploads of
+        # an existing snap package without having to edit it.
+        snap_url = canonical_url(self.snap)
 
-    def test_missing_root_macaroon(self):
-        # If the snap package has no root macaroon set, we begin
-        # authorization.  This allows (re-)authorizing uploads of an
-        # existing snap package without having to edit it.
-        with person_logged_in(self.snap.owner):
-            view = create_initialized_view(
-                self.snap, "+authorize", form={"field.callback": "on"})
-            self.assertRequestsAuthorization(self.snap, view)
-            self.assertEqual(302, view.request.response.getStatus())
-            self.assertEqual(
-                canonical_url(self.snap) +
-                "/+authorize/+login?field.callback=on&"
-                "macaroon_caveat_id=dummy&"
-                "discharge_macaroon_field=field.discharge_macaroon",
-                view.request.response.getHeader("Location"))
-            self.assertEqual([], view.request.response.notifications)
+        def begin_authorization():
+            browser = self.getNonRedirectingBrowser(
+                url=snap_url + "/+authorize", user=self.snap.owner)
+            return self.assertRaises(
+                HTTPError, browser.getControl("Begin authorization").click)
 
-    def test_missing_discharge_macaroon(self):
-        # If field.callback is set but the discharge macaroon is missing, we
-        # indicate an authorization failure.
+        redirection = self.assertRequestsAuthorization(
+            self.snap, begin_authorization)
+        self.assertEqual(303, redirection.code)
+        self.assertEqual(
+            snap_url + "/+authorize/+login?macaroon_caveat_id=dummy&"
+            "discharge_macaroon_action=field.actions.complete&"
+            "discharge_macaroon_field=field.discharge_macaroon",
+            redirection.hdrs["Location"])
+
+    def test_complete_authorization_missing_discharge_macaroon(self):
+        # If the form does not include a discharge macaroon, the "complete"
+        # action fails.
         with person_logged_in(self.snap.owner):
             self.snap.store_secrets = {"root": "root"}
+            transaction.commit()
+            form = {"field.actions.complete": "1"}
             view = create_initialized_view(
-                self.snap, "+authorize", form={"field.callback": "on"})
-            self.assertIsNone(view())
+                self.snap, "+authorize", form=form, method="POST",
+                principal=self.snap.owner)
+            html = view()
+            self.assertEqual(
+                "Uploads of %s to the store were not authorized." %
+                self.snap.name,
+                get_feedback_messages(html)[1])
+            self.assertNotIn("discharge", self.snap.store_secrets)
+
+    def test_complete_authorization(self):
+        # If the form includes a discharge macaroon, the "complete" action
+        # succeeds and records the new secrets.
+        with person_logged_in(self.snap.owner):
+            self.snap.store_secrets = {"root": "root"}
+            transaction.commit()
+            form = {
+                "field.actions.complete": "1",
+                "field.discharge_macaroon": "discharge",
+                }
+            view = create_initialized_view(
+                self.snap, "+authorize", form=form, method="POST",
+                principal=self.snap.owner)
+            self.assertEqual("", view())
             self.assertEqual(302, view.request.response.getStatus())
             self.assertEqual(
                 canonical_url(self.snap),
                 view.request.response.getHeader("Location"))
             self.assertEqual(
-                "Uploads of %s to the store were not authorized." %
+                "Uploads of %s to the store are now authorized." %
                 self.snap.name,
                 view.request.response.notifications[0].message)
-
-    def assertAuthorizationWorks(self, snap, method):
-        with person_logged_in(snap.owner):
-            snap.store_secrets = {"root": "root"}
-            form = {
-                "field.callback": "on",
-                "field.discharge_macaroon": "discharge",
-                }
-            view = create_initialized_view(
-                snap, "+authorize", form=form, method=method)
-            self.assertIsNone(view())
-            self.assertEqual(302, view.request.response.getStatus())
             self.assertEqual(
-                canonical_url(snap),
-                view.request.response.getHeader("Location"))
-            self.assertEqual(
-                "Uploads of %s to the store are now authorized." % snap.name,
-                view.request.response.notifications[0].message)
-            transaction.abort()
-            self.assertEqual(
-                {"root": "root", "discharge": "discharge"}, snap.store_secrets)
-
-    def test_authorize(self):
-        # Normal authorization works.
-        self.assertAuthorizationWorks(self.snap, "POST")
-
-    def test_authorize_GET(self):
-        # Authorization via a GET request (due to OpenID redirection) works.
-        self.assertAuthorizationWorks(self.snap, "GET")
+                {"root": "root", "discharge": "discharge"},
+                self.snap.store_secrets)
 
 
 class TestSnapDeleteView(BrowserTestCase):

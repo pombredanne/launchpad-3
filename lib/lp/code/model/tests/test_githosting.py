@@ -18,6 +18,7 @@ from httmock import (
     all_requests,
     HTTMock,
     )
+from lazr.restful.utils import get_current_browser_request
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.interface import implementer
@@ -38,6 +39,7 @@ from lp.services.job.runner import (
     BaseRunnableJob,
     JobRunner,
     )
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -75,11 +77,16 @@ class TestGitHostingClient(TestCase):
             finally:
                 set_default_timeout_function(original_timeout_function)
 
-    def assertRequest(self, url_suffix, json_data=None, **kwargs):
+    def assertRequest(self, url_suffix, json_data=None, method=None, **kwargs):
         self.assertThat(self.request, MatchesStructure.byEquality(
-            url=urlappend(self.endpoint, url_suffix), **kwargs))
+            url=urlappend(self.endpoint, url_suffix), method=method, **kwargs))
         if json_data is not None:
             self.assertEqual(json_data, json.loads(self.request.body))
+        timeline = get_request_timeline(get_current_browser_request())
+        action = timeline.actions[-1]
+        self.assertEqual("git-hosting-%s" % method.lower(), action.category)
+        self.assertEqual(
+            "/" + url_suffix.split("?", 1)[0], action.detail.split(" ", 1)[0])
 
     def test_create(self):
         with self.mockRequests():
@@ -157,6 +164,54 @@ class TestGitHostingClient(TestCase):
                 "Failed to get commit details from Git repository: "
                 "Bad request",
                 self.client.getCommits, "123", ["0"])
+
+    def test_getLog(self):
+        with self.mockRequests(content=b'[{"sha1": "0"}]'):
+            log = self.client.getLog("123", "refs/heads/master")
+        self.assertEqual([{"sha1": "0"}], log)
+        self.assertRequest("repo/123/log/refs/heads/master", method="GET")
+
+    def test_getLog_limit_stop(self):
+        with self.mockRequests(content=b'[{"sha1": "0"}]'):
+            log = self.client.getLog(
+                "123", "refs/heads/master", limit=10, stop="refs/heads/old")
+        self.assertEqual([{"sha1": "0"}], log)
+        self.assertRequest(
+            "repo/123/log/refs/heads/master?limit=10&stop=refs%2Fheads%2Fold",
+            method="GET")
+
+    def test_getLog_failure(self):
+        with self.mockRequests(status_code=400, content=b"Bad request"):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get commit log from Git repository: Bad request",
+                self.client.getLog, "123", "refs/heads/master")
+
+    def test_getDiff(self):
+        with self.mockRequests(content=b'{"patch": ""}'):
+            diff = self.client.getDiff("123", "a", "b")
+        self.assertEqual({"patch": ""}, diff)
+        self.assertRequest("repo/123/compare/a..b", method="GET")
+
+    def test_getDiff_common_ancestor(self):
+        with self.mockRequests(content=b'{"patch": ""}'):
+            diff = self.client.getDiff("123", "a", "b", common_ancestor=True)
+        self.assertEqual({"patch": ""}, diff)
+        self.assertRequest("repo/123/compare/a...b", method="GET")
+
+    def test_getDiff_context_lines(self):
+        with self.mockRequests(content=b'{"patch": ""}'):
+            diff = self.client.getDiff("123", "a", "b", context_lines=4)
+        self.assertEqual({"patch": ""}, diff)
+        self.assertRequest(
+            "repo/123/compare/a..b?context_lines=4", method="GET")
+
+    def test_getDiff_failure(self):
+        with self.mockRequests(status_code=400, content=b"Bad request"):
+            self.assertRaisesWithContent(
+                GitRepositoryScanFault,
+                "Failed to get diff from Git repository: Bad request",
+                self.client.getDiff, "123", "a", "b")
 
     def test_getMergeDiff(self):
         with self.mockRequests(content=b'{"patch": ""}'):

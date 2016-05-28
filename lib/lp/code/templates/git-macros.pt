@@ -98,12 +98,52 @@
 
 </div>
 
+<metal:ref-commits define-macro="ref-commits">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      ref - the ref that has the commits
+      commit_infos - a list of dicts of commit information (sha1, author,
+                     author_date, commit_message, merge_proposal)
+  </tal:comment>
+  <style type="text/css">
+    .subordinate {
+      margin-left: 1em;
+    }
+  </style>
+  <dl class="commit">
+    <tal:commit repeat="commit_info commit_infos">
+      <metal:commit-text use-macro="ref/@@+macros/commit-text"/>
+    </tal:commit>
+    <tal:ajax-revision-diffs
+        condition="request/features/code.ajax_revision_diffs.enabled">
+      <tal:diff-expander condition="show_diff_expander | nothing">
+        <div class="revision-group-diff">
+          <a href="#" class="hidden expander-icon js-action"
+              tal:define="start_revision python:commit_infos[0]['sha1'];
+                          prev_revision python:commit_infos[0]['sha1'] + '^';
+                          last_revision python:commit_infos[-1]['sha1']"
+              tal:attributes="id string:expandable-${prev_revision}-${last_revision}"
+          >Changes added by commit
+          <tal:sha1 replace="start_revision/fmt:shorten/10"/>
+          <tal:plural condition="python: start_revision!=last_revision">
+            to commit <tal:sha1 replace="last_revision/fmt:shorten/10"/>
+          </tal:plural></a>
+          <div class="hidden expander-content">Loading diff <img src="/@@/spinner"/></div>
+        </div>
+      </tal:diff-expander>
+    </tal:ajax-revision-diffs>
+  </dl>
+
+</metal:ref-commits>
+
 <metal:commit-text define-macro="commit-text">
 
   <tal:comment condition="nothing">
     This macro requires the following defined variable:
       commit_info - a dict of the commit information (sha1, author,
-                    author_date, commit_message) to be displayed.
+                    author_date, commit_message, merge_proposal) to be
+                    displayed
 
     It is expected that this macro is called from within a definition list
     (<dl></dl>).
@@ -113,7 +153,7 @@
         sha1 python:commit_info['sha1'];
         author python:commit_info['author'];
         author_date python:commit_info['author_date']">
-    <a tal:attributes="href string:${context/repository/getCodebrowseUrl}/commit/?id=${sha1}"
+    <a tal:attributes="href python: ref.getCodebrowseUrlForRevision(sha1)"
        tal:content="sha1/fmt:shorten/10" />
     by
     <tal:known-person condition="author/person">
@@ -130,6 +170,18 @@
     <tal:commit-message
       replace="structure commit_message/fmt:obfuscate-email/fmt:text-to-html" />
   </dd>
+
+  <div tal:define="merge_proposal python:commit_info.get('merge_proposal')"
+       tal:condition="merge_proposal">
+    <dd class="subordinate commit-comment"
+        tal:define="committer_date merge_proposal/merge_source/committer_date|nothing">
+      <a tal:attributes="href merge_proposal/fmt:url">Merged</a> branch
+      <a tal:condition="committer_date"
+         tal:replace="structure merge_proposal/merge_source/fmt:link">source branch</a>
+      <span tal:condition="not: committer_date"
+            tal:content="merge_proposal/merge_source/display_name" />
+    </dd>
+  </div>
 
 </metal:commit-text>
 

@@ -12,9 +12,6 @@ __all__ = [
     ]
 
 from itertools import chain
-import os
-import shutil
-import tempfile
 
 from sqlobject import (
     ForeignKey,
@@ -40,11 +37,6 @@ from zope.component import getUtility
 from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
-# XXX 2009-05-10 julian
-# This should not import from archivepublisher, but to avoid
-# that it needs a bit of redesigning here around the publication stuff.
-from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -76,7 +68,6 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.librarian.utils import copy_and_close
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import (
     cachedproperty,
@@ -101,6 +92,8 @@ from lp.soyuz.interfaces.publishing import (
     name_priority_map,
     )
 from lp.soyuz.interfaces.queue import (
+    CustomUploadError,
+    ICustomUploadHandler,
     IPackageUpload,
     IPackageUploadBuild,
     IPackageUploadCustom,
@@ -121,10 +114,6 @@ from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.section import Section
-
-# There are imports below in PackageUploadCustom for various bits
-# of the archivepublisher which cause circular import errors if they
-# are placed here.
 
 
 def debug(logger, msg):
@@ -1358,135 +1347,13 @@ class PackageUploadCustom(SQLBase):
 
     def publish(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # This is a marker as per the comment in lib/lp/soyuz/enums.py:
-        ##CUSTOMFORMAT##
-        # Essentially, if you alter anything to do with what custom formats
-        # are, what their tags are, or anything along those lines, you should
-        # grep for the marker in the source tree and fix it up in every place
-        # so marked.
         debug(logger, "Publishing custom %s to %s/%s" % (
             self.packageupload.displayname,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
-
-        self.publisher_dispatch[self.customformat](self, logger)
-
-    def temp_filename(self):
-        """See `IPackageUploadCustom`."""
-        temp_dir = tempfile.mkdtemp()
-        temp_file_name = os.path.join(
-            temp_dir, self.libraryfilealias.filename)
-        temp_file = file(temp_file_name, "wb")
-        self.libraryfilealias.open()
-        copy_and_close(self.libraryfilealias, temp_file)
-        return temp_file_name
-
-    def _publishCustom(self, action_method, logger=None):
-        """Publish custom formats.
-
-        Publish Either an installer, an upgrader or a ddtp upload using the
-        supplied action method.
-        """
-        temp_filename = self.temp_filename()
-        suite = self.packageupload.distroseries.getSuite(
-            self.packageupload.pocket)
-        try:
-            # See the XXX near the import for getPubConfig.
-            archive_config = getPubConfig(self.packageupload.archive)
-            action_method(archive_config, temp_filename, suite, logger=logger)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
-
-    def publishDebianInstaller(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.debian_installer import (
-            process_debian_installer)
-
-        self._publishCustom(process_debian_installer, logger=logger)
-
-    def publishDistUpgrader(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.dist_upgrader import process_dist_upgrader
-
-        self._publishCustom(process_dist_upgrader, logger=logger)
-
-    def publishDdtpTarball(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.ddtp_tarball import process_ddtp_tarball
-
-        self._publishCustom(process_ddtp_tarball, logger=logger)
-
-    def publishRosettaTranslations(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        from lp.archivepublisher.rosetta_translations import (
-            process_rosetta_translations)
-
-        process_rosetta_translations(self.packageupload,
-                                     self.libraryfilealias, logger=logger)
-
-    def publishStaticTranslations(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # Static translations are not published.  Currently, they're
-        # only exposed via webservice methods so that third parties can
-        # retrieve them from the librarian.
-        debug(logger, "Skipping publishing of static translations.")
-        return
-
-    def publishMetaData(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # In the future this could use the existing custom upload file
-        # processing which deals with versioning, etc., but that's too
-        # complicated for our needs right now.  Also, the existing code
-        # assumes that everything is a tarball and tries to unpack it.
-
-        # See the XXX near the import for getPubConfig.
-        archive_config = getPubConfig(self.packageupload.archive)
-        if archive_config.metaroot is None:
-            debug(logger, "Skipping meta-data for archive without metaroot.")
-            return
-
-        dest_file = os.path.join(
-            archive_config.metaroot, self.libraryfilealias.filename)
-        if not os.path.isdir(archive_config.metaroot):
-            os.makedirs(archive_config.metaroot, 0o755)
-
-        # At this point we now have a directory of the format:
-        # <person_name>/meta/<ppa_name>
-        # We're ready to copy the file out of the librarian into it.
-
-        file_obj = file(dest_file, "wb")
-        self.libraryfilealias.open()
-        copy_and_close(self.libraryfilealias, file_obj)
-
-    def publishSigning(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.signing import process_signing
-
-        self._publishCustom(process_signing, logger=logger)
-
-    publisher_dispatch = {
-        PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,
-        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
-            publishRosettaTranslations,
-        PackageUploadCustomFormat.DIST_UPGRADER: publishDistUpgrader,
-        PackageUploadCustomFormat.DDTP_TARBALL: publishDdtpTarball,
-        PackageUploadCustomFormat.STATIC_TRANSLATIONS:
-            publishStaticTranslations,
-        PackageUploadCustomFormat.META_DATA: publishMetaData,
-        PackageUploadCustomFormat.SIGNING: publishSigning,
-        }
-
-    # publisher_dispatch must have an entry for each value of
-    # PackageUploadCustomFormat.
-    assert len(publisher_dispatch) == len(PackageUploadCustomFormat)
+        handler = getUtility(ICustomUploadHandler, self.customformat.name)
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
 
 @implementer(IPackageUploadSet)

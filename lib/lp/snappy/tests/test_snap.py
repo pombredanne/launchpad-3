@@ -24,6 +24,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -32,9 +33,9 @@ from lp.services.database.constants import (
     ONE_DAY_AGO,
     UTC_NOW,
     )
-from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features.testing import FeatureFixture
+from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
@@ -453,16 +454,31 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
             registrant=owner, owner=owner, distroseries=distroseries,
             name=u"condemned")
         build = self.factory.makeSnapBuild(snap=snap)
+        build_queue = build.queueBuild()
         snapfile = self.factory.makeSnapFile(snapbuild=build)
         self.assertTrue(getUtility(ISnapSet).exists(owner, u"condemned"))
+        other_build = self.factory.makeSnapBuild()
+        other_build.queueBuild()
+        store = Store.of(build)
+        store.flush()
         build_id = build.id
+        build_queue_id = build_queue.id
+        build_farm_job_id = removeSecurityProxy(build).build_farm_job_id
         snapfile_id = removeSecurityProxy(snapfile).id
         with person_logged_in(snap.owner):
             snap.destroySelf()
         flush_database_caches()
+        # The deleted snap and its builds are gone.
         self.assertFalse(getUtility(ISnapSet).exists(owner, u"condemned"))
         self.assertIsNone(getUtility(ISnapBuildSet).getByID(build_id))
-        self.assertIsNone(IMasterStore(SnapFile).get(SnapFile, snapfile_id))
+        self.assertIsNone(store.get(BuildQueue, build_queue_id))
+        self.assertIsNone(store.get(BuildFarmJob, build_farm_job_id))
+        self.assertIsNone(store.get(SnapFile, snapfile_id))
+        # Unrelated builds are still present.
+        clear_property_cache(other_build)
+        self.assertEqual(
+            other_build, getUtility(ISnapBuildSet).getByID(other_build.id))
+        self.assertIsNotNone(other_build.buildqueue_record)
 
     def test_related_webhooks_deleted(self):
         owner = self.factory.makePerson()

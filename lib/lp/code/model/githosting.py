@@ -8,9 +8,11 @@ __all__ = [
     'GitHostingClient',
     ]
 
+import json
 from urllib import quote
 from urlparse import urljoin
 
+from lazr.restful.utils import get_current_browser_request
 import requests
 from zope.interface import implementer
 
@@ -21,6 +23,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import urlfetch
 
 
@@ -35,13 +38,18 @@ class GitHostingClient:
     def __init__(self):
         self.endpoint = config.codehosting.internal_git_api_endpoint
 
-    def _request(self, method, path, json_data=None, **kwargs):
+    def _request(self, method, path, **kwargs):
+        timeline = get_request_timeline(get_current_browser_request())
+        action = timeline.start(
+            "git-hosting-%s" % method, "%s %s" % (path, json.dumps(kwargs)))
         try:
             response = urlfetch(
                 urljoin(self.endpoint, path), trust_env=False, method=method,
                 **kwargs)
         except requests.HTTPError as e:
             raise HTTPResponseNotOK(e.response.content)
+        finally:
+            action.finish()
         if response.content:
             return response.json()
         else:
@@ -107,6 +115,37 @@ class GitHostingClient:
             raise GitRepositoryScanFault(
                 "Failed to get commit details from Git repository: %s" %
                 unicode(e))
+
+    def getLog(self, path, start, limit=None, stop=None, logger=None):
+        """See `IGitHostingClient`."""
+        try:
+            if logger is not None:
+                logger.info(
+                    "Requesting commit log for %s: "
+                    "start %s, limit %s, stop %s" %
+                    (path, start, limit, stop))
+            return self._get(
+                "/repo/%s/log/%s" % (path, quote(start)),
+                params={"limit": limit, "stop": stop})
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get commit log from Git repository: %s" %
+                unicode(e))
+
+    def getDiff(self, path, old, new, common_ancestor=False,
+                context_lines=None, logger=None):
+        """See `IGitHostingClient`."""
+        try:
+            if logger is not None:
+                logger.info(
+                    "Requesting diff for %s from %s to %s" % (path, old, new))
+            separator = "..." if common_ancestor else ".."
+            url = "/repo/%s/compare/%s%s%s" % (
+                path, quote(old), separator, quote(new))
+            return self._get(url, params={"context_lines": context_lines})
+        except Exception as e:
+            raise GitRepositoryScanFault(
+                "Failed to get diff from Git repository: %s" % unicode(e))
 
     def getMergeDiff(self, path, base, head, prerequisite=None, logger=None):
         """See `IGitHostingClient`."""

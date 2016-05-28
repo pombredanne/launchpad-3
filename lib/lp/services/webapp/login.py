@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Stuff to do with logging in and logging out."""
 
@@ -9,10 +9,6 @@ from datetime import (
     timedelta,
     )
 import urllib
-from urlparse import (
-    parse_qsl,
-    urlunsplit,
-    )
 
 from openid.consumer.consumer import (
     CANCEL,
@@ -62,10 +58,7 @@ from lp.services.openid.extensions import macaroon
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
 from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.webapp import (
-    canonical_url,
-    urlsplit,
-    )
+from lp.services.webapp import canonical_url
 from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
     CookieAuthLoggedInEvent,
@@ -226,11 +219,11 @@ class OpenIDLogin(LaunchpadView):
         # '+login' bit). To do that we encode that URL as a query arg in the
         # return_to URL passed to the OpenID Provider
         starting_data = [('starting_url', self.starting_url.encode('utf-8'))]
-        discharge_macaroon_field = self.request.form.get(
-            'discharge_macaroon_field', None)
-        if discharge_macaroon_field is not None:
-            starting_data.append(
-                ('discharge_macaroon_field', discharge_macaroon_field))
+        for passthrough_name in (
+                'discharge_macaroon_action', 'discharge_macaroon_field'):
+            passthrough_field = self.request.form.get(passthrough_name, None)
+            if passthrough_field is not None:
+                starting_data.append((passthrough_name, passthrough_field))
         starting_url = urllib.urlencode(starting_data)
         trust_root = allvhosts.configs['mainsite'].rooturl
         return_to = urlappend(trust_root, '+openid-callback')
@@ -264,7 +257,8 @@ class OpenIDLogin(LaunchpadView):
         """
         for name, value in self.request.form.items():
             if name in ('loggingout', 'reauth',
-                        'macaroon_caveat_id', 'discharge_macaroon_field'):
+                        'macaroon_caveat_id', 'discharge_macaroon_action',
+                        'discharge_macaroon_field'):
                 continue
             if name.startswith('openid.'):
                 continue
@@ -298,6 +292,9 @@ class OpenIDCallbackView(OpenIDLogin):
 
     team_email_address_template = ViewPageTemplateFile(
         'templates/login-team-email-address.pt')
+
+    discharge_macaroon_template = ViewPageTemplateFile(
+        'templates/login-discharge-macaroon.pt')
 
     def _gather_params(self, request):
         params = dict(request.form)
@@ -407,6 +404,9 @@ class OpenIDCallbackView(OpenIDLogin):
         with MasterDatabasePolicy():
             self.login(person)
 
+        if self.params.get('discharge_macaroon_field'):
+            return self.discharge_macaroon_template()
+
         if should_update_last_write:
             # This is a GET request but we changed the database, so update
             # session_data['last_write'] to make sure further requests use
@@ -448,27 +448,10 @@ class OpenIDCallbackView(OpenIDLogin):
         transaction.commit()
         return retval
 
-    @staticmethod
-    def _appendParam(url, key, value):
-        """Append a parameter to a URL's query string."""
-        parts = urlsplit(url)
-        query = parse_qsl(parts.query)
-        query.append((key, value))
-        return urlunsplit(
-            (parts.scheme, parts.netloc, parts.path, urllib.urlencode(query),
-             parts.fragment))
-
     def _redirect(self):
         target = self.params.get('starting_url')
         if target is None:
             target = self.request.getApplicationURL()
-        discharge_macaroon_field = self.params.get('discharge_macaroon_field')
-        if (discharge_macaroon_field is not None and
-                self.discharge_macaroon_raw is not None):
-            # XXX cjwatson 2016-04-18: Do we need to POST this instead due
-            # to size?
-            target = self._appendParam(
-                target, discharge_macaroon_field, self.discharge_macaroon_raw)
         self.request.response.redirect(target, temporary_if_possible=True)
 
 

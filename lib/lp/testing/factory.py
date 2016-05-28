@@ -83,7 +83,10 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
@@ -215,7 +218,11 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageUrgency,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet,
+    SSH_KEY_TYPE_TO_TEXT,
+    SSHKeyType,
+    )
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.milestone import Milestone
@@ -1876,7 +1883,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
+                    status=None):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1945,8 +1953,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        task = removeSecurityProxy(bug).addTask(
-            owner, removeSecurityProxy(target))
+        task = getUtility(IBugTaskSet).createTask(
+            removeSecurityProxy(bug), owner, target, status=status)
         removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return task
 
@@ -4277,12 +4285,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
-    def makeSSHKey(self, person=None):
-        """Create a new SSHKey."""
+    def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA):
+        """Create a new SSHKey.
+
+        :param person: If specified, the person to attach the key to. If
+            unspecified, a person is created.
+        :param key_type: If specified, the type of SSH key to generate. Must be
+            a member of SSHKeyType. If unspecified, SSHKeyType.RSA is used.
+        """
         if person is None:
             person = self.makePerson()
-        public_key = "ssh-rsa %s %s" % (
-            self.getUniqueString(), self.getUniqueString())
+        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
+        if key_type is None:
+            raise AssertionError(
+                "key_type must be a member of SSHKeyType, not %r" % key_type)
+        public_key = "%s %s %s" % (
+            key_type_string,
+            self.getUniqueString(),
+            self.getUniqueString(),
+            )
         return getUtility(ISSHKeySet).new(person, public_key)
 
     def makeBlob(self, blob=None, expires=None, blob_file=None):

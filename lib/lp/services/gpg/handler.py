@@ -638,6 +638,9 @@ def sanitize_fingerprint(fingerprint):
 class LPGPGClient(GPGClient):
     """See IGPGClient."""
 
+    def __init__(self):
+        super(LPGPGClient, self).__init__(bypass_proxy=True)
+
     def get_endpoint(self):
         return config.gpgservice.api_endpoint
 

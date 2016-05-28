@@ -24,18 +24,28 @@
     </div>
   </div>
 
-  <div id="source-revisions" tal:condition="context/source_branch">
-    <tal:history-available condition="context/source_branch/revision_count"
-                           define="branch context/source_branch;
-                                   revisions view/unlanded_revisions">
-      <h2>Unmerged revisions</h2>
-      <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
-    </tal:history-available>
+  <div id="source-revisions">
+    <tal:bzr-revisions condition="context/source_branch">
+      <tal:history-available condition="context/source_branch/revision_count"
+                             define="branch context/source_branch;
+                                     revisions view/unlanded_revisions">
+        <h2>Unmerged revisions</h2>
+        <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+      </tal:history-available>
 
-    <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
-      <h2>Unmerged revisions</h2>
-      <p>Recent revisions are not available due to the source branch being remote.</p>
-    </tal:remote-branch>
+      <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+        <h2>Unmerged revisions</h2>
+        <p>Recent revisions are not available due to the source branch being remote.</p>
+      </tal:remote-branch>
+    </tal:bzr-revisions>
+    <tal:git-revisions condition="context/source_git_ref">
+      <tal:history-available define="ref context/source_git_ref;
+                                     commit_infos view/unlanded_revisions"
+                             condition="commit_infos">
+        <h2>Unmerged commits</h2>
+        <metal:commits use-macro="ref/@@+macros/ref-commits"/>
+      </tal:history-available>
+    </tal:git-revisions>
   </div>
 
 </div>

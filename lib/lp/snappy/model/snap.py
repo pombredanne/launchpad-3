@@ -33,6 +33,8 @@ from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
@@ -437,6 +439,17 @@ class Snap(Storm, WebhookTargetMixin):
         """See `ISnap`."""
         store = IStore(Snap)
         store.find(SnapArch, SnapArch.snap == self).remove()
+        # Remove build jobs.  There won't be many queued builds, so we can
+        # afford to do this the safe but slow way via BuildQueue.destroySelf
+        # rather than in bulk.
+        buildqueue_records = store.find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id == SnapBuild.build_farm_job_id,
+            SnapBuild.snap == self)
+        for buildqueue_record in buildqueue_records:
+            buildqueue_record.destroySelf()
+        build_farm_job_ids = list(store.find(
+            SnapBuild.build_farm_job_id, SnapBuild.snap == self))
         # XXX cjwatson 2016-02-27 bug=322972: Requires manual SQL due to
         # lack of support for DELETE FROM ... USING ... in Storm.
         store.execute("""
@@ -449,6 +462,8 @@ class Snap(Storm, WebhookTargetMixin):
         store.find(SnapBuild, SnapBuild.snap == self).remove()
         getUtility(IWebhookSet).delete(self.webhooks)
         store.remove(self)
+        store.find(
+            BuildFarmJob, BuildFarmJob.id.is_in(build_farm_job_ids)).remove()
 
 
 class SnapArch(Storm):

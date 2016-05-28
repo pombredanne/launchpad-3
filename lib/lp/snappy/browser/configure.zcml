@@ -70,7 +70,8 @@
             for="lp.snappy.interfaces.snap.ISnap"
             class="lp.snappy.browser.snap.SnapAuthorizeView"
             permission="launchpad.Edit"
-            name="+authorize" />
+            name="+authorize"
+            template="../templates/snap-authorize.pt" />
         <browser:page
             for="lp.snappy.interfaces.snap.ISnap"
             class="lp.snappy.browser.snap.SnapDeleteView"

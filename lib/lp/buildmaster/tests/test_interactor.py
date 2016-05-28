@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuilderInteractor features."""
@@ -20,9 +20,16 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
-from testtools.matchers import ContainsAll
+from testtools.matchers import (
+    ContainsAll,
+    HasLength,
+    MatchesDict,
+    )
 from testtools.testcase import ExpectedException
-from twisted.internet import defer
+from twisted.internet import (
+    defer,
+    reactor as default_reactor,
+    )
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.web.client import getPage
@@ -38,6 +45,7 @@ from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
     extract_vitals_from_db,
+    LimitedHTTPConnectionPool,
     )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonIsolationError,
@@ -789,6 +797,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             for sha1, local_file in files:
                 with open(local_file) as f:
                     self.assertEqual(content_map[sha1], f.read())
+            return slave.pool.closeCachedConnections()
 
         def finished_uploading(ignored):
             d = slave.getFiles(files)
@@ -812,3 +821,60 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             dl.append(d)
 
         return defer.DeferredList(dl).addCallback(finished_uploading)
+
+    def test_getFiles_open_connections(self):
+        # getFiles honours the configured limit on active download
+        # connections.
+        pool = LimitedHTTPConnectionPool(default_reactor, 2)
+        contents = [self.factory.getUniqueString() for _ in range(10)]
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave(pool=pool)
+        files = []
+        content_map = {}
+
+        def got_files(ignored):
+            # Called back when getFiles finishes.  Make sure all the
+            # content is as expected.
+            for sha1, local_file in files:
+                with open(local_file) as f:
+                    self.assertEqual(content_map[sha1], f.read())
+            # Only two connections were used.
+            self.assertThat(
+                slave.pool._connections,
+                MatchesDict({("http", "localhost", 8221): HasLength(2)}))
+            return slave.pool.closeCachedConnections()
+
+        def finished_uploading(ignored):
+            d = slave.getFiles(files)
+            return d.addCallback(got_files)
+
+        # Set up some files on the builder and store details in
+        # content_map so we can compare downloads later.
+        dl = []
+        for content in contents:
+            filename = content + '.txt'
+            lf = self.factory.makeLibraryFileAlias(filename, content=content)
+            content_map[lf.content.sha1] = content
+            files.append((lf.content.sha1, tempfile.mkstemp()[1]))
+            self.addCleanup(os.remove, files[-1][1])
+            self.layer.txn.commit()
+            d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
+            dl.append(d)
+
+        return defer.DeferredList(dl).addCallback(finished_uploading)
+
+    @defer.inlineCallbacks
+    def test_getFiles_with_file_objects(self):
+        # getFiles works with file-like objects as well as file names.
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
+        temp_fd, temp_name = tempfile.mkstemp()
+        self.addCleanup(os.remove, temp_name)
+        lf = self.factory.makeLibraryFileAlias(
+            'content.txt', content='content')
+        self.layer.txn.commit()
+        yield slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
+        yield slave.getFiles([(lf.content.sha1, os.fdopen(temp_fd, "w"))])
+        with open(temp_name) as f:
+            self.assertEqual('content', f.read())
+        yield slave.pool.closeCachedConnections()
