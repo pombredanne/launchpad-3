@@ -157,7 +157,7 @@ class SnapStoreClient:
         try:
             assert snap.store_secrets is not None
             urlfetch(
-                upload_url, method="POST", data=data,
+                upload_url, method="POST", json=data,
                 auth=MacaroonAuth(
                     snap.store_secrets["root"],
                     snap.store_secrets["discharge"]))
