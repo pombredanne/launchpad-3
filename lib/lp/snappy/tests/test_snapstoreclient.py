@@ -274,14 +274,11 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertThat(self.snap_upload_request, RequestMatches(
             url=Equals("http://sca.example/dev/api/snap-upload/"),
             method=Equals("POST"),
+            headers=ContainsDict({"Content-Type": Equals("application/json")}),
             auth=("Macaroon", MacaroonsVerify(self.root_key)),
-            form_data={
-                "name": MatchesStructure.byEquality(
-                    name="name", value="test-snap"),
-                "updown_id": MatchesStructure.byEquality(
-                    name="updown_id", value="1"),
-                "series": MatchesStructure.byEquality(
-                    name="series", value="rolling")}))
+            json_data={
+                "name": "test-snap", "updown_id": 1, "series": "rolling",
+                }))
 
     def test_upload_needs_discharge_macaroon_refresh(self):
         @urlmatch(path=r".*/snap-upload/$")
@@ -306,7 +303,6 @@ class TestSnapStoreClient(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-
         with HTTMock(self._unscanned_upload_handler, snap_upload_handler,
                      self._macaroon_refresh_handler):
             self.client.upload(snapbuild)

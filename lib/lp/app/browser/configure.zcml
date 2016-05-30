@@ -853,6 +853,12 @@
       name="fmt"
       />
   <adapter
+      for="lp.snappy.interfaces.snappyseries.ISnappySeries"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.SnappySeriesFormatterAPI"
+      name="fmt"
+      />
+  <adapter
       for="lp.blueprints.interfaces.specification.ISpecification"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SpecificationFormatterAPI"
