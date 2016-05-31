@@ -512,12 +512,18 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             [dict(tag.attrs) for tag in discharge_form.findAll('input')],
             MatchesListwise([
                 ContainsDict({
+                    'type': Equals('hidden'),
                     'name': Equals('field.actions.complete'),
                     'value': Equals('1'),
                     }),
                 ContainsDict({
+                    'type': Equals('hidden'),
                     'name': Equals('field.discharge_macaroon'),
                     'value': Equals('dummy discharge'),
+                    }),
+                ContainsDict({
+                    'type': Equals('submit'),
+                    'value': Equals('Continue'),
                     }),
                 ]))
 
