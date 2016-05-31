@@ -34,8 +34,8 @@ from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
 from lp.archivepublisher.signing import (
-    UefiUpload,
     SigningUpload,
+    UefiUpload,
     )
 from lp.archiveuploader.utils import (
     determine_source_file_type,
