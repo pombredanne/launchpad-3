@@ -183,9 +183,9 @@ class TestSnapStoreClient(TestCaseWithFactory):
             "content": {"successful": True, "upload_id": 1},
             }
 
-    @urlmatch(path=r".*/snap-upload/$")
-    def _snap_upload_handler(self, url, request):
-        self.snap_upload_request = request
+    @urlmatch(path=r".*/snap-push/$")
+    def _snap_push_handler(self, url, request):
+        self.snap_push_request = request
         return {"status_code": 202, "content": {"success": True}}
 
     @urlmatch(path=r".*/api/v2/tokens/refresh$")
@@ -259,8 +259,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-        with HTTMock(
-            self._unscanned_upload_handler, self._snap_upload_handler):
+        with HTTMock(self._unscanned_upload_handler, self._snap_push_handler):
             self.client.upload(snapbuild)
         self.assertThat(self.unscanned_upload_request, RequestMatches(
             url=Equals("http://updown.example/unscanned-upload/"),
@@ -271,8 +270,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     value="dummy snap content",
                     type="application/octet-stream",
                     )}))
-        self.assertThat(self.snap_upload_request, RequestMatches(
-            url=Equals("http://sca.example/dev/api/snap-upload/"),
+        self.assertThat(self.snap_push_request, RequestMatches(
+            url=Equals("http://sca.example/dev/api/snap-push/"),
             method=Equals("POST"),
             headers=ContainsDict({"Content-Type": Equals("application/json")}),
             auth=("Macaroon", MacaroonsVerify(self.root_key)),
@@ -281,18 +280,18 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 }))
 
     def test_upload_needs_discharge_macaroon_refresh(self):
-        @urlmatch(path=r".*/snap-upload/$")
-        def snap_upload_handler(url, request):
-            snap_upload_handler.call_count += 1
-            if snap_upload_handler.call_count == 1:
-                self.first_snap_upload_request = request
+        @urlmatch(path=r".*/snap-push/$")
+        def snap_push_handler(url, request):
+            snap_push_handler.call_count += 1
+            if snap_push_handler.call_count == 1:
+                self.first_snap_push_request = request
                 return {
                     "status_code": 401,
                     "headers": {
                         "WWW-Authenticate": "Macaroon needs_refresh=1"}}
             else:
-                return self._snap_upload_handler(url, request)
-        snap_upload_handler.call_count = 0
+                return self._snap_push_handler(url, request)
+        snap_push_handler.call_count = 0
 
         store_secrets = self._make_store_secrets()
         snap = self.factory.makeSnap(
@@ -303,10 +302,10 @@ class TestSnapStoreClient(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-        with HTTMock(self._unscanned_upload_handler, snap_upload_handler,
+        with HTTMock(self._unscanned_upload_handler, snap_push_handler,
                      self._macaroon_refresh_handler):
             self.client.upload(snapbuild)
-        self.assertEqual(2, snap_upload_handler.call_count)
+        self.assertEqual(2, snap_push_handler.call_count)
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])
 
