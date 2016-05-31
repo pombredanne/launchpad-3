@@ -8,6 +8,7 @@ __metaclass__ = type
 import os
 import stat
 import tarfile
+from cStringIO import StringIO
 
 from fixtures import MonkeyPatch
 
@@ -255,6 +256,23 @@ class TestSigning(TestSigningHelpers):
         upload = self.process_emulate()
         self.assertContentEqual(['first', 'second'],
             upload.signing_options.keys())
+
+    def test_options_none(self):
+        # Specifying no options should leave us with an open tree.
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi.signed")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko.sig")))
 
     def test_options_tarball(self):
         # Specifying the "tarball" option should create an tarball in
@@ -601,6 +619,48 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(self.kmod_x509))
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_pem).st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_x509).st_mode), 0o644)
+
+    def test_sha256_basic_summing(self):
+        upload = SigningUpload()
+
+        data = StringIO("Hello World!\n")
+        self.assertEqual(
+            '03ba204e50d126e4674c005e04d82e84c21366780af1f43bd54a37816b6ab340',
+            upload.checksumSha256(data))
+
+        data = StringIO("Something somewhat longer?\n" * 100)
+        self.assertEqual(
+            '8bdc49d049287ac937e524afe6c7ba014169b7aff11c78f05467487cc50f6f67',
+            upload.checksumSha256(data))
+
+    def test_sha256_multiblock_summing(self):
+        upload = SigningUpload()
+
+        line = "A" * 1024 + "\n"
+        data = StringIO(line * 300)
+        self.assertEqual(
+            'e4d4650544a18a1dd837ee70c68137b553e3d9455e941ec71465cd5557ef0e20',
+            upload.checksumSha256(data))
+
+    def test_checksumming_tree(self):
+        # Specifying no options should leave us with an open tree,
+        # confirm it is checksummed.
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        sha256file = os.path.join(self.getSignedPath("test", "amd64"),
+             "1.0", "SHA256SUMS")
+        self.assertTrue(os.path.exists(sha256file))
+        H = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        expected = [[H, 'empty.efi'], [H, 'empty.efi.signed'],
+            [H, 'empty.ko'], [H, 'empty.ko.sig', ],
+            ]
+        with open(sha256file) as sfd:
+            content = [line.split() for line in sfd]
+        self.assertContentEqual(expected, content)
 
 
 class TestUefi(TestSigningHelpers):
