@@ -18,7 +18,10 @@ from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
-from lp.archivepublisher.signing import SigningUpload
+from lp.archivepublisher.signing import (
+    SigningUpload,
+    UefiUpload,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.soyuz.enums import PackageUploadCustomFormat
@@ -40,6 +43,7 @@ class CustomUploadsCopier:
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
         PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
             RosettaTranslationsUpload,
+        PackageUploadCustomFormat.UEFI: UefiUpload,
         PackageUploadCustomFormat.SIGNING: SigningUpload,
         }
 
@@ -63,7 +67,8 @@ class CustomUploadsCopier:
             return True
         # Signing uploads will be signed, and must therefore be approved
         # by a human.
-        if custom.customformat == PackageUploadCustomFormat.SIGNING:
+        if custom.customformat in (PackageUploadCustomFormat.UEFI,
+                                   PackageUploadCustomFormat.SIGNING):
             return False
         return True
 
