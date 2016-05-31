@@ -62,7 +62,7 @@ class SigningUpload(CustomUpload):
     publisher configuration.  In this directory, the private key is
     "uefi.key" and the certificate is "uefi.crt".
     """
-    custom_type = "raw-signing"
+    custom_type = "signing"
 
     def distsDirectory(self):
         return 'signed'
@@ -310,7 +310,7 @@ class SigningUpload(CustomUpload):
 
 class UefiUpload(SigningUpload):
     """Legacy UEFI Signing custom upload."""
-    custom_type = "raw-uefi"
+    custom_type = "uefi"
 
     def distsDirectory(self):
         return 'uefi'
