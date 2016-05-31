@@ -14,8 +14,8 @@ from __future__ import print_function
 __metaclass__ = type
 
 __all__ = [
-    "UefiUpload",
     "SigningUpload",
+    "UefiUpload",
     ]
 
 import os
