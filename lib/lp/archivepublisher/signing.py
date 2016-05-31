@@ -305,7 +305,8 @@ class SigningUpload(CustomUpload):
                     disk_name = os.path.join(dirpath, filename)
                     with open(disk_name) as dfd:
                         checksum = self.checksumSha256(dfd)
-                    print(checksum, disk_name[prefix_len:], file=sfd)
+                    print("%s  %s" % (checksum, disk_name[prefix_len:]),
+                        file=sfd)
         os.rename(checksum_file, os.path.join(versiondir, "SHA256SUMS"))
 
     def extract(self):
