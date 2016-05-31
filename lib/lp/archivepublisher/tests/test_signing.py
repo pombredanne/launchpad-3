@@ -16,8 +16,8 @@ from lp.archivepublisher.customupload import (
     CustomUploadBadUmask,
     )
 from lp.archivepublisher.signing import (
-    UefiUpload,
     SigningUpload,
+    UefiUpload,
     )
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile

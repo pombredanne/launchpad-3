@@ -19,8 +19,8 @@ from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
 from lp.archivepublisher.signing import (
-    UefiUpload,
     SigningUpload,
+    UefiUpload,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
