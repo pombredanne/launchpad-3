@@ -147,7 +147,7 @@ class SnapStoreClient:
         """Create a new store upload based on the uploaded file."""
         assert config.snappy.store_url is not None
         assert snap.store_name is not None
-        upload_url = urlappend(config.snappy.store_url, "dev/api/snap-upload/")
+        upload_url = urlappend(config.snappy.store_url, "dev/api/snap-push/")
         data = {
             "name": snap.store_name,
             "updown_id": upload_data["upload_id"],
