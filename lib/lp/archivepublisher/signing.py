@@ -64,8 +64,7 @@ class SigningUpload(CustomUpload):
     """
     custom_type = "signing"
 
-    def distsDirectory(self):
-        return 'signed'
+    dists_directory = "signed"
 
     @staticmethod
     def parsePath(tarfile_path):
@@ -99,7 +98,7 @@ class SigningUpload(CustomUpload):
         self.setComponents(tarfile_path)
 
         dists_signed = os.path.join(pubconf.archiveroot, "dists",
-            suite, "main", self.distsDirectory())
+            suite, "main", self.dists_directory)
         self.targetdir = os.path.join(
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
@@ -312,5 +311,4 @@ class UefiUpload(SigningUpload):
     """Legacy UEFI Signing custom upload."""
     custom_type = "uefi"
 
-    def distsDirectory(self):
-        return 'uefi'
+    dists_directory = "uefi"
