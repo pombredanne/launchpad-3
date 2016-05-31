@@ -68,7 +68,7 @@ class CustomUploadsCopier:
         # Signing uploads will be signed, and must therefore be approved
         # by a human.
         if custom.customformat in (PackageUploadCustomFormat.UEFI,
-            PackageUploadCustomFormat.SIGNING):
+                                   PackageUploadCustomFormat.SIGNING):
             return False
         return True
 

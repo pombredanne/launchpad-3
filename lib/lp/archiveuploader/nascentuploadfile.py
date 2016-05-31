@@ -314,7 +314,7 @@ class CustomUploadFile(NascentUploadFile):
         # Signing uploads will be signed, and must therefore be approved
         # by a human.
         if self.custom_type in (PackageUploadCustomFormat.UEFI,
-            PackageUploadCustomFormat.SIGNING):
+                                PackageUploadCustomFormat.SIGNING):
             return False
         return True
 
