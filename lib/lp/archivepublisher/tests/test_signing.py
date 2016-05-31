@@ -656,7 +656,7 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(sha256file))
         H = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
         expected = [[H, 'empty.efi'], [H, 'empty.efi.signed'],
-            [H, 'empty.ko'], [H, 'empty.ko.sig', ],
+            [H, 'empty.ko'], [H, 'empty.ko.sig'],
             ]
         with open(sha256file) as sfd:
             content = [line.split() for line in sfd]
