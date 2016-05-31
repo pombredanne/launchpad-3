@@ -15,6 +15,7 @@ __metaclass__ = type
 
 __all__ = [
     "SigningUpload",
+    "UefiUpload",
     ]
 
 import os
@@ -63,6 +64,8 @@ class SigningUpload(CustomUpload):
     """
     custom_type = "signing"
 
+    dists_directory = "signed"
+
     @staticmethod
     def parsePath(tarfile_path):
         tarfile_base = os.path.basename(tarfile_path)
@@ -94,8 +97,8 @@ class SigningUpload(CustomUpload):
 
         self.setComponents(tarfile_path)
 
-        dists_signed = os.path.join(
-            pubconf.archiveroot, "dists", suite, "main", "signed")
+        dists_signed = os.path.join(pubconf.archiveroot, "dists",
+            suite, "main", self.dists_directory)
         self.targetdir = os.path.join(
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
@@ -302,3 +305,20 @@ class SigningUpload(CustomUpload):
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
+
+
+class UefiUpload(SigningUpload):
+    """Legacy UEFI Signing custom upload.
+
+    Provides backwards compatibility UEFI signing uploads. Existing
+    packages use the raw-uefi custom upload and expect the results
+    to be published to dists/*/uefi.  These are a functional subset of
+    raw-signing custom uploads differing only in where they are published
+    in the archive.
+
+    We expect to be able to remove this upload type once all existing
+    packages are converted to the new form and location.
+    """
+    custom_type = "uefi"
+
+    dists_directory = "uefi"

@@ -88,6 +88,13 @@
             interface="lp.soyuz.interfaces.queue.ICustomUploadHandler"/>
     </securedutility>
     <securedutility
+        class="lp.archivepublisher.signing.UefiUpload"
+        provides="lp.soyuz.interfaces.queue.ICustomUploadHandler"
+        name="UEFI">
+        <allow
+            interface="lp.soyuz.interfaces.queue.ICustomUploadHandler"/>
+    </securedutility>
+    <securedutility
         class="lp.archivepublisher.signing.SigningUpload"
         provides="lp.soyuz.interfaces.queue.ICustomUploadHandler"
         name="SIGNING">

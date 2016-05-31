@@ -481,7 +481,13 @@ class PackageUploadCustomFormat(DBEnumeratedType):
         the Software Center.
         """)
 
-    SIGNING = DBItem(6, """
+    UEFI = DBItem(6, """
+        uefi
+
+        A tarball containing EFI images to be signed.
+        """)
+
+    SIGNING = DBItem(7, """
         signing
 
         A tarball containing images to be signed.

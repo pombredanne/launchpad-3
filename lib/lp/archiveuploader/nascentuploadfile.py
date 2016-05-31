@@ -33,7 +33,10 @@ from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
-from lp.archivepublisher.signing import SigningUpload
+from lp.archivepublisher.signing import (
+    SigningUpload,
+    UefiUpload,
+    )
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     prefix_multi_line_string,
@@ -258,8 +261,8 @@ class CustomUploadFile(NascentUploadFile):
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
+        'raw-uefi': PackageUploadCustomFormat.UEFI,
         'raw-signing': PackageUploadCustomFormat.SIGNING,
-        'raw-uefi': PackageUploadCustomFormat.SIGNING,  # Compatibility
         }
 
     custom_handlers = {
@@ -268,6 +271,7 @@ class CustomUploadFile(NascentUploadFile):
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
         PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
             RosettaTranslationsUpload,
+        PackageUploadCustomFormat.UEFI: UefiUpload,
         PackageUploadCustomFormat.SIGNING: SigningUpload,
         }
 
@@ -309,7 +313,8 @@ class CustomUploadFile(NascentUploadFile):
         """Return whether this custom upload can be automatically approved."""
         # Signing uploads will be signed, and must therefore be approved
         # by a human.
-        if self.custom_type == PackageUploadCustomFormat.SIGNING:
+        if self.custom_type in (PackageUploadCustomFormat.UEFI,
+                                PackageUploadCustomFormat.SIGNING):
             return False
         return True
 
