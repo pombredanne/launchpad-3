@@ -7,9 +7,11 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'BadRefreshResponse',
     'BadRequestPackageUploadResponse',
     'BadUploadResponse',
     'ISnapStoreClient',
+    'NeedsRefreshResponse',
     ]
 
 from zope.interface import Interface
@@ -20,6 +22,14 @@ class BadRequestPackageUploadResponse(Exception):
 
 
 class BadUploadResponse(Exception):
+    pass
+
+
+class BadRefreshResponse(Exception):
+    pass
+
+
+class NeedsRefreshResponse(Exception):
     pass
 
 
@@ -44,4 +54,10 @@ class ISnapStoreClient(Interface):
         """Upload a snap build to the store.
 
         :param snapbuild: The `ISnapBuild` to upload.
+        """
+
+    def refreshDischargeMacaroon(snap):
+        """Refresh a snap's discharge macaroon.
+
+        :param snap: An `ISnap` whose discharge macaroon needs to be refreshed.
         """

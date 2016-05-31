@@ -23,9 +23,11 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import urlfetch
 from lp.services.webapp.url import urlappend
 from lp.snappy.interfaces.snapstoreclient import (
+    BadRefreshResponse,
     BadRequestPackageUploadResponse,
     BadUploadResponse,
     ISnapStoreClient,
+    NeedsRefreshResponse,
     )
 
 
@@ -151,7 +153,6 @@ class SnapStoreClient:
             "updown_id": upload_data["upload_id"],
             "series": snap.store_series.name,
             }
-        # XXX cjwatson 2016-04-20: handle refresh
         # XXX cjwatson 2016-05-09: This should add timeline information, but
         # that's currently difficult in jobs.
         try:
@@ -162,6 +163,10 @@ class SnapStoreClient:
                     snap.store_secrets["root"],
                     snap.store_secrets["discharge"]))
         except requests.HTTPError as e:
+            if (e.response.status_code == 401 and
+                e.response.headers.get("WWW-Authenticate") ==
+                    "Macaroon needs_refresh=1"):
+                raise NeedsRefreshResponse()
             raise BadUploadResponse(e.args[0])
 
     def upload(self, snapbuild):
@@ -169,4 +174,29 @@ class SnapStoreClient:
         assert snapbuild.snap.can_upload_to_store
         for _, lfa, lfc in snapbuild.getFiles():
             upload_data = self._uploadFile(lfa, lfc)
-            self._uploadApp(snapbuild.snap, upload_data)
+            try:
+                self._uploadApp(snapbuild.snap, upload_data)
+            except NeedsRefreshResponse:
+                # Try to automatically refresh the discharge macaroon and
+                # retry the upload.
+                self.refreshDischargeMacaroon(snapbuild.snap)
+                self._uploadApp(snapbuild.snap, upload_data)
+
+    @classmethod
+    def refreshDischargeMacaroon(cls, snap):
+        assert config.launchpad.openid_provider_root is not None
+        assert snap.store_secrets is not None
+        refresh_url = urlappend(
+            config.launchpad.openid_provider_root, "api/v2/tokens/refresh")
+        data = {"discharge_macaroon": snap.store_secrets["discharge"]}
+        try:
+            response = urlfetch(refresh_url, method="POST", json=data)
+            response_data = response.json()
+            if "discharge_macaroon" not in response_data:
+                raise BadRefreshResponse(response.text)
+            # Set a new dict here to avoid problems with security proxies.
+            new_secrets = dict(snap.store_secrets)
+            new_secrets["discharge"] = response_data["discharge_macaroon"]
+            snap.store_secrets = new_secrets
+        except requests.HTTPError as e:
+            raise BadRefreshResponse(e.args[0])
