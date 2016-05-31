@@ -308,7 +308,17 @@ class SigningUpload(CustomUpload):
 
 
 class UefiUpload(SigningUpload):
-    """Legacy UEFI Signing custom upload."""
+    """Legacy UEFI Signing custom upload.
+
+    Provides backwards compatibility UEFI signing uploads. Existing
+    packages use the raw-uefi custom upload and expect the results
+    to be published to dists/*/uefi.  These are a functional subset of
+    raw-signing custom uploads differing only in where they are published
+    in the archive.
+
+    We expect to be able to remove this upload type once all existing
+    packages are converted to the new form and location.
+    """
     custom_type = "uefi"
 
     dists_directory = "uefi"
