@@ -1264,9 +1264,14 @@ class PublishingSet:
                              ancestor=None, create_dsd_job=True,
                              creator=None, sponsor=None, packageupload=None):
         """See `IPublishingSet`."""
-        # Avoid circular import.
+        # Circular imports.
         from lp.registry.model.distributionsourcepackage import (
-            DistributionSourcePackage)
+            DistributionSourcePackage,
+            )
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
+
         if distroseries.distribution != archive.distribution:
             raise AssertionError(
                 "Series distribution %s doesn't match archive distribution %s."
@@ -1294,6 +1299,12 @@ class PublishingSet:
                 distroseries, sourcepackagerelease.sourcepackagename, pocket)
         Store.of(sourcepackagerelease).flush()
         del get_property_cache(sourcepackagerelease).published_archives
+
+        DistributionSourcePackageCache.update(
+            distroseries.distribution,
+            [sourcepackagerelease.sourcepackagename], archive,
+            with_binaries=False)
+
         return pub
 
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,
