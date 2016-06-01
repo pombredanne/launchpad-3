@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -42,7 +42,9 @@ class SourceFileMixin:
     def is_orig(self):
         return self.filetype in (
             SourcePackageFileType.ORIG_TARBALL,
-            SourcePackageFileType.COMPONENT_ORIG_TARBALL
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE,
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE,
             )
 
 

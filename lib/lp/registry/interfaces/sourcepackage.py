@@ -411,6 +411,17 @@ class SourcePackageFileType(DBEnumeratedType):
 
         This is only part of the 3.0 (quilt) source package format.""")
 
+    ORIG_TARBALL_SIGNATURE = DBItem(9, """
+        Orig Tarball Signature
+
+        This file is a detached signature for an Ubuntu "orig" file.""")
+
+    COMPONENT_ORIG_TARBALL_SIGNATURE = DBItem(10, """
+        Component Orig Tarball Signature
+
+        This file is a detached signature for an Ubuntu component "orig"
+        file.""")
+
 
 class SourcePackageType(DBEnumeratedType):
     """Source Package Format

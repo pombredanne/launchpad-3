@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
@@ -86,6 +86,27 @@ class TestUtilities(TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0.tar.xz'),
             SourcePackageFileType.NATIVE_TARBALL)
+
+        # (Component) original tarball signatures are detected for any
+        # supported compression method.
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig.tar.gz.asc'),
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig.tar.bz2.asc'),
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig.tar.xz.asc'),
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig-foo.tar.gz.asc'),
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig-bar.tar.bz2.asc'),
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig-bar.tar.xz.asc'),
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE)
 
         self.assertEquals(None, determine_source_file_type('foo_1.0'))
         self.assertEquals(None, determine_source_file_type('foo_1.0.blah.gz'))
