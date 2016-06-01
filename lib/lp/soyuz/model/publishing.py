@@ -1302,7 +1302,8 @@ class PublishingSet:
 
         DistributionSourcePackageCache.update(
             distroseries.distribution,
-            [sourcepackagerelease.sourcepackagename], archive)
+            [sourcepackagerelease.sourcepackagename], archive,
+            with_binaries=False)
 
         return pub
 
