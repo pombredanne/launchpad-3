@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+from textwrap import dedent
 import uuid
 
 import fixtures
@@ -293,15 +294,38 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
 class MakeSnapBuildMixin:
     """Provide the common makeBuild method returning a queued build."""
 
-    def makeBuild(self):
+    def makeSnap(self):
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-        build = self.factory.makeSnapBuild(status=BuildStatus.BUILDING)
+        # We can't use self.pushConfig here since this is used in a
+        # TrialTestCase instance.
+        config_name = self.factory.getUniqueString()
+        config.push(config_name, dedent("""
+            [snappy]
+            store_url: http://sca.example/
+            store_upload_url: http://updown.example/
+            """))
+        self.addCleanup(config.pop, config_name)
+        distroseries = self.factory.makeDistroSeries()
+        snappyseries = self.factory.makeSnappySeries(
+            usable_distro_series=[distroseries])
+        return self.factory.makeSnap(
+            distroseries=distroseries, store_upload=True,
+            store_series=snappyseries,
+            store_name=self.factory.getUniqueUnicode(),
+            store_secrets={
+                "root": "dummy-root", "discharge": "dummy-discharge"})
+
+    def makeBuild(self):
+        snap = self.makeSnap()
+        build = self.factory.makeSnapBuild(
+            requester=snap.registrant, snap=snap, status=BuildStatus.BUILDING)
         build.queueBuild()
         return build
 
     def makeUnmodifiableBuild(self):
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-        build = self.factory.makeSnapBuild(status=BuildStatus.BUILDING)
+        snap = self.makeSnap()
+        build = self.factory.makeSnapBuild(
+            requester=snap.registrant, snap=snap, status=BuildStatus.BUILDING)
         build.distro_series.status = SeriesStatus.OBSOLETE
         build.queueBuild()
         return build
