@@ -260,7 +260,8 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_upload = True
         self.build.snap.store_secrets = {
             "root": "dummy-root", "discharge": "dummy-discharge"}
-        self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         self.assertContentEqual([], self.build.store_upload_jobs)
 
     def test_updateStatus_fullybuilt_triggers_store_uploads(self):
@@ -270,7 +271,8 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_upload = True
         self.build.snap.store_secrets = {
             "root": "dummy-root", "discharge": "dummy-discharge"}
-        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.FULLYBUILT)
         self.assertEqual(1, len(list(self.build.store_upload_jobs)))
 
     def test_notify_fullybuilt(self):
