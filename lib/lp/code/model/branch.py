@@ -1102,7 +1102,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             (BranchRevision.branch, BranchRevision.revision_id,
              BranchRevision.sequence),
             [(self, rev_db_ids[revid], seq)
-             for revid, seq in revision_id_sequence_pairs])
+             for revid, seq in revision_id_sequence_pairs
+             if revid in rev_db_ids])
 
     def getTipRevision(self):
         """See `IBranch`."""
