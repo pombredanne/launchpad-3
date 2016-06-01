@@ -119,13 +119,12 @@ class DistributionSourcePackageCache(SQLBase):
                 cache.destroySelf()
 
     @classmethod
-    def _update(cls, distro, sourcepackagenames, archive, log):
+    def update(cls, distro, sourcepackagenames, archive, with_binaries=True,
+               log=None):
         """Update the package cache for a given set of `ISourcePackageName`s.
 
         Cached details include generated binarypackage names, summary
         and description fti.
-
-        'log' is required and only prints debug level information.
         """
 
         # Get the set of published sourcepackage releases.
@@ -142,13 +141,9 @@ class DistributionSourcePackageCache(SQLBase):
                 PackagePublishingStatus.PUBLISHED))
             ).config(distinct=True).order_by(SourcePackageRelease.id))
         if len(all_sprs) == 0:
-            log.debug("No sources releases found.")
+            if log is not None:
+                log.debug("No sources releases found.")
             return
-
-        spr_map = defaultdict(list)
-        for spn_id, spr_id, spr_version in all_sprs:
-            spn = IStore(SourcePackageName).get(SourcePackageName, spn_id)
-            spr_map[spn].append((spr_id, spr_version))
 
         all_caches = IStore(cls).find(
             cls, cls.distribution == distro, cls.archive == archive,
@@ -161,57 +156,67 @@ class DistributionSourcePackageCache(SQLBase):
                 archive=archive, distribution=distro,
                 sourcepackagename=spn)
 
-        # Query BinaryPackageBuilds and their BinaryPackageReleases
-        # separately, since the big and inconsistent intermediates can
-        # confuse postgres into a seq scan over BPR, which never ends
-        # well for anybody.
-        #
-        # Beware: the sets expand much faster than you might expect for
-        # the primary archive; COPY archive builds are caught too, of
-        # which there are dozens for most SPRs, and there's no easy way
-        # to exclude them!
-        all_builds = list(IStore(BinaryPackageBuild).find(
-            (BinaryPackageBuild.source_package_release_id,
-             BinaryPackageBuild.id),
-            BinaryPackageBuild.source_package_release_id.is_in(
-                [row[1] for row in all_sprs])))
-        all_binaries = list(IStore(BinaryPackageRelease).find(
-            (BinaryPackageRelease.buildID,
-             BinaryPackageRelease.binarypackagenameID,
-             BinaryPackageRelease.summary, BinaryPackageRelease.description),
-            BinaryPackageRelease.buildID.is_in(
-                [row[1] for row in all_builds])))
-        sprs_by_build = {build_id: spr_id for spr_id, build_id in all_builds}
+        if with_binaries:
+            spr_map = defaultdict(list)
+            for spn_id, spr_id, spr_version in all_sprs:
+                spn = IStore(SourcePackageName).get(SourcePackageName, spn_id)
+                spr_map[spn].append((spr_id, spr_version))
 
-        bulk.load(BinaryPackageName, [row[1] for row in all_binaries])
-        binaries_by_spr = defaultdict(list)
-        for bpb_id, bpn_id, summary, description in all_binaries:
-            spr_id = sprs_by_build[bpb_id]
-            binaries_by_spr[spr_id].append((
-                IStore(BinaryPackageName).get(BinaryPackageName, bpn_id),
-                summary, description))
+            # Query BinaryPackageBuilds and their BinaryPackageReleases
+            # separately, since the big and inconsistent intermediates can
+            # confuse postgres into a seq scan over BPR, which never ends
+            # well for anybody.
+            #
+            # Beware: the sets expand much faster than you might expect for
+            # the primary archive; COPY archive builds are caught too, of
+            # which there are dozens for most SPRs, and there's no easy way
+            # to exclude them!
+            all_builds = list(IStore(BinaryPackageBuild).find(
+                (BinaryPackageBuild.source_package_release_id,
+                 BinaryPackageBuild.id),
+                BinaryPackageBuild.source_package_release_id.is_in(
+                    [row[1] for row in all_sprs])))
+            all_binaries = list(IStore(BinaryPackageRelease).find(
+                (BinaryPackageRelease.buildID,
+                 BinaryPackageRelease.binarypackagenameID,
+                 BinaryPackageRelease.summary,
+                 BinaryPackageRelease.description),
+                BinaryPackageRelease.buildID.is_in(
+                    [row[1] for row in all_builds])))
+            sprs_by_build = {
+                build_id: spr_id for spr_id, build_id in all_builds}
+
+            bulk.load(BinaryPackageName, [row[1] for row in all_binaries])
+            binaries_by_spr = defaultdict(list)
+            for bpb_id, bpn_id, summary, description in all_binaries:
+                spr_id = sprs_by_build[bpb_id]
+                binaries_by_spr[spr_id].append((
+                    IStore(BinaryPackageName).get(BinaryPackageName, bpn_id),
+                    summary, description))
 
         for spn in sourcepackagenames:
             cache = cache_map[spn]
             cache.name = spn.name
 
-            sprs = spr_map.get(spn, [])
+            if with_binaries:
+                binpkgnames = set()
+                binpkgsummaries = set()
+                binpkgdescriptions = set()
+                for spr_id, spr_version in spr_map.get(spn, []):
+                    if log is not None:
+                        log.debug(
+                            "Considering source %s %s", spn.name, spr_version)
+                    binpkgs = binaries_by_spr.get(spr_id, [])
+                    for bpn, summary, description in binpkgs:
+                        binpkgnames.add(bpn.name)
+                        binpkgsummaries.add(summary)
+                        binpkgdescriptions.add(description)
 
-            binpkgnames = set()
-            binpkgsummaries = set()
-            binpkgdescriptions = set()
-            for spr_id, spr_version in sprs:
-                log.debug("Considering source %s %s", spn.name, spr_version)
-                binpkgs = binaries_by_spr.get(spr_id, [])
-                for bpn, summary, description in binpkgs:
-                    binpkgnames.add(bpn.name)
-                    binpkgsummaries.add(summary)
-                    binpkgdescriptions.add(description)
+                # Update the caches.
+                cache.binpkgnames = ' '.join(sorted(binpkgnames))
+                cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
+                cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
 
-            # Update the caches.
-            cache.binpkgnames = ' '.join(sorted(binpkgnames))
-            cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
-            cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
             # Column due for deletion.
             cache.changelog = None
 
@@ -254,7 +259,7 @@ class DistributionSourcePackageCache(SQLBase):
             log.debug(
                 "Considering sources %s",
                 ', '.join([spn.name for spn in chunk]))
-            cls._update(distro, chunk, archive, log)
+            cls.update(distro, chunk, archive, log)
             number_of_updates += len(chunk)
             log.debug("Committing")
             ztm.commit()

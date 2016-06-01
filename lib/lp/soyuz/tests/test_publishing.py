@@ -906,6 +906,19 @@ class TestPublishingSetLite(TestCaseWithFactory):
         super(TestPublishingSetLite, self).setUp()
         self.person = self.factory.makePerson()
 
+    def test_newSourcePublication_updates_cache(self):
+        ubuntutest = getUtility(IDistributionSet)["ubuntutest"]
+        breezy_autotest = ubuntutest["breezy-autotest"]
+        spn = self.factory.makeSourcePackageName()
+        self.assertEqual(0, ubuntutest.searchSourcePackages(spn.name).count())
+        spr = self.factory.makeSourcePackageRelease(
+            archive=ubuntutest.main_archive, sourcepackagename=spn,
+            distroseries=breezy_autotest, creator=self.person)
+        getUtility(IPublishingSet).newSourcePublication(
+            ubuntutest.main_archive, spr, breezy_autotest, spr.component,
+            spr.section, self.factory.getAnyPocket())
+        self.assertEqual(1, ubuntutest.searchSourcePackages(spn.name).count())
+
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion([spph], self.person)
