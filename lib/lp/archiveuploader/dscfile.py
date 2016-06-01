@@ -50,6 +50,7 @@ from lp.archiveuploader.utils import (
     parse_maintainer_bytes,
     ParseMaintError,
     re_is_component_orig_tar_ext,
+    re_is_component_orig_tar_ext_sig,
     re_issource,
     re_valid_pkg_name,
     re_valid_version,
@@ -441,7 +442,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if (self.policy.archive.purpose == ArchivePurpose.PPA and
             determine_source_file_type(filename) in (
                 SourcePackageFileType.ORIG_TARBALL,
-                SourcePackageFileType.COMPONENT_ORIG_TARBALL)):
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL,
+                SourcePackageFileType.ORIG_TARBALL_SIGNATURE,
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE,
+                )):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
             archives = [self.policy.archive]
@@ -470,10 +474,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         file_type_counts = {
             SourcePackageFileType.DIFF: 0,
             SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE: 0,
             SourcePackageFileType.DEBIAN_TARBALL: 0,
             SourcePackageFileType.NATIVE_TARBALL: 0,
             }
         component_orig_tar_counts = {}
+        component_orig_tar_signature_counts = {}
         bzip2_count = 0
         xz_count = 0
         files_missing = False
@@ -492,6 +498,15 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 if component not in component_orig_tar_counts:
                     component_orig_tar_counts[component] = 0
                 component_orig_tar_counts[component] += 1
+            elif (
+                file_type ==
+                    SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE):
+                # Split the count by component name.
+                component = re_is_component_orig_tar_ext_sig.match(
+                    get_source_file_extension(sub_dsc_file.filename)).group(1)
+                if component not in component_orig_tar_signature_counts:
+                    component_orig_tar_signature_counts[component] = 0
+                component_orig_tar_signature_counts[component] += 1
             else:
                 file_type_counts[file_type] += 1
 
@@ -552,7 +567,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         for error in file_checker(
             self.filename, file_type_counts, component_orig_tar_counts,
-            bzip2_count, xz_count):
+            component_orig_tar_signature_counts, bzip2_count, xz_count):
             yield error
 
         if files_missing:
@@ -791,12 +806,14 @@ def find_changelog(source_dir, logger):
     return open(changelog_file, 'r').read()
 
 
-def check_format_1_0_files(filename, file_type_counts, component_counts,
+def check_format_1_0_files(filename, file_type_counts,
+                           component_counts, component_signature_counts,
                            bzip2_count, xz_count):
     """Check that the given counts of each file type suit format 1.0.
 
     A 1.0 source must be native (with only one tar.gz), or have an orig.tar.gz
-    and a diff.gz. It cannot use bzip2 or xz compression.
+    and a diff.gz. It cannot use bzip2 or xz compression. If it has an
+    orig.tar.gz, it may have an orig.tar.gz.asc signature.
     """
     if bzip2_count > 0:
         yield UploadError(
@@ -811,11 +828,20 @@ def check_format_1_0_files(filename, file_type_counts, component_counts,
         {
             SourcePackageFileType.NATIVE_TARBALL: 1,
             SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE: 0,
             SourcePackageFileType.DEBIAN_TARBALL: 0,
             SourcePackageFileType.DIFF: 0,
         },
         {
             SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE: 0,
+            SourcePackageFileType.DIFF: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+        },
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE: 1,
             SourcePackageFileType.DIFF: 1,
             SourcePackageFileType.NATIVE_TARBALL: 0,
             SourcePackageFileType.DEBIAN_TARBALL: 0,
@@ -823,14 +849,15 @@ def check_format_1_0_files(filename, file_type_counts, component_counts,
     ]
 
     if (file_type_counts not in valid_file_type_counts or
-        len(component_counts) > 0):
+        len(component_counts) > 0 or len(component_signature_counts) > 0):
         yield UploadError(
             "%s: must have exactly one tar.gz, or an orig.tar.gz and diff.gz"
             % filename)
 
 
 def check_format_3_0_native_files(filename, file_type_counts,
-                                  component_counts, bzip2_count, xz_count):
+                                  component_counts, component_signature_counts,
+                                  bzip2_count, xz_count):
     """Check that the given counts of each file type suit format 3.0 (native).
 
     A 3.0 (native) source must have only one tar.*. Any of gzip, bzip2, and
@@ -841,28 +868,39 @@ def check_format_3_0_native_files(filename, file_type_counts,
         {
             SourcePackageFileType.NATIVE_TARBALL: 1,
             SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE: 0,
             SourcePackageFileType.DEBIAN_TARBALL: 0,
             SourcePackageFileType.DIFF: 0,
         },
     ]
 
     if (file_type_counts not in valid_file_type_counts or
-        len(component_counts) > 0):
+        len(component_counts) > 0 or len(component_signature_counts) > 0):
         yield UploadError("%s: must have only a tar.*." % filename)
 
 
 def check_format_3_0_quilt_files(filename, file_type_counts,
-                                 component_counts, bzip2_count, xz_count):
+                                 component_counts, component_signature_counts,
+                                 bzip2_count, xz_count):
     """Check that the given counts of each file type suit format 3.0 (native).
 
     A 3.0 (quilt) source must have exactly one orig.tar.*, one debian.tar.*,
     and at most one orig-COMPONENT.tar.* for each COMPONENT. Any of gzip,
-    bzip2, and xz compression are permissible.
+    bzip2, and xz compression are permissible. It may have orig.tar.*.asc
+    or orig-COMPONENT.tar.* signatures.
     """
 
     valid_file_type_counts = [
         {
             SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL_SIGNATURE: 1,
             SourcePackageFileType.DEBIAN_TARBALL: 1,
             SourcePackageFileType.NATIVE_TARBALL: 0,
             SourcePackageFileType.DIFF: 0,
@@ -878,6 +916,11 @@ def check_format_3_0_quilt_files(filename, file_type_counts,
         if component_counts[component] > 1:
             yield UploadError(
                 "%s: has more than one orig-%s.tar.*."
+                % (filename, component))
+    for component in component_signature_counts:
+        if component_signature_counts[component] > 1:
+            yield UploadError(
+                "%s: has more than one orig-%s.tar.*.asc."
                 % (filename, component))
 
 
