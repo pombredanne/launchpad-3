@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
@@ -2134,6 +2134,22 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         # This is just "assertNotRaises"
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
+
+    def test_ghost(self):
+        # createBranchRevisionFromIDs skips ghost revisions for which no
+        # Revision rows exist.
+        branch = self.factory.makeAnyBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        ghost_rev_id = self.factory.getUniqueString("revision-id")
+        revision_id_sequence_pairs = [
+            (rev.revision_id, revision_number),
+            (ghost_rev_id, None),
+            ]
+        branch.createBranchRevisionFromIDs(revision_id_sequence_pairs)
+        self.assertEqual(
+            revision_number, branch.getBranchRevision(revision=rev).sequence)
+        self.assertIsNone(branch.getBranchRevision(revision_id=ghost_rev_id))
 
 
 class TestRevisionHistory(TestCaseWithFactory):
