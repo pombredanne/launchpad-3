@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -1785,12 +1785,17 @@ class TestUploadProcessor(TestUploadProcessorBase):
               SourcePackageFileType.DSC),
              ('bar_1.0.orig-comp1.tar.gz',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp1.tar.gz.asc',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE),
              ('bar_1.0.orig-comp2.tar.bz2',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig-comp3.tar.xz',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig.tar.gz',
-              SourcePackageFileType.ORIG_TARBALL)])
+              SourcePackageFileType.ORIG_TARBALL),
+             ('bar_1.0.orig.tar.gz.asc',
+              SourcePackageFileType.ORIG_TARBALL_SIGNATURE),
+             ])
 
     def test30QuiltUploadWithSameComponentOrig(self):
         """Ensure that 3.0 (quilt) uploads with shared component origs work.
@@ -1825,10 +1830,15 @@ class TestUploadProcessor(TestUploadProcessorBase):
               SourcePackageFileType.DSC),
              ('bar_1.0.orig-comp1.tar.gz',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp1.tar.gz',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE),
              ('bar_1.0.orig-comp2.tar.bz2',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig.tar.gz',
-              SourcePackageFileType.ORIG_TARBALL)])
+              SourcePackageFileType.ORIG_TARBALL),
+             ('bar_1.0.orig.tar.gz.asc',
+              SourcePackageFileType.ORIG_TARBALL_SIGNATURE),
+             ])
 
     def test30NativeUpload(self):
         """Ensure that 3.0 (native) uploads work properly. """
