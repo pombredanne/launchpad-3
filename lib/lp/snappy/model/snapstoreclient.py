@@ -52,6 +52,10 @@ class LibraryFileAliasWrapper:
         return data
 
 
+class InvalidStoreSecretsError(Exception):
+    pass
+
+
 class MacaroonAuth(requests.auth.AuthBase):
     """Attaches macaroon authentication to a given Request object."""
 
@@ -65,8 +69,12 @@ class MacaroonAuth(requests.auth.AuthBase):
     @classmethod
     def _makeAuthParam(cls, key, value):
         # Check framing.
-        assert set(key).issubset(cls.allowed_chars)
-        assert set(value).issubset(cls.allowed_chars)
+        if not set(key).issubset(cls.allowed_chars):
+            raise InvalidStoreSecretsError(
+                "Key contains unsafe characters: %r" % key)
+        if not set(value).issubset(cls.allowed_chars):
+            raise InvalidStoreSecretsError(
+                "Value contains unsafe characters: %r" % key)
         return '%s="%s"' % (key, value)
 
     @property
