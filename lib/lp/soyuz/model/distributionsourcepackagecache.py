@@ -16,6 +16,8 @@ from sqlobject import (
     )
 from zope.interface import implementer
 
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -32,12 +34,15 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
+_DEFAULT = object()
+
+
 @implementer(IDistributionSourcePackageCache)
 class DistributionSourcePackageCache(SQLBase):
     _table = 'DistributionSourcePackageCache'
 
     archive = ForeignKey(dbName='archive',
-        foreignKey='Archive', notNull=True)
+        foreignKey='Archive', notNull=False)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=True)
     sourcepackagename = ForeignKey(dbName='sourcepackagename',
@@ -61,32 +66,41 @@ class DistributionSourcePackageCache(SQLBase):
             self.sourcepackagename)
 
     @classmethod
-    def findCurrentSourcePackageNames(cls, archive):
-        spn_ids = IStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory.sourcepackagenameID,
-            SourcePackagePublishingHistory.archive == archive,
-            SourcePackagePublishingHistory.status.is_in((
-                PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED))).config(
-                    distinct=True)
-        return bulk.load(SourcePackageName, spn_ids)
+    def findCurrentSourcePackageNames(cls, distro, archive):
+        if archive is None:
+            spn_ids = IStore(SeriesSourcePackageBranch).find(
+                SeriesSourcePackageBranch.sourcepackagenameID,
+                DistroSeries.distribution == distro.id,
+                SeriesSourcePackageBranch.distroseriesID == DistroSeries.id)
+        else:
+            spn_ids = IStore(SourcePackagePublishingHistory).find(
+                SourcePackagePublishingHistory.sourcepackagenameID,
+                SourcePackagePublishingHistory.archive == archive,
+                SourcePackagePublishingHistory.status.is_in((
+                    PackagePublishingStatus.PENDING,
+                    PackagePublishingStatus.PUBLISHED)))
+        return bulk.load(SourcePackageName, spn_ids.config(distinct=True))
 
     @classmethod
-    def _find(cls, distro, archive=None):
+    def _find(cls, distro, archive=_DEFAULT):
         """The set of all source package info caches for this distribution.
 
         If 'archive' is not given it will return all caches stored for the
         distribution main archives (PRIMARY and PARTNER).
         """
-        if archive is not None:
-            archives = [archive.id]
+        archive_column = DistributionSourcePackageCache.archiveID
+        if archive is _DEFAULT:
+            archive_clause = (
+                archive_column.is_in(distro.all_distro_archive_ids))
+        elif archive is not None:
+            archive_clause = (archive_column == archive.id)
         else:
-            archives = distro.all_distro_archive_ids
+            archive_clause = (archive_column == None)
 
         result = IStore(DistributionSourcePackageCache).find(
             (DistributionSourcePackageCache, SourcePackageName),
             DistributionSourcePackageCache.distribution == distro,
-            DistributionSourcePackageCache.archiveID.is_in(archives),
+            archive_clause,
             SourcePackageName.id ==
                 DistributionSourcePackageCache.sourcepackagenameID,
             ).order_by(DistributionSourcePackageCache.name)
@@ -98,17 +112,18 @@ class DistributionSourcePackageCache(SQLBase):
 
         Also purges all existing cache records for disabled archives.
 
-        :param archive: target `IArchive`.
+        :param archive: target `IArchive`, or None to consider official
+            branches.
         :param log: the context logger object able to print DEBUG level
             messages.
         """
 
         # Get the set of source package names to deal with.
-        if not archive.enabled:
+        if archive is not None and not archive.enabled:
             spns = set()
         else:
             spns = set(
-                cls.findCurrentSourcePackageNames(archive))
+                cls.findCurrentSourcePackageNames(distro, archive))
 
         # Remove the cache entries for packages we no longer publish.
         for cache in cls._find(distro, archive):
@@ -151,7 +166,7 @@ class DistributionSourcePackageCache(SQLBase):
                 [spn.id for spn in sourcepackagenames]))
         cache_map = {cache.sourcepackagename: cache for cache in all_caches}
 
-        for spn in set(sourcepackagenames) - set(cache_map.keys()):
+        for spn in set(sourcepackagenames) - set(cache_map):
             cache_map[spn] = cls(
                 archive=archive, distribution=distro,
                 sourcepackagename=spn)
@@ -221,6 +236,23 @@ class DistributionSourcePackageCache(SQLBase):
             cache.changelog = None
 
     @classmethod
+    def updateOfficialBranches(cls, distro, sourcepackagenames):
+        """Update the package cache for official branches with given names.
+
+        We just cache the names for these.
+        """
+        all_caches = IStore(cls).find(
+            cls, cls.distribution == distro, cls.archive == None,
+            cls.sourcepackagenameID.is_in(
+                [spn.id for spn in sourcepackagenames]))
+        cache_map = {cache.sourcepackagename: cache for cache in all_caches}
+
+        for spn in set(sourcepackagenames) - set(cache_map):
+            cache_map[spn] = cls(
+                archive=None, distribution=distro, sourcepackagename=spn,
+                name=spn.name)
+
+    @classmethod
     def updateAll(cls, distro, archive, log, ztm, commit_chunk=500):
         """Update the source package cache.
 
@@ -236,12 +268,12 @@ class DistributionSourcePackageCache(SQLBase):
         :return the number packages updated done
         """
         # Do not create cache entries for disabled archives.
-        if not archive.enabled:
+        if archive is not None and not archive.enabled:
             return
 
         # Get the set of source package names to deal with.
         spns = list(sorted(
-            cls.findCurrentSourcePackageNames(archive),
+            cls.findCurrentSourcePackageNames(distro, archive),
             key=attrgetter('name')))
 
         number_of_updates = 0
@@ -259,7 +291,10 @@ class DistributionSourcePackageCache(SQLBase):
             log.debug(
                 "Considering sources %s",
                 ', '.join([spn.name for spn in chunk]))
-            cls.update(distro, chunk, archive, log)
+            if archive is None:
+                cls.updateOfficialBranches(distro, chunk)
+            else:
+                cls.update(distro, chunk, archive, log)
             number_of_updates += len(chunk)
             log.debug("Committing")
             ztm.commit()

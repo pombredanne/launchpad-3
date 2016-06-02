@@ -83,12 +83,19 @@ class SeriesSourcePackageBranchSet:
     def new(distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):
         """Link a source package in a distribution suite to a branch."""
+        # Circular import.
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
+
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
         sspb = SeriesSourcePackageBranch(
             distroseries, pocket, sourcepackagename, branch, registrant,
             date_created)
         IMasterStore(SeriesSourcePackageBranch).add(sspb)
+        DistributionSourcePackageCache.updateOfficialBranches(
+            distroseries.distribution, [sourcepackagename])
         return sspb
 
     def findForBranch(self, branch):

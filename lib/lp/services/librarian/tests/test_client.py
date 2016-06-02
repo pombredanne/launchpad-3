@@ -1,30 +1,41 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
 import hashlib
 import httplib
+import os
+import re
 import textwrap
 import unittest
 from urllib2 import (
     HTTPError,
     URLError,
+    urlopen,
     )
 
+from fixtures import (
+    EnvironmentVariable,
+    TempDir,
+    )
 import transaction
 
 from lp.services.config import config
+from lp.services.daemons.tachandler import TacTestSetup
 from lp.services.database.interfaces import ISlaveStore
 from lp.services.database.policy import SlaveDatabasePolicy
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.librarian import client as client_module
 from lp.services.librarian.client import (
+    _File,
     LibrarianClient,
     LibrarianServerError,
     RestrictedLibrarianClient,
     )
 from lp.services.librarian.interfaces.client import UploadFailed
 from lp.services.librarian.model import LibraryFileAlias
+from lp.services.propertycache import cachedproperty
+from lp.testing import TestCase
 from lp.testing.layers import (
     DatabaseLayer,
     FunctionalLayer,
@@ -77,6 +88,80 @@ def make_mock_file(error, max_raise):
         return 'This is a fake file object'
 
     return mock_file
+
+
+class FakeServerTestSetup(TacTestSetup):
+
+    def setUp(self):
+        self.port = None
+        super(FakeServerTestSetup, self).setUp()
+
+    def setUpRoot(self):
+        pass
+
+    @cachedproperty
+    def root(self):
+        return self.useFixture(TempDir()).path
+
+    @property
+    def tacfile(self):
+        return os.path.join(os.path.dirname(__file__), "fakeserver.tac")
+
+    @property
+    def pidfile(self):
+        return os.path.join(self.root, "fakeserver.pid")
+
+    @property
+    def logfile(self):
+        return os.path.join(self.root, "fakeserver.log")
+
+    def removeLog(self):
+        pass
+
+    def _hasDaemonStarted(self):
+        if super(FakeServerTestSetup, self)._hasDaemonStarted():
+            with open(self.logfile) as logfile:
+                self.port = int(re.search(
+                    r"Site starting on (\d+)", logfile.read()).group(1))
+            return True
+        else:
+            return False
+
+
+class LibrarianFileWrapperTestCase(TestCase):
+    """Test behaviour of the _File wrapper used by the librarian client."""
+
+    def makeFile(self, extra_content_length=None):
+        extra_content_length_str = (
+            str(extra_content_length) if extra_content_length is not None
+            else None)
+        self.useFixture(EnvironmentVariable(
+            "LP_EXTRA_CONTENT_LENGTH", extra_content_length_str))
+        port = self.useFixture(FakeServerTestSetup()).port
+        url = "http://localhost:%d/" % port
+        return _File(urlopen(url), url)
+
+    def test_unbounded_read_correct_length(self):
+        file = self.makeFile()
+        self.assertEqual(b"abcdef", file.read())
+        self.assertEqual(b"", file.read())
+
+    def test_unbounded_read_incorrect_length(self):
+        file = self.makeFile(extra_content_length=1)
+        self.assertEqual(b"abcdef", file.read())
+        self.assertRaises(httplib.IncompleteRead, file.read)
+
+    def test_bounded_read_correct_length(self):
+        file = self.makeFile()
+        self.assertEqual(b"abcd", file.read(chunksize=4))
+        self.assertEqual(b"ef", file.read(chunksize=4))
+        self.assertEqual(b"", file.read(chunksize=4))
+
+    def test_bounded_read_incorrect_length(self):
+        file = self.makeFile(extra_content_length=1)
+        self.assertEqual(b"abcd", file.read(chunksize=4))
+        self.assertEqual(b"ef", file.read(chunksize=4))
+        self.assertRaises(httplib.IncompleteRead, file.read, chunksize=4)
 
 
 class LibrarianClientTestCase(unittest.TestCase):
