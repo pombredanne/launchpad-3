@@ -66,6 +66,29 @@ class TestSSHKey(TestCaseWithFactory):
         expected = "ssh-dss %s %s" % (key.keytext, key.comment)
         self.assertEqual(expected, key.getFullKeyText())
 
+    def test_destroySelf_sends_notification_by_default(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            key = self.factory.makeSSHKey(person, send_notification=False)
+            key.destroySelf()
+            [email] = pop_notifications()
+            self.assertEqual(
+                email['Subject'],
+                "SSH Key removed from your Launchpad account.")
+            self.assertThat(
+                email.get_payload(),
+                StartsWith(
+                    "The SSH Key %s was removed from your "
+                    % key.comment)
+            )
+
+    def test_destroySelf_notications_can_be_supressed(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            key = self.factory.makeSSHKey(person, send_notification=False)
+            key.destroySelf(False)
+            self.assertEqual([], pop_notifications())
+
 
 class TestSSHKeySet(TestCaseWithFactory):
 

@@ -3486,7 +3486,7 @@ class PersonSet:
             IPerson(account), key_text, False, dry_run=dry_run)
 
     def deleteSSHKeyFromSSO(self, user, openid_identifier, key_text,
-                                     dry_run=False):
+                            dry_run=False):
         """See `IPersonSet`."""
         if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
             raise Unauthorized()
@@ -3503,7 +3503,7 @@ class PersonSet:
             # ISSHKeySet does not restrict the same SSH key being added
             # multiple times, so make sure we delte them all:
             for key in keys:
-                key.destroySelf()
+                key.destroySelf(send_notification=False)
 
     def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
@@ -4078,12 +4078,13 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
-    def destroySelf(self):
-        # For security reasons we want to notify the preferred email address
-        # that this sshkey has been removed.
-        self.person.security_field_changed(
-            "SSH Key removed from your Launchpad account.",
-            "The SSH Key %s was removed from your account." % self.comment)
+    def destroySelf(self, send_notification=True):
+        if send_notification:
+            # For security reasons we want to notify the preferred email
+            # address that this sshkey has been removed.
+            self.person.security_field_changed(
+                "SSH Key removed from your Launchpad account.",
+                "The SSH Key %s was removed from your account." % self.comment)
         super(SSHKey, self).destroySelf()
 
     def getFullKeyText(self):
