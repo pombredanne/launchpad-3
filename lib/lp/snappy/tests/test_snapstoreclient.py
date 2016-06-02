@@ -45,7 +45,10 @@ from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     ISnapStoreClient,
     )
-from lp.snappy.model.snapstoreclient import MacaroonAuth
+from lp.snappy.model.snapstoreclient import (
+    InvalidStoreSecretsError,
+    MacaroonAuth,
+    )
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -95,7 +98,16 @@ class TestMacaroonAuth(TestCase):
 
     def test_bad_framing(self):
         r = Request()
-        self.assertRaises(AssertionError, MacaroonAuth('ev"il', 'wic"ked'), r)
+        self.assertRaises(
+            InvalidStoreSecretsError, MacaroonAuth('ev"il', 'wic"ked'), r)
+        # Test _makeAuthParam's behaviour directly in case somebody somehow
+        # convinces Macaroon.serialize to emit data that breaks framing.
+        self.assertRaises(
+            InvalidStoreSecretsError, MacaroonAuth._makeAuthParam,
+            'ev"il', 'good')
+        self.assertRaises(
+            InvalidStoreSecretsError, MacaroonAuth._makeAuthParam,
+            'good', 'ev"il')
 
 
 class RequestMatches(Matcher):
