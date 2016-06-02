@@ -74,7 +74,7 @@ class MacaroonAuth(requests.auth.AuthBase):
                 "Key contains unsafe characters: %r" % key)
         if not set(value).issubset(cls.allowed_chars):
             raise InvalidStoreSecretsError(
-                "Value contains unsafe characters: %r" % key)
+                "Value contains unsafe characters: %r" % value)
         return '%s="%s"' % (key, value)
 
     @property
