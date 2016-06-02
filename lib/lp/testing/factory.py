@@ -4286,7 +4286,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
-    def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA):
+    def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA,
+                   send_notification=True):
         """Create a new SSHKey.
 
         :param person: If specified, the person to attach the key to. If
@@ -4305,7 +4306,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.getUniqueString(),
             self.getUniqueString(),
             )
-        return getUtility(ISSHKeySet).new(person, public_key)
+        return getUtility(ISSHKeySet).new(
+            person, public_key, send_notification=send_notification)
 
     def makeBlob(self, blob=None, expires=None, blob_file=None):
         """Create a new TemporaryFileStorage BLOB."""
