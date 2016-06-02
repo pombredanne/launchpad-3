@@ -317,7 +317,7 @@ class _File:
                 # from a non-chunked-transfer-coding resource.  Check this
                 # manually.
                 if not s and chunksize != 0 and self.length:
-                    raise httplib.IncompleteRead(s)
+                    raise httplib.IncompleteRead(s, expected=self.length)
             return s
         finally:
             action.finish()
