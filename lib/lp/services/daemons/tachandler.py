@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for TAC (Twisted Application Configuration) files."""
@@ -44,7 +44,7 @@ class TacTestSetup(TacTestFixture):
         # readyservice.LOG_MAGIC string and return immediately, provoking
         # hard-to-diagnose race conditions. Delete the logfile to make sure
         # this does not happen.
-        remove_if_exists(self.logfile)
+        self.removeLog()
         with override_environ(LP_DEBUG_SQL=None):
             TacTestFixture.setUp(self,
                 python_path=sys.executable,
@@ -61,6 +61,9 @@ class TacTestSetup(TacTestFixture):
                 return readyservice.LOG_MAGIC in logfile.read()
         else:
             return False
+
+    def removeLog(self):
+        remove_if_exists(self.logfile)
 
     def truncateLog(self):
         """Truncate the log file.
