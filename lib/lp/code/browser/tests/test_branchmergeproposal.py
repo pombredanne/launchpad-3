@@ -23,8 +23,12 @@ from soupmatchers import (
     Tag,
     )
 from testtools.matchers import (
+    Equals,
+    Is,
+    MatchesDict,
     MatchesListwise,
     MatchesRegex,
+    MatchesSetwise,
     MatchesStructure,
     Not,
     )
@@ -1611,6 +1615,43 @@ class TestBranchMergeProposalBrowserView(
         text = self.getMainText(bmp, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace(
             'Prerequisite: ' + re.escape(identity), text)
+
+    def test_git_hosting_calls(self):
+        # Rendering a Git-based merge proposal makes the correct calls to
+        # the hosting service, including requesting cross-repository
+        # information.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        self.getMainText(bmp, '+index')
+        self.assertThat(self.hosting_client.getLog.calls, MatchesSetwise(
+            # _getNewerRevisions
+            MatchesListwise([
+                Equals((
+                    '%s:%s' % (
+                        bmp.target_git_repository.getInternalPath(),
+                        bmp.source_git_repository.getInternalPath()),
+                    bmp.source_git_commit_sha1,
+                    )),
+                MatchesDict({
+                    'stop': Equals(bmp.target_git_commit_sha1),
+                    'limit': Is(None),
+                    'logger': Is(None),
+                    }),
+                ]),
+            # getUnlandedSourceBranchRevisions
+            MatchesListwise([
+                Equals((
+                    '%s:%s' % (
+                        bmp.target_git_repository.getInternalPath(),
+                        bmp.source_git_repository.getInternalPath()),
+                    bmp.source_git_commit_sha1,
+                    )),
+                MatchesDict({
+                    'stop': Equals(bmp.target_git_commit_sha1),
+                    'limit': Equals(10),
+                    'logger': Is(None),
+                    }),
+                ]),
+            ))
 
 
 class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
