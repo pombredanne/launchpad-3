@@ -17,7 +17,10 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapBuildJob,
     ISnapStoreUploadJob,
     )
-from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
+from lp.snappy.interfaces.snapstoreclient import (
+    ISnapStoreClient,
+    UnauthorizedUploadResponse,
+    )
 from lp.snappy.model.snapbuildjob import (
     SnapBuildJob,
     SnapBuildJobType,
@@ -31,6 +34,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.mail_helpers import pop_notifications
 
 
 @implementer(ISnapStoreClient)
@@ -89,6 +93,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([((snapbuild,), {})], client.upload.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
 
     def test_run_failed(self):
         # A failed run sets the store upload status to FAILED.
@@ -103,3 +108,42 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([((snapbuild,), {})], client.upload.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertEqual("An upload failure", job.error_message)
+        self.assertEqual([], pop_notifications())
+
+    def test_run_unauthorized_notifies(self):
+        # A run that gets 401 from the store sends mail.
+        requester = self.factory.makePerson(name="requester")
+        snapbuild = self.factory.makeSnapBuild(
+            requester=requester, name="test-snap", owner=requester)
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.failure = UnauthorizedUploadResponse(
+            "Authorization failed.")
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertEqual("Authorization failed.", job.error_message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            config.canonical.noreply_from_address, notification["From"])
+        self.assertEqual(
+            "Requester <%s>" % requester.preferredemail.email,
+            notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
+        self.assertEqual("Store authorization failed for test-snap", subject)
+        self.assertEqual(
+            "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(
+            requester.name, notification["X-Launchpad-Message-For"])
+        self.assertEqual(
+            "snap-build-upload-unauthorized",
+            notification["X-Launchpad-Notification-Type"])
+        body, footer = notification.get_payload(decode=True).split("\n-- \n")
+        self.assertIn(
+            "http://launchpad.dev/~requester/+snap/test-snap/+authorize", body)
+        self.assertEqual(
+            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
+            "You are the requester of the build.\n" % snapbuild.id, footer)

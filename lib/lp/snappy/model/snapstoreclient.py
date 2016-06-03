@@ -28,6 +28,7 @@ from lp.snappy.interfaces.snapstoreclient import (
     BadUploadResponse,
     ISnapStoreClient,
     NeedsRefreshResponse,
+    UnauthorizedUploadResponse,
     )
 
 
@@ -163,10 +164,12 @@ class SnapStoreClient:
                     snap.store_secrets["root"],
                     snap.store_secrets["discharge"]))
         except requests.HTTPError as e:
-            if (e.response.status_code == 401 and
-                e.response.headers.get("WWW-Authenticate") ==
-                    "Macaroon needs_refresh=1"):
-                raise NeedsRefreshResponse()
+            if e.response.status_code == 401:
+                if (e.response.headers.get("WWW-Authenticate") ==
+                        "Macaroon needs_refresh=1"):
+                    raise NeedsRefreshResponse()
+                else:
+                    raise UnauthorizedUploadResponse("Authorization failed.")
             raise BadUploadResponse(e.args[0])
 
     def upload(self, snapbuild):
