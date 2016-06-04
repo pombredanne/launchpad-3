@@ -135,6 +135,12 @@ class RepositoryIndexFile:
                 self.old_index_files.append(
                     cls(temp_root, filename, auto_open=False))
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
     def write(self, content):
         """Write contents to all target medias."""
         for index_file in self.index_files:
