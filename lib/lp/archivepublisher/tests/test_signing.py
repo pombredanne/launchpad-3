@@ -5,10 +5,10 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import os
 import stat
 import tarfile
-from cStringIO import StringIO
 
 from fixtures import MonkeyPatch
 
