@@ -27,6 +27,7 @@ import tempfile
 import textwrap
 
 from lp.archivepublisher.customupload import CustomUpload
+from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
@@ -297,17 +298,16 @@ class SigningUpload(CustomUpload):
     def generateChecksums(self):
         """Generate SHA256 checksums for the custom upload."""
         versiondir = os.path.join(self.tmpdir, self.version)
-        checksum_file = os.path.join(self.tmpdir, "SHA256SUMS.tmp")
+        checksum_file = os.path.join(versiondir, "SHA256SUMS")
         prefix_len = len(versiondir) + 1
-        with open(checksum_file, "w") as sfd:
+
+        with RepositoryIndexFile(checksum_file, self.tmpdir) as sif:
             for dirpath, dirnames, filenames in os.walk(versiondir):
                 for filename in filenames:
                     disk_name = os.path.join(dirpath, filename)
                     with open(disk_name) as dfd:
                         checksum = self.checksumSha256(dfd)
-                    print("%s  %s" % (checksum, disk_name[prefix_len:]),
-                        file=sfd)
-        os.rename(checksum_file, os.path.join(versiondir, "SHA256SUMS"))
+                    sif.write("%s  %s\n" % (checksum, disk_name[prefix_len:]))
 
     def extract(self):
         """Copy the custom upload to a temporary directory, and sign it.
