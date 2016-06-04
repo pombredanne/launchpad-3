@@ -113,7 +113,7 @@ class RepositoryIndexFile:
     (plain, gzip, bzip2, and xz) transparently and atomically.
     """
 
-    def __init__(self, path, temp_root, compressors):
+    def __init__(self, path, temp_root, compressors = [IndexCompressionType.UNCOMPRESSED]):
         """Store repositories destinations and filename.
 
         The given 'temp_root' needs to exist; on the other hand, the
