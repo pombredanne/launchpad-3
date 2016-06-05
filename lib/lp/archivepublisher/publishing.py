@@ -261,8 +261,12 @@ class IArchiveHash(Interface):
         "subdirectories.")
     lfc_name = Attribute(
         "LibraryFileContent attribute name corresponding to this algorithm.")
+    dh_name = Attribute(
+        "Filename for use when checksumming directories with this algorithm.")
     write_by_hash = Attribute(
         "Whether to write by-hash subdirectories for this algorithm.")
+    write_directory_hash = Attribute(
+        "Whether to write *SUM files for this algorithm for directories.")
 
 
 @implementer(IArchiveHash)
@@ -271,7 +275,9 @@ class MD5ArchiveHash:
     deb822_name = "md5sum"
     apt_name = "MD5Sum"
     lfc_name = "md5"
+    dh_name = "MD5SUMS"
     write_by_hash = False
+    write_directory_hash = False
 
 
 @implementer(IArchiveHash)
@@ -280,7 +286,9 @@ class SHA1ArchiveHash:
     deb822_name = "sha1"
     apt_name = "SHA1"
     lfc_name = "sha1"
+    dh_name = "SHA1SUMS"
     write_by_hash = False
+    write_directory_hash = False
 
 
 @implementer(IArchiveHash)
@@ -289,7 +297,9 @@ class SHA256ArchiveHash:
     deb822_name = "sha256"
     apt_name = "SHA256"
     lfc_name = "sha256"
+    dh_name = "SHA256SUMS"
     write_by_hash = True
+    write_directory_hash = True
 
 
 archive_hashes = [
@@ -1462,3 +1472,58 @@ class Publisher(object):
             count += 1
         self.archive.name = new_name
         self.log.info("Renamed deleted archive '%s'.", self.archive.reference)
+
+
+class DirectoryHash:
+    """Represents a directory hierachy for hashing."""
+
+    def __init__(self, root, tmpdir, log):
+        self.root = root
+        self.tmpdir = tmpdir
+        self.log = log
+        self.checksum_hash = []
+
+        for usable in self._usable_archive_hashes:
+            checksum_file = os.path.join(self.root, usable.dh_name)
+            self.checksum_hash.append(
+                (RepositoryIndexFile(checksum_file, self.tmpdir), usable))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    @property
+    def _usable_archive_hashes(self):
+        usable = []
+        for archive_hash in archive_hashes:
+            if archive_hash.write_directory_hash:
+                usable.append(archive_hash)
+        return usable
+
+    def add(self, path):
+        """Add a path to be checksummed."""
+        hashes = [
+            (checksum_file, archive_hash.hash_factory())
+            for (checksum_file, archive_hash) in self.checksum_hash]
+        size = 0
+        with open(path, 'rb') as in_file:
+            for chunk in iter(lambda: in_file.read(256 * 1024), ""):
+                for (checksum_file, hashobj) in hashes:
+                    hashobj.update(chunk)
+                size += len(chunk)
+
+        for (checksum_file, hashobj) in hashes:
+            checksum_file.write("%s  %s\n" %
+                (hashobj.hexdigest(), path[len(self.root) + 1:]))
+
+    def add_dir(self, path):
+        """Recursivly add a directory path to be checksummed."""
+        for dirpath, dirnames, filenames in os.walk(path):
+            for filename in filenames:
+                self.add(os.path.join(dirpath, filename))
+
+    def close(self):
+        for (checksum_file, archive_hash) in self.checksum_hash:
+            checksum_file.close()
