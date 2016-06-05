@@ -18,7 +18,6 @@ __all__ = [
     "UefiUpload",
     ]
 
-import hashlib
 import os
 import shutil
 import subprocess
@@ -288,27 +287,6 @@ class SigningUpload(CustomUpload):
         except OSError as exc:
             raise SigningUploadPackError(tarfilename, exc)
 
-    def checksumSha256(self, datafd):
-        """Calculate the SHA256 checksum for the passed file descriptor."""
-        file_hash = hashlib.sha256()
-        for chunk in iter(lambda: datafd.read(256 * 1024), ""):
-            file_hash.update(chunk)
-        return file_hash.hexdigest()
-
-    def generateChecksums(self):
-        """Generate SHA256 checksums for the custom upload."""
-        versiondir = os.path.join(self.tmpdir, self.version)
-        checksum_file = os.path.join(versiondir, "SHA256SUMS")
-        prefix_len = len(versiondir) + 1
-
-        with RepositoryIndexFile(checksum_file, self.tmpdir) as sif:
-            for dirpath, dirnames, filenames in os.walk(versiondir):
-                for filename in filenames:
-                    disk_name = os.path.join(dirpath, filename)
-                    with open(disk_name) as dfd:
-                        checksum = self.checksumSha256(dfd)
-                    sif.write("%s  %s\n" % (checksum, disk_name[prefix_len:]))
-
     def extract(self):
         """Copy the custom upload to a temporary directory, and sign it.
 
@@ -326,7 +304,12 @@ class SigningUpload(CustomUpload):
         if 'tarball' in self.signing_options:
             self.convertToTarball()
 
-        self.generateChecksums()
+        # Avoid circular import.
+        from lp.archivepublisher.publishing import DirectoryHash
+
+        versiondir = os.path.join(self.tmpdir, self.version)
+        with DirectoryHash(versiondir, self.tmpdir, self.logger) as hasher:
+            hasher.add_dir(versiondir)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
