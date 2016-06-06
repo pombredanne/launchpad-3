@@ -42,7 +42,6 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
-from lp.services import encoding
 from lp.services.config import config
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
