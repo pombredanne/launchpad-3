@@ -113,7 +113,7 @@ class RepositoryIndexFile:
     (plain, gzip, bzip2, and xz) transparently and atomically.
     """
 
-    def __init__(self, path, temp_root, compressors = [IndexCompressionType.UNCOMPRESSED]):
+    def __init__(self, path, temp_root, compressors=None):
         """Store repositories destinations and filename.
 
         The given 'temp_root' needs to exist; on the other hand, the
@@ -123,6 +123,9 @@ class RepositoryIndexFile:
         Additionally creates the needed temporary files in the given
         'temp_root'.
         """
+        if compressors is None:
+            compressors = [IndexCompressionType.UNCOMPRESSED]
+
         self.root, filename = os.path.split(path)
         assert os.path.exists(temp_root), 'Temporary root does not exist.'
 
