@@ -26,6 +26,7 @@ import tempfile
 import textwrap
 
 from lp.archivepublisher.customupload import CustomUpload
+from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
@@ -291,6 +292,9 @@ class SigningUpload(CustomUpload):
 
         No actual extraction is required.
         """
+        # Avoid circular import.
+        from lp.archivepublisher.publishing import DirectoryHash
+
         super(SigningUpload, self).extract()
         self.setSigningOptions()
         filehandlers = list(self.findSigningHandlers())
@@ -302,6 +306,10 @@ class SigningUpload(CustomUpload):
         # If tarball output is requested, tar up the results.
         if 'tarball' in self.signing_options:
             self.convertToTarball()
+
+        versiondir = os.path.join(self.tmpdir, self.version)
+        with DirectoryHash(versiondir, self.tmpdir, self.logger) as hasher:
+            hasher.add_dir(versiondir)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
