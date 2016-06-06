@@ -1475,7 +1475,7 @@ class Publisher(object):
 
 
 class DirectoryHash:
-    """Represents a directory hierachy for hashing."""
+    """Represents a directory hierarchy for hashing."""
 
     def __init__(self, root, tmpdir, log):
         self.root = root
