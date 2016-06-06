@@ -1507,12 +1507,10 @@ class DirectoryHash:
         hashes = [
             (checksum_file, archive_hash.hash_factory())
             for (checksum_file, archive_hash) in self.checksum_hash]
-        size = 0
         with open(path, 'rb') as in_file:
             for chunk in iter(lambda: in_file.read(256 * 1024), ""):
                 for (checksum_file, hashobj) in hashes:
                     hashobj.update(chunk)
-                size += len(chunk)
 
         for (checksum_file, hashobj) in hashes:
             checksum_file.write("%s *%s\n" %
