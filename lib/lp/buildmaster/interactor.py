@@ -539,8 +539,8 @@ class BuilderInteractor(object):
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            vitals.build_queue.logtail = encoding.guess(
-                str(slave_status.get('logtail')))
+            vitals.build_queue.logtail = str(
+                slave_status.get('logtail')).decode('UTF-8', errors='replace')
             transaction.commit()
         elif builder_status == 'BuilderStatus.ABORTING':
             # Build is being aborted.
