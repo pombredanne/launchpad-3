@@ -292,6 +292,9 @@ class SigningUpload(CustomUpload):
 
         No actual extraction is required.
         """
+        # Avoid circular import.
+        from lp.archivepublisher.publishing import DirectoryHash
+
         super(SigningUpload, self).extract()
         self.setSigningOptions()
         filehandlers = list(self.findSigningHandlers())
@@ -303,9 +306,6 @@ class SigningUpload(CustomUpload):
         # If tarball output is requested, tar up the results.
         if 'tarball' in self.signing_options:
             self.convertToTarball()
-
-        # Avoid circular import.
-        from lp.archivepublisher.publishing import DirectoryHash
 
         versiondir = os.path.join(self.tmpdir, self.version)
         with DirectoryHash(versiondir, self.tmpdir, self.logger) as hasher:
