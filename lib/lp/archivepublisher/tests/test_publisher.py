@@ -24,8 +24,6 @@ from textwrap import dedent
 import time
 
 from debian.deb822 import Release
-
-
 try:
     import lzma
 except ImportError:
