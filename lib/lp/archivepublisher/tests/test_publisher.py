@@ -54,7 +54,6 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
 from lp.archivepublisher.publishing import (
-    archive_hashes,
     ByHash,
     ByHashes,
     DirectoryHash,
@@ -3176,17 +3175,16 @@ class TestDirectoryHash(TestCase):
         return hashlib.sha256(content).hexdigest()
 
     @property
-    def allHashFiles(self):
-        return [hash.dh_name for hash in archive_hashes]
+    def all_hash_files(self):
+        return ['MD5SUMS', 'SHA1SUMS', 'SHA256SUMS']
 
     @property
-    def expectedHashFiles(self):
-        return [hash.dh_name for hash in archive_hashes
-                if hash.write_directory_hash]
+    def expected_hash_files(self):
+        return ['SHA256SUMS']
 
     def fetchSums(self, rootdir):
         result = []
-        for dh_file in self.allHashFiles:
+        for dh_file in self.all_hash_files:
             checksum_file = os.path.join(rootdir, dh_file)
             if os.path.exists(checksum_file):
                 with open(checksum_file, "r") as sfd:
@@ -3198,16 +3196,16 @@ class TestDirectoryHash(TestCase):
         tmpdir = unicode(self.makeTemporaryDirectory())
         rootdir = unicode(self.makeTemporaryDirectory())
 
-        for dh_file in self.allHashFiles:
+        for dh_file in self.all_hash_files:
             checksum_file = os.path.join(rootdir, dh_file)
             self.assertFalse(os.path.exists(checksum_file))
 
         with DirectoryHash(rootdir, tmpdir, None) as dh:
             pass
 
-        for dh_file in self.allHashFiles:
+        for dh_file in self.all_hash_files:
             checksum_file = os.path.join(rootdir, dh_file)
-            if dh_file in self.expectedHashFiles:
+            if dh_file in self.expected_hash_files:
                 self.assertTrue(os.path.exists(checksum_file))
             else:
                 self.assertFalse(os.path.exists(checksum_file))
