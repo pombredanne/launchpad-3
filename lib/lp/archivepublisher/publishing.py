@@ -1496,11 +1496,9 @@ class DirectoryHash:
 
     @property
     def _usable_archive_hashes(self):
-        usable = []
         for archive_hash in archive_hashes:
             if archive_hash.write_directory_hash:
-                usable.append(archive_hash)
-        return usable
+                yield archive_hash
 
     def add(self, path):
         """Add a path to be checksummed."""
