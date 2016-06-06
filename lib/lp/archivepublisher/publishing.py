@@ -1515,7 +1515,7 @@ class DirectoryHash:
                 size += len(chunk)
 
         for (checksum_file, hashobj) in hashes:
-            checksum_file.write("%s  %s\n" %
+            checksum_file.write("%s *%s\n" %
                 (hashobj.hexdigest(), path[len(self.root) + 1:]))
 
     def add_dir(self, path):

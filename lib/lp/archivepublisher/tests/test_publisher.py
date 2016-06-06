@@ -3234,9 +3234,9 @@ class TestDirectoryHash(TestCase):
             dh.add(test3_file)
 
         expected = [
-            [test1_hash, "", "test1"],
-            [test2_hash, "", "test2"],
-            [test3_hash, "", "subdir1/test3"],
+            [test1_hash, "*test1"],
+            [test2_hash, "*test2"],
+            [test3_hash, "*subdir1/test3"],
             ]
         self.assertContentEqual(expected, self.fetchSums(rootdir))
 
@@ -3258,8 +3258,8 @@ class TestDirectoryHash(TestCase):
             dh.add_dir(rootdir)
 
         expected = [
-            [test1_hash, "", "test1"],
-            [test2_hash, "", "test2"],
-            [test3_hash, "", "subdir1/test3"],
+            [test1_hash, "*test1"],
+            [test2_hash, "*test2"],
+            [test3_hash, "*subdir1/test3"],
             ]
         self.assertContentEqual(expected, self.fetchSums(rootdir))
