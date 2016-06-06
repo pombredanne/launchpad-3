@@ -1519,7 +1519,7 @@ class DirectoryHash:
                 (hashobj.hexdigest(), path[len(self.root) + 1:]))
 
     def add_dir(self, path):
-        """Recursivly add a directory path to be checksummed."""
+        """Recursively add a directory path to be checksummed."""
         for dirpath, dirnames, filenames in os.walk(path):
             for filename in filenames:
                 self.add(os.path.join(dirpath, filename))
