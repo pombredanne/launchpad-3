@@ -24,6 +24,8 @@ from textwrap import dedent
 import time
 
 from debian.deb822 import Release
+
+
 try:
     import lzma
 except ImportError:
@@ -54,8 +56,10 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
 from lp.archivepublisher.publishing import (
+    archive_hashes,
     ByHash,
     ByHashes,
+    DirectoryHash,
     getPublisher,
     I18nIndex,
     Publisher,
@@ -92,7 +96,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory
+    )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import KeyServerTac
@@ -3160,3 +3167,99 @@ class TestPublisherLite(TestCaseWithFactory):
 
         partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
         self.assertEqual([], self.makePublisher(partner).subcomponents)
+
+
+class TestDirectoryHash(TestCase):
+    """Unit tests for DirectoryHash object."""
+
+    def createTestFile(self, path, content):
+        with open(path, "w") as tfd:
+            tfd.write(content)
+        return hashlib.sha256(content).hexdigest()
+
+    @property
+    def allHashFiles(self):
+        return [hash.dh_name for hash in archive_hashes]
+
+    @property
+    def expectedHashFiles(self):
+        return [hash.dh_name for hash in archive_hashes
+                if hash.write_directory_hash]
+
+    def fetchSums(self, rootdir):
+        result = []
+        for dh_file in self.allHashFiles:
+            checksum_file = os.path.join(rootdir, dh_file)
+            if os.path.exists(checksum_file):
+                with open(checksum_file, "r") as sfd:
+                    for line in sfd:
+                        result.append(line.strip().split(' '))
+        return result
+
+    def test_checksum_files_created(self):
+        tmpdir = unicode(self.makeTemporaryDirectory())
+        rootdir = unicode(self.makeTemporaryDirectory())
+
+        for dh_file in self.allHashFiles:
+            checksum_file = os.path.join(rootdir, dh_file)
+            self.assertFalse(os.path.exists(checksum_file))
+
+        with DirectoryHash(rootdir, tmpdir, None) as dh:
+            pass
+
+        for dh_file in self.allHashFiles:
+            checksum_file = os.path.join(rootdir, dh_file)
+            if dh_file in self.expectedHashFiles:
+                self.assertTrue(os.path.exists(checksum_file))
+            else:
+                self.assertFalse(os.path.exists(checksum_file))
+
+    def test_basic_file_add(self):
+        tmpdir = unicode(self.makeTemporaryDirectory())
+        rootdir = unicode(self.makeTemporaryDirectory())
+        test1_file = os.path.join(rootdir, "test1")
+        test1_hash = self.createTestFile(test1_file, "test1")
+
+        test2_file = os.path.join(rootdir, "test2")
+        test2_hash = self.createTestFile(test2_file, "test2")
+
+        os.mkdir(os.path.join(rootdir, "subdir1"))
+
+        test3_file = os.path.join(rootdir, "subdir1", "test3")
+        test3_hash = self.createTestFile(test3_file, "test3")
+
+        with DirectoryHash(rootdir, tmpdir, None) as dh:
+            dh.add(test1_file)
+            dh.add(test2_file)
+            dh.add(test3_file)
+
+        expected = [
+            [test1_hash, "", "test1"],
+            [test2_hash, "", "test2"],
+            [test3_hash, "", "subdir1/test3"],
+            ]
+        self.assertContentEqual(expected, self.fetchSums(rootdir))
+
+    def test_basic_directory_add(self):
+        tmpdir = unicode(self.makeTemporaryDirectory())
+        rootdir = unicode(self.makeTemporaryDirectory())
+        test1_file = os.path.join(rootdir, "test1")
+        test1_hash = self.createTestFile(test1_file, "test1 dir")
+
+        test2_file = os.path.join(rootdir, "test2")
+        test2_hash = self.createTestFile(test2_file, "test2 dir")
+
+        os.mkdir(os.path.join(rootdir, "subdir1"))
+
+        test3_file = os.path.join(rootdir, "subdir1", "test3")
+        test3_hash = self.createTestFile(test3_file, "test3 dir")
+
+        with DirectoryHash(rootdir, tmpdir, None) as dh:
+            dh.add_dir(rootdir)
+
+        expected = [
+            [test1_hash, "", "test1"],
+            [test2_hash, "", "test2"],
+            [test3_hash, "", "subdir1/test3"],
+            ]
+        self.assertContentEqual(expected, self.fetchSums(rootdir))
