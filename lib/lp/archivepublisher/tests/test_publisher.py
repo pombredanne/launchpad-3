@@ -37,6 +37,7 @@ from testtools.matchers import (
     Is,
     LessThan,
     Matcher,
+    MatchesDict,
     MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
@@ -3183,13 +3184,14 @@ class TestDirectoryHash(TestCase):
         return ['SHA256SUMS']
 
     def fetchSums(self, rootdir):
-        result = []
+        result = {}
         for dh_file in self.all_hash_files:
             checksum_file = os.path.join(rootdir, dh_file)
             if os.path.exists(checksum_file):
                 with open(checksum_file, "r") as sfd:
                     for line in sfd:
-                        result.append(line.strip().split(' '))
+                        file_list = result.setdefault(dh_file, [])
+                        file_list.append(line.strip().split(' '))
         return result
 
     def test_checksum_files_created(self):
@@ -3229,12 +3231,14 @@ class TestDirectoryHash(TestCase):
             dh.add(test2_file)
             dh.add(test3_file)
 
-        expected = [
-            [test1_hash, "*test1"],
-            [test2_hash, "*test2"],
-            [test3_hash, "*subdir1/test3"],
-            ]
-        self.assertContentEqual(expected, self.fetchSums(rootdir))
+        expected = {
+            'SHA256SUMS': MatchesSetwise(
+                Equals([test1_hash, "*test1"]),
+                Equals([test2_hash, "*test2"]),
+                Equals([test3_hash, "*subdir1/test3"]),
+            ),
+        }
+        self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
 
     def test_basic_directory_add(self):
         tmpdir = unicode(self.makeTemporaryDirectory())
@@ -3253,9 +3257,11 @@ class TestDirectoryHash(TestCase):
         with DirectoryHash(rootdir, tmpdir, None) as dh:
             dh.add_dir(rootdir)
 
-        expected = [
-            [test1_hash, "*test1"],
-            [test2_hash, "*test2"],
-            [test3_hash, "*subdir1/test3"],
-            ]
-        self.assertContentEqual(expected, self.fetchSums(rootdir))
+        expected = {
+            'SHA256SUMS': MatchesSetwise(
+                Equals([test1_hash, "*test1"]),
+                Equals([test2_hash, "*test2"]),
+                Equals([test3_hash, "*subdir1/test3"]),
+            ),
+        }
+        self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
