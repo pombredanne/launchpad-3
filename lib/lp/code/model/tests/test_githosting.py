@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -225,6 +229,17 @@ class TestGitHostingClient(TestCase):
         self.assertEqual({"patch": ""}, diff)
         self.assertRequest(
             "repo/123/compare-merge/a:b?sha1_prerequisite=c", method="GET")
+
+    def test_getMergeDiff_unpaired_surrogate(self):
+        # pygit2 tries to decode the diff as UTF-8 with errors="replace".
+        # In some cases this can result in unpaired surrogates, which older
+        # versions of json/simplejson don't like.
+        content = json.dumps(
+            {"patch": "卷。".encode("GBK").decode("UTF-8", errors="replace")})
+        with self.mockRequests(content=content):
+            diff = self.client.getMergeDiff("123", "a", "b")
+        self.assertEqual({"patch": "\uFFFD\uD863"}, diff)
+        self.assertRequest("repo/123/compare-merge/a:b", method="GET")
 
     def test_getMergeDiff_failure(self):
         with self.mockRequests(status_code=400, content=b"Bad request"):
