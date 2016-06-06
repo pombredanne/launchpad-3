@@ -96,7 +96,7 @@ from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import (
     TestCase,
-    TestCaseWithFactory
+    TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
