@@ -20,6 +20,7 @@ __all__ = [
 
 import os
 import shutil
+import stat
 import subprocess
 import tarfile
 import tempfile
@@ -103,6 +104,23 @@ class SigningUpload(CustomUpload):
         self.targetdir = os.path.join(
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
+
+        self.public_keys = []
+
+    def publishPublicKey(self, key):
+        """Record this key as having been used in this upload."""
+        if key not in self.public_keys:
+            self.public_keys.append(key)
+
+    def copyPublishedPublicKeys(self):
+        """Copy out published keys into the custom upload."""
+        keydir = os.path.join(self.tmpdir, self.version, 'control')
+        if not os.path.exists(keydir):
+            os.makedirs(keydir)
+        for key in self.public_keys:
+            # Ensure we only emit files which are world readable.
+            if stat.S_IMODE(os.stat(key).st_mode) & stat.S_IROTH:
+                shutil.copy(key, os.path.join(keydir, os.path.basename(key)))
 
     def setSigningOptions(self):
         """Find and extract raw-signing.options from the tarball."""
@@ -202,6 +220,7 @@ class SigningUpload(CustomUpload):
             self.uefi_key, self.uefi_cert)
         if not key or not cert:
             return
+        self.publishPublicKey(cert)
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
         return self.callLog("UEFI signing", cmdl)
 
@@ -265,6 +284,7 @@ class SigningUpload(CustomUpload):
             self.kmod_pem, self.kmod_x509)
         if not pem or not cert:
             return
+        self.publishPublicKey(cert)
         cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
         return self.callLog("Kmod signing", cmdl)
 
@@ -302,6 +322,9 @@ class SigningUpload(CustomUpload):
             if (handler(filename) == 0 and
                 'signed-only' in self.signing_options):
                 os.unlink(filename)
+
+        # Copy out the public keys where they were used.
+        self.copyPublishedPublicKeys()
 
         # If tarball output is requested, tar up the results.
         if 'tarball' in self.signing_options:

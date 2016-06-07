@@ -292,8 +292,10 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/empty.efi', '1.0/empty.efi.signed', '1.0/empty.ko',
-                '1.0/empty.ko.sig', '1.0/raw-signing.options',
+                '1.0', '1.0/control', '1.0/control/kmod.x509',
+                '1.0/control/uefi.crt', '1.0/empty.efi',
+                '1.0/empty.efi.signed', '1.0/empty.ko', '1.0/empty.ko.sig',
+                '1.0/raw-signing.options',
                 ], tarball.getnames())
 
     def test_options_signed_only(self):
@@ -332,8 +334,9 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/empty.efi.signed', '1.0/empty.ko.sig',
-                '1.0/raw-signing.options',
+                '1.0', '1.0/control', '1.0/control/kmod.x509',
+                '1.0/control/uefi.crt', '1.0/empty.efi.signed',
+                '1.0/empty.ko.sig', '1.0/raw-signing.options',
                 ], tarball.getnames())
 
     def test_no_signed_files(self):
