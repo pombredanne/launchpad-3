@@ -114,7 +114,7 @@ class SigningUpload(CustomUpload):
 
     def copyPublishedPublicKeys(self):
         """Copy out published keys into the custom upload."""
-        keydir = os.path.join(self.tmpdir, self.version, 'control')
+        keydir = os.path.join(self.tmpdir, self.version, "control")
         if not os.path.exists(keydir):
             os.makedirs(keydir)
         for key in self.public_keys:
@@ -123,11 +123,12 @@ class SigningUpload(CustomUpload):
                 shutil.copy(key, os.path.join(keydir, os.path.basename(key)))
 
     def setSigningOptions(self):
-        """Find and extract raw-signing.options from the tarball."""
+        """Find and extract raw-signing options from the tarball."""
         self.signing_options = {}
 
+        # Look for an options file in the top level control directory.
         options_file = os.path.join(self.tmpdir, self.version,
-            "raw-signing.options")
+            "control", "options")
         if not os.path.exists(options_file):
             return
 
