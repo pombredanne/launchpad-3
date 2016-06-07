@@ -9,27 +9,34 @@ high-level tests of debian-installer upload and queue manipulation.
 
 import os
 
+from zope.component import getUtility
+
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.testing import TestCase
+from lp.soyuz.enums import ArchivePurpose
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
-class FakeConfig:
-    """A fake publisher configuration."""
-    def __init__(self, archiveroot):
-        self.archiveroot = archiveroot
+class TestDebianInstaller(TestCaseWithFactory):
 
-
-class TestDebianInstaller(TestCase):
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestDebianInstaller, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
-        self.pubconf = FakeConfig(self.temp_dir)
+        self.distro = self.factory.makeDistribution()
+        db_pubconf = getUtility(IPublisherConfigSet).getByDistribution(
+            self.distro)
+        db_pubconf.root_dir = unicode(self.temp_dir)
+        self.archive = self.factory.makeArchive(
+            distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 0o022.
         old_umask = os.umask(0o022)
@@ -42,24 +49,25 @@ class TestDebianInstaller(TestCase):
             self.temp_dir,
             "debian-installer-images_%s_%s.tar.gz" % (self.version, self.arch))
         self.buffer = open(self.path, "wb")
-        self.archive = LaunchpadWriteTarFile(self.buffer)
+        self.tarfile = LaunchpadWriteTarFile(self.buffer)
 
     def addFile(self, path, contents):
-        self.archive.add_file(
+        self.tarfile.add_file(
             "installer-%s/%s/%s" % (self.arch, self.version, path), contents)
 
     def addSymlink(self, path, target):
-        self.archive.add_symlink(
+        self.tarfile.add_symlink(
             "installer-%s/%s/%s" % (self.arch, self.version, path), target)
 
     def process(self):
-        self.archive.close()
+        self.tarfile.close()
         self.buffer.close()
-        DebianInstallerUpload().process(self.pubconf, self.path, self.suite)
+        DebianInstallerUpload().process(self.archive, self.path, self.suite)
 
     def getInstallerPath(self, versioned_filename=None):
+        pubconf = getPubConfig(self.archive)
         installer_path = os.path.join(
-            self.temp_dir, "dists", self.suite, "main",
+            pubconf.archiveroot, "dists", self.suite, "main",
             "installer-%s" % self.arch)
         if versioned_filename is not None:
             installer_path = os.path.join(
