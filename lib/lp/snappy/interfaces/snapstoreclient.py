@@ -12,6 +12,7 @@ __all__ = [
     'BadUploadResponse',
     'ISnapStoreClient',
     'NeedsRefreshResponse',
+    'UnauthorizedUploadResponse',
     ]
 
 from zope.interface import Interface
@@ -30,6 +31,10 @@ class BadRefreshResponse(Exception):
 
 
 class NeedsRefreshResponse(Exception):
+    pass
+
+
+class UnauthorizedUploadResponse(Exception):
     pass
 
 

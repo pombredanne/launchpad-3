@@ -47,7 +47,11 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJob,
     ISnapStoreUploadJobSource,
     )
-from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
+from lp.snappy.interfaces.snapstoreclient import (
+    ISnapStoreClient,
+    UnauthorizedUploadResponse,
+    )
+from lp.snappy.mail.snapbuild import SnapBuildMailer
 
 
 class SnapBuildJobType(DBEnumeratedType):
@@ -187,5 +191,8 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             # message.
             transaction.abort()
             self.error_message = str(e)
+            if isinstance(e, UnauthorizedUploadResponse):
+                mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)
+                mailer.sendAll()
             transaction.commit()
             raise

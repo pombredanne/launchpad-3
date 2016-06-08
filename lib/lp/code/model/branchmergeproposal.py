@@ -1054,6 +1054,7 @@ class BranchMergeProposal(SQLBase):
         else:
             commits = reversed(self.source_git_ref.getCommits(
                 self.source_git_commit_sha1, stop=self.target_git_commit_sha1,
+                union_repository=self.target_git_repository,
                 start_date=start_date, end_date=self.revision_end_date))
             return [
                 ((commit["author_date"], count), commit)

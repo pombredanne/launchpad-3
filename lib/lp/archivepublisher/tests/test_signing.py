@@ -256,6 +256,23 @@ class TestSigning(TestSigningHelpers):
         self.assertContentEqual(['first', 'second'],
             upload.signing_options.keys())
 
+    def test_options_none(self):
+        # Specifying no options should leave us with an open tree.
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.efi.signed")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getSignedPath("test", "amd64"), "1.0", "empty.ko.sig")))
+
     def test_options_tarball(self):
         # Specifying the "tarball" option should create an tarball in
         # the tmpdir.
@@ -601,6 +618,19 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(self.kmod_x509))
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_pem).st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_x509).st_mode), 0o644)
+
+    def test_checksumming_tree(self):
+        # Specifying no options should leave us with an open tree,
+        # confirm it is checksummed.
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.archive.add_file("1.0/empty.efi", "")
+        self.archive.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        sha256file = os.path.join(self.getSignedPath("test", "amd64"),
+             "1.0", "SHA256SUMS")
+        self.assertTrue(os.path.exists(sha256file))
 
 
 class TestUefi(TestSigningHelpers):

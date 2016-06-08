@@ -44,8 +44,12 @@ from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     ISnapStoreClient,
+    UnauthorizedUploadResponse,
     )
-from lp.snappy.model.snapstoreclient import MacaroonAuth
+from lp.snappy.model.snapstoreclient import (
+    InvalidStoreSecretsError,
+    MacaroonAuth,
+    )
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -95,7 +99,16 @@ class TestMacaroonAuth(TestCase):
 
     def test_bad_framing(self):
         r = Request()
-        self.assertRaises(AssertionError, MacaroonAuth('ev"il', 'wic"ked'), r)
+        self.assertRaises(
+            InvalidStoreSecretsError, MacaroonAuth('ev"il', 'wic"ked'), r)
+        # Test _makeAuthParam's behaviour directly in case somebody somehow
+        # convinces Macaroon.serialize to emit data that breaks framing.
+        self.assertRaises(
+            InvalidStoreSecretsError, MacaroonAuth._makeAuthParam,
+            'ev"il', 'good')
+        self.assertRaises(
+            InvalidStoreSecretsError, MacaroonAuth._makeAuthParam,
+            'good', 'ev"il')
 
 
 class RequestMatches(Matcher):
@@ -278,6 +291,29 @@ class TestSnapStoreClient(TestCaseWithFactory):
             json_data={
                 "name": "test-snap", "updown_id": 1, "series": "rolling",
                 }))
+
+    def test_upload_unauthorized(self):
+        @urlmatch(path=r".*/snap-push/$")
+        def snap_push_handler(url, request):
+            self.snap_push_request = request
+            return {
+                "status_code": 401,
+                "headers": {"WWW-Authenticate": 'Macaroon realm="Devportal"'},
+                }
+
+        store_secrets = self._make_store_secrets()
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=store_secrets)
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
+        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
+        transaction.commit()
+        with HTTMock(self._unscanned_upload_handler, snap_push_handler,
+                     self._macaroon_refresh_handler):
+            self.assertRaises(
+                UnauthorizedUploadResponse, self.client.upload, snapbuild)
 
     def test_upload_needs_discharge_macaroon_refresh(self):
         @urlmatch(path=r".*/snap-push/$")
