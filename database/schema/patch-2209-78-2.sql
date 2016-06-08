@@ -8,4 +8,7 @@ CREATE INDEX distributionsourcepackagecache__sourcepackagename__archive__idx
 CREATE INDEX distroseriespackagecache__binarypackagename__archive__idx
     ON DistroSeriesPackageCache (binarypackagename, archive);
 
+CREATE INDEX distributionsourcepackagecache__binpkgnames__idx
+    ON DistributionSourcePackageCache USING gin (binpkgnames trgm.gin_trgm_ops);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 78, 2);
