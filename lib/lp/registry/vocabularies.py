@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -74,6 +74,7 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
+    Not,
     Or,
     Select,
     SQL,
@@ -166,6 +167,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import Case
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -191,8 +193,13 @@ from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
     NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary,
+    NamedStormHugeVocabulary,
     SQLObjectVocabularyBase,
     VocabularyFilter,
+    )
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
     )
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 
@@ -1941,15 +1948,60 @@ class SourcePackageNameIterator(BatchedCountableIterator):
         return [SimpleTerm(obj, obj.name, obj.name) for obj in results]
 
 
-class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+class SourcePackageNameVocabulary(NamedStormHugeVocabulary):
     """A vocabulary that lists source package names."""
     displayname = 'Select a source package'
     _table = SourcePackageName
-    _orderBy = 'name'
+    # Use a subselect rather than a join to encourage the planner to do the
+    # quick SPN scan first and then use the results of that for an
+    # index-only scan of DSPC.
+    _clauses = [
+        SourcePackageName.id.is_in(Select(
+            DistributionSourcePackageCache.sourcepackagenameID,
+            # No current users of this vocabulary can easily provide a
+            # distribution context, since the distribution and source
+            # package name are typically selected together, so the best we
+            # can do is search for names that are present in public archives
+            # of any distribution.
+            where=Or(
+                Not(Archive._private),
+                DistributionSourcePackageCache.archive == None),
+            tables=LeftJoin(
+                DistributionSourcePackageCache, Archive,
+                DistributionSourcePackageCache.archiveID == Archive.id))),
+        ]
     iterator = SourcePackageNameIterator
+
+    def searchForTerms(self, query=None, vocab_filter=None):
+        if not query:
+            return self.emptySelectResults()
+
+        query = ensure_unicode(query).lower()
+        results = IStore(self._table).find(
+            self._table,
+            Or(
+                # Always return exact matches if they exist.
+                self._table.name == query,
+                # Subselect to avoid pathological planner behaviour.
+                self._table.id.is_in(Select(
+                    self._table.id,
+                    where=And(
+                        self._table.name.contains_string(query),
+                        *self._clauses),
+                    tables=self._table))))
+        rank = Case(
+            when=(
+                (self._table.name == query, 100),
+                (self._table.name.startswith(query + "-"), 75),
+                (self._table.name.startswith(query), 50),
+                (self._table.name.contains_string("-" + query), 25),
+                ),
+            else_=1)
+        results.order_by(Desc(rank), self._table.name)
+        return self.iterator(results.count(), results, self.toTerm)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        # package names are always lowercase.
+        # Package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
