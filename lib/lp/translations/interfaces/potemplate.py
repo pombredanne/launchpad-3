@@ -150,14 +150,6 @@ class IPOTemplate(IRosettaStats):
         title=_("Source Package Version"),
         required=False)
 
-    binarypackagename = Choice(
-        title=_("Binary Package"),
-        description=_(
-            "The package in which this template's translations are "
-            "installed."),
-        required=False,
-        vocabulary="BinaryPackageName")
-
     languagepack = exported(Bool(
         title=_("Include translations for this template in language packs?"),
         description=_(
