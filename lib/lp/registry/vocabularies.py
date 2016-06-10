@@ -31,6 +31,7 @@ __all__ = [
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
+    'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
     'DistroSeriesDifferencesVocabulary',
@@ -63,7 +64,10 @@ __all__ = [
 
 
 from operator import attrgetter
+import re
 
+from lazr.restful.interfaces import IReference
+from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -82,6 +86,7 @@ from storm.expr import (
     With,
     )
 from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implementer
 from zope.schema.interfaces import IVocabularyTokenized
@@ -95,15 +100,20 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.answers.interfaces.question import IQuestion
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -135,7 +145,11 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackageInDatabase,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
@@ -167,7 +181,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import Case
+from lp.services.database.stormexpr import (
+    Case,
+    RegexpMatch,
+    )
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -2005,3 +2022,174 @@ class SourcePackageNameVocabulary(NamedStormHugeVocabulary):
         # Package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
+
+
+@implementer(IHugeVocabulary)
+class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
+
+    displayname = 'Select a package'
+    step_title = 'Search by name or distro/name'
+
+    def __init__(self, context):
+        self.context = context
+        if IReference.providedBy(context):
+            target = context.context.target
+        elif IBugTask.providedBy(context) or IQuestion.providedBy(context):
+            target = context.target
+        else:
+            target = context
+        try:
+            self.distribution = IDistribution(target)
+        except TypeError:
+            self.distribution = None
+        if IDistributionSourcePackage.providedBy(target):
+            self.dsp = target
+        else:
+            self.dsp = None
+
+    def __contains__(self, spn_or_dsp):
+        if spn_or_dsp == self.dsp:
+            # Historic values are always valid. The DSP used to
+            # initialize the vocabulary is always included.
+            return True
+        try:
+            self.toTerm(spn_or_dsp)
+            return True
+        except LookupError:
+            return False
+
+    def __iter__(self):
+        pass
+
+    def __len__(self):
+        pass
+
+    def setDistribution(self, distribution):
+        """Set the distribution after the vocabulary was instantiated."""
+        self.distribution = distribution
+
+    def getDistributionAndPackageName(self, text):
+        "Return the distribution and package name from the parsed text."
+        # Match the toTerm() format, but also use it to select a distribution.
+        distribution = None
+        if '/' in text:
+            distro_name, text = text.split('/', 1)
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        if distribution is None:
+            distribution = self.distribution
+        return distribution, text
+
+    def toTerm(self, spn_or_dsp, distribution=None):
+        """See `IVocabulary`."""
+        dsp = None
+        binary_names = None
+        if isinstance(spn_or_dsp, tuple):
+            # The DSP in DB was passed with its binary_names.
+            spn_or_dsp, binary_names = spn_or_dsp
+            if binary_names is not None:
+                binary_names = binary_names.split()
+        if IDistributionSourcePackage.providedBy(spn_or_dsp):
+            dsp = spn_or_dsp
+            distribution = spn_or_dsp.distribution
+        elif (not ISourcePackageName.providedBy(spn_or_dsp) and
+            safe_hasattr(spn_or_dsp, 'distribution')
+            and safe_hasattr(spn_or_dsp, 'sourcepackagename')):
+            # We use the hasattr checks rather than adaptation because the
+            # DistributionSourcePackageInDatabase object is a little bit
+            # broken and does not provide any interface.
+            distribution = spn_or_dsp.distribution
+            dsp = distribution.getSourcePackage(spn_or_dsp.sourcepackagename)
+        else:
+            distribution = distribution or self.distribution
+            if distribution is not None and spn_or_dsp is not None:
+                dsp = distribution.getSourcePackage(spn_or_dsp)
+        if dsp is not None and (dsp == self.dsp or dsp.is_official):
+            if binary_names:
+                # Search already did the hard work of looking up binary names.
+                cache = get_property_cache(dsp)
+                cache.binary_names = binary_names
+            token = '%s/%s' % (dsp.distribution.name, dsp.name)
+            return SimpleTerm(dsp, token, token)
+        raise LookupError(distribution, spn_or_dsp)
+
+    def getTerm(self, spn_or_dsp):
+        """See `IBaseVocabulary`."""
+        return self.toTerm(spn_or_dsp)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        distribution, package_name = self.getDistributionAndPackageName(token)
+        return self.toTerm(package_name, distribution)
+
+    def searchForTerms(self, query=None, vocab_filter=None):
+        """See `IHugeVocabulary`."""
+        if not query:
+            return EmptyResultSet()
+        distribution, query = self.getDistributionAndPackageName(query)
+        if distribution is None:
+            # This could failover to ubuntu, but that is non-obvious. The
+            # Python widget must set the default distribution and the JS
+            # widget must encourage the <distro>/<package> search format.
+            return EmptyResultSet()
+
+        query = unicode(query)
+        query_re = re.escape(query)
+        store = IStore(DistributionSourcePackageInDatabase)
+        # Construct the searchable text that could live in the DSP table.
+        # Limit the results to ensure the user could see all the batches.
+        # Rank only what is returned: exact source name, exact binary
+        # name, partial source name, and lastly partial binary name.
+        searchable_dspc_cte = With("SearchableDSPC", Select(
+            (DistributionSourcePackageCache.sourcepackagenameID,
+             DistributionSourcePackageCache.binpkgnames),
+            where=And(
+                Or(
+                    DistributionSourcePackageCache.name.contains_string(query),
+                    DistributionSourcePackageCache.binpkgnames.contains_string(
+                        query),
+                    ),
+                Or(
+                    DistributionSourcePackageCache.archiveID.is_in(
+                        distribution.all_distro_archive_ids),
+                    DistributionSourcePackageCache.archive == None),
+                Or(
+                    DistributionSourcePackageCache.name == query,
+                    DistributionSourcePackageCache.distribution ==
+                        distribution),
+                ),
+            tables=DistributionSourcePackageCache))
+        rank = Case(
+            when=(
+                # name == query
+                (SourcePackageName.name == query, 100),
+                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                             r'(^| )%s( |$)' % query_re), 90),
+                # name.startswith(query + "-")
+                (SourcePackageName.name.startswith(query + "-"), 80),
+                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                             r'(^| )%s-' % query_re), 70),
+                # name.startswith(query)
+                (SourcePackageName.name.startswith(query), 60),
+                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                             r'(^| )%s' % query_re), 50),
+                # name.contains_string("-" + query)
+                (SourcePackageName.name.contains_string("-" + query), 40),
+                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                             r'-%s' % query_re), 30),
+                ),
+            else_=1)
+        # It might be possible to return the source name and binary names to
+        # reduce the work of the picker adapter.
+        results = store.with_(searchable_dspc_cte).using(
+            DistributionSourcePackageInDatabase, SourcePackageName,
+            "SearchableDSPC").find(
+                (DistributionSourcePackageInDatabase,
+                 SQL("SearchableDSPC.binpkgnames")),
+                DistributionSourcePackageInDatabase.distribution ==
+                    distribution,
+                DistributionSourcePackageInDatabase.sourcepackagename_id ==
+                    SourcePackageName.id,
+                SourcePackageName.id ==
+                    SQL("SearchableDSPC.sourcepackagename"))
+        results.order_by(Desc(rank), SourcePackageName.name)
+        return CountableIterator(results.count(), results, self.toTerm)

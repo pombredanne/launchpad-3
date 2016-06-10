@@ -181,7 +181,6 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -224,6 +223,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
@@ -4198,13 +4198,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=dsp.sourcepackagename,
                 archive=archive)
         with dbuser('statistician'):
-            cache = IStore(DistributionSourcePackageCache).find(
-                DistributionSourcePackageCache,
-                DistributionSourcePackageCache.distribution == distribution,
-                DistributionSourcePackageCache.archive == archive,
-                DistributionSourcePackageCache.sourcepackagename ==
-                    dsp.sourcepackagename).one()
-            cache.binpkgnames = binary_names
+            if official:
+                cache = IStore(DistributionSourcePackageCache).find(
+                    DistributionSourcePackageCache,
+                    DistributionSourcePackageCache.distribution ==
+                        distribution,
+                    DistributionSourcePackageCache.archive == archive,
+                    DistributionSourcePackageCache.sourcepackagename ==
+                        dsp.sourcepackagename).one()
+                cache.binpkgnames = binary_names
         return distribution, dsp
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
