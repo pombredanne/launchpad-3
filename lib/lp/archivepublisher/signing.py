@@ -27,7 +27,6 @@ import tempfile
 import textwrap
 
 from lp.archivepublisher.customupload import CustomUpload
-from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
