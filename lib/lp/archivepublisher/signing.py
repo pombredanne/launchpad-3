@@ -105,12 +105,11 @@ class SigningUpload(CustomUpload):
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
 
-        self.public_keys = []
+        self.public_keys = set()
 
     def publishPublicKey(self, key):
         """Record this key as having been used in this upload."""
-        if key not in self.public_keys:
-            self.public_keys.append(key)
+        self.public_keys.add(key)
 
     def copyPublishedPublicKeys(self):
         """Copy out published keys into the custom upload."""
