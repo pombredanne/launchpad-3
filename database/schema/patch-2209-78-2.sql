@@ -5,8 +5,6 @@ SET client_min_messages=ERROR;
 
 CREATE INDEX distributionsourcepackagecache__sourcepackagename__archive__idx
     ON DistributionSourcePackageCache (sourcepackagename, archive);
-CREATE INDEX distroseriespackagecache__binarypackagename__archive__idx
-    ON DistroSeriesPackageCache (binarypackagename, archive);
 
 CREATE INDEX distributionsourcepackagecache__binpkgnames__idx
     ON DistributionSourcePackageCache USING gin (binpkgnames trgm.gin_trgm_ops);
