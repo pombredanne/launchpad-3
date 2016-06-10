@@ -20,13 +20,13 @@ __all__ = [
 
 import os
 import shutil
+import stat
 import subprocess
 import tarfile
 import tempfile
 import textwrap
 
 from lp.archivepublisher.customupload import CustomUpload
-from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
@@ -104,12 +104,33 @@ class SigningUpload(CustomUpload):
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
 
+        self.public_keys = set()
+
+    def publishPublicKey(self, key):
+        """Record this key as having been used in this upload."""
+        self.public_keys.add(key)
+
+    def copyPublishedPublicKeys(self):
+        """Copy out published keys into the custom upload."""
+        keydir = os.path.join(self.tmpdir, self.version, "control")
+        if not os.path.exists(keydir):
+            os.makedirs(keydir)
+        for key in self.public_keys:
+            # Ensure we only emit files which are world readable.
+            if stat.S_IMODE(os.stat(key).st_mode) & stat.S_IROTH:
+                shutil.copy(key, os.path.join(keydir, os.path.basename(key)))
+            else:
+                if self.logger is not None:
+                    self.logger.warning(
+                        "%s: public key not world readable" % key)
+
     def setSigningOptions(self):
-        """Find and extract raw-signing.options from the tarball."""
+        """Find and extract raw-signing options from the tarball."""
         self.signing_options = {}
 
+        # Look for an options file in the top level control directory.
         options_file = os.path.join(self.tmpdir, self.version,
-            "raw-signing.options")
+            "control", "options")
         if not os.path.exists(options_file):
             return
 
@@ -202,6 +223,7 @@ class SigningUpload(CustomUpload):
             self.uefi_key, self.uefi_cert)
         if not key or not cert:
             return
+        self.publishPublicKey(cert)
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
         return self.callLog("UEFI signing", cmdl)
 
@@ -265,6 +287,7 @@ class SigningUpload(CustomUpload):
             self.kmod_pem, self.kmod_x509)
         if not pem or not cert:
             return
+        self.publishPublicKey(cert)
         cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
         return self.callLog("Kmod signing", cmdl)
 
@@ -302,6 +325,9 @@ class SigningUpload(CustomUpload):
             if (handler(filename) == 0 and
                 'signed-only' in self.signing_options):
                 os.unlink(filename)
+
+        # Copy out the public keys where they were used.
+        self.copyPublishedPublicKeys()
 
         # If tarball output is requested, tar up the results.
         if 'tarball' in self.signing_options:

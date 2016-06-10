@@ -235,7 +235,7 @@ class TestSigning(TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "")
+        self.archive.add_file("1.0/control/options", "")
         upload = self.process_emulate()
         self.assertContentEqual([], upload.signing_options.keys())
 
@@ -243,7 +243,7 @@ class TestSigning(TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "first\n")
+        self.archive.add_file("1.0/control/options", "first\n")
         upload = self.process_emulate()
         self.assertContentEqual(['first'], upload.signing_options.keys())
 
@@ -251,7 +251,7 @@ class TestSigning(TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "first\nsecond\n")
+        self.archive.add_file("1.0/control/options", "first\nsecond\n")
         upload = self.process_emulate()
         self.assertContentEqual(['first', 'second'],
             upload.signing_options.keys())
@@ -279,7 +279,7 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "tarball")
+        self.archive.add_file("1.0/control/options", "tarball")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
         self.process_emulate()
@@ -292,8 +292,10 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/empty.efi', '1.0/empty.efi.signed', '1.0/empty.ko',
-                '1.0/empty.ko.sig', '1.0/raw-signing.options',
+                '1.0', '1.0/control', '1.0/control/kmod.x509',
+                '1.0/control/uefi.crt', '1.0/empty.efi',
+                '1.0/empty.efi.signed', '1.0/empty.ko', '1.0/empty.ko.sig',
+                '1.0/control/options',
                 ], tarball.getnames())
 
     def test_options_signed_only(self):
@@ -302,7 +304,7 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "signed-only")
+        self.archive.add_file("1.0/control/options", "signed-only")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
         self.process_emulate()
@@ -322,7 +324,7 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options",
+        self.archive.add_file("1.0/control/options",
             "tarball\nsigned-only")
         self.archive.add_file("1.0/empty.efi", "")
         self.archive.add_file("1.0/empty.ko", "")
@@ -332,8 +334,9 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/empty.efi.signed', '1.0/empty.ko.sig',
-                '1.0/raw-signing.options',
+                '1.0', '1.0/control', '1.0/control/kmod.x509',
+                '1.0/control/uefi.crt', '1.0/empty.efi.signed',
+                '1.0/empty.ko.sig', '1.0/control/options',
                 ], tarball.getnames())
 
     def test_no_signed_files(self):
