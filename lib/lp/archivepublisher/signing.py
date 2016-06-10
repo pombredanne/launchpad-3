@@ -120,6 +120,10 @@ class SigningUpload(CustomUpload):
             # Ensure we only emit files which are world readable.
             if stat.S_IMODE(os.stat(key).st_mode) & stat.S_IROTH:
                 shutil.copy(key, os.path.join(keydir, os.path.basename(key)))
+            else:
+                if self.logger is not None:
+                    self.logger.warning(
+                        "%s: public key not world readable" % key)
 
     def setSigningOptions(self):
         """Find and extract raw-signing options from the tarball."""
