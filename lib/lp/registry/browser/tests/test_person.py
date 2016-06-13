@@ -41,6 +41,8 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
+from lp.services.gpg.interfaces import GPG_HIDE_PERSON_KEY_LISTING
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
@@ -330,6 +332,43 @@ class TestPersonIndexView(BrowserTestCase):
         with person_logged_in(None):
             browser = self.getViewBrowser(person)
         self.assertNotIn(spec.name, browser.contents)
+
+    def test_show_gpg_keys_for_view_owner(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            view = create_initialized_view(person, '+index')
+            self.assertTrue(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_not_shown_for_user_with_no_gpg_keys(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertFalse(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_shown_for_user_with_gpg_keys(self):
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        view = create_initialized_view(person, '+index')
+        self.assertTrue(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_now_shown_for_owner_with_hide_keys_ff(self):
+        self.useFixture(FeatureFixture({
+            GPG_HIDE_PERSON_KEY_LISTING: True,
+        }))
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            view = create_initialized_view(person, '+index')
+            self.assertFalse(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_not_shown_for_user_with_gpg_keys_with_hide_keys_ff(self):
+        self.useFixture(FeatureFixture({
+            GPG_HIDE_PERSON_KEY_LISTING: True,
+        }))
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        view = create_initialized_view(person, '+index')
+        self.assertFalse(view.should_show_gpgkeys_section)
+
+
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
