@@ -22,7 +22,6 @@ import tempfile
 
 from zope.interface import implementer
 
-from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
@@ -108,10 +107,9 @@ class CustomUpload:
             temp_file = open(tarfile_path, "wb")
             libraryfilealias.open()
             copy_and_close(libraryfilealias, temp_file)
-            pubconf = getPubConfig(packageupload.archive)
             suite = packageupload.distroseries.getSuite(packageupload.pocket)
             upload = cls(logger=logger)
-            upload.process(pubconf, tarfile_path, suite)
+            upload.process(packageupload.archive, tarfile_path, suite)
         finally:
             shutil.rmtree(temp_dir)
 
