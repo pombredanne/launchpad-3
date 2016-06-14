@@ -3,6 +3,7 @@
 
 __all__ = [
     'cannot_modify_suite',
+    'DirectoryHash',
     'FORMAT_TO_SUBCOMPONENT',
     'GLOBAL_PUBLISHER_LOCK',
     'Publisher',

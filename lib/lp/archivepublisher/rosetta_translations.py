@@ -139,7 +139,7 @@ class RosettaTranslationsUpload(CustomUpload):
         """Sets the package name parsed from the lfa filename."""
         self.package_name = self.parsePath(tarfile_name)[0]
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, archive, tarfile_path, distroseries):
         pass
 
     @classmethod
