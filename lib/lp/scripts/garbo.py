@@ -510,13 +510,9 @@ class PopulateDistributionSourcePackageCache(TunableLoop):
         origin = [
             SourcePackagePublishingHistory,
             Join(
-                SourcePackageRelease,
-                SourcePackageRelease.id ==
-                    SourcePackagePublishingHistory.sourcepackagereleaseID),
-            Join(
                 SourcePackageName,
                 SourcePackageName.id ==
-                    SourcePackageRelease.sourcepackagenameID),
+                    SourcePackagePublishingHistory.sourcepackagenameID),
             Join(
                 Archive,
                 Archive.id == SourcePackagePublishingHistory.archiveID),
