@@ -4198,13 +4198,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=dsp.sourcepackagename,
                 archive=archive)
         with dbuser('statistician'):
-            cache = IStore(DistributionSourcePackageCache).find(
-                DistributionSourcePackageCache,
-                DistributionSourcePackageCache.distribution == distribution,
-                DistributionSourcePackageCache.archive == archive,
-                DistributionSourcePackageCache.sourcepackagename ==
-                    dsp.sourcepackagename).one()
-            cache.binpkgnames = binary_names
+            DistributionSourcePackageCache(
+                distribution=dsp.distribution,
+                sourcepackagename=dsp.sourcepackagename,
+                archive=archive,
+                name=package_name,
+                binpkgnames=binary_names)
         return distribution, dsp
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
