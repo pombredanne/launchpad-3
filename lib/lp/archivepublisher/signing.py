@@ -28,6 +28,9 @@ import textwrap
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
@@ -328,7 +331,12 @@ class SigningUpload(CustomUpload):
             self.convertToTarball()
 
         versiondir = os.path.join(self.tmpdir, self.version)
-        with DirectoryHash(versiondir, self.tmpdir, self.logger) as hasher:
+
+        signer = None
+        if self.archive.signing_key:
+            signer = IArchiveSigningKey(self.archive)
+        with DirectoryHash(versiondir, self.tmpdir, signer,
+                           self.logger) as hasher:
             hasher.add_dir(versiondir)
 
     def shouldInstall(self, filename):
