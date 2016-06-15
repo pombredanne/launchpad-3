@@ -144,3 +144,20 @@ class ArchiveSigningKey:
             os.path.join(suite_path, 'InRelease'), 'w')
         inline_release_file.write(inline_release)
         inline_release_file.close()
+
+    def signFile(self, path):
+        """See `IArchiveSigningKey`."""
+        assert self.archive.signing_key is not None, (
+            "No signing key available for %s" % self.archive.displayname)
+
+        secret_key_export = open(
+            self.getPathForSecretKey(self.archive.signing_key)).read()
+        gpghandler = getUtility(IGPGHandler)
+        secret_key = gpghandler.importSecretKey(secret_key_export)
+
+        file_content = open(path).read()
+        signature = gpghandler.signContent(
+            file_content, secret_key, mode=gpgme.SIG_MODE_DETACH)
+
+        with open(os.path.join(path + '.gpg'), 'w') as signature_file:
+            signature_file.write(signature)
