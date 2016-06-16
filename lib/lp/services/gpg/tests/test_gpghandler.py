@@ -510,7 +510,7 @@ class GPGClientTests(TestCase):
         client.getKeysForOwner(user)
 
         self.assert_last_timeline_action(
-            'get', construct_url("/users/{owner_id}/keys", user))
+            'GET', construct_url("/users/{owner_id}/keys", user))
 
     def test_add_key_for_owner_has_timeline_support(self):
         self.useFixture(KeyServerTac())
@@ -520,7 +520,7 @@ class GPGClientTests(TestCase):
         client.addKeyForOwner(user, fingerprint)
 
         self.assert_last_timeline_action(
-            'post', construct_url("/users/{owner_id}/keys", user))
+            'POST', construct_url("/users/{owner_id}/keys", user))
 
     def test_disable_key_for_owner_has_timeline_support(self):
         self.useFixture(KeyServerTac())
@@ -531,7 +531,7 @@ class GPGClientTests(TestCase):
         client.disableKeyForOwner(user, fingerprint)
 
         self.assert_last_timeline_action(
-            'delete',
+            'DELETE',
             construct_url(
                 "/users/{owner_id}/keys/{fingerprint}", user, fingerprint))
 
@@ -541,7 +541,7 @@ class GPGClientTests(TestCase):
         client.getKeyByFingerprint(fingerprint)
 
         self.assert_last_timeline_action(
-            'get',
+            'GET',
             construct_url("/keys/{fingerprint}", fingerprint=fingerprint))
 
     def test_get_keys_by_fingerprints_has_timeline_support(self):
@@ -553,7 +553,7 @@ class GPGClientTests(TestCase):
         client.getKeysByFingerprints(fingerprints)
 
         self.assert_last_timeline_action(
-            'get',
+            'GET',
             construct_url(
                 "/keys/{fingerprint}", fingerprint=','.join(fingerprints)))
 

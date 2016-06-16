@@ -666,7 +666,7 @@ class LPGPGClient(GPGClient):
             [(k, v) for k, v in headers.items() if k.lower() in header_whitelist]
         )
         self.action = timeline.start(
-            "gpgservice-%s" % method,
+            "gpgservice-%s" % method.upper(),
             ' '.join((path, data_summary, json.dumps(headers)))
         )
 
