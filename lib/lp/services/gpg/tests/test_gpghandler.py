@@ -1,12 +1,14 @@
 # Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import base64
 import os
 import random
 import string
 import subprocess
 
 import gpgme
+from lazr.restful.utils import get_current_browser_request
 from testtools.matchers import (
     ContainsDict,
     Equals,
@@ -30,6 +32,7 @@ from lp.services.gpg.interfaces import (
     )
 from lp.services.log.logger import BufferLogger
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -493,3 +496,67 @@ class GPGClientTests(TestCase):
             keyset.activate,
             person2, key, key.can_encrypt
         )
+
+    def assert_last_timeline_action(self, expected_method, expected_url):
+        timeline = get_request_timeline(get_current_browser_request())
+        action = timeline.actions[-1]
+        self.assertEqual("gpgservice-%s" % expected_method, action.category)
+        self.assertEqual(expected_url, action.detail.split(" ", 1)[0])
+
+    def test_get_keys_for_owner_has_timeline_support(self):
+        client = getUtility(IGPGClient)
+        user = self.get_random_owner_id_string()
+        client.getKeysForOwner(user)
+
+        self.assert_last_timeline_action(
+            'get', construct_url("/users/{owner_id}/keys", user))
+
+    def test_add_key_for_owner_has_timeline_support(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        user = self.get_random_owner_id_string()
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        client.addKeyForOwner(user, fingerprint)
+
+        self.assert_last_timeline_action(
+            'post', construct_url("/users/{owner_id}/keys", user))
+
+    def test_disable_key_for_owner_has_timeline_support(self):
+        self.useFixture(KeyServerTac())
+        client = getUtility(IGPGClient)
+        user = self.get_random_owner_id_string()
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        client.addKeyForOwner(user, fingerprint)
+        client.disableKeyForOwner(user, fingerprint)
+
+        self.assert_last_timeline_action(
+            'delete',
+            construct_url(
+                "/users/{owner_id}/keys/{fingerprint}", user, fingerprint))
+
+    def test_get_key_by_fingerprint_has_timeline_support(self):
+        client = getUtility(IGPGClient)
+        fingerprint = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+        client.getKeyByFingerprint(fingerprint)
+
+        self.assert_last_timeline_action(
+            'get',
+            construct_url("/keys/{fingerprint}", fingerprint=fingerprint))
+
+    def test_get_keys_by_fingerprints_has_timeline_support(self):
+        client = getUtility(IGPGClient)
+        fingerprints = [
+            'A419AE861E88BC9E04B9C26FBA2B9389DFD20543',
+            'B439AF863EDEFC9E04FAB26FBA2B7289DF324545',
+        ]
+        client.getKeysByFingerprints(fingerprints)
+
+        self.assert_last_timeline_action(
+            'get',
+            construct_url(
+                "/keys/{fingerprint}", fingerprint=','.join(fingerprints)))
+
+
+def construct_url(template, owner_id='', fingerprint=''):
+    owner_id = base64.b64encode(owner_id, altchars='-_')
+    return template.format(owner_id=owner_id, fingerprint=fingerprint)
