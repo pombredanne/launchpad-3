@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import base64
+import json
 import os
 import random
 import string
@@ -555,6 +556,19 @@ class GPGClientTests(TestCase):
             'get',
             construct_url(
                 "/keys/{fingerprint}", fingerprint=','.join(fingerprints)))
+
+    def test_timeline_support_filters_unknown_headers(self):
+        client = removeSecurityProxy(getUtility(IGPGClient))
+        client._request(
+            'get', '/', headers={'X-Foo': 'bar', 'Content-Type': 'baz'})
+
+        expected_headers = {'Content-Type': 'baz'}
+        timeline = get_request_timeline(get_current_browser_request())
+        action = timeline.actions[-1]
+        self.assertEqual(
+            '/ no body ' + json.dumps(expected_headers),
+            action.detail
+        )
 
 
 def construct_url(template, owner_id='', fingerprint=''):

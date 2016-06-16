@@ -658,6 +658,13 @@ class LPGPGClient(GPGClient):
             data_summary = '%d byte body' % len(data)
         else:
             data_summary = 'no body'
+        header_whitelist = (
+            'content-type',
+            'x-gpg-fingerprint',
+        )
+        headers = dict(
+            [(k, v) for k, v in headers.items() if k.lower() in header_whitelist]
+        )
         self.action = timeline.start(
             "gpgservice-%s" % method,
             ' '.join((path, data_summary, json.dumps(headers)))
