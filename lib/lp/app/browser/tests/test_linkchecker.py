@@ -43,9 +43,22 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
         removeSecurityProxy(product).development_focus.branch = product_branch
         valid_product_url = self.BRANCH_URL_TEMPLATE % product.name
 
+        # git branches are a thing now as well!
+        project_git_repo = removeSecurityProxy(
+            self.factory.makeGitRepository())
+        dsp = self.factory.makeDistributionSourcePackage()
+        dsp_git_repo = removeSecurityProxy(
+            self.factory.makeGitRepository(target=dsp))
+        person = self.factory.makePerson()
+        person_git_repo = removeSecurityProxy(
+            self.factory.makeGitRepository(target=person))
+
         return [
             valid_branch_url,
             valid_product_url,
+            self.BRANCH_URL_TEMPLATE % project_git_repo.unique_name,
+            self.BRANCH_URL_TEMPLATE % dsp_git_repo.unique_name,
+            self.BRANCH_URL_TEMPLATE % person_git_repo.unique_name,
         ]
 
     def make_invalid_branch_links(self):

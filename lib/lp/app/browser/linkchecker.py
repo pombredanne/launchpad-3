@@ -19,6 +19,7 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.registry.interfaces.product import InvalidProductName
 from lp.services.searchbuilder import any
 from lp.services.webapp import LaunchpadView
@@ -70,15 +71,20 @@ class LinkCheckerAPI(LaunchpadView):
     def check_branch_links(self, links):
         """Check links of the form /+branch/foo/bar"""
         invalid_links = {}
-        branch_lookup = getUtility(IBranchLookup)
+        bzr_branch_lookup = getUtility(IBranchLookup)
+        git_branch_lookup = getUtility(IGitLookup)
         for link in links:
             path = link.strip('/')[len('+branch/'):]
-            try:
-                branch_lookup.getByLPPath(path)
-            except (CannotHaveLinkedBranch, InvalidNamespace,
-                    InvalidProductName, NoLinkedBranch, NoSuchBranch,
-                    NotFoundError) as e:
-                invalid_links[link] = self._error_message(e)
+            if '+git' in path:
+                if git_branch_lookup.getByUniqueName(path) is None:
+                    invalid_links[link] = "Branch not found"
+            else:
+                try:
+                    bzr_branch_lookup.getByLPPath(path)
+                except (CannotHaveLinkedBranch, InvalidNamespace,
+                        InvalidProductName, NoLinkedBranch, NoSuchBranch,
+                        NotFoundError) as e:
+                    invalid_links[link] = self._error_message(e)
         return {'invalid': invalid_links}
 
     def check_bug_links(self, links):
