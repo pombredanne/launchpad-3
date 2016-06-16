@@ -75,10 +75,7 @@ class LinkCheckerAPI(LaunchpadView):
         git_branch_lookup = getUtility(IGitLookup)
         for link in links:
             path = link.strip('/')[len('+branch/'):]
-            if '+git' in path:
-                if git_branch_lookup.getByUniqueName(path) is None:
-                    invalid_links[link] = "Branch not found"
-            else:
+            if git_branch_lookup.getByPath(path)[0] is None:
                 try:
                     bzr_branch_lookup.getByLPPath(path)
                 except (CannotHaveLinkedBranch, InvalidNamespace,
