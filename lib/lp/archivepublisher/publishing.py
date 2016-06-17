@@ -1478,10 +1478,9 @@ class Publisher(object):
 class DirectoryHash:
     """Represents a directory hierarchy for hashing."""
 
-    def __init__(self, root, tmpdir, signer=None, logger=None):
+    def __init__(self, root, tmpdir, signer=None):
         self.root = root
         self.tmpdir = tmpdir
-        self.logger = logger
         self.signer = signer
         self.checksum_hash = []
 

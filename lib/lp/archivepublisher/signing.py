@@ -338,8 +338,7 @@ class SigningUpload(CustomUpload):
         signer = None
         if self.archive.signing_key:
             signer = IArchiveSigningKey(self.archive)
-        with DirectoryHash(versiondir, self.tmpdir, signer,
-                           self.logger) as hasher:
+        with DirectoryHash(versiondir, self.tmpdir, signer) as hasher:
             hasher.add_dir(versiondir)
 
     def shouldInstall(self, filename):
