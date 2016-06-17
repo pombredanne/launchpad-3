@@ -3296,6 +3296,7 @@ class TestDirectoryHashSigning(TestDirectoryHashHelpers):
         db_pubconf.root_dir = unicode(self.temp_dir)
         self.archive = self.factory.makeArchive(
             distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
+        self.archive_root = getPubConfig(self.archive).archiveroot
         self.suite = "distroseries"
 
         # Setup a keyserver so we can install the archive key.
@@ -3309,7 +3310,9 @@ class TestDirectoryHashSigning(TestDirectoryHashHelpers):
 
     def test_basic_directory_add_signed(self):
         tmpdir = unicode(self.makeTemporaryDirectory())
-        rootdir = unicode(self.makeTemporaryDirectory())
+        rootdir = self.archive_root
+        os.makedirs(rootdir)
+
         test1_file = os.path.join(rootdir, "test1")
         test1_hash = self.createTestFile(test1_file, "test1 dir")
 
