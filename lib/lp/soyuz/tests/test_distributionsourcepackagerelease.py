@@ -97,12 +97,11 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             [release.name
              for release in self.dsp_release.sample_binary_packages])
 
-    def updateDistroSeriesPackageCache(self):
-        # Create DistroSeriesPackageCache records for new binary
-        # packages.
+    def updatePackageCache(self):
+        # Create package cache records for new binary packages.
         #
-        # SoyuzTestPublisher.updateDistroSeriesPackageCache() creates
-        # a DistroSeriesPackageCache record for the new binary package.
+        # SoyuzTestPublisher.updatePackageCache() creates a
+        # DistroSeriesPackageCache record for the new binary package.
         # The method closes the current DB connection, making references
         # to DB objects in other DB objects unusable. Starting with
         # the distroarchseries, we can create new, valid, instances of
@@ -110,8 +109,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         # of the objects we need later.
         sourcepackagename = self.sourcepackagerelease.sourcepackagename
         publisher = SoyuzTestPublisher()
-        publisher.updateDistroSeriesPackageCache(
-            self.distroarchseries.distroseries)
+        publisher.updatePackageCache(self.distroarchseries.distroseries)
         self.distroarchseries = DistroArchSeries.get(self.distroarchseries.id)
         distribution = self.distroarchseries.distroseries.distribution
         releases = distribution.getCurrentSourceReleases([sourcepackagename])
@@ -126,7 +124,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         # constant number of SQL queries, regardless of the number
         # of existing binary package releases.
         self.makeBinaryPackageRelease()
-        self.updateDistroSeriesPackageCache()
+        self.updatePackageCache()
         with StormStatementRecorder() as recorder:
             for ds_package in self.dsp_release.sample_binary_packages:
                 ds_package.summary
@@ -135,7 +133,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
 
         for iteration in range(5):
             self.makeBinaryPackageRelease()
-        self.updateDistroSeriesPackageCache()
+        self.updatePackageCache()
         with StormStatementRecorder() as recorder:
             for ds_package in self.dsp_release.sample_binary_packages:
                 ds_package.summary

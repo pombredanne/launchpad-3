@@ -45,9 +45,8 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
 
     def _makeUbuntuSourcePackage(self, package_name):
         distro = getUtility(IDistributionSet).getByName('ubuntu')
-        return self.factory.makeSourcePackage(
-            sourcepackagename=package_name, distroseries=distro.currentseries,
-            publish=True).distribution_sourcepackage
+        return self.factory.makeDSPCache(
+            distroseries=distro.currentseries, sourcepackagename=package_name)
 
     def test_view_attributes(self):
         component = self._makeComponent(u'Example')

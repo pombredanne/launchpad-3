@@ -30,9 +30,10 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         # If a source package is published to a main archive with the given
         # name, there is no error.
         bug = self.factory.makeBug()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            archive=self.distribution.main_archive)
-        spn = spph.sourcepackagename
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.distribution)
+        dsp = self.factory.makeDSPCache(distroseries=distroseries)
+        spn = dsp.sourcepackagename
         browser = self.openBugPage(bug)
         browser.getLink(url='+distrotask').click()
         browser.getControl('Distribution').value = [self.distribution.name]

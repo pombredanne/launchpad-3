@@ -3538,6 +3538,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=distroseries,
                 sourcepackagename=sourcepackagename)
+            with dbuser('statistician'):
+                DistributionSourcePackageCache(
+                    distribution=distroseries.distribution,
+                    sourcepackagename=sourcepackagename,
+                    archive=distroseries.main_archive,
+                    name=sourcepackagename.name)
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnySourcePackageUrgency(self):
@@ -4174,27 +4180,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if with_db:
             # Create an instance with a database record, that is normally
             # done by secondary process.
-            removeSecurityProxy(package)._new(
-                distribution, sourcepackagename, False)
+            naked_package = removeSecurityProxy(package)
+            if naked_package._get(distribution, sourcepackagename) is None:
+                naked_package._new(distribution, sourcepackagename, False)
         return package
 
-    def makeDSPCache(self, distro_name, package_name, make_distro=True,
+    def makeDSPCache(self, distroseries=None, sourcepackagename=None,
                      official=True, binary_names=None, archive=None):
-        if make_distro:
-            distribution = self.makeDistribution(name=distro_name)
-        else:
-            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
         dsp = self.makeDistributionSourcePackage(
-            distribution=distribution, sourcepackagename=package_name,
-            with_db=official)
+            distribution=distroseries.distribution,
+            sourcepackagename=sourcepackagename, with_db=official)
         if archive is None:
             archive = dsp.distribution.main_archive
-        else:
-            archive = self.makeArchive(
-                distribution=distribution, purpose=archive)
         if official:
             self.makeSourcePackagePublishingHistory(
-                distroseries=distribution.currentseries,
+                distroseries=distroseries,
                 sourcepackagename=dsp.sourcepackagename,
                 archive=archive)
         with dbuser('statistician'):
@@ -4202,9 +4204,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distribution=dsp.distribution,
                 sourcepackagename=dsp.sourcepackagename,
                 archive=archive,
-                name=package_name,
+                name=dsp.sourcepackagename.name,
                 binpkgnames=binary_names)
-        return distribution, dsp
+        return dsp
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
