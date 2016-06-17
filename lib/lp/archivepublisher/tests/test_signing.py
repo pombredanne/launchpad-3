@@ -117,13 +117,9 @@ class TestSigningHelpers(TestCaseWithFactory):
         self.testcase_cn = '/CN=PPA signing-owner testing/'
 
     def setUpArchiveKey(self):
-        tac = KeyServerTac()
-        tac.setUp()
-
-        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-        IArchiveSigningKey(self.archive).setSigningKey(key_path)
-
-        tac.tearDown()
+        with KeyServerTac():
+            key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+            IArchiveSigningKey(self.archive).setSigningKey(key_path)
 
     def setUpUefiKeys(self, create=True):
         self.key = os.path.join(self.signing_dir, "uefi.key")
