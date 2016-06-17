@@ -312,9 +312,6 @@ class SigningUpload(CustomUpload):
 
         No actual extraction is required.
         """
-        # Avoid circular import.
-        from lp.archivepublisher.publishing import DirectoryHash
-
         super(SigningUpload, self).extract()
         self.setSigningOptions()
         filehandlers = list(self.findSigningHandlers())
@@ -330,8 +327,14 @@ class SigningUpload(CustomUpload):
         if 'tarball' in self.signing_options:
             self.convertToTarball()
 
-        versiondir = os.path.join(self.tmpdir, self.version)
+    def installFiles(self):
+        """After installation hash and sign the installed result."""
+        # Avoid circular import.
+        from lp.archivepublisher.publishing import DirectoryHash
 
+        super(SigningUpload, self).installFiles()
+
+        versiondir = os.path.join(self.targetdir, self.version)
         signer = None
         if self.archive.signing_key:
             signer = IArchiveSigningKey(self.archive)
