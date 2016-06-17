@@ -6,7 +6,10 @@
 __metaclass__ = type
 
 import bz2
-from collections import OrderedDict
+from collections import (
+    defaultdict,
+    OrderedDict,
+    )
 import crypt
 from datetime import (
     datetime,
@@ -3182,25 +3185,23 @@ class TestDirectoryHashHelpers(TestCaseWithFactory):
         return ['SHA256SUMS']
 
     def fetchSums(self, rootdir):
-        result = {}
+        result = defaultdict(list)
         for dh_file in self.all_hash_files:
             checksum_file = os.path.join(rootdir, dh_file)
             if os.path.exists(checksum_file):
                 with open(checksum_file, "r") as sfd:
                     for line in sfd:
-                        file_list = result.setdefault(dh_file, [])
-                        file_list.append(line.strip().split(' '))
+                        result[dh_file].append(line.strip().split(' '))
         return result
 
     def fetchSigs(self, rootdir):
-        result = {}
+        result = defaultdict(list)
         for dh_file in self.all_hash_files:
             checksum_sig = os.path.join(rootdir, dh_file) + '.gpg'
             if os.path.exists(checksum_sig):
                 with open(checksum_sig, "r") as sfd:
                     for line in sfd:
-                        sig_lines = result.setdefault(dh_file, [])
-                        sig_lines.append(line)
+                        result[dh_file].append(line)
         return result
 
 
