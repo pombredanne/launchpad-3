@@ -150,6 +150,13 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is not None, (
             "No signing key available for %s" % self.archive.displayname)
 
+        # NOTE: uses os.sep to prevent /var/tmp/../tmpFOO attacks.
+        archive_root = self._archive_root_path + os.sep
+        path = os.path.realpath(path)
+        assert path.startswith(archive_root), (
+            "Attempting to sign file (%s) outside archive_root for %s" % (
+                path, self.archive.displayname))
+
         secret_key_export = open(
             self.getPathForSecretKey(self.archive.signing_key)).read()
         gpghandler = getUtility(IGPGHandler)
