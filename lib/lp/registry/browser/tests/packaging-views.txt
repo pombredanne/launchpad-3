@@ -15,10 +15,8 @@ Distro series sourcepackages can be linked to product series using the
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> hoary = ubuntu.getSeries('hoary')
     >>> sourcepackagename = factory.makeSourcePackageName('hot')
-    >>> sourcepackage = factory.makeSourcePackage(
-    ...     sourcepackagename=sourcepackagename, distroseries=hoary)
-    >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=sourcepackagename, distroseries=hoary)
+    >>> dsp = factory.makeDSPCache(
+    ...     distroseries=hoary, sourcepackagename=sourcepackagename)
     >>> product = factory.makeProduct(name="hot", displayname='Hot')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='hotter')
@@ -143,9 +141,8 @@ a history.
 
 The package in the current Ubuntu series can be updated.
 
-    >>> thunderbird_spn = factory.getOrMakeSourcePackageName('thunderbird')
-    >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=thunderbird_spn, distroseries=hoary)
+    >>> dsp = factory.makeDSPCache(
+    ...     distroseries=hoary, sourcepackagename='thunderbird')
 
     >>> form = {
     ...     'field.sourcepackagename': 'thunderbird',
