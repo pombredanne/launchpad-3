@@ -66,6 +66,7 @@ from lp.archivepublisher.publishing import (
     Publisher,
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
@@ -105,7 +106,6 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 
 
 RELEASE = PackagePublishingPocket.RELEASE
