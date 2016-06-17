@@ -198,9 +198,9 @@ autonomously.
     >>> templateset = POTemplateSet()
 
     >>> login(ANONYMOUS)
-    >>> package = factory.makeSourcePackageName()
+    >>> spph = factory.makeSourcePackagePublishingHistory(distroseries=hoary)
     >>> templatesubset = templateset.getSubset(
-    ...     distroseries=hoary, sourcepackagename=package)
+    ...     distroseries=hoary, sourcepackagename=spph.sourcepackagename)
     >>> template_owner = factory.makePerson()
     >>> template = templatesubset.new(
     ...     'foo', 'foo', 'foo.pot', template_owner)
@@ -213,7 +213,8 @@ autonomously.
     >>> ubuntu.translationgroup = translation_group
     >>> template_admin_url = str(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
-    ...     '+source/%s/+pots/%s/+admin' % (package.name, template.name))
+    ...     '+source/%s/+pots/%s/+admin' % (
+    ...         spph.sourcepackagename.name, template.name))
     >>> logout()
 
 A distribution's owner can manage the distribution's templates.

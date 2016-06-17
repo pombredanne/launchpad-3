@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SourcePackage view code."""
@@ -167,7 +167,7 @@ class TestSourcePackageView(BrowserTestCase):
 
     def test_register_upstream_forbids_proprietary(self):
         # Cannot specify information_type if registering for sourcepackage.
-        sourcepackage = self.factory.makeSourcePackage()
+        sourcepackage = self.factory.makeSourcePackage(publish=True)
         browser = self.getViewBrowser(sourcepackage)
         browser.getControl("Register the upstream project").click()
         browser.getControl("Link to Upstream Project").click()

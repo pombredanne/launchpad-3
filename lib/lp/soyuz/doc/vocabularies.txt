@@ -130,11 +130,12 @@ All the binary packages in Launchpad.
 SourcePackageNameVocabulary
 ...........................
 
-All the source packages in Launchpad.
+All the source packages in Launchpad that are published in public archives
+of any distribution.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    17
+    10
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)

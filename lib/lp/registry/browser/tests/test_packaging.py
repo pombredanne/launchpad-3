@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser tests for Packaging actions."""
@@ -103,10 +103,12 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         self.assertEqual('sourcepackagename', view.errors[0].field_name)
         self.assertEqual('Required input is missing.', view.errors[0].doc())
 
-    def test_cannot_link_to_nonexistant_ubuntu_package(self):
+    def test_cannot_link_to_nonexistent_ubuntu_package(self):
         # In the case of full functionality distributions like Ubuntu, the
         # source package must be published in the distro series.
-        self.factory.makeSourcePackageName('vapor')
+        warty = self.ubuntu.getSeries('warty')
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename='vapor', distroseries=warty)
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'vapor',
