@@ -52,11 +52,10 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         source_package_name = (
             test_data['source_package'].sourcepackagename.name)
         distroseries_id = test_data['distroseries'].id
-        test_publisher.updateDistroSeriesPackageCache(
-            test_data['distroseries'])
+        test_publisher.updatePackageCache(test_data['distroseries'])
 
-        # updateDistroSeriesPackageCache reconnects the db, so the
-        # objects need to be reloaded.
+        # updatePackageCache reconnects the db, so the objects need to be
+        # reloaded.
         distroseries = getUtility(IDistroSeriesSet).get(distroseries_id)
         return distroseries.getSourcePackage(source_package_name)
 

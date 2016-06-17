@@ -38,10 +38,8 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.hoary = self.ubuntu.getSeries('hoary')
         self.sourcepackagename = self.factory.makeSourcePackageName('hot')
-        self.sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
+        self.factory.makeDSPCache(
+            distroseries=self.hoary, sourcepackagename=self.sourcepackagename)
         self.product = self.factory.makeProduct(name="hot", displayname='Hot')
         self.productseries = self.factory.makeProductSeries(
             product=self.product, name='hotter')
@@ -107,8 +105,8 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         # In the case of full functionality distributions like Ubuntu, the
         # source package must be published in the distro series.
         warty = self.ubuntu.getSeries('warty')
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename='vapor', distroseries=warty)
+        self.factory.makeDSPCache(
+            distroseries=warty, sourcepackagename='vapor')
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'vapor',

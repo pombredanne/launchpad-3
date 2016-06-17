@@ -91,10 +91,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             source_pub = distro_series_difference.source_pub
 
         stp.makeSourcePackageSummaryData(source_pub)
-        stp.updateDistroSeriesPackageCache(source_pub.distroseries)
+        stp.updatePackageCache(source_pub.distroseries)
 
-        # updateDistroSeriesPackageCache reconnects the db, so the
-        # objects need to be reloaded.
+        # updatePackageCache reconnects the db, so the objects need to be
+        # reloaded.
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         ds_diff = dsd_source.getByDistroSeriesNameAndParentSeries(
             distro_series, source_package_name_str, parent_series)
