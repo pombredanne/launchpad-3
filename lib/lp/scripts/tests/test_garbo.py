@@ -120,6 +120,9 @@ from lp.snappy.model.snapbuildjob import (
     )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
@@ -1285,6 +1288,71 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runDaily()
 
         self.assertEqual(VCSType.GIT, product.vcs)
+
+    def test_PopulateDistributionSourcePackageCache(self):
+        switch_dbuser('testadmin')
+        # Make some test data.  We create source publications for different
+        # distributions and archives.
+        distributions = []
+        for _ in range(2):
+            distribution = self.factory.makeDistribution()
+            self.factory.makeDistroSeries(distribution=distribution)
+            distributions.append(distribution)
+        archives = []
+        for distribution in distributions:
+            archives.append(distribution.main_archive)
+            archives.append(
+                self.factory.makeArchive(distribution=distribution))
+        spns = [self.factory.makeSourcePackageName() for _ in range(2)]
+        spphs = []
+        for spn in spns:
+            for archive in archives:
+                spphs.append(self.factory.makeSourcePackagePublishingHistory(
+                    distroseries=archive.distribution.currentseries,
+                    archive=archive, status=PackagePublishingStatus.PUBLISHED,
+                    sourcepackagename=spn))
+        transaction.commit()
+
+        self.runFrequently()
+
+        def _assert_cached_names(spns, archive):
+            dspcs = DistributionSourcePackageCache._find(
+                archive.distribution, archive)
+            self.assertContentEqual(
+                spns, [dspc.sourcepackagename for dspc in dspcs])
+            if archive.is_main:
+                for spn in spns:
+                    self.assertEqual(
+                        1,
+                        archive.distribution.searchSourcePackages(
+                            spn.name).count())
+
+        def _assert_last_spph_id(spph_id):
+            job_data = load_garbo_job_state(
+                'PopulateDistributionSourcePackageCache')
+            self.assertEqual(spph_id, job_data['last_spph_id'])
+
+        for archive in archives:
+            _assert_cached_names(spns, archive)
+        _assert_last_spph_id(spphs[-1].id)
+
+        # Create some more publications.  Those with PENDING or PUBLISHED
+        # status are inserted into the cache, while others are ignored.
+        switch_dbuser('testadmin')
+        spphs.append(self.factory.makeSourcePackagePublishingHistory(
+            distroseries=archives[0].distribution.currentseries,
+            archive=archives[0], status=PackagePublishingStatus.PENDING))
+        spphs.append(self.factory.makeSourcePackagePublishingHistory(
+            distroseries=archives[0].distribution.currentseries,
+            archive=archives[0], status=PackagePublishingStatus.SUPERSEDED))
+        transaction.commit()
+
+        self.runFrequently()
+
+        _assert_cached_names(spns + [spphs[-2].sourcepackagename], archives[0])
+        for archive in archives[1:]:
+            _assert_cached_names(spns, archive)
+        _assert_last_spph_id(spphs[-2].id)
 
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')

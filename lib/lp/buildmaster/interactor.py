@@ -42,7 +42,6 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
-from lp.services import encoding
 from lp.services.config import config
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
@@ -539,8 +538,8 @@ class BuilderInteractor(object):
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            vitals.build_queue.logtail = encoding.guess(
-                str(slave_status.get('logtail')))
+            vitals.build_queue.logtail = str(
+                slave_status.get('logtail')).decode('UTF-8', errors='replace')
             transaction.commit()
         elif builder_status == 'BuilderStatus.ABORTING':
             # Build is being aborted.
