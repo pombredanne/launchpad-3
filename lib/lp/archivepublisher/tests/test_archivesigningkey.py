@@ -42,7 +42,7 @@ class TestArchiveSigningKey(TestCaseWithFactory):
             key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
             IArchiveSigningKey(self.archive).setSigningKey(key_path)
 
-    def test_signfile_within_archive(self):
+    def test_signfile_absolute_within_archive(self):
         filename = os.path.join(self.archive_root, "signme")
         write_file(filename, "sign this")
 
@@ -52,9 +52,29 @@ class TestArchiveSigningKey(TestCaseWithFactory):
         signature = filename + '.gpg'
         self.assertTrue(os.path.exists(signature))
 
-    def test_signfile_outside_archive(self):
+    def test_signfile_absolute_outside_archive(self):
         filename = os.path.join(self.temp_dir, "signme")
         write_file(filename, "sign this")
 
         signer = IArchiveSigningKey(self.archive)
         self.assertRaises(AssertionError, lambda: signer.signFile(filename))
+
+    def test_signfile_relative_within_archive(self):
+        filename_relative = "signme"
+        filename = os.path.join(self.archive_root, filename_relative)
+        write_file(filename, "sign this")
+
+        signer = IArchiveSigningKey(self.archive)
+        signer.signFile(filename_relative)
+
+        signature = filename + '.gpg'
+        self.assertTrue(os.path.exists(signature))
+
+    def test_signfile_relative_outside_archive(self):
+        filename_relative = "../signme"
+        filename = os.path.join(self.temp_dir, filename_relative)
+        write_file(filename, "sign this")
+
+        signer = IArchiveSigningKey(self.archive)
+        self.assertRaises(
+            AssertionError, lambda: signer.signFile(filename_relative))

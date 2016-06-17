@@ -150,9 +150,13 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is not None, (
             "No signing key available for %s" % self.archive.displayname)
 
+        # Allow the passed path to be relative to the archive root.
+        path = os.path.realpath(os.path.join(self._archive_root_path, path))
+
+        # Ensure the resulting path is within the archive root after
+        # normalisation.
         # NOTE: uses os.sep to prevent /var/tmp/../tmpFOO attacks.
         archive_root = self._archive_root_path + os.sep
-        path = os.path.realpath(path)
         assert path.startswith(archive_root), (
             "Attempting to sign file (%s) outside archive_root for %s" % (
                 path, self.archive.displayname))
