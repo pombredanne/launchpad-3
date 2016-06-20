@@ -21,7 +21,7 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    BRANCH_URL_TEMPLATE = '/+branch/%s'
+    BRANCH_URL_TEMPLATE = '/+code/%s'
 
     def check_invalid_links(self, result_json, link_type, invalid_links):
         link_dict = simplejson.loads(result_json)
@@ -45,7 +45,7 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
 
         # git branches are a thing now as well!
         project_git_repo = removeSecurityProxy(
-            self.factory.makeGitRepository())
+            self.factory.makeGitRepository(target=product))
         dsp = self.factory.makeDistributionSourcePackage()
         dsp_git_repo = removeSecurityProxy(
             self.factory.makeGitRepository(target=dsp))

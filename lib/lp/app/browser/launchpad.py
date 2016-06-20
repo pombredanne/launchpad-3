@@ -104,8 +104,8 @@ from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.interfaces.gitlookup import IGitLookup
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.layers import WebServiceLayer
 from lp.registry.enums import VCSType
@@ -782,7 +782,7 @@ class LaunchpadRootNavigation(Navigation):
 
         Unlike +branch, this works for both git and bzr repositories/branches.
         """
-        target_url = ''
+        target_url = None
         path = '/'.join(self.request.stepstogo)
 
         # Try a Git repository lookup first, since the schema is simpler and
@@ -800,34 +800,32 @@ class LaunchpadRootNavigation(Navigation):
             # so don't set target_url
             pass
 
-        # Git lookup failed. If '+git' is in the path, there's no point
-        # attempting a bzr lookup as well.
-        if '+git' not in path:
-            try:
-                branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
-                bzr_url = canonical_url(branch)
-                if trailing != '':
-                    bzr_url = urlappend(bzr_url, trailing)
+        # Attempt a bzr lookup as well:
+        try:
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
+            bzr_url = canonical_url(branch)
+            if trailing != '':
+                bzr_url = urlappend(bzr_url, trailing)
 
-                if target_url:
-                    # Project has both a bzr branch and a git repo. There's no
-                    # right thing we can do here, so pretend we didn't see
-                    # anything at all.
-                    if branch.product.vcs is None:
-                        target_url = ''
-                    # if it's set to BZR, then set this branch as the target
-                    if branch.product.vcs == VCSType.BZR:
-                        target_url = bzr_url
-                else:
+            if target_url and branch.product is not None:
+                # Project has both a bzr branch and a git repo. There's no
+                # right thing we can do here, so pretend we didn't see
+                # anything at all.
+                if branch.product.vcs is None:
+                    target_url = None
+                # if it's set to BZR, then set this branch as the target
+                if branch.product.vcs == VCSType.BZR:
                     target_url = bzr_url
-            except (NoLinkedBranch, CannotHaveLinkedBranch, InvalidNamespace,
-                    InvalidProductName, NotFoundError):
-                # No bzr branch found either.
-                pass
+            else:
+                target_url = bzr_url
+        except (NoLinkedBranch, CannotHaveLinkedBranch, InvalidNamespace,
+                InvalidProductName, NotFoundError):
+            # No bzr branch found either.
+            pass
 
         # Either neither bzr nor git returned matches, or they did but we're
         # not authorised to view them, or they both did and the project has not
-        # set it's 'vcs' property to indicate which one to prefer. In all cases
+        # set its 'vcs' property to indicate which one to prefer. In all cases
         # raise a 404:
         if not target_url:
             raise NotFoundError

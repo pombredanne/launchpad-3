@@ -21,8 +21,8 @@ from lp.app.enums import InformationType
 from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.enums import (
     PersonVisibility,
     SharingPermission,
@@ -39,11 +39,11 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlappend
 from lp.testing import (
-    ANONYMOUS,
     admin_logged_in,
+    ANONYMOUS,
     celebrity_logged_in,
-    login,
     login_person,
+    login,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -527,7 +527,7 @@ class TestCodeTraversal(TestCaseWithFactory, TraversalMixin):
     def test_invalid_product_name_without_referer(self):
         self.assertNotFound("_foo", use_default_referer=False)
 
-    def test_ambigous_project_default_repo_bzr(self):
+    def test_ambiguous_project_default_repo_bzr(self):
         project = self.factory.makeProduct()
         bzr_branch = self.factory.makeBranch(target=project)
         self.factory.makeGitRepository(target=project)
@@ -536,7 +536,7 @@ class TestCodeTraversal(TestCaseWithFactory, TraversalMixin):
 
         self.assertRedirects(project.name, canonical_url(bzr_branch))
 
-    def test_ambigous_project_without_vcs_set(self):
+    def test_ambiguous_project_without_vcs_set(self):
         project = self.factory.makeProduct()
         bzr_branch = self.factory.makeBranch(target=project)
         repo = self.factory.makeGitRepository(target=project)
@@ -547,7 +547,7 @@ class TestCodeTraversal(TestCaseWithFactory, TraversalMixin):
 
         self.assertNotFound(project.name)
 
-    def test_ambigous_project_with_vcs_set_to_git(self):
+    def test_ambiguous_project_with_vcs_set_to_git(self):
         project = self.factory.makeProduct()
         bzr_branch = self.factory.makeBranch(target=project)
         repo = self.factory.makeGitRepository(target=project)
@@ -559,7 +559,7 @@ class TestCodeTraversal(TestCaseWithFactory, TraversalMixin):
 
         self.assertRedirects(project.name, canonical_url(repo))
 
-    def test_ambigous_project_with_vcs_set_to_bzr(self):
+    def test_ambiguous_project_with_vcs_set_to_bzr(self):
         project = self.factory.makeProduct()
         bzr_branch = self.factory.makeBranch(target=project)
         repo = self.factory.makeGitRepository(target=project)
