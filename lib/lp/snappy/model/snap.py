@@ -628,9 +628,12 @@ class SnapSet:
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.branch == branch)
 
-    def findByGitRepository(self, repository):
+    def findByGitRepository(self, repository, paths=None):
         """See `ISnapSet`."""
-        return IStore(Snap).find(Snap, Snap.git_repository == repository)
+        clauses = [Snap.git_repository == repository]
+        if paths is not None:
+            clauses.append(Snap.git_path.is_in(paths))
+        return IStore(Snap).find(Snap, *clauses)
 
     def findByGitRef(self, ref):
         """See `ISnapSet`."""

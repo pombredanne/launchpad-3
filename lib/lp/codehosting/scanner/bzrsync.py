@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import version control metadata from a Bazaar branch into the database."""
@@ -331,6 +331,10 @@ def schedule_diff_updates(tip_changed):
 
 def update_recipes(tip_changed):
     tip_changed.db_branch.markRecipesStale()
+
+
+def update_snaps(tip_changed):
+    tip_changed.db_branch.markSnapsStale()
 
 
 def trigger_webhooks(tip_changed):
