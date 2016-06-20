@@ -7,18 +7,23 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
+from zope.component import getUtility
 from zope.formlib.interfaces import (
     IBrowserWidget,
     IInputWidget,
     WidgetInputError,
     )
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
+from lp.snappy.interfaces.snap import (
+    ISnap,
+    SNAP_FEATURE_FLAG,
+    )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.vocabularies import PPAVocabulary
@@ -29,16 +34,17 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestSnapArchiveWidget(TestCaseWithFactory):
+class TestSnapArchiveWidgetMixin:
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestSnapArchiveWidget, self).setUp()
+        super(TestSnapArchiveWidgetMixin, self).setUp()
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.distroseries = self.factory.makeDistroSeries()
         field = Reference(
             __name__="archive", schema=IArchive, title=u"Archive")
-        self.context = self.factory.makeSnap()
+        self.context = self.makeContext(self.distroseries)
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
         self.widget = SnapArchiveWidget(field, request)
@@ -130,7 +136,7 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         # Passing a primary archive will set the widget's render state to
         # 'primary'.
         self.widget.setUpSubWidgets()
-        self.widget.setRenderedValue(self.context.distro_series.main_archive)
+        self.widget.setRenderedValue(self.distroseries.main_archive)
         self.assertEqual("primary", self.widget.default_option)
         self.assertIsNone(self.widget.ppa_widget._getCurrentValue())
 
@@ -139,10 +145,10 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         # 'primary', even if it was initially something else.
         self.widget.setUpSubWidgets()
         archive = self.factory.makeArchive(
-            distribution=self.context.distro_series.distribution,
+            distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PPA)
         self.widget.setRenderedValue(archive)
-        self.widget.setRenderedValue(self.context.distro_series.main_archive)
+        self.widget.setRenderedValue(self.distroseries.main_archive)
         self.assertEqual("primary", self.widget.default_option)
         self.assertIsNone(self.widget.ppa_widget._getCurrentValue())
 
@@ -150,7 +156,7 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         # Passing a person will set the widget's render state to 'personal'.
         self.widget.setUpSubWidgets()
         archive = self.factory.makeArchive(
-            distribution=self.context.distro_series.distribution,
+            distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PPA)
         self.widget.setRenderedValue(archive)
         self.assertEqual("ppa", self.widget.default_option)
@@ -194,13 +200,17 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         self.assertEqual(html_escape(message), self.widget.error())
 
     def test_getInputValue_primary(self):
-        # The field value is the context's primary archive when the primary
-        # radio button is selected.
+        # When the primary radio button is selected, the field value is the
+        # context's primary archive if the context is a Snap, or the Ubuntu
+        # primary archive otherwise.
         self.widget.request = LaunchpadTestRequest(
             form={"field.archive": "primary"})
-        self.assertEqual(
-            self.context.distro_series.main_archive,
-            self.widget.getInputValue())
+        if ISnap.providedBy(self.context):
+            expected_main_archive = self.distroseries.main_archive
+        else:
+            expected_main_archive = (
+                getUtility(ILaunchpadCelebrities).ubuntu.main_archive)
+        self.assertEqual(expected_main_archive, self.widget.getInputValue())
 
     def test_getInputValue_ppa_missing(self):
         # An error is raised when the ppa field is missing.
@@ -243,3 +253,24 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
             ]
         ids = [field["id"] for field in fields]
         self.assertContentEqual(expected_ids, ids)
+
+
+class TestSnapArchiveWidgetForSnap(
+    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
+
+    def makeContext(self, distroseries):
+        return self.factory.makeSnap(distroseries=distroseries)
+
+
+class TestSnapArchiveWidgetForBranch(
+    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
+
+    def makeContext(self, distroseries):
+        return self.factory.makeAnyBranch()
+
+
+class TestSnapArchiveWidgetForGitRepository(
+    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
+
+    def makeContext(self, distroseries):
+        return self.factory.makeGitRepository()
