@@ -17,6 +17,9 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.signing import (
     SigningUpload,
@@ -27,6 +30,8 @@ from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import KeyServerTac
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
@@ -110,6 +115,11 @@ class TestSigningHelpers(TestCaseWithFactory):
         self.signing_dir = os.path.join(
             self.temp_dir, "signing", "signing-owner", "testing")
         self.testcase_cn = '/CN=PPA signing-owner testing/'
+
+    def setUpArchiveKey(self):
+        with KeyServerTac():
+            key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+            IArchiveSigningKey(self.archive).setSigningKey(key_path)
 
     def setUpUefiKeys(self, create=True):
         self.key = os.path.join(self.signing_dir, "uefi.key")
@@ -628,6 +638,22 @@ class TestSigning(TestSigningHelpers):
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
+
+    def test_checksumming_tree_signed(self):
+        # Specifying no options should leave us with an open tree,
+        # confirm it is checksummed.  Supply an archive signing key
+        # which should trigger signing of the checksum file.
+        self.setUpArchiveKey()
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        sha256file = os.path.join(self.getSignedPath("test", "amd64"),
+             "1.0", "SHA256SUMS")
+        self.assertTrue(os.path.exists(sha256file))
+        self.assertTrue(os.path.exists(sha256file + '.gpg'))
 
 
 class TestUefi(TestSigningHelpers):
