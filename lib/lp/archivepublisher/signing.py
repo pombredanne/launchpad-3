@@ -28,6 +28,9 @@ import textwrap
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
@@ -309,9 +312,6 @@ class SigningUpload(CustomUpload):
 
         No actual extraction is required.
         """
-        # Avoid circular import.
-        from lp.archivepublisher.publishing import DirectoryHash
-
         super(SigningUpload, self).extract()
         self.setSigningOptions()
         filehandlers = list(self.findSigningHandlers())
@@ -327,8 +327,18 @@ class SigningUpload(CustomUpload):
         if 'tarball' in self.signing_options:
             self.convertToTarball()
 
-        versiondir = os.path.join(self.tmpdir, self.version)
-        with DirectoryHash(versiondir, self.tmpdir, self.logger) as hasher:
+    def installFiles(self):
+        """After installation hash and sign the installed result."""
+        # Avoid circular import.
+        from lp.archivepublisher.publishing import DirectoryHash
+
+        super(SigningUpload, self).installFiles()
+
+        versiondir = os.path.join(self.targetdir, self.version)
+        signer = None
+        if self.archive.signing_key:
+            signer = IArchiveSigningKey(self.archive)
+        with DirectoryHash(versiondir, self.tmpdir, signer) as hasher:
             hasher.add_dir(versiondir)
 
     def shouldInstall(self, filename):

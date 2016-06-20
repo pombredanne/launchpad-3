@@ -6,7 +6,10 @@
 __metaclass__ = type
 
 import bz2
-from collections import OrderedDict
+from collections import (
+    defaultdict,
+    OrderedDict,
+    )
 import crypt
 from datetime import (
     datetime,
@@ -63,6 +66,7 @@ from lp.archivepublisher.publishing import (
     Publisher,
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
@@ -94,10 +98,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import KeyServerTac
@@ -3167,8 +3168,8 @@ class TestPublisherLite(TestCaseWithFactory):
         self.assertEqual([], self.makePublisher(partner).subcomponents)
 
 
-class TestDirectoryHash(TestCase):
-    """Unit tests for DirectoryHash object."""
+class TestDirectoryHashHelpers(TestCaseWithFactory):
+    """Helper functions for DirectoryHash testing."""
 
     def createTestFile(self, path, content):
         with open(path, "w") as tfd:
@@ -3184,15 +3185,30 @@ class TestDirectoryHash(TestCase):
         return ['SHA256SUMS']
 
     def fetchSums(self, rootdir):
-        result = {}
+        result = defaultdict(list)
         for dh_file in self.all_hash_files:
             checksum_file = os.path.join(rootdir, dh_file)
             if os.path.exists(checksum_file):
                 with open(checksum_file, "r") as sfd:
                     for line in sfd:
-                        file_list = result.setdefault(dh_file, [])
-                        file_list.append(line.strip().split(' '))
+                        result[dh_file].append(line.strip().split(' '))
         return result
+
+    def fetchSigs(self, rootdir):
+        result = defaultdict(list)
+        for dh_file in self.all_hash_files:
+            checksum_sig = os.path.join(rootdir, dh_file) + '.gpg'
+            if os.path.exists(checksum_sig):
+                with open(checksum_sig, "r") as sfd:
+                    for line in sfd:
+                        result[dh_file].append(line)
+        return result
+
+
+class TestDirectoryHash(TestDirectoryHashHelpers):
+    """Unit tests for DirectoryHash object."""
+
+    layer = ZopelessDatabaseLayer
 
     def test_checksum_files_created(self):
         tmpdir = unicode(self.makeTemporaryDirectory())
@@ -3202,7 +3218,7 @@ class TestDirectoryHash(TestCase):
             checksum_file = os.path.join(rootdir, dh_file)
             self.assertFalse(os.path.exists(checksum_file))
 
-        with DirectoryHash(rootdir, tmpdir, None) as dh:
+        with DirectoryHash(rootdir, tmpdir, None):
             pass
 
         for dh_file in self.all_hash_files:
@@ -3226,7 +3242,7 @@ class TestDirectoryHash(TestCase):
         test3_file = os.path.join(rootdir, "subdir1", "test3")
         test3_hash = self.createTestFile(test3_file, "test3")
 
-        with DirectoryHash(rootdir, tmpdir, None) as dh:
+        with DirectoryHash(rootdir, tmpdir) as dh:
             dh.add(test1_file)
             dh.add(test2_file)
             dh.add(test3_file)
@@ -3254,7 +3270,7 @@ class TestDirectoryHash(TestCase):
         test3_file = os.path.join(rootdir, "subdir1", "test3")
         test3_hash = self.createTestFile(test3_file, "test3 dir")
 
-        with DirectoryHash(rootdir, tmpdir, None) as dh:
+        with DirectoryHash(rootdir, tmpdir) as dh:
             dh.add_dir(rootdir)
 
         expected = {
@@ -3265,3 +3281,63 @@ class TestDirectoryHash(TestCase):
             ),
         }
         self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
+
+
+class TestDirectoryHashSigning(TestDirectoryHashHelpers):
+    """Unit tests for DirectoryHash object, signing functionality."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestDirectoryHashSigning, self).setUp()
+        self.temp_dir = self.makeTemporaryDirectory()
+        self.distro = self.factory.makeDistribution()
+        db_pubconf = getUtility(IPublisherConfigSet).getByDistribution(
+            self.distro)
+        db_pubconf.root_dir = unicode(self.temp_dir)
+        self.archive = self.factory.makeArchive(
+            distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
+        self.archive_root = getPubConfig(self.archive).archiveroot
+        self.suite = "distroseries"
+
+        # Setup a keyserver so we can install the archive key.
+        tac = KeyServerTac()
+        tac.setUp()
+
+        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        IArchiveSigningKey(self.archive).setSigningKey(key_path)
+
+        tac.tearDown()
+
+    def test_basic_directory_add_signed(self):
+        tmpdir = unicode(self.makeTemporaryDirectory())
+        rootdir = self.archive_root
+        os.makedirs(rootdir)
+
+        test1_file = os.path.join(rootdir, "test1")
+        test1_hash = self.createTestFile(test1_file, "test1 dir")
+
+        test2_file = os.path.join(rootdir, "test2")
+        test2_hash = self.createTestFile(test2_file, "test2 dir")
+
+        os.mkdir(os.path.join(rootdir, "subdir1"))
+
+        test3_file = os.path.join(rootdir, "subdir1", "test3")
+        test3_hash = self.createTestFile(test3_file, "test3 dir")
+
+        signer = IArchiveSigningKey(self.archive)
+        with DirectoryHash(rootdir, tmpdir, signer=signer) as dh:
+            dh.add_dir(rootdir)
+
+        expected = {
+            'SHA256SUMS': MatchesSetwise(
+                Equals([test1_hash, "*test1"]),
+                Equals([test2_hash, "*test2"]),
+                Equals([test3_hash, "*subdir1/test3"]),
+            ),
+        }
+        self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
+        sig_content = self.fetchSigs(rootdir)
+        for dh_file in sig_content:
+            self.assertEqual(
+                sig_content[dh_file][0], '-----BEGIN PGP SIGNATURE-----\n')
