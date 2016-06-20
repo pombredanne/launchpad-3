@@ -42,6 +42,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.errors import GitRepositoryScanFault
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -76,6 +77,7 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -210,11 +212,23 @@ class TestSnapAddView(BrowserTestCase):
             "Source:\n%s\nEdit snap package" % source_display,
             MatchesTagText(content, "source"))
         self.assertThat(
+            "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
+            MatchesTagText(content, "auto_build"))
+        self.assertThat(
+            "Source archive for automatic builds:\n\nEdit snap package\n",
+            MatchesTagText(content, "auto_build_archive"))
+        self.assertThat(
+            "Pocket for automatic builds:\n\nEdit snap package",
+            MatchesTagText(content, "auto_build_pocket"))
+        self.assertThat(
             "Builds of this snap package are not automatically uploaded to "
             "the store.\nEdit snap package",
             MatchesTagText(content, "store_upload"))
 
     def test_create_new_snap_git(self):
+        hosting_client = FakeMethod()
+        hosting_client.getBlob = FakeMethod(result="")
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         [git_ref] = self.factory.makeGitRefs()
         source_display = git_ref.display_name
         browser = self.getViewBrowser(
@@ -233,6 +247,15 @@ class TestSnapAddView(BrowserTestCase):
         self.assertThat(
             "Source:\n%s\nEdit snap package" % source_display,
             MatchesTagText(content, "source"))
+        self.assertThat(
+            "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
+            MatchesTagText(content, "auto_build"))
+        self.assertThat(
+            "Source archive for automatic builds:\n\nEdit snap package\n",
+            MatchesTagText(content, "auto_build_archive"))
+        self.assertThat(
+            "Pocket for automatic builds:\n\nEdit snap package",
+            MatchesTagText(content, "auto_build_pocket"))
         self.assertThat(
             "Builds of this snap package are not automatically uploaded to "
             "the store.\nEdit snap package",
@@ -302,6 +325,34 @@ class TestSnapAddView(BrowserTestCase):
             'This snap contains Private information',
             extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
+
+    def test_create_new_snap_auto_build(self):
+        # Creating a new snap and asking for it to be automatically built
+        # sets all the appropriate fields.
+        branch = self.factory.makeAnyBranch()
+        archive = self.factory.makeArchive()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl(name="field.name").value = "snap-name"
+        browser.getControl(
+            "Automatically build when branch changes").selected = True
+        browser.getControl("PPA").click()
+        browser.getControl(name="field.auto_build_archive.ppa").value = (
+            archive.reference)
+        browser.getControl("Pocket for automatic builds").value = ["SECURITY"]
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertThat(
+            "Build schedule:\n(?)\nBuilt automatically\nEdit snap package\n",
+            MatchesTagText(content, "auto_build"))
+        self.assertThat(
+            "Source archive for automatic builds:\n%s\nEdit snap package\n" %
+            archive.displayname,
+            MatchesTagText(content, "auto_build_archive"))
+        self.assertThat(
+            "Pocket for automatic builds:\nSecurity\nEdit snap package",
+            MatchesTagText(content, "auto_build_pocket"))
 
     def test_create_new_snap_store_upload(self):
         # Creating a new snap and asking for it to be automatically uploaded
@@ -394,7 +445,7 @@ class TestSnapAddView(BrowserTestCase):
         view = create_initialized_view(git_ref, "+new-snap")
         with mock.patch('yaml.load') as unsafe_load:
             with mock.patch('yaml.safe_load') as safe_load:
-                initial_values = view.initial_values
+                view.initial_values
         self.assertEqual(0, unsafe_load.call_count)
         self.assertEqual(1, safe_load.call_count)
 
@@ -527,6 +578,7 @@ class TestSnapEditView(BrowserTestCase):
             new_snappy_series = self.factory.makeSnappySeries(
                 usable_distro_series=[new_series])
         [new_git_ref] = self.factory.makeGitRefs()
+        archive = self.factory.makeArchive()
 
         browser = self.getViewBrowser(snap, user=self.person)
         browser.getLink("Edit snap package").click()
@@ -538,6 +590,12 @@ class TestSnapEditView(BrowserTestCase):
         browser.getControl("Git repository").value = (
             new_git_ref.repository.identity)
         browser.getControl("Git branch").value = new_git_ref.path
+        browser.getControl(
+            "Automatically build when branch changes").selected = True
+        browser.getControl("PPA").click()
+        browser.getControl(name="field.auto_build_archive.ppa").value = (
+            archive.reference)
+        browser.getControl("Pocket for automatic builds").value = ["SECURITY"]
         browser.getControl("Update snap package").click()
 
         content = find_main_content(browser.contents)
@@ -550,6 +608,16 @@ class TestSnapEditView(BrowserTestCase):
         self.assertThat(
             "Source:\n%s\nEdit snap package" % new_git_ref.display_name,
             MatchesTagText(content, "source"))
+        self.assertThat(
+            "Build schedule:\n(?)\nBuilt automatically\nEdit snap package\n",
+            MatchesTagText(content, "auto_build"))
+        self.assertThat(
+            "Source archive for automatic builds:\n%s\nEdit snap package\n" %
+            archive.displayname,
+            MatchesTagText(content, "auto_build_archive"))
+        self.assertThat(
+            "Pocket for automatic builds:\nSecurity\nEdit snap package",
+            MatchesTagText(content, "auto_build_pocket"))
         self.assertThat(
             "Builds of this snap package are not automatically uploaded to "
             "the store.\nEdit snap package",
@@ -1036,6 +1104,10 @@ class TestSnapView(BrowserTestCase):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: lp://dev/~test-person/\\+junk/snap-branch
+            Build schedule: \(\?\)
+            Built on request
+            Source archive for automatic builds:
+            Pocket for automatic builds:
             Builds of this snap package are not automatically uploaded to
             the store.
             Latest builds
@@ -1059,6 +1131,10 @@ class TestSnapView(BrowserTestCase):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: ~test-person/\\+git/snap-repository:master
+            Build schedule: \(\?\)
+            Built on request
+            Source archive for automatic builds:
+            Pocket for automatic builds:
             Builds of this snap package are not automatically uploaded to
             the store.
             Latest builds

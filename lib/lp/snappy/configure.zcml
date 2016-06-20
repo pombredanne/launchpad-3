@@ -14,6 +14,8 @@
     <include package=".browser" />
     <include file="vocabularies.zcml" />
 
+    <lp:help-folder folder="help" name="+help-snappy" />
+
     <!-- Snap -->
     <class class="lp.snappy.model.snap.Snap">
         <require
