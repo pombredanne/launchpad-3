@@ -377,6 +377,31 @@ class ISnapEditableAttributes(IHasOwner):
             "The Git branch containing a snapcraft.yaml recipe at the top "
             "level.")))
 
+    auto_build = exported(Bool(
+        title=_("Automatically build when branch changes"),
+        required=True, readonly=False,
+        description=_(
+            "Whether this snap package is built automatically when the branch "
+            "containing its snapcraft.yaml recipe changes.")))
+
+    auto_build_archive = exported(Reference(
+        IArchive, title=_("Source archive for automatic builds"),
+        required=False, readonly=False,
+        description=_(
+            "The archive from which automatic builds of this snap package "
+            "should be built.")))
+
+    auto_build_pocket = exported(Choice(
+        title=_("Pocket for automatic builds"),
+        vocabulary=PackagePublishingPocket, required=False, readonly=False,
+        description=_(
+            "The pocket for which automatic builds of this snap package "
+            "should be built.")))
+
+    is_stale = Bool(
+        title=_("Snap package is stale and is due to be rebuilt."),
+        required=True, readonly=False)
+
     store_upload = Bool(
         title=_("Automatically upload to store"),
         required=True, readonly=False,
@@ -522,6 +547,12 @@ class ISnapSet(Interface):
 
     def preloadDataForSnaps(snaps, user):
         """Load the data related to a list of snap packages."""
+
+    def makeAutoBuilds(logger=None):
+        """Create and return automatic builds for stale snap packages.
+
+        :param logger: An optional logger.
+        """
 
     def detachFromBranch(branch):
         """Detach all snap packages from the given Bazaar branch.
