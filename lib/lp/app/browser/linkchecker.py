@@ -35,7 +35,7 @@ class LinkCheckerAPI(LaunchpadView):
     something appropriate.
 
     This initial implementation supports processing links like the following:
-        /+branch/foo/bar
+        /+code/foo/bar
 
     The implementation can easily be extended to handle other forms by
     providing a method to handle the link type extracted from the json
@@ -69,12 +69,12 @@ class LinkCheckerAPI(LaunchpadView):
         return simplejson.dumps(result)
 
     def check_branch_links(self, links):
-        """Check links of the form /+branch/foo/bar"""
+        """Check links of the form /+code/foo/bar"""
         invalid_links = {}
         bzr_branch_lookup = getUtility(IBranchLookup)
         git_branch_lookup = getUtility(IGitLookup)
         for link in links:
-            path = link.strip('/')[len('+branch/'):]
+            path = link.strip('/')[len('+code/'):]
             if git_branch_lookup.getByPath(path)[0] is None:
                 try:
                     bzr_branch_lookup.getByLPPath(path)

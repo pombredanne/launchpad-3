@@ -22,9 +22,11 @@ from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.registry.enums import (
     PersonVisibility,
     SharingPermission,
+    VCSType,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.identity.interfaces.account import AccountStatus
@@ -38,6 +40,7 @@ from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlappend
 from lp.testing import (
     ANONYMOUS,
+    admin_logged_in,
     celebrity_logged_in,
     login,
     login_person,
@@ -330,6 +333,253 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # error notification if the thing following +branch has an invalid
         # product name.
         self.assertNotFound("_foo", use_default_referer=False)
+
+
+class TestCodeTraversal(TestCaseWithFactory, TraversalMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def traverse(self, path, **kwargs):
+        return super(TestCodeTraversal, self).traverse(
+            path, '+code', **kwargs)
+
+    def test_project_bzr_branch(self):
+        branch = self.factory.makeAnyBranch()
+        self.assertRedirects(branch.unique_name, canonical_url(branch))
+
+    def test_project_git_branch(self):
+        git_repo = self.factory.makeGitRepository()
+        self.assertRedirects(git_repo.unique_name, canonical_url(git_repo))
+
+    def test_no_such_bzr_unique_name(self):
+        branch = self.factory.makeAnyBranch()
+        bad_name = branch.unique_name + 'wibble'
+        self.assertNotFound(bad_name)
+
+    def test_no_such_git_unique_name(self):
+        repo = self.factory.makeGitRepository()
+        bad_name = repo.unique_name + 'wibble'
+        self.assertNotFound(bad_name)
+
+    def test_private_bzr_branch(self):
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
+        branch_unique_name = removeSecurityProxy(branch).unique_name
+        login(ANONYMOUS)
+        self.assertNotFound(branch_unique_name)
+
+    def test_private_git_branch(self):
+        git_repo = self.factory.makeGitRepository(
+            information_type=InformationType.USERDATA)
+        repo_unique_name = removeSecurityProxy(git_repo).unique_name
+        login(ANONYMOUS)
+        self.assertNotFound(repo_unique_name)
+
+    def test_product_alias_bzr(self):
+        branch = self.factory.makeProductBranch()
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        self.assertRedirects(naked_product.name, canonical_url(branch))
+
+    def test_product_alias_git(self):
+        project = self.factory.makeProduct()
+        repo = self.factory.makeGitRepository(target=project)
+        naked_project = removeSecurityProxy(project)
+        with person_logged_in(repo.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repo.target, repo)
+        self.assertRedirects(naked_project.name, canonical_url(repo))
+
+    def test_private_bzr_branch_for_product(self):
+        branch = self.factory.makeProductBranch()
+        naked_product = removeSecurityProxy(branch.product)
+        ICanHasLinkedBranch(naked_product).setBranch(branch)
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
+        login(ANONYMOUS)
+        self.assertNotFound(naked_product.name)
+
+    def test_private_git_branch_for_product(self):
+        project = self.factory.makeProduct()
+        repo = self.factory.makeGitRepository(target=project)
+        with person_logged_in(repo.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repo.target, repo)
+
+        removeSecurityProxy(repo).information_type = (
+            InformationType.USERDATA)
+        login(ANONYMOUS)
+
+        naked_project = removeSecurityProxy(project)
+        self.assertNotFound(naked_project.name)
+
+    def test_nonexistent_product(self):
+        non_existent = 'non-existent'
+        self.assertNotFound(non_existent)
+
+    def test_product_without_dev_focus(self):
+        product = self.factory.makeProduct()
+        self.assertNotFound(product.name)
+
+    def test_distro_package_alias_bzr(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        distro_package = sourcepackage.distribution_sourcepackage
+        registrant = distro_package.distribution.owner
+        target = ICanHasLinkedBranch(distro_package)
+        with person_logged_in(registrant):
+            target.setBranch(branch, registrant)
+        self.assertRedirects("%s" % target.bzr_path, canonical_url(branch))
+
+    def test_distro_package_alias_git(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        distro_package = sourcepackage.distribution_sourcepackage
+        repo = self.factory.makeGitRepository(target=distro_package)
+
+        with admin_logged_in():
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                distro_package, repo)
+
+        self.assertRedirects("%s" % repo.shortened_path, canonical_url(repo))
+
+    def test_private_branch_for_distro_package_bzr(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage,
+            information_type=InformationType.USERDATA)
+        distro_package = sourcepackage.distribution_sourcepackage
+        registrant = distro_package.distribution.owner
+        with person_logged_in(registrant):
+            ICanHasLinkedBranch(distro_package).setBranch(branch, registrant)
+        login(ANONYMOUS)
+        path = ICanHasLinkedBranch(distro_package).bzr_path
+        self.assertNotFound(path)
+
+    def test_private_branch_for_distro_package_git(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        distro_package = sourcepackage.distribution_sourcepackage
+        repo = self.factory.makeGitRepository(
+            target=distro_package,
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                distro_package, repo)
+        login(ANONYMOUS)
+        path = removeSecurityProxy(repo).shortened_path
+        self.assertNotFound(path)
+
+    def test_trailing_path_redirect_bzr(self):
+        branch = self.factory.makeAnyBranch()
+        path = urlappend(branch.unique_name, '+edit')
+        self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
+
+    def test_trailing_path_redirect_git(self):
+        repo = self.factory.makeGitRepository()
+        path = urlappend(repo.unique_name, '+edit')
+        self.assertRedirects(path, canonical_url(repo, view_name='+edit'))
+
+    def test_alias_trailing_path_redirect_bzr(self):
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.product.development_focus.branch = branch
+        path = '%s/+edit' % branch.product.name
+        self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
+
+    def test_alias_trailing_path_redirect_git(self):
+        project = self.factory.makeProduct()
+        repo = self.factory.makeGitRepository(target=project)
+        with admin_logged_in():
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                project, repo)
+        path = '%s/+edit' % project.name
+        self.assertRedirects(path, canonical_url(repo, view_name='+edit'))
+
+    def test_product_series_redirect_bzr(self):
+        branch = self.factory.makeBranch()
+        series = self.factory.makeProductSeries(branch=branch)
+        self.assertRedirects(
+            ICanHasLinkedBranch(series).bzr_path, canonical_url(branch))
+
+    def test_no_branch_for_series(self):
+        # If there's no branch for a product series, display a
+        # message telling the user there is no linked branch.
+        series = self.factory.makeProductSeries()
+        path = ICanHasLinkedBranch(series).bzr_path
+        self.assertNotFound(path)
+
+    def test_private_branch_for_series(self):
+        # If the development focus of a product series is private, display a
+        # message telling the user there is no linked branch.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        series = self.factory.makeProductSeries(branch=branch)
+        login(ANONYMOUS)
+        path = ICanHasLinkedBranch(series).bzr_path
+        self.assertNotFound(path)
+
+    def test_too_short_branch_name(self):
+        owner = self.factory.makePerson()
+        self.assertNotFound('~%s' % owner.name)
+
+    def test_invalid_product_name(self):
+        self.assertNotFound('_foo')
+
+    def test_invalid_product_name_without_referer(self):
+        self.assertNotFound("_foo", use_default_referer=False)
+
+    def test_ambigous_project_default_repo_bzr(self):
+        project = self.factory.makeProduct()
+        bzr_branch = self.factory.makeBranch(target=project)
+        self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            ICanHasLinkedBranch(project).setBranch(bzr_branch, project.owner)
+
+        self.assertRedirects(project.name, canonical_url(bzr_branch))
+
+    def test_ambigous_project_without_vcs_set(self):
+        project = self.factory.makeProduct()
+        bzr_branch = self.factory.makeBranch(target=project)
+        repo = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            ICanHasLinkedBranch(project).setBranch(bzr_branch, project.owner)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                project, repo)
+
+        self.assertNotFound(project.name)
+
+    def test_ambigous_project_with_vcs_set_to_git(self):
+        project = self.factory.makeProduct()
+        bzr_branch = self.factory.makeBranch(target=project)
+        repo = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            ICanHasLinkedBranch(project).setBranch(bzr_branch, project.owner)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                project, repo)
+            project.vcs = VCSType.GIT
+
+        self.assertRedirects(project.name, canonical_url(repo))
+
+    def test_ambigous_project_with_vcs_set_to_bzr(self):
+        project = self.factory.makeProduct()
+        bzr_branch = self.factory.makeBranch(target=project)
+        repo = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            ICanHasLinkedBranch(project).setBranch(bzr_branch, project.owner)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                project, repo)
+            project.vcs = VCSType.BZR
+
+        self.assertRedirects(project.name, canonical_url(bzr_branch))
+
+    def test_personal_branch_bzr(self):
+        person = self.factory.makePerson()
+        branch = self.factory.makePersonalBranch(owner=person)
+        self.assertRedirects(branch.unique_name, canonical_url(branch))
+
+    def test_personal_branch_git(self):
+        person = self.factory.makePerson()
+        repo = self.factory.makeGitRepository(owner=person, target=person)
+        self.assertRedirects(repo.unique_name, canonical_url(repo))
 
 
 class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
