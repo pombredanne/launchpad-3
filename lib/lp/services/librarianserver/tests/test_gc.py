@@ -851,16 +851,27 @@ class TestBlobCollection(TestCase):
         self.unexpired_blob_id = cur.fetchone()[0]
         self.layer.txn.commit()
 
-        # Make sure all the librarian files actually exist on disk
+        # Make sure all the librarian files actually exist on disk with
+        # hashes matching the DB. We use the hash as the new file
+        # content, to preserve existing duplicate relationships.
+        switch_dbuser('testadmin')
         cur = cursor()
-        cur.execute("SELECT id FROM LibraryFileContent")
-        for content_id in (row[0] for row in cur.fetchall()):
+        cur.execute("SELECT id, sha1 FROM LibraryFileContent")
+        for content_id, sha1 in cur.fetchall():
             path = librariangc.get_file_path(content_id)
             if not os.path.exists(path):
                 if not os.path.exists(os.path.dirname(path)):
                     os.makedirs(os.path.dirname(path))
-                open(path, 'w').write('whatever')
-        self.layer.txn.abort()
+                data = sha1
+                open(path, 'w').write(data)
+                cur.execute(
+                    "UPDATE LibraryFileContent "
+                    "SET md5 = %s, sha1 = %s, sha256 = %s, filesize = %s "
+                    "WHERE id = %s",
+                    (hashlib.md5(data).hexdigest(),
+                     hashlib.sha1(data).hexdigest(),
+                     hashlib.sha256(data).hexdigest(), len(data), content_id))
+        self.layer.txn.commit()
 
         switch_dbuser(config.librarian_gc.dbuser)
 
