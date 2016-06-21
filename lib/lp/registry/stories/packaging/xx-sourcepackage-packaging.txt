@@ -7,8 +7,7 @@ Create test data.
     >>> test_publisher = SoyuzTestPublisher()
     >>> login('admin@canonical.com')
     >>> test_data = test_publisher.makeSourcePackageSummaryData()
-    >>> test_publisher.updateDistroSeriesPackageCache(
-    ...     test_data['distroseries'])
+    >>> test_publisher.updatePackageCache(test_data['distroseries'])
     >>> logout()
 
 No Privileges Person visit the distroseries upstream links page for Hoary

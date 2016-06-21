@@ -52,9 +52,8 @@ class ArchiveSigningKey:
         if not os.path.exists(os.path.dirname(export_path)):
             os.makedirs(os.path.dirname(export_path))
 
-        export_file = open(export_path, 'w')
-        export_file.write(key.export())
-        export_file.close()
+        with open(export_path, 'w') as export_file:
+            export_file.write(key.export())
 
     def generateSigningKey(self):
         """See `IArchiveSigningKey`."""
@@ -86,8 +85,9 @@ class ArchiveSigningKey:
         assert os.path.exists(key_path), (
             "%s does not exist" % key_path)
 
-        secret_key = getUtility(IGPGHandler).importSecretKey(
-            open(key_path).read())
+        with open(key_path) as key_file:
+            secret_key_export = key_file.read()
+        secret_key = getUtility(IGPGHandler).importSecretKey(secret_key_export)
         self._setupSigningKey(secret_key)
 
     def _setupSigningKey(self, secret_key):
@@ -122,25 +122,55 @@ class ArchiveSigningKey:
             "Release file doesn't exist in the repository: %s"
             % release_file_path)
 
-        secret_key_export = open(
-            self.getPathForSecretKey(self.archive.signing_key)).read()
+        secret_key_path = self.getPathForSecretKey(self.archive.signing_key)
+        with open(secret_key_path) as secret_key_file:
+            secret_key_export = secret_key_file.read()
 
         gpghandler = getUtility(IGPGHandler)
         secret_key = gpghandler.importSecretKey(secret_key_export)
 
-        release_file_content = open(release_file_path).read()
+        with open(release_file_path) as release_file:
+            release_file_content = release_file.read()
         signature = gpghandler.signContent(
             release_file_content, secret_key, mode=gpgme.SIG_MODE_DETACH)
 
-        release_signature_file = open(
-            os.path.join(suite_path, 'Release.gpg'), 'w')
-        release_signature_file.write(signature)
-        release_signature_file.close()
+        release_signature_path = os.path.join(suite_path, 'Release.gpg')
+        with open(release_signature_path, 'w') as release_signature_file:
+            release_signature_file.write(signature)
 
         inline_release = gpghandler.signContent(
             release_file_content, secret_key, mode=gpgme.SIG_MODE_CLEAR)
 
-        inline_release_file = open(
-            os.path.join(suite_path, 'InRelease'), 'w')
-        inline_release_file.write(inline_release)
-        inline_release_file.close()
+        inline_release_path = os.path.join(suite_path, 'InRelease')
+        with open(inline_release_path, 'w') as inline_release_file:
+            inline_release_file.write(inline_release)
+
+    def signFile(self, path):
+        """See `IArchiveSigningKey`."""
+        assert self.archive.signing_key is not None, (
+            "No signing key available for %s" % self.archive.displayname)
+
+        # Allow the passed path to be relative to the archive root.
+        path = os.path.realpath(os.path.join(self._archive_root_path, path))
+
+        # Ensure the resulting path is within the archive root after
+        # normalisation.
+        # NOTE: uses os.sep to prevent /var/tmp/../tmpFOO attacks.
+        archive_root = self._archive_root_path + os.sep
+        assert path.startswith(archive_root), (
+            "Attempting to sign file (%s) outside archive_root for %s" % (
+                path, self.archive.displayname))
+
+        secret_key_path = self.getPathForSecretKey(self.archive.signing_key)
+        with open(secret_key_path) as secret_key_file:
+            secret_key_export = secret_key_file.read()
+        gpghandler = getUtility(IGPGHandler)
+        secret_key = gpghandler.importSecretKey(secret_key_export)
+
+        with open(path) as path_file:
+            file_content = path_file.read()
+        signature = gpghandler.signContent(
+            file_content, secret_key, mode=gpgme.SIG_MODE_DETACH)
+
+        with open(os.path.join(path + '.gpg'), 'w') as signature_file:
+            signature_file.write(signature)

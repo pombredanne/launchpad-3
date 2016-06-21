@@ -18,6 +18,7 @@ __all__ = [
 
 import os
 
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
 
 
@@ -58,8 +59,9 @@ class DdtpTarballUpload(CustomUpload):
         _, self.component, self.version = self.parsePath(tarfile_path)
         self.arch = None
 
-    def setTargetDirectory(self, pubconf, tarfile_path, suite):
+    def setTargetDirectory(self, archive, tarfile_path, suite):
         self.setComponents(tarfile_path)
+        pubconf = getPubConfig(archive)
         self.targetdir = os.path.join(
             pubconf.archiveroot, 'dists', suite, self.component)
 

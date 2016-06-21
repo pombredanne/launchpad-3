@@ -11,6 +11,7 @@ __all__ = [
 
 import os
 
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
 from lp.archivepublisher.debversion import (
     BadUpstreamError,
@@ -65,8 +66,9 @@ class DistUpgraderUpload(CustomUpload):
     def setComponents(self, tarfile_path):
         _, self.version, self.arch = self.parsePath(tarfile_path)
 
-    def setTargetDirectory(self, pubconf, tarfile_path, suite):
+    def setTargetDirectory(self, archive, tarfile_path, suite):
         self.setComponents(tarfile_path)
+        pubconf = getPubConfig(archive)
         self.targetdir = os.path.join(
             pubconf.archiveroot, 'dists', suite, 'main',
             'dist-upgrader-%s' % self.arch)

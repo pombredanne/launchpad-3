@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -27,9 +27,13 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         return browser
 
     def test_bug_alsoaffects_spn_exists(self):
-        # If the source package name exists, there is no error.
+        # If a source package is published to a main archive with the given
+        # name, there is no error.
         bug = self.factory.makeBug()
-        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.distribution)
+        dsp = self.factory.makeDSPCache(distroseries=distroseries)
+        spn = dsp.sourcepackagename
         browser = self.openBugPage(bug)
         browser.getLink(url='+distrotask').click()
         browser.getControl('Distribution').value = [self.distribution.name]

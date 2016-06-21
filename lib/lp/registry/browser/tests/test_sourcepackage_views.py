@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SourcePackage view code."""
@@ -52,11 +52,10 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         source_package_name = (
             test_data['source_package'].sourcepackagename.name)
         distroseries_id = test_data['distroseries'].id
-        test_publisher.updateDistroSeriesPackageCache(
-            test_data['distroseries'])
+        test_publisher.updatePackageCache(test_data['distroseries'])
 
-        # updateDistroSeriesPackageCache reconnects the db, so the
-        # objects need to be reloaded.
+        # updatePackageCache reconnects the db, so the objects need to be
+        # reloaded.
         distroseries = getUtility(IDistroSeriesSet).get(distroseries_id)
         return distroseries.getSourcePackage(source_package_name)
 
@@ -167,7 +166,7 @@ class TestSourcePackageView(BrowserTestCase):
 
     def test_register_upstream_forbids_proprietary(self):
         # Cannot specify information_type if registering for sourcepackage.
-        sourcepackage = self.factory.makeSourcePackage()
+        sourcepackage = self.factory.makeSourcePackage(publish=True)
         browser = self.getViewBrowser(sourcepackage)
         browser.getControl("Register the upstream project").click()
         browser.getControl("Link to Upstream Project").click()

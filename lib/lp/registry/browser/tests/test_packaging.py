@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser tests for Packaging actions."""
@@ -38,10 +38,8 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.hoary = self.ubuntu.getSeries('hoary')
         self.sourcepackagename = self.factory.makeSourcePackageName('hot')
-        self.sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
+        self.factory.makeDSPCache(
+            distroseries=self.hoary, sourcepackagename=self.sourcepackagename)
         self.product = self.factory.makeProduct(name="hot", displayname='Hot')
         self.productseries = self.factory.makeProductSeries(
             product=self.product, name='hotter')
@@ -103,10 +101,12 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         self.assertEqual('sourcepackagename', view.errors[0].field_name)
         self.assertEqual('Required input is missing.', view.errors[0].doc())
 
-    def test_cannot_link_to_nonexistant_ubuntu_package(self):
+    def test_cannot_link_to_nonexistent_ubuntu_package(self):
         # In the case of full functionality distributions like Ubuntu, the
         # source package must be published in the distro series.
-        self.factory.makeSourcePackageName('vapor')
+        warty = self.ubuntu.getSeries('warty')
+        self.factory.makeDSPCache(
+            distroseries=warty, sourcepackagename='vapor')
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'vapor',

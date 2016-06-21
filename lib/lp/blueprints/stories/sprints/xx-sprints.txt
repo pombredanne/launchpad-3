@@ -218,7 +218,7 @@ should receive a nice error message.
 We fix the dates and change the address, we expect to be redirected to the
 sprint home page.
 
-    >>> browser.getControl('Timezone').value = ['America/Montreal']
+    >>> browser.getControl('Timezone').value = ['America/Toronto']
     >>> browser.getControl(
     ...     'Starting Date and Time').value = '2006-01-10 08:30'
     >>> browser.getControl(
