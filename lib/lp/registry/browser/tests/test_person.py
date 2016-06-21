@@ -7,6 +7,7 @@ import doctest
 import email
 from textwrap import dedent
 
+from lazr.restful.utils import get_current_browser_request
 import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
@@ -42,12 +43,16 @@ from lp.registry.model.milestone import milestone_sort_key
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
-from lp.services.gpg.interfaces import GPG_HIDE_PERSON_KEY_LISTING
+from lp.services.gpg.interfaces import (
+    GPG_HIDE_PERSON_KEY_LISTING,
+    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
+    )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
 from lp.services.mail import stub
 from lp.services.propertycache import clear_property_cache
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
@@ -367,6 +372,48 @@ class TestPersonIndexView(BrowserTestCase):
         self.factory.makeGPGKey(person)
         view = create_initialized_view(person, '+index')
         self.assertFalse(view.should_show_gpgkeys_section)
+
+
+class PersonIndexViewGPGTimelineTests(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def get_markup(self, view, person):
+        def fake_method():
+            return canonical_url(person)
+        with monkey_patch(view, _getURL=fake_method):
+            markup = view.render()
+        return markup
+
+    def get_timeline_for_person_index_view_render(self):
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        view = create_initialized_view(person, '+index')
+        self.get_markup(view, person)
+        return get_request_timeline(
+            get_current_browser_request())
+
+    def assert_num_gpgservice_timeline_actions(self, expected_count, timeline):
+        self.assertEqual(
+            expected_count,
+            len([a for a in timeline.actions if 'gpgservice' in a.category]))
+
+    def test_hide_keys_ff_no_timeline_action(self):
+        self.useFixture(FeatureFixture({
+            GPG_HIDE_PERSON_KEY_LISTING: True,
+            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
+        }))
+        timeline = self.get_timeline_for_person_index_view_render()
+
+        self.assert_num_gpgservice_timeline_actions(0, timeline)
+
+    def test_one_gpg_timeline_action_when_rendering_view(self):
+        self.useFixture(FeatureFixture({
+            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
+        }))
+        timeline = self.get_timeline_for_person_index_view_render()
+
+        self.assert_num_gpgservice_timeline_actions(1, timeline)
 
 
 
