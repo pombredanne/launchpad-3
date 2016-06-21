@@ -5,9 +5,7 @@ __metaclass__ = type
 __all__ = [
     'BinaryPackageName',
     'BinaryPackageNameSet',
-    'BinaryPackageNameVocabulary',
-    'getBinaryPackageDescriptions',
-]
+    ]
 
 from sqlobject import (
     SQLObjectNotFound,
@@ -16,25 +14,16 @@ from sqlobject import (
 from storm.expr import Join
 from storm.store import EmptyResultSet
 from zope.interface import implementer
-from zope.schema.vocabulary import SimpleTerm
 
 from lp.app.errors import NotFoundError
 from lp.services.database.interfaces import IStore
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.helpers import ensure_unicode
-from lp.services.webapp.vocabulary import (
-    BatchedCountableIterator,
-    NamedSQLObjectHugeVocabulary,
-    )
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName,
     IBinaryPackageNameSet,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 
 @implementer(IBinaryPackageName)
@@ -110,60 +99,3 @@ class BinaryPackageNameSet:
                 BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
                 BinaryPackagePublishingHistory.binarypackagenameID.is_in(
                     name_ids)).config(distinct=True)
-
-
-class BinaryPackageNameIterator(BatchedCountableIterator):
-    """An iterator for BinaryPackageNameVocabulary.
-
-    Builds descriptions based on releases of that binary package name.
-    """
-
-    def getTermsWithDescriptions(self, results):
-        # Prefill the descriptions dictionary with the latest
-        # description uploaded for that package name.
-        descriptions = getBinaryPackageDescriptions(results)
-        return [SimpleTerm(obj, obj.name,
-                    descriptions.get(obj.name, "Not uploaded"))
-                for obj in results]
-
-
-class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
-    """A vocabulary for searching for binary package names."""
-    _table = BinaryPackageName
-    _orderBy = 'name'
-    displayname = 'Select a Binary Package'
-    iterator = BinaryPackageNameIterator
-
-
-def getBinaryPackageDescriptions(results, use_names=False,
-                                 max_title_length=50):
-    """Return a dict of descriptions keyed by package name.
-
-    See sourcepackage.py:getSourcePackageDescriptions, which is analogous.
-    """
-    if len(list(results)) < 1:
-        return {}
-    if use_names:
-        clause = ("BinaryPackageName.name in %s" %
-                 sqlvalues([pn.name for pn in results]))
-    else:
-        clause = ("BinaryPackageName.id in %s" %
-                 sqlvalues([bpn.id for bpn in results]))
-
-    descriptions = {}
-    releases = BinaryPackageRelease.select(
-        """BinaryPackageRelease.binarypackagename =
-            BinaryPackageName.id AND
-           %s""" % clause,
-        clauseTables=["BinaryPackageRelease", "BinaryPackageName"],
-        orderBy=["-BinaryPackageRelease.datecreated"])
-
-    for release in releases:
-        binarypackagename = release.binarypackagename.name
-        if binarypackagename not in descriptions:
-            description = release.description.strip().replace("\n", " ")
-            if len(description) > max_title_length:
-                description = (release.description[:max_title_length]
-                              + "...")
-            descriptions[binarypackagename] = description
-    return descriptions
