@@ -25,10 +25,13 @@ from lp.services.webapp.url import urlappend
 from lp.snappy.interfaces.snapstoreclient import (
     BadRefreshResponse,
     BadRequestPackageUploadResponse,
+    BadScanStatusResponse,
     BadUploadResponse,
     ISnapStoreClient,
     NeedsRefreshResponse,
+    ScanFailedResponse,
     UnauthorizedUploadResponse,
+    UploadNotScannedYetResponse,
     )
 
 
@@ -166,11 +169,12 @@ class SnapStoreClient:
         # that's currently difficult in jobs.
         try:
             assert snap.store_secrets is not None
-            urlfetch(
+            response = urlfetch(
                 upload_url, method="POST", json=data,
                 auth=MacaroonAuth(
                     snap.store_secrets["root"],
                     snap.store_secrets["discharge"]))
+            return response.json()["status_url"]
         except requests.HTTPError as e:
             if e.response.status_code == 401:
                 if (e.response.headers.get("WWW-Authenticate") ==
@@ -186,12 +190,12 @@ class SnapStoreClient:
         for _, lfa, lfc in snapbuild.getFiles():
             upload_data = self._uploadFile(lfa, lfc)
             try:
-                self._uploadApp(snapbuild.snap, upload_data)
+                return self._uploadApp(snapbuild.snap, upload_data)
             except NeedsRefreshResponse:
                 # Try to automatically refresh the discharge macaroon and
                 # retry the upload.
                 self.refreshDischargeMacaroon(snapbuild.snap)
-                self._uploadApp(snapbuild.snap, upload_data)
+                return self._uploadApp(snapbuild.snap, upload_data)
 
     @classmethod
     def refreshDischargeMacaroon(cls, snap):
@@ -211,3 +215,29 @@ class SnapStoreClient:
             snap.store_secrets = new_secrets
         except requests.HTTPError as e:
             raise BadRefreshResponse(e.args[0])
+
+    @classmethod
+    def checkStatus(cls, status_url):
+        try:
+            response = urlfetch(status_url)
+            response_data = response.json()
+            if "completed" in response_data:
+                # Old status format.
+                if not response_data["completed"]:
+                    raise UploadNotScannedYetResponse()
+                elif not response_data["application_url"]:
+                    raise ScanFailedResponse(response_data["message"])
+                else:
+                    return response_data["application_url"]
+            else:
+                # New status format.
+                if not response_data["processed"]:
+                    raise UploadNotScannedYetResponse()
+                elif "errors" in response_data:
+                    error_message = "\n".join(
+                        error["message"] for error in response_data["errors"])
+                    raise ScanFailedResponse(error_message)
+                else:
+                    return response_data["url"]
+        except requests.HTTPError as e:
+            raise BadScanStatusResponse(e.args[0])

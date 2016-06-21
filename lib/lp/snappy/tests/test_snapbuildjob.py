@@ -7,10 +7,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapbuildjob import (
@@ -18,8 +20,10 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJob,
     )
 from lp.snappy.interfaces.snapstoreclient import (
+    BadScanStatusResponse,
     ISnapStoreClient,
     UnauthorizedUploadResponse,
+    UploadNotScannedYetResponse,
     )
 from lp.snappy.model.snapbuildjob import (
     SnapBuildJob,
@@ -42,6 +46,7 @@ class FakeSnapStoreClient:
 
     def __init__(self):
         self.upload = FakeMethod()
+        self.checkStatus = FakeMethod()
 
 
 class TestSnapBuildJob(TestCaseWithFactory):
@@ -67,6 +72,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
     def setUp(self):
         super(TestSnapStoreUploadJob, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
+        self.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
 
     def test_provides_interface(self):
         # `SnapStoreUploadJob` objects provide `ISnapStoreUploadJob`.
@@ -82,16 +89,20 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
             "<SnapStoreUploadJob for %s>" % snapbuild.title, repr(job))
 
     def test_run(self):
-        # The job uploads the build to the store.
+        # The job uploads the build to the store and records the store URL.
         snapbuild = self.factory.makeSnapBuild()
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
+        client.upload.result = self.status_url
+        client.checkStatus.result = self.store_url
         self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             JobRunner([job]).runAll()
         self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([((self.status_url,), {})], client.checkStatus.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertEqual(self.store_url, job.store_url)
         self.assertIsNone(job.error_message)
         self.assertEqual([], pop_notifications())
 
@@ -106,7 +117,9 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             JobRunner([job]).runAll()
         self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([], client.checkStatus.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
         self.assertEqual("An upload failure", job.error_message)
         self.assertEqual([], pop_notifications())
 
@@ -124,7 +137,9 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             JobRunner([job]).runAll()
         self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([], client.checkStatus.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
         self.assertEqual("Authorization failed.", job.error_message)
         [notification] = pop_notifications()
         self.assertEqual(
@@ -144,6 +159,83 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         body, footer = notification.get_payload(decode=True).split("\n-- \n")
         self.assertIn(
             "http://launchpad.dev/~requester/+snap/test-snap/+authorize", body)
+        self.assertEqual(
+            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
+            "You are the requester of the build.\n" % snapbuild.id, footer)
+
+    def test_run_scan_pending_retries(self):
+        # A run that finds that the store has not yet finished scanning the
+        # package schedules itself to be retried.
+        self.useFixture(FakeLogger())
+        snapbuild = self.factory.makeSnapBuild()
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.result = self.status_url
+        client.checkStatus.failure = UploadNotScannedYetResponse()
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([((self.status_url,), {})], client.checkStatus.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
+        self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        # Try again.  The upload part of the job is not retried, and this
+        # time the scan completes.
+        job.lease_expires = None
+        job.scheduled_start = None
+        client.upload.calls = []
+        client.checkStatus.calls = []
+        client.checkStatus.failure = None
+        client.checkStatus.result = self.store_url
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([], client.upload.calls)
+        self.assertEqual([((self.status_url,), {})], client.checkStatus.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertEqual(self.store_url, job.store_url)
+        self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+
+    def test_run_scan_failure_notifies(self):
+        # A run that gets a scan failure from the store sends mail.
+        requester = self.factory.makePerson(name="requester")
+        snapbuild = self.factory.makeSnapBuild(
+            requester=requester, name="test-snap", owner=requester)
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.result = self.status_url
+        client.checkStatus.failure = BadScanStatusResponse("Scan failed.")
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([((self.status_url,), {})], client.checkStatus.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
+        self.assertEqual("Scan failed.", job.error_message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            config.canonical.noreply_from_address, notification["From"])
+        self.assertEqual(
+            "Requester <%s>" % requester.preferredemail.email,
+            notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
+        self.assertEqual("Store upload scan failed for test-snap", subject)
+        self.assertEqual(
+            "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(
+            requester.name, notification["X-Launchpad-Message-For"])
+        self.assertEqual(
+            "snap-build-upload-scan-failed",
+            notification["X-Launchpad-Notification-Type"])
+        body, footer = notification.get_payload(decode=True).split("\n-- \n")
+        self.assertIn("Scan failed.", body)
         self.assertEqual(
             "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
             "You are the requester of the build.\n" % snapbuild.id, footer)

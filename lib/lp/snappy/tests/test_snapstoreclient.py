@@ -43,8 +43,11 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
+    BadScanStatusResponse,
     ISnapStoreClient,
+    ScanFailedResponse,
     UnauthorizedUploadResponse,
+    UploadNotScannedYetResponse,
     )
 from lp.snappy.model.snapstoreclient import (
     InvalidStoreSecretsError,
@@ -199,7 +202,13 @@ class TestSnapStoreClient(TestCaseWithFactory):
     @urlmatch(path=r".*/snap-push/$")
     def _snap_push_handler(self, url, request):
         self.snap_push_request = request
-        return {"status_code": 202, "content": {"success": True}}
+        return {
+            "status_code": 202,
+            "content": {
+                "success": True,
+                "status_url": (
+                    "http://sca.example/dev/api/snaps/1/builds/1/status"),
+                }}
 
     @urlmatch(path=r".*/api/v2/tokens/refresh$")
     def _macaroon_refresh_handler(self, url, request):
@@ -361,3 +370,139 @@ class TestSnapStoreClient(TestCaseWithFactory):
             json_data={"discharge_macaroon": store_secrets["discharge"]}))
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])
+
+    def test_checkStatus_old_pending(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 200,
+                "content": {
+                    "completed": False, "application_url": "",
+                    "revision": None,
+                    "message": "Task 1 is waiting for execution.",
+                    "package_name": None,
+                    }}
+
+        status_url = "http://sca.example/dev/api/click-scan-complete/updown/1/"
+        with HTTMock(handler):
+            self.assertRaises(
+                UploadNotScannedYetResponse, self.client.checkStatus,
+                status_url)
+
+    def test_checkStatus_old_error(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 200,
+                "content": {
+                    "completed": True, "application_url": "", "revision": None,
+                    "message": "You cannot use that reserved namespace.",
+                    "package_name": None,
+                    }}
+
+        status_url = "http://sca.example/dev/api/click-scan-complete/updown/1/"
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                ScanFailedResponse, b"You cannot use that reserved namespace.",
+                self.client.checkStatus, status_url)
+
+    def test_checkStatus_old_success(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 200,
+                "content": {
+                    "completed": True,
+                    "application_url": "http://sca.example/dev/click-apps/1/",
+                    "revision": 1, "message": "", "package_name": "test",
+                    }}
+
+        status_url = "http://sca.example/dev/api/click-scan-complete/updown/1/"
+        with HTTMock(handler):
+            self.assertEqual(
+                "http://sca.example/dev/click-apps/1/",
+                self.client.checkStatus(status_url))
+
+    def test_checkStatus_new_pending(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 200,
+                "content": {
+                    "code": "being_processed", "processed": False,
+                    "can_release": False,
+                    }}
+
+        status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
+        with HTTMock(handler):
+            self.assertRaises(
+                UploadNotScannedYetResponse, self.client.checkStatus,
+                status_url)
+
+    def test_checkStatus_new_error(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 200,
+                "content": {
+                    "code": "processing_error", "processed": True,
+                    "can_release": False,
+                    "errors": [
+                        {"code": None,
+                         "message": "You cannot use that reserved namespace.",
+                         }],
+                    }}
+
+        status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                ScanFailedResponse,
+                b"You cannot use that reserved namespace.",
+                self.client.checkStatus, status_url)
+
+    def test_checkStatus_new_review_error(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 200,
+                "content": {
+                    "code": "processing_error", "processed": True,
+                    "can_release": False,
+                    "errors": [{"code": None, "message": "Review failed."}],
+                    "url": "http://sca.example/dev/click-apps/1/rev/1/",
+                    }}
+
+        status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                ScanFailedResponse, b"Review failed.",
+                self.client.checkStatus, status_url)
+
+    def test_checkStatus_new_complete(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 200,
+                "content": {
+                    "code": "ready_to_release", "processed": True,
+                    "can_release": True,
+                    "url": "http://sca.example/dev/click-apps/1/rev/1/",
+                    "revision": 1,
+                    }}
+
+        status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
+        with HTTMock(handler):
+            self.assertEqual(
+                "http://sca.example/dev/click-apps/1/rev/1/",
+                self.client.checkStatus(status_url))
+
+    def test_checkStatus_404(self):
+        @all_requests
+        def handler(url, request):
+            return {"status_code": 404, "reason": b"Not found"}
+
+        status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                BadScanStatusResponse, b"404 Client Error: Not found",
+                self.client.checkStatus, status_url)

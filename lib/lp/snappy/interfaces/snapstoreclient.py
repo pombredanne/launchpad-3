@@ -9,10 +9,13 @@ __metaclass__ = type
 __all__ = [
     'BadRefreshResponse',
     'BadRequestPackageUploadResponse',
+    'BadScanStatusResponse',
     'BadUploadResponse',
     'ISnapStoreClient',
     'NeedsRefreshResponse',
+    'ScanFailedResponse',
     'UnauthorizedUploadResponse',
+    'UploadNotScannedYetResponse',
     ]
 
 from zope.interface import Interface
@@ -38,6 +41,18 @@ class UnauthorizedUploadResponse(Exception):
     pass
 
 
+class BadScanStatusResponse(Exception):
+    pass
+
+
+class UploadNotScannedYetResponse(Exception):
+    pass
+
+
+class ScanFailedResponse(Exception):
+    pass
+
+
 class ISnapStoreClient(Interface):
     """Interface for the API provided by the snap store."""
 
@@ -59,10 +74,23 @@ class ISnapStoreClient(Interface):
         """Upload a snap build to the store.
 
         :param snapbuild: The `ISnapBuild` to upload.
+        :return: A URL to poll for upload processing status.
         """
 
     def refreshDischargeMacaroon(snap):
         """Refresh a snap's discharge macaroon.
 
         :param snap: An `ISnap` whose discharge macaroon needs to be refreshed.
+        """
+
+    def checkStatus(status_url):
+        """Poll the store once for upload scan status.
+
+        :param status_url: A URL as returned by `upload`.
+        :raises UploadNotScannedYetResponse: if the store has not yet
+            scanned the upload.
+        :raises BadScanStatusResponse: if the store failed to scan the
+            upload.
+        :return: A URL on the store with further information about this
+            upload.
         """

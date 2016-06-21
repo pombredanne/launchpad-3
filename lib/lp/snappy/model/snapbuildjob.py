@@ -12,6 +12,8 @@ __all__ = [
     'SnapStoreUploadJob',
     ]
 
+from datetime import timedelta
+
 from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
@@ -48,8 +50,11 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJobSource,
     )
 from lp.snappy.interfaces.snapstoreclient import (
+    BadScanStatusResponse,
     ISnapStoreClient,
+    ScanFailedResponse,
     UnauthorizedUploadResponse,
+    UploadNotScannedYetResponse,
     )
 from lp.snappy.mail.snapbuild import SnapBuildMailer
 
@@ -159,7 +164,12 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
 
     class_job_type = SnapBuildJobType.STORE_UPLOAD
 
+    user_error_types = (UnauthorizedUploadResponse, ScanFailedResponse)
+
     # XXX cjwatson 2016-05-04: identify transient upload failures and retry
+    retry_error_types = (UploadNotScannedYetResponse,)
+    retry_delay = timedelta(minutes=1)
+    max_retries = 20
 
     config = config.ISnapStoreUploadJobSource
 
@@ -181,11 +191,26 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         """See `ISnapStoreUploadJob`."""
         self.metadata["error_message"] = message
 
+    @property
+    def store_url(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.metadata.get("store_url")
+
+    @store_url.setter
+    def store_url(self, url):
+        """See `ISnapStoreUploadJob`."""
+        self.metadata["store_url"] = url
+
     def run(self):
         """See `IRunnableJob`."""
+        client = getUtility(ISnapStoreClient)
         try:
-            getUtility(ISnapStoreClient).upload(self.snapbuild)
+            if "status_url" not in self.metadata:
+                self.metadata["status_url"] = client.upload(self.snapbuild)
+            self.store_url = client.checkStatus(self.metadata["status_url"])
             self.error_message = None
+        except self.retry_error_types:
+            raise
         except Exception as e:
             # Abort work done so far, but make sure that we commit the error
             # message.
@@ -193,6 +218,9 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             self.error_message = str(e)
             if isinstance(e, UnauthorizedUploadResponse):
                 mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)
+                mailer.sendAll()
+            elif isinstance(e, (BadScanStatusResponse, ScanFailedResponse)):
+                mailer = SnapBuildMailer.forUploadScanFailure(self.snapbuild)
                 mailer.sendAll()
             transaction.commit()
             raise
