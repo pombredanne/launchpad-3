@@ -109,6 +109,7 @@ class SigningUpload(CustomUpload):
         self.targetdir = os.path.join(
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
+        self.temproot = pubconf.temproot
 
         self.public_keys = set()
 
@@ -338,7 +339,7 @@ class SigningUpload(CustomUpload):
         signer = None
         if self.archive.signing_key:
             signer = IArchiveSigningKey(self.archive)
-        with DirectoryHash(versiondir, self.tmpdir, signer) as hasher:
+        with DirectoryHash(versiondir, self.temproot, signer) as hasher:
             hasher.add_dir(versiondir)
 
     def shouldInstall(self, filename):
