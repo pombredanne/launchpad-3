@@ -95,9 +95,9 @@ And this is for a person:
     >>> check_redirect(
     ...     "/~name12/+branch/gnome-terminal/pushed/+edit",
     ...     auth=True, status=301)
-    >>> check_redirect("/~name12/+code/gnome-terminal/pushed/", status=301)
+    >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
     >>> check_redirect(
-    ...     "/~name12/+code/gnome-terminal/pushed/+edit",
+    ...     "/~name12/+branch/gnome-terminal/pushed/+edit",
     ...     auth=True, status=301)
     >>> check_redirect("/~name16/+packages", status=301)
     >>> check_redirect("/~name16/+projects", status=301)
