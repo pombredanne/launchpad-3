@@ -340,7 +340,8 @@ class SnapAuthorizeMixin:
             log_oops(e, self.request)
 
 
-class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
+class SnapAddView(
+        LaunchpadFormView, SnapAuthorizeMixin, EnableProcessorsMixin):
     """View for creating snap packages."""
 
     page_title = label = 'Create a new snap package'
@@ -368,6 +369,16 @@ class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
             if (IInformationType.providedBy(self.context) and
                 self.context.information_type in PRIVATE_INFORMATION_TYPES):
                 raise SnapPrivateFeatureDisabled
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(SnapAddView, self).setUpFields()
+        processors = getUtility(ISnapSet).availableProcessors()
+        self.form_fields += self.createEnabledProcessors(
+            processors,
+            u"The architectures that this snap package builds for. Some "
+            u"architectures are restricted and may only be enabled or "
+            u"disabled by administrators.")
 
     @property
     def cancel_url(self):
@@ -432,7 +443,8 @@ class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
             data['store_distro_series'].distro_series, data['name'],
             private=private, store_upload=data['store_upload'],
             store_series=data['store_distro_series'].snappy_series,
-            store_name=data['store_name'], **kwargs)
+            store_name=data['store_name'], processors=data['processors'],
+            **kwargs)
         if data['store_upload']:
             self.requestAuthorization(snap)
         else:
@@ -636,7 +648,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
                         data['processors'].append(processor)
                     elif processor.name in widget.disabled_items:
                         # This processor is restricted and currently
-                        # enabled.  Leave it untouched.
+                        # enabled. Leave it untouched.
                         data['processors'].append(processor)
 
 
