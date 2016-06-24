@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces related to bugs."""
@@ -809,6 +809,13 @@ class IBugEdit(Interface):
         file_alias.restricted.
         """
 
+    def linkMergeProposal(merge_proposal, user, check_permissions=True):
+        """Ensure that this MP is linked to this bug."""
+
+    def unlinkMergeProposal(merge_proposal, user, check_permissions=True):
+        """Ensure that any links between this bug and the given MP are removed.
+        """
+
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
@@ -1009,8 +1016,23 @@ class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
     @export_read_operation()
     @operation_for_version('beta')
     def getVisibleLinkedBranches(user):
-        """Return the branches linked to this bug that are visible by
-        `user`."""
+        """Return all the branches linked to the bug that `user` can see."""
+
+    linked_merge_proposals = exported(
+        CollectionField(
+            title=_("Merge proposals associated with this bug."),
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(schema=Interface),
+            readonly=True),
+        as_of='devel')
+
+    @accessor_for(linked_merge_proposals)
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getVisibleLinkedMergeProposals(user):
+        """Return all the MPs linked to the bug that `user` can see."""
 
 
 # We are forced to define these now to avoid circular import problems.

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -671,15 +671,37 @@ def _build_query(params):
                     BugBranch.branchID, branches))
         return Exists(Select(1, tables=[BugBranch], where=And(*where)))
 
+    def make_merge_proposal_clause(merge_proposals=None):
+        where = [
+            XRef.from_type == u'bug',
+            XRef.from_id_int == BugTaskFlat.bug_id,
+            XRef.to_type == u'merge_proposal',
+            ]
+        if merge_proposals is not None:
+            where.append(
+                search_value_to_storm_where_condition(
+                    XRef.to_id_int, merge_proposals))
+        return Exists(Select(1, tables=[XRef], where=And(*where)))
+
     if zope_isinstance(params.linked_branches, BaseItem):
         if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
-            extra_clauses.append(make_branch_clause())
+            extra_clauses.append(
+                Or(make_branch_clause(), make_merge_proposal_clause()))
         elif (params.linked_branches ==
                 BugBranchSearch.BUGS_WITHOUT_BRANCHES):
             extra_clauses.append(Not(make_branch_clause()))
+            extra_clauses.append(Not(make_merge_proposal_clause()))
     elif zope_isinstance(params.linked_branches, (any, all, int)):
-        # A specific search term has been supplied.
+        # A specific search term has been supplied.  Note that this only
+        # works with branches, not merge proposals, as it takes integer
+        # branch IDs.
         extra_clauses.append(make_branch_clause(params.linked_branches))
+
+    if zope_isinstance(params.linked_merge_proposals, (any, all, int)):
+        # This is normally only used internally by
+        # BranchMergeProposal.getRelatedBugTasks.
+        extra_clauses.append(
+            make_merge_proposal_clause(params.linked_merge_proposals))
 
     linked_blueprints_clause = _build_blueprint_related_clause(params)
     if linked_blueprints_clause is not None:

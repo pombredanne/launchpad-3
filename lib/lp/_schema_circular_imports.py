@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -681,6 +681,7 @@ patch_plain_parameter_type(
     IBug, 'getNominationFor', 'target', IBugTarget)
 patch_plain_parameter_type(
     IBug, 'getNominations', 'target', IBugTarget)
+patch_collection_property(IBug, 'linked_merge_proposals', IBranchMergeProposal)
 patch_choice_parameter_type(
     IBug, 'subscribe', 'level', BugNotificationLevel)
 

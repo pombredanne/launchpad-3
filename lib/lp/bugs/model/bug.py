@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad bug-related database table classes."""
@@ -166,6 +166,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
@@ -1380,7 +1381,7 @@ class Bug(SQLBase, InformationTypeMixin):
             Store.of(bug_branch).remove(bug_branch)
 
     def getVisibleLinkedBranches(self, user, eager_load=False):
-        """Return all the branches linked to the bug that `user` can see."""
+        """See `IBug`."""
         linked_branches = list(getUtility(IAllBranches).visibleByUser(
             user).linkedToBugs([self]).getBranches(eager_load=eager_load))
         if len(linked_branches) == 0:
@@ -1390,6 +1391,39 @@ class Bug(SQLBase, InformationTypeMixin):
             return Store.of(self).find(
                 BugBranch,
                 BugBranch.bug == self, In(BugBranch.branchID, branch_ids))
+
+    def linkMergeProposal(self, merge_proposal, user, check_permissions=True):
+        """See `IBug`."""
+        merge_proposal.linkBug(
+            self, user=user, check_permissions=check_permissions)
+
+    def unlinkMergeProposal(self, merge_proposal, user,
+                            check_permissions=True):
+        """See `IBug`."""
+        merge_proposal.unlinkBug(
+            self, user=user, check_permissions=check_permissions)
+
+    @property
+    def linked_merge_proposals(self):
+        from lp.code.model.branchmergeproposal import BranchMergeProposal
+        merge_proposal_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'bug', unicode(self.id)), types=[u'merge_proposal'])]
+        return list(sorted(
+            bulk.load(BranchMergeProposal, merge_proposal_ids),
+            key=operator.attrgetter('id')))
+
+    def getVisibleLinkedMergeProposals(self, user, eager_load=False):
+        """See `IBug`."""
+        linked_merge_proposal_ids = set(
+            bmp.id for bmp in self.linked_merge_proposals)
+        # XXX cjwatson 2016-06-24: This will also need to look at
+        # IAllBranches in the event that we start linking bugs directly to
+        # Bazaar-based merge proposals rather than to their source branches.
+        collection = getUtility(IAllGitRepositories).visibleByUser(user)
+        return collection.getMergeProposals(
+            merge_proposal_ids=linked_merge_proposal_ids,
+            eager_load=eager_load)
 
     @cachedproperty
     def has_cves(self):

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -707,7 +707,9 @@
                 attributes="
                     linked_branches
                     linked_bugbranches
-                    getVisibleLinkedBranches"/>
+                    getVisibleLinkedBranches
+                    linked_merge_proposals
+                    getVisibleLinkedMergeProposals"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.bugs.interfaces.bug.IBugEdit"
