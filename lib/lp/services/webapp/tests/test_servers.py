@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -30,6 +30,7 @@ from zope.interface import (
     Interface,
     )
 
+from lp.app import versioninfo
 from lp.services.webapp.interfaces import IFinishReadOnlyRequestEvent
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
@@ -381,6 +382,11 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEquals(
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=15552000')
+
+    def test_baserequest_revision_header(self):
+        response = LaunchpadBrowserRequest(StringIO.StringIO(''), {}).response
+        self.assertEqual(
+            versioninfo.revno, response.getHeader('X-Launchpad-Revision'))
 
     def test_baserequest_recovers_from_bad_path_info_encoding(self):
         # The request object recodes PATH_INFO to ensure sane_environment
