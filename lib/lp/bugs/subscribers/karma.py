@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Assign karma for bugs domain activity."""
@@ -125,6 +125,16 @@ def branch_linked(bug, event):
     """Assign karma to the user who linked the bug to the branch."""
     from lp.code.interfaces.branch import IBranch
     if not IBranch.providedBy(event.other_object):
+        return
+    event.other_object.target.assignKarma(
+        IPerson(event.user), 'bugbranchcreated')
+
+
+@block_implicit_flushes
+def merge_proposal_linked(bug, event):
+    """Assign karma to the user who linked the bug to the merge proposal."""
+    from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+    if not IBranchMergeProposal.providedBy(event.other_object):
         return
     event.other_object.target.assignKarma(
         IPerson(event.user), 'bugbranchcreated')
