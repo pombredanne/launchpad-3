@@ -245,6 +245,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
                 }},
             }
         hosting_client = FakeGitHostingClient(new_refs, [])
+        hosting_client.getLog = FakeMethod(result=[])
         hosting_client.detectMerges = FakeMethod(
             result={source.commit_sha1: u'0' * 40})
         self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))

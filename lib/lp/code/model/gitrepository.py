@@ -966,11 +966,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             store.invalidate()
         return updated
 
-    def scheduleDiffUpdates(self, paths):
+    def updateLandingTargets(self, paths):
         """See `IGitRepository`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = []
         for merge_proposal in self.getActiveLandingTargets(paths):
+            merge_proposal.updateRelatedBugsFromSource()
             jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
         return jobs
 

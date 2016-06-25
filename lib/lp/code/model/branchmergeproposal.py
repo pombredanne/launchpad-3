@@ -123,6 +123,10 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.xref.interfaces import IXRefSet
+from lp.soyuz.enums import (
+    re_bug_numbers,
+    re_lp_closes,
+    )
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -427,6 +431,56 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             # Otherwise, link the bug to the merge proposal directly.
             return super(BranchMergeProposal, self).unlinkBug(
                 bug, user=user, check_permissions=check_permissions)
+
+    def _fetchRelatedBugIDsFromSource(self):
+        """Fetch related bug IDs from the source branch."""
+        from lp.bugs.model.bug import Bug
+        # Only currently used for Git.
+        assert self.source_git_ref is not None
+        # XXX cjwatson 2016-06-11: This may return too many bugs in the case
+        # where a prerequisite branch fixes a bug which is not fixed by
+        # further commits on the source branch.  To fix this, we need
+        # turnip's log API to be able to take multiple stop parameters.
+        commits = self.getUnlandedSourceBranchRevisions()
+        bug_ids = set()
+        for commit in commits:
+            if "commit_message" in commit:
+                for match in re_lp_closes.finditer(commit["commit_message"]):
+                    for bug_id in re_bug_numbers.findall(match.group(0)):
+                        bug_ids.add(int(bug_id))
+        # Only return bug IDs that exist.
+        return set(IStore(Bug).find(Bug.id, Bug.id.is_in(bug_ids)))
+
+    def updateRelatedBugsFromSource(self):
+        """See `IBranchMergeProposal`."""
+        # Only currently used for Git.
+        assert self.source_git_ref is not None
+        current_bug_ids_from_source = {
+            int(id): (props['metadata'] or {}).get('from_source', False)
+            for (_, id), props in getUtility(IXRefSet).findFrom(
+                (u'merge_proposal', unicode(self.id)), types=[u'bug']).items()}
+        current_bug_ids = set(current_bug_ids_from_source)
+        new_bug_ids = self._fetchRelatedBugIDsFromSource()
+        # Only remove links marked as originating in the source branch.
+        remove_bug_ids = set(
+            bug_id for bug_id in current_bug_ids - new_bug_ids
+            if current_bug_ids_from_source[bug_id])
+        if remove_bug_ids:
+            getUtility(IXRefSet).delete(
+                {(u'merge_proposal', unicode(self.id)):
+                    [(u'bug', unicode(bug_id)) for bug_id in remove_bug_ids]})
+        add_bug_ids = new_bug_ids - current_bug_ids
+        # XXX cjwatson 2016-06-11: We could perhaps set creator and
+        # date_created based on commit information, but then we'd have to
+        # work out what to do in the case of multiple commits referring to
+        # the same bug, updating properties if more such commits arrive
+        # later, etc.  This is simple and does the job for now.
+        if add_bug_ids:
+            getUtility(IXRefSet).create(
+                {(u'merge_proposal', unicode(self.id)):
+                    {(u'bug', unicode(bug_id)):
+                        {'metadata': {'from_source': True}}
+                     for bug_id in add_bug_ids}})
 
     @property
     def address(self):

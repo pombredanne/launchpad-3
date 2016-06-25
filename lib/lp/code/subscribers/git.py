@@ -9,6 +9,6 @@ __metaclass__ = type
 def refs_updated(repository, event):
     """Some references in a Git repository have been updated."""
     repository.updateMergeCommitIDs(event.paths)
-    repository.scheduleDiffUpdates(event.paths)
+    repository.updateLandingTargets(event.paths)
     repository.markRecipesStale(event.paths)
     repository.detectMerges(event.paths, logger=event.logger)
