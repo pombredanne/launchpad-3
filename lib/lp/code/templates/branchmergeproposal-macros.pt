@@ -67,4 +67,63 @@
 
 </metal:active-reviews>
 
+<metal:bug-summary define-macro="bug-summary">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      proposal - the linked merge proposal
+      bug - the linked bug
+  </tal:comment>
+
+  <div class="bug-mp-summary"
+       tal:define="show_edit bug/required:launchpad.Edit"
+       tal:condition="proposal/required:launchpad.View">
+    <a tal:attributes="href proposal/merge_source/fmt:url"
+       class="sprite branch"
+       tal:content="proposal/merge_source/display_name"/>
+    <a title="Remove link"
+       tal:condition="show_edit"
+       tal:attributes="href string:${proposal/fmt:url}/+unlinkbug?field.bugs=${bug/id}">
+      <img src="/@@/remove" alt="Remove"/>
+    </a>
+    <div class="reviews">
+      <tal:merge-fragment
+          tal:replace="structure proposal/@@+summary-fragment"/>
+    </div>
+  </div>
+
+</metal:bug-summary>
+
+<metal:bug-links define-macro="bug-links">
+
+  <table tal:condition="view/linked_bugtasks">
+    <tal:bug-tasks repeat="bugtask view/linked_bugtasks">
+      <tr tal:condition="bugtask/bug/required:launchpad.View"
+           tal:attributes="id string:buglink-${bugtask/bug/id}"
+           class="bug-mp-summary">
+        <td tal:content="structure bugtask/fmt:link:bugs" class="first"/>
+        <td>
+          <span tal:content="bugtask/importance/title"
+                tal:attributes="class string:importance${bugtask/importance/name}"
+                >Critical</span>
+        </td>
+        <td>
+          <span tal:content="bugtask/status/title"
+                tal:attributes="class string:status${bugtask/status/name}"
+                >Triaged</span>
+        </td>
+        <td>
+          <a title="Remove link"
+             class="delete-buglink"
+             tal:attributes="href string:+unlinkbug?field.bugs=${bugtask/bug/id};
+                             id string:delete-buglink-${bugtask/bug/id}">
+            <img src="/@@/remove" alt="Remove"/>
+          </a>
+        </td>
+      </tr>
+    </tal:bug-tasks>
+  </table>
+
+</metal:bug-links>
+
 </tal:root>

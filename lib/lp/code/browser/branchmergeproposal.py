@@ -283,6 +283,10 @@ class BranchMergeProposalMenuMixin:
             BranchMergeProposalStatus.SUPERSEDED)
         return Link('+resubmit', text, enabled=enabled, icon='edit')
 
+    def link_bug(self):
+        text = 'Link a bug report'
+        return Link('+linkbug', text, icon='add')
+
 
 class BranchMergeProposalEditMenu(NavigationMenu,
                                   BranchMergeProposalMenuMixin):
@@ -308,6 +312,7 @@ class BranchMergeProposalContextMenu(ContextMenu,
         'set_commit_message',
         'set_description',
         'edit_status',
+        'link_bug',
         'merge',
         'request_review',
         'resubmit',
@@ -704,10 +709,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         return self.context.preview_diff
 
     @property
-    def has_bug_or_spec(self):
-        """Return whether or not the merge proposal has a linked bug or spec.
-        """
-        return self.linked_bugtasks or self.spec_links
+    def has_specs(self):
+        """Return whether the merge proposal has any linked specs."""
+        return bool(self.spec_links)
 
     @property
     def spec_links(self):
@@ -720,7 +724,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @cachedproperty
     def linked_bugtasks(self):
-        """Return BugTasks linked to the source branch."""
+        """Return BugTasks linked to the MP or the source branch."""
         return self.context.getRelatedBugTasks(self.user)
 
     @property

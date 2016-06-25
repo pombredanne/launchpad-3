@@ -254,6 +254,18 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+linkbug"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        class="lp.bugs.browser.buglinktarget.BugLinkView"
+        permission="launchpad.AnyPerson"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+unlinkbug"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        class="lp.bugs.browser.buglinktarget.BugsUnlinkView"
+        permission="launchpad.AnyPerson"
+        template="../templates/branchmergeproposal-unlinkbugs.pt"/>
+    <browser:page
         name="+link-summary"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeCandidateView"

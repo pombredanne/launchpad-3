@@ -283,6 +283,8 @@ patch_collection_property(
     IBranchMergeProposal, 'votes', ICodeReviewVoteReference)
 patch_collection_return_type(
     IBranchMergeProposal, 'getRelatedBugTasks', IBugTask)
+patch_plain_parameter_type(IBranchMergeProposal, 'linkBug', 'bug', IBug)
+patch_plain_parameter_type(IBranchMergeProposal, 'unlinkBug', 'bug', IBug)
 
 patch_collection_return_type(IHasBranches, 'getBranches', IBranch)
 patch_collection_return_type(
@@ -682,8 +684,12 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IBug, 'getNominations', 'target', IBugTarget)
 patch_collection_property(IBug, 'linked_merge_proposals', IBranchMergeProposal)
+patch_plain_parameter_type(
+    IBug, 'linkMergeProposal', 'merge_proposal', IBranchMergeProposal)
 patch_choice_parameter_type(
     IBug, 'subscribe', 'level', BugNotificationLevel)
+patch_plain_parameter_type(
+    IBug, 'unlinkMergeProposal', 'merge_proposal', IBranchMergeProposal)
 
 
 # IFrontPageBugAddForm

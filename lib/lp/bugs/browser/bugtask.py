@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -811,6 +811,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 for_branches=[link.branch for link in linked_branches],
                 eager_load=True))
         return linked_branches
+
+    @cachedproperty
+    def linked_merge_proposals(self):
+        """Filter out the links to non-visible private MPs."""
+        return list(self.context.bug.getVisibleLinkedMergeProposals(
+            self.user, eager_load=True))
 
     @property
     def days_to_expiration(self):
