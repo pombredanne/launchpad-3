@@ -174,7 +174,11 @@ class SnapStoreClient:
                 auth=MacaroonAuth(
                     snap.store_secrets["root"],
                     snap.store_secrets["discharge"]))
-            return response.json()["status_url"]
+            response_data = response.json()
+            if "status_details_url" in response_data:
+                return response_data["status_details_url"]
+            else:
+                return response_data["status_url"]
         except requests.HTTPError as e:
             if e.response.status_code == 401:
                 if (e.response.headers.get("WWW-Authenticate") ==

@@ -207,6 +207,9 @@ class TestSnapStoreClient(TestCaseWithFactory):
             "content": {
                 "success": True,
                 "status_url": (
+                    "http://sca.example/dev/api/"
+                    "click-scan-complete/updown/1/"),
+                "status_details_url": (
                     "http://sca.example/dev/api/snaps/1/builds/1/status"),
                 }}
 
@@ -282,7 +285,9 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
         with HTTMock(self._unscanned_upload_handler, self._snap_push_handler):
-            self.client.upload(snapbuild)
+            self.assertEqual(
+                "http://sca.example/dev/api/snaps/1/builds/1/status",
+                self.client.upload(snapbuild))
         self.assertThat(self.unscanned_upload_request, RequestMatches(
             url=Equals("http://updown.example/unscanned-upload/"),
             method=Equals("POST"),
@@ -349,10 +354,37 @@ class TestSnapStoreClient(TestCaseWithFactory):
         transaction.commit()
         with HTTMock(self._unscanned_upload_handler, snap_push_handler,
                      self._macaroon_refresh_handler):
-            self.client.upload(snapbuild)
+            self.assertEqual(
+                "http://sca.example/dev/api/snaps/1/builds/1/status",
+                self.client.upload(snapbuild))
         self.assertEqual(2, snap_push_handler.call_count)
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])
+
+    def test_upload_old_status_url(self):
+        @urlmatch(path=r".*/snap-push/$")
+        def snap_push_handler(url, request):
+            return {
+                "status_code": 202,
+                "content": {
+                    "success": True,
+                    "status_url": (
+                        "http://sca.example/dev/api/"
+                        "click-scan-complete/updown/1/"),
+                    }}
+
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=self._make_store_secrets())
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
+        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
+        transaction.commit()
+        with HTTMock(self._unscanned_upload_handler, snap_push_handler):
+            self.assertEqual(
+                "http://sca.example/dev/api/click-scan-complete/updown/1/",
+                self.client.upload(snapbuild))
 
     def test_refresh_discharge_macaroon(self):
         store_secrets = self._make_store_secrets()
