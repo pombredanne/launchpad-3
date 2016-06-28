@@ -1,6 +1,6 @@
 -- Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.3.5
+-- Created using pg_dump (PostgreSQL) 9.3.12
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -3821,6 +3821,7 @@ ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'js.combo_loader.enabled', 'true', '2012-05-18 07:34:39.239649');
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 1, 'longpoll.merge_proposals.enabled', 'true', '2012-05-18 07:34:39.239649');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'snap.allow_new', 'true', '2016-06-22 15:32:03.502299');
 
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
@@ -9487,6 +9488,15 @@ ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE snappyseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (1, '2016-06-22 16:25:51.474348', 1, 'ubuntu_core_1504', 'Ubuntu Core 15.04', 4);
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (2, '2016-06-22 16:25:51.474348', 1, 'ubuntu_core_16', 'Ubuntu Core 16', 4);
+
+
+ALTER TABLE snappyseries ENABLE TRIGGER ALL;
+
+
 ALTER TABLE snap DISABLE TRIGGER ALL;
 
 
@@ -9519,6 +9529,20 @@ ALTER TABLE snapfile DISABLE TRIGGER ALL;
 
 
 ALTER TABLE snapfile ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE snappydistroseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 1);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 3);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (2, 1);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (2, 3);
+
+
+ALTER TABLE snappydistroseries ENABLE TRIGGER ALL;
 
 
 
