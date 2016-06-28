@@ -16,10 +16,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
-from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.testing import (
     admin_logged_in,
@@ -46,10 +44,6 @@ class TestCanonicalUrlForSnapBuild(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestCanonicalUrlForSnapBuild, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
         snap = self.factory.makeSnap(
@@ -63,10 +57,6 @@ class TestCanonicalUrlForSnapBuild(TestCaseWithFactory):
 class TestSnapBuildView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestSnapBuildView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
 
     def test_files(self):
         # SnapBuildView.files returns all the associated files.
@@ -120,7 +110,6 @@ class TestSnapBuildOperations(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapBuildOperations, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.useFixture(FakeLogger())
         self.build = self.factory.makeSnapBuild()
         self.build_url = canonical_url(self.build)

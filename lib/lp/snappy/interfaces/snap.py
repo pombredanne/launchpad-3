@@ -14,14 +14,12 @@ __all__ = [
     'ISnapView',
     'NoSourceForSnap',
     'NoSuchSnap',
-    'SNAP_FEATURE_FLAG',
     'SNAP_PRIVATE_FEATURE_FLAG',
     'SNAP_TESTING_FLAGS',
     'SNAP_WEBHOOKS_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
-    'SnapFeatureDisabled',
     'SnapNotOwner',
     'SnapPrivacyMismatch',
     'SnapPrivateFeatureDisabled',
@@ -94,13 +92,11 @@ from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
-SNAP_FEATURE_FLAG = u"snap.allow_new"
 SNAP_PRIVATE_FEATURE_FLAG = u"snap.allow_private"
 SNAP_WEBHOOKS_FEATURE_FLAG = u"snap.webhooks.enabled"
 
 
 SNAP_TESTING_FLAGS = {
-    SNAP_FEATURE_FLAG: u"on",
     SNAP_PRIVATE_FEATURE_FLAG: u"on",
     SNAP_WEBHOOKS_FEATURE_FLAG: u"on",
     }
@@ -141,16 +137,6 @@ class SnapBuildDisallowedArchitecture(Exception):
         super(SnapBuildDisallowedArchitecture, self).__init__(
             "This snap package is not allowed to build for %s." %
             das.displayname)
-
-
-@error_status(httplib.UNAUTHORIZED)
-class SnapFeatureDisabled(Unauthorized):
-    """Only certain users can create new snap-related objects."""
-
-    def __init__(self):
-        super(SnapFeatureDisabled, self).__init__(
-            "You do not have permission to create new snaps or new snap "
-            "builds.")
 
 
 @error_status(httplib.UNAUTHORIZED)

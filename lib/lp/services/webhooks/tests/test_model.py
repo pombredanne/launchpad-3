@@ -17,7 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.registry.enums import BranchSharingPolicy
 from lp.services.database.interfaces import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.services.webhooks.interfaces import (
     IWebhook,
@@ -27,7 +26,6 @@ from lp.services.webhooks.model import (
     WebhookJob,
     WebhookSet,
     )
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
@@ -398,7 +396,6 @@ class TestWebhookSetSnap(TestWebhookSetBase, TestCaseWithFactory):
     event_type = 'snap:build:0.1'
 
     def makeTarget(self, owner=None, **kwargs):
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: 'true'}))
         if owner is None:
             owner = self.factory.makePerson()
         return self.factory.makeSnap(registrant=owner, owner=owner, **kwargs)

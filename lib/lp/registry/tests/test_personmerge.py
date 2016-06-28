@@ -41,10 +41,7 @@ from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from lp.snappy.interfaces.snap import (
-    ISnapSet,
-    SNAP_FEATURE_FLAG,
-    )
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.livefs import (
     ILiveFSSet,
@@ -560,7 +557,6 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
     def test_merge_moves_snaps(self):
         # When person/teams are merged, snap packages owned by the from
         # person are moved.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         duplicate = self.factory.makePerson()
         mergee = self.factory.makePerson()
         self.factory.makeSnap(registrant=duplicate, owner=duplicate)
@@ -572,7 +568,6 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
     def test_merge_with_duplicated_snaps(self):
         # If both the from and to people have snap packages with the same
         # name, merging renames the duplicate from the from person's side.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         duplicate = self.factory.makePerson()
         mergee = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()

@@ -13,9 +13,7 @@ from lp.services.database.constants import (
     ONE_DAY_AGO,
     UTC_NOW,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -39,8 +37,7 @@ class TestSnapListing(BrowserTestCase):
         We do things this way rather than by calling self.useFixture because
         opening a URL in a test browser loses the thread-local feature flag.
         """
-        with FeatureFixture({SNAP_FEATURE_FLAG: u"on"}):
-            return self.factory.makeSnap(**kwargs)
+        return self.factory.makeSnap(**kwargs)
 
     def assertSnapsLink(self, context, link_text, link_has_context=False,
                         **kwargs):

@@ -48,18 +48,13 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.snappy.interfaces.snap import (
-    ISnapSet,
-    SNAP_FEATURE_FLAG,
-    SnapFeatureDisabled,
-    )
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
     ISnapBuildSet,
@@ -160,8 +155,6 @@ class SnapBuild(PackageBuildMixin, Storm):
                  distro_arch_series, pocket, processor, virtualized,
                  date_created):
         """Construct a `SnapBuild`."""
-        if not getFeatureFlag(SNAP_FEATURE_FLAG):
-            raise SnapFeatureDisabled
         super(SnapBuild, self).__init__()
         self.build_farm_job = build_farm_job
         self.requester = requester

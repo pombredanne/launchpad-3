@@ -44,11 +44,9 @@ from lp.snappy.interfaces.snap import (
     ISnapSet,
     ISnapView,
     NoSourceForSnap,
-    SNAP_FEATURE_FLAG,
     SNAP_TESTING_FLAGS,
     SnapBuildAlreadyPending,
     SnapBuildDisallowedArchitecture,
-    SnapFeatureDisabled,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
     )
@@ -66,7 +64,6 @@ from lp.testing import (
     logout,
     person_logged_in,
     record_two_runs,
-    set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -86,18 +83,10 @@ class TestSnapFeatureFlag(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, we will not create new Snaps.
-        person = self.factory.makePerson()
-        self.assertRaises(
-            SnapFeatureDisabled, getUtility(ISnapSet).new,
-            person, person, None, None, branch=self.factory.makeAnyBranch())
-
     def test_private_feature_flag_disabled(self):
         # Without a private feature flag, we will not create new private Snaps.
         person = self.factory.makePerson()
         with feature_flags():
-            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
             self.assertRaises(
                 SnapPrivateFeatureDisabled, getUtility(ISnapSet).new,
                 person, person, None, None,
