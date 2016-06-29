@@ -78,6 +78,7 @@ from lp.app.browser.tales import (
     )
 from lp.app.errors import (
     GoneError,
+    NameLookupFailed,
     NotFoundError,
     POSTToNonCanonicalURL,
     )
@@ -103,9 +104,11 @@ from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.layers import WebServiceLayer
+from lp.registry.enums import VCSType
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -767,6 +770,68 @@ class LaunchpadRootNavigation(Navigation):
 
         return self.redirectSubTree(target_url)
 
+    @stepto('+code')
+    def redirect_branch_or_repo(self):
+        """Redirect /+code/<foo> to the branch or repository named 'foo'.
+
+        'foo' can be the unique name of the branch/repo, or any of the aliases
+        for the branch/repo.
+
+        If 'foo' is invalid, or exists but the user does not have permission to
+        view 'foo', a NotFoundError is raised, resulting in a 404 error.
+
+        Unlike +branch, this works for both git and bzr repositories/branches.
+        """
+        target_url = None
+        path = '/'.join(self.request.stepstogo)
+
+        # Try a Git repository lookup first, since the schema is simpler and
+        # so it's quicker.
+        try:
+            repository, trailing = getUtility(IGitLookup).getByPath(path)
+            if repository is not None:
+                target_url = canonical_url(repository)
+                if trailing:
+                    target_url = urlappend(target_url, trailing)
+        except (InvalidNamespace, InvalidProductName, NameLookupFailed,
+                Unauthorized):
+            # Either the git repository wasn't found, or it was found but we
+            # lack authority to access it. In either case, attempt a bzr lookup
+            # so don't set target_url
+            pass
+
+        # Attempt a bzr lookup as well:
+        try:
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
+            bzr_url = canonical_url(branch)
+            if trailing != '':
+                bzr_url = urlappend(bzr_url, trailing)
+
+            if target_url and branch.product is not None:
+                # Project has both a bzr branch and a git repo. There's no
+                # right thing we can do here, so pretend we didn't see
+                # anything at all.
+                if branch.product.vcs is None:
+                    target_url = None
+                # if it's set to BZR, then set this branch as the target
+                if branch.product.vcs == VCSType.BZR:
+                    target_url = bzr_url
+            else:
+                target_url = bzr_url
+        except (NoLinkedBranch, CannotHaveLinkedBranch, InvalidNamespace,
+                InvalidProductName, NotFoundError):
+            # No bzr branch found either.
+            pass
+
+        # Either neither bzr nor git returned matches, or they did but we're
+        # not authorised to view them, or they both did and the project has not
+        # set its 'vcs' property to indicate which one to prefer. In all cases
+        # raise a 404:
+        if not target_url:
+            raise NotFoundError
+
+        return self.redirectSubTree(target_url)
+
     @stepto('+builds')
     def redirect_buildfarm(self):
         """Redirect old /+builds requests to new URL, /builders."""
@@ -785,7 +850,7 @@ class LaunchpadRootNavigation(Navigation):
         'branches': IBranchSet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
-        '+code': IBazaarApplication,
+        '+code-index': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         '+countries': ICountrySet,

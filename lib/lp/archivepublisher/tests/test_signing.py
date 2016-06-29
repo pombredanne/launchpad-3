@@ -100,6 +100,9 @@ class TestSigningHelpers(TestCaseWithFactory):
         self.signing_dir = os.path.join(
             self.temp_dir, self.distro.name + "-signing")
         self.suite = "distroseries"
+        pubconf = getPubConfig(self.archive)
+        if not os.path.exists(pubconf.temproot):
+            os.makedirs(pubconf.temproot)
         # CustomUpload.installFiles requires a umask of 0o022.
         old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
@@ -115,6 +118,9 @@ class TestSigningHelpers(TestCaseWithFactory):
         self.signing_dir = os.path.join(
             self.temp_dir, "signing", "signing-owner", "testing")
         self.testcase_cn = '/CN=PPA signing-owner testing/'
+        pubconf = getPubConfig(self.archive)
+        if not os.path.exists(pubconf.temproot):
+            os.makedirs(pubconf.temproot)
 
     def setUpArchiveKey(self):
         with KeyServerTac():
@@ -183,6 +189,9 @@ class TestSigning(TestSigningHelpers):
         # nothing is signed.
         self.archive = self.factory.makeArchive(
             distribution=self.distro, purpose=ArchivePurpose.COPY)
+        pubconf = getPubConfig(self.archive)
+        if not os.path.exists(pubconf.temproot):
+            os.makedirs(pubconf.temproot)
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
