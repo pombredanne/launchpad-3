@@ -231,8 +231,6 @@ class POTemplate(SQLBase, RosettaStats):
     distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='distroseries', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=True)
-    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
-        dbName='binarypackagename', notNull=False, default=None)
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
     date_last_updated = UtcDateTimeCol(dbName='date_last_updated',
         default=DEFAULT)

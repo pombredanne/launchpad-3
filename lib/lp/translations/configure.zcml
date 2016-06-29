@@ -394,7 +394,7 @@
                 permission="launchpad.Admin"
                 set_attributes="
                     productseries distroseries
-                    sourcepackageversion binarypackagename
+                    sourcepackageversion
                     source_file_format source_file date_last_updated
                     from_sourcepackagename header"/>
         </class>
