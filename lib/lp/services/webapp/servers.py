@@ -60,6 +60,7 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from zope.session.interfaces import ISession
 
+from lp.app import versioninfo
 from lp.app.errors import UnexpectedFormData
 import lp.layers
 from lp.services.config import config
@@ -599,6 +600,9 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
             # 15552000 = 180 days in seconds
             self.response.setHeader(
                 'Strict-Transport-Security', 'max-age=15552000')
+
+        # Publish revision information.
+        self.response.setHeader('X-Launchpad-Revision', versioninfo.revno)
 
     @property
     def stepstogo(self):

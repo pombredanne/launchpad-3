@@ -653,7 +653,7 @@ class POTemplateAdminView(POTemplateEditView):
     field_names = [
         'name', 'translation_domain', 'description', 'header', 'iscurrent',
         'owner', 'productseries', 'distroseries', 'sourcepackagename',
-        'from_sourcepackagename', 'sourcepackageversion', 'binarypackagename',
+        'from_sourcepackagename', 'sourcepackageversion',
         'languagepack', 'path', 'source_file_format', 'priority',
         'date_last_updated']
     label = 'Administer translation template'

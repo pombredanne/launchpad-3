@@ -59,8 +59,6 @@ a Rosetta Expert to administer it.
     ''
     >>> browser.getControl(name='field.sourcepackageversion').value
     ''
-    >>> browser.getControl(name='field.binarypackagename').value
-    ''
     >>> browser.getControl(name='field.languagepack').value
     False
     >>> browser.getControl(name='field.path').value
@@ -106,8 +104,6 @@ an admin to administer it.
     >>> admin_browser.getControl(name='field.sourcepackagename').value
     ''
     >>> admin_browser.getControl(name='field.sourcepackageversion').value
-    ''
-    >>> admin_browser.getControl(name='field.binarypackagename').value
     ''
     >>> admin_browser.getControl(name='field.languagepack').value
     False
