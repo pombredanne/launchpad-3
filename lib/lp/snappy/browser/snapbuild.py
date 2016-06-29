@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SnapBuild views."""
@@ -16,6 +16,7 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -28,6 +29,7 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     Navigation,
+    structured,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.interfaces.binarypackagebuild import IBuildRescoreForm
@@ -81,6 +83,20 @@ class SnapBuildView(LaunchpadView):
     @cachedproperty
     def has_files(self):
         return bool(self.files)
+
+    @cachedproperty
+    def store_upload_status(self):
+        job = self.context.store_upload_jobs.first()
+        if job is None:
+            return None
+        elif job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
+            return "Store upload in progress"
+        elif job.job.status == JobStatus.COMPLETED:
+            return structured(
+                '<a href="%s">Manage this package in the store</a>',
+                job.store_url)
+        else:
+            return structured("Store upload failed: %s", job.error_message)
 
 
 class SnapBuildCancelView(LaunchpadFormView):

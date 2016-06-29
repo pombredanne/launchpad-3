@@ -10,6 +10,7 @@ from datetime import (
     timedelta,
     )
 import errno
+import hashlib
 import os
 import re
 import sys
@@ -91,17 +92,15 @@ def open_stream(content_id):
     return None  # File not found.
 
 
-def same_file(content_id_1, content_id_2):
-    file1 = open_stream(content_id_1)
-    file2 = open_stream(content_id_2)
-
-    chunks_iter = iter(
-        lambda: (file1.read(STREAM_CHUNK_SIZE), file2.read(STREAM_CHUNK_SIZE)),
-        ('', ''))
-    for chunk1, chunk2 in chunks_iter:
-        if chunk1 != chunk2:
-            return False
-    return True
+def sha1_file(content_id):
+    file = open_stream(content_id)
+    chunks_iter = iter(lambda: file.read(STREAM_CHUNK_SIZE), '')
+    length = 0
+    hasher = hashlib.sha1()
+    for chunk in chunks_iter:
+        hasher.update(chunk)
+        length += len(chunk)
+    return hasher.hexdigest(), length
 
 
 def confirm_no_clock_skew(con):
@@ -222,18 +221,18 @@ def merge_duplicates(con):
         # most likely to exist on the staging server (it should be
         # irrelevant on production).
         cur.execute("""
-            SELECT id
+            SELECT id, sha1, filesize
             FROM LibraryFileContent
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
             ORDER BY datecreated DESC
             """, vars())
-        dupes = [row[0] for row in cur.fetchall()]
+        dupes = cur.fetchall()
 
         if debug:
             log.debug("Found duplicate LibraryFileContents")
             # Spit out more info in case it helps work out where
             # dupes are coming from.
-            for dupe_id in dupes:
+            for dupe_id, _, _ in dupes:
                 cur.execute("""
                     SELECT id, filename, mimetype FROM LibraryFileAlias
                     WHERE content = %(dupe_id)s
@@ -246,7 +245,7 @@ def merge_duplicates(con):
         # and cope - just report and skip. However, on staging this will
         # be more common because database records has been synced from
         # production but the actual librarian contents has not.
-        dupe1_id = dupes[0]
+        dupe1_id = dupes[0][0]
         if not file_exists(dupe1_id):
             if config.instance_name == 'staging':
                 log.debug(
@@ -256,31 +255,25 @@ def merge_duplicates(con):
                         "LibraryFileContent %d data is missing", dupe1_id)
             continue
 
-        # Do a manual check that they really are identical, because we
-        # employ paranoids. And we might as well cope with someone breaking
-        # SHA1 enough that it becomes possible to create a SHA1 collision
-        # with an identical filesize to an existing file. Which is pretty
-        # unlikely. Where did I leave my tin foil hat?
-        for dupe2_id in (dupe for dupe in dupes[1:]):
-            # Check paths exist, because on staging they may not!
-            if (file_exists(dupe2_id) and not same_file(dupe1_id, dupe2_id)):
-                log.error(
-                        "SHA-1 collision found. LibraryFileContent %d and "
-                        "%d have the same SHA1 and filesize, but are not "
-                        "byte-for-byte identical.",
-                        dupe1_id, dupe2_id
-                        )
-                sys.exit(1)
+        # Check that the first file is intact. Don't want to delete
+        # dupes if we might need them to recover the original.
+        actual_sha1, actual_size = sha1_file(dupe1_id)
+        if actual_sha1 != dupes[0][1] or actual_size != dupes[0][2]:
+            log.error(
+                "Corruption found. LibraryFileContent %d has SHA-1 %s and "
+                "size %d, expected %s and %d.", dupes[0][0],
+                actual_sha1, actual_size, dupes[0][1], dupes[0][2])
+            sys.exit(1)
 
         # Update all the LibraryFileAlias entries to point to a single
         # LibraryFileContent
-        prime_id = dupes[0]
-        other_ids = ', '.join(str(dupe) for dupe in dupes[1:])
+        prime_id = dupes[0][0]
+        other_ids = ', '.join(str(dupe) for dupe, _, _ in dupes[1:])
         log.debug(
             "Making LibraryFileAliases referencing %s reference %s instead",
             other_ids, prime_id
             )
-        for other_id in dupes[1:]:
+        for other_id, _, _ in dupes[1:]:
             cur.execute("""
                 UPDATE LibraryFileAlias SET content=%(prime_id)s
                 WHERE content = %(other_id)s
