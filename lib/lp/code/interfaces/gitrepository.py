@@ -520,8 +520,16 @@ class IGitRepositoryView(IHasRecipes):
         """Mark recipes associated with this repository as stale.
 
         :param paths: A list of reference paths.  Any recipes that include
-            an entry that points to this repository and that has a `revspec`
-            that is one of these paths will be marked as stale.
+            an entry that points to this repository and that have a
+            `revspec` that is one of these paths will be marked as stale.
+        """
+
+    def markSnapsStale(paths):
+        """Mark snap packages associated with this repository as stale.
+
+        :param paths: A list of reference paths.  Any snap packages that
+            include an entry that points to this repository and that are
+            based on one of these paths will be marked as stale.
         """
 
     def detectMerges(paths, logger=None):

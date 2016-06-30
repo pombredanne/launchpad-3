@@ -721,6 +721,27 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertContentEqual(
             snaps[2:], snap_set.findByGitRepository(repositories[1]))
 
+    def test_findByGitRepository_paths(self):
+        # ISnapSet.findByGitRepository can restrict by reference paths.
+        repositories = [self.factory.makeGitRepository() for i in range(2)]
+        snaps = []
+        for repository in repositories:
+            for i in range(3):
+                [ref] = self.factory.makeGitRefs(repository=repository)
+                snaps.append(self.factory.makeSnap(git_ref=ref))
+        snap_set = getUtility(ISnapSet)
+        self.assertContentEqual(
+            [], snap_set.findByGitRepository(repositories[0], paths=[]))
+        self.assertContentEqual(
+            [snaps[0]],
+            snap_set.findByGitRepository(
+                repositories[0], paths=[snaps[0].git_ref.path]))
+        self.assertContentEqual(
+            snaps[:2],
+            snap_set.findByGitRepository(
+                repositories[0],
+                paths=[snaps[0].git_ref.path, snaps[1].git_ref.path]))
+
     def test_findByGitRef(self):
         # ISnapSet.findByGitRef returns all Snaps with the given Git
         # reference.
