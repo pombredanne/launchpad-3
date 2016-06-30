@@ -5,12 +5,19 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+import pytz
 from storm.exceptions import LostObjectError
 from storm.locals import Store
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.event import notify
@@ -35,6 +42,7 @@ from lp.services.database.constants import (
     )
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features.testing import FeatureFixture
+from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
@@ -56,6 +64,7 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
     ISnapBuildSet,
     )
+from lp.snappy.model.snap import SnapSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.testing import (
     admin_logged_in,
@@ -372,7 +381,7 @@ class TestSnap(TestCaseWithFactory):
         build11 = self.factory.makeSnapBuild(snap=snap1)
         build12 = self.factory.makeSnapBuild(snap=snap1)
         build2 = self.factory.makeSnapBuild(snap=snap2)
-        build3 = self.factory.makeSnapBuild()
+        self.factory.makeSnapBuild()
         summary1 = snap1.getBuildSummariesForSnapBuildIds(
             [build11.id, build12.id])
         summary2 = snap2.getBuildSummariesForSnapBuildIds([build2.id])
@@ -391,7 +400,7 @@ class TestSnap(TestCaseWithFactory):
         # Should not return build summaries of other snaps.
         snap1 = self.factory.makeSnap()
         snap2 = self.factory.makeSnap()
-        build1 = self.factory.makeSnapBuild(snap=snap1)
+        self.factory.makeSnapBuild(snap=snap1)
         build2 = self.factory.makeSnapBuild(snap=snap2)
         summary1 = snap1.getBuildSummariesForSnapBuildIds([build2.id])
         self.assertEqual({}, summary1)
@@ -539,6 +548,9 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertIsNone(snap.git_repository)
         self.assertIsNone(snap.git_path)
         self.assertIsNone(snap.git_ref)
+        self.assertFalse(snap.auto_build)
+        self.assertIsNone(snap.auto_build_archive)
+        self.assertIsNone(snap.auto_build_pocket)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
@@ -556,6 +568,9 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(ref.repository, snap.git_repository)
         self.assertEqual(ref.path, snap.git_path)
         self.assertEqual(ref, snap.git_ref)
+        self.assertFalse(snap.auto_build)
+        self.assertIsNone(snap.auto_build_archive)
+        self.assertIsNone(snap.auto_build_pocket)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
@@ -749,6 +764,146 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertRaises(
             BadSnapSearchContext, snap_set.findByContext,
             self.factory.makeDistribution())
+
+    def test__findStaleSnaps(self):
+        # Stale; not built automatically.
+        self.factory.makeSnap(is_stale=True)
+        # Not stale; built automatically.
+        self.factory.makeSnap(auto_build=True, is_stale=False)
+        # Stale; built automatically.
+        stale_daily = self.factory.makeSnap(auto_build=True, is_stale=True)
+        self.assertContentEqual([stale_daily], SnapSet._findStaleSnaps())
+
+    def test__findStaleSnapsDistinct(self):
+        # If a snap package has two builds due to two architectures, it only
+        # returns one recipe.
+        distroseries = self.factory.makeDistroSeries()
+        dases = [
+            self.factory.makeDistroArchSeries(distroseries=distroseries)
+            for _ in range(2)]
+        snap = self.factory.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases],
+            auto_build=True, is_stale=True)
+        for das in dases:
+            self.factory.makeSnapBuild(
+                requester=snap.owner, snap=snap,
+                archive=snap.auto_build_archive, distroarchseries=das,
+                pocket=snap.auto_build_pocket,
+                date_created=(datetime.now(pytz.UTC) - timedelta(days=2)))
+        self.assertContentEqual([snap], SnapSet._findStaleSnaps())
+
+    def makeBuildableDistroArchSeries(self, **kwargs):
+        das = self.factory.makeDistroArchSeries(**kwargs)
+        fake_chroot = self.factory.makeLibraryFileAlias(
+            filename="fake_chroot.tar.gz", db_only=True)
+        das.addOrUpdateChroot(fake_chroot)
+        return das
+
+    def makeAutoBuildableSnap(self, **kwargs):
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        das = self.makeBuildableDistroArchSeries(processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=das.distroseries, processors=[das.processor],
+            auto_build=True, **kwargs)
+        return das, snap
+
+    def test_makeAutoBuilds(self):
+        # ISnapSet.makeAutoBuilds requests builds of
+        # appropriately-configured Snaps where possible.
+        self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
+        das, snap = self.makeAutoBuildableSnap(is_stale=True)
+        logger = BufferLogger()
+        [build] = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        self.assertThat(build, MatchesStructure.byEquality(
+            requester=snap.owner, snap=snap, distro_arch_series=das,
+            status=BuildStatus.NEEDSBUILD,
+            ))
+        expected_log_entries = [
+            "DEBUG Scheduling builds of snap package %s/%s" % (
+                snap.owner.name, snap.name),
+            "DEBUG  - %s/%s/%s: Build requested." % (
+                snap.owner.name, snap.name, das.architecturetag),
+            ]
+        self.assertEqual(
+            expected_log_entries, logger.getLogBuffer().splitlines())
+        self.assertFalse(snap.is_stale)
+
+    def test_makeAutoBuilds_skips_if_built_recently(self):
+        # ISnapSet.makeAutoBuilds skips snap packages that have been built
+        # recently.
+        das, snap = self.makeAutoBuildableSnap(is_stale=True)
+        self.factory.makeSnapBuild(
+            requester=snap.owner, snap=snap, archive=snap.auto_build_archive,
+            distroarchseries=das)
+        logger = BufferLogger()
+        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        self.assertEqual([], builds)
+        self.assertEqual([], logger.getLogBuffer().splitlines())
+
+    def test_makeAutoBuilds_skips_non_stale_snaps(self):
+        # ISnapSet.makeAutoBuilds skips snap packages that are not stale.
+        das, snap = self.makeAutoBuildableSnap(is_stale=False)
+        self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
+
+    def test_makeAutoBuilds_skips_pending(self):
+        # ISnapSet.makeAutoBuilds skips snap packages that already have
+        # pending builds.
+        das, snap = self.makeAutoBuildableSnap(is_stale=True)
+        # Simulate very long build farm queues so that this case isn't
+        # filtered out earlier.
+        self.factory.makeSnapBuild(
+            requester=snap.owner, snap=snap, archive=snap.auto_build_archive,
+            distroarchseries=das,
+            date_created=datetime.now(pytz.UTC) - timedelta(days=1))
+        logger = BufferLogger()
+        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        self.assertEqual([], builds)
+        expected_log_entries = [
+            "DEBUG Scheduling builds of snap package %s/%s" % (
+                snap.owner.name, snap.name),
+            "WARNING  - %s/%s/%s: An identical build of this snap package "
+            "is already pending." % (
+                snap.owner.name, snap.name, das.architecturetag),
+            ]
+        self.assertEqual(
+            expected_log_entries, logger.getLogBuffer().splitlines())
+
+    def test_makeAutoBuilds_with_older_build(self):
+        # If a previous build is not recent and the snap package is stale,
+        # ISnapSet.makeAutoBuilds requests builds.
+        das, snap = self.makeAutoBuildableSnap(is_stale=True)
+        self.factory.makeSnapBuild(
+            requester=snap.owner, snap=snap, archive=snap.auto_build_archive,
+            distroarchseries=das,
+            date_created=datetime.now(pytz.UTC) - timedelta(days=1),
+            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=1))
+        builds = getUtility(ISnapSet).makeAutoBuilds()
+        self.assertEqual(1, len(builds))
+
+    def test_makeAutoBuilds_with_older_and_newer_builds(self):
+        # If a snap package has been built twice, and the most recent build
+        # is too recent, ISnapSet.makeAutoBuilds does not request builds.
+        das, snap = self.makeAutoBuildableSnap(is_stale=True)
+        for timediff in timedelta(days=1), timedelta(minutes=30):
+            self.factory.makeSnapBuild(
+                requester=snap.owner, snap=snap,
+                archive=snap.auto_build_archive, distroarchseries=das,
+                date_created=datetime.now(pytz.UTC) - timediff,
+                status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=1))
+        self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
+
+    def test_makeAutoBuilds_with_recent_build_from_different_archive(self):
+        # If a snap package has been built recently but from an archive
+        # other than the auto_build_archive, ISnapSet.makeAutoBuilds
+        # requests builds.
+        das, snap = self.makeAutoBuildableSnap(is_stale=True)
+        self.factory.makeSnapBuild(
+            requester=snap.owner, snap=snap, distroarchseries=das,
+            date_created=datetime.now(pytz.UTC) - timedelta(minutes=30),
+            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=1))
+        builds = getUtility(ISnapSet).makeAutoBuilds()
+        self.assertEqual(1, len(builds))
 
     def test_detachFromBranch(self):
         # ISnapSet.detachFromBranch clears the given Bazaar branch from all
