@@ -676,12 +676,3 @@ class SnapSet:
     def empty_list(self):
         """See `ISnapSet`."""
         return []
-
-    @classmethod
-    def availableProcessors(self):
-        """See `ISnapSet`."""
-        store = IMasterStore(Snap)
-        processors = store.find(
-            Processor,
-            Processor.id == DistroArchSeries.processor_id)
-        return processors.config(distinct=True)

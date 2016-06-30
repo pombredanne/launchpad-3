@@ -543,8 +543,3 @@ class ISnapSet(Interface):
 
         This only exists to keep lazr.restful happy.
         """
-
-    def availableProcessors():
-        """Return all architectures that are available to be enabled or
-        disabled for new snap packages.")
-        """

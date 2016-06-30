@@ -31,6 +31,9 @@
         <tal:widget define="widget nocall:view/widgets/store_distro_series">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/processors">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
 
         <tr tal:condition="view/has_snappy_distro_series">
           <td>
@@ -49,12 +52,6 @@
             </p>
           </td>
         </tr>
-
-        <br/>
-
-        <tal:widget define="widget nocall:view/widgets/processors">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-        </tal:widget>
 
       </table>
     </metal:formbody>

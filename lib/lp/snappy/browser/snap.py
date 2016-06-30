@@ -52,6 +52,7 @@ from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.browser.widgets.gitref import GitRefWidget
 from lp.code.errors import GitRepositoryScanFault
 from lp.code.interfaces.gitref import IGitRef
@@ -373,9 +374,8 @@ class SnapAddView(
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(SnapAddView, self).setUpFields()
-        processors = getUtility(ISnapSet).availableProcessors()
         self.form_fields += self.createEnabledProcessors(
-            processors,
+            getUtility(IProcessorSet).getAll(),
             u"The architectures that this snap package builds for. Some "
             u"architectures are restricted and may only be enabled or "
             u"disabled by administrators.")
@@ -414,6 +414,9 @@ class SnapAddView(
             'store_name': store_name,
             'owner': self.user,
             'store_distro_series': sds_set.getByDistroSeries(series).first(),
+            'processors': [
+                p for p in getUtility(IProcessorSet).getAll()
+                if p.build_by_default],
             }
 
     @property

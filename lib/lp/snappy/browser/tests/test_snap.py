@@ -395,7 +395,7 @@ class TestSnapAddView(BrowserTestCase):
             ["Intel 386 (386)", "AMD 64bit (amd64)", "HPPA Processor (hppa)"],
             [extract_text(option) for option in processors.displayOptions])
         self.assertContentEqual(["386", "amd64", "hppa"], processors.options)
-        self.assertContentEqual([], processors.value)
+        self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
 
     def test_create_new_snap_display_restricted_processors(self):
         # A restricted processor is shown disabled in the UI.
