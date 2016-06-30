@@ -1946,6 +1946,44 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         self.assertFalse(recipe.is_stale)
 
 
+class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestGitRepositoryMarkSnapsStale, self).setUp()
+        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+
+    def test_same_repository(self):
+        # On ref changes, snap packages using this ref become stale.
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=ref)
+        removeSecurityProxy(snap).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(snap.is_stale)
+
+    def test_same_repository_different_ref(self):
+        # On ref changes, snap packages using a different ref in the same
+        # repository are left alone.
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        snap = self.factory.makeSnap(git_ref=ref1)
+        removeSecurityProxy(snap).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(snap.is_stale)
+
+    def test_different_repository(self):
+        # On ref changes, unrelated snap packages are left alone.
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0])
+        removeSecurityProxy(snap).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(snap.is_stale)
+
+
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer

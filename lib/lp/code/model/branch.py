@@ -184,6 +184,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 @implementer(IBranch, IPrivacy, IInformationType)
@@ -667,6 +668,11 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         for recipe in self._recipes:
             recipe.is_stale = True
 
+    def markSnapsStale(self):
+        """See `IBranch`."""
+        for snap in getUtility(ISnapSet).findByBranch(self):
+            snap.is_stale = True
+
     def addToLaunchBag(self, launchbag):
         """See `IBranch`."""
         launchbag.add(self.product)
@@ -821,8 +827,6 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
-        from lp.snappy.interfaces.snap import ISnapSet
-
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.

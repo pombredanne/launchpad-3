@@ -527,8 +527,13 @@ class ISnapSet(Interface):
     def findByBranch(branch):
         """Return all snap packages for the given Bazaar branch."""
 
-    def findByGitRepository(repository):
-        """Return all snap packages for the given Git repository."""
+    def findByGitRepository(repository, paths=None):
+        """Return all snap packages for the given Git repository.
+
+        :param repository: An `IGitRepository`.
+        :param paths: If not None, only return snap packages for one of
+            these Git reference paths.
+        """
 
     def findByGitRef(ref):
         """Return all snap packages for the given Git reference."""
