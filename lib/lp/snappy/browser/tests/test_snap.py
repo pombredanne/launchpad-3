@@ -65,6 +65,7 @@ from lp.snappy.interfaces.snap import (
     SnapFeatureDisabled,
     SnapPrivateFeatureDisabled,
     )
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
@@ -135,6 +136,10 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
     def test_private_feature_flag_disabled(self):
         # Without a private_snap feature flag, we will not create Snaps for
         # private contexts.
+        self.snap_store_client = FakeMethod()
+        self.snap_store_client.listChannels = FakeMethod(result=[])
+        self.useFixture(
+            ZopeUtilityFixture(self.snap_store_client, ISnapStoreClient))
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
             owner=owner, information_type=InformationType.USERDATA)
@@ -161,6 +166,15 @@ class TestSnapAddView(BrowserTestCase):
         with admin_logged_in():
             self.snappyseries = self.factory.makeSnappySeries(
                 usable_distro_series=[self.distroseries])
+        self.snap_store_client = FakeMethod()
+        self.snap_store_client.listChannels = FakeMethod(result=[
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ])
+        self.snap_store_client.requestPackageUploadPermission = (
+            getUtility(ISnapStoreClient).requestPackageUploadPermission)
+        self.useFixture(
+            ZopeUtilityFixture(self.snap_store_client, ISnapStoreClient))
 
     def test_initial_distroseries(self):
         # The initial distroseries is the newest that is current or in
@@ -365,6 +379,8 @@ class TestSnapAddView(BrowserTestCase):
         browser.getControl("Automatically upload to store").selected = True
         browser.getControl("Registered store package name").value = (
             "store-name")
+        self.assertFalse(browser.getControl("Stable").selected)
+        browser.getControl("Edge").selected = True
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
@@ -389,7 +405,8 @@ class TestSnapAddView(BrowserTestCase):
             owner=self.person, distro_series=self.distroseries,
             name=u"snap-name", source=branch, store_upload=True,
             store_series=self.snappyseries, store_name=u"store-name",
-            store_secrets={"root": root_macaroon_raw}))
+            store_secrets={"root": root_macaroon_raw},
+            store_channels=["edge"]))
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {
@@ -543,6 +560,15 @@ class TestSnapEditView(BrowserTestCase):
         with admin_logged_in():
             self.snappyseries = self.factory.makeSnappySeries(
                 usable_distro_series=[self.distroseries])
+        self.snap_store_client = FakeMethod()
+        self.snap_store_client.listChannels = FakeMethod(result=[
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ])
+        self.snap_store_client.requestPackageUploadPermission = (
+            getUtility(ISnapStoreClient).requestPackageUploadPermission)
+        self.useFixture(
+            ZopeUtilityFixture(self.snap_store_client, ISnapStoreClient))
 
     def test_initial_store_series(self):
         # The initial store_series is the newest that is usable for the
@@ -792,10 +818,13 @@ class TestSnapEditView(BrowserTestCase):
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=self.distroseries, store_upload=True,
-            store_series=self.snappyseries, store_name=u"one")
+            store_series=self.snappyseries, store_name=u"one",
+            store_channels=["edge"])
         view_url = canonical_url(snap, view_name="+edit")
         browser = self.getNonRedirectingBrowser(url=view_url, user=self.person)
         browser.getControl("Registered store package name").value = "two"
+        browser.getControl("Stable").selected = True
+        self.assertTrue(browser.getControl("Edge").selected)
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
@@ -816,7 +845,8 @@ class TestSnapEditView(BrowserTestCase):
                 HTTPError, browser.getControl("Update snap package").click)
         login_person(self.person)
         self.assertThat(snap, MatchesStructure.byEquality(
-            store_name=u"two", store_secrets={"root": root_macaroon_raw}))
+            store_name=u"two", store_secrets={"root": root_macaroon_raw},
+            store_channels=["stable", "edge"]))
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {

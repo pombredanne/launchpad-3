@@ -95,6 +95,11 @@ class SnapBuildView(LaunchpadView):
             return structured(
                 '<a href="%s">Manage this package in the store</a>',
                 job.store_url)
+        elif job.store_url:
+            return structured(
+                '<a href="%s">Manage this package in the store</a><br />'
+                'Releasing package to channels failed: %s',
+                job.store_url, job.error_message)
         else:
             return structured("Store upload failed: %s", job.error_message)
 

@@ -113,6 +113,20 @@ class TestSnapBuildView(TestCaseWithFactory):
             "Store upload failed: Scan failed.",
             build_view.store_upload_status.escapedtext)
 
+    def test_store_upload_status_release_failed(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
+        naked_job.error_message = "Failed to publish"
+        build_view = create_initialized_view(build, "+index")
+        self.assertEqual(
+            '<a href="%s">Manage this package in the store</a><br />'
+            "Releasing package to channels failed: Failed to publish" % (
+                job.store_url),
+            build_view.store_upload_status.escapedtext)
+
 
 class TestSnapBuildOperations(BrowserTestCase):
 

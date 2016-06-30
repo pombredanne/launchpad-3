@@ -332,6 +332,9 @@ class ISnapEditSchema(Interface):
     # This is only required if store_upload is True.  Later validation takes
     # care of adjusting the required attribute.
     store_name = copy_field(ISnap['store_name'], required=True)
+    store_channels = copy_field(
+        ISnap['store_channels'],
+        value_type=Choice(vocabulary='SnapStoreChannel'), required=True)
 
 
 def log_oops(error, request):
@@ -368,9 +371,11 @@ class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
         'auto_build_pocket',
         'store_upload',
         'store_name',
+        'store_channels',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
+    custom_widget('store_channels', LabeledMultiCheckBoxWidget)
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -443,6 +448,7 @@ class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
             super(SnapAddView, self).validate_widgets(data, ['store_upload'])
             store_upload = data.get('store_upload', False)
             self.widgets['store_name'].context.required = store_upload
+            self.widgets['store_channels'].context.required = store_upload
         super(SnapAddView, self).validate_widgets(data, names=names)
 
     @action('Create snap package', name='create')
@@ -464,7 +470,8 @@ class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
             auto_build_pocket=data['auto_build_pocket'],
             private=private, store_upload=data['store_upload'],
             store_series=data['store_distro_series'].snappy_series,
-            store_name=data['store_name'], **kwargs)
+            store_name=data['store_name'],
+            store_channels=data.get('store_channels'), **kwargs)
         if data['store_upload']:
             self.requestAuthorization(snap)
         else:
@@ -534,6 +541,7 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
                 data, ['store_upload'])
             store_upload = data.get('store_upload', False)
             self.widgets['store_name'].context.required = store_upload
+            self.widgets['store_channels'].context.required = store_upload
         super(BaseSnapEditView, self).validate_widgets(data, names=names)
 
     def _needStoreReauth(self, data):
@@ -572,6 +580,8 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
         if not store_upload:
             if 'store_name' in data:
                 del data['store_name']
+            if 'store_channels' in data:
+                del data['store_channels']
         need_store_reauth = self._needStoreReauth(data)
         self.updateContextFromData(data)
         if need_store_reauth:
@@ -631,8 +641,10 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'auto_build_pocket',
         'store_upload',
         'store_name',
+        'store_channels',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
+    custom_widget('store_channels', LabeledMultiCheckBoxWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
