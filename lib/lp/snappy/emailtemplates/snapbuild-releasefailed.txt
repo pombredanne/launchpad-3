@@ -1,0 +1,7 @@
+Launchpad asked the store to release this snap package, but it failed:
+
+  %(store_error_message)s
+
+You can try to release it manually here:
+
+  %(store_url)s
