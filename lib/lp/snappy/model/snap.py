@@ -187,12 +187,14 @@ class Snap(Storm, WebhookTargetMixin):
 
     store_secrets = JSON('store_secrets', allow_none=True)
 
+    store_channels = JSON('store_channels', allow_none=True)
+
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
                  require_virtualized=True, date_created=DEFAULT,
                  private=False, store_upload=False, store_series=None,
-                 store_name=None, store_secrets=None):
+                 store_name=None, store_secrets=None, store_channels=None):
         """Construct a `Snap`."""
         if not getFeatureFlag(SNAP_FEATURE_FLAG):
             raise SnapFeatureDisabled
@@ -216,6 +218,7 @@ class Snap(Storm, WebhookTargetMixin):
         self.store_series = store_series
         self.store_name = store_name
         self.store_secrets = store_secrets
+        self.store_channels = store_channels
 
     @property
     def valid_webhook_event_types(self):
@@ -511,7 +514,7 @@ class SnapSet:
             auto_build_archive=None, auto_build_pocket=None,
             require_virtualized=True, processors=None, date_created=DEFAULT,
             private=False, store_upload=False, store_series=None,
-            store_name=None, store_secrets=None):
+            store_name=None, store_secrets=None, store_channels=None):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -540,7 +543,7 @@ class SnapSet:
             require_virtualized=require_virtualized, date_created=date_created,
             private=private, store_upload=store_upload,
             store_series=store_series, store_name=store_name,
-            store_secrets=store_secrets)
+            store_secrets=store_secrets, store_channels=store_channels)
         store.add(snap)
 
         if processors is None:

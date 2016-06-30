@@ -39,12 +39,16 @@ import transaction
 from zope.component import getUtility
 
 from lp.services.features.testing import FeatureFixture
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapstoreclient import (
+    BadReleaseResponse,
     BadRequestPackageUploadResponse,
     BadScanStatusResponse,
+    BadSearchResponse,
     ISnapStoreClient,
+    ReleaseFailedResponse,
     ScanFailedResponse,
     UnauthorizedUploadResponse,
     UploadNotScannedYetResponse,
@@ -169,7 +173,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.pushConfig(
             "snappy", store_url="http://sca.example/",
-            store_upload_url="http://updown.example/")
+            store_upload_url="http://updown.example/",
+            store_search_url="http://search.example/")
         self.pushConfig(
             "launchpad", openid_provider_root="http://sso.example/")
         self.client = getUtility(ISnapStoreClient)
@@ -224,6 +229,22 @@ class TestSnapStoreClient(TestCaseWithFactory):
             "status_code": 200,
             "content": {"discharge_macaroon": new_macaroon.serialize()},
             }
+
+    @urlmatch(path=r".*/snap-release/$")
+    def _snap_release_handler(self, url, request):
+        self.snap_release_request = request
+        return {
+            "status_code": 200,
+            "content": {
+                "success": True,
+                "channel_map": [
+                    {"channel": "stable", "info": "specific",
+                     "version": "1.0", "revision": 1},
+                    {"channel": "edge", "info": "specific",
+                     "version": "1.0", "revision": 1},
+                    ],
+                "opened_channels": ["stable", "edge"],
+                }}
 
     def test_requestPackageUploadPermission(self):
         @all_requests
@@ -452,7 +473,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         status_url = "http://sca.example/dev/api/click-scan-complete/updown/1/"
         with HTTMock(handler):
             self.assertEqual(
-                "http://sca.example/dev/click-apps/1/",
+                ("http://sca.example/dev/click-apps/1/", 1),
                 self.client.checkStatus(status_url))
 
     def test_checkStatus_new_pending(self):
@@ -525,7 +546,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
         with HTTMock(handler):
             self.assertEqual(
-                "http://sca.example/dev/click-apps/1/rev/1/",
+                ("http://sca.example/dev/click-apps/1/rev/1/", 1),
                 self.client.checkStatus(status_url))
 
     def test_checkStatus_404(self):
@@ -538,3 +559,121 @@ class TestSnapStoreClient(TestCaseWithFactory):
             self.assertRaisesWithContent(
                 BadScanStatusResponse, b"404 Client Error: Not found",
                 self.client.checkStatus, status_url)
+
+    def test_listChannels(self):
+        expected_channels = [
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ]
+
+        @all_requests
+        def handler(url, request):
+            self.request = request
+            return {
+                "status_code": 200,
+                "content": {
+                    "_embedded": {"clickindex:channel": expected_channels}}}
+
+        memcache_key = "search.example:channels".encode("UTF-8")
+        try:
+            with HTTMock(handler):
+                self.assertEqual(expected_channels, self.client.listChannels())
+            self.assertThat(self.request, RequestMatches(
+                url=Equals("http://search.example/api/v1/channels"),
+                method=Equals("GET"),
+                headers=ContainsDict(
+                    {"Accept": Equals("application/hal+json")})))
+            self.assertEqual(
+                expected_channels,
+                json.loads(getUtility(IMemcacheClient).get(memcache_key)))
+            self.request = None
+            with HTTMock(handler):
+                self.assertEqual(expected_channels, self.client.listChannels())
+            self.assertIsNone(self.request)
+        finally:
+            getUtility(IMemcacheClient).delete(memcache_key)
+
+    def test_listChannels_404(self):
+        @all_requests
+        def handler(url, request):
+            return {"status_code": 404, "reason": b"Not found"}
+
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                BadSearchResponse, b"404 Client Error: Not found",
+                self.client.listChannels)
+
+    def test_listChannels_disable_search(self):
+        @all_requests
+        def handler(url, request):
+            self.request = request
+            return {"status_code": 404, "reason": b"Not found"}
+
+        self.useFixture(
+            FeatureFixture({u"snap.disable_channel_search": u"on"}))
+        expected_channels = [
+            {"name": "candidate", "display_name": "Candidate"},
+            {"name": "edge", "display_name": "Edge"},
+            {"name": "beta", "display_name": "Beta"},
+            {"name": "stable", "display_name": "Stable"},
+            ]
+        self.request = None
+        with HTTMock(handler):
+            self.assertEqual(expected_channels, self.client.listChannels())
+        self.assertIsNone(self.request)
+        memcache_key = "search.example:channels".encode("UTF-8")
+        self.assertIsNone(getUtility(IMemcacheClient).get(memcache_key))
+
+    def test_release(self):
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=self._make_store_secrets(),
+            store_channels=["stable", "edge"])
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        with HTTMock(self._snap_release_handler):
+            self.client.release(snapbuild, 1)
+        self.assertThat(self.snap_release_request, RequestMatches(
+            url=Equals("http://sca.example/dev/api/snap-release/"),
+            method=Equals("POST"),
+            headers=ContainsDict({"Content-Type": Equals("application/json")}),
+            auth=("Macaroon", MacaroonsVerify(self.root_key)),
+            json_data={
+                "name": "test-snap", "revision": 1,
+                "channels": ["stable", "edge"], "series": "rolling",
+                }))
+
+    def test_release_error(self):
+        @urlmatch(path=r".*/snap-release/$")
+        def handler(url, request):
+            return {
+                "status_code": 503,
+                "content": {"success": False, "errors": "Failed to publish"},
+                }
+
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=self._make_store_secrets(),
+            store_channels=["stable", "edge"])
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                ReleaseFailedResponse, "Failed to publish",
+                self.client.release, snapbuild, 1)
+
+    def test_release_404(self):
+        @urlmatch(path=r".*/snap-release/$")
+        def handler(url, request):
+            return {"status_code": 404, "reason": b"Not found"}
+
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=self._make_store_secrets(),
+            store_channels=["stable", "edge"])
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                BadReleaseResponse, b"404 Client Error: Not found",
+                self.client.release, snapbuild, 1)
