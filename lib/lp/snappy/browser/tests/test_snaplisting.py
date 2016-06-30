@@ -31,14 +31,6 @@ class TestSnapListing(BrowserTestCase):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeSnap(self, **kwargs):
-        """Create a snap package, enabling the feature flag.
-
-        We do things this way rather than by calling self.useFixture because
-        opening a URL in a test browser loses the thread-local feature flag.
-        """
-        return self.factory.makeSnap(**kwargs)
-
     def assertSnapsLink(self, context, link_text, link_has_context=False,
                         **kwargs):
         if link_has_context:
@@ -51,8 +43,8 @@ class TestSnapListing(BrowserTestCase):
                 attrs={"href": expected_href}))
         self.assertThat(self.getViewBrowser(context).contents, Not(matcher))
         login(ANONYMOUS)
-        self.makeSnap(**kwargs)
-        self.makeSnap(**kwargs)
+        self.factory.makeSnap(**kwargs)
+        self.factory.makeSnap(**kwargs)
         self.assertThat(self.getViewBrowser(context).contents, matcher)
 
     def test_branch_links_to_snaps(self):
@@ -86,7 +78,7 @@ class TestSnapListing(BrowserTestCase):
     def test_branch_snap_listing(self):
         # We can see snap packages for a Bazaar branch.
         branch = self.factory.makeAnyBranch()
-        self.makeSnap(branch=branch)
+        self.factory.makeSnap(branch=branch)
         text = self.getMainText(branch, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for lp:.*
@@ -97,7 +89,7 @@ class TestSnapListing(BrowserTestCase):
         # We can see snap packages for a Git repository.
         repository = self.factory.makeGitRepository()
         [ref] = self.factory.makeGitRefs(repository=repository)
-        self.makeSnap(git_ref=ref)
+        self.factory.makeSnap(git_ref=ref)
         text = self.getMainText(repository, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for lp:~.*
@@ -107,7 +99,7 @@ class TestSnapListing(BrowserTestCase):
     def test_git_ref_snap_listing(self):
         # We can see snap packages for a Git reference.
         [ref] = self.factory.makeGitRefs()
-        self.makeSnap(git_ref=ref)
+        self.factory.makeSnap(git_ref=ref)
         text = self.getMainText(ref, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for ~.*:.*
@@ -117,11 +109,11 @@ class TestSnapListing(BrowserTestCase):
     def test_person_snap_listing(self):
         # We can see snap packages for a person.
         owner = self.factory.makePerson(displayname="Snap Owner")
-        self.makeSnap(
+        self.factory.makeSnap(
             registrant=owner, owner=owner, branch=self.factory.makeAnyBranch(),
             date_created=ONE_DAY_AGO)
         [ref] = self.factory.makeGitRefs()
-        self.makeSnap(
+        self.factory.makeSnap(
             registrant=owner, owner=owner, git_ref=ref, date_created=UTC_NOW)
         text = self.getMainText(owner, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
@@ -133,11 +125,11 @@ class TestSnapListing(BrowserTestCase):
     def test_project_snap_listing(self):
         # We can see snap packages for a project.
         project = self.factory.makeProduct(displayname="Snappable")
-        self.makeSnap(
+        self.factory.makeSnap(
             branch=self.factory.makeProductBranch(product=project),
             date_created=ONE_DAY_AGO)
         [ref] = self.factory.makeGitRefs(target=project)
-        self.makeSnap(git_ref=ref, date_created=UTC_NOW)
+        self.factory.makeSnap(git_ref=ref, date_created=UTC_NOW)
         text = self.getMainText(project, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for Snappable
@@ -159,7 +151,7 @@ class TestSnapListing(BrowserTestCase):
 
         def create_snap():
             with person_logged_in(person):
-                self.makeSnap(branch=branch)
+                self.factory.makeSnap(branch=branch)
 
         self.assertSnapsQueryCount(branch, create_snap)
 
@@ -173,7 +165,7 @@ class TestSnapListing(BrowserTestCase):
         def create_snap():
             with person_logged_in(person):
                 [ref] = self.factory.makeGitRefs(repository=repository)
-                self.makeSnap(git_ref=ref)
+                self.factory.makeSnap(git_ref=ref)
 
         self.assertSnapsQueryCount(repository, create_snap)
 
@@ -186,7 +178,7 @@ class TestSnapListing(BrowserTestCase):
 
         def create_snap():
             with person_logged_in(person):
-                self.makeSnap(git_ref=ref)
+                self.factory.makeSnap(git_ref=ref)
 
         self.assertSnapsQueryCount(ref, create_snap)
 
@@ -203,11 +195,11 @@ class TestSnapListing(BrowserTestCase):
                 if (i % 2) == 0:
                     branch = self.factory.makeProductBranch(
                         owner=person, product=project)
-                    self.makeSnap(branch=branch)
+                    self.factory.makeSnap(branch=branch)
                 else:
                     [ref] = self.factory.makeGitRefs(
                         owner=person, target=project)
-                    self.makeSnap(git_ref=ref)
+                    self.factory.makeSnap(git_ref=ref)
 
         self.assertSnapsQueryCount(person, create_snap)
 
@@ -223,9 +215,9 @@ class TestSnapListing(BrowserTestCase):
             with person_logged_in(person):
                 if (i % 2) == 0:
                     branch = self.factory.makeProductBranch(product=project)
-                    self.makeSnap(branch=branch)
+                    self.factory.makeSnap(branch=branch)
                 else:
                     [ref] = self.factory.makeGitRefs(target=project)
-                    self.makeSnap(git_ref=ref)
+                    self.factory.makeSnap(git_ref=ref)
 
         self.assertSnapsQueryCount(project, create_snap)

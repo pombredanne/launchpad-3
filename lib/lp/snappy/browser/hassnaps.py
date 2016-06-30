@@ -38,9 +38,8 @@ class HasSnapsMenuMixin:
         return Link('+snaps', text, icon='info', enabled=enabled)
 
     def create_snap(self):
-        # Only enabled if the general snap feature flag is enabled
-        # for public contexts and additionally if the snap_private
-        # flag is enabled for private contexts.
+        # Only enabled if the snap_private flag is enabled for
+        # private contexts.
         enabled = (
             not self.context.private or
             bool(getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG)))
@@ -59,10 +58,6 @@ class HasSnapsViewMixin:
             context = context.branch
         return getUtility(ISnapSet).findByContext(
             context, visible_by_user=self.user)
-
-    @property
-    def show_snap_information(self):
-        return not self.snaps.is_empty()
 
     @property
     def snaps_link(self):

@@ -59,7 +59,6 @@ from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
     api_url,
-    feature_flags,
     login,
     logout,
     person_logged_in,
@@ -86,11 +85,10 @@ class TestSnapFeatureFlag(TestCaseWithFactory):
     def test_private_feature_flag_disabled(self):
         # Without a private feature flag, we will not create new private Snaps.
         person = self.factory.makePerson()
-        with feature_flags():
-            self.assertRaises(
-                SnapPrivateFeatureDisabled, getUtility(ISnapSet).new,
-                person, person, None, None,
-                branch=self.factory.makeAnyBranch(), private=True)
+        self.assertRaises(
+            SnapPrivateFeatureDisabled, getUtility(ISnapSet).new,
+            person, person, None, None,
+            branch=self.factory.makeAnyBranch(), private=True)
 
 
 class TestSnap(TestCaseWithFactory):

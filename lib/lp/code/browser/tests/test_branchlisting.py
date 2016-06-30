@@ -47,7 +47,6 @@ from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
-    feature_flags,
     login_person,
     normalize_whitespace,
     person_logged_in,
@@ -378,20 +377,16 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
             self.assertThat(page, Not(recipes_matcher))
 
     def test_branch_list_snaps_link(self):
-        # The link to the snap packages is displayed if the appropriate
-        # feature flag is set.
+        # The link to the snap packages is always displayed.
         snaps_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Snap packages link', 'a', text='Snap packages',
                 attrs={'href': self.base_url + '/+snaps'}))
         page = self.get_branch_list_page()
-        self.assertThat(page, Not(snaps_matcher))
-        with feature_flags():
-            page = self.get_branch_list_page()
-            if IPerson.providedBy(self.default_target):
-                self.assertThat(page, snaps_matcher)
-            else:
-                self.assertThat(page, Not(snaps_matcher))
+        if IPerson.providedBy(self.default_target):
+            self.assertThat(page, snaps_matcher)
+        else:
+            self.assertThat(page, Not(snaps_matcher))
 
 
 class TestSimplifiedPersonProductBranchesView(

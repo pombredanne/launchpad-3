@@ -65,7 +65,6 @@ from lp.snappy.interfaces.snap import (
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
-    feature_flags,
     login,
     login_person,
     person_logged_in,
@@ -127,11 +126,10 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        with feature_flags():
-            with person_logged_in(owner):
-                self.assertRaises(
-                    SnapPrivateFeatureDisabled, create_initialized_view,
-                    branch, "+new-snap")
+        with person_logged_in(owner):
+            self.assertRaises(
+                SnapPrivateFeatureDisabled, create_initialized_view,
+                branch, "+new-snap")
 
 
 class TestSnapAddView(BrowserTestCase):
