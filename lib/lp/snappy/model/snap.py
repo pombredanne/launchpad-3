@@ -731,11 +731,21 @@ class SnapSet:
                         snap.auto_build_pocket)
                     if logger is not None:
                         logger.debug(
-                            " - %s: Build requested.", arch.architecturetag)
+                            " - %s/%s/%s: Build requested.",
+                            snap.owner.name, snap.name, arch.architecturetag)
                     builds.append(build)
+                except SnapBuildAlreadyPending as e:
+                    if logger is not None:
+                        logger.warning(
+                            " - %s/%s/%s: %s",
+                            snap.owner.name, snap.name, arch.architecturetag,
+                            e)
                 except Exception as e:
                     if logger is not None:
-                        logger.debug(" - %s: %s", arch.architecturetag, e)
+                        logger.exception(
+                            " - %s/%s/%s: %s",
+                            snap.owner.name, snap.name, arch.architecturetag,
+                            e)
         return builds
 
     def detachFromBranch(self, branch):

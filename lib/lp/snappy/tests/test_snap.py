@@ -822,7 +822,8 @@ class TestSnapSet(TestCaseWithFactory):
         expected_log_entries = [
             "DEBUG Scheduling builds of snap package %s/%s" % (
                 snap.owner.name, snap.name),
-            "DEBUG  - %s: Build requested." % das.architecturetag,
+            "DEBUG  - %s/%s/%s: Build requested." % (
+                snap.owner.name, snap.name, das.architecturetag),
             ]
         self.assertEqual(
             expected_log_entries, logger.getLogBuffer().splitlines())
@@ -861,8 +862,9 @@ class TestSnapSet(TestCaseWithFactory):
         expected_log_entries = [
             "DEBUG Scheduling builds of snap package %s/%s" % (
                 snap.owner.name, snap.name),
-            "DEBUG  - %s: An identical build of this snap package is already "
-            "pending." % das.architecturetag,
+            "WARNING  - %s/%s/%s: An identical build of this snap package "
+            "is already pending." % (
+                snap.owner.name, snap.name, das.architecturetag),
             ]
         self.assertEqual(
             expected_log_entries, logger.getLogBuffer().splitlines())
