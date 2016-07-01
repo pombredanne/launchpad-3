@@ -51,7 +51,6 @@ from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.osutils import override_environ
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import (
     dbuser,
@@ -752,10 +751,6 @@ class TestSetRecipeStale(BzrSyncTestCase):
 
 class TestMarkSnapsStale(BzrSyncTestCase):
     """Test that snap packages associated with the branch are marked stale."""
-
-    def setUp(self):
-        super(TestMarkSnapsStale, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
 
     @run_as_db_user(config.launchpad.dbuser)
     def test_same_branch(self):
