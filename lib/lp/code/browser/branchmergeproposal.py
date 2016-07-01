@@ -107,6 +107,11 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.scripts import log
+from lp.services.timeout import (
+    reduced_timeout,
+    TimeoutError,
+    )
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -343,7 +348,17 @@ class UnmergedRevisionsMixin:
     @cachedproperty
     def unlanded_revisions(self):
         """Return the unlanded revisions from the source branch."""
-        return self.context.getUnlandedSourceBranchRevisions()
+        with reduced_timeout(1.0, webapp_max=5.0):
+            try:
+                return self.context.getUnlandedSourceBranchRevisions()
+            except TimeoutError:
+                log.exception(
+                    "Timeout fetching unlanded source revisions for merge "
+                    "proposal %s (%s => %s)" % (
+                        self.context.id,
+                        self.context.merge_source.identity,
+                        self.context.merge_target.identity))
+                return []
 
     @property
     def pending_writes(self):
@@ -615,7 +630,17 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
         merge_proposal = self.context
-        groups = list(merge_proposal.getRevisionsSinceReviewStart())
+        with reduced_timeout(1.0, webapp_max=5.0):
+            try:
+                groups = list(merge_proposal.getRevisionsSinceReviewStart())
+            except TimeoutError:
+                log.exception(
+                    "Timeout fetching revisions since review start for "
+                    "merge proposal %s (%s => %s)" % (
+                        merge_proposal.id,
+                        merge_proposal.merge_source.identity,
+                        merge_proposal.merge_target.identity))
+                groups = []
         source = merge_proposal.merge_source
         if IBranch.providedBy(source):
             source = DecoratedBranch(source)
