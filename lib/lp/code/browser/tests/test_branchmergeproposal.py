@@ -1758,6 +1758,18 @@ class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
                 object=MatchesStructure.byEquality(
                     queue_status=BranchMergeProposalStatus.NEEDS_REVIEW))]))
 
+    def test_source_revid_bzr(self):
+        view = self._createView()
+        self.assertEqual(
+            self.proposal.merge_source.last_scanned_id, view.source_revid)
+
+    def test_source_revid_git(self):
+        git_proposal = self.factory.makeBranchMergeProposalForGit()
+        view = BranchMergeProposalChangeStatusView(
+            git_proposal, LaunchpadTestRequest())
+        self.assertEqual(
+            git_proposal.merge_source.commit_sha1, view.source_revid)
+
 
 class TestCommentAttachmentRendering(TestCaseWithFactory):
     """Test diff attachments are rendered correctly."""
