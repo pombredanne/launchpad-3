@@ -380,6 +380,11 @@ class SnapAddView(
             u"architectures are restricted and may only be enabled or "
             u"disabled by administrators.")
 
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(SnapAddView, self).setUpWidgets()
+        self.widgets['processors'].widget_class = 'processors'
+
     @property
     def cancel_url(self):
         return canonical_url(self.context)

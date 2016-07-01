@@ -34,7 +34,7 @@ input {
     visibility: inherit;
     }
 input[type=radio],
-input[type=checkbox][name="field.processors"] {
+.processors input {
     margin-left: 1em;
     }
 input.urlTextType {
