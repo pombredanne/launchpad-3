@@ -101,12 +101,10 @@ from lp.snappy.interfaces.snap import (
     ISnapSet,
     NoSourceForSnap,
     NoSuchSnap,
-    SNAP_FEATURE_FLAG,
     SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
-    SnapFeatureDisabled,
     SnapNotOwner,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
@@ -194,9 +192,6 @@ class Snap(Storm, WebhookTargetMixin):
                  private=False, store_upload=False, store_series=None,
                  store_name=None, store_secrets=None):
         """Construct a `Snap`."""
-        if not getFeatureFlag(SNAP_FEATURE_FLAG):
-            raise SnapFeatureDisabled
-
         super(Snap, self).__init__()
         self.registrant = registrant
         self.owner = owner

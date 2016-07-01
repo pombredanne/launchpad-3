@@ -59,19 +59,15 @@ from lp.snappy.browser.snap import (
 from lp.snappy.interfaces.snap import (
     CannotModifySnapProcessor,
     ISnapSet,
-    SNAP_FEATURE_FLAG,
     SNAP_TESTING_FLAGS,
-    SnapFeatureDisabled,
     SnapPrivateFeatureDisabled,
     )
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
-    feature_flags,
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -124,24 +120,16 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, we will not create new Snaps.
-        branch = self.factory.makeAnyBranch()
-        self.assertRaises(
-            SnapFeatureDisabled, create_initialized_view, branch, "+new-snap")
-
     def test_private_feature_flag_disabled(self):
         # Without a private_snap feature flag, we will not create Snaps for
         # private contexts.
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        with feature_flags():
-            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
-            with person_logged_in(owner):
-                self.assertRaises(
-                    SnapPrivateFeatureDisabled, create_initialized_view,
-                    branch, "+new-snap")
+        with person_logged_in(owner):
+            self.assertRaises(
+                SnapPrivateFeatureDisabled, create_initialized_view,
+                branch, "+new-snap")
 
 
 class TestSnapAddView(BrowserTestCase):
@@ -275,12 +263,8 @@ class TestSnapAddView(BrowserTestCase):
             information_type=InformationType.USERDATA)
 
         browser = self.getViewBrowser(branch, user=self.person)
-        browser.getLink('Create snap package')
-
-        with FeatureFixture({SNAP_FEATURE_FLAG: u'on'}):
-            browser = self.getViewBrowser(branch, user=self.person)
-            self.assertRaises(
-                LinkNotFoundError, browser.getLink, "Create snap package")
+        self.assertRaises(
+            LinkNotFoundError, browser.getLink, "Create snap package")
 
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.

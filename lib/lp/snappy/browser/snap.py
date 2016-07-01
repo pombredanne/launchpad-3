@@ -84,10 +84,8 @@ from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapSet,
     NoSuchSnap,
-    SNAP_FEATURE_FLAG,
     SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
-    SnapFeatureDisabled,
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
@@ -357,9 +355,6 @@ class SnapAddView(LaunchpadFormView, SnapAuthorizeMixin):
 
     def initialize(self):
         """See `LaunchpadView`."""
-        if not getFeatureFlag(SNAP_FEATURE_FLAG):
-            raise SnapFeatureDisabled
-
         super(SnapAddView, self).initialize()
 
         # Once initialized, if the private_snap flag is disabled, it
