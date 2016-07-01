@@ -23,12 +23,18 @@ from testtools.matchers import MatchesStructure
 
 from lp.services.timeout import (
     get_default_timeout_function,
+    reduced_timeout,
     set_default_timeout_function,
     TimeoutError,
     TransportWithTimeout,
     urlfetch,
     with_timeout,
     )
+from lp.services.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
 
 
@@ -200,6 +206,36 @@ class TestTimeout(TestCase):
         self.addCleanup(set_default_timeout_function, None)
         no_default_timeout()
         self.assertEqual([True], using_default)
+
+    def test_reduced_timeout(self):
+        """reduced_timeout caps the available timeout in various ways."""
+        self.addCleanup(set_default_timeout_function, None)
+        with reduced_timeout(1.0):
+            self.assertIsNone(get_default_timeout_function()())
+        with reduced_timeout(1.0, default=5.0):
+            self.assertEqual(5.0, get_default_timeout_function()())
+        set_default_timeout_function(lambda: 5.0)
+        with reduced_timeout(1.0):
+            self.assertEqual(4.0, get_default_timeout_function()())
+        with reduced_timeout(1.0, default=5.0, webapp_max=2.0):
+            self.assertEqual(4.0, get_default_timeout_function()())
+        with reduced_timeout(1.0, default=5.0, webapp_max=6.0):
+            self.assertEqual(4.0, get_default_timeout_function()())
+        with reduced_timeout(6.0, default=5.0, webapp_max=2.0):
+            self.assertEqual(5.0, get_default_timeout_function()())
+        LaunchpadTestRequest()
+        set_request_started()
+        try:
+            with reduced_timeout(1.0):
+                self.assertEqual(4.0, get_default_timeout_function()())
+            with reduced_timeout(1.0, default=5.0, webapp_max=2.0):
+                self.assertEqual(2.0, get_default_timeout_function()())
+            with reduced_timeout(1.0, default=5.0, webapp_max=6.0):
+                self.assertEqual(4.0, get_default_timeout_function()())
+            with reduced_timeout(6.0, default=5.0, webapp_max=2.0):
+                self.assertEqual(2.0, get_default_timeout_function()())
+        finally:
+            clear_request_started()
 
     def make_test_socket(self):
         """One common use case for timing out is when making an HTTP request
