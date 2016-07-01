@@ -9,11 +9,13 @@ __all__ = [
     ]
 
 import json
+import sys
 from urllib import quote
 from urlparse import urljoin
 
 from lazr.restful.utils import get_current_browser_request
 import requests
+from six import reraise
 from zope.interface import implementer
 
 from lp.code.errors import (
@@ -24,11 +26,14 @@ from lp.code.errors import (
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
 from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.timeout import urlfetch
+from lp.services.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
 
 
-class HTTPResponseNotOK(Exception):
-    pass
+class RequestExceptionWrapper(requests.RequestException):
+    """A non-requests exception that occurred during a request."""
 
 
 @implementer(IGitHostingClient)
@@ -46,10 +51,18 @@ class GitHostingClient:
             response = urlfetch(
                 urljoin(self.endpoint, path), trust_env=False, method=method,
                 **kwargs)
-        except requests.HTTPError as e:
-            raise HTTPResponseNotOK(e.response.content)
+        except TimeoutError:
+            # Re-raise this directly so that it can be handled specially by
+            # callers.
+            raise
+        except Exception:
+            _, val, tb = sys.exc_info()
+            reraise(
+                RequestExceptionWrapper, RequestExceptionWrapper(*val.args),
+                tb)
         finally:
             action.finish()
+        response.raise_for_status()
         if response.content:
             return response.json()
         else:
@@ -75,7 +88,7 @@ class GitHostingClient:
             else:
                 request = {"repo_path": path}
             self._post("/repo", json=request)
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryCreationFault(
                 "Failed to create Git repository: %s" % unicode(e))
 
@@ -83,7 +96,7 @@ class GitHostingClient:
         """See `IGitHostingClient`."""
         try:
             return self._get("/repo/%s" % path)
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to get properties of Git repository: %s" % unicode(e))
 
@@ -91,7 +104,7 @@ class GitHostingClient:
         """See `IGitHostingClient`."""
         try:
             self._patch("/repo/%s" % path, json=props)
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to set properties of Git repository: %s" % unicode(e))
 
@@ -99,7 +112,7 @@ class GitHostingClient:
         """See `IGitHostingClient`."""
         try:
             return self._get("/repo/%s/refs" % path)
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to get refs from Git repository: %s" % unicode(e))
 
@@ -111,7 +124,7 @@ class GitHostingClient:
                 logger.info("Requesting commit details for %s" % commit_oids)
             return self._post(
                 "/repo/%s/commits" % path, json={"commits": commit_oids})
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to get commit details from Git repository: %s" %
                 unicode(e))
@@ -127,7 +140,7 @@ class GitHostingClient:
             return self._get(
                 "/repo/%s/log/%s" % (path, quote(start)),
                 params={"limit": limit, "stop": stop})
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to get commit log from Git repository: %s" %
                 unicode(e))
@@ -143,7 +156,7 @@ class GitHostingClient:
             url = "/repo/%s/compare/%s%s%s" % (
                 path, quote(old), separator, quote(new))
             return self._get(url, params={"context_lines": context_lines})
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to get diff from Git repository: %s" % unicode(e))
 
@@ -157,7 +170,7 @@ class GitHostingClient:
             url = "/repo/%s/compare-merge/%s:%s" % (
                 path, quote(base), quote(head))
             return self._get(url, params={"sha1_prerequisite": prerequisite})
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to get merge diff from Git repository: %s" %
                 unicode(e))
@@ -173,7 +186,7 @@ class GitHostingClient:
             return self._post(
                 "/repo/%s/detect-merges/%s" % (path, quote(target)),
                 json={"sources": sources})
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to detect merges in Git repository: %s" % unicode(e))
 
@@ -183,7 +196,7 @@ class GitHostingClient:
             if logger is not None:
                 logger.info("Deleting repository %s" % path)
             self._delete("/repo/%s" % path)
-        except Exception as e:
+        except requests.RequestException as e:
             raise GitRepositoryDeletionFault(
                 "Failed to delete Git repository: %s" % unicode(e))
 
@@ -195,6 +208,10 @@ class GitHostingClient:
                     "Fetching file %s from repository %s" % (filename, path))
             url = "/repo/%s/blob/%s" % (path, quote(filename))
             response = self._get(url, params={"rev": rev})
+        except requests.RequestException as e:
+            raise GitRepositoryScanFault(
+                "Failed to get file from Git repository: %s" % unicode(e))
+        try:
             blob = response["data"].decode("base64")
             if len(blob) != response["size"]:
                 raise GitRepositoryScanFault(
