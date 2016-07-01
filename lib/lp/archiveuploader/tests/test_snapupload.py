@@ -19,9 +19,7 @@ from lp.archiveuploader.uploadprocessor import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.features.testing import FeatureFixture
 from lp.services.osutils import write_file
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 
 
@@ -31,7 +29,6 @@ class TestSnapBuildUploads(TestUploadProcessorBase):
     def setUp(self):
         super(TestSnapBuildUploads, self).setUp()
 
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.setupBreezy()
 
         self.switchToAdmin()

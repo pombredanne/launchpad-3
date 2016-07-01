@@ -9402,6 +9402,15 @@ ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE snappyseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (1, '2016-06-22 16:25:51.474348', 1, '15.04-core', 'Ubuntu Core 15.04', 4);
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (2, '2016-06-22 16:25:51.474348', 1, '16', 'Ubuntu Core 16', 4);
+
+
+ALTER TABLE snappyseries ENABLE TRIGGER ALL;
+
+
 ALTER TABLE snap DISABLE TRIGGER ALL;
 
 
@@ -9434,6 +9443,19 @@ ALTER TABLE snapfile DISABLE TRIGGER ALL;
 
 
 ALTER TABLE snapfile ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE snappydistroseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 1);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 3);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (2, 3);
+
+
+ALTER TABLE snappydistroseries ENABLE TRIGGER ALL;
 
 
 

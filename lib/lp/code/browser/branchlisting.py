@@ -107,7 +107,6 @@ from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     FeedsMixin,
     PersonBranchesFeedLink,
@@ -129,7 +128,6 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.publisher import LaunchpadView
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 
 
 class BranchBadges(HasBadgeBase):
@@ -892,9 +890,7 @@ class PersonBranchesMenu(ApplicationMenu):
             enabled=IPerson.providedBy(self.context))
 
     def snaps(self):
-        enabled = (
-            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) and
-            IPerson.providedBy(self.context))
+        enabled = IPerson.providedBy(self.context)
         return Link('+snaps', 'Snap packages', enabled=enabled)
 
 

@@ -40,12 +40,8 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
-from lp.snappy.interfaces.snap import (
-    SNAP_FEATURE_FLAG,
-    SnapBuildArchiveOwnerMismatch,
-    )
+from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -60,7 +56,6 @@ class TestSnapBuildBehaviourBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapBuildBehaviourBase, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.pushConfig("snappy", tools_source=None)
 
     def makeJob(self, pocket=PackagePublishingPocket.UPDATES, **kwargs):
@@ -295,7 +290,6 @@ class MakeSnapBuildMixin:
     """Provide the common makeBuild method returning a queued build."""
 
     def makeSnap(self):
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         # We can't use self.pushConfig here since this is used in a
         # TrialTestCase instance.
         config_name = self.factory.getUniqueString()
