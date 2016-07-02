@@ -1947,10 +1947,6 @@ class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def setUp(self):
-        super(TestGitRepositoryMarkSnapsStale, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-
     def test_same_repository(self):
         # On ref changes, snap packages using this ref become stale.
         [ref] = self.factory.makeGitRefs()
