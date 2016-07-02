@@ -96,6 +96,7 @@ and approved merges.
     Branches
     Active reviews
     Source package recipes
+    Snap packages
 
 The person's active reviews also lists all of their currently requested
 reviews.
