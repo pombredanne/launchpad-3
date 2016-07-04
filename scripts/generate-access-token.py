@@ -12,8 +12,8 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.oauth.interfaces import IOAuthConsumerSet
-from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.scripts.base import LaunchpadScript
+from lp.services.webapp.interfaces import OAuthPermission
 
 
 LP_API_URL = 'https://api.launchpad.dev/devel'
