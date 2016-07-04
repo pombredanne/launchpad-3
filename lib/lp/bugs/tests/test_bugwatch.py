@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
@@ -372,6 +372,17 @@ class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
     bugtracker_type = BugTrackerType.GOOGLE_CODE
     bug_url = 'http://code.google.com/p/myproject/issues/detail?id=12345'
     base_url = 'http://code.google.com/p/myproject/issues'
+    bug_id = '12345'
+
+
+class GitHubBugTrackerExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works for GitHub Issues URLs.
+    """
+
+    bugtracker_type = BugTrackerType.GITHUB
+    bug_url = 'https://github.com/user/repository/issues/12345'
+    base_url = 'https://github.com/user/repository/issues'
     bug_id = '12345'
 
 

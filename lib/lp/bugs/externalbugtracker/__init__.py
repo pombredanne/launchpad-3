@@ -14,6 +14,7 @@ __all__ = [
     'DebBugs',
     'DebBugsDatabaseNotFound',
     'ExternalBugTracker',
+    'GitHub',
     'InvalidBugId',
     'LookupTree',
     'Mantis',
@@ -52,6 +53,7 @@ from lp.bugs.externalbugtracker.debbugs import (
     DebBugs,
     DebBugsDatabaseNotFound,
     )
+from lp.bugs.externalbugtracker.github import GitHub
 from lp.bugs.externalbugtracker.mantis import (
     Mantis,
     MantisLoginHandler,
@@ -66,6 +68,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 BUG_TRACKER_CLASSES = {
     BugTrackerType.BUGZILLA: Bugzilla,
     BugTrackerType.DEBBUGS: DebBugs,
+    BugTrackerType.GITHUB: GitHub,
     BugTrackerType.MANTIS: Mantis,
     BugTrackerType.TRAC: Trac,
     BugTrackerType.ROUNDUP: Roundup,

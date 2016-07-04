@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -81,6 +81,7 @@ from lp.services.webapp import (
 BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
     BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
+    BugTrackerType.GITHUB: '%s',
     BugTrackerType.GOOGLE_CODE: 'detail?id=%s',
     BugTrackerType.MANTIS: 'view.php?id=%s',
     BugTrackerType.ROUNDUP: 'issue%s',
@@ -388,6 +389,7 @@ class BugWatchSet:
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS: self.parseDebbugsURL,
             BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
+            BugTrackerType.GITHUB: self.parseGitHubURL,
             BugTrackerType.GOOGLE_CODE: self.parseGoogleCodeURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.PHPPROJECT: self.parsePHPProjectURL,
@@ -686,6 +688,18 @@ class BugWatchSet:
 
         tracker_path = path_match.groupdict()['base_path']
         base_url = urlunsplit((scheme, host, tracker_path, '', ''))
+        return base_url, remote_bug
+
+    def parseGitHubURL(self, scheme, host, path, query):
+        """Extract a GitHub Issues base URL and bug ID."""
+        if host != 'github.com':
+            return None
+        match = re.match(r'(.*/issues)/(\d+)$', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = match.group(2)
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
     def extractBugTrackerAndBug(self, url):
