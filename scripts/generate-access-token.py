@@ -34,7 +34,6 @@ def print_local_settings(user, key, token, secret):
 
 class AccessTokenGenerator(LaunchpadScript):
 
-
     def add_my_options(self):
         self.parser.usage = "%prog username [-n CONSUMER NAME]"
         self.parser.add_option("-n", "--name", dest="consumer_name")
