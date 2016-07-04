@@ -49,8 +49,7 @@ with the getExternalBugTrackerToUse() method, which returns the correct
 instance.  Usually there is only one version, so the default for the
 original instance is to return itself.
 
-    >>> from lp.bugs.externalbugtracker import (
-    ...     ExternalBugTracker)
+    >>> from lp.bugs.externalbugtracker import ExternalBugTracker
     >>> external_bugtracker = ExternalBugTracker('http://example.com/')
     >>> chosen_bugtracker = external_bugtracker.getExternalBugTrackerToUse()
     >>> chosen_bugtracker is external_bugtracker
@@ -63,9 +62,11 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
 (ExternalBugTracker, bug_watches) tuples.
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     Bugzilla, BugzillaAPI, BUG_TRACKER_CLASSES)
-    >>> from lp.bugs.interfaces.bugtracker import (
-    ...     BugTrackerType)
+    ...     Bugzilla,
+    ...     BUG_TRACKER_CLASSES,
+    ...     )
+    >>> from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()

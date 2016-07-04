@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """__init__ module for the externalbugtracker package."""
@@ -31,14 +31,35 @@ __all__ = [
     'get_external_bugtracker',
     ]
 
-from lp.bugs.externalbugtracker.base import *
-from lp.bugs.externalbugtracker.bugzilla import *
-from lp.bugs.externalbugtracker.debbugs import *
-from lp.bugs.externalbugtracker.mantis import *
-from lp.bugs.externalbugtracker.roundup import *
-from lp.bugs.externalbugtracker.rt import *
-from lp.bugs.externalbugtracker.sourceforge import *
-from lp.bugs.externalbugtracker.trac import *
+from lp.bugs.externalbugtracker.base import (
+    BATCH_SIZE_UNLIMITED,
+    BugNotFound,
+    BugTrackerConnectError,
+    BugWatchUpdateError,
+    BugWatchUpdateWarning,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    PrivateRemoteBug,
+    UnknownBugTrackerTypeError,
+    UnknownRemoteStatusError,
+    UnparsableBugData,
+    UnparsableBugTrackerVersion,
+    UnsupportedBugTrackerVersion,
+    )
+from lp.bugs.externalbugtracker.bugzilla import Bugzilla
+from lp.bugs.externalbugtracker.debbugs import (
+    DebBugs,
+    DebBugsDatabaseNotFound,
+    )
+from lp.bugs.externalbugtracker.mantis import (
+    Mantis,
+    MantisLoginHandler,
+    )
+from lp.bugs.externalbugtracker.roundup import Roundup
+from lp.bugs.externalbugtracker.rt import RequestTracker
+from lp.bugs.externalbugtracker.sourceforge import SourceForge
+from lp.bugs.externalbugtracker.trac import Trac
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 
 
