@@ -1,8 +1,13 @@
 #!/usr/bin/python -S
+#
+# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Conveniently generates access token and outputs relevant settings.
-# You will most likely want to run this with
-# LP_DISABLE_SSL_CERTIFICATE_VALIDATION=1 locally.
+"""Conveniently generates access token and outputs relevant settings.
+
+    You will most likely want to run this with:
+    LP_DISABLE_SSL_CERTIFICATE_VALIDATION=1
+"""
 
 import _pythonpath
 
