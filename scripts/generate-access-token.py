@@ -58,6 +58,9 @@ class AccessTokenGenerator(LaunchpadScript):
 
         # create access token
         access_token, access_secret = request_token.createAccessToken()
+
+        self.txn.commit()
+
         print_local_settings(person.name,
                              self.options.consumer_name,
                              access_token.key,
