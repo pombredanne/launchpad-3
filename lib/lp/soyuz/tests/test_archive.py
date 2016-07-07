@@ -1274,16 +1274,18 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertEqual(token.archive_url, url)
 
     def test_newNamedAuthToken_private_archive(self):
-        result = self.private_ppa.newNamedAuthToken(u"tokenname", u"somesecret")
+        res = self.private_ppa.newNamedAuthToken(u"tokenname", u"somesecret")
         token = getUtility(IArchiveAuthTokenSet).getActiveNamedTokenForArchive(
             self.private_ppa, u"tokenname")
+        self.assertIsNotNone(token)
         self.assertIsNone(token.person)
         self.assertEqual("tokenname", token.name)
         self.assertEqual("somesecret", token.token)
-        self.assertIn("//%s:%s@" % (token.name, token.token), token.archive_url)
+        self.assertEqual(self.private_ppa, token.archive)
+        self.assertIn("/%s:%s@" % (token.name, token.token), token.archive_url)
         self.assertDictEqual(
             {"token": token.token, "archive_url": token.archive_url},
-            result
+            res
             )
 
     def test_newNamedAuthToken_public_archive(self):
@@ -1300,10 +1302,10 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertIsNone(self.private_ppa.getNamedAuthToken(u"tokenname"))
 
     def test_getNamedAuthToken_with_token(self):
-        result = self.private_ppa.newNamedAuthToken(u"tokenname", u"somesecret")
+        res = self.private_ppa.newNamedAuthToken(u"tokenname", u"somesecret")
         self.assertEqual(
-            result,
-            self.private_ppa.getNamedAuthToken(u"tokenname"))
+            self.private_ppa.getNamedAuthToken(u"tokenname"),
+            res)
 
     def test_revokeNamedAuthToken_with_token(self):
         self.private_ppa.newNamedAuthToken(u"tokenname", u"somesecret")
@@ -1322,9 +1324,9 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertIsNone(self.private_ppa.getNamedAuthToken(u"tokenname"))
 
     def test_getNamedAuthTokens(self):
-        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1", u"somesecret1")
-        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2", u"somesecret2")
-        self.private_ppa.newNamedAuthToken(u"tokenname3", u"somesecret3")
+        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1", u"secret1")
+        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2", u"secret2")
+        self.private_ppa.newNamedAuthToken(u"tokenname3", u"secret3")
         self.private_ppa.revokeNamedAuthToken(u"tokenname3")
         self.assertContentEqual(
             [res1, res2],

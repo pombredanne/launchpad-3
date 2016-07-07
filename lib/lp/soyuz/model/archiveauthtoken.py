@@ -92,19 +92,15 @@ class ArchiveAuthTokenSet:
 
     def getActiveTokenForArchiveAndPerson(self, archive, person):
         """See `IArchiveAuthTokenSet`."""
-        store = Store.of(archive)
         return self.getByArchive(archive).find(
             ArchiveAuthToken.person == person).one()
 
     def getActiveNamedTokenForArchive(self, archive, name):
         """See `IArchiveAuthTokenSet`."""
-        store = Store.of(archive)
         return self.getByArchive(archive).find(
             ArchiveAuthToken.name == name).one()
 
     def getActiveNamedTokensForArchive(self, archive):
         """See `IArchiveAuthTokenSet`."""
-        store = Store.of(archive)
         return self.getByArchive(archive).find(
             ArchiveAuthToken.name != None)
-

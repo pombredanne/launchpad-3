@@ -140,7 +140,6 @@ from lp.soyuz.interfaces.archive import (
     ArchiveAlreadyDeleted,
     ArchiveDependencyError,
     ArchiveDisabled,
-    ArchiveNotOwner,
     ArchiveNotPrivate,
     CannotCopy,
     CannotModifyArchiveProcessor,
@@ -1977,23 +1976,22 @@ class Archive(SQLBase):
     def getNamedAuthToken(self, name):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
-        archive_auth_token = token_set.getActiveNamedTokenForArchive(self, name)
-        if archive_auth_token is not None:
-            return archive_auth_token.as_dict()
+        auth_token = token_set.getActiveNamedTokenForArchive(self, name)
+        if auth_token is not None:
+            return auth_token.as_dict()
 
     def getNamedAuthTokens(self):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
-        archive_auth_tokens = token_set.getActiveNamedTokensForArchive(self)
-        return [archive_auth_token.as_dict()
-            for archive_auth_token in archive_auth_tokens]
+        auth_tokens = token_set.getActiveNamedTokensForArchive(self)
+        return [auth_token.as_dict() for auth_token in auth_tokens]
 
     def revokeNamedAuthToken(self, name):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
-        archive_auth_token = token_set.getActiveNamedTokenForArchive(self, name)
-        if archive_auth_token is not None:
-            archive_auth_token.deactivate()
+        auth_token = token_set.getActiveNamedTokenForArchive(self, name)
+        if auth_token is not None:
+            auth_token.deactivate()
         else:
             raise NotFoundError(name)
 

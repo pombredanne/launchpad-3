@@ -84,15 +84,15 @@ class IArchiveAuthTokenSet(Interface):
     def get(token_id):
         """Retrieve a token by its database ID.
 
-        :param token_id: The database ID
-        :return: An object conforming to IArchiveAuthToken
+        :param token_id: The database ID.
+        :return: An object conforming to `IArchiveAuthToken`.
         """
 
     def getByToken(token):
         """Retrieve a token by its token text.
 
         :param token: The token text for the token.
-        :return: An object conforming to IArchiveAuthToken
+        :return: An object conforming to `IArchiveAuthToken`.
         """
 
     def getByArchive(archive):
@@ -115,7 +115,7 @@ class IArchiveAuthTokenSet(Interface):
 
         :param archive: The archive to which the token corresponds.
         :param name: The name of a named authorization token.
-        :return An object conforming to IArchiveAuthToken or None.
+        :return An object conforming to `IArchiveAuthToken` or None.
         """
 
     def getActiveNamedTokensForArchive(archive):
