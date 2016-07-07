@@ -27,16 +27,16 @@ from lp.soyuz.interfaces.archive import IArchive
 
 
 class IArchiveAuthTokenView(Interface):
-    """Interface for Archive Authorisation Tokens requiring launchpad.View."""
+    """Interface for Archive Authorization Tokens requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
     archive = Reference(
         IArchive, title=_("Archive"), required=True, readonly=True,
-        description=_("The archive for this authorisation token."))
+        description=_("The archive for this authorization token."))
 
     person = Reference(
         IPerson, title=_("Person"), required=False, readonly=True,
-        description=_("The person for this authorisation token."))
+        description=_("The person for this authorization token."))
     person_id = Attribute('db person value')
 
     date_created = Datetime(

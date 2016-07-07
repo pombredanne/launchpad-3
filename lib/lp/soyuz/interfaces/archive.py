@@ -538,12 +538,12 @@ class IArchiveSubscriberView(Interface):
         """
 
     def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
+        """Create a new authorization token.
 
-        :param person: An IPerson whom this token is for
+        :param person: An IPerson whom this token is for.
         :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
+            generated if not given.
+        :param date_created: Optional, defaults to now.
 
         :return: A new IArchiveAuthToken
         """
@@ -1336,7 +1336,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getQueueAdminsForComponent(component_name):
-        """Return `IArchivePermission` records for authorised queue admins.
+        """Return `IArchivePermission` records for authorized queue admins.
 
         :param component_name: An `IComponent` or textual name for the
             component.
@@ -1389,7 +1389,7 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     @operation_for_version("devel")
     def getQueueAdminsForPocket(pocket, distroseries=None):
-        """Return `IArchivePermission` records for authorised queue admins.
+        """Return `IArchivePermission` records for authorized queue admins.
 
         :param pocket: A `PackagePublishingPocket`.
         :param distroseries: An optional `IDistroSeries`.
@@ -2074,6 +2074,7 @@ class IArchiveEdit(Interface):
         :return: a `IArchiveDependency` object targeted to the context
             `IArchive` requiring 'dependency' `IArchive`.
         """
+
     @operation_parameters(
         dependency=Reference(schema=Interface, required=True),
         # Really IArchive
