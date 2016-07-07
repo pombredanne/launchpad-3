@@ -1952,6 +1952,7 @@ COMMENT ON COLUMN ArchiveAuthToken.person IS 'The person to which this token app
 COMMENT ON COLUMN ArchiveAuthToken.date_created IS 'The date and time this token was created.';
 COMMENT ON COLUMN ArchiveAuthToken.date_deactivated IS 'The date and time this token was deactivated.';
 COMMENT ON COLUMN ArchiveAuthToken.token IS 'The token text for this authorisation.';
+COMMENT ON COLUMN ArchiveAuthToken.name IS 'The name for this named token.';
 
 -- ArchiveDependency
 COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
