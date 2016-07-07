@@ -7,6 +7,8 @@ ALTER TABLE ArchiveAuthToken
     ALTER COLUMN person DROP NOT NULL,
     ADD COLUMN name text;
 
-CREATE INDEX archiveauthtoken__name__idx ON ArchiveAuthToken USING btree (name);
+COMMENT ON COLUMN ArchiveAuthToken.name IS 'The name for this named token.';
+
+CREATE INDEX archiveauthtoken__archive__name__date_deactivated__idx ON ArchiveAuthToken(archive, name) WHERE date_deactivated IS NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 79, 0);
