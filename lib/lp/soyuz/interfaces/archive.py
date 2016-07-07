@@ -151,12 +151,6 @@ class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
 
 
-@error_status(httplib.FORBIDDEN)
-class ArchiveNotOwner(Exception):
-    """Raised when the user is not the owner or a member of the owner team
-    of an archive."""
-
-
 @error_status(httplib.BAD_REQUEST)
 class NoTokensForTeams(Exception):
     """Raised when creating a token for a team, rather than a person."""
@@ -318,7 +312,7 @@ class CannotModifyArchiveProcessor(Exception):
             self._fmt % {'processor': processor.name})
 
 
-@error_status(httplib.BAD_REQUEST)
+@error_status(httplib.CONFLICT)
 class DuplicateTokenName(Exception):
     """Raised when creating a named token and an active token for this archive
      with this name already exists."""
@@ -2088,16 +2082,17 @@ class IArchiveEdit(Interface):
         """
 
     @operation_parameters(
-        name=TextLine(title=_("Authorization token name"), required=True))
+        name=TextLine(title=_("Authorization token name"), required=True),
+        token=TextLine(
+            title=_("Optional secret for this named token"), required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def newNamedAuthToken(name, token=None, date_created=None):
+    def newNamedAuthToken(name, token=None):
         """Create a new named authorization token.
 
         :param name: An identifier string for this token.
         :param token: Optional unicode text to use as the token. One will be
             generated if not given.
-        :param date_created: Optional, defaults to now.
 
         :return: A dictionary where the value of `token` is the secret and
             the value of `archive_url` is the externally-usable archive URL
@@ -2109,19 +2104,21 @@ class IArchiveEdit(Interface):
     @export_read_operation()
     @operation_for_version("devel")
     def getNamedAuthToken(name):
-        """Return a named authorization token for a given archive and name.
+        """Return a named authorization token for the given name in this
+         archive.
 
         :param name: The identifier string for a token.
 
         :return: A dictionary where the value of `token` is the secret and
             the value of `archive_url` is the externally-usable archive URL
             including basic auth.
+        :raises NotFoundError: if no matching token could be found.
         """
 
     @export_read_operation()
     @operation_for_version("devel")
     def getNamedAuthTokens():
-        """Return a list of named authorization tokens for a given archive.
+        """Return a list of named authorization tokens for this archive.
 
         :return: A list of dictionaries where the value of `token` is the
             secret and the value of `archive_url` is the externally-usable
@@ -2136,6 +2133,7 @@ class IArchiveEdit(Interface):
         """Deactivates a named authorization token.
 
         :param name: The identifier string for a token.
+        :raises NotFoundError: if no matching token could be found.
         """
 
 

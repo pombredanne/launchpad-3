@@ -1949,17 +1949,22 @@ class Archive(SQLBase):
         IStore(ArchiveAuthToken).add(archive_auth_token)
         return archive_auth_token
 
-    def newNamedAuthToken(self, name, token=None, date_created=None):
+    def newNamedAuthToken(self, name, token=None):
         """See `IArchive`."""
 
         # Bail if the archive isn't private
         if not self.private:
             raise ArchiveNotPrivate("Archive must be private.")
 
-        if self.getNamedAuthToken(name) is not None:
+        try:
+            # Check for duplicate name.
+            self.getNamedAuthToken(name)
             raise DuplicateTokenName(
-                "An active token with name %s for archive %s alread exists." %
+                "An active token with name %s for archive %s already exists." %
                 (name, self.displayname))
+        except NotFoundError:
+            # No duplicate name found: continue.
+            pass
 
         # Now onto the actual token creation:
         if token is None:
@@ -1968,23 +1973,23 @@ class Archive(SQLBase):
         archive_auth_token.archive = self
         archive_auth_token.name = name
         archive_auth_token.token = token
-        if date_created is not None:
-            archive_auth_token.date_created = date_created
         IStore(ArchiveAuthToken).add(archive_auth_token)
-        return archive_auth_token.as_dict()
+        return archive_auth_token.asDict()
 
     def getNamedAuthToken(self, name):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
         auth_token = token_set.getActiveNamedTokenForArchive(self, name)
         if auth_token is not None:
-            return auth_token.as_dict()
+            return auth_token.asDict()
+        else:
+            raise NotFoundError(name)
 
     def getNamedAuthTokens(self):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
         auth_tokens = token_set.getActiveNamedTokensForArchive(self)
-        return [auth_token.as_dict() for auth_token in auth_tokens]
+        return [auth_token.asDict() for auth_token in auth_tokens]
 
     def revokeNamedAuthToken(self, name):
         """See `IArchive`."""

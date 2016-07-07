@@ -60,11 +60,14 @@ class ArchiveAuthToken(Storm):
     def archive_url(self):
         """Return a custom archive url for basic authentication."""
         normal_url = URI(self.archive.archive_url)
-        auth_url = normal_url.replace(
-            userinfo="%s:%s" % (self.name or self.person.name, self.token))
+        if self.name:
+            name = '+' + self.name
+        else:
+            name = self.person.name
+        auth_url = normal_url.replace(userinfo="%s:%s" % (name, self.token))
         return str(auth_url)
 
-    def as_dict(self):
+    def asDict(self):
         return {"token": self.token, "archive_url": self.archive_url}
 
 

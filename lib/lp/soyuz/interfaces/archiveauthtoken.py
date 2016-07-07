@@ -58,12 +58,13 @@ class IArchiveAuthTokenView(Interface):
 
     name = TextLine(
         title=_("Name"), required=False, readonly=True,
-        description=_("The name for this named authorization token."))
+        description=_(
+            "The name in the case of a named authorization token, or None."))
 
     def deactivate():
         """Deactivate the token by setting date_deactivated to UTC_NOW."""
 
-    def as_dict():
+    def asDict():
         """Returns a dictionary where the value of `token` is the secret and
         the value of `archive_url` is the externally-usable archive URL
         including basic auth.
@@ -107,7 +108,7 @@ class IArchiveAuthTokenSet(Interface):
 
         :param archive: The archive to which the token corresponds.
         :param person: The person to which the token corresponds.
-        :return An object conforming to IArchiveAuthToken or None.
+        :return: An `IArchiveAuthToken` or None.
         """
 
     def getActiveNamedTokenForArchive(archive, name):
