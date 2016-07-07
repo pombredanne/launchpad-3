@@ -64,6 +64,9 @@ class ArchiveAuthToken(Storm):
             userinfo="%s:%s" % (self.name or self.person.name, self.token))
         return str(auth_url)
 
+    def as_dict(self):
+        return {"token": self.token, "archive_url": self.archive_url}
+
 
 @implementer(IArchiveAuthTokenSet)
 class ArchiveAuthTokenSet:
@@ -90,8 +93,18 @@ class ArchiveAuthTokenSet:
     def getActiveTokenForArchiveAndPerson(self, archive, person):
         """See `IArchiveAuthTokenSet`."""
         store = Store.of(archive)
-        return store.find(
-            ArchiveAuthToken,
-            ArchiveAuthToken.archive == archive,
-            ArchiveAuthToken.person == person,
-            ArchiveAuthToken.date_deactivated == None).one()
+        return self.getByArchive(archive).find(
+            ArchiveAuthToken.person == person).one()
+
+    def getActiveNamedTokenForArchive(self, archive, name):
+        """See `IArchiveAuthTokenSet`."""
+        store = Store.of(archive)
+        return self.getByArchive(archive).find(
+            ArchiveAuthToken.name == name).one()
+
+    def getActiveNamedTokensForArchive(self, archive):
+        """See `IArchiveAuthTokenSet`."""
+        store = Store.of(archive)
+        return self.getByArchive(archive).find(
+            ArchiveAuthToken.name != None)
+

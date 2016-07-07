@@ -63,6 +63,12 @@ class IArchiveAuthTokenView(Interface):
     def deactivate():
         """Deactivate the token by setting date_deactivated to UTC_NOW."""
 
+    def as_dict():
+        """Returns a dictionary where the value of `token` is the secret and
+        the value of `archive_url` is the externally-usable archive URL
+        including basic auth.
+        """
+
 
 class IArchiveAuthTokenEdit(Interface):
     """Interface for Archive Auth Tokens requiring launchpad.Edit."""
@@ -102,4 +108,19 @@ class IArchiveAuthTokenSet(Interface):
         :param archive: The archive to which the token corresponds.
         :param person: The person to which the token corresponds.
         :return An object conforming to IArchiveAuthToken or None.
+        """
+
+    def getActiveNamedTokenForArchive(archive, name):
+        """Retrieve an active named token for the given archive and name.
+
+        :param archive: The archive to which the token corresponds.
+        :param name: The name of a named authorization token.
+        :return An object conforming to IArchiveAuthToken or None.
+        """
+
+    def getActiveNamedTokensForArchive(archive):
+        """Retrieve all active named tokens for the given archive.
+
+        :param archive: The archive to which the tokens correspond.
+        :return: A result set containing `IArchiveAuthToken`s.
         """
