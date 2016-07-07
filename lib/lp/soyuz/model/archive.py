@@ -110,6 +110,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import BulkUpdate
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -161,6 +162,8 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA,
     IPPA,
     MAIN_ARCHIVE_PURPOSES,
+    NAMED_AUTH_TOKEN_FEATURE_FLAG,
+    NamedAuthTokenFeatureDisabled,
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
@@ -1951,6 +1954,9 @@ class Archive(SQLBase):
 
     def newNamedAuthToken(self, name, token=None):
         """See `IArchive`."""
+
+        if not getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG):
+            raise NamedAuthTokenFeatureDisabled()
 
         # Bail if the archive isn't private
         if not self.private:

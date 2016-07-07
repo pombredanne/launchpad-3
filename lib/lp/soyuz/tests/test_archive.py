@@ -41,6 +41,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     clear_property_cache,
@@ -76,6 +77,8 @@ from lp.soyuz.interfaces.archive import (
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
+    NAMED_AUTH_TOKEN_FEATURE_FLAG,
+    NamedAuthTokenFeatureDisabled,
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
@@ -1249,6 +1252,23 @@ class TestBuilddSecret(TestCaseWithFactory):
             self.assertEqual("really secret", self.archive.buildd_secret)
 
 
+class TestNamedAuthTokenFeatureFlag(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_feature_flag_disabled(self):
+        # With feature flag disabled, we will not create new named auth tokens.
+        private_ppa = self.factory.makeArchive(private=True)
+        with FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u""}):
+            self.assertRaises(NamedAuthTokenFeatureDisabled,
+                              private_ppa.newNamedAuthToken, u"tokenname")
+
+    def test_feature_flag_disabled_by_default(self):
+         # Without a feature flag, we will not create new named auth tokens.
+        private_ppa = self.factory.makeArchive(private=True)
+        self.assertRaises(NamedAuthTokenFeatureDisabled,
+            private_ppa.newNamedAuthToken, u"tokenname")
+
+
 class TestArchiveTokens(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
@@ -1258,6 +1278,7 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.private_ppa = self.factory.makeArchive(owner=owner, private=True)
         self.joe = self.factory.makePerson(name='joe')
         self.private_ppa.newSubscription(self.joe, owner)
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
 
     def test_getAuthToken_with_no_token(self):
         self.assertIsNone(self.private_ppa.getAuthToken(self.joe))

@@ -20,6 +20,7 @@ __all__ = [
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'CannotUploadToSeries',
+    'DuplicateTokenName',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAdmin',
@@ -38,6 +39,8 @@ __all__ = [
     'InvalidPocketForPPA',
     'IPPA',
     'MAIN_ARCHIVE_PURPOSES',
+    'NAMED_AUTH_TOKEN_FEATURE_FLAG',
+    'NamedAuthTokenFeatureDisabled',
     'NoRightsForArchive',
     'NoRightsForComponent',
     'NoSuchPPA',
@@ -92,6 +95,7 @@ from zope.schema import (
     Text,
     TextLine,
     )
+from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.app.errors import NameLookupFailed
@@ -109,6 +113,9 @@ from lp.services.fields import (
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent
+
+
+NAMED_AUTH_TOKEN_FEATURE_FLAG = u"soyuz.named_auth_token.allow_new"
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -316,6 +323,15 @@ class CannotModifyArchiveProcessor(Exception):
 class DuplicateTokenName(Exception):
     """Raised when creating a named token and an active token for this archive
      with this name already exists."""
+
+
+@error_status(httplib.UNAUTHORIZED)
+class NamedAuthTokenFeatureDisabled(Unauthorized):
+    """Only certain users can create named authorization tokens."""
+
+    def __init__(self):
+        super(NamedAuthTokenFeatureDisabled, self).__init__(
+            "You do not have permission to create named authorization tokens")
 
 
 class IArchivePublic(IPrivacy, IHasOwner):
