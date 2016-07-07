@@ -35,7 +35,7 @@ class IArchiveAuthTokenView(Interface):
         description=_("The archive for this authorisation token."))
 
     person = Reference(
-        IPerson, title=_("Person"), required=True, readonly=True,
+        IPerson, title=_("Person"), required=False, readonly=True,
         description=_("The person for this authorisation token."))
     person_id = Attribute('db person value')
 
@@ -56,7 +56,11 @@ class IArchiveAuthTokenView(Interface):
         description=_(
             "External archive URL including basic auth for this person"))
 
-    def deactivate(self):
+    name = TextLine(
+        title=_("Name"), required=False, readonly=True,
+        description=_("The name for this named authorization token."))
+
+    def deactivate():
         """Deactivate the token by setting date_deactivated to UTC_NOW."""
 
 

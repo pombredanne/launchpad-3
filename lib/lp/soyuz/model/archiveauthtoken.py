@@ -39,7 +39,7 @@ class ArchiveAuthToken(Storm):
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
 
-    person_id = Int(name='person', allow_none=False)
+    person_id = Int(name='person', allow_none=True)
     person = Reference(person_id, 'Person.id')
 
     date_created = DateTime(
@@ -50,6 +50,8 @@ class ArchiveAuthToken(Storm):
 
     token = Unicode(name='token', allow_none=False)
 
+    name = Unicode(name='name', allow_none=True)
+
     def deactivate(self):
         """See `IArchiveAuthTokenSet`."""
         self.date_deactivated = UTC_NOW
@@ -59,7 +61,7 @@ class ArchiveAuthToken(Storm):
         """Return a custom archive url for basic authentication."""
         normal_url = URI(self.archive.archive_url)
         auth_url = normal_url.replace(
-            userinfo="%s:%s" % (self.person.name, self.token))
+            userinfo="%s:%s" % (self.name or self.person.name, self.token))
         return str(auth_url)
 
 
