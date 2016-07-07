@@ -619,7 +619,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
 
-    def assertIsInstance(self, instance, assert_class):
+    def assertIsInstance(self, instance, assert_class, msg=None):
         """Assert that an instance is an instance of assert_class.
 
         instance and assert_class have the same semantics as the parameters

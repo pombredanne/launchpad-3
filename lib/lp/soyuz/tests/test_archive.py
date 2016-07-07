@@ -3505,9 +3505,6 @@ class TestCountersAndSummaries(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def assertDictEqual(self, one, two):
-        self.assertContentEqual(one.items(), two.items())
-
     def test_cprov_build_counters_in_sampledata(self):
         cprov_archive = getUtility(IPersonSet).getByName("cprov").archive
         expected_counters = {
