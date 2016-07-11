@@ -49,6 +49,9 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import (
@@ -524,8 +527,8 @@ class SoyuzTestPublisher:
         """Make test data for SourcePackage.summary.
 
         The distroseries that is returned from this method needs to be
-        passed into updateDistroseriesPackageCache() so that
-        SourcePackage.summary can be populated.
+        passed into updatePackageCache() so that SourcePackage.summary can
+        be populated.
         """
         if source_pub is None:
             distribution = self.factory.makeDistribution(
@@ -562,11 +565,16 @@ class SoyuzTestPublisher:
             distroseries=source_pub.distroseries,
             source_package=source_pub.meta_sourcepackage)
 
-    def updateDistroSeriesPackageCache(self, distroseries):
+    def updatePackageCache(self, distroseries):
         with dbuser(config.statistician.dbuser):
+            DistributionSourcePackageCache.updateAll(
+                distroseries.distribution,
+                archive=distroseries.main_archive,
+                ztm=transaction,
+                log=DevNullLogger())
             DistroSeriesPackageCache.updateAll(
                 distroseries,
-                archive=distroseries.distribution.main_archive,
+                archive=distroseries.main_archive,
                 ztm=transaction,
                 log=DevNullLogger())
 
@@ -905,19 +913,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
     def setUp(self):
         super(TestPublishingSetLite, self).setUp()
         self.person = self.factory.makePerson()
-
-    def test_newSourcePublication_updates_cache(self):
-        ubuntutest = getUtility(IDistributionSet)["ubuntutest"]
-        breezy_autotest = ubuntutest["breezy-autotest"]
-        spn = self.factory.makeSourcePackageName()
-        self.assertEqual(0, ubuntutest.searchSourcePackages(spn.name).count())
-        spr = self.factory.makeSourcePackageRelease(
-            archive=ubuntutest.main_archive, sourcepackagename=spn,
-            distroseries=breezy_autotest, creator=self.person)
-        getUtility(IPublishingSet).newSourcePublication(
-            ubuntutest.main_archive, spr, breezy_autotest, spr.component,
-            spr.section, self.factory.getAnyPocket())
-        self.assertEqual(1, ubuntutest.searchSourcePackages(spn.name).count())
 
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()

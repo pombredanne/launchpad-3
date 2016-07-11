@@ -749,6 +749,28 @@ class TestSetRecipeStale(BzrSyncTestCase):
         self.assertEqual(False, recipe.is_stale)
 
 
+class TestMarkSnapsStale(BzrSyncTestCase):
+    """Test that snap packages associated with the branch are marked stale."""
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_same_branch(self):
+        # On tip change, snap packages using this branch become stale.
+        snap = self.factory.makeSnap(branch=self.db_branch)
+        removeSecurityProxy(snap).is_stale = False
+        switch_dbuser("branchscanner")
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertTrue(snap.is_stale)
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_unrelated_branch(self):
+        # On tip change, unrelated snap packages are left alone.
+        snap = self.factory.makeSnap()
+        removeSecurityProxy(snap).is_stale = False
+        switch_dbuser("branchscanner")
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertFalse(snap.is_stale)
+
+
 class TestTriggerWebhooks(BzrSyncTestCase):
     """Test triggering of webhooks."""
 

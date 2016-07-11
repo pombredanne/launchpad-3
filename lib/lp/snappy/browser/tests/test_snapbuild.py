@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build views."""
@@ -16,9 +16,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
-from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
+from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -44,10 +44,6 @@ class TestCanonicalUrlForSnapBuild(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestCanonicalUrlForSnapBuild, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
         snap = self.factory.makeSnap(
@@ -61,10 +57,6 @@ class TestCanonicalUrlForSnapBuild(TestCaseWithFactory):
 class TestSnapBuildView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestSnapBuildView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
 
     def test_files(self):
         # SnapBuildView.files returns all the associated files.
@@ -81,6 +73,36 @@ class TestSnapBuildView(TestCaseWithFactory):
         build_view = create_initialized_view(build, "+index")
         self.assertEqual([], build_view.files)
 
+    def test_store_upload_status_in_progress(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        getUtility(ISnapStoreUploadJobSource).create(build)
+        build_view = create_initialized_view(build, "+index")
+        self.assertEqual(
+            "Store upload in progress", build_view.store_upload_status)
+
+    def test_store_upload_status_completed(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.COMPLETED
+        naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
+        build_view = create_initialized_view(build, "+index")
+        self.assertEqual(
+            '<a href="%s">Manage this package in the store</a>' % (
+                job.store_url),
+            build_view.store_upload_status.escapedtext)
+
+    def test_store_upload_status_failed(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.error_message = "Scan failed."
+        build_view = create_initialized_view(build, "+index")
+        self.assertEqual(
+            "Store upload failed: Scan failed.",
+            build_view.store_upload_status.escapedtext)
+
 
 class TestSnapBuildOperations(BrowserTestCase):
 
@@ -88,7 +110,6 @@ class TestSnapBuildOperations(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapBuildOperations, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.useFixture(FakeLogger())
         self.build = self.factory.makeSnapBuild()
         self.build_url = canonical_url(self.build)

@@ -118,7 +118,6 @@ from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -659,7 +658,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
     def test_snap_requirements(self):
         # If a repository is used by a snap package, the deletion
         # requirements indicate this.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         [ref] = self.factory.makeGitRefs()
         self.factory.makeSnap(git_ref=ref)
         self.assertEqual(
@@ -669,7 +667,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
     def test_snap_deletion(self):
         # break_references allows deleting a repository used by a snap package.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         repository = self.factory.makeGitRepository()
         [ref1, ref2] = self.factory.makeGitRefs(
             repository=repository, paths=[u"refs/heads/1", u"refs/heads/2"])
@@ -1944,6 +1941,40 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         ref.repository.createOrUpdateRefs(
             {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
+
+
+class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_same_repository(self):
+        # On ref changes, snap packages using this ref become stale.
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=ref)
+        removeSecurityProxy(snap).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(snap.is_stale)
+
+    def test_same_repository_different_ref(self):
+        # On ref changes, snap packages using a different ref in the same
+        # repository are left alone.
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        snap = self.factory.makeSnap(git_ref=ref1)
+        removeSecurityProxy(snap).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(snap.is_stale)
+
+    def test_different_repository(self):
+        # On ref changes, unrelated snap packages are left alone.
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0])
+        removeSecurityProxy(snap).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(snap.is_stale)
 
 
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):

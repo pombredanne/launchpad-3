@@ -20,13 +20,17 @@ __all__ = [
 
 import os
 import shutil
+import stat
 import subprocess
 import tarfile
 import tempfile
 import textwrap
 
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
-from lp.archivepublisher.utils import RepositoryIndexFile
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
@@ -79,7 +83,9 @@ class SigningUpload(CustomUpload):
         self.package, self.version, self.arch = self.parsePath(
             tarfile_path)
 
-    def setTargetDirectory(self, pubconf, tarfile_path, suite):
+    def setTargetDirectory(self, archive, tarfile_path, suite):
+        self.archive = archive
+        pubconf = getPubConfig(archive)
         if pubconf.signingroot is None:
             if self.logger is not None:
                 self.logger.warning(
@@ -103,13 +109,35 @@ class SigningUpload(CustomUpload):
         self.targetdir = os.path.join(
             dists_signed, "%s-%s" % (self.package, self.arch))
         self.archiveroot = pubconf.archiveroot
+        self.temproot = pubconf.temproot
+
+        self.public_keys = set()
+
+    def publishPublicKey(self, key):
+        """Record this key as having been used in this upload."""
+        self.public_keys.add(key)
+
+    def copyPublishedPublicKeys(self):
+        """Copy out published keys into the custom upload."""
+        keydir = os.path.join(self.tmpdir, self.version, "control")
+        if not os.path.exists(keydir):
+            os.makedirs(keydir)
+        for key in self.public_keys:
+            # Ensure we only emit files which are world readable.
+            if stat.S_IMODE(os.stat(key).st_mode) & stat.S_IROTH:
+                shutil.copy(key, os.path.join(keydir, os.path.basename(key)))
+            else:
+                if self.logger is not None:
+                    self.logger.warning(
+                        "%s: public key not world readable" % key)
 
     def setSigningOptions(self):
-        """Find and extract raw-signing.options from the tarball."""
+        """Find and extract raw-signing options from the tarball."""
         self.signing_options = {}
 
+        # Look for an options file in the top level control directory.
         options_file = os.path.join(self.tmpdir, self.version,
-            "raw-signing.options")
+            "control", "options")
         if not os.path.exists(options_file):
             return
 
@@ -124,14 +152,6 @@ class SigningUpload(CustomUpload):
             return package, arch
         except ValueError:
             return None
-
-    def getArchiveOwnerAndName(self):
-        # XXX apw 2016-05-18: pull out the PPA owner and name to seed key CN
-        archive_name = os.path.dirname(self.archiveroot)
-        owner_name = os.path.basename(os.path.dirname(archive_name))
-        archive_name = os.path.basename(archive_name)
-
-        return owner_name + ' ' + archive_name
 
     def callLog(self, description, cmdl):
         status = subprocess.call(cmdl)
@@ -179,7 +199,8 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        common_name = '/CN=PPA ' + self.getArchiveOwnerAndName() + '/'
+        common_name = '/CN=PPA %s %s/' % (
+            self.archive.owner.name, self.archive.name)
 
         old_mask = os.umask(0o077)
         try:
@@ -202,6 +223,7 @@ class SigningUpload(CustomUpload):
             self.uefi_key, self.uefi_cert)
         if not key or not cert:
             return
+        self.publishPublicKey(cert)
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
         return self.callLog("UEFI signing", cmdl)
 
@@ -214,8 +236,6 @@ class SigningUpload(CustomUpload):
         old_mask = os.umask(0o077)
         try:
             with tempfile.NamedTemporaryFile(suffix='.keygen') as tf:
-                common_name = self.getArchiveOwnerAndName()
-
                 genkey_text = textwrap.dedent("""\
                     [ req ]
                     default_bits = 4096
@@ -225,14 +245,14 @@ class SigningUpload(CustomUpload):
                     x509_extensions = myexts
 
                     [ req_distinguished_name ]
-                    CN = /CN=PPA """ + common_name + """ kmod/
+                    CN = /CN=PPA %s %s kmod/
 
                     [ myexts ]
                     basicConstraints=critical,CA:FALSE
                     keyUsage=digitalSignature
                     subjectKeyIdentifier=hash
                     authorityKeyIdentifier=keyid
-                    """)
+                    """ % (self.archive.owner.name, self.archive.name))
 
                 print(genkey_text, file=tf)
 
@@ -265,6 +285,7 @@ class SigningUpload(CustomUpload):
             self.kmod_pem, self.kmod_x509)
         if not pem or not cert:
             return
+        self.publishPublicKey(cert)
         cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
         return self.callLog("Kmod signing", cmdl)
 
@@ -292,9 +313,6 @@ class SigningUpload(CustomUpload):
 
         No actual extraction is required.
         """
-        # Avoid circular import.
-        from lp.archivepublisher.publishing import DirectoryHash
-
         super(SigningUpload, self).extract()
         self.setSigningOptions()
         filehandlers = list(self.findSigningHandlers())
@@ -303,12 +321,25 @@ class SigningUpload(CustomUpload):
                 'signed-only' in self.signing_options):
                 os.unlink(filename)
 
+        # Copy out the public keys where they were used.
+        self.copyPublishedPublicKeys()
+
         # If tarball output is requested, tar up the results.
         if 'tarball' in self.signing_options:
             self.convertToTarball()
 
-        versiondir = os.path.join(self.tmpdir, self.version)
-        with DirectoryHash(versiondir, self.tmpdir, self.logger) as hasher:
+    def installFiles(self):
+        """After installation hash and sign the installed result."""
+        # Avoid circular import.
+        from lp.archivepublisher.publishing import DirectoryHash
+
+        super(SigningUpload, self).installFiles()
+
+        versiondir = os.path.join(self.targetdir, self.version)
+        signer = None
+        if self.archive.signing_key:
+            signer = IArchiveSigningKey(self.archive)
+        with DirectoryHash(versiondir, self.temproot, signer) as hasher:
             hasher.add_dir(versiondir)
 
     def shouldInstall(self, filename):

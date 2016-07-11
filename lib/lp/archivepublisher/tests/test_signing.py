@@ -10,19 +10,29 @@ import stat
 import tarfile
 
 from fixtures import MonkeyPatch
+from zope.component import getUtility
 
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.signing import (
     SigningUpload,
     UefiUpload,
     )
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.testing import TestCase
+from lp.soyuz.enums import ArchivePurpose
+from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import KeyServerTac
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class FakeMethodCallLog(FakeMethod):
@@ -74,49 +84,48 @@ class FakeMethodCallLog(FakeMethod):
         return self.callers.get(caller, 0)
 
 
-class FakeConfigPrimary:
-    """A fake publisher configuration for the main archive."""
-    def __init__(self, distroroot, signingroot):
-        self.distroroot = distroroot
-        self.signingroot = signingroot
-        self.archiveroot = os.path.join(self.distroroot, 'ubuntu')
-        self.signingautokey = False
+class TestSigningHelpers(TestCaseWithFactory):
 
-
-class FakeConfigCopy:
-    """A fake publisher configuration for a copy archive."""
-    def __init__(self, distroroot):
-        self.distroroot = distroroot
-        self.signingroot = None
-        self.archiveroot = os.path.join(self.distroroot, 'ubuntu')
-        self.signingautokey = False
-
-
-class FakeConfigPPA:
-    """A fake publisher configuration for a PPA."""
-    def __init__(self, distroroot, signingroot, owner, ppa):
-        self.distroroot = distroroot
-        self.signingroot = signingroot
-        self.archiveroot = os.path.join(self.distroroot, owner, ppa, 'ubuntu')
-        self.signingautokey = True
-
-
-class TestSigningHelpers(TestCase):
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestSigningHelpers, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
-        self.signing_dir = self.makeTemporaryDirectory()
-        self.pubconf = FakeConfigPrimary(self.temp_dir, self.signing_dir)
+        self.distro = self.factory.makeDistribution()
+        db_pubconf = getUtility(IPublisherConfigSet).getByDistribution(
+            self.distro)
+        db_pubconf.root_dir = unicode(self.temp_dir)
+        self.archive = self.factory.makeArchive(
+            distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
+        self.signing_dir = os.path.join(
+            self.temp_dir, self.distro.name + "-signing")
         self.suite = "distroseries"
+        pubconf = getPubConfig(self.archive)
+        if not os.path.exists(pubconf.temproot):
+            os.makedirs(pubconf.temproot)
         # CustomUpload.installFiles requires a umask of 0o022.
         old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
 
     def setUpPPA(self):
-        self.pubconf = FakeConfigPPA(self.temp_dir, self.signing_dir,
-            'ubuntu-archive', 'testing')
-        self.testcase_cn = '/CN=PPA ubuntu-archive testing/'
+        self.pushConfig(
+            "personalpackagearchive", root=self.temp_dir,
+            signing_keys_root=self.temp_dir)
+        owner = self.factory.makePerson(name="signing-owner")
+        self.archive = self.factory.makeArchive(
+            distribution=self.distro, owner=owner, name="testing",
+            purpose=ArchivePurpose.PPA)
+        self.signing_dir = os.path.join(
+            self.temp_dir, "signing", "signing-owner", "testing")
+        self.testcase_cn = '/CN=PPA signing-owner testing/'
+        pubconf = getPubConfig(self.archive)
+        if not os.path.exists(pubconf.temproot):
+            os.makedirs(pubconf.temproot)
+
+    def setUpArchiveKey(self):
+        with KeyServerTac():
+            key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+            IArchiveSigningKey(self.archive).setSigningKey(key_path)
 
     def setUpUefiKeys(self, create=True):
         self.key = os.path.join(self.signing_dir, "uefi.key")
@@ -136,11 +145,11 @@ class TestSigningHelpers(TestCase):
         self.path = os.path.join(
             self.temp_dir, "%s_%s_%s.tar.gz" % (loader_type, version, arch))
         self.buffer = open(self.path, "wb")
-        self.archive = LaunchpadWriteTarFile(self.buffer)
+        self.tarfile = LaunchpadWriteTarFile(self.buffer)
 
     def getDistsPath(self):
-        return os.path.join(self.pubconf.archiveroot, "dists",
-            self.suite, "main")
+        pubconf = getPubConfig(self.archive)
+        return os.path.join(pubconf.archiveroot, "dists", self.suite, "main")
 
 
 class TestSigning(TestSigningHelpers):
@@ -150,19 +159,19 @@ class TestSigning(TestSigningHelpers):
             "%s-%s" % (loader_type, arch))
 
     def process_emulate(self):
-        self.archive.close()
+        self.tarfile.close()
         self.buffer.close()
         upload = SigningUpload()
         # Under no circumstances is it safe to execute actual commands.
         self.fake_call = FakeMethod(result=0)
         upload.callLog = FakeMethodCallLog(upload=upload)
         self.useFixture(MonkeyPatch("subprocess.call", self.fake_call))
-        upload.process(self.pubconf, self.path, self.suite)
+        upload.process(self.archive, self.path, self.suite)
 
         return upload
 
     def process(self):
-        self.archive.close()
+        self.tarfile.close()
         self.buffer.close()
         upload = SigningUpload()
         upload.signUefi = FakeMethod()
@@ -170,7 +179,7 @@ class TestSigning(TestSigningHelpers):
         # Under no circumstances is it safe to execute actual commands.
         fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload.process(self.pubconf, self.path, self.suite)
+        upload.process(self.archive, self.path, self.suite)
         self.assertEqual(0, fake_call.call_count)
 
         return upload
@@ -178,10 +187,14 @@ class TestSigning(TestSigningHelpers):
     def test_archive_copy(self):
         # If there is no key/cert configuration, processing succeeds but
         # nothing is signed.
-        self.pubconf = FakeConfigCopy(self.temp_dir)
+        self.archive = self.factory.makeArchive(
+            distribution=self.distro, purpose=ArchivePurpose.COPY)
+        pubconf = getPubConfig(self.archive)
+        if not os.path.exists(pubconf.temproot):
+            os.makedirs(pubconf.temproot)
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         upload = self.process_emulate()
         self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
         self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
@@ -193,8 +206,8 @@ class TestSigning(TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         upload = self.process_emulate()
         self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
         self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
@@ -208,8 +221,8 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         upload = self.process_emulate()
         self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
         self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
@@ -222,8 +235,8 @@ class TestSigning(TestSigningHelpers):
         # nothing is signed.
         self.setUpPPA()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         upload = self.process_emulate()
         self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
         self.assertEqual(1, upload.callLog.caller_count('Kmod keygen key'))
@@ -235,7 +248,7 @@ class TestSigning(TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "")
+        self.tarfile.add_file("1.0/control/options", "")
         upload = self.process_emulate()
         self.assertContentEqual([], upload.signing_options.keys())
 
@@ -243,7 +256,7 @@ class TestSigning(TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "first\n")
+        self.tarfile.add_file("1.0/control/options", "first\n")
         upload = self.process_emulate()
         self.assertContentEqual(['first'], upload.signing_options.keys())
 
@@ -251,7 +264,7 @@ class TestSigning(TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "first\nsecond\n")
+        self.tarfile.add_file("1.0/control/options", "first\nsecond\n")
         upload = self.process_emulate()
         self.assertContentEqual(['first', 'second'],
             upload.signing_options.keys())
@@ -261,8 +274,8 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
@@ -279,9 +292,9 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "tarball")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/control/options", "tarball")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
         self.assertFalse(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
@@ -292,8 +305,10 @@ class TestSigning(TestSigningHelpers):
         self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/empty.efi', '1.0/empty.efi.signed', '1.0/empty.ko',
-                '1.0/empty.ko.sig', '1.0/raw-signing.options',
+                '1.0', '1.0/control', '1.0/control/kmod.x509',
+                '1.0/control/uefi.crt', '1.0/empty.efi',
+                '1.0/empty.efi.signed', '1.0/empty.ko', '1.0/empty.ko.sig',
+                '1.0/control/options',
                 ], tarball.getnames())
 
     def test_options_signed_only(self):
@@ -302,9 +317,9 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options", "signed-only")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/control/options", "signed-only")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
         self.assertFalse(os.path.exists(os.path.join(
             self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
@@ -322,18 +337,19 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/raw-signing.options",
+        self.tarfile.add_file("1.0/control/options",
             "tarball\nsigned-only")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
         tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")
         self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/empty.efi.signed', '1.0/empty.ko.sig',
-                '1.0/raw-signing.options',
+                '1.0', '1.0/control', '1.0/control/kmod.x509',
+                '1.0/control/uefi.crt', '1.0/empty.efi.signed',
+                '1.0/empty.ko.sig', '1.0/control/options',
                 ], tarball.getnames())
 
     def test_no_signed_files(self):
@@ -341,7 +357,7 @@ class TestSigning(TestSigningHelpers):
         # Nothing is signed.
         self.setUpUefiKeys()
         self.openArchive("empty", "1.0", "amd64")
-        self.archive.add_file("1.0/hello", "world")
+        self.tarfile.add_file("1.0/hello", "world")
         upload = self.process()
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("empty", "amd64"), "1.0", "hello")))
@@ -352,7 +368,7 @@ class TestSigning(TestSigningHelpers):
         # If the target directory already exists, processing fails.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
         os.makedirs(os.path.join(self.getSignedPath("test", "amd64"), "1.0"))
         self.assertRaises(CustomUploadAlreadyExists, self.process)
 
@@ -360,7 +376,7 @@ class TestSigning(TestSigningHelpers):
         # The umask must be 0o022 to avoid incorrect permissions.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/dir/file.efi", "foo")
+        self.tarfile.add_file("1.0/dir/file.efi", "foo")
         os.umask(0o002)  # cleanup already handled by setUp
         self.assertRaises(CustomUploadBadUmask, self.process)
 
@@ -373,7 +389,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signUefi('t.efi')
         self.assertEqual(1, fake_call.call_count)
         # Assert command form.
@@ -393,7 +409,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.generateUefiKeys = FakeMethod()
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signUefi('t.efi')
         self.assertEqual(0, fake_call.call_count)
         self.assertEqual(0, upload.generateUefiKeys.call_count)
@@ -407,7 +423,7 @@ class TestSigning(TestSigningHelpers):
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.generateUefiKeys()
         self.assertEqual(1, fake_call.call_count)
         # Assert the actual command matches.
@@ -428,7 +444,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.generateKmodKeys = FakeMethod()
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signKmod('t.ko')
         self.assertEqual(1, fake_call.call_count)
         # Assert command form.
@@ -449,7 +465,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.generateKmodKeys = FakeMethod()
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signUefi('t.ko')
         self.assertEqual(0, fake_call.call_count)
         self.assertEqual(0, upload.generateKmodKeys.call_count)
@@ -463,7 +479,7 @@ class TestSigning(TestSigningHelpers):
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
         upload = SigningUpload()
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.generateKmodKeys()
         self.assertEqual(2, fake_call.call_count)
         # Assert the actual command matches.
@@ -489,7 +505,7 @@ class TestSigning(TestSigningHelpers):
         # Each image in the tarball is signed.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
 
@@ -497,7 +513,7 @@ class TestSigning(TestSigningHelpers):
         # Each image in the tarball is signed.
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         upload = self.process()
         self.assertEqual(1, upload.signKmod.call_count)
 
@@ -505,9 +521,9 @@ class TestSigning(TestSigningHelpers):
         # Each image in the tarball is signed.
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
-        self.archive.add_file("1.0/empty2.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty2.ko", "")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
         self.assertEqual(2, upload.signKmod.call_count)
@@ -516,7 +532,7 @@ class TestSigning(TestSigningHelpers):
         # Files in the tarball are installed correctly.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
@@ -528,7 +544,7 @@ class TestSigning(TestSigningHelpers):
         os.makedirs(os.path.join(self.getDistsPath(), "uefi"))
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
@@ -540,7 +556,7 @@ class TestSigning(TestSigningHelpers):
         os.makedirs(os.path.join(self.getDistsPath(), "signing"))
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
@@ -557,7 +573,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signUefi(os.path.join(self.makeTemporaryDirectory(), 't.efi'))
         self.assertEqual(0, upload.callLog.caller_count('UEFI keygen'))
         self.assertFalse(os.path.exists(self.key))
@@ -574,7 +590,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signUefi(os.path.join(self.makeTemporaryDirectory(), 't.efi'))
         self.assertEqual(1, upload.callLog.caller_count('UEFI keygen'))
         self.assertTrue(os.path.exists(self.key))
@@ -592,7 +608,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signKmod(os.path.join(self.makeTemporaryDirectory(), 't.ko'))
         self.assertEqual(0, upload.callLog.caller_count('Kmod keygen key'))
         self.assertEqual(0, upload.callLog.caller_count('Kmod keygen cert'))
@@ -610,7 +626,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.callLog = FakeMethodCallLog(upload=upload)
         upload.setTargetDirectory(
-            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
         upload.signKmod(os.path.join(self.makeTemporaryDirectory(), 't.ko'))
         self.assertEqual(1, upload.callLog.caller_count('Kmod keygen key'))
         self.assertEqual(1, upload.callLog.caller_count('Kmod keygen cert'))
@@ -625,12 +641,28 @@ class TestSigning(TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
-        self.archive.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
+
+    def test_checksumming_tree_signed(self):
+        # Specifying no options should leave us with an open tree,
+        # confirm it is checksummed.  Supply an archive signing key
+        # which should trigger signing of the checksum file.
+        self.setUpArchiveKey()
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
+        self.process_emulate()
+        sha256file = os.path.join(self.getSignedPath("test", "amd64"),
+             "1.0", "SHA256SUMS")
+        self.assertTrue(os.path.exists(sha256file))
+        self.assertTrue(os.path.exists(sha256file + '.gpg'))
 
 
 class TestUefi(TestSigningHelpers):
@@ -640,7 +672,7 @@ class TestUefi(TestSigningHelpers):
             "%s-%s" % (loader_type, arch))
 
     def process(self):
-        self.archive.close()
+        self.tarfile.close()
         self.buffer.close()
         upload = UefiUpload()
         upload.signUefi = FakeMethod()
@@ -648,7 +680,7 @@ class TestUefi(TestSigningHelpers):
         # Under no circumstances is it safe to execute actual commands.
         fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
-        upload.process(self.pubconf, self.path, self.suite)
+        upload.process(self.archive, self.path, self.suite)
         self.assertEqual(0, fake_call.call_count)
 
         return upload
@@ -657,7 +689,7 @@ class TestUefi(TestSigningHelpers):
         # Files in the tarball are installed correctly.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.archive.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", "")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "uefi")))

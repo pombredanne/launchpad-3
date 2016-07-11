@@ -22,7 +22,6 @@ import tempfile
 
 from zope.interface import implementer
 
-from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
@@ -108,10 +107,9 @@ class CustomUpload:
             temp_file = open(tarfile_path, "wb")
             libraryfilealias.open()
             copy_and_close(libraryfilealias, temp_file)
-            pubconf = getPubConfig(packageupload.archive)
             suite = packageupload.distroseries.getSuite(packageupload.pocket)
             upload = cls(logger=logger)
-            upload.process(pubconf, tarfile_path, suite)
+            upload.process(packageupload.archive, tarfile_path, suite)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -123,11 +121,11 @@ class CustomUpload:
         self.tmpdir = None
         self.logger = logger
 
-    def process(self, pubconf, tarfile_path, suite):
+    def process(self, archive, tarfile_path, suite):
         """Process the upload and install it into the archive."""
         self.tarfile_path = tarfile_path
         try:
-            self.setTargetDirectory(pubconf, tarfile_path, suite)
+            self.setTargetDirectory(archive, tarfile_path, suite)
             self.checkForConflicts()
             self.extract()
             self.installFiles()
@@ -147,7 +145,7 @@ class CustomUpload:
         """Set instance variables based on decomposing the filename."""
         raise NotImplementedError
 
-    def setTargetDirectory(self, pubconf, tarfile_path, suite):
+    def setTargetDirectory(self, archive, tarfile_path, suite):
         """Set self.targetdir based on parameters.
 
         This should also set self.version and self.arch (if applicable) as a

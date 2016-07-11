@@ -3,6 +3,7 @@
 
 __all__ = [
     'cannot_modify_suite',
+    'DirectoryHash',
     'FORMAT_TO_SUBCOMPONENT',
     'GLOBAL_PUBLISHER_LOCK',
     'Publisher',
@@ -1477,16 +1478,16 @@ class Publisher(object):
 class DirectoryHash:
     """Represents a directory hierarchy for hashing."""
 
-    def __init__(self, root, tmpdir, log):
+    def __init__(self, root, tmpdir, signer=None):
         self.root = root
         self.tmpdir = tmpdir
-        self.log = log
+        self.signer = signer
         self.checksum_hash = []
 
         for usable in self._usable_archive_hashes:
-            checksum_file = os.path.join(self.root, usable.dh_name)
-            self.checksum_hash.append(
-                (RepositoryIndexFile(checksum_file, self.tmpdir), usable))
+            csum_path = os.path.join(self.root, usable.dh_name)
+            self.checksum_hash.append((csum_path,
+                RepositoryIndexFile(csum_path, self.tmpdir), usable))
 
     def __enter__(self):
         return self
@@ -1504,7 +1505,7 @@ class DirectoryHash:
         """Add a path to be checksummed."""
         hashes = [
             (checksum_file, archive_hash.hash_factory())
-            for (checksum_file, archive_hash) in self.checksum_hash]
+            for (_, checksum_file, archive_hash) in self.checksum_hash]
         with open(path, 'rb') as in_file:
             for chunk in iter(lambda: in_file.read(256 * 1024), ""):
                 for (checksum_file, hashobj) in hashes:
@@ -1521,5 +1522,7 @@ class DirectoryHash:
                 self.add(os.path.join(dirpath, filename))
 
     def close(self):
-        for (checksum_file, archive_hash) in self.checksum_hash:
+        for (checksum_path, checksum_file, archive_hash) in self.checksum_hash:
             checksum_file.close()
+            if self.signer:
+                self.signer.signFile(checksum_path)

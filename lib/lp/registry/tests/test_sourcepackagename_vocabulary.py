@@ -53,21 +53,21 @@ class TestSourcePackageNameVocabulary(TestCaseWithFactory):
                 'moths', 'moths-secret')]
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
-        for archive in ubuntu.all_distro_archives:
+        for archive in list(ubuntu.all_distro_archives):
             for spn in self.spns[:3]:
-                self.factory.makeSourcePackagePublishingHistory(
-                    distroseries=distroseries, archive=archive,
-                    sourcepackagename=spn)
+                self.factory.makeDSPCache(
+                    distroseries=distroseries, sourcepackagename=spn,
+                    archive=archive)
         ppa = self.factory.makeArchive(
             distribution=ubuntu, purpose=ArchivePurpose.PPA)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=ppa,
-            sourcepackagename=self.spns[3])
+        self.factory.makeDSPCache(
+            distroseries=distroseries, sourcepackagename=self.spns[3],
+            archive=ppa)
         private_ppa = self.factory.makeArchive(
             distribution=ubuntu, purpose=ArchivePurpose.PPA, private=True)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=private_ppa,
-            sourcepackagename=self.spns[4])
+        self.factory.makeDSPCache(
+            distroseries=distroseries, sourcepackagename=self.spns[4],
+            archive=private_ppa)
 
     def test_searchForTerms(self):
         # searchForTerms returns appropriate source package names.

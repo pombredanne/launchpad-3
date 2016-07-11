@@ -15,11 +15,11 @@ Changes:
  .
    * Another version
 Checksums-Sha1: 
- d9ccd09135965a759bd741fba1f5223a0314aac8 1115 bar_1.0-2.dsc
+ 400d018767b52d515929591abc88bd3ebaf49993 1585 bar_1.0-2.dsc
  62776c07df0412798956af8b625a9f1744c8f0fb 807 bar_1.0-2.debian.tar.bz2
 Checksums-Sha256: 
- 53ec1fb4c1671e203c433db570a667750bf4a503e4556ac2c9600389e119744a 1115 bar_1.0-2.dsc
+ 0c4d2b8004b183597c08674d6d96fcfb0f519b4c8fe7590233277abe4b41b15d 1585 bar_1.0-2.dsc
  a2a4a82e6f6b212e7de11df327fea18bf2b8e846d221e417b0a479d0f8bf9d79 807 bar_1.0-2.debian.tar.bz2
 Files: 
- 014288c2cdeca7a9a5e3201aca044c3b 1115 devel optional bar_1.0-2.dsc
+ e6ec6a0a747885aaee312b1a598dbf39 1585 devel optional bar_1.0-2.dsc
  8b17b1469943483df4d5093955553992 807 devel optional bar_1.0-2.debian.tar.bz2

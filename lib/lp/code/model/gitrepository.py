@@ -152,6 +152,7 @@ from lp.services.propertycache import (
 from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 object_type_map = {
@@ -1004,6 +1005,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         for recipe in self._getRecipes(paths):
             recipe.is_stale = True
 
+    def markSnapsStale(self, paths):
+        """See `IGitRepository`."""
+        snap_set = getUtility(ISnapSet)
+        for snap in snap_set.findByGitRepository(self, paths=paths):
+            snap.is_stale = True
+
     def _markProposalMerged(self, proposal, merged_revision_id, logger=None):
         if logger is not None:
             logger.info(
@@ -1058,8 +1065,6 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
-        from lp.snappy.interfaces.snap import ISnapSet
-
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target repositories to

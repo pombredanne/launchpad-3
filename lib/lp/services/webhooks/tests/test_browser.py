@@ -17,7 +17,6 @@ import transaction
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     login_person,
     record_two_runs,
@@ -88,7 +87,6 @@ class SnapTestHelpers:
 
     def makeTarget(self):
         self.useFixture(FeatureFixture({
-            SNAP_FEATURE_FLAG: 'true',
             'webhooks.new.enabled': 'true',
             }))
         owner = self.factory.makePerson()

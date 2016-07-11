@@ -11,4 +11,5 @@ def refs_updated(repository, event):
     repository.updateMergeCommitIDs(event.paths)
     repository.scheduleDiffUpdates(event.paths)
     repository.markRecipesStale(event.paths)
+    repository.markSnapsStale(event.paths)
     repository.detectMerges(event.paths, logger=event.logger)

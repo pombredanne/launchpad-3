@@ -455,7 +455,7 @@ class FormattersAPI:
             if path.isdigit():
                 return FormattersAPI._linkify_bug_number(
                     lp_url, path, trailers)
-            url = '/+branch/%s' % path
+            url = '/+code/%s' % path
             # Mark the links with a 'branch-short-link' class so they can be
             # harvested and validated when the page is rendered.
             return structured(

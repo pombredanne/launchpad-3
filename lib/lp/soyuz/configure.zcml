@@ -239,24 +239,6 @@
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageName"/>
         </class>
-        <securedutility
-            name="BinaryPackageName"
-            component="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary"
-            provides="zope.schema.interfaces.IVocabularyFactory">
-          <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-        </securedutility>
-
-        <class class="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary">
-          <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
-        </class>
-
-        <!-- BinaryPackagenameIterator -->
-
-        <class
-            class="lp.soyuz.model.binarypackagename.BinaryPackageNameIterator">
-            <allow
-                interface="lp.services.webapp.vocabulary.ICountableIterator"/>
-        </class>
 
         <!-- BinaryPackageNameSet -->
 

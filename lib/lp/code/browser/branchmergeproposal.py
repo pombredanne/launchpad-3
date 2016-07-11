@@ -477,6 +477,14 @@ class BranchMergeProposalStatusMixin:
             terms.append(SimpleTerm(status, status.name, title))
         return SimpleVocabulary(terms)
 
+    @property
+    def source_revid(self):
+        if IBranch.providedBy(self.context.merge_source):
+            source_revid = self.context.merge_source.last_scanned_id
+        else:
+            source_revid = self.context.merge_source.commit_sha1
+        return source_revid
+
 
 class DiffRenderingMixin:
     """A mixin class for handling diff text."""
@@ -758,16 +766,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def status_config(self):
         """The config to configure the ChoiceSource JS widget."""
-        if IBranch.providedBy(self.context.merge_source):
-            source_revid = self.context.merge_source.last_scanned_id
-        else:
-            source_revid = self.context.merge_source.commit_sha1
         return simplejson.dumps({
             'status_widget_items': vocabulary_to_choice_edit_items(
                 self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
-            'source_revid': source_revid,
+            'source_revid': self.source_revid,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
             })

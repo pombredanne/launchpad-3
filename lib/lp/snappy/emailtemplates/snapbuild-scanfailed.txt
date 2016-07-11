@@ -1,0 +1,4 @@
+Launchpad uploaded this snap package to the store, but the store failed to
+scan it:
+
+  %(store_error_message)s
