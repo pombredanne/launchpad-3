@@ -67,7 +67,6 @@ from operator import attrgetter
 import re
 
 from lazr.restful.interfaces import IReference
-from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -147,7 +146,6 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackageInDatabase,
@@ -2093,14 +2091,6 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
             distribution = spn_or_dsp.distribution
-        elif (not ISourcePackageName.providedBy(spn_or_dsp) and
-            safe_hasattr(spn_or_dsp, 'distribution')
-            and safe_hasattr(spn_or_dsp, 'sourcepackagename')):
-            # We use the hasattr checks rather than adaptation because the
-            # DistributionSourcePackageInDatabase object is a little bit
-            # broken and does not provide any interface.
-            distribution = spn_or_dsp.distribution
-            dsp = distribution.getSourcePackage(spn_or_dsp.sourcepackagename)
         else:
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
@@ -2192,4 +2182,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 DistributionSourcePackageInDatabase.sourcepackagename_id ==
                     searchable_dspc_sourcepackagename)
         results.order_by(Desc(rank), searchable_dspc_name)
-        return CountableIterator(results.count(), results, self.toTerm)
+
+        def make_term(row):
+            dspid, binary_names = row
+            dsp = dspid.distribution.getSourcePackage(dspid.sourcepackagename)
+            return self.toTerm((dsp, binary_names))
+
+        return CountableIterator(results.count(), results, make_term)
