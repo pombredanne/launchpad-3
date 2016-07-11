@@ -2183,8 +2183,6 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                              r'-%s' % query_re), 30),
                 ),
             else_=1)
-        # It might be possible to return the source name and binary names to
-        # reduce the work of the picker adapter.
         results = store.with_(searchable_dspc_cte).using(
             DistributionSourcePackageInDatabase, SearchableDSPC).find(
                 (DistributionSourcePackageInDatabase,
