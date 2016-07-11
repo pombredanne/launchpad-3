@@ -2155,10 +2155,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                     DistributionSourcePackageCache.archiveID.is_in(
                         distribution.all_distro_archive_ids),
                     DistributionSourcePackageCache.archive == None),
-                Or(
-                    DistributionSourcePackageCache.name == query,
-                    DistributionSourcePackageCache.distribution ==
-                        distribution),
+                DistributionSourcePackageCache.distribution == distribution,
                 ),
             tables=DistributionSourcePackageCache))
         SearchableDSPC = Table("SearchableDSPC")

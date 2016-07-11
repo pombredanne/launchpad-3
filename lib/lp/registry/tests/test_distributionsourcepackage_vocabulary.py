@@ -274,23 +274,6 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         terms = list(results)
         self.assertEqual(0, len(terms))
 
-    def test_searchForTerms_match_official_source_package_branch(self):
-        # An official package that is only a branch can be matched by source
-        # name if it was set as an official branch in another distro.
-        sp = self.factory.makeSourcePackage(sourcepackagename='snarf')
-        branch = self.factory.makePackageBranch(sourcepackage=sp)
-        with person_logged_in(sp.distribution.owner):
-            sp.setBranch(PackagePublishingPocket.RELEASE, branch, branch.owner)
-        distribution = self.factory.makeDistribution(name='pting')
-        self.factory.makeDistributionSourcePackage(
-            distribution=distribution, sourcepackagename='snarf',
-            with_db=True)
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='pting/snarf')
-        terms = list(results)
-        self.assertEqual(1, len(terms))
-        self.assertEqual('pting/snarf', terms[0].token)
-
     def test_searchForTerms_ranking(self):
         # Exact matches are ranked higher than similar matches.
         self.factory.makeDSPCache('fnord', 'snarf')
