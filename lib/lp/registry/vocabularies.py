@@ -2071,7 +2071,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         self.distribution = distribution
 
     def getDistributionAndPackageName(self, text):
-        "Return the distribution and package name from the parsed text."
+        """Return the distribution and package name from the parsed text."""
         # Match the toTerm() format, but also use it to select a distribution.
         distribution = None
         if '/' in text:
