@@ -75,6 +75,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Column,
     Desc,
     Join,
     LeftJoin,
@@ -82,6 +83,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Table,
     Union,
     With,
     )
@@ -2140,7 +2142,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         # Rank only what is returned: exact source name, exact binary
         # name, partial source name, and lastly partial binary name.
         searchable_dspc_cte = With("SearchableDSPC", Select(
-            (DistributionSourcePackageCache.sourcepackagenameID,
+            (DistributionSourcePackageCache.name,
+             DistributionSourcePackageCache.sourcepackagenameID,
              DistributionSourcePackageCache.binpkgnames),
             where=And(
                 Or(
@@ -2158,38 +2161,40 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                         distribution),
                 ),
             tables=DistributionSourcePackageCache))
+        SearchableDSPC = Table("SearchableDSPC")
+        searchable_dspc_name = Column("name", SearchableDSPC)
+        searchable_dspc_sourcepackagename = Column(
+            "sourcepackagename", SearchableDSPC)
+        searchable_dspc_binpkgnames = Column("binpkgnames", SearchableDSPC)
         rank = Case(
             when=(
                 # name == query
-                (SourcePackageName.name == query, 100),
-                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                (searchable_dspc_name == query, 100),
+                (RegexpMatch(searchable_dspc_binpkgnames,
                              r'(^| )%s( |$)' % query_re), 90),
                 # name.startswith(query + "-")
-                (SourcePackageName.name.startswith(query + "-"), 80),
-                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                (searchable_dspc_name.startswith(query + "-"), 80),
+                (RegexpMatch(searchable_dspc_binpkgnames,
                              r'(^| )%s-' % query_re), 70),
                 # name.startswith(query)
-                (SourcePackageName.name.startswith(query), 60),
-                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                (searchable_dspc_name.startswith(query), 60),
+                (RegexpMatch(searchable_dspc_binpkgnames,
                              r'(^| )%s' % query_re), 50),
                 # name.contains_string("-" + query)
-                (SourcePackageName.name.contains_string("-" + query), 40),
-                (RegexpMatch(SQL("SearchableDSPC.binpkgnames"),
+                (searchable_dspc_name.contains_string("-" + query), 40),
+                (RegexpMatch(searchable_dspc_binpkgnames,
                              r'-%s' % query_re), 30),
                 ),
             else_=1)
         # It might be possible to return the source name and binary names to
         # reduce the work of the picker adapter.
         results = store.with_(searchable_dspc_cte).using(
-            DistributionSourcePackageInDatabase, SourcePackageName,
-            "SearchableDSPC").find(
+            DistributionSourcePackageInDatabase, SearchableDSPC).find(
                 (DistributionSourcePackageInDatabase,
-                 SQL("SearchableDSPC.binpkgnames")),
+                 searchable_dspc_binpkgnames),
                 DistributionSourcePackageInDatabase.distribution ==
                     distribution,
                 DistributionSourcePackageInDatabase.sourcepackagename_id ==
-                    SourcePackageName.id,
-                SourcePackageName.id ==
-                    SQL("SearchableDSPC.sourcepackagename"))
-        results.order_by(Desc(rank), SourcePackageName.name)
+                    searchable_dspc_sourcepackagename)
+        results.order_by(Desc(rank), searchable_dspc_name)
         return CountableIterator(results.count(), results, self.toTerm)
