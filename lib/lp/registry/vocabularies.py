@@ -2070,8 +2070,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         """Set the distribution after the vocabulary was instantiated."""
         self.distribution = distribution
 
-    def getDistributionAndPackageName(self, text):
-        """Return the distribution and package name from the parsed text."""
+    def parseToken(self, text):
+        """Return the distribution and package name from the parsed token."""
         # Match the toTerm() format, but also use it to select a distribution.
         distribution = None
         if '/' in text:
@@ -2120,14 +2120,14 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        distribution, package_name = self.getDistributionAndPackageName(token)
+        distribution, package_name = self.parseToken(token)
         return self.toTerm(package_name, distribution)
 
     def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         if not query:
             return EmptyResultSet()
-        distribution, query = self.getDistributionAndPackageName(query)
+        distribution, query = self.parseToken(query)
         if distribution is None:
             # This could failover to ubuntu, but that is non-obvious. The
             # Python widget must set the default distribution and the JS

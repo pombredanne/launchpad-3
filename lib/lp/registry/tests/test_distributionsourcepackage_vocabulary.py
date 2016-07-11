@@ -72,35 +72,31 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary.setDistribution(new_distro)
         self.assertEqual(new_distro, vocabulary.distribution)
 
-    def test_getDistributionAndPackageName_distro_and_package(self):
-        # getDistributionAndPackageName returns a tuple of distribution and
-        # package name when the text contains both.
+    def test_parseToken_distro_and_package(self):
+        # parseToken returns a tuple of distribution and package name when
+        # the text contains both.
         new_distro = self.factory.makeDistribution(name='fnord')
         vocabulary = DistributionSourcePackageVocabulary(None)
-        distribution, package_name = vocabulary.getDistributionAndPackageName(
-            'fnord/pting')
+        distribution, package_name = vocabulary.parseToken('fnord/pting')
         self.assertEqual(new_distro, distribution)
         self.assertEqual('pting', package_name)
 
-    def test_getDistributionAndPackageName_default_distro_and_package(self):
-        # getDistributionAndPackageName returns a tuple of the default
-        # distribution and package name when the text is just a package
-        # name.
+    def test_parseToken_default_distro_and_package(self):
+        # parseToken returns a tuple of the default distribution and package
+        # name when the text is just a package name.
         default_distro = self.factory.makeDistribution(name='fnord')
         vocabulary = DistributionSourcePackageVocabulary(default_distro)
-        distribution, package_name = vocabulary.getDistributionAndPackageName(
-            'pting')
+        distribution, package_name = vocabulary.parseToken('pting')
         self.assertEqual(default_distro, distribution)
         self.assertEqual('pting', package_name)
 
-    def test_getDistributionAndPackageName_bad_distro_and_package(self):
-        # getDistributionAndPackageName returns a tuple of the default
-        # distribution and package name when the distro in the text cannot
-        # be matched to a real distro.
+    def test_parseToken_bad_distro_and_package(self):
+        # parseToken returns a tuple of the default distribution and package
+        # name when the distro in the text cannot be matched to a real
+        # distro.
         default_distro = self.factory.makeDistribution(name='fnord')
         vocabulary = DistributionSourcePackageVocabulary(default_distro)
-        distribution, package_name = vocabulary.getDistributionAndPackageName(
-            'misspelled/pting')
+        distribution, package_name = vocabulary.parseToken('misspelled/pting')
         self.assertEqual(default_distro, distribution)
         self.assertEqual('pting', package_name)
 
