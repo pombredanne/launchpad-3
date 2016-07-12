@@ -9,6 +9,6 @@ ALTER TABLE ArchiveAuthToken
 
 COMMENT ON COLUMN ArchiveAuthToken.name IS 'The name for this named token.';
 
-CREATE INDEX archiveauthtoken__archive__name__date_deactivated__idx ON ArchiveAuthToken(archive, name) WHERE date_deactivated IS NULL;
+CREATE UNIQUE INDEX archiveauthtoken__archive__name__date_deactivated__idx ON ArchiveAuthToken(archive, name) WHERE date_deactivated IS NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 79, 0);
