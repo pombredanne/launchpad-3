@@ -21,7 +21,6 @@ from lp.services.webapp import (
 from lp.services.webapp.escaping import structured
 from lp.snappy.interfaces.snap import (
     ISnapSet,
-    SNAP_FEATURE_FLAG,
     SNAP_PRIVATE_FEATURE_FLAG,
     )
 
@@ -39,15 +38,11 @@ class HasSnapsMenuMixin:
         return Link('+snaps', text, icon='info', enabled=enabled)
 
     def create_snap(self):
-        # Only enabled if the general snap feature flag is enabled
-        # for public contexts and additionally if the snap_private
-        # flag is enabled for private contexts.
-        if not bool(getFeatureFlag(SNAP_FEATURE_FLAG)):
-            enabled = False
-        else:
-            enabled = (
-                not self.context.private or
-                bool(getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG)))
+        # Only enabled if the snap_private flag is enabled for
+        # private contexts.
+        enabled = (
+            not self.context.private or
+            bool(getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG)))
 
         text = 'Create snap package'
         return Link('+new-snap', text, enabled=enabled, icon='add')
@@ -63,12 +58,6 @@ class HasSnapsViewMixin:
             context = context.branch
         return getUtility(ISnapSet).findByContext(
             context, visible_by_user=self.user)
-
-    @property
-    def show_snap_information(self):
-        return (
-            bool(getFeatureFlag(SNAP_FEATURE_FLAG)) or
-            not self.snaps.is_empty())
 
     @property
     def snaps_link(self):

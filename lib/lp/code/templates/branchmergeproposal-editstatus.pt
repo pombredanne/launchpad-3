@@ -13,7 +13,7 @@
 
     <tal:hidden-input metal:fill-slot="extra_info">
       <input type="hidden" name="revno"
-             tal:attributes="value context/source_branch/last_scanned_id"/>
+             tal:attributes="value view/source_revid"/>
     </tal:hidden-input>
 
   </div>
