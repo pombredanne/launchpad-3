@@ -42,7 +42,7 @@ __all__ = [
 
 
 from operator import attrgetter
-import urlparse
+from urlparse import urlunsplit
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
@@ -214,6 +214,7 @@ from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import UnsafeFormGetSubmissionError
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.url import urlsplit
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
@@ -1745,12 +1746,12 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 self.context.pillar))
 
     @property
-    def git_url(self):
-        base_url = urlparse.urlparse(
+    def git_ssh_url(self):
+        base_url = urlsplit(
             urlutils.join(config.codehosting.git_ssh_root, self.context.name))
-        url = base_url._replace(
-            netloc="{}@{}".format(self.user.name, base_url.hostname))
-        return url.geturl()
+        url = list(base_url)
+        url[1] = "{}@{}".format(self.user.name, base_url.hostname)
+        return urlunsplit(url)
 
     @property
     def next_url(self):

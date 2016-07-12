@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import re
+from urlparse import urlsplit
 
 from testtools.matchers import Not
 import soupmatchers
@@ -13,12 +14,14 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.views import create_initialized_view
 
 
 class TestProductSetBranchView(BrowserTestCase):
@@ -33,6 +36,18 @@ class TestProductSetBranchView(BrowserTestCase):
         project = removeSecurityProxy(project)
         url = canonical_url(project, view_name=view_name)
         return self.getUserBrowser(url, project.owner)
+
+    def test_git_ssh_url(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            view = create_initialized_view(
+                project, '+configure-code', principal=project.owner,
+                method='GET')
+            git_ssh_url = 'git+ssh://{username}@{host}/{project}'.format(
+                username=project.owner.name,
+                host=urlsplit(config.codehosting.git_ssh_root).netloc,
+                project=project.name)
+            self.assertEqual(git_ssh_url, view.git_ssh_url)
 
     def test_no_initial_git_repository(self):
         # If a project has no default Git repository, its "Git repository"
