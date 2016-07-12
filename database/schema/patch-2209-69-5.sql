@@ -5,6 +5,6 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE Snap ADD COLUMN store_channels text;
 
-COMMENT ON COLUMN Snap.store_channels IS 'Channels to which to release this snap package after uploading it to the store.';
+COMMENT ON COLUMN Snap.store_channels IS 'Channels to release this snap package to after uploading it to the store.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 69, 5);
