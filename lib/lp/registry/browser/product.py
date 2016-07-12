@@ -42,7 +42,9 @@ __all__ = [
 
 
 from operator import attrgetter
+import urlparse
 
+from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 from lazr.delegates import delegate_to
 from lazr.restful.interface import (
@@ -1741,6 +1743,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             branch_location=self.series.branch,
             git_repository_location=repository_set.getDefaultRepository(
                 self.context.pillar))
+
+    @property
+    def git_url(self):
+        base_url = urlparse.urlparse(
+            urlutils.join(config.codehosting.git_ssh_root, self.context.name))
+        url = base_url._replace(
+            netloc="{}@{}".format(self.user.name, base_url.hostname))
+        return url.geturl()
 
     @property
     def next_url(self):

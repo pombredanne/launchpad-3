@@ -20,7 +20,7 @@
     command:</p>
     <p>
       <code class="command command-block">
-        git remote add origin <tal:project replace="modules/lp.services.config/config/codehosting/git_ssh_root"/><tal:project replace="context/name"/><br />
+        git remote add origin <span tal:content="string:${view/git_url}"></span><br />
     </code></p>
     <p>&hellip; and push the Git branch to Launchpad with:</p>
     <p>
