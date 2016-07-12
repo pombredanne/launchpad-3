@@ -19,23 +19,15 @@ from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
-class TestProductSetBranchView(BrowserTestCase):
+class TestProductSetBranchView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    editsshkeys_tag = soupmatchers.Tag(
-        'edit SSH keys', 'a', text=re.compile('register an SSH key'),
-        attrs={'href': re.compile(r'/\+editsshkeys$')})
-
-    def getBrowser(self, project, view_name=None):
-        project = removeSecurityProxy(project)
-        url = canonical_url(project, view_name=view_name)
-        return self.getUserBrowser(url, project.owner)
 
     def test_git_ssh_url(self):
         project = self.factory.makeProduct()
@@ -48,6 +40,20 @@ class TestProductSetBranchView(BrowserTestCase):
                 host=urlsplit(config.codehosting.git_ssh_root).netloc,
                 project=project.name)
             self.assertEqual(git_ssh_url, view.git_ssh_url)
+
+
+class TestBrowserProductSetBranchView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    editsshkeys_tag = soupmatchers.Tag(
+        'edit SSH keys', 'a', text=re.compile('register an SSH key'),
+        attrs={'href': re.compile(r'/\+editsshkeys$')})
+
+    def getBrowser(self, project, view_name=None):
+        project = removeSecurityProxy(project)
+        url = canonical_url(project, view_name=view_name)
+        return self.getUserBrowser(url, project.owner)
 
     def test_no_initial_git_repository(self):
         # If a project has no default Git repository, its "Git repository"
