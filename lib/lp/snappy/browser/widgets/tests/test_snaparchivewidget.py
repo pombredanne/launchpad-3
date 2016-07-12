@@ -20,14 +20,10 @@ from zope.formlib.interfaces import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
-from lp.snappy.interfaces.snap import (
-    ISnap,
-    SNAP_FEATURE_FLAG,
-    )
+from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.vocabularies import PPAVocabulary
@@ -50,7 +46,6 @@ class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapArchiveWidget, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.distroseries = self.factory.makeDistroSeries()
         field = Reference(
             __name__="archive", schema=IArchive, title=u"Archive")

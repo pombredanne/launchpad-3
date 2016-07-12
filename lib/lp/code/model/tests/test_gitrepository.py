@@ -118,7 +118,6 @@ from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -659,7 +658,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
     def test_snap_requirements(self):
         # If a repository is used by a snap package, the deletion
         # requirements indicate this.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         [ref] = self.factory.makeGitRefs()
         self.factory.makeSnap(git_ref=ref)
         self.assertEqual(
@@ -669,7 +667,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
     def test_snap_deletion(self):
         # break_references allows deleting a repository used by a snap package.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         repository = self.factory.makeGitRepository()
         [ref1, ref2] = self.factory.makeGitRefs(
             repository=repository, paths=[u"refs/heads/1", u"refs/heads/2"])
@@ -1949,10 +1946,6 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
 class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
-
-    def setUp(self):
-        super(TestGitRepositoryMarkSnapsStale, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
 
     def test_same_repository(self):
         # On ref changes, snap packages using this ref become stale.

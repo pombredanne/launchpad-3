@@ -59,19 +59,15 @@ from lp.snappy.browser.snap import (
 from lp.snappy.interfaces.snap import (
     CannotModifySnapProcessor,
     ISnapSet,
-    SNAP_FEATURE_FLAG,
     SNAP_TESTING_FLAGS,
-    SnapFeatureDisabled,
     SnapPrivateFeatureDisabled,
     )
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
-    feature_flags,
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -124,24 +120,16 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, we will not create new Snaps.
-        branch = self.factory.makeAnyBranch()
-        self.assertRaises(
-            SnapFeatureDisabled, create_initialized_view, branch, "+new-snap")
-
     def test_private_feature_flag_disabled(self):
         # Without a private_snap feature flag, we will not create Snaps for
         # private contexts.
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        with feature_flags():
-            set_feature_flag(SNAP_FEATURE_FLAG, u'on')
-            with person_logged_in(owner):
-                self.assertRaises(
-                    SnapPrivateFeatureDisabled, create_initialized_view,
-                    branch, "+new-snap")
+        with person_logged_in(owner):
+            self.assertRaises(
+                SnapPrivateFeatureDisabled, create_initialized_view,
+                branch, "+new-snap")
 
 
 class TestSnapAddView(BrowserTestCase):
@@ -159,6 +147,28 @@ class TestSnapAddView(BrowserTestCase):
         with admin_logged_in():
             self.snappyseries = self.factory.makeSnappySeries(
                 usable_distro_series=[self.distroseries])
+
+    def setUpDistroSeries(self):
+        """Set up a distroseries with some available processors."""
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        processor_names = ["386", "amd64", "hppa"]
+        for name in processor_names:
+            processor = getUtility(IProcessorSet).getByName(name)
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, architecturetag=name,
+                processor=processor)
+        with admin_logged_in():
+            self.factory.makeSnappySeries(usable_distro_series=[distroseries])
+        return distroseries
+
+    def assertProcessorControls(self, processors_control, enabled, disabled):
+        matchers = [
+            MatchesStructure.byEquality(optionValue=name, disabled=False)
+            for name in enabled]
+        matchers.extend([
+            MatchesStructure.byEquality(optionValue=name, disabled=True)
+            for name in disabled])
+        self.assertThat(processors_control.controls, MatchesSetwise(*matchers))
 
     def test_initial_distroseries(self):
         # The initial distroseries is the newest that is current or in
@@ -275,12 +285,8 @@ class TestSnapAddView(BrowserTestCase):
             information_type=InformationType.USERDATA)
 
         browser = self.getViewBrowser(branch, user=self.person)
-        browser.getLink('Create snap package')
-
-        with FeatureFixture({SNAP_FEATURE_FLAG: u'on'}):
-            browser = self.getViewBrowser(branch, user=self.person)
-            self.assertRaises(
-                LinkNotFoundError, browser.getLink, "Create snap package")
+        self.assertRaises(
+            LinkNotFoundError, browser.getLink, "Create snap package")
 
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.
@@ -362,6 +368,47 @@ class TestSnapAddView(BrowserTestCase):
             "macaroon_caveat_id": ["dummy"],
             }
         self.assertEqual(expected_args, parse_qs(parsed_location[3]))
+
+    def test_create_new_snap_display_processors(self):
+        branch = self.factory.makeAnyBranch()
+        distroseries = self.setUpDistroSeries()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        processors = browser.getControl(name="field.processors")
+        self.assertContentEqual(
+            ["Intel 386 (386)", "AMD 64bit (amd64)", "HPPA Processor (hppa)"],
+            [extract_text(option) for option in processors.displayOptions])
+        self.assertContentEqual(["386", "amd64", "hppa"], processors.options)
+        self.assertContentEqual(["386", "amd64", "hppa"], processors.value)
+
+    def test_create_new_snap_display_restricted_processors(self):
+        # A restricted processor is shown disabled in the UI.
+        branch = self.factory.makeAnyBranch()
+        distroseries = self.setUpDistroSeries()
+        proc_armhf = self.factory.makeProcessor(
+            name="armhf", restricted=True, build_by_default=False)
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="armhf",
+            processor=proc_armhf)
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        processors = browser.getControl(name="field.processors")
+        self.assertProcessorControls(
+            processors, ["386", "amd64", "hppa"], ["armhf"])
+
+    def test_create_new_snap_processors(self):
+        branch = self.factory.makeAnyBranch()
+        distroseries = self.setUpDistroSeries()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        processors = browser.getControl(name="field.processors")
+        processors.value = ["386", "amd64"]
+        browser.getControl(name="field.name").value = "snap-name"
+        browser.getControl("Create snap package").click()
+        login_person(self.person)
+        snap = getUtility(ISnapSet).getByName(self.person, u"snap-name")
+        self.assertContentEqual(
+            ["386", "amd64"], [proc.name for proc in snap.processors])
 
     def test_initial_name_extraction_git(self):
         [git_ref] = self.factory.makeGitRefs()

@@ -113,6 +113,7 @@ The summary is shown.
     Branches
     Active reviews
     Source package recipes
+    Snap packages
 
 Now we'll create another branch, and unsubscribe the owner from it.
 
@@ -127,3 +128,4 @@ Now we'll create another branch, and unsubscribe the owner from it.
     Branches
     Active reviews
     Source package recipes
+    Snap packages
