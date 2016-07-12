@@ -439,8 +439,8 @@ class ISnapEditableAttributes(IHasOwner):
         value_type=TextLine(), title=_("Store channels"),
         required=False, readonly=False,
         description=_(
-            "Channels to which to release this snap package after "
-            "uploading it to the store."))
+            "Channels to release this snap package to after uploading it to "
+            "the store."))
 
 
 class ISnapAdminAttributes(Interface):
