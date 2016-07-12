@@ -7,6 +7,10 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.component import getUtility
 from zope.formlib.interfaces import (
     IBrowserWidget,
@@ -34,12 +38,18 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestSnapArchiveWidgetMixin:
+class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
+
+    scenarios = [
+        ("Snap", {"context_type": "snap"}),
+        ("Branch", {"context_type": "branch"}),
+        ("GitRepository", {"context_type": "git_repository"}),
+        ]
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestSnapArchiveWidgetMixin, self).setUp()
+        super(TestSnapArchiveWidget, self).setUp()
         self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.distroseries = self.factory.makeDistroSeries()
         field = Reference(
@@ -48,6 +58,16 @@ class TestSnapArchiveWidgetMixin:
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
         self.widget = SnapArchiveWidget(field, request)
+
+    def makeContext(self, distroseries):
+        if self.context_type == "snap":
+            return self.factory.makeSnap(distroseries=distroseries)
+        elif self.context_type == "branch":
+            return self.factory.makeAnyBranch()
+        elif self.context_type == "git_repository":
+            return self.factory.makeGitRepository()
+        else:
+            raise AssertionError("Unknown context type %s" % self.context_type)
 
     def test_implements(self):
         self.assertTrue(verifyObject(IBrowserWidget, self.widget))
@@ -255,22 +275,4 @@ class TestSnapArchiveWidgetMixin:
         self.assertContentEqual(expected_ids, ids)
 
 
-class TestSnapArchiveWidgetForSnap(
-    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
-
-    def makeContext(self, distroseries):
-        return self.factory.makeSnap(distroseries=distroseries)
-
-
-class TestSnapArchiveWidgetForBranch(
-    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
-
-    def makeContext(self, distroseries):
-        return self.factory.makeAnyBranch()
-
-
-class TestSnapArchiveWidgetForGitRepository(
-    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
-
-    def makeContext(self, distroseries):
-        return self.factory.makeGitRepository()
+load_tests = load_tests_apply_scenarios
