@@ -188,7 +188,6 @@
   <dl class="revision">
     <!-- Display the extended revision listing -->
     <tal:revision repeat="rev_info revision_info"
-                  define="codebrowse view/codebrowse_url"
                   condition="revision_info | nothing">
       <div tal:define="rev_no python:rev_info['revision']">
         <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
@@ -196,7 +195,6 @@
     </tal:revision>
     <!-- Display the standard revision listing -->
     <tal:revision repeat="rev_no revisions"
-                  define="codebrowse view/codebrowse_url"
                   condition="revisions | nothing">
       <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
@@ -206,8 +204,9 @@
   <div class="revision-group-diff" tal:condition="revisions | nothing">
         <a href="#" class="hidden expander-icon js-action"
             tal:define="start_revno python:revisions[0].sequence;
-       last_revno python:revisions[-1].sequence"
-       tal:attributes="id string:expandable-${start_revno}-${last_revno}"
+                        prev_revno python:revisions[0].sequence - 1;
+                        last_revno python:revisions[-1].sequence"
+       tal:attributes="id string:expandable-${prev_revno}-${last_revno}"
     >Changes added by revision <tal:revno replace="start_revno">1</tal:revno>
       <tal:plural condition="python: start_revno!=last_revno">
         to revision <tal:revno replace="last_revno">2</tal:revno>
@@ -229,7 +228,6 @@
         or
           rev_info - a dict of the branch revision information (revision,
                      merge_proposal, linked_bugtasks) to be displayed.
-      codebrowse - the branch's codebrowse root.
 
     It is expected that this macro is called from within a definition
     list (<dl></dl>)
@@ -240,7 +238,7 @@
       has no whitespace between the elements as we do not want any
       space between the number and the fullstop.
     </tal:comment>
-    <a tal:attributes="href string:${codebrowse}/revision/${rev_no/sequence}"
+    <a tal:attributes="href python: branch.getCodebrowseUrlForRevision(rev_no.sequence)"
        tal:content="rev_no/sequence"
        tal:condition="rev_no/branch/code_is_browseable">
       1

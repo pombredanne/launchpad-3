@@ -24,10 +24,20 @@ from lp.services.openid.model.openididentifier import OpenIdIdentifier
 class CurrentOpenIDEndPoint:
     """A utility for working with multiple OpenID End Points."""
 
-    @classmethod
-    def getServiceURL(cls):
+    @staticmethod
+    def getServiceURL():
         """The OpenID server URL (/+openid) for the current request."""
         return config.launchpad.openid_provider_root + '+openid'
+
+    @staticmethod
+    def getAllRootURLs():
+        """All configured OpenID provider root URLs."""
+        yield config.launchpad.openid_provider_root
+        alternate_roots = config.launchpad.openid_alternate_provider_roots
+        if alternate_roots:
+            for root in [r.strip() for r in alternate_roots.split(',')]:
+                if root:
+                    yield root
 
 
 @adapter(IAccount)
@@ -61,6 +71,15 @@ class OpenIDPersistentIdentity:
             return None
         else:
             return '+id/' + identifier.identifier
+
+    @property
+    def openid_canonical_url(self):
+        openid_identifier = self.openid_identifier
+        if openid_identifier is None:
+            return None
+        return (
+            config.launchpad.openid_canonical_root +
+            openid_identifier.encode('ascii'))
 
 
 @adapter(IPerson)

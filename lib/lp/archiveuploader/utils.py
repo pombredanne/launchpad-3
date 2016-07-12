@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive uploader utilities."""
@@ -19,6 +19,7 @@ __all__ = [
     're_isadeb',
     're_issource',
     're_is_component_orig_tar_ext',
+    're_is_component_orig_tar_ext_sig',
     're_no_epoch',
     're_no_revision',
     're_valid_version',
@@ -67,12 +68,15 @@ re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 
 source_file_exts = [
-    'orig(?:-.+)?\.tar\.(?:gz|bz2|xz)', 'diff.gz',
+    'orig(?:-.+)?\.tar\.(?:gz|bz2|xz)(?:\.asc)?', 'diff.gz',
     '(?:debian\.)?tar\.(?:gz|bz2|xz)', 'dsc']
 re_issource = re.compile(
     r"([^_]+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
 re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2|xz)$")
+re_is_component_orig_tar_ext_sig = re.compile(
+    r"^orig-(.+).tar.(?:gz|bz2|xz)\.asc$")
 re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2|xz)$")
+re_is_orig_tar_ext_sig = re.compile(r"^orig.tar.(?:gz|bz2|xz)\.asc$")
 re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2|xz)$")
 re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2|xz)$")
 
@@ -115,6 +119,10 @@ def determine_source_file_type(filename):
         return SourcePackageFileType.DEBIAN_TARBALL
     elif re_is_native_tar_ext.match(extension):
         return SourcePackageFileType.NATIVE_TARBALL
+    elif re_is_orig_tar_ext_sig.match(extension):
+        return SourcePackageFileType.ORIG_TARBALL_SIGNATURE
+    elif re_is_component_orig_tar_ext_sig.match(extension):
+        return SourcePackageFileType.COMPONENT_ORIG_TARBALL_SIGNATURE
     else:
         return None
 

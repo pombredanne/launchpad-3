@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,7 @@ __all__ = [
     'ArrayContains',
     'ArrayIntersects',
     'BulkUpdate',
+    'Case',
     'ColumnSelect',
     'Concatenate',
     'CountDistinct',
@@ -19,6 +20,7 @@ __all__ = [
     'NullCount',
     'NullsFirst',
     'NullsLast',
+    'RegexpMatch',
     'rank_by_fti',
     'TryAdvisoryLock',
     'Unnest',
@@ -26,7 +28,10 @@ __all__ = [
     ]
 
 from storm import Undef
-from storm.exceptions import ClassInfoError
+from storm.exceptions import (
+    ClassInfoError,
+    ExprError,
+    )
 from storm.expr import (
     BinaryOper,
     COLUMN_NAME,
@@ -36,6 +41,7 @@ from storm.expr import (
     EXPR,
     Expr,
     In,
+    Like,
     NamedFunc,
     Or,
     SQL,
@@ -226,6 +232,40 @@ class NullsLast(SuffixExpr):
     """Order null values after non-null values."""
     __slots__ = ()
     suffix = "NULLS LAST"
+
+
+class Case(Expr):
+    """Generic conditional expression."""
+    __slots__ = ("when", "else_")
+
+    def __init__(self, when, else_=None):
+        if not when:
+            raise ExprError("Must specify at least one WHEN clause")
+        self.when = when
+        self.else_ = else_
+
+
+@compile.when(Case)
+def compile_case(compile, expr, state):
+    tokens = ["CASE"]
+    for condition, result in expr.when:
+        tokens.append(" WHEN ")
+        tokens.append(compile(condition, state))
+        tokens.append(" THEN ")
+        tokens.append(compile(result, state))
+    if expr.else_ is not None:
+        tokens.append(" ELSE ")
+        tokens.append(compile(expr.else_, state))
+    tokens.append(" END")
+    return "".join(tokens)
+
+
+class RegexpMatch(BinaryOper):
+    __slots__ = ()
+    oper = " ~ "
+
+
+compile.set_precedence(compile.get_precedence(Like), RegexpMatch)
 
 
 def get_where_for_reference(reference, other):

@@ -6,6 +6,7 @@ __all__ = [
     'get_git_repository_privacy_filter',
     'GitRepository',
     'GitRepositorySet',
+    'parse_git_commits',
     ]
 
 from datetime import datetime
@@ -151,6 +152,7 @@ from lp.services.propertycache import (
 from lp.services.webapp.authorization import available_with_permission
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.interfaces.snap import ISnapSet
 
 
 object_type_map = {
@@ -159,6 +161,57 @@ object_type_map = {
     "blob": GitObjectType.BLOB,
     "tag": GitObjectType.TAG,
     }
+
+
+def parse_git_commits(commits):
+    """Parse commit information returned by turnip.
+
+    :param commits: A list of turnip-formatted commit object dicts.
+    :return: A dict mapping sha1 identifiers of commits to parsed commit
+        dicts: keys may include "sha1", "author_date", "author_addr",
+        "author", "committer_date", "committer_addr", "committer", and
+        "commit_message".
+    """
+    parsed = {}
+    authors_to_acquire = []
+    committers_to_acquire = []
+    for commit in commits:
+        if "sha1" not in commit:
+            continue
+        info = {"sha1": commit["sha1"]}
+        author = commit.get("author")
+        if author is not None:
+            if "time" in author:
+                info["author_date"] = datetime.fromtimestamp(
+                    author["time"], tz=pytz.UTC)
+            if "name" in author and "email" in author:
+                author_addr = email.utils.formataddr(
+                    (author["name"], author["email"]))
+                info["author_addr"] = author_addr
+                authors_to_acquire.append(author_addr)
+        committer = commit.get("committer")
+        if committer is not None:
+            if "time" in committer:
+                info["committer_date"] = datetime.fromtimestamp(
+                    committer["time"], tz=pytz.UTC)
+            if "name" in committer and "email" in committer:
+                committer_addr = email.utils.formataddr(
+                    (committer["name"], committer["email"]))
+                info["committer_addr"] = committer_addr
+                committers_to_acquire.append(committer_addr)
+        if "message" in commit:
+            info["commit_message"] = commit["message"]
+        parsed[commit["sha1"]] = info
+    revision_authors = getUtility(IRevisionSet).acquireRevisionAuthors(
+        authors_to_acquire + committers_to_acquire)
+    for info in parsed.values():
+        author = revision_authors.get(info.get("author_addr"))
+        if author is not None:
+            info["author"] = author
+        committer = revision_authors.get(info.get("committer_addr"))
+        if committer is not None:
+            info["committer"] = committer
+    return parsed
 
 
 def git_repository_modified(repository, event):
@@ -520,8 +573,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         columns = [getattr(GitRef, name) for name in column_names]
         values = [
             (self.id, path, info["sha1"], info["type"],
-             info.get("author"), info.get("author_date"),
-             info.get("committer"), info.get("committer_date"),
+             info["author"].id if "author" in info else None,
+             info.get("author_date"),
+             info["committer"].id if "committer" in info else None,
+             info.get("committer_date"),
              info.get("commit_message"))
             for path, info in refs_info.items()]
         db_values = dbify_values(values)
@@ -602,47 +657,13 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def fetchRefCommits(hosting_path, refs, logger=None):
         """See `IGitRepository`."""
         oids = sorted(set(info["sha1"] for info in refs.values()))
-        commits = {
-            commit.get("sha1"): commit
-            for commit in getUtility(IGitHostingClient).getCommits(
-                hosting_path, oids, logger=logger)}
-        authors_to_acquire = []
-        committers_to_acquire = []
+        commits = parse_git_commits(
+            getUtility(IGitHostingClient).getCommits(
+                hosting_path, oids, logger=logger))
         for info in refs.values():
             commit = commits.get(info["sha1"])
-            if commit is None:
-                continue
-            author = commit.get("author")
-            if author is not None:
-                if "time" in author:
-                    info["author_date"] = datetime.fromtimestamp(
-                        author["time"], tz=pytz.UTC)
-                if "name" in author and "email" in author:
-                    author_addr = email.utils.formataddr(
-                        (author["name"], author["email"]))
-                    info["author_addr"] = author_addr
-                    authors_to_acquire.append(author_addr)
-            committer = commit.get("committer")
-            if committer is not None:
-                if "time" in committer:
-                    info["committer_date"] = datetime.fromtimestamp(
-                        committer["time"], tz=pytz.UTC)
-                if "name" in committer and "email" in committer:
-                    committer_addr = email.utils.formataddr(
-                        (committer["name"], committer["email"]))
-                    info["committer_addr"] = committer_addr
-                    committers_to_acquire.append(committer_addr)
-            if "message" in commit:
-                info["commit_message"] = commit["message"]
-        revision_authors = getUtility(IRevisionSet).acquireRevisionAuthors(
-            authors_to_acquire + committers_to_acquire)
-        for info in refs.values():
-            author = revision_authors.get(info.get("author_addr"))
-            if author is not None:
-                info["author"] = author.id
-            committer = revision_authors.get(info.get("committer_addr"))
-            if committer is not None:
-                info["committer"] = committer.id
+            if commit is not None:
+                info.update(commit)
 
     def synchroniseRefs(self, refs_to_upsert, refs_to_remove, logger=None):
         """See `IGitRepository`."""
@@ -984,6 +1005,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         for recipe in self._getRecipes(paths):
             recipe.is_stale = True
 
+    def markSnapsStale(self, paths):
+        """See `IGitRepository`."""
+        snap_set = getUtility(ISnapSet)
+        for snap in snap_set.findByGitRepository(self, paths=paths):
+            snap.is_stale = True
+
     def _markProposalMerged(self, proposal, merged_revision_id, logger=None):
         if logger is not None:
             logger.info(
@@ -1011,6 +1038,17 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                     self._markProposalMerged(
                         proposal, merged_revision_id, logger=logger)
 
+    def getBlob(self, filename, rev=None):
+        """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
+        return hosting_client.getBlob(self.getInternalPath(), filename, rev)
+
+    def getDiff(self, old, new):
+        """See `IGitRepository`."""
+        hosting_client = getUtility(IGitHostingClient)
+        diff = hosting_client.getDiff(self.getInternalPath(), old, new)
+        return diff["patch"]
+
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.
@@ -1027,8 +1065,6 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         As well as the dictionaries, this method returns two list of callables
         that may be called to perform the alterations and deletions needed.
         """
-        from lp.snappy.interfaces.snap import ISnapSet
-
         alteration_operations = []
         deletion_operations = []
         # Merge proposals require their source and target repositories to
@@ -1216,7 +1252,7 @@ class GitRepositorySet:
     def getRepositories(self, user, target):
         """See `IGitRepositorySet`."""
         collection = IGitCollection(target).visibleByUser(user)
-        return collection.getRepositories(eager_load=True)
+        return collection.getRepositories(eager_load=True, order_by_id=True)
 
     def getRepositoryVisibilityInfo(self, user, person, repository_names):
         """See `IGitRepositorySet`."""

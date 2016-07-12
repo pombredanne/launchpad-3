@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -11,6 +11,7 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
+import hashlib
 import re
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -22,8 +23,12 @@ from soupmatchers import (
     Tag,
     )
 from testtools.matchers import (
+    Equals,
+    Is,
+    MatchesDict,
     MatchesListwise,
     MatchesRegex,
+    MatchesSetwise,
     MatchesStructure,
     Not,
     )
@@ -59,6 +64,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
@@ -87,6 +93,8 @@ from lp.testing import (
     time_counter,
     verifyObject,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -94,9 +102,20 @@ from lp.testing.layers import (
 from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
+    first_tag_by_class,
     get_feedback_messages,
     )
 from lp.testing.views import create_initialized_view
+
+
+class GitHostingClientMixin:
+
+    def setUp(self):
+        super(GitHostingClientMixin, self).setUp()
+        self.hosting_client = FakeMethod()
+        self.hosting_client.getLog = FakeMethod(result=[])
+        self.useFixture(
+            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
 
 
 class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
@@ -219,8 +238,11 @@ class TestBranchMergeProposalMergedViewBzr(
 
 
 class TestBranchMergeProposalMergedViewGit(
-    TestBranchMergeProposalMergedViewMixin, BrowserTestCase):
+    TestBranchMergeProposalMergedViewMixin, GitHostingClientMixin,
+    BrowserTestCase):
     """Tests for `BranchMergeProposalMergedView` for Git."""
+
+    layer = LaunchpadFunctionalLayer
 
     arbitrary_revisions = ("0" * 40, "1" * 40, "2" * 40)
     merged_revision_text = 'Merged Revision ID'
@@ -1015,8 +1037,11 @@ class TestBranchMergeProposalRequestReviewViewBzr(
 
 
 class TestBranchMergeProposalRequestReviewViewGit(
-    TestBranchMergeProposalRequestReviewViewMixin, BrowserTestCase):
+    TestBranchMergeProposalRequestReviewViewMixin, GitHostingClientMixin,
+    BrowserTestCase):
     """Test `BranchMergeProposalRequestReviewView` for Git."""
+
+    layer = LaunchpadFunctionalLayer
 
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
@@ -1245,10 +1270,10 @@ class TestResubmitBrowserBzr(BrowserTestCase):
             self.assertEqual('flibble', bmp.superseded_by.description)
 
 
-class TestResubmitBrowserGit(BrowserTestCase):
+class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
     """Browser tests for resubmitting branch merge proposals for Git."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_resubmit_text(self):
         """The text of the resubmit page is as expected."""
@@ -1425,7 +1450,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             [diff],
             [comment.diff for comment in comments])
 
-    def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
+    def test_CodeReviewNewRevisions_implements_interface_bzr(self):
         # The browser helper class implements its interface.
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
         revision_date = review_date + timedelta(days=1)
@@ -1437,6 +1462,36 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         new_revisions = view.conversation.comments[0]
 
         self.assertTrue(verifyObject(ICodeReviewNewRevisions, new_revisions))
+
+    def test_CodeReviewNewRevisions_implements_interface_git(self):
+        # The browser helper class implements its interface.
+        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        author = self.factory.makePerson()
+        with person_logged_in(author):
+            author_email = author.preferredemail.email
+        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+        review_date = self.factory.getUniqueDate()
+        commit_date = self.factory.getUniqueDate()
+        bmp = self.factory.makeBranchMergeProposalForGit(
+            date_created=review_date)
+        hosting_client = FakeMethod()
+        hosting_client.getLog = FakeMethod(result=[
+            {
+                u'sha1': unicode(hashlib.sha1(b'0').hexdigest()),
+                u'message': u'0',
+                u'author': {
+                    u'name': author.display_name,
+                    u'email': author_email,
+                    u'time': int((commit_date - epoch).total_seconds()),
+                    },
+                }
+            ])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+
+        view = create_initialized_view(bmp, '+index')
+        new_commits = view.conversation.comments[0]
+
+        self.assertTrue(verifyObject(ICodeReviewNewRevisions, new_commits))
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
@@ -1510,10 +1565,38 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 content=description[:497] + '...'))
         self.assertThat(browser.contents, HTMLContains(expected_meta))
 
+    def test_unmerged_commits_from_deleted_git_ref(self):
+        # Even if the source Git ref has been deleted, we still know its tip
+        # SHA-1 and can ask the repository for its unmerged commits.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        sha1 = unicode(hashlib.sha1(b'0').hexdigest())
+        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+        commit_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
+        hosting_client = FakeMethod()
+        hosting_client.getLog = FakeMethod(result=[
+            {
+                u'sha1': sha1,
+                u'message': u'Sample message',
+                u'author': {
+                    u'name': 'Example Person',
+                    u'email': 'person@example.org',
+                    u'time': int((commit_date - epoch).total_seconds()),
+                    },
+                }
+            ])
+        bmp.source_git_repository.removeRefs([bmp.source_git_path])
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        browser = self.getUserBrowser(canonical_url(bmp, rootsite='code'))
+        tag = first_tag_by_class(browser.contents, 'commit-details')
+        self.assertEqual(
+            "%.7s...\nby\nExample Person &lt;person@example.org&gt;\n"
+            "on 2015-01-01" % sha1, extract_text(tag))
 
-class TestBranchMergeProposalBrowserView(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+class TestBranchMergeProposalBrowserView(
+    GitHostingClientMixin, BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
 
     def test_prerequisite_bzr(self):
         # A prerequisite branch is rendered in the Bazaar case.
@@ -1532,6 +1615,43 @@ class TestBranchMergeProposalBrowserView(BrowserTestCase):
         text = self.getMainText(bmp, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace(
             'Prerequisite: ' + re.escape(identity), text)
+
+    def test_git_hosting_calls(self):
+        # Rendering a Git-based merge proposal makes the correct calls to
+        # the hosting service, including requesting cross-repository
+        # information.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        self.getMainText(bmp, '+index')
+        self.assertThat(self.hosting_client.getLog.calls, MatchesSetwise(
+            # _getNewerRevisions
+            MatchesListwise([
+                Equals((
+                    '%s:%s' % (
+                        bmp.target_git_repository.getInternalPath(),
+                        bmp.source_git_repository.getInternalPath()),
+                    bmp.source_git_commit_sha1,
+                    )),
+                MatchesDict({
+                    'stop': Equals(bmp.target_git_commit_sha1),
+                    'limit': Is(None),
+                    'logger': Is(None),
+                    }),
+                ]),
+            # getUnlandedSourceBranchRevisions
+            MatchesListwise([
+                Equals((
+                    '%s:%s' % (
+                        bmp.target_git_repository.getInternalPath(),
+                        bmp.source_git_repository.getInternalPath()),
+                    bmp.source_git_commit_sha1,
+                    )),
+                MatchesDict({
+                    'stop': Equals(bmp.target_git_commit_sha1),
+                    'limit': Equals(10),
+                    'logger': Is(None),
+                    }),
+                ]),
+            ))
 
 
 class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
@@ -1638,6 +1758,18 @@ class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
                 object=MatchesStructure.byEquality(
                     queue_status=BranchMergeProposalStatus.NEEDS_REVIEW))]))
 
+    def test_source_revid_bzr(self):
+        view = self._createView()
+        self.assertEqual(
+            self.proposal.merge_source.last_scanned_id, view.source_revid)
+
+    def test_source_revid_git(self):
+        git_proposal = self.factory.makeBranchMergeProposalForGit()
+        view = BranchMergeProposalChangeStatusView(
+            git_proposal, LaunchpadTestRequest())
+        self.assertEqual(
+            git_proposal.merge_source.commit_sha1, view.source_revid)
+
 
 class TestCommentAttachmentRendering(TestCaseWithFactory):
     """Test diff attachments are rendered correctly."""
@@ -1711,7 +1843,7 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
         self.assertEqual('Eric on 2008-09-10', view.status_title)
 
 
-class TestBranchMergeProposal(BrowserTestCase):
+class TestBranchMergeProposal(GitHostingClientMixin, BrowserTestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -1903,8 +2035,11 @@ class TestBranchMergeProposalDeleteViewBzr(
 
 
 class TestBranchMergeProposalDeleteViewGit(
-    TestBranchMergeProposalDeleteViewMixin, BrowserTestCase):
+    TestBranchMergeProposalDeleteViewMixin, GitHostingClientMixin,
+    BrowserTestCase):
     """Test the BranchMergeProposal deletion view for Git."""
+
+    layer = LaunchpadFunctionalLayer
 
     def _makeBranchMergeProposal(self, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(**kwargs)

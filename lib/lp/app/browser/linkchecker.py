@@ -19,6 +19,7 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.registry.interfaces.product import InvalidProductName
 from lp.services.searchbuilder import any
 from lp.services.webapp import LaunchpadView
@@ -34,7 +35,7 @@ class LinkCheckerAPI(LaunchpadView):
     something appropriate.
 
     This initial implementation supports processing links like the following:
-        /+branch/foo/bar
+        /+code/foo/bar
 
     The implementation can easily be extended to handle other forms by
     providing a method to handle the link type extracted from the json
@@ -68,17 +69,19 @@ class LinkCheckerAPI(LaunchpadView):
         return simplejson.dumps(result)
 
     def check_branch_links(self, links):
-        """Check links of the form /+branch/foo/bar"""
+        """Check links of the form /+code/foo/bar"""
         invalid_links = {}
-        branch_lookup = getUtility(IBranchLookup)
+        bzr_branch_lookup = getUtility(IBranchLookup)
+        git_branch_lookup = getUtility(IGitLookup)
         for link in links:
-            path = link.strip('/')[len('+branch/'):]
-            try:
-                branch_lookup.getByLPPath(path)
-            except (CannotHaveLinkedBranch, InvalidNamespace,
-                    InvalidProductName, NoLinkedBranch, NoSuchBranch,
-                    NotFoundError) as e:
-                invalid_links[link] = self._error_message(e)
+            path = link.strip('/')[len('+code/'):]
+            if git_branch_lookup.getByPath(path)[0] is None:
+                try:
+                    bzr_branch_lookup.getByLPPath(path)
+                except (CannotHaveLinkedBranch, InvalidNamespace,
+                        InvalidProductName, NoLinkedBranch, NoSuchBranch,
+                        NotFoundError) as e:
+                    invalid_links[link] = self._error_message(e)
         return {'invalid': invalid_links}
 
     def check_bug_links(self, links):

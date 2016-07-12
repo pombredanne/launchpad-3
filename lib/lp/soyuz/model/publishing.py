@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1264,9 +1264,11 @@ class PublishingSet:
                              ancestor=None, create_dsd_job=True,
                              creator=None, sponsor=None, packageupload=None):
         """See `IPublishingSet`."""
-        # Avoid circular import.
+        # Circular import.
         from lp.registry.model.distributionsourcepackage import (
-            DistributionSourcePackage)
+            DistributionSourcePackage,
+            )
+
         if distroseries.distribution != archive.distribution:
             raise AssertionError(
                 "Series distribution %s doesn't match archive distribution %s."
@@ -1294,6 +1296,7 @@ class PublishingSet:
                 distroseries, sourcepackagerelease.sourcepackagename, pocket)
         Store.of(sourcepackagerelease).flush()
         del get_property_cache(sourcepackagerelease).published_archives
+
         return pub
 
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,

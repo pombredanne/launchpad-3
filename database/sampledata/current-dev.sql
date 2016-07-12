@@ -1,6 +1,6 @@
 -- Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.3.5
+-- Created using pg_dump (PostgreSQL) 9.3.12
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -3479,20 +3479,10 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox mozilla-firefox-data', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (3, 1, 9, 'evolution', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (4, 1, 10, 'netapplet', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL, 'This is a placeholder changelog for pmount 0.1-2 pmount (0.1-1) hoary; urgency=low
-
- * Fix description (Malone #1)
- * Fix debian (Debian #2000)
- * Fix warty (Warty Ubuntu #1)
-
- -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (6, 1, 19, 'alsa-utils', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (7, 1, 20, 'cnews', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL, 'libstdc++ (9.9-1) hoary; urgency=high
-
- * Placeholder
-
- -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 12);
@@ -9497,6 +9487,15 @@ ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE snappyseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (1, '2016-06-22 16:25:51.474348', 1, '15.04-core', 'Ubuntu Core 15.04', 4);
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (2, '2016-06-22 16:25:51.474348', 1, '16', 'Ubuntu Core 16', 4);
+
+
+ALTER TABLE snappyseries ENABLE TRIGGER ALL;
+
+
 ALTER TABLE snap DISABLE TRIGGER ALL;
 
 
@@ -9529,6 +9528,19 @@ ALTER TABLE snapfile DISABLE TRIGGER ALL;
 
 
 ALTER TABLE snapfile ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE snappydistroseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 1);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 3);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (2, 3);
+
+
+ALTER TABLE snappydistroseries ENABLE TRIGGER ALL;
 
 
 

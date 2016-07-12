@@ -170,6 +170,14 @@
           <p>Recent revisions are not available due to the source branch being remote.</p>
         </tal:remote-branch>
       </tal:bzr-revisions>
+      <tal:git-revisions condition="context/source_git_ref">
+        <tal:history-available define="ref context/source_git_ref;
+                                       commit_infos view/unlanded_revisions"
+                               condition="commit_infos">
+          <h2>Unmerged commits</h2>
+          <metal:commits use-macro="ref/@@+macros/ref-commits"/>
+        </tal:history-available>
+      </tal:git-revisions>
     </div>
   </div>
 

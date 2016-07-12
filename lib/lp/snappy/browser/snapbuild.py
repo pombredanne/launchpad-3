@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SnapBuild views."""
@@ -16,7 +16,7 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.buildmaster.enums import BuildQueueStatus
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -29,6 +29,7 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     Navigation,
+    structured,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.interfaces.binarypackagebuild import IBuildRescoreForm
@@ -70,39 +71,6 @@ class SnapBuildView(LaunchpadView):
     page_title = label
 
     @cachedproperty
-    def eta(self):
-        """The datetime when the build job is estimated to complete.
-
-        This is the BuildQueue.estimated_duration plus the
-        Job.date_started or BuildQueue.getEstimatedJobStartTime.
-        """
-        if self.context.buildqueue_record is None:
-            return None
-        queue_record = self.context.buildqueue_record
-        if queue_record.status == BuildQueueStatus.WAITING:
-            start_time = queue_record.getEstimatedJobStartTime()
-        else:
-            start_time = queue_record.date_started
-        if start_time is None:
-            return None
-        duration = queue_record.estimated_duration
-        return start_time + duration
-
-    @cachedproperty
-    def estimate(self):
-        """If true, the date value is an estimate."""
-        if self.context.date_finished is not None:
-            return False
-        return self.eta is not None
-
-    @cachedproperty
-    def date(self):
-        """The date when the build completed or is estimated to complete."""
-        if self.estimate:
-            return self.eta
-        return self.context.date_finished
-
-    @cachedproperty
     def files(self):
         """Return `LibraryFileAlias`es for files produced by this build."""
         if not self.context.was_built:
@@ -115,6 +83,20 @@ class SnapBuildView(LaunchpadView):
     @cachedproperty
     def has_files(self):
         return bool(self.files)
+
+    @cachedproperty
+    def store_upload_status(self):
+        job = self.context.store_upload_jobs.first()
+        if job is None:
+            return None
+        elif job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
+            return "Store upload in progress"
+        elif job.job.status == JobStatus.COMPLETED:
+            return structured(
+                '<a href="%s">Manage this package in the store</a>',
+                job.store_url)
+        else:
+            return structured("Store upload failed: %s", job.error_message)
 
 
 class SnapBuildCancelView(LaunchpadFormView):

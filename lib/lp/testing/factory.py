@@ -83,7 +83,10 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
@@ -178,7 +181,6 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -215,8 +217,13 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageUrgency,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet,
+    SSH_KEY_TYPE_TO_TEXT,
+    SSHKeyType,
+    )
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
@@ -275,6 +282,7 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -633,11 +641,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param longitude: This person's longitude, as a float.
         :param selfgenerated_bugnotifications: Receive own bugmail.
         """
-        if email is None:
-            email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
+        if account_status == AccountStatus.PLACEHOLDER:
+            # Placeholder people are pretty special, so just create and
+            # bail out.
+            openid = self.getUniqueUnicode(u'%s-openid' % name)
+            person = getUtility(IPersonSet).createPlaceholderPerson(
+                openid, name)
+            return person
         # By default, make the email address preferred.
+        if email is None:
+            email = self.getUniqueEmailAddress()
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
@@ -1868,7 +1883,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
+                    status=None):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1937,8 +1953,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        task = removeSecurityProxy(bug).addTask(
-            owner, removeSecurityProxy(target))
+        task = getUtility(IBugTaskSet).createTask(
+            removeSecurityProxy(bug), owner, target, status=status)
         removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return task
 
@@ -3522,6 +3538,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=distroseries,
                 sourcepackagename=sourcepackagename)
+            with dbuser('statistician'):
+                DistributionSourcePackageCache(
+                    distribution=distroseries.distribution,
+                    sourcepackagename=sourcepackagename,
+                    archive=distroseries.main_archive,
+                    name=sourcepackagename.name)
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnySourcePackageUrgency(self):
@@ -4158,27 +4180,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if with_db:
             # Create an instance with a database record, that is normally
             # done by secondary process.
-            removeSecurityProxy(package)._new(
-                distribution, sourcepackagename, False)
+            naked_package = removeSecurityProxy(package)
+            if naked_package._get(distribution, sourcepackagename) is None:
+                naked_package._new(distribution, sourcepackagename, False)
         return package
 
-    def makeDSPCache(self, distro_name, package_name, make_distro=True,
+    def makeDSPCache(self, distroseries=None, sourcepackagename=None,
                      official=True, binary_names=None, archive=None):
-        if make_distro:
-            distribution = self.makeDistribution(name=distro_name)
-        else:
-            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
         dsp = self.makeDistributionSourcePackage(
-            distribution=distribution, sourcepackagename=package_name,
-            with_db=official)
+            distribution=distroseries.distribution,
+            sourcepackagename=sourcepackagename, with_db=official)
         if archive is None:
             archive = dsp.distribution.main_archive
-        else:
-            archive = self.makeArchive(
-                distribution=distribution, purpose=archive)
         if official:
             self.makeSourcePackagePublishingHistory(
-                distroseries=distribution.currentseries,
+                distroseries=distroseries,
                 sourcepackagename=dsp.sourcepackagename,
                 archive=archive)
         with dbuser('statistician'):
@@ -4186,9 +4204,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distribution=dsp.distribution,
                 sourcepackagename=dsp.sourcepackagename,
                 archive=archive,
-                name=package_name,
+                name=dsp.sourcepackagename.name,
                 binpkgnames=binary_names)
-        return distribution, dsp
+        return dsp
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None, encode_attachments=False):
@@ -4269,13 +4287,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
-    def makeSSHKey(self, person=None):
-        """Create a new SSHKey."""
+    def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA,
+                   send_notification=True):
+        """Create a new SSHKey.
+
+        :param person: If specified, the person to attach the key to. If
+            unspecified, a person is created.
+        :param key_type: If specified, the type of SSH key to generate. Must be
+            a member of SSHKeyType. If unspecified, SSHKeyType.RSA is used.
+        """
         if person is None:
             person = self.makePerson()
-        public_key = "ssh-rsa %s %s" % (
-            self.getUniqueString(), self.getUniqueString())
-        return getUtility(ISSHKeySet).new(person, public_key)
+        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
+        if key_type is None:
+            raise AssertionError(
+                "key_type must be a member of SSHKeyType, not %r" % key_type)
+        public_key = "%s %s %s" % (
+            key_type_string,
+            self.getUniqueString(),
+            self.getUniqueString(),
+            )
+        return getUtility(ISSHKeySet).new(
+            person, public_key, send_notification=send_notification)
 
     def makeBlob(self, blob=None, expires=None, blob_file=None):
         """Create a new TemporaryFileStorage BLOB."""
@@ -4597,9 +4630,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             active, secret)
 
     def makeSnap(self, registrant=None, owner=None, distroseries=None,
-                 name=None, branch=None, git_ref=None,
-                 require_virtualized=True, processors=None,
-                 date_created=DEFAULT, private=False):
+                 name=None, branch=None, git_ref=None, auto_build=False,
+                 auto_build_archive=None, auto_build_pocket=None,
+                 is_stale=None, require_virtualized=True, processors=None,
+                 date_created=DEFAULT, private=False, store_upload=False,
+                 store_series=None, store_name=None, store_secrets=None):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4611,11 +4646,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString(u"snap-name")
         if branch is None and git_ref is None:
             branch = self.makeAnyBranch()
+        if auto_build:
+            if auto_build_archive is None:
+                auto_build_archive = self.makeArchive(
+                    distribution=distroseries.distribution, owner=owner)
+            if auto_build_pocket is None:
+                auto_build_pocket = PackagePublishingPocket.UPDATES
         snap = getUtility(ISnapSet).new(
             registrant, owner, distroseries, name,
             require_virtualized=require_virtualized, processors=processors,
             date_created=date_created, branch=branch, git_ref=git_ref,
-            private=private)
+            auto_build=auto_build, auto_build_archive=auto_build_archive,
+            auto_build_pocket=auto_build_pocket, private=private,
+            store_upload=store_upload, store_series=store_series,
+            store_name=store_name, store_secrets=store_secrets)
+        if is_stale is not None:
+            removeSecurityProxy(snap).is_stale = is_stale
         IStore(snap).flush()
         return snap
 
@@ -4647,7 +4693,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=snap.distro_series)
         if pocket is None:
-            pocket = PackagePublishingPocket.RELEASE
+            pocket = PackagePublishingPocket.UPDATES
         snapbuild = getUtility(ISnapBuildSet).new(
             requester, snap, archive, distroarchseries, pocket,
             date_created=date_created)
@@ -4671,6 +4717,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             libraryfile = self.makeLibraryFileAlias()
         return ProxyFactory(
             SnapFile(snapbuild=snapbuild, libraryfile=libraryfile))
+
+    def makeSnappySeries(self, registrant=None, name=None, display_name=None,
+                         status=SeriesStatus.DEVELOPMENT,
+                         date_created=DEFAULT, usable_distro_series=None):
+        """Make a new SnappySeries."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if name is None:
+            name = self.getUniqueString(u"snappy-series-name")
+        if display_name is None:
+            display_name = SPACE.join(
+                word.capitalize() for word in name.split('-'))
+        snappy_series = getUtility(ISnappySeriesSet).new(
+            registrant, name, display_name, status, date_created=date_created)
+        if usable_distro_series is not None:
+            snappy_series.usable_distro_series = usable_distro_series
+        IStore(snappy_series).flush()
+        return snappy_series
 
 
 # Some factory methods return simple Python types. We don't add

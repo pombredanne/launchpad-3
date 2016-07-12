@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies pulling stuff from the database.
@@ -17,6 +17,8 @@ __all__ = [
     'IHugeVocabulary',
     'NamedSQLObjectHugeVocabulary',
     'NamedSQLObjectVocabulary',
+    'NamedStormHugeVocabulary',
+    'NamedStormVocabulary',
     'SQLObjectVocabularyBase',
     'StormVocabularyBase',
     'VocabularyFilter',
@@ -583,3 +585,71 @@ class StormVocabularyBase(FilteredVocabularyBase):
         a SelectResults object.
         """
         return EmptyResultSet()
+
+
+class NamedStormVocabulary(StormVocabularyBase):
+    """A Storm vocabulary for tables with a unique Unicode name column.
+
+    Provides all methods required by IHugeVocabulary, although it
+    doesn't actually specify this interface since it may not actually
+    be huge and require the custom widgets.
+    """
+    _order_by = "name"
+    # The iterator class will be used to wrap the results; its iteration
+    # methods should return SimpleTerms, as the reference implementation
+    # CountableIterator does.
+    iterator = CountableIterator
+
+    def searchForTerms(self, query=None, vocab_filter=None):
+        if not query:
+            return self.emptySelectResults()
+
+        query = ensure_unicode(query).lower()
+        results = IStore(self._table).find(
+            self._table,
+            self._table.name.contains_string(query),
+            *self._clauses).order_by(self._order_by)
+        return self.iterator(results.count(), results, self.toTerm)
+
+    def toTerm(self, obj):
+        """See `StormVocabularyBase`.
+
+        This implementation uses name as a token instead of the object's
+        ID, and tries to be smart about deciding to present an object's
+        title if it has one.
+        """
+        if getattr(obj, "title", None) is None:
+            return SimpleTerm(obj, obj.name, obj.name)
+        else:
+            return SimpleTerm(obj, obj.name, obj.title)
+
+    def __contains__(self, obj):
+        if zisinstance(obj, Storm):
+            found_obj = IStore(self._table).find(
+                self._table,
+                self._table.name == obj.name, *self._clauses).one()
+            return found_obj is not None and found_obj == obj
+        else:
+            found_obj = IStore(self._table).find(
+                self._table, self._table.name == obj, *self._clauses).one()
+            return found_obj is not None
+
+    def getTermByToken(self, token):
+        obj = IStore(self._table).find(
+            self._table, self._table.name == token, *self._clauses).one()
+        if obj is None:
+            raise LookupError(token)
+        return self.toTerm(obj)
+
+
+@implementer(IHugeVocabulary)
+class NamedStormHugeVocabulary(NamedStormVocabulary):
+    """A NamedStormVocabulary that implements IHugeVocabulary."""
+
+    displayname = None
+    step_title = "Search"
+
+    def __init__(self, context=None):
+        super(NamedStormHugeVocabulary, self).__init__(context)
+        if self.displayname is None:
+            self.displayname = "Select %s" % self.__class__.__name__

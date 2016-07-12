@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Stuff to do with logging in and logging out."""
 
@@ -54,6 +54,7 @@ from lp.registry.interfaces.person import (
 from lp.services.config import config
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.identity.interfaces.account import AccountSuspendedError
+from lp.services.openid.extensions import macaroon
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
 from lp.services.timeline.requesttimeline import get_request_timeline
@@ -176,10 +177,12 @@ class OpenIDLogin(LaunchpadView):
         return Consumer(session, openid_store)
 
     def render(self):
-        # Reauthentication is called for by a parameter, usually passed in
-        # the query string.
+        # Reauthentication and discharge macaroon issuing are called for by
+        # parameters, usually passed in the query string.
         do_reauth = int(self.request.form.get('reauth', '0'))
-        if self.account is not None and not do_reauth:
+        macaroon_caveat_id = self.request.form.get('macaroon_caveat_id', None)
+        if (self.account is not None and not do_reauth and
+                macaroon_caveat_id is None):
             return AlreadyLoggedInView(self.context, self.request)()
 
         # Allow unauthenticated users to have sessions for the OpenID
@@ -198,6 +201,9 @@ class OpenIDLogin(LaunchpadView):
             timeline_action.finish()
         self.openid_request.addExtension(
             sreg.SRegRequest(required=['email', 'fullname']))
+        if macaroon_caveat_id is not None:
+            self.openid_request.addExtension(
+                macaroon.MacaroonRequest(macaroon_caveat_id))
 
         # Force the Open ID handshake to re-authenticate, using
         # pape extension's max_auth_age, if the URL indicates it.
@@ -212,8 +218,13 @@ class OpenIDLogin(LaunchpadView):
         # they started the login process (i.e. the current URL without the
         # '+login' bit). To do that we encode that URL as a query arg in the
         # return_to URL passed to the OpenID Provider
-        starting_url = urllib.urlencode(
-            [('starting_url', self.starting_url.encode('utf-8'))])
+        starting_data = [('starting_url', self.starting_url.encode('utf-8'))]
+        for passthrough_name in (
+                'discharge_macaroon_action', 'discharge_macaroon_field'):
+            passthrough_field = self.request.form.get(passthrough_name, None)
+            if passthrough_field is not None:
+                starting_data.append((passthrough_name, passthrough_field))
+        starting_url = urllib.urlencode(starting_data)
         trust_root = allvhosts.configs['mainsite'].rooturl
         return_to = urlappend(trust_root, '+openid-callback')
         return_to = "%s?%s" % (return_to, starting_url)
@@ -245,7 +256,9 @@ class OpenIDLogin(LaunchpadView):
         All keys and values are UTF-8-encoded.
         """
         for name, value in self.request.form.items():
-            if name in ('loggingout', 'reauth'):
+            if name in ('loggingout', 'reauth',
+                        'macaroon_caveat_id', 'discharge_macaroon_action',
+                        'discharge_macaroon_field'):
                 continue
             if name.startswith('openid.'):
                 continue
@@ -280,6 +293,9 @@ class OpenIDCallbackView(OpenIDLogin):
     team_email_address_template = ViewPageTemplateFile(
         'templates/login-team-email-address.pt')
 
+    discharge_macaroon_template = ViewPageTemplateFile(
+        'templates/login-discharge-macaroon.pt')
+
     def _gather_params(self, request):
         params = dict(request.form)
         for key, value in request.query_string_params.iteritems():
@@ -308,6 +324,7 @@ class OpenIDCallbackView(OpenIDLogin):
                 self.params, requested_url)
         finally:
             timeline_action.finish()
+        self.discharge_macaroon_raw = None
 
     def login(self, person, when=None):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -320,6 +337,11 @@ class OpenIDCallbackView(OpenIDLogin):
     @cachedproperty
     def sreg_response(self):
         return sreg.SRegResponse.fromSuccessResponse(self.openid_response)
+
+    @cachedproperty
+    def macaroon_response(self):
+        return macaroon.MacaroonResponse.fromSuccessResponse(
+            self.openid_response)
 
     def _getEmailAddressAndFullName(self):
         # Here we assume the OP sent us the user's email address and
@@ -372,8 +394,18 @@ class OpenIDCallbackView(OpenIDLogin):
         except TeamEmailAddressError:
             return self.team_email_address_template()
 
+        if self.params.get('discharge_macaroon_field'):
+            if self.macaroon_response.discharge_macaroon_raw is None:
+                raise HTTPBadRequest(
+                    "OP didn't include a macaroon extension in the response.")
+            self.discharge_macaroon_raw = (
+                self.macaroon_response.discharge_macaroon_raw)
+
         with MasterDatabasePolicy():
             self.login(person)
+
+        if self.params.get('discharge_macaroon_field'):
+            return self.discharge_macaroon_template()
 
         if should_update_last_write:
             # This is a GET request but we changed the database, so update

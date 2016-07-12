@@ -34,6 +34,7 @@ from zope.interface import (
     Interface,
     providedBy,
     )
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -172,6 +173,22 @@ class GitRepositoryNavigation(WebhookTargetNavigationMixin, Navigation):
             # Not a number.
             return None
         return self.context.getMergeProposalByID(id)
+
+    @stepto("+diff")
+    def traverse_diff(self):
+        segments = list(self.request.getTraversalStack())
+        if len(segments) == 1:
+            new = segments.pop()
+            old = new + "^"
+            self.request.stepstogo.consume()
+        elif len(segments) == 2:
+            new = segments.pop()
+            old = segments.pop()
+            self.request.stepstogo.consume()
+            self.request.stepstogo.consume()
+        else:
+            return None
+        return GitRepositoryDiffView(self.context, self.request, old, new)
 
 
 class GitRepositoryEditMenu(NavigationMenu):
@@ -604,6 +621,29 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
                     "default_branch",
                     "This repository does not contain a reference named "
                     "'%s'." % default_branch)
+
+
+@implementer(IBrowserPublisher)
+class GitRepositoryDiffView:
+
+    def __init__(self, context, request, old, new):
+        self.context = context
+        self.request = request
+        self.old = old
+        self.new = new
+
+    def __call__(self):
+        content = self.context.getDiff(self.old, self.new)
+        filename = "%s_%s.diff" % (self.old, self.new)
+        self.request.response.setHeader(
+            "Content-Type", 'text/x-patch; charset="UTF-8"')
+        self.request.response.setHeader("Content-Length", str(len(content)))
+        self.request.response.setHeader(
+            "Content-Disposition", "attachment; filename=%s" % filename)
+        return content
+
+    def browserDefault(self, request):
+        return self, ()
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):

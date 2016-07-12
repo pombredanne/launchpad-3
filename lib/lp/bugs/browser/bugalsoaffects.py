@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -81,6 +81,7 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.registry.model.product import Product
+from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
@@ -342,13 +343,25 @@ class BugTaskCreationStep(AlsoAffectsStep):
         self.next_url = canonical_url(task_added)
 
 
+class IAddDistroBugTaskForm(IAddBugTaskForm):
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+                      "Leave blank if you are not sure."),
+        vocabulary='DistributionSourcePackage')
+
+
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
 
     @property
     def schema(self):
-        return IAddBugTaskForm
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return IAddDistroBugTaskForm
+        else:
+            return IAddBugTaskForm
 
     custom_widget(
         'sourcepackagename', BugTaskAlsoAffectsSourcePackageNameWidget)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source package in Distribution Cache interfaces."""
@@ -31,7 +31,7 @@ class IDistributionSourcePackageCache(Interface):
         "distro.")
     changelog = Attribute("A concatenation of the source package release "
         "changelog entries for this source package, where the status is "
-        "not REMOVED.")
+        "not REMOVED.  (Deprecated; due to be removed.)")
 
     distributionsourcepackage = Attribute("The DistributionSourcePackage "
         "for which this is a cache.")

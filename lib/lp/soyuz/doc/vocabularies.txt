@@ -110,31 +110,15 @@ The search does a case-insensitive, substring match.
      ('linux-source-2.6.15', u'linux-source-2.6.15')]
 
 
-BinaryPackageNameVocabulary
-...........................
-
-All the binary packages in Launchpad.
-
-    >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
-    >>> len(bpn_vocabulary)
-    8
-
-    >>> bpn_terms = bpn_vocabulary.searchForTerms("mozilla")
-    >>> len(bpn_terms)
-    2
-    >>> [(term.token, term.title) for term in bpn_terms]
-    [('mozilla-firefox', u'iceweasel huh ?'),
-     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
-
-
 SourcePackageNameVocabulary
 ...........................
 
-All the source packages in Launchpad.
+All the source packages in Launchpad that are published in public archives
+of any distribution.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    17
+    10
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,8 +12,13 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipStatus,
     )
+from lp.registry.interfaces.ssh import SSHKeyType
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
-from lp.services.identity.interfaces.account import AccountStatus
+from lp.registry.tests.test_ssh import VULNERABLE_RSA_KEY
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
@@ -367,3 +372,333 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             sca = getUtility(IPersonSet).getByName('software-center-agent')
         response = self.getOrCreateSoftwareCenterCustomer(sca)
         self.assertEqual(400, response.status)
+
+    def test_getUsernameForSSO(self):
+        # canonical-identity-provider (SSO) can get the username for an
+        # OpenID identifier suffix.
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+            existing = self.factory.makePerson(name='username')
+            taken_openid = (
+                existing.account.openid_identifiers.any().identifier)
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getUsernameForSSO',
+            openid_identifier=taken_openid, api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertEqual('username', response.jsonBody())
+
+    def test_getUsernameForSSO_nonexistent(self):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getUsernameForSSO',
+            openid_identifier='doesnotexist', api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertEqual(None, response.jsonBody())
+
+    def setUsernameFromSSO(self, user, openid_identifier, name,
+                           dry_run=False):
+        webservice = webservice_for_person(
+            user, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            '/people', 'setUsernameFromSSO',
+            openid_identifier=openid_identifier, name=name, dry_run=dry_run,
+            api_version='devel')
+        return response
+
+    def test_setUsernameFromSSO(self):
+        # canonical-identity-provider (SSO) can create a placeholder
+        # Person to give a username to a non-LP user.
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        response = self.setUsernameFromSSO(sso, 'foo', 'bar')
+        self.assertEqual(200, response.status)
+        with admin_logged_in():
+            by_name = getUtility(IPersonSet).getByName('bar')
+            by_openid = getUtility(IPersonSet).getByOpenIDIdentifier(
+                u'http://testopenid.dev/+id/foo')
+            self.assertEqual(by_name, by_openid)
+            self.assertEqual(
+                AccountStatus.PLACEHOLDER, by_name.account_status)
+
+    def test_setUsernameFromSSO_dry_run(self):
+        # setUsernameFromSSO provides a dry run mode that performs all
+        # the checks but doesn't actually make changes. Useful for input
+        # validation in SSO.
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        response = self.setUsernameFromSSO(sso, 'foo', 'bar', dry_run=True)
+        self.assertEqual(200, response.status)
+        with admin_logged_in():
+            self.assertIs(None, getUtility(IPersonSet).getByName('bar'))
+            self.assertRaises(
+                LookupError,
+                getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
+
+    def test_setUsernameFromSSO_is_restricted(self):
+        # The method may only be invoked by the ~ubuntu-sso celebrity
+        # user, as it is security-sensitive.
+        with admin_logged_in():
+            random = self.factory.makePerson()
+        response = self.setUsernameFromSSO(random, 'foo', 'bar')
+        self.assertEqual(401, response.status)
+
+    def test_setUsernameFromSSO_rejects_bad_input(self, dry_run=False):
+        # The method returns meaningful errors on bad input, so SSO can
+        # give advice to users.
+        # Check canonical-identity-provider before changing these!
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+            self.factory.makePerson(name='taken-name')
+            existing = self.factory.makePerson()
+            taken_openid = (
+                existing.account.openid_identifiers.any().identifier)
+
+        response = self.setUsernameFromSSO(
+            sso, 'foo', 'taken-name', dry_run=dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            'name: taken-name is already in use by another person or team.',
+            response.body)
+
+        response = self.setUsernameFromSSO(
+            sso, 'foo', 'private-name', dry_run=dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            'name: The name &#x27;private-name&#x27; has been blocked by the '
+            'Launchpad administrators. Contact Launchpad Support if you want '
+            'to use this name.',
+            response.body)
+
+        response = self.setUsernameFromSSO(
+            sso, taken_openid, 'bar', dry_run=dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            'An account for that OpenID identifier already exists.',
+            response.body)
+
+    def test_setUsernameFromSSO_rejects_bad_input_in_dry_run(self):
+        self.test_setUsernameFromSSO_rejects_bad_input(dry_run=True)
+
+    def test_getSSHKeysForSSO(self):
+        with admin_logged_in():
+            target = self.factory.makePerson()
+            key = self.factory.makeSSHKey(target)
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+            taken_openid = (
+                target.account.openid_identifiers.any().identifier)
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getSSHKeysForSSO',
+            openid_identifier=taken_openid, api_version='devel')
+        expected = 'ssh-rsa %s %s' % (key.keytext, key.comment)
+        self.assertEqual(200, response.status)
+        self.assertEqual([expected], response.jsonBody())
+
+    def test_getSSHKeysForSSO_nonexistent(self):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.READ_PUBLIC)
+        response = webservice.named_get(
+            '/people', 'getSSHKeysForSSO',
+            openid_identifier='doesnotexist', api_version='devel')
+        self.assertEqual(200, response.status)
+        self.assertEqual(None, response.jsonBody())
+
+    def addSSHKeyForPerson(self, openid_identifier, key_text, dry_run=False):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.WRITE_PRIVATE)
+        return webservice.named_post(
+            '/people', 'addSSHKeyFromSSO',
+            openid_identifier=openid_identifier, key_text=key_text,
+            dry_run=dry_run, api_version='devel')
+
+    def test_addSSHKeyFromSSO_nonexistant(self):
+        response = self.addSSHKeyForPerson('doesnotexist', 'sdf')
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "No account found for openid identifier 'doesnotexist'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_bad_key_data(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, 'bad_data')
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key data: 'bad_data'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_bad_key_type(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, 'foo keydata comment')
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key type: 'foo'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_bad_key_type_dry_run(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(
+            openid_id, 'foo keydata comment', True)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key type: 'foo'",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_vulnerable_keys(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This key cannot be added as it is known to be compromised.",
+            response.body)
+
+    def test_addSSHKeyFromSSO_rejects_vulnerable_keys_dry_run(self):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY, True)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This key cannot be added as it is known to be compromised.",
+            response.body)
+
+    def test_addSSHKeyFromSSO_works(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(
+            openid_id, 'ssh-rsa keydata comment')
+
+        self.assertEqual(200, response.status)
+        [key] = person.sshkeys
+        self.assertEqual(SSHKeyType.RSA, key.keytype)
+        self.assertEqual('keydata', key.keytext)
+        self.assertEqual('comment', key.comment)
+
+    def test_addSSHKeyFromSSO_dry_run(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.addSSHKeyForPerson(
+            openid_id, 'ssh-rsa keydata comment', dry_run=True)
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(0, person.sshkeys.count())
+
+    def test_addSSHKeyFromSSO_is_restricted(self):
+        with admin_logged_in():
+            target = self.factory.makePerson()
+            openid_id = target.account.openid_identifiers.any().identifier
+        webservice = webservice_for_person(
+            target, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            '/people', 'addSSHKeyFromSSO',
+            openid_identifier=openid_id, key_text='ssh-rsa foo bar',
+            dry_run=False, api_version='devel')
+        self.assertEqual(401, response.status)
+
+    def deleteSSHKeyFromSSO(self, openid_identifier, key_text,
+                                     dry_run=False):
+        with admin_logged_in():
+            sso = getUtility(IPersonSet).getByName('ubuntu-sso')
+        webservice = webservice_for_person(
+            sso, permission=OAuthPermission.WRITE_PRIVATE)
+        return webservice.named_post(
+            '/people', 'deleteSSHKeyFromSSO',
+            openid_identifier=openid_identifier, key_text=key_text,
+            dry_run=dry_run, api_version='devel')
+
+    def test_deleteSSHKeyFromSSO_nonexistant(self, dry_run=False):
+        response = self.deleteSSHKeyFromSSO(
+            'doesnotexist', 'sdf', dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "No account found for openid identifier 'doesnotexist'",
+            response.body)
+
+    def test_deleteSSHKeyFromSSO_nonexistant_dry_run(self):
+        self.test_deleteSSHKeyFromSSO_nonexistant(True)
+
+    def test_deleteSSHKeyFromSSO_rejects_bad_key_data(self,
+                                                               dry_run=False):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyFromSSO(
+            openid_id, 'bad_data', dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key data: 'bad_data'",
+            response.body)
+
+    def test_deleteSSHKeyFromSSO_rejects_bad_key_data_dry_run(self):
+        self.test_deleteSSHKeyFromSSO_rejects_bad_key_data(True)
+
+    def test_deleteSSHKeyFromSSO_rejects_bad_key_type(self,
+                                                               dry_run=False):
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyFromSSO(
+            openid_id, 'foo keydata comment', dry_run)
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Invalid SSH key type: 'foo'",
+            response.body)
+
+    def test_deleteSSHKeyFromSSO_rejects_bad_key_type_dry_run(self):
+        self.test_deleteSSHKeyFromSSO_rejects_bad_key_type(True)
+
+    def test_deleteSSHKeyFromSSO_works(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            key = self.factory.makeSSHKey(person)
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyFromSSO(
+            openid_id, key.getFullKeyText())
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(0, person.sshkeys.count())
+
+    def test_deleteSSHKeyFromSSO_works_dry_run(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            key = self.factory.makeSSHKey(person)
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyFromSSO(
+            openid_id, key.getFullKeyText(), dry_run=True)
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(1, person.sshkeys.count())
+
+    def test_deleteSSHKeyFromSSO_is_restricted(self, dry_run=False):
+        with admin_logged_in():
+            target = self.factory.makePerson()
+            openid_id = target.account.openid_identifiers.any().identifier
+        webservice = webservice_for_person(
+            target, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.named_post(
+            '/people', 'deleteSSHKeyFromSSO',
+            openid_identifier=openid_id, key_text='ssh-rsa foo bar',
+            dry_run=dry_run, api_version='devel')
+        self.assertEqual(401, response.status)
+
+    def test_deleteSSHKeyFromSSO_is_restricted_dry_run(self):
+        self.test_deleteSSHKeyFromSSO_is_restricted(True)

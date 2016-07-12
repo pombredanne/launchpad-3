@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -404,6 +404,14 @@ class PersonCreationRationale(DBEnumeratedType):
 
         A purchase of commercial software (ie. subscriptions to a private
         and commercial archive) was made via Software Center.
+        """)
+
+    USERNAME_PLACEHOLDER = DBItem(17, """
+        Created by setting a username in SSO.
+
+        Somebody without a Launchpad account set their username in SSO.
+        Since SSO doesn't store usernames directly, an invisible
+        placeholder Launchpad account is required.
         """)
 
 
@@ -2117,6 +2125,19 @@ class IPersonSet(Interface):
             used.
         """
 
+    def createPlaceholderPerson(openid_identifier, name):
+        """Create and return an SSO username placeholder `IPerson`.
+
+        The returned Person will have no email address, just a username and an
+        OpenID identifier.
+
+        :param openid_identifier: The SSO account's OpenID suffix.
+        :param name: The person's name.
+        :raises InvalidName: When the passed name isn't valid.
+        :raises NameAlreadyTaken: When the passed name has already been
+            used.
+        """
+
     def ensurePerson(email, displayname, rationale, comment=None,
                      registrant=None):
         """Make sure that there is a person in the database with the given
@@ -2200,6 +2221,125 @@ class IPersonSet(Interface):
             This is *not* the full URL, just the unique suffix portion.
         :param email_address: the email address of the user.
         :param full_name: the full name of the user.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getUsernameForSSO(user, openid_identifier):
+        """Restricted person creation API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It
+        finds the username for an account by OpenID identifier.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        name=copy_field(IPerson['name']),
+        dry_run=Bool(_("Don't save changes")))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setUsernameFromSSO(user, openid_identifier, name, dry_run=False):
+        """Restricted person creation API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It
+        reserves a username for an account by OpenID identifier, as long as
+        the user has no Launchpad account.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param name: the desired username.
+        :raises: `InvalidName` if the username doesn't meet character
+            constraints.
+        :raises: `NameAlreadyTaken` if the username is already in use.
+        :raises: `NotPlaceholderAccount` if the OpenID identifier has a
+            non-placeholder Launchpad account.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getSSHKeysForSSO(user, openid_identifier):
+        """Restricted SSH key creation API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It finds and
+        returns all the SSH keys belonging to the account identified by the
+        openid_identifier parameter.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        key_text=TextLine(
+            title=_("SSH key text"), required=True),
+        dry_run=Bool(_("Don't save changes")))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def addSSHKeyFromSSO(user, openid_identifier, key_text, dry_run=False):
+        """Restricted SSH key creation API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It adds a new
+        SSH key to the account identified by 'openid_identifier' based on the
+        'key_text' parameter.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param key_text: The full text of the SSH Key.
+        :raises NoSuchAccount: If the openid_identifier specified does not
+            match any account.
+        :raises SSHKeyAdditionError: If the ssh key_text is invalid.
+        :raises SSHKeyCompromisedError: If the ssh key_text is a known
+            compromised key.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        openid_identifier=TextLine(
+            title=_("OpenID identifier suffix"), required=True),
+        key_text=TextLine(
+            title=_("SSH key text"), required=True),
+        dry_run=Bool(_("Don't save changes")))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def deleteSSHKeyFromSSO(user, openid_identifier, key_text,
+                                     dry_run=False):
+        """Restricted SSH key deletion API for SSO.
+
+        This method can only be called by the Ubuntu SSO service. It deletes an
+        SSH key from the account identified by 'openid_identifier' based on the
+        'key_text' parameter.
+
+        :param user: the `IPerson` performing the operation. Only the
+            ubuntu-sso celebrity is allowed.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param key_text: The full text of the SSH Key.
+        :raises NoSuchAccount: If the openid_identifier specified does not
+            match any account.
+        :raises KeyAdditionError: If the key text is invalid.
         """
 
     @call_with(teamowner=REQUEST_USER)

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -350,11 +350,6 @@ class UnmergedRevisionsMixin:
         """Needed to make the branch-revisions metal macro work."""
         return False
 
-    @property
-    def codebrowse_url(self):
-        """Return the link to codebrowse for this branch."""
-        return self.context.merge_source.getCodebrowseUrl()
-
 
 class BranchMergeProposalRevisionIdMixin:
     """A mixin class to provide access to the revision ids."""
@@ -482,6 +477,14 @@ class BranchMergeProposalStatusMixin:
             terms.append(SimpleTerm(status, status.name, title))
         return SimpleVocabulary(terms)
 
+    @property
+    def source_revid(self):
+        if IBranch.providedBy(self.context.merge_source):
+            source_revid = self.context.merge_source.last_scanned_id
+        else:
+            source_revid = self.context.merge_source.commit_sha1
+        return source_revid
+
 
 class DiffRenderingMixin:
     """A mixin class for handling diff text."""
@@ -539,9 +542,15 @@ class CodeReviewNewRevisions:
     particular time.
     """
 
-    def __init__(self, revisions, date, branch, diff):
+    def __init__(self, revisions, date, source, diff):
         self.revisions = revisions
-        self.branch = branch
+        self.source = source
+        if IBranch.providedBy(source):
+            self.branch = source
+            self.git_ref = None
+        else:
+            self.branch = None
+            self.git_ref = source
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
@@ -564,15 +573,6 @@ class CodeReviewNewRevisions:
         pass
 
 
-class CodeReviewNewRevisionsView(LaunchpadView):
-    """The view for rendering the new revisions."""
-
-    @property
-    def codebrowse_url(self):
-        """Return the link to codebrowse for this branch."""
-        return self.context.branch.getCodebrowseUrl()
-
-
 @implementer(IBranchMergeProposalActionMenu)
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin,
@@ -593,10 +593,11 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                         self.context.source_branch.unique_name),
                 })
         else:
-            # XXX cjwatson 2015-04-29: Unimplemented for Git; this would
-            # require something in the webapp which proxies diff requests to
-            # the code browser, or an integrated code browser.
-            pass
+            cache.objects.update({
+                'branch_diff_link':
+                    canonical_url(self.context.source_git_repository) +
+                    '/+diff/',
+                })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key
@@ -627,7 +628,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         if IBranch.providedBy(source):
             source = DecoratedBranch(source)
         comments = []
-        if getFeatureFlag('code.incremental_diffs.enabled'):
+        if (getFeatureFlag('code.incremental_diffs.enabled') and
+                merge_proposal.source_branch is not None):
+            # XXX cjwatson 2016-05-09: Implement for Git.
             ranges = [
                 (revisions[0].revision.getLefthandParent(),
                  revisions[-1].revision)
@@ -636,8 +639,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         else:
             diffs = [None] * len(groups)
         for revisions, diff in zip(groups, diffs):
+            if merge_proposal.source_branch is not None:
+                last_date_created = revisions[-1].revision.date_created
+            else:
+                last_date_created = revisions[-1]["author_date"]
             newrevs = CodeReviewNewRevisions(
-                revisions, revisions[-1].revision.date_created, source, diff)
+                revisions, last_date_created, source, diff)
             comments.append(newrevs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
@@ -759,16 +766,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def status_config(self):
         """The config to configure the ChoiceSource JS widget."""
-        if IBranch.providedBy(self.context.merge_source):
-            source_revid = self.context.merge_source.last_scanned_id
-        else:
-            source_revid = self.context.merge_source.commit_sha1
         return simplejson.dumps({
             'status_widget_items': vocabulary_to_choice_edit_items(
                 self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
-            'source_revid': source_revid,
+            'source_revid': self.source_revid,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
             })

@@ -566,7 +566,7 @@
 
     <browser:pages
         for="lp.code.browser.branchmergeproposal.ICodeReviewNewRevisions"
-        class="lp.code.browser.branchmergeproposal.CodeReviewNewRevisionsView"
+        class="lp.services.webapp.LaunchpadView"
         permission="zope.Public">
         <browser:page
             name="+comment-header"
@@ -838,6 +838,10 @@
         permission="launchpad.Edit"
         name="+edit"
         template="../templates/gitrepository-edit.pt"/>
+    <class class="lp.code.browser.gitrepository.GitRepositoryDiffView">
+        <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+               attributes="__call__"/>
+    </class>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryDeletionView"

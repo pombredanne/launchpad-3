@@ -194,7 +194,6 @@ from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSHKeyAdditionError,
     SSHKeyCompromisedError,
-    SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -210,6 +209,7 @@ from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPG_DATABASE_READONLY_FEATURE_FLAG,
+    GPG_HIDE_PERSON_KEY_LISTING,
     GPGKeyNotFoundError,
     GPGReadOnly,
     IGPGHandler,
@@ -1703,6 +1703,8 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
         It's shown when the person has OpenPGP keys registered or has rights
         to register new ones.
         """
+        if getFeatureFlag(GPG_HIDE_PERSON_KEY_LISTING):
+            return False
         return bool(self.context.gpg_keys) or (
             check_permission('launchpad.Edit', self.context))
 
@@ -1976,15 +1978,7 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     def showSSHKeys(self):
         """Return a data structure used for display of raw SSH keys"""
         self.request.response.setHeader('Content-Type', 'text/plain')
-        keys = []
-        for key in self.context.sshkeys:
-            if key.keytype == SSHKeyType.DSA:
-                type_name = 'ssh-dss'
-            elif key.keytype == SSHKeyType.RSA:
-                type_name = 'ssh-rsa'
-            else:
-                type_name = 'Unknown key type'
-            keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
+        keys = [key.getFullKeyText() for key in self.context.sshkeys]
         return "\n".join(keys)
 
     @cachedproperty

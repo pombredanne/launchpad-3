@@ -1,4 +1,4 @@
-<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -12,6 +12,39 @@
     </securedutility>
 
     <class class="lp.snappy.vocabularies.SnapDistroArchSeriesVocabulary">
+        <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
+    </class>
+
+    <securedutility
+        name="SnappySeries"
+        component="lp.snappy.vocabularies.SnappySeriesVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory" />
+    </securedutility>
+
+    <class class="lp.snappy.vocabularies.SnappySeriesVocabulary">
+        <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
+    </class>
+
+    <securedutility
+        name="SnappyDistroSeries"
+        component="lp.snappy.vocabularies.SnappyDistroSeriesVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory" />
+    </securedutility>
+
+    <class class="lp.snappy.vocabularies.SnappyDistroSeriesVocabulary">
+        <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
+    </class>
+
+    <securedutility
+        name="BuildableSnappyDistroSeries"
+        component="lp.snappy.vocabularies.BuildableSnappyDistroSeriesVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory" />
+    </securedutility>
+
+    <class class="lp.snappy.vocabularies.BuildableSnappyDistroSeriesVocabulary">
         <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
     </class>
 

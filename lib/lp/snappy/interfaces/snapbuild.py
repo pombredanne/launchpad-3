@@ -20,12 +20,16 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     )
-from lazr.restful.fields import Reference
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface
 from zope.schema import (
     Bool,
     Choice,
+    Datetime,
     Int,
     )
 
@@ -102,6 +106,23 @@ class ISnapBuildView(IPackageBuild):
         title=_("Can be cancelled"),
         required=True, readonly=True,
         description=_("Whether this build record can be cancelled.")))
+
+    eta = Datetime(
+        title=_("The datetime when the build job is estimated to complete."),
+        readonly=True)
+
+    estimate = Bool(
+        title=_("If true, the date value is an estimate."), readonly=True)
+
+    date = Datetime(
+        title=_("The date when the build completed or is estimated to "
+            "complete."), readonly=True)
+
+    store_upload_jobs = CollectionField(
+        title=_("Store upload jobs for this build."),
+        # Really ISnapStoreUploadJob.
+        value_type=Reference(schema=Interface),
+        readonly=True)
 
     def getFiles():
         """Retrieve the build's `ISnapFile` records.

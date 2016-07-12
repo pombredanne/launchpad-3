@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The interface for branch merge proposals."""
@@ -429,6 +429,9 @@ class IBranchMergeProposalView(Interface):
         source branch that are not in the revision history of the target
         branch.  These are the revisions that have been committed to the
         source branch since it branched off the target branch.
+
+        For Bazaar, this returns a sequence of `BranchRevision` objects.
+        For Git, this returns a sequence of commit information dicts.
         """
 
     def getUsersVoteReference(user):

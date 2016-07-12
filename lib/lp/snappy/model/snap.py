@@ -6,13 +6,22 @@ __all__ = [
     'Snap',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import pytz
+from storm.expr import (
+    And,
+    Desc,
+    LeftJoin,
+    Not,
+    )
 from storm.locals import (
     Bool,
     DateTime,
-    Desc,
     Int,
-    Not,
+    JSON,
     Reference,
     Store,
     Storm,
@@ -26,10 +35,14 @@ from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.processor import IProcessorSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
@@ -51,16 +64,19 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import (
     IHasOwner,
     IPersonRoles,
     )
+from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
@@ -70,6 +86,10 @@ from lp.services.database.stormexpr import (
     NullsLast,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
@@ -81,17 +101,16 @@ from lp.snappy.interfaces.snap import (
     ISnapSet,
     NoSourceForSnap,
     NoSuchSnap,
-    SNAP_FEATURE_FLAG,
     SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
-    SnapFeatureDisabled,
     SnapNotOwner,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.model.snapbuild import SnapBuild
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import (
@@ -144,18 +163,35 @@ class Snap(Storm, WebhookTargetMixin):
 
     git_path = Unicode(name='git_path', allow_none=True)
 
+    auto_build = Bool(name='auto_build', allow_none=False)
+
+    auto_build_archive_id = Int(name='auto_build_archive', allow_none=True)
+    auto_build_archive = Reference(auto_build_archive_id, 'Archive.id')
+
+    auto_build_pocket = DBEnum(enum=PackagePublishingPocket, allow_none=True)
+
+    is_stale = Bool(name='is_stale', allow_none=False)
+
     require_virtualized = Bool(name='require_virtualized')
 
     private = Bool(name='private')
 
-    def __init__(self, registrant, owner, distro_series, name,
-                 description=None, branch=None, git_ref=None,
-                 require_virtualized=True, date_created=DEFAULT,
-                 private=False):
-        """Construct a `Snap`."""
-        if not getFeatureFlag(SNAP_FEATURE_FLAG):
-            raise SnapFeatureDisabled
+    store_upload = Bool(name='store_upload', allow_none=False)
 
+    store_series_id = Int(name='store_series', allow_none=True)
+    store_series = Reference(store_series_id, 'SnappySeries.id')
+
+    store_name = Unicode(name='store_name', allow_none=True)
+
+    store_secrets = JSON('store_secrets', allow_none=True)
+
+    def __init__(self, registrant, owner, distro_series, name,
+                 description=None, branch=None, git_ref=None, auto_build=False,
+                 auto_build_archive=None, auto_build_pocket=None,
+                 require_virtualized=True, date_created=DEFAULT,
+                 private=False, store_upload=False, store_series=None,
+                 store_name=None, store_secrets=None):
+        """Construct a `Snap`."""
         super(Snap, self).__init__()
         self.registrant = registrant
         self.owner = owner
@@ -164,10 +200,17 @@ class Snap(Storm, WebhookTargetMixin):
         self.description = description
         self.branch = branch
         self.git_ref = git_ref
+        self.auto_build = auto_build
+        self.auto_build_archive = auto_build_archive
+        self.auto_build_pocket = auto_build_pocket
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
         self.private = private
+        self.store_upload = store_upload
+        self.store_series = store_series
+        self.store_name = store_name
+        self.store_secrets = store_secrets
 
     @property
     def valid_webhook_event_types(self):
@@ -266,6 +309,29 @@ class Snap(Storm, WebhookTargetMixin):
                     das.processor.supports_virtualized
                     or not self.require_virtualized))]
 
+    @property
+    def store_distro_series(self):
+        if self.store_series is None:
+            return None
+        return getUtility(ISnappyDistroSeriesSet).getByBothSeries(
+            self.store_series, self.distro_series)
+
+    @store_distro_series.setter
+    def store_distro_series(self, value):
+        self.distro_series = value.distro_series
+        self.store_series = value.snappy_series
+
+    @property
+    def can_upload_to_store(self):
+        return (
+            config.snappy.store_upload_url is not None and
+            config.snappy.store_url is not None and
+            self.store_upload and
+            self.store_series is not None and
+            self.store_name is not None and
+            self.store_secrets is not None and
+            "discharge" in self.store_secrets)
+
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
         if not requester.inTeam(self.owner):
@@ -309,6 +375,41 @@ class Snap(Storm, WebhookTargetMixin):
             query_args.append(filter_term)
         result = Store.of(self).find(SnapBuild, *query_args)
         result.order_by(order_by)
+        return result
+
+    def getBuildSummariesForSnapBuildIds(self, snap_build_ids):
+        """See `ISnap`."""
+        result = {}
+        if snap_build_ids is None:
+            return result
+        filter_term = SnapBuild.id.is_in(snap_build_ids)
+        order_by = Desc(SnapBuild.id)
+        builds = self._getBuilds(filter_term, order_by)
+
+        # Prefetch data to keep DB query count constant
+        getUtility(IBuildQueueSet).preloadForBuildFarmJobs(builds)
+        lfas = load_related(LibraryFileAlias, builds, ["log_id"])
+        load_related(LibraryFileContent, lfas, ["contentID"])
+
+        for build in builds:
+            if build.date is not None:
+                when_complete = DateTimeFormatterAPI(build.date).displaydate()
+            else:
+                when_complete = None
+
+            if build.log:
+                build_log_size = build.log.content.filesize
+            else:
+                build_log_size = None
+
+            result[build.id] = {
+                "status": build.status.name,
+                "buildstate": build.status,
+                "when_complete": when_complete,
+                "when_complete_estimate": build.estimate,
+                "build_log_url": build.log_url,
+                "build_log_size": build_log_size,
+                }
         return result
 
     @property
@@ -356,6 +457,17 @@ class Snap(Storm, WebhookTargetMixin):
         """See `ISnap`."""
         store = IStore(Snap)
         store.find(SnapArch, SnapArch.snap == self).remove()
+        # Remove build jobs.  There won't be many queued builds, so we can
+        # afford to do this the safe but slow way via BuildQueue.destroySelf
+        # rather than in bulk.
+        buildqueue_records = store.find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id == SnapBuild.build_farm_job_id,
+            SnapBuild.snap == self)
+        for buildqueue_record in buildqueue_records:
+            buildqueue_record.destroySelf()
+        build_farm_job_ids = list(store.find(
+            SnapBuild.build_farm_job_id, SnapBuild.snap == self))
         # XXX cjwatson 2016-02-27 bug=322972: Requires manual SQL due to
         # lack of support for DELETE FROM ... USING ... in Storm.
         store.execute("""
@@ -368,6 +480,8 @@ class Snap(Storm, WebhookTargetMixin):
         store.find(SnapBuild, SnapBuild.snap == self).remove()
         getUtility(IWebhookSet).delete(self.webhooks)
         store.remove(self)
+        store.find(
+            BuildFarmJob, BuildFarmJob.id.is_in(build_farm_job_ids)).remove()
 
 
 class SnapArch(Storm):
@@ -388,8 +502,11 @@ class SnapSet:
     """See `ISnapSet`."""
 
     def new(self, registrant, owner, distro_series, name, description=None,
-            branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=DEFAULT, private=False):
+            branch=None, git_ref=None, auto_build=False,
+            auto_build_archive=None, auto_build_pocket=None,
+            require_virtualized=True, processors=None, date_created=DEFAULT,
+            private=False, store_upload=False, store_series=None,
+            store_name=None, store_secrets=None):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -412,9 +529,13 @@ class SnapSet:
         store = IMasterStore(Snap)
         snap = Snap(
             registrant, owner, distro_series, name, description=description,
-            branch=branch, git_ref=git_ref,
+            branch=branch, git_ref=git_ref, auto_build=auto_build,
+            auto_build_archive=auto_build_archive,
+            auto_build_pocket=auto_build_pocket,
             require_virtualized=require_virtualized, date_created=date_created,
-            private=private)
+            private=private, store_upload=store_upload,
+            store_series=store_series, store_name=store_name,
+            store_secrets=store_secrets)
         store.add(snap)
 
         if processors is None:
@@ -502,9 +623,12 @@ class SnapSet:
         """See `ISnapSet`."""
         return IStore(Snap).find(Snap, Snap.branch == branch)
 
-    def findByGitRepository(self, repository):
+    def findByGitRepository(self, repository, paths=None):
         """See `ISnapSet`."""
-        return IStore(Snap).find(Snap, Snap.git_repository == repository)
+        clauses = [Snap.git_repository == repository]
+        if paths is not None:
+            clauses.append(Snap.git_path.is_in(paths))
+        return IStore(Snap).find(Snap, *clauses)
 
     def findByGitRef(self, ref):
         """See `ISnapSet`."""
@@ -538,14 +662,8 @@ class SnapSet:
         """See `ISnapSet`."""
         snaps = [removeSecurityProxy(snap) for snap in snaps]
 
-        branch_ids = set()
-        git_repository_ids = set()
         person_ids = set()
         for snap in snaps:
-            if snap.branch_id is not None:
-                branch_ids.add(snap.branch_id)
-            if snap.git_repository_id is not None:
-                git_repository_ids.add(snap.git_repository_id)
             person_ids.add(snap.registrant_id)
             person_ids.add(snap.owner_id)
 
@@ -568,6 +686,65 @@ class SnapSet:
 
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
+
+    @staticmethod
+    def _findStaleSnaps():
+        """See `ISnapSet`."""
+        threshold_date = (
+            datetime.now(pytz.UTC) -
+            timedelta(minutes=config.snappy.auto_build_frequency))
+        origin = [
+            Snap,
+            LeftJoin(
+                SnapBuild,
+                And(
+                    SnapBuild.snap_id == Snap.id,
+                    SnapBuild.archive_id == Snap.auto_build_archive_id,
+                    SnapBuild.pocket == Snap.auto_build_pocket,
+                    # We only want Snaps that haven't had an automatic
+                    # SnapBuild dispatched for them recently.
+                    SnapBuild.date_created >= threshold_date)),
+            ]
+        return IStore(Snap).using(*origin).find(
+            Snap,
+            Snap.is_stale == True,
+            Snap.auto_build == True,
+            SnapBuild.date_created == None).config(distinct=True)
+
+    @classmethod
+    def makeAutoBuilds(cls, logger=None):
+        """See `ISnapSet`."""
+        snaps = cls._findStaleSnaps()
+        builds = []
+        for snap in snaps:
+            snap.is_stale = False
+            if logger is not None:
+                logger.debug(
+                    "Scheduling builds of snap package %s/%s",
+                    snap.owner.name, snap.name)
+            for arch in snap.getAllowedArchitectures():
+                try:
+                    build = snap.requestBuild(
+                        snap.owner, snap.auto_build_archive, arch,
+                        snap.auto_build_pocket)
+                    if logger is not None:
+                        logger.debug(
+                            " - %s/%s/%s: Build requested.",
+                            snap.owner.name, snap.name, arch.architecturetag)
+                    builds.append(build)
+                except SnapBuildAlreadyPending as e:
+                    if logger is not None:
+                        logger.warning(
+                            " - %s/%s/%s: %s",
+                            snap.owner.name, snap.name, arch.architecturetag,
+                            e)
+                except Exception as e:
+                    if logger is not None:
+                        logger.exception(
+                            " - %s/%s/%s: %s",
+                            snap.owner.name, snap.name, arch.architecturetag,
+                            e)
+        return builds
 
     def detachFromBranch(self, branch):
         """See `ISnapSet`."""

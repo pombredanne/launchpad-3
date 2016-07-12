@@ -520,8 +520,16 @@ class IGitRepositoryView(IHasRecipes):
         """Mark recipes associated with this repository as stale.
 
         :param paths: A list of reference paths.  Any recipes that include
-            an entry that points to this repository and that has a `revspec`
-            that is one of these paths will be marked as stale.
+            an entry that points to this repository and that have a
+            `revspec` that is one of these paths will be marked as stale.
+        """
+
+    def markSnapsStale(paths):
+        """Mark snap packages associated with this repository as stale.
+
+        :param paths: A list of reference paths.  Any snap packages that
+            include an entry that points to this repository and that are
+            based on one of these paths will be marked as stale.
         """
 
     def detectMerges(paths, logger=None):
@@ -531,6 +539,22 @@ class IGitRepositoryView(IHasRecipes):
             target is this repository and one of these paths will be
             checked.
         :param logger: An optional logger.
+        """
+
+    def getBlob(filename, rev=None):
+        """Get a blob by file name from this repository.
+
+        :param filename: Relative path of a file in the repository.
+        :param rev: An optional revision. Defaults to 'HEAD'.
+        :return: A binary string with the blob content.
+        """
+
+    def getDiff(old, new):
+        """Get the diff between two commits in this repository.
+
+        :param old: The OID of the old commit.
+        :param new: The OID of the new commit.
+        :return: The diff as a binary string.
         """
 
 

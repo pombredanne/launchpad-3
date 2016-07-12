@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
@@ -142,7 +142,6 @@ from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
     OAuthPermission,
     )
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -1689,7 +1688,6 @@ class TestBranchDeletionConsequences(TestCase):
     def test_snap_requirements(self):
         # If a branch is used by a snap package, the deletion requirements
         # indicate this.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.factory.makeSnap(branch=self.branch)
         self.assertEqual(
             {None: ('alter', _('Some snap packages build from this branch.'))},
@@ -1697,7 +1695,6 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_snap_deletion(self):
         # break_references allows deleting a branch used by a snap package.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         snap1 = self.factory.makeSnap(branch=self.branch)
         snap2 = self.factory.makeSnap(branch=self.branch)
         self.branch.destroySelf(break_references=True)
@@ -2134,6 +2131,22 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         # This is just "assertNotRaises"
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
+
+    def test_ghost(self):
+        # createBranchRevisionFromIDs skips ghost revisions for which no
+        # Revision rows exist.
+        branch = self.factory.makeAnyBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        ghost_rev_id = self.factory.getUniqueString("revision-id")
+        revision_id_sequence_pairs = [
+            (rev.revision_id, revision_number),
+            (ghost_rev_id, None),
+            ]
+        branch.createBranchRevisionFromIDs(revision_id_sequence_pairs)
+        self.assertEqual(
+            revision_number, branch.getBranchRevision(revision=rev).sequence)
+        self.assertIsNone(branch.getBranchRevision(revision_id=ghost_rev_id))
 
 
 class TestRevisionHistory(TestCaseWithFactory):

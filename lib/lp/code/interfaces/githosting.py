@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for communication with the Git hosting service."""
@@ -55,6 +55,36 @@ class IGitHostingClient(Interface):
             requested commits.  Non-existent commits will be omitted.
         """
 
+    def getLog(path, start, limit=None, stop=None, logger=None):
+        """Get commit log information.
+
+        :param path: Physical path of the repository on the hosting service.
+        :param start: The commit to start listing from.
+        :param limit: If not None, return no more than this many commits.
+        :param stop: If not None, ignore this commit and its ancestors.
+        :param logger: An optional logger.
+        :return: A list of dicts each of which represents a commit from the
+            start commit's history.
+        """
+
+    def getDiff(path, old, new, common_ancestor=False, context_lines=None,
+                logger=None):
+        """Get the diff between two commits.
+
+        :param path: Physical path of the repository on the hosting service.
+        :param old: The OID of the old commit.
+        :param new: The OID of the new commit.
+        :param common_ancestor: If True, return the symmetric or common
+            ancestor diff, equivalent to
+            `git diff $(git-merge-base OLD NEW) NEW`.
+        :param context_lines: Include this number of lines of context around
+            each hunk.
+        :param logger: An optional logger.
+        :return: A dict mapping 'commits' to a list of commits between 'old'
+            and 'new' (formatted as with `getCommits`) and 'patch' to the
+            text of the diff between 'old' and 'new'.
+        """
+
     def getMergeDiff(path, base, head, logger=None):
         """Get the merge preview diff between two commits.
 
@@ -87,4 +117,14 @@ class IGitHostingClient(Interface):
 
         :param path: Physical path of the repository on the hosting service.
         :param logger: An optional logger.
+        """
+
+    def getBlob(path, filename, rev=None, logger=None):
+        """Get a blob by file name from a repository.
+
+        :param path: Physical path of the repository on the hosting service.
+        :param filename: Relative path of a file in the repository.
+        :param rev: An optional revision. Defaults to 'HEAD'.
+        :param logger: An optional logger.
+        :return: A binary string with the blob content.
         """

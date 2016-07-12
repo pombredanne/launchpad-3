@@ -154,6 +154,8 @@ from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
+    NoSuchAccount,
+    NotPlaceholderAccount,
     PPACreationError,
     TeamMembershipPolicyError,
     )
@@ -206,6 +208,8 @@ from lp.registry.interfaces.ssh import (
     SSHKeyAdditionError,
     SSHKeyCompromisedError,
     SSHKeyType,
+    SSH_KEY_TYPE_TO_TEXT,
+    SSH_TEXT_TO_KEY_TYPE,
     )
 from lp.registry.interfaces.teammembership import (
     IJoinTeamEvent,
@@ -288,6 +292,7 @@ from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
@@ -3279,13 +3284,7 @@ class PersonSet:
         # + is reserved, so is not allowed to be reencoded in transit, so
         # should never appear as its percent-encoded equivalent.
         identifier_suffix = None
-        roots = [config.launchpad.openid_provider_root]
-        if config.launchpad.openid_alternate_provider_roots:
-            roots.extend(
-                [root.strip() for root in
-                 config.launchpad.openid_alternate_provider_roots.split(',')
-                 if root.strip()])
-        for root in roots:
+        for root in CurrentOpenIDEndPoint.getAllRootURLs():
             base = '%s+id/' % root
             if identifier.startswith(base):
                 identifier_suffix = identifier.replace(base, '', 1)
@@ -3397,7 +3396,13 @@ class PersonSet:
                 raise NameAlreadyTaken(
                     "The account matching the identifier is inactive.")
             elif person.account.status in [AccountStatus.DEACTIVATED,
-                                           AccountStatus.NOACCOUNT]:
+                                           AccountStatus.NOACCOUNT,
+                                           AccountStatus.PLACEHOLDER]:
+                if person.account.status == AccountStatus.PLACEHOLDER:
+                    # Placeholder accounts were never visible to anyone
+                    # before, so make them appear fresh to the user.
+                    removeSecurityProxy(person).display_name = full_name
+                    removeSecurityProxy(person).datecreated = UTC_NOW
                 removeSecurityProxy(person.account).reactivate(comment)
                 if email is None:
                     email = getUtility(IEmailAddressSet).new(
@@ -3422,6 +3427,83 @@ class PersonSet:
                 "when purchasing an application via Software Center.",
                 trust_email=False)
         return person
+
+    def getUsernameForSSO(self, user, openid_identifier):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            return None
+        return IPerson(account).name
+
+    def setUsernameFromSSO(self, user, openid_identifier, name,
+                           dry_run=False):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        self._validateName(name)
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            if not dry_run:
+                person = self.createPlaceholderPerson(openid_identifier, name)
+        else:
+            if account.status != AccountStatus.PLACEHOLDER:
+                raise NotPlaceholderAccount(
+                    "An account for that OpenID identifier already exists.")
+            if not dry_run:
+                account = removeSecurityProxy(account)
+                person = IPerson(account)
+                person.name = person.display_name = account.displayname = name
+
+    def getSSHKeysForSSO(self, user, openid_identifier):
+        """See `IPersonSet`"""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            return None
+        return [s.getFullKeyText() for s in IPerson(account).sshkeys]
+
+    def addSSHKeyFromSSO(self, user, openid_identifier, key_text,
+                         dry_run=False):
+        """See `IPersonSet`"""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            raise NoSuchAccount("No account found for openid identifier '%s'"
+                                % openid_identifier)
+        getUtility(ISSHKeySet).new(
+            IPerson(account), key_text, False, dry_run=dry_run)
+
+    def deleteSSHKeyFromSSO(self, user, openid_identifier, key_text,
+                            dry_run=False):
+        """See `IPersonSet`."""
+        if user != getUtility(ILaunchpadCelebrities).ubuntu_sso:
+            raise Unauthorized()
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            raise NoSuchAccount("No account found for openid identifier '%s'"
+                                % openid_identifier)
+        keys = getUtility(ISSHKeySet).getByPersonAndKeyText(
+            IPerson(account),
+            key_text)
+        if not dry_run:
+            # ISSHKeySet does not restrict the same SSH key being added
+            # multiple times, so make sure we delte them all:
+            for key in keys:
+                key.destroySelf(send_notification=False)
 
     def newTeam(self, teamowner, name, display_name, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
@@ -3490,9 +3572,18 @@ class PersonSet:
             name, displayname, hide_email_addresses=True, rationale=rationale,
             comment=comment, registrant=registrant)
 
-    def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, registrant=None, account=None):
-        """Create and return a new Person with the given attributes."""
+    def createPlaceholderPerson(self, openid_identifier, name):
+        """See `IPersonSet`."""
+        account = getUtility(IAccountSet).new(
+            AccountCreationRationale.USERNAME_PLACEHOLDER, name,
+            openid_identifier=openid_identifier,
+            status=AccountStatus.PLACEHOLDER)
+        return self._newPerson(
+            name, name, True,
+            rationale=PersonCreationRationale.USERNAME_PLACEHOLDER,
+            comment="when setting a username in SSO", account=account)
+
+    def _validateName(self, name):
         if not valid_name(name):
             raise InvalidName(
                 "%s is not a valid name for a person." % name)
@@ -3502,6 +3593,11 @@ class PersonSet:
         if self.getByName(name, ignore_merged=False) is not None:
             raise NameAlreadyTaken(
                 "The name '%s' is already taken." % name)
+
+    def _newPerson(self, name, displayname, hide_email_addresses,
+                   rationale, comment=None, registrant=None, account=None):
+        """Create and return a new Person with the given attributes."""
+        self._validateName(name)
 
         if not displayname:
             displayname = name.capitalize()
@@ -3982,47 +4078,42 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
-    def destroySelf(self):
-        # For security reasons we want to notify the preferred email address
-        # that this sshkey has been removed.
-        self.person.security_field_changed(
-            "SSH Key removed from your Launchpad account.",
-            "The SSH Key %s was removed from your account." % self.comment)
+    def destroySelf(self, send_notification=True):
+        if send_notification:
+            # For security reasons we want to notify the preferred email
+            # address that this sshkey has been removed.
+            self.person.security_field_changed(
+                "SSH Key removed from your Launchpad account.",
+                "The SSH Key %s was removed from your account." % self.comment)
         super(SSHKey, self).destroySelf()
+
+    def getFullKeyText(self):
+        return "%s %s %s" % (
+            SSH_KEY_TYPE_TO_TEXT[self.keytype], self.keytext, self.comment)
 
 
 @implementer(ISSHKeySet)
 class SSHKeySet:
 
-    def new(self, person, sshkey):
-        try:
-            kind, keytext, comment = sshkey.split(' ', 2)
-        except (ValueError, AttributeError):
-            raise SSHKeyAdditionError
-
-        if not (kind and keytext and comment):
-            raise SSHKeyAdditionError
+    def new(self, person, sshkey, send_notification=True, dry_run=False):
+        keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
 
         process = subprocess.Popen(
             '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = process.communicate(sshkey.encode('utf-8'))
         if 'compromised' in out.lower():
-            raise SSHKeyCompromisedError
+            raise SSHKeyCompromisedError(
+                "This key cannot be added as it is known to be compromised.")
 
-        if kind == 'ssh-rsa':
-            keytype = SSHKeyType.RSA
-        elif kind == 'ssh-dss':
-            keytype = SSHKeyType.DSA
-        else:
-            raise SSHKeyAdditionError
+        if send_notification:
+            person.security_field_changed(
+                "New SSH key added to your account.",
+                "The SSH key '%s' has been added to your account." % comment)
 
-        person.security_field_changed(
-            "New SSH key added to your account.",
-            "The SSH key '%s' has been added to your account." % comment)
-
-        return SSHKey(person=person, keytype=keytype, keytext=keytext,
-                      comment=comment)
+        if not dry_run:
+            return SSHKey(person=person, keytype=keytype, keytext=keytext,
+                          comment=comment)
 
     def getByID(self, id, default=None):
         try:
@@ -4035,6 +4126,27 @@ class SSHKeySet:
         return SSHKey.select("""
             SSHKey.person IN %s
             """ % sqlvalues([person.id for person in people]))
+
+    def getByPersonAndKeyText(self, person, sshkey):
+        keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
+        return IStore(SSHKey).find(
+            SSHKey,
+            person=person, keytype=keytype, keytext=keytext, comment=comment)
+
+    def _extract_ssh_key_components(self, sshkey):
+        try:
+            kind, keytext, comment = sshkey.split(' ', 2)
+        except (ValueError, AttributeError):
+            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
+
+        if not (kind and keytext and comment):
+            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
+
+        keytype = SSH_TEXT_TO_KEY_TYPE.get(kind)
+        if keytype is None:
+            raise SSHKeyAdditionError(
+                "Invalid SSH key type: '%s'" % kind)
+        return keytype, keytext, comment
 
 
 @implementer(IWikiName)

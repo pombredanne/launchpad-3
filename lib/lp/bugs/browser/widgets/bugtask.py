@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -67,6 +67,7 @@ from lp.bugs.interfaces.bugwatch import (
     )
 from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
@@ -510,6 +511,16 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
         cached_value = self.cached_values.get(input)
         if cached_value:
             return cached_value
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            try:
+                self.context.vocabulary.setDistribution(distribution)
+                return self.context.vocabulary.getTermByToken(input).value
+            except NotFoundError:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+        # Else the untrusted SPN vocab was used so it needs secondary
+        # verification.
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:

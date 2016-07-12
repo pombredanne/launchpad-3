@@ -56,8 +56,11 @@ class TestGitRepositoryTargetWidgetBase:
 
     def setUp(self):
         super(TestGitRepositoryTargetWidgetBase, self).setUp()
-        self.distribution, self.package = self.factory.makeDSPCache(
-            distro_name="fnord", package_name="snarf")
+        self.distribution = self.factory.makeDistribution(name="fnord")
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.distribution)
+        self.package = self.factory.makeDSPCache(
+            distroseries=distroseries, sourcepackagename="snarf")
         self.project = self.factory.makeProduct("pting")
         field = Reference(
             __name__="target", schema=Interface, title=u"target")

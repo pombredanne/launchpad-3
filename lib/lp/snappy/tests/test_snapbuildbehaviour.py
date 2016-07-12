@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+from textwrap import dedent
 import uuid
 
 import fixtures
@@ -39,12 +40,8 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
-from lp.snappy.interfaces.snap import (
-    SNAP_FEATURE_FLAG,
-    SnapBuildArchiveOwnerMismatch,
-    )
+from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -59,10 +56,9 @@ class TestSnapBuildBehaviourBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapBuildBehaviourBase, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.pushConfig("snappy", tools_source=None)
 
-    def makeJob(self, pocket=PackagePublishingPocket.RELEASE, **kwargs):
+    def makeJob(self, pocket=PackagePublishingPocket.UPDATES, **kwargs):
         """Create a sample `ISnapBuildBehaviour`."""
         distribution = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(
@@ -293,15 +289,37 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
 class MakeSnapBuildMixin:
     """Provide the common makeBuild method returning a queued build."""
 
+    def makeSnap(self):
+        # We can't use self.pushConfig here since this is used in a
+        # TrialTestCase instance.
+        config_name = self.factory.getUniqueString()
+        config.push(config_name, dedent("""
+            [snappy]
+            store_url: http://sca.example/
+            store_upload_url: http://updown.example/
+            """))
+        self.addCleanup(config.pop, config_name)
+        distroseries = self.factory.makeDistroSeries()
+        snappyseries = self.factory.makeSnappySeries(
+            usable_distro_series=[distroseries])
+        return self.factory.makeSnap(
+            distroseries=distroseries, store_upload=True,
+            store_series=snappyseries,
+            store_name=self.factory.getUniqueUnicode(),
+            store_secrets={
+                "root": "dummy-root", "discharge": "dummy-discharge"})
+
     def makeBuild(self):
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-        build = self.factory.makeSnapBuild(status=BuildStatus.BUILDING)
+        snap = self.makeSnap()
+        build = self.factory.makeSnapBuild(
+            requester=snap.registrant, snap=snap, status=BuildStatus.BUILDING)
         build.queueBuild()
         return build
 
     def makeUnmodifiableBuild(self):
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-        build = self.factory.makeSnapBuild(status=BuildStatus.BUILDING)
+        snap = self.makeSnap()
+        build = self.factory.makeSnapBuild(
+            requester=snap.registrant, snap=snap, status=BuildStatus.BUILDING)
         build.distro_series.status = SeriesStatus.OBSOLETE
         build.queueBuild()
         return build

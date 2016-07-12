@@ -102,6 +102,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.persondistributionsourcepackage import (
     IPersonDistributionSourcePackageFactory,
     )
@@ -117,7 +118,6 @@ from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -125,6 +125,7 @@ from lp.testing import (
     celebrity_logged_in,
     login_person,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     verifyObject,
     )
@@ -138,7 +139,10 @@ from lp.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
-from lp.testing.matchers import DoesNotSnapshot
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    HasQueryCount,
+    )
 from lp.testing.pages import webservice_for_person
 
 
@@ -654,7 +658,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
     def test_snap_requirements(self):
         # If a repository is used by a snap package, the deletion
         # requirements indicate this.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         [ref] = self.factory.makeGitRefs()
         self.factory.makeSnap(git_ref=ref)
         self.assertEqual(
@@ -664,7 +667,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
     def test_snap_deletion(self):
         # break_references allows deleting a repository used by a snap package.
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         repository = self.factory.makeGitRepository()
         [ref1, ref2] = self.factory.makeGitRefs(
             repository=repository, paths=[u"refs/heads/1", u"refs/heads/2"])
@@ -1260,10 +1262,10 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             u"refs/heads/master": {
                 u"sha1": master_sha1,
                 u"type": GitObjectType.COMMIT,
-                u"author": expected_author.id,
+                u"author": expected_author,
                 u"author_addr": expected_author_addr,
                 u"author_date": author_date,
-                u"committer": expected_committer.id,
+                u"committer": expected_committer,
                 u"committer_addr": expected_committer_addr,
                 u"committer_date": committer_date,
                 u"commit_message": u"tip of master",
@@ -1941,6 +1943,40 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         self.assertFalse(recipe.is_stale)
 
 
+class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_same_repository(self):
+        # On ref changes, snap packages using this ref become stale.
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=ref)
+        removeSecurityProxy(snap).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertTrue(snap.is_stale)
+
+    def test_same_repository_different_ref(self):
+        # On ref changes, snap packages using a different ref in the same
+        # repository are left alone.
+        ref1, ref2 = self.factory.makeGitRefs(
+            paths=[u"refs/heads/a", u"refs/heads/b"])
+        snap = self.factory.makeSnap(git_ref=ref1)
+        removeSecurityProxy(snap).is_stale = False
+        ref1.repository.createOrUpdateRefs(
+            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(snap.is_stale)
+
+    def test_different_repository(self):
+        # On ref changes, unrelated snap packages are left alone.
+        [ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0])
+        removeSecurityProxy(snap).is_stale = False
+        ref.repository.createOrUpdateRefs(
+            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+        self.assertFalse(snap.is_stale)
+
+
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -2031,6 +2067,28 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             set((event.object_before_modification.queue_status,
                  event.object.queue_status)
                 for event in events[:2]))
+
+
+class TestGitRepositoryGetBlob(TestCaseWithFactory):
+    """Tests for retrieving files from a Git repository."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getBlob_with_default_rev(self):
+        repository = self.factory.makeGitRepository()
+        hosting_client = FakeMethod()
+        hosting_client.getBlob = FakeMethod(result='Some text')
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        ret = repository.getBlob('src/README.txt')
+        self.assertEqual('Some text', ret)
+
+    def test_getBlob_with_rev(self):
+        repository = self.factory.makeGitRepository()
+        hosting_client = FakeMethod()
+        hosting_client.getBlob = FakeMethod(result='Some text')
+        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        ret = repository.getBlob('src/README.txt', 'some-rev')
+        self.assertEqual('Some text', ret)
 
 
 class TestGitRepositorySet(TestCaseWithFactory):
@@ -2421,56 +2479,51 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
             "git+ssh://git.launchpad.dev/~person/project/+git/repository",
             repository["git_ssh_url"])
 
-    def test_getRepositories_project(self):
-        project_db = self.factory.makeProduct()
-        repository_db = self.factory.makeGitRepository(target=project_db)
-        webservice = webservice_for_person(
-            repository_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
-        webservice.default_api_version = "devel"
-        with person_logged_in(ANONYMOUS):
-            repository_url = api_url(repository_db)
-            owner_url = api_url(repository_db.owner)
-            project_url = api_url(project_db)
-        response = webservice.named_get(
-            "/+git", "getRepositories", user=owner_url, target=project_url)
-        self.assertEqual(200, response.status)
-        self.assertEqual(
-            [webservice.getAbsoluteUrl(repository_url)],
-            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+    def assertGetRepositoriesWorks(self, target_db):
+        if IPerson.providedBy(target_db):
+            owner_db = target_db
+        else:
+            owner_db = self.factory.makePerson()
+        owner_url = api_url(owner_db)
+        target_url = api_url(target_db)
 
-    def test_getRepositories_package(self):
-        dsp_db = self.factory.makeDistributionSourcePackage()
-        repository_db = self.factory.makeGitRepository(target=dsp_db)
-        webservice = webservice_for_person(
-            repository_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
-        webservice.default_api_version = "devel"
-        with person_logged_in(ANONYMOUS):
-            repository_url = api_url(repository_db)
-            owner_url = api_url(repository_db.owner)
-            dsp_url = api_url(dsp_db)
-        response = webservice.named_get(
-            "/+git", "getRepositories", user=owner_url, target=dsp_url)
-        self.assertEqual(200, response.status)
-        self.assertEqual(
-            [webservice.getAbsoluteUrl(repository_url)],
-            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        repos_db = []
+        repos_url = []
 
-    def test_getRepositories_personal(self):
-        owner_db = self.factory.makePerson()
-        repository_db = self.factory.makeGitRepository(
-            owner=owner_db, target=owner_db)
         webservice = webservice_for_person(
             owner_db, permission=OAuthPermission.WRITE_PUBLIC)
         webservice.default_api_version = "devel"
-        with person_logged_in(ANONYMOUS):
-            repository_url = api_url(repository_db)
-            owner_url = api_url(owner_db)
-        response = webservice.named_get(
-            "/+git", "getRepositories", user=owner_url, target=owner_url)
-        self.assertEqual(200, response.status)
-        self.assertEqual(
-            [webservice.getAbsoluteUrl(repository_url)],
-            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
+        def create_repository():
+            with admin_logged_in():
+                repo = self.factory.makeGitRepository(
+                    target=target_db, owner=owner_db)
+                repos_db.append(repo)
+                repos_url.append(api_url(repo))
+
+        def verify_getRepositories():
+            response = webservice.named_get(
+                "/+git", "getRepositories", user=owner_url, target=target_url)
+            self.assertEqual(200, response.status)
+            self.assertEqual(
+                [webservice.getAbsoluteUrl(url) for url in repos_url],
+                [entry["self_link"]
+                 for entry in response.jsonBody()["entries"]])
+
+        verify_getRepositories()
+        recorder1, recorder2 = record_two_runs(
+            verify_getRepositories, create_repository, 2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_getRepositories_project(self):
+        self.assertGetRepositoriesWorks(self.factory.makeProduct())
+
+    def test_getRepositories_package(self):
+        self.assertGetRepositoriesWorks(
+            self.factory.makeDistributionSourcePackage())
+
+    def test_getRepositories_personal(self):
+        self.assertGetRepositoriesWorks(self.factory.makePerson())
 
     def test_set_information_type(self):
         # The repository owner can change the information type.

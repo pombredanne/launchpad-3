@@ -1,0 +1,6 @@
+Launchpad could not upload this snap package to the store because of an
+authorization failure.  If you still want Launchpad to upload this
+package to the store on your behalf, you will need to reauthorize it.
+You can do that by following the instructions here:
+
+  %(snap_authorize_url)s

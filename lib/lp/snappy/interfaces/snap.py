@@ -14,14 +14,12 @@ __all__ = [
     'ISnapView',
     'NoSourceForSnap',
     'NoSuchSnap',
-    'SNAP_FEATURE_FLAG',
     'SNAP_PRIVATE_FEATURE_FLAG',
     'SNAP_TESTING_FLAGS',
     'SNAP_WEBHOOKS_FEATURE_FLAG',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
-    'SnapFeatureDisabled',
     'SnapNotOwner',
     'SnapPrivacyMismatch',
     'SnapPrivateFeatureDisabled',
@@ -86,17 +84,19 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.services.webhooks.interfaces import IWebhookTarget
+from lp.snappy.interfaces.snappyseries import (
+    ISnappyDistroSeries,
+    ISnappySeries,
+    )
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
-SNAP_FEATURE_FLAG = u"snap.allow_new"
 SNAP_PRIVATE_FEATURE_FLAG = u"snap.allow_private"
 SNAP_WEBHOOKS_FEATURE_FLAG = u"snap.webhooks.enabled"
 
 
 SNAP_TESTING_FLAGS = {
-    SNAP_FEATURE_FLAG: u"on",
     SNAP_PRIVATE_FEATURE_FLAG: u"on",
     SNAP_WEBHOOKS_FEATURE_FLAG: u"on",
     }
@@ -137,16 +137,6 @@ class SnapBuildDisallowedArchitecture(Exception):
         super(SnapBuildDisallowedArchitecture, self).__init__(
             "This snap package is not allowed to build for %s." %
             das.displayname)
-
-
-@error_status(httplib.UNAUTHORIZED)
-class SnapFeatureDisabled(Unauthorized):
-    """Only certain users can create new snap-related objects."""
-
-    def __init__(self):
-        super(SnapFeatureDisabled, self).__init__(
-            "You do not have permission to create new snaps or new snap "
-            "builds.")
 
 
 @error_status(httplib.UNAUTHORIZED)
@@ -248,6 +238,10 @@ class ISnapView(Interface):
         :return: Sequence of `IDistroArchSeries` instances.
         """
 
+    can_upload_to_store = Attribute(
+        "Whether everything is set up to allow uploading builds of this snap "
+        "package to the store.")
+
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
         archive=Reference(schema=IArchive),
@@ -264,6 +258,21 @@ class ISnapView(Interface):
         :param distro_arch_series: The architecture to build for.
         :param pocket: The pocket that should be targeted.
         :return: `ISnapBuild`.
+        """
+
+    @operation_parameters(
+        snap_build_ids=List(
+            title=_("A list of snap build ids."),
+            value_type=Int()))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBuildSummariesForSnapBuildIds(snap_build_ids):
+        """Return a dictionary containing a summary of the build statuses.
+
+        :param snap_build_ids: A list of snap build ids.
+        :type source_ids: ``list``
+        :return: A dict consisting of the overall status summaries for the
+            given snap builds.
         """
 
     builds = exported(doNotSnapshot(CollectionField(
@@ -354,6 +363,64 @@ class ISnapEditableAttributes(IHasOwner):
             "The Git branch containing a snapcraft.yaml recipe at the top "
             "level.")))
 
+    auto_build = exported(Bool(
+        title=_("Automatically build when branch changes"),
+        required=True, readonly=False,
+        description=_(
+            "Whether this snap package is built automatically when the branch "
+            "containing its snapcraft.yaml recipe changes.")))
+
+    auto_build_archive = exported(Reference(
+        IArchive, title=_("Source archive for automatic builds"),
+        required=False, readonly=False,
+        description=_(
+            "The archive from which automatic builds of this snap package "
+            "should be built.")))
+
+    auto_build_pocket = exported(Choice(
+        title=_("Pocket for automatic builds"),
+        vocabulary=PackagePublishingPocket, required=False, readonly=False,
+        description=_(
+            "The pocket for which automatic builds of this snap package "
+            "should be built.")))
+
+    is_stale = Bool(
+        title=_("Snap package is stale and is due to be rebuilt."),
+        required=True, readonly=False)
+
+    store_upload = Bool(
+        title=_("Automatically upload to store"),
+        required=True, readonly=False,
+        description=_(
+            "Whether builds of this snap package are automatically uploaded "
+            "to the store."))
+
+    store_series = ReferenceChoice(
+        title=_("Store series"),
+        schema=ISnappySeries, vocabulary="SnappySeries",
+        required=False, readonly=False,
+        description=_(
+            "The series in which this snap package should be published in the "
+            "store."))
+
+    store_distro_series = ReferenceChoice(
+        title=_("Store and distro series"),
+        schema=ISnappyDistroSeries, vocabulary="SnappyDistroSeries",
+        required=False, readonly=False)
+
+    store_name = TextLine(
+        title=_("Registered store package name"),
+        required=False, readonly=False,
+        description=_(
+            "The registered name of this snap package in the store."))
+
+    store_secrets = List(
+        value_type=TextLine(), title=_("Store upload tokens"),
+        required=False, readonly=False,
+        description=_(
+            "Serialized secrets issued by the store and the login service to "
+            "authorize uploads of this snap package."))
+
 
 class ISnapAdminAttributes(Interface):
     """`ISnap` attributes that can be edited by admins.
@@ -401,7 +468,9 @@ class ISnapSet(Interface):
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=None, private=False):
+            processors=None, date_created=None, private=False,
+            store_upload=False, store_series=None, store_name=None,
+            store_secrets=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):
@@ -444,8 +513,13 @@ class ISnapSet(Interface):
     def findByBranch(branch):
         """Return all snap packages for the given Bazaar branch."""
 
-    def findByGitRepository(repository):
-        """Return all snap packages for the given Git repository."""
+    def findByGitRepository(repository, paths=None):
+        """Return all snap packages for the given Git repository.
+
+        :param repository: An `IGitRepository`.
+        :param paths: If not None, only return snap packages for one of
+            these Git reference paths.
+        """
 
     def findByGitRef(ref):
         """Return all snap packages for the given Git reference."""
@@ -464,6 +538,12 @@ class ISnapSet(Interface):
 
     def preloadDataForSnaps(snaps, user):
         """Load the data related to a list of snap packages."""
+
+    def makeAutoBuilds(logger=None):
+        """Create and return automatic builds for stale snap packages.
+
+        :param logger: An optional logger.
+        """
 
     def detachFromBranch(branch):
         """Detach all snap packages from the given Bazaar branch.

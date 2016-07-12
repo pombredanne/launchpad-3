@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of Rosetta translations tarballs.
@@ -11,7 +11,6 @@ __metaclass__ = type
 
 __all__ = [
     'RosettaTranslationsUpload',
-    'process_rosetta_translations',
     ]
 
 from zope.component import getUtility
@@ -47,6 +46,12 @@ class RosettaTranslationsUpload(CustomUpload):
     custom_type = "rosetta-translations"
 
     package_name = None
+
+    @classmethod
+    def publish(cls, packageupload, libraryfilealias, logger=None):
+        """See `ICustomUploadHandler`."""
+        upload = cls(logger=logger)
+        upload.process(packageupload, libraryfilealias)
 
     def process(self, packageupload, libraryfilealias):
         if packageupload.package_name is None:
@@ -134,7 +139,7 @@ class RosettaTranslationsUpload(CustomUpload):
         """Sets the package name parsed from the lfa filename."""
         self.package_name = self.parsePath(tarfile_name)[0]
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, archive, tarfile_path, distroseries):
         pass
 
     @classmethod
@@ -154,9 +159,3 @@ class RosettaTranslationsUpload(CustomUpload):
             name=self.package_name, exact_match=True,
             distroseries=packageupload.distroseries,
             pocket=packageupload.pocket).first()
-
-
-def process_rosetta_translations(packageupload, libraryfilealias, logger=None):
-    """Process a Rosetta translation upload."""
-    upload = RosettaTranslationsUpload(logger)
-    upload.process(packageupload, libraryfilealias)

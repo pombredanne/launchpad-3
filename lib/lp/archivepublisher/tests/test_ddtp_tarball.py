@@ -9,26 +9,30 @@ tests of ddtp-tarball upload and queue manipulation.
 
 import os
 
-from lp.archivepublisher.ddtp_tarball import (
-    DdtpTarballUpload,
-    process_ddtp_tarball,
-    )
+from zope.component import getUtility
+
+from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.testing import TestCase
+from lp.soyuz.enums import ArchivePurpose
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
-class FakeConfig:
-    """A fake publisher configuration."""
-    def __init__(self, archiveroot):
-        self.archiveroot = archiveroot
+class TestDdtpTarball(TestCaseWithFactory):
 
-
-class TestDdtpTarball(TestCase):
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestDdtpTarball, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
-        self.pubconf = FakeConfig(self.temp_dir)
+        self.distro = self.factory.makeDistribution()
+        db_pubconf = getUtility(IPublisherConfigSet).getByDistribution(
+            self.distro)
+        db_pubconf.root_dir = unicode(self.temp_dir)
+        self.archive = self.factory.makeArchive(
+            distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 0o022.
         old_umask = os.umask(0o022)
@@ -38,21 +42,22 @@ class TestDdtpTarball(TestCase):
         self.path = os.path.join(
             self.temp_dir, "translations_main_%s.tar.gz" % version)
         self.buffer = open(self.path, "wb")
-        self.archive = LaunchpadWriteTarFile(self.buffer)
+        self.tarfile = LaunchpadWriteTarFile(self.buffer)
 
     def process(self):
-        self.archive.close()
+        self.tarfile.close()
         self.buffer.close()
-        process_ddtp_tarball(self.pubconf, self.path, self.suite)
+        DdtpTarballUpload().process(self.archive, self.path, self.suite)
 
     def getTranslationsPath(self, filename):
+        pubconf = getPubConfig(self.archive)
         return os.path.join(
-            self.temp_dir, "dists", self.suite, "main", "i18n", filename)
+            pubconf.archiveroot, "dists", self.suite, "main", "i18n", filename)
 
     def test_basic(self):
         # Processing a simple correct tar file works.
         self.openArchive("20060728")
-        self.archive.add_file("i18n/Translation-de", "")
+        self.tarfile.add_file("i18n/Translation-de", "")
         self.process()
         self.assertTrue(os.path.exists(
             self.getTranslationsPath("Translation-de")))
@@ -60,8 +65,8 @@ class TestDdtpTarball(TestCase):
     def test_ignores_empty_directories(self):
         # Empty directories in the tarball are not extracted.
         self.openArchive("20060728")
-        self.archive.add_file("i18n/Translation-de", "")
-        self.archive.add_directory("i18n/foo")
+        self.tarfile.add_file("i18n/Translation-de", "")
+        self.tarfile.add_directory("i18n/foo")
         self.process()
         self.assertTrue(os.path.exists(
             self.getTranslationsPath("Translation-de")))
@@ -71,15 +76,15 @@ class TestDdtpTarball(TestCase):
         # If a DDTP tarball only contains a subset of published translation
         # files, these are updated and the rest are left untouched.
         self.openArchive("20060728")
-        self.archive.add_file("i18n/Translation-bn", "bn")
-        self.archive.add_file("i18n/Translation-ca", "ca")
+        self.tarfile.add_file("i18n/Translation-bn", "bn")
+        self.tarfile.add_file("i18n/Translation-ca", "ca")
         self.process()
         with open(self.getTranslationsPath("Translation-bn")) as bn_file:
             self.assertEqual("bn", bn_file.read())
         with open(self.getTranslationsPath("Translation-ca")) as ca_file:
             self.assertEqual("ca", ca_file.read())
         self.openArchive("20060817")
-        self.archive.add_file("i18n/Translation-bn", "new bn")
+        self.tarfile.add_file("i18n/Translation-bn", "new bn")
         self.process()
         with open(self.getTranslationsPath("Translation-bn")) as bn_file:
             self.assertEqual("new bn", bn_file.read())
@@ -93,7 +98,7 @@ class TestDdtpTarball(TestCase):
         # into place, so making this work requires special care.  Test that
         # that care has been taken.
         self.openArchive("20060728")
-        self.archive.add_file("i18n/Translation-ca", "")
+        self.tarfile.add_file("i18n/Translation-ca", "")
         self.process()
         ca = self.getTranslationsPath("Translation-ca")
         bn = self.getTranslationsPath("Translation-bn")
@@ -102,7 +107,7 @@ class TestDdtpTarball(TestCase):
         self.assertEqual(2, os.stat(bn).st_nlink)
         self.assertEqual(2, os.stat(ca).st_nlink)
         self.openArchive("20060817")
-        self.archive.add_file("i18n/Translation-bn", "break hard link")
+        self.tarfile.add_file("i18n/Translation-bn", "break hard link")
         self.process()
         with open(bn) as bn_file:
             self.assertEqual("break hard link", bn_file.read())

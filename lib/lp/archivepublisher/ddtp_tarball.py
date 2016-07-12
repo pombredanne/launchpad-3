@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of translated packages descriptions (ddtp) tarballs.
@@ -14,11 +14,11 @@ __metaclass__ = type
 
 __all__ = [
     'DdtpTarballUpload',
-    'process_ddtp_tarball',
     ]
 
 import os
 
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
 
 
@@ -59,10 +59,11 @@ class DdtpTarballUpload(CustomUpload):
         _, self.component, self.version = self.parsePath(tarfile_path)
         self.arch = None
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, archive, tarfile_path, suite):
         self.setComponents(tarfile_path)
+        pubconf = getPubConfig(archive)
         self.targetdir = os.path.join(
-            pubconf.archiveroot, 'dists', distroseries, self.component)
+            pubconf.archiveroot, 'dists', suite, self.component)
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
@@ -82,14 +83,3 @@ class DdtpTarballUpload(CustomUpload):
     def fixCurrentSymlink(self):
         # There is no symlink to fix up for DDTP uploads
         pass
-
-
-def process_ddtp_tarball(pubconf, tarfile_path, distroseries, logger=None):
-    """Process a raw-ddtp-tarball tarfile.
-
-    Unpacking it into the given archive for the given distroseries.
-    Raises CustomUploadError (or some subclass thereof) if
-    anything goes wrong.
-    """
-    upload = DdtpTarballUpload(logger=logger)
-    upload.process(pubconf, tarfile_path, distroseries)

@@ -35,10 +35,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
-from lp.snappy.interfaces.snap import (
-    SNAP_TESTING_FLAGS,
-    SnapFeatureDisabled,
-    )
+from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
     ISnapBuildSet,
@@ -61,27 +58,12 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.testing.pages import webservice_for_person
 
 
-class TestSnapBuildFeatureFlag(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, we will not create new SnapBuilds.
-        class MockSnap:
-            require_virtualized = False
-
-        self.assertRaises(
-            SnapFeatureDisabled, getUtility(ISnapBuildSet).new,
-            None, MockSnap(), self.factory.makeArchive(),
-            self.factory.makeDistroArchSeries(), None)
-
-
 expected_body = """\
  * Snap Package: snap-1
  * Archive: distro
  * Distroseries: distro unstable
  * Architecture: i386
- * Pocket: RELEASE
+ * Pocket: UPDATES
  * State: Failed to build
  * Duration: 10 minutes
  * Build Log: %s
@@ -97,6 +79,9 @@ class TestSnapBuild(TestCaseWithFactory):
     def setUp(self):
         super(TestSnapBuild, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
         self.build = self.factory.makeSnapBuild()
 
     def test_implements_interfaces(self):
@@ -250,6 +235,28 @@ class TestSnapBuild(TestCaseWithFactory):
                     hook.id, hook.target),
                 repr(delivery))
 
+    def test_updateStatus_failure_does_not_trigger_store_uploads(self):
+        # A failed SnapBuild does not trigger store uploads.
+        self.build.snap.store_series = self.factory.makeSnappySeries()
+        self.build.snap.store_name = self.factory.getUniqueUnicode()
+        self.build.snap.store_upload = True
+        self.build.snap.store_secrets = {
+            "root": "dummy-root", "discharge": "dummy-discharge"}
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        self.assertContentEqual([], self.build.store_upload_jobs)
+
+    def test_updateStatus_fullybuilt_triggers_store_uploads(self):
+        # A completed SnapBuild triggers store uploads.
+        self.build.snap.store_series = self.factory.makeSnappySeries()
+        self.build.snap.store_name = self.factory.getUniqueUnicode()
+        self.build.snap.store_upload = True
+        self.build.snap.store_secrets = {
+            "root": "dummy-root", "discharge": "dummy-discharge"}
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(1, len(list(self.build.store_upload_jobs)))
+
     def test_notify_fullybuilt(self):
         # notify does not send mail when a SnapBuild completes normally.
         person = self.factory.makePerson(name="person")
@@ -285,7 +292,7 @@ class TestSnapBuild(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual(
             "[Snap build #%d] i386 build of snap-1 snap package in distro "
-            "unstable" % build.id, subject)
+            "unstable-updates" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(person.name, notification["X-Launchpad-Message-For"])
@@ -312,6 +319,23 @@ class TestSnapBuild(TestCaseWithFactory):
                 self.build.snap.owner.name, self.build.snap.name,
                 self.build.id),
             self.build.log_url)
+
+    def test_eta(self):
+        # SnapBuild.eta returns a non-None value when it should, or None
+        # when there's no start time.
+        self.build.queueBuild()
+        self.assertIsNone(self.build.eta)
+        self.factory.makeBuilder(processors=[self.build.processor])
+        self.assertIsNotNone(self.build.eta)
+
+    def test_estimate(self):
+        # SnapBuild.estimate returns True until the job is completed.
+        self.build.queueBuild()
+        self.factory.makeBuilder(processors=[self.build.processor])
+        self.build.updateStatus(BuildStatus.BUILDING)
+        self.assertTrue(self.build.estimate)
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertFalse(self.build.estimate)
 
 
 class TestSnapBuildSet(TestCaseWithFactory):
@@ -377,7 +401,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(db_build.distro_arch_series),
                 build["distro_arch_series_link"])
-            self.assertEqual("Release", build["pocket"])
+            self.assertEqual("Updates", build["pocket"])
             self.assertIsNone(build["score"])
             self.assertFalse(build["can_be_rescored"])
             self.assertFalse(build["can_be_cancelled"])

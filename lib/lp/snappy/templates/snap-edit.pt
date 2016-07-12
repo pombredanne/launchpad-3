@@ -25,9 +25,27 @@
         <tal:widget define="widget nocall:view/widgets/name">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
-        <tal:widget define="widget nocall:view/widgets/distro_series">
+        <tal:widget define="widget nocall:view/widgets/store_distro_series">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
+
+        <tr tal:condition="view/has_snappy_distro_series">
+          <td>
+            <tal:widget define="widget nocall:view/widgets/store_upload">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+            <table class="subordinate">
+              <tal:widget define="widget nocall:view/widgets/store_name">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+            </table>
+            <p class="formHelp">
+              If you change any settings related to automatically uploading
+              builds of this snap to the store, then the login service will
+              prompt you to authorize this request.
+            </p>
+          </td>
+        </tr>
 
         <tr>
           <td>
