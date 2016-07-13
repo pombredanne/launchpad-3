@@ -396,17 +396,17 @@ class TestMakeBugtrackerName(TestCase):
     """Tests for make_bugtracker_name."""
 
     def test_url(self):
-        self.assertEquals(
+        self.assertEqual(
             'auto-bugs.example.com',
             make_bugtracker_name('http://bugs.example.com/shrubbery'))
 
     def test_email_address(self):
-        self.assertEquals(
+        self.assertEqual(
             'auto-foo.bar',
             make_bugtracker_name('mailto:foo.bar@somewhere.com'))
 
     def test_sanitises_forbidden_characters(self):
-        self.assertEquals(
+        self.assertEqual(
             'auto-foobar',
             make_bugtracker_name('mailto:foo_bar@somewhere.com'))
 
@@ -415,12 +415,12 @@ class TestMakeBugtrackerTitle(TestCase):
     """Tests for make_bugtracker_title."""
 
     def test_url(self):
-        self.assertEquals(
+        self.assertEqual(
             'bugs.example.com/shrubbery',
             make_bugtracker_title('http://bugs.example.com/shrubbery'))
 
     def test_email_address(self):
-        self.assertEquals(
+        self.assertEqual(
             'Email to foo.bar@somewhere',
             make_bugtracker_title('mailto:foo.bar@somewhere.com'))
 
