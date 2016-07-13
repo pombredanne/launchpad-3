@@ -34,35 +34,37 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
+def make_snap(test_case):
+    return test_case.factory.makeSnap(distroseries=test_case.distroseries)
+
+
+def make_branch(test_case):
+    return test_case.factory.makeAnyBranch()
+
+
+def make_git_repository(test_case):
+    return test_case.factory.makeGitRepository()
+
+
 class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
 
-    scenarios = [
-        ("Snap", {"context_type": "snap"}),
-        ("Branch", {"context_type": "branch"}),
-        ("GitRepository", {"context_type": "git_repository"}),
-        ]
-
     layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ("Snap", {"context_factory": make_snap}),
+        ("Branch", {"context_factory": make_branch}),
+        ("GitRepository", {"context_factory": make_git_repository}),
+        ]
 
     def setUp(self):
         super(TestSnapArchiveWidget, self).setUp()
         self.distroseries = self.factory.makeDistroSeries()
         field = Reference(
             __name__="archive", schema=IArchive, title=u"Archive")
-        self.context = self.makeContext(self.distroseries)
+        self.context = self.context_factory(self)
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
         self.widget = SnapArchiveWidget(field, request)
-
-    def makeContext(self, distroseries):
-        if self.context_type == "snap":
-            return self.factory.makeSnap(distroseries=distroseries)
-        elif self.context_type == "branch":
-            return self.factory.makeAnyBranch()
-        elif self.context_type == "git_repository":
-            return self.factory.makeGitRepository()
-        else:
-            raise AssertionError("Unknown context type %s" % self.context_type)
 
     def test_implements(self):
         self.assertTrue(verifyObject(IBrowserWidget, self.widget))
