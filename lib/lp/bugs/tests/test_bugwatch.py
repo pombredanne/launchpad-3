@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
@@ -10,12 +10,15 @@ from datetime import (
     timedelta,
     )
 import re
-import unittest
 from urlparse import urlunsplit
 
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import utc
 from storm.store import Store
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -50,6 +53,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import switch_dbuser
@@ -61,8 +65,111 @@ from lp.testing.layers import (
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
-class ExtractBugTrackerAndBugTestBase:
-    """Test base for testing BugWatchSet.extractBugTrackerAndBug."""
+class ExtractBugTrackerAndBugTest(WithScenarios, TestCase):
+    """Test BugWatchSet.extractBugTrackerAndBug."""
+
+    scenarios = [
+        ('Mantis', {
+            'bugtracker_type': BugTrackerType.MANTIS,
+            'bug_url': 'http://some.host/bugs/view.php?id=3224',
+            'base_url': 'http://some.host/bugs/',
+            'bug_id': '3224',
+            }),
+        ('Bugzilla', {
+            'bugtracker_type': BugTrackerType.BUGZILLA,
+            'bug_url': 'http://some.host/bugs/show_bug.cgi?id=3224',
+            'base_url': 'http://some.host/bugs/',
+            'bug_id': '3224',
+            }),
+        # Issuezilla is practically the same as Bugzilla, so we treat it as
+        # a normal BUGZILLA type.
+        ('Issuezilla', {
+            'bugtracker_type': BugTrackerType.BUGZILLA,
+            'bug_url': 'http://some.host/bugs/show_bug.cgi?issue=3224',
+            'base_url': 'http://some.host/bugs/',
+            'bug_id': '3224',
+            }),
+        ('RoundUp', {
+            'bugtracker_type': BugTrackerType.ROUNDUP,
+            'bug_url': 'http://some.host/some/path/issue377',
+            'base_url': 'http://some.host/some/path/',
+            'bug_id': '377',
+            }),
+        ('Trac', {
+            'bugtracker_type': BugTrackerType.TRAC,
+            'bug_url': 'http://some.host/some/path/ticket/42',
+            'base_url': 'http://some.host/some/path/',
+            'bug_id': '42',
+            }),
+        ('Debbugs', {
+            'bugtracker_type': BugTrackerType.DEBBUGS,
+            'bug_url': (
+                'http://some.host/some/path/cgi-bin/bugreport.cgi?bug=42'),
+            'base_url': 'http://some.host/some/path/',
+            'bug_id': '42',
+            }),
+        ('DebbugsShorthand', {
+            'bugtracker_type': BugTrackerType.DEBBUGS,
+            'bug_url': 'http://bugs.debian.org/42',
+            'base_url': 'http://bugs.debian.org/',
+            'bug_id': '42',
+            'already_registered': True,
+            }),
+        # SourceForge-like URLs, though not actually SourceForge itself.
+        ('XForge', {
+            'bugtracker_type': BugTrackerType.SOURCEFORGE,
+            'bug_url': (
+                'http://gforge.example.com/tracker/index.php'
+                '?func=detail&aid=90812&group_id=84122&atid=575154'),
+            'base_url': 'http://gforge.example.com/',
+            'bug_id': '90812',
+            }),
+        ('RT', {
+            'bugtracker_type': BugTrackerType.RT,
+            'bug_url': 'http://some.host/Ticket/Display.html?id=2379',
+            'base_url': 'http://some.host/',
+            'bug_id': '2379',
+            }),
+        ('CPAN', {
+            'bugtracker_type': BugTrackerType.RT,
+            'bug_url': 'http://rt.cpan.org/Public/Bug/Display.html?id=2379',
+            'base_url': 'http://rt.cpan.org/',
+            'bug_id': '2379',
+            }),
+        ('Savannah', {
+            'bugtracker_type': BugTrackerType.SAVANE,
+            'bug_url': 'http://savannah.gnu.org/bugs/?22003',
+            'base_url': 'http://savannah.gnu.org/',
+            'bug_id': '22003',
+            'already_registered': True,
+            }),
+        ('Savane', {
+            'bugtracker_type': BugTrackerType.SAVANE,
+            'bug_url': 'http://savane.example.com/bugs/?12345',
+            'base_url': 'http://savane.example.com/',
+            'bug_id': '12345',
+            }),
+        ('PHPProject', {
+            'bugtracker_type': BugTrackerType.PHPPROJECT,
+            'bug_url': 'http://phptracker.example.com/bug.php?id=12345',
+            'base_url': 'http://phptracker.example.com/',
+            'bug_id': '12345',
+            }),
+        ('GoogleCode', {
+            'bugtracker_type': BugTrackerType.GOOGLE_CODE,
+            'bug_url': (
+                'http://code.google.com/p/myproject/issues/detail?id=12345'),
+            'base_url': 'http://code.google.com/p/myproject/issues',
+            'bug_id': '12345',
+            }),
+        ('GitHub', {
+            'bugtracker_type': BugTrackerType.GITHUB,
+            'bug_url': 'https://github.com/user/repository/issues/12345',
+            'base_url': 'https://github.com/user/repository/issues',
+            'bug_id': '12345',
+            }),
+        ]
+
     layer = LaunchpadFunctionalLayer
 
     # A URL to an unregistered bug tracker.
@@ -77,7 +184,11 @@ class ExtractBugTrackerAndBugTestBase:
     # The bug id in the sample bug_url.
     bug_id = None
 
+    # True if the bug tracker is already registered in sampledata.
+    already_registered = False
+
     def setUp(self):
+        super(ExtractBugTrackerAndBugTest, self).setUp()
         login(ANONYMOUS)
         self.bugwatch_set = getUtility(IBugWatchSet)
         self.bugtracker_set = getUtility(IBugTrackerSet)
@@ -108,8 +219,9 @@ class ExtractBugTrackerAndBugTestBase:
         # A NoBugTrackerFound exception is raised if extractBugTrackerAndBug
         # can extract a base URL and bug id from the URL but there's no
         # such bug tracker registered in Launchpad.
-        self.failUnless(
-            self.bugtracker_set.queryByBaseURL(self.base_url) is None)
+        if self.already_registered:
+            return
+        self.assertIsNone(self.bugtracker_set.queryByBaseURL(self.base_url))
         try:
             bugtracker, bug = self.bugwatch_set.extractBugTrackerAndBug(
                 self.bug_url)
@@ -132,86 +244,7 @@ class ExtractBugTrackerAndBugTestBase:
             self.bugwatch_set.extractBugTrackerAndBug, invalid_url)
 
 
-class MantisExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Mantis URLs."""
-
-    bugtracker_type = BugTrackerType.MANTIS
-    bug_url = 'http://some.host/bugs/view.php?id=3224'
-    base_url = 'http://some.host/bugs/'
-    bug_id = '3224'
-
-
-class BugzillaExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
-
-    bugtracker_type = BugTrackerType.BUGZILLA
-    bug_url = 'http://some.host/bugs/show_bug.cgi?id=3224'
-    base_url = 'http://some.host/bugs/'
-    bug_id = '3224'
-
-
-class IssuezillaExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Issuezilla.
-
-    Issuezilla is practically the same as Buzilla, so we treat it as a
-    normal BUGZILLA type.
-    """
-
-    bugtracker_type = BugTrackerType.BUGZILLA
-    bug_url = 'http://some.host/bugs/show_bug.cgi?issue=3224'
-    base_url = 'http://some.host/bugs/'
-    bug_id = '3224'
-
-
-class RoundUpExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
-
-    bugtracker_type = BugTrackerType.ROUNDUP
-    bug_url = 'http://some.host/some/path/issue377'
-    base_url = 'http://some.host/some/path/'
-    bug_id = '377'
-
-
-class TracExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
-
-    bugtracker_type = BugTrackerType.TRAC
-    bug_url = 'http://some.host/some/path/ticket/42'
-    base_url = 'http://some.host/some/path/'
-    bug_id = '42'
-
-
-class DebbugsExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Debbugs URLs."""
-
-    bugtracker_type = BugTrackerType.DEBBUGS
-    bug_url = 'http://some.host/some/path/cgi-bin/bugreport.cgi?bug=42'
-    base_url = 'http://some.host/some/path/'
-    bug_id = '42'
-
-
-class DebbugsExtractBugTrackerAndBugShorthandTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure extractBugTrackerAndBug works for short Debbugs URLs."""
-
-    bugtracker_type = BugTrackerType.DEBBUGS
-    bug_url = 'http://bugs.debian.org/42'
-    base_url = 'http://bugs.debian.org/'
-    bug_id = '42'
-
-    def test_unregistered_tracker_url(self):
-        # bugs.debian.org is already registered, so no dice.
-        pass
-
-
-class SFExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
+class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTest):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with SF URLs.
 
     We have only one SourceForge tracker registered in Launchpad, so we
@@ -219,17 +252,31 @@ class SFExtractBugTrackerAndBugTest(
     bug id.
     """
 
-    bugtracker_type = BugTrackerType.SOURCEFORGE
-    bug_url = (
-        'http://sourceforge.net/tracker/index.php'
-        '?func=detail&aid=1568562&group_id=84122&atid=575154')
-    base_url = 'http://sourceforge.net/'
-    bug_id = '1568562'
+    scenarios = [
+        # We have only one SourceForge tracker registered in Launchpad, so
+        # we don't care about the aid and group_id, only about atid which is
+        # the bug id.
+        ('SourceForge', {
+            'bugtracker_type': BugTrackerType.SOURCEFORGE,
+            'bug_url': (
+                'http://sourceforge.net/tracker/index.php'
+                '?func=detail&aid=1568562&group_id=84122&atid=575154'),
+            'base_url': 'http://sourceforge.net/',
+            'bug_id': '1568562',
+            }),
+        # New SF tracker URLs.
+        ('SourceForgeTracker2', {
+            'bugtracker_type': BugTrackerType.SOURCEFORGE,
+            'bug_url': (
+                'http://sourceforge.net/tracker2/'
+                '?func=detail&aid=1568562&group_id=84122&atid=575154'),
+            'base_url': 'http://sourceforge.net/',
+            'bug_id': '1568562',
+            }),
+        ]
 
-    def test_unregistered_tracker_url(self):
-        # The SourceForge tracker is always registered, so this test
-        # doesn't make sense for SourceForge URLs.
-        pass
+    # The SourceForge tracker is always registered.
+    already_registered = True
 
     def test_aliases(self):
         """Test that parsing SourceForge URLs works with the SF aliases."""
@@ -260,82 +307,11 @@ class SFExtractBugTrackerAndBugTest(
         self.base_url = original_base_url
 
 
-class SFTracker2ExtractBugTrackerAndBugTest(SFExtractBugTrackerAndBugTest):
-    """Ensure extractBugTrackerAndBug works for new SF tracker URLs."""
-
-    bugtracker_type = BugTrackerType.SOURCEFORGE
-    bug_url = (
-        'http://sourceforge.net/tracker2/'
-        '?func=detail&aid=1568562&group_id=84122&atid=575154')
-    base_url = 'http://sourceforge.net/'
-    bug_id = '1568562'
-
-
-class XForgeExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure extractBugTrackerAndBug works with SourceForge-like URLs.
-    """
-
-    bugtracker_type = BugTrackerType.SOURCEFORGE
-    bug_url = (
-        'http://gforge.example.com/tracker/index.php'
-        '?func=detail&aid=90812&group_id=84122&atid=575154')
-    base_url = 'http://gforge.example.com/'
-    bug_id = '90812'
-
-
-class RTExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with RT URLs."""
-
-    bugtracker_type = BugTrackerType.RT
-    bug_url = 'http://some.host/Ticket/Display.html?id=2379'
-    base_url = 'http://some.host/'
-    bug_id = '2379'
-
-
-class CpanExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with CPAN URLs."""
-
-    bugtracker_type = BugTrackerType.RT
-    bug_url = 'http://rt.cpan.org/Public/Bug/Display.html?id=2379'
-    base_url = 'http://rt.cpan.org/'
-    bug_id = '2379'
-
-
-class SavannahExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Savannah URLs.
-    """
-
-    bugtracker_type = BugTrackerType.SAVANE
-    bug_url = 'http://savannah.gnu.org/bugs/?22003'
-    base_url = 'http://savannah.gnu.org/'
-    bug_id = '22003'
-
-    def test_unregistered_tracker_url(self):
-        # The Savannah tracker is always registered, so this test
-        # doesn't make sense for Savannah URLs.
-        pass
-
-
-class SavaneExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Savane URLs.
-    """
-
-    bugtracker_type = BugTrackerType.SAVANE
-    bug_url = 'http://savane.example.com/bugs/?12345'
-    base_url = 'http://savane.example.com/'
-    bug_id = '12345'
-
-
-class EmailAddressExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
+class EmailAddressExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTest):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with email addresses.
     """
 
+    scenarios = None
     bugtracker_type = BugTrackerType.EMAILADDRESS
     bug_url = 'mailto:foo.bar@example.com'
     base_url = 'mailto:foo.bar@example.com'
@@ -351,28 +327,6 @@ class EmailAddressExtractBugTrackerAndBugTest(
     def test_invalid_bug_number(self):
         # Test does not make sense for email addresses.
         pass
-
-
-class PHPProjectBugTrackerExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with PHP bug URLs.
-    """
-
-    bugtracker_type = BugTrackerType.PHPPROJECT
-    bug_url = 'http://phptracker.example.com/bug.php?id=12345'
-    base_url = 'http://phptracker.example.com/'
-    bug_id = '12345'
-
-
-class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works for Google Code URLs.
-    """
-
-    bugtracker_type = BugTrackerType.GOOGLE_CODE
-    bug_url = 'http://code.google.com/p/myproject/issues/detail?id=12345'
-    base_url = 'http://code.google.com/p/myproject/issues'
-    bug_id = '12345'
 
 
 class TestBugWatch(TestCaseWithFactory):
@@ -758,3 +712,6 @@ class TestBugWatchResetting(TestCaseWithFactory):
         login_person(lp_dev)
         self.bug_watch.reset()
         self._assertBugWatchHasBeenChanged()
+
+
+load_tests = load_tests_apply_scenarios
