@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
@@ -35,11 +35,19 @@ from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.services.librarian.interfaces.client import (
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from lp.services.webapp import canonical_url
+from lp.services.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
     login_person,
-    monkey_patch,
     TestCaseWithFactory,
     verifyObject,
     )
@@ -223,29 +231,44 @@ class TestDiff(DiffTestCase):
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
 
-    def test_getDiffTimeout(self):
+    def test_timeout(self):
         # The time permitted to get the diff from the librarian may be None,
         # or 2. If there is not 2 seconds left in the request, the number will
-        # will 0.01 smaller or the actual remaining time.
-        content = ''.join(unified_diff('', "1234567890" * 10))
-        diff = self._create_diff(content)
+        # be 0.01 smaller or the actual remaining time.
+        class DiffWithFakeText(Diff):
+            diff_text = FakeMethod()
+
+        diff = DiffWithFakeText()
+        diff.diff_text.open = FakeMethod()
+        diff.diff_text.read = FakeMethod()
+        diff.diff_text.close = FakeMethod()
         value = None
-
-        def fake():
-            return value
-
-        from lp.code.model import diff as diff_module
-        with monkey_patch(diff_module, get_request_remaining_seconds=fake):
-            self.assertIs(
-                LIBRARIAN_SERVER_DEFAULT_TIMEOUT, diff._getDiffTimeout())
-            value = 3.1
-            self.assertEqual(2.0, diff._getDiffTimeout())
-            value = 1.11
-            self.assertEqual(1.1, diff._getDiffTimeout())
-            value = 0.11
-            self.assertEqual(0.1, diff._getDiffTimeout())
-            value = 0.01
-            self.assertEqual(0.01, diff._getDiffTimeout())
+        original_timeout_function = get_default_timeout_function()
+        set_default_timeout_function(lambda: value)
+        try:
+            LaunchpadTestRequest()
+            set_request_started()
+            try:
+                diff.text
+                self.assertEqual(
+                    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+                    diff.diff_text.open.calls[-1][0][0])
+                value = 3.1
+                diff.text
+                self.assertEqual(2.0, diff.diff_text.open.calls[-1][0][0])
+                value = 1.11
+                diff.text
+                self.assertEqual(1.1, diff.diff_text.open.calls[-1][0][0])
+                value = 0.11
+                diff.text
+                self.assertEqual(0.1, diff.diff_text.open.calls[-1][0][0])
+                value = 0.01
+                diff.text
+                self.assertEqual(0.01, diff.diff_text.open.calls[-1][0][0])
+            finally:
+                clear_request_started()
+        finally:
+            set_default_timeout_function(original_timeout_function)
 
 
 class TestDiffInScripts(DiffTestCase):

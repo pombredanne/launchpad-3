@@ -90,6 +90,7 @@ setup(
         's4',
         'setproctitle',
         'setuptools',
+        'six',
         'Sphinx',
         'soupmatchers',
         'sourcecodegen',
