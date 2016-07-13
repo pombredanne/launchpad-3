@@ -2116,6 +2116,22 @@ class IArchiveEdit(Interface):
         """
 
     @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def newNamedAuthTokens(names):
+        """Create named authorization tokens in bulk.
+
+        :param names: A list of token names.
+
+        :return: A dictionary of {name: {token, archive_url} where `name` is
+            a token name, `token` is the secret and `archive_url` is the
+            externally-usable archive URL including basic auth.
+        """
+
+    @operation_parameters(
         name=TextLine(title=_("Authorization token name"), required=True))
     @export_read_operation()
     @operation_for_version("devel")
@@ -2146,10 +2162,22 @@ class IArchiveEdit(Interface):
     @export_write_operation()
     @operation_for_version("devel")
     def revokeNamedAuthToken(name):
-        """Deactivates a named authorization token.
+        """Deactivate a named authorization token.
 
         :param name: The identifier string for a token.
         :raises NotFoundError: if no matching token could be found.
+        """
+
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def revokeNamedAuthTokens(names):
+        """Deactivate named authorization tokens in bulk.
+
+        :param names: A list of token names.
         """
 
 

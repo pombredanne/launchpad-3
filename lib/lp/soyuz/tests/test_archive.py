@@ -12,8 +12,10 @@ import doctest
 
 from pytz import UTC
 from testtools.matchers import (
+    AllMatch,
     DocTestMatches,
     LessThan,
+    MatchesPredicate,
     MatchesRegex,
     MatchesStructure,
     )
@@ -41,6 +43,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
+from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
@@ -85,7 +88,6 @@ from lp.soyuz.interfaces.archive import (
     RedirectedPocket,
     VersionRequiresName,
     )
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -111,6 +113,7 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     RequestTimelineCollector,
     TestCaseWithFactory,
     )
@@ -1295,8 +1298,7 @@ class TestArchiveTokens(TestCaseWithFactory):
 
     def test_newNamedAuthToken_private_archive(self):
         res = self.private_ppa.newNamedAuthToken(u"tokenname")
-        token = getUtility(IArchiveAuthTokenSet).getActiveNamedTokenForArchive(
-            self.private_ppa, u"tokenname")
+        token = self.private_ppa.getNamedAuthToken(u"tokenname", as_dict=False)
         self.assertIsNotNone(token)
         self.assertIsNone(token.person)
         self.assertEqual("tokenname", token.name)
@@ -1324,15 +1326,44 @@ class TestArchiveTokens(TestCaseWithFactory):
             u"tokenname", u"somesecret", as_dict=False)
         self.assertEqual(u"somesecret", token.token)
 
+    def test_newNamedAuthTokens_private_archive(self):
+        res = self.private_ppa.newNamedAuthTokens((u"name1", u"name2"))
+        tokens = self.private_ppa.getNamedAuthTokens(as_dict=False)
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
+
+    def test_newNamedAuthTokens_public_archive(self):
+        public_ppa = self.factory.makeArchive(private=False)
+        self.assertRaises(ArchiveNotPrivate,
+            public_ppa.newNamedAuthTokens, (u"name1", u"name2"))
+
+    def test_newNamedAuthTokens_duplicate_name(self):
+        self.private_ppa.newNamedAuthToken(u"tok1")
+        res = self.private_ppa.newNamedAuthTokens((u"tok1", u"tok2", u"tok3"))
+        tokens = self.private_ppa.getNamedAuthTokens(as_dict=False)
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
+
+    def test_newNamedAuthTokens_idempotent(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        res1 = self.private_ppa.newNamedAuthTokens(names)
+        res2 = self.private_ppa.newNamedAuthTokens(names)
+        self.assertEqual(res1, res2)
+
+    def test_newNamedAuthTokens_query_count(self):
+        # Preload feature flag so it is cached.
+        getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG)
+        with StormStatementRecorder() as recorder1:
+            self.private_ppa.newNamedAuthTokens((u"tok1"))
+        with StormStatementRecorder() as recorder2:
+            self.private_ppa.newNamedAuthTokens((u"tok1", u"tok2", u"tok3"))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
     def test_getNamedAuthToken_with_no_token(self):
         self.assertRaises(
             NotFoundError, self.private_ppa.getNamedAuthToken, u"tokenname")
 
     def test_getNamedAuthToken_with_token(self):
         res = self.private_ppa.newNamedAuthToken(u"tokenname")
-        self.assertEqual(
-            self.private_ppa.getNamedAuthToken(u"tokenname"),
-            res)
+        self.assertEqual(self.private_ppa.getNamedAuthToken(u"tokenname"), res)
 
     def test_revokeNamedAuthToken_with_token(self):
         token = self.private_ppa.newNamedAuthToken(u"tokenname", as_dict=False)
@@ -1342,6 +1373,40 @@ class TestArchiveTokens(TestCaseWithFactory):
     def test_revokeNamedAuthToken_with_no_token(self):
         self.assertRaises(
             NotFoundError, self.private_ppa.revokeNamedAuthToken, u"tokenname")
+
+    def test_revokeNamedAuthTokens(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        tokens = self.private_ppa.newNamedAuthTokens(names, as_dict=False)
+        self.assertThat(
+            tokens, AllMatch(MatchesPredicate(
+                lambda x: not x.date_deactivated, '%s is not active.')))
+        self.private_ppa.revokeNamedAuthTokens(names)
+        self.assertThat(
+            tokens, AllMatch(MatchesPredicate(
+                lambda x: x.date_deactivated, '%s is active.')))
+
+    def test_revokeNamedAuthTokens_with_previously_revoked_token(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        self.private_ppa.newNamedAuthTokens(names)
+        token1 = self.private_ppa.getNamedAuthToken(u"name1", as_dict=False)
+        token2 = self.private_ppa.getNamedAuthToken(u"name2", as_dict=False)
+
+        # Revoke token1.
+        deactivation_time_1 = datetime.now(UTC) - timedelta(seconds=90)
+        token1.date_deactivated = deactivation_time_1
+
+        # Revoke all tokens, including token1.
+        self.private_ppa.revokeNamedAuthTokens(names)
+
+        # Check that token1.date_deactivated has not changed.
+        self.assertEqual(deactivation_time_1, token1.date_deactivated)
+        self.assertLess(token1.date_deactivated, token2.date_deactivated)
+
+    def test_revokeNamedAuthTokens_idempotent(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        res1 = self.private_ppa.revokeNamedAuthTokens(names)
+        res2 = self.private_ppa.revokeNamedAuthTokens(names)
+        self.assertEqual(res1, res2)
 
     def test_getNamedAuthToken_with_revoked_token(self):
         self.private_ppa.newNamedAuthToken(u"tokenname")
