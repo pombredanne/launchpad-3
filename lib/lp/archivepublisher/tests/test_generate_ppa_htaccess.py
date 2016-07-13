@@ -32,6 +32,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.services.osutils import (
     ensure_directory_exists,
@@ -43,6 +44,7 @@ from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
     )
+from lp.soyuz.interfaces.archive import NAMED_AUTH_TOKEN_FEATURE_FLAG
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import (
     lp_dbuser,
@@ -71,6 +73,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # does, so override the PPA's distro here.
         ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.ppa.distribution = ubuntutest
+
+        # Enable named auth tokens.
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
 
     def getScript(self, test_args=None):
         """Return a HtaccessTokenGenerator instance."""
@@ -260,6 +265,11 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             all_persons, persons1, persons2, tokens) = data
         team1_person = persons1[0]
 
+        # Named tokens should be ignored for deactivation.
+        self.ppa.newNamedAuthToken(u"tokenname1", as_dict=False)
+        named_token = self.ppa.newNamedAuthToken(u"tokenname2", as_dict=False)
+        named_token.deactivate()
+
         # Initially, nothing is eligible for deactivation.
         script = self.getScript()
         script.deactivateInvalidTokens()
@@ -325,12 +335,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         sub2 = self.ppa.newSubscription(name16, self.ppa.owner)
         token1 = self.ppa.newAuthToken(name12)
         token2 = self.ppa.newAuthToken(name16)
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3", as_dict=False)
         self.layer.txn.commit()
-        subs = [sub1]
-        subs.append(sub2)
-        tokens = [token1]
-        tokens.append(token2)
-        return subs, tokens
+        return (sub1, sub2), (token1, token2, token3)
 
     def ensureNoFiles(self):
         """Ensure the .ht* files don't already exist."""
@@ -372,6 +379,32 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
                 (return_code, stderr))
         self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
+        os.remove(htaccess)
+        os.remove(htpasswd)
+
+    def testBasicOperation_with_named_tokens(self):
+        """Invoke the actual script and make sure it generates some files."""
+        token1 = self.ppa.newNamedAuthToken(u"tokenname1", as_dict=False)
+        token2 = self.ppa.newNamedAuthToken(u"tokenname2", as_dict=False)
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3", as_dict=False)
+        token3.deactivate()
+
+        # Call the script and check that we have a .htaccess and a .htpasswd.
+        htaccess, htpasswd = self.ensureNoFiles()
+        script = self.getScript()
+        script.main()
+        self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
+        self.assertIn('+' + token1.name, open(htpasswd).read())
+        self.assertIn('+' + token2.name, open(htpasswd).read())
+        self.assertNotIn('+' + token3.name, open(htpasswd).read())
+
+        # Deactivate a named token and verify it is removed from .htpasswd.
+        token2.deactivate()
+        script.main()
+        self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
+        self.assertIn('+' + token1.name, open(htpasswd).read())
+        self.assertNotIn('+' + token2.name, open(htpasswd).read())
+        self.assertNotIn('+' + token3.name, open(htpasswd).read())
         os.remove(htaccess)
         os.remove(htpasswd)
 
@@ -598,14 +631,47 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script = self.getScript()
         self.assertContentEqual(tokens[1:], script.getNewTokens())
 
+    def test_getDeactivatedNamedTokens_no_previous_run(self):
+        """All deactivated named tokens returned if there is no record
+        of previous run."""
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
+
+        self.ppa.newNamedAuthToken(u"tokenname1", as_dict=False)
+        token2 = self.ppa.newNamedAuthToken(u"tokenname2", as_dict=False)
+        token2.deactivate()
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3", as_dict=False)
+        token3.date_deactivated = before_last_start
+
+        script = self.getScript()
+        self.assertContentEqual(
+            [token2, token3], script.getDeactivatedNamedTokens())
+
+    def test_getDeactivatedNamedTokens_only_those_since_last_run(self):
+        """Only named tokens deactivated since last run are returned."""
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
+        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
+
+        self.ppa.newNamedAuthToken(u"tokenname1", as_dict=False)
+        token2 = self.ppa.newNamedAuthToken(u"tokenname2", as_dict=False)
+        token2.deactivate()
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3", as_dict=False)
+        token3.date_deactivated = before_last_start
+        token4 = self.ppa.newNamedAuthToken(u"tokenname4", as_dict=False)
+        token4.date_deactivated = tomorrow
+
+        script = self.getScript()
+        self.assertContentEqual(
+            [token2], script.getDeactivatedNamedTokens(last_start))
+
     def test_processes_PPAs_without_subscription(self):
         # A .htaccess file is written for Private PPAs even if they don't have
         # any subscriptions.
         htaccess, htpasswd = self.ensureNoFiles()
         transaction.commit()
 
-        # Call the script and check that we have a .htaccess and a
-        # .htpasswd.
+        # Call the script and check that we have a .htaccess and a .htpasswd.
         return_code, stdout, stderr = self.runScript()
         self.assertEqual(
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
