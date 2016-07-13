@@ -64,13 +64,17 @@ class TestGitHostingClient(TestCase):
         self.request = None
 
     @contextmanager
-    def mockRequests(self, status_code=200, content=b"",
+    def mockRequests(self, status_code=200, content=b"", reason=None,
                      set_default_timeout=True):
         @all_requests
         def handler(url, request):
             self.assertIsNone(self.request)
             self.request = request
-            return {"status_code": status_code, "content": content}
+            return {
+                "status_code": status_code,
+                "content": content,
+                "reason": reason,
+                }
 
         with HTTMock(handler):
             original_timeout_function = get_default_timeout_function()
@@ -106,10 +110,11 @@ class TestGitHostingClient(TestCase):
             json_data={"repo_path": "123", "clone_from": "122"})
 
     def test_create_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryCreationFault,
-                "Failed to create Git repository: Bad request",
+                "Failed to create Git repository: "
+                "400 Client Error: Bad request",
                 self.client.create, "123")
 
     def test_getProperties(self):
@@ -120,10 +125,11 @@ class TestGitHostingClient(TestCase):
         self.assertRequest("repo/123", method="GET")
 
     def test_getProperties_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to get properties of Git repository: Bad request",
+                "Failed to get properties of Git repository: "
+                "400 Client Error: Bad request",
                 self.client.getProperties, "123")
 
     def test_setProperties(self):
@@ -134,10 +140,11 @@ class TestGitHostingClient(TestCase):
             json_data={"default_branch": "refs/heads/a"})
 
     def test_setProperties_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to set properties of Git repository: Bad request",
+                "Failed to set properties of Git repository: "
+                "400 Client Error: Bad request",
                 self.client.setProperties, "123",
                 default_branch="refs/heads/a")
 
@@ -148,10 +155,11 @@ class TestGitHostingClient(TestCase):
         self.assertRequest("repo/123/refs", method="GET")
 
     def test_getRefs_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to get refs from Git repository: Bad request",
+                "Failed to get refs from Git repository: "
+                "400 Client Error: Bad request",
                 self.client.getRefs, "123")
 
     def test_getCommits(self):
@@ -162,11 +170,11 @@ class TestGitHostingClient(TestCase):
             "repo/123/commits", method="POST", json_data={"commits": ["0"]})
 
     def test_getCommits_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
                 "Failed to get commit details from Git repository: "
-                "Bad request",
+                "400 Client Error: Bad request",
                 self.client.getCommits, "123", ["0"])
 
     def test_getLog(self):
@@ -185,10 +193,11 @@ class TestGitHostingClient(TestCase):
             method="GET")
 
     def test_getLog_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to get commit log from Git repository: Bad request",
+                "Failed to get commit log from Git repository: "
+                "400 Client Error: Bad request",
                 self.client.getLog, "123", "refs/heads/master")
 
     def test_getDiff(self):
@@ -211,10 +220,11 @@ class TestGitHostingClient(TestCase):
             "repo/123/compare/a..b?context_lines=4", method="GET")
 
     def test_getDiff_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to get diff from Git repository: Bad request",
+                "Failed to get diff from Git repository: "
+                "400 Client Error: Bad request",
                 self.client.getDiff, "123", "a", "b")
 
     def test_getMergeDiff(self):
@@ -242,10 +252,11 @@ class TestGitHostingClient(TestCase):
         self.assertRequest("repo/123/compare-merge/a:b", method="GET")
 
     def test_getMergeDiff_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to get merge diff from Git repository: Bad request",
+                "Failed to get merge diff from Git repository: "
+                "400 Client Error: Bad request",
                 self.client.getMergeDiff, "123", "a", "b")
 
     def test_detectMerges(self):
@@ -257,10 +268,11 @@ class TestGitHostingClient(TestCase):
             json_data={"sources": ["b", "c"]})
 
     def test_detectMerges_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to detect merges in Git repository: Bad request",
+                "Failed to detect merges in Git repository: "
+                "400 Client Error: Bad request",
                 self.client.detectMerges, "123", "a", ["b", "c"])
 
     def test_delete(self):
@@ -269,10 +281,11 @@ class TestGitHostingClient(TestCase):
         self.assertRequest("repo/123", method="DELETE")
 
     def test_delete_failed(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryDeletionFault,
-                "Failed to delete Git repository: Bad request",
+                "Failed to delete Git repository: "
+                "400 Client Error: Bad request",
                 self.client.delete, "123")
 
     def test_getBlob(self):
@@ -294,10 +307,11 @@ class TestGitHostingClient(TestCase):
             "repo/123/blob/dir/path/file/name?rev=dev", method="GET")
 
     def test_getBlob_failure(self):
-        with self.mockRequests(status_code=400, content=b"Bad request"):
+        with self.mockRequests(status_code=400, reason=b"Bad request"):
             self.assertRaisesWithContent(
                 GitRepositoryScanFault,
-                "Failed to get file from Git repository: Bad request",
+                "Failed to get file from Git repository: "
+                "400 Client Error: Bad request",
                 self.client.getBlob, "123", "dir/path/file/name")
 
     def test_getBlob_url_quoting(self):
