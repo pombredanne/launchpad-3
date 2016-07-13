@@ -61,6 +61,31 @@
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
+
+      <dl id="auto_build">
+        <dt>Build schedule:
+          <a href="/+help-snappy/snap-build-frequency.html" target="help"
+             class="sprite maybe action-icon">(?)</a>
+        </dt>
+        <dd>
+          <span tal:replace="view/build_frequency"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
+      <dl id="auto_build_archive">
+        <dt>Source archive for automatic builds:</dt>
+        <dd>
+          <a tal:replace="structure context/auto_build_archive/fmt:link"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
+      <dl id="auto_build_pocket">
+        <dt>Pocket for automatic builds:</dt>
+        <dd>
+          <span tal:replace="context/auto_build_pocket/title|nothing"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
     </div>
 
     <div id="store_upload" class="two-column-list"

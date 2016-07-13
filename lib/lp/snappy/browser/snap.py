@@ -179,6 +179,13 @@ class SnapView(LaunchpadView):
             self.context, field, format_link(self.context.owner),
             header='Change owner', step_title='Select a new owner')
 
+    @property
+    def build_frequency(self):
+        if self.context.auto_build:
+            return 'Built automatically'
+        else:
+            return 'Built on request'
+
 
 def builds_for_snap(snap):
     """A list of interesting builds.
@@ -303,6 +310,7 @@ class ISnapEditSchema(Interface):
         'name',
         'private',
         'require_virtualized',
+        'auto_build',
         'store_upload',
         ])
     store_distro_series = Choice(
@@ -315,8 +323,13 @@ class ISnapEditSchema(Interface):
     branch = copy_field(ISnap['branch'], required=True)
     git_ref = copy_field(ISnap['git_ref'], required=True)
 
-    # These are only required if store_upload is True.  Later validation
-    # takes care of adjusting the required attribute.
+    # These are only required if auto_build is True.  Later validation takes
+    # care of adjusting the required attribute.
+    auto_build_archive = copy_field(ISnap['auto_build_archive'], required=True)
+    auto_build_pocket = copy_field(ISnap['auto_build_pocket'], required=True)
+
+    # This is only required if store_upload is True.  Later validation takes
+    # care of adjusting the required attribute.
     store_name = copy_field(ISnap['store_name'], required=True)
 
 
@@ -350,10 +363,14 @@ class SnapAddView(
         'owner',
         'name',
         'store_distro_series',
+        'auto_build',
+        'auto_build_archive',
+        'auto_build_pocket',
         'store_upload',
         'store_name',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
+    custom_widget('auto_build_archive', SnapArchiveWidget)
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -417,6 +434,8 @@ class SnapAddView(
             'processors': [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default],
+            'auto_build_archive': series.main_archive,
+            'auto_build_pocket': PackagePublishingPocket.UPDATES,
             }
 
     @property
@@ -425,6 +444,13 @@ class SnapAddView(
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
+        if self.widgets.get('auto_build') is not None:
+            # Set widgets as required or optional depending on the
+            # auto_build field.
+            super(SnapAddView, self).validate_widgets(data, ['auto_build'])
+            auto_build = data.get('auto_build', False)
+            self.widgets['auto_build_archive'].context.required = auto_build
+            self.widgets['auto_build_pocket'].context.required = auto_build
         if self.widgets.get('store_upload') is not None:
             # Set widgets as required or optional depending on the
             # store_upload field.
@@ -441,9 +467,15 @@ class SnapAddView(
             kwargs = {'branch': self.context}
         private = not getUtility(
             ISnapSet).isValidPrivacy(False, data['owner'], **kwargs)
+        if not data.get('auto_build', False):
+            data['auto_build_archive'] = None
+            data['auto_build_pocket'] = None
         snap = getUtility(ISnapSet).new(
             self.user, data['owner'],
             data['store_distro_series'].distro_series, data['name'],
+            auto_build=data['auto_build'],
+            auto_build_archive=data['auto_build_archive'],
+            auto_build_pocket=data['auto_build_pocket'],
             private=private, store_upload=data['store_upload'],
             store_series=data['store_distro_series'].snappy_series,
             store_name=data['store_name'], processors=data['processors'],
@@ -502,6 +534,14 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
                 self.widgets['git_ref'].context.required = True
             else:
                 raise AssertionError("Unknown branch type %s" % vcs)
+        if self.widgets.get('auto_build') is not None:
+            # Set widgets as required or optional depending on the
+            # auto_build field.
+            super(BaseSnapEditView, self).validate_widgets(
+                data, ['auto_build'])
+            auto_build = data.get('auto_build', False)
+            self.widgets['auto_build_archive'].context.required = auto_build
+            self.widgets['auto_build_pocket'].context.required = auto_build
         if self.widgets.get('store_upload') is not None:
             # Set widgets as required or optional depending on the
             # store_upload field.
@@ -538,9 +578,15 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
                 self.context.setProcessors(
                     new_processors, check_permissions=True, user=self.user)
             del data['processors']
+        if not data.get('auto_build', False):
+            if 'auto_build_archive' in data:
+                del data['auto_build_archive']
+            if 'auto_build_pocket' in data:
+                del data['auto_build_pocket']
         store_upload = data.get('store_upload', False)
         if not store_upload:
-            data['store_name'] = None
+            if 'store_name' in data:
+                del data['store_name']
         need_store_reauth = self._needStoreReauth(data)
         self.updateContextFromData(data)
         if need_store_reauth:
@@ -592,15 +638,19 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'owner',
         'name',
         'store_distro_series',
-        'store_upload',
-        'store_name',
         'vcs',
         'branch',
         'git_ref',
+        'auto_build',
+        'auto_build_archive',
+        'auto_build_pocket',
+        'store_upload',
+        'store_name',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
+    custom_widget('auto_build_archive', SnapArchiveWidget)
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -624,6 +674,9 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
             initial_values['vcs'] = VCSType.GIT
         else:
             initial_values['vcs'] = VCSType.BZR
+        if self.context.auto_build_pocket is None:
+            initial_values['auto_build_pocket'] = (
+                PackagePublishingPocket.UPDATES)
         return initial_values
 
     def validate(self, data):
