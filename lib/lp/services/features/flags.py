@@ -148,6 +148,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.dsp_picker.enabled',
+     'boolean',
+     'Enables the use of the new DistributionSourcePackage vocabulary for '
+     'the source and binary package name pickers.',
+     '',
+     '',
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '

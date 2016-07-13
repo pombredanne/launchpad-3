@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -151,7 +151,7 @@ class LaunchBag:
     @property
     def time_zone(self):
         if getattr(self._store, "time_zone", None) is None:
-            if self.user and self.user.time_zone:
+            if self.user:
                 self._store.time_zone = pytz.timezone(self.user.time_zone)
             else:
                 # fall back to UTC
