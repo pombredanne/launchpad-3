@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.component import getUtility
 from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
@@ -25,11 +26,13 @@ from zope.interface import implementer
 from zope.schema import Choice
 
 from lp.app.errors import UnexpectedFormData
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
     )
+from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.interfaces.archive import IArchive
 
 
@@ -59,21 +62,28 @@ class SnapArchiveWidget(BrowserWidget, InputWidget):
             attributes = dict(
                 type="radio", name=self.name, value=option,
                 id="%s.option.%s" % (self.name, option))
-            if self.request.form_ng.getOne(
-                    self.name, self.default_option) == option:
+            if (self.default_option is not None and
+                self.request.form_ng.getOne(
+                    self.name, self.default_option) == option):
                 attributes["checked"] = "checked"
             self.options[option] = renderElement("input", **attributes)
 
     @property
     def main_archive(self):
-        return self.context.context.distro_series.main_archive
+        if ISnap.providedBy(self.context.context):
+            return self.context.context.distro_series.main_archive
+        else:
+            return getUtility(ILaunchpadCelebrities).ubuntu.main_archive
 
     def setRenderedValue(self, value):
         """See `IWidget`."""
         self.setUpSubWidgets()
-        if value is None or not IArchive.providedBy(value):
+        if value is None:
+            self.default_option = None
+            self.ppa_widget.setRenderedValue(None)
+        elif not IArchive.providedBy(value):
             raise AssertionError("Not a valid value: %r" % value)
-        if value.is_primary:
+        elif value.is_primary:
             self.default_option = "primary"
             self.ppa_widget.setRenderedValue(None)
         elif value.is_ppa:
@@ -98,7 +108,9 @@ class SnapArchiveWidget(BrowserWidget, InputWidget):
         """See `IInputWidget`."""
         self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
-        if form_value == "primary":
+        if form_value is None:
+            return None
+        elif form_value == "primary":
             return self.main_archive
         elif form_value == "ppa":
             try:

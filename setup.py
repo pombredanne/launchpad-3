@@ -95,6 +95,7 @@ setup(
         'sourcecodegen',
         'storm',
         'subvertpy',
+        'testscenarios',
         'testtools',
         'timeline',
         'transaction',
