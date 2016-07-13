@@ -1320,9 +1320,8 @@ class TestArchiveTokens(TestCaseWithFactory):
             self.private_ppa.newNamedAuthToken, u"tokenname")
 
     def test_newNamedAuthToken_with_custom_secret(self):
-        self.private_ppa.newNamedAuthToken(u"tokenname", u"somesecret")
-        token = getUtility(IArchiveAuthTokenSet).getActiveNamedTokenForArchive(
-            self.private_ppa, u"tokenname")
+        token = self.private_ppa.newNamedAuthToken(
+            u"tokenname", u"somesecret", as_dict=False)
         self.assertEqual(u"somesecret", token.token)
 
     def test_getNamedAuthToken_with_no_token(self):
@@ -1336,9 +1335,7 @@ class TestArchiveTokens(TestCaseWithFactory):
             res)
 
     def test_revokeNamedAuthToken_with_token(self):
-        self.private_ppa.newNamedAuthToken(u"tokenname")
-        token = getUtility(IArchiveAuthTokenSet).getActiveNamedTokenForArchive(
-            self.private_ppa, u"tokenname")
+        token = self.private_ppa.newNamedAuthToken(u"tokenname", as_dict=False)
         self.private_ppa.revokeNamedAuthToken(u"tokenname")
         self.assertIsNotNone(token.date_deactivated)
 

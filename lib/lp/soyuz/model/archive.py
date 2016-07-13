@@ -1952,7 +1952,7 @@ class Archive(SQLBase):
         IStore(ArchiveAuthToken).add(archive_auth_token)
         return archive_auth_token
 
-    def newNamedAuthToken(self, name, token=None):
+    def newNamedAuthToken(self, name, token=None, as_dict=True):
         """See `IArchive`."""
 
         if not getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG):
@@ -1980,7 +1980,10 @@ class Archive(SQLBase):
         archive_auth_token.name = name
         archive_auth_token.token = token
         IStore(ArchiveAuthToken).add(archive_auth_token)
-        return archive_auth_token.asDict()
+        if as_dict:
+            return archive_auth_token.asDict()
+        else:
+            return archive_auth_token
 
     def getNamedAuthToken(self, name):
         """See `IArchive`."""
