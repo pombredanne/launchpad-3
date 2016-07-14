@@ -2158,6 +2158,10 @@ class IArchiveEdit(Interface):
         """
 
     @call_with(as_dict=True)
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=False))
     @export_read_operation()
     @operation_for_version("devel")
     def getNamedAuthTokens(names=None, as_dict=False):
