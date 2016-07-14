@@ -39,7 +39,7 @@ class ArchiveAuthToken(Storm):
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
 
-    person_id = Int(name='person', allow_none=False)
+    person_id = Int(name='person', allow_none=True)
     person = Reference(person_id, 'Person.id')
 
     date_created = DateTime(
@@ -50,6 +50,8 @@ class ArchiveAuthToken(Storm):
 
     token = Unicode(name='token', allow_none=False)
 
+    name = Unicode(name='name', allow_none=True)
+
     def deactivate(self):
         """See `IArchiveAuthTokenSet`."""
         self.date_deactivated = UTC_NOW
@@ -58,9 +60,15 @@ class ArchiveAuthToken(Storm):
     def archive_url(self):
         """Return a custom archive url for basic authentication."""
         normal_url = URI(self.archive.archive_url)
-        auth_url = normal_url.replace(
-            userinfo="%s:%s" % (self.person.name, self.token))
+        if self.name:
+            name = '+' + self.name
+        else:
+            name = self.person.name
+        auth_url = normal_url.replace(userinfo="%s:%s" % (name, self.token))
         return str(auth_url)
+
+    def asDict(self):
+        return {"token": self.token, "archive_url": self.archive_url}
 
 
 @implementer(IArchiveAuthTokenSet)
@@ -87,9 +95,15 @@ class ArchiveAuthTokenSet:
 
     def getActiveTokenForArchiveAndPerson(self, archive, person):
         """See `IArchiveAuthTokenSet`."""
-        store = Store.of(archive)
-        return store.find(
-            ArchiveAuthToken,
-            ArchiveAuthToken.archive == archive,
-            ArchiveAuthToken.person == person,
-            ArchiveAuthToken.date_deactivated == None).one()
+        return self.getByArchive(archive).find(
+            ArchiveAuthToken.person == person).one()
+
+    def getActiveNamedTokenForArchive(self, archive, name):
+        """See `IArchiveAuthTokenSet`."""
+        return self.getByArchive(archive).find(
+            ArchiveAuthToken.name == name).one()
+
+    def getActiveNamedTokensForArchive(self, archive):
+        """See `IArchiveAuthTokenSet`."""
+        return self.getByArchive(archive).find(
+            ArchiveAuthToken.name != None)

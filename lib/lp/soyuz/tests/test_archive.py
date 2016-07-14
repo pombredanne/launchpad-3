@@ -41,6 +41,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     clear_property_cache,
@@ -65,21 +66,26 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
+    ArchiveNotPrivate,
     CannotCopy,
     CannotModifyArchiveProcessor,
     CannotUploadToPocket,
     CannotUploadToPPA,
     CannotUploadToSeries,
+    DuplicateTokenName,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
+    NAMED_AUTH_TOKEN_FEATURE_FLAG,
+    NamedAuthTokenFeatureDisabled,
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
     RedirectedPocket,
     VersionRequiresName,
     )
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -1246,6 +1252,23 @@ class TestBuilddSecret(TestCaseWithFactory):
             self.assertEqual("really secret", self.archive.buildd_secret)
 
 
+class TestNamedAuthTokenFeatureFlag(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_feature_flag_disabled(self):
+        # With feature flag disabled, we will not create new named auth tokens.
+        private_ppa = self.factory.makeArchive(private=True)
+        with FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u""}):
+            self.assertRaises(NamedAuthTokenFeatureDisabled,
+                              private_ppa.newNamedAuthToken, u"tokenname")
+
+    def test_feature_flag_disabled_by_default(self):
+         # Without a feature flag, we will not create new named auth tokens.
+        private_ppa = self.factory.makeArchive(private=True)
+        self.assertRaises(NamedAuthTokenFeatureDisabled,
+            private_ppa.newNamedAuthToken, u"tokenname")
+
+
 class TestArchiveTokens(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
@@ -1255,19 +1278,88 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.private_ppa = self.factory.makeArchive(owner=owner, private=True)
         self.joe = self.factory.makePerson(name='joe')
         self.private_ppa.newSubscription(self.joe, owner)
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
 
     def test_getAuthToken_with_no_token(self):
-        token = self.private_ppa.getAuthToken(self.joe)
-        self.assertEqual(token, None)
+        self.assertIsNone(self.private_ppa.getAuthToken(self.joe))
 
     def test_getAuthToken_with_token(self):
         token = self.private_ppa.newAuthToken(self.joe)
+        self.assertIsNone(token.name)
         self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
 
     def test_getArchiveSubscriptionURL(self):
         url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)
+
+    def test_newNamedAuthToken_private_archive(self):
+        res = self.private_ppa.newNamedAuthToken(u"tokenname")
+        token = getUtility(IArchiveAuthTokenSet).getActiveNamedTokenForArchive(
+            self.private_ppa, u"tokenname")
+        self.assertIsNotNone(token)
+        self.assertIsNone(token.person)
+        self.assertEqual("tokenname", token.name)
+        self.assertIsNotNone(token.token)
+        self.assertEqual(self.private_ppa, token.archive)
+        self.assertIn(
+            "://+%s:%s@" % (token.name, token.token), token.archive_url)
+        self.assertDictEqual(
+            {"token": token.token, "archive_url": token.archive_url},
+            res
+            )
+
+    def test_newNamedAuthToken_public_archive(self):
+        public_ppa = self.factory.makeArchive(private=False)
+        self.assertRaises(ArchiveNotPrivate,
+            public_ppa.newNamedAuthToken, u"tokenname")
+
+    def test_newNamedAuthToken_duplicate_name(self):
+        self.private_ppa.newNamedAuthToken(u"tokenname")
+        self.assertRaises(DuplicateTokenName,
+            self.private_ppa.newNamedAuthToken, u"tokenname")
+
+    def test_newNamedAuthToken_with_custom_secret(self):
+        self.private_ppa.newNamedAuthToken(u"tokenname", u"somesecret")
+        token = getUtility(IArchiveAuthTokenSet).getActiveNamedTokenForArchive(
+            self.private_ppa, u"tokenname")
+        self.assertEqual(u"somesecret", token.token)
+
+    def test_getNamedAuthToken_with_no_token(self):
+        self.assertRaises(
+            NotFoundError, self.private_ppa.getNamedAuthToken, u"tokenname")
+
+    def test_getNamedAuthToken_with_token(self):
+        res = self.private_ppa.newNamedAuthToken(u"tokenname")
+        self.assertEqual(
+            self.private_ppa.getNamedAuthToken(u"tokenname"),
+            res)
+
+    def test_revokeNamedAuthToken_with_token(self):
+        self.private_ppa.newNamedAuthToken(u"tokenname")
+        token = getUtility(IArchiveAuthTokenSet).getActiveNamedTokenForArchive(
+            self.private_ppa, u"tokenname")
+        self.private_ppa.revokeNamedAuthToken(u"tokenname")
+        self.assertIsNotNone(token.date_deactivated)
+
+    def test_revokeNamedAuthToken_with_no_token(self):
+        self.assertRaises(
+            NotFoundError, self.private_ppa.revokeNamedAuthToken, u"tokenname")
+
+    def test_getNamedAuthToken_with_revoked_token(self):
+        self.private_ppa.newNamedAuthToken(u"tokenname")
+        self.private_ppa.revokeNamedAuthToken(u"tokenname")
+        self.assertRaises(
+            NotFoundError, self.private_ppa.getNamedAuthToken, u"tokenname")
+
+    def test_getNamedAuthTokens(self):
+        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1")
+        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2")
+        self.private_ppa.newNamedAuthToken(u"tokenname3")
+        self.private_ppa.revokeNamedAuthToken(u"tokenname3")
+        self.assertContentEqual(
+            [res1, res2],
+            self.private_ppa.getNamedAuthTokens())
 
 
 class TestGetBinaryPackageRelease(TestCaseWithFactory):
@@ -3504,9 +3596,6 @@ class TestSigningKeyPropagation(TestCaseWithFactory):
 class TestCountersAndSummaries(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def assertDictEqual(self, one, two):
-        self.assertContentEqual(one.items(), two.items())
 
     def test_cprov_build_counters_in_sampledata(self):
         cprov_archive = getUtility(IPersonSet).getByName("cprov").archive

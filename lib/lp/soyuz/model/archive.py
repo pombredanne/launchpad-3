@@ -110,6 +110,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import BulkUpdate
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -149,6 +150,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToSeries,
     ComponentNotFound,
     default_name_by_purpose,
+    DuplicateTokenName,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
@@ -160,6 +162,8 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA,
     IPPA,
     MAIN_ARCHIVE_PURPOSES,
+    NAMED_AUTH_TOKEN_FEATURE_FLAG,
+    NamedAuthTokenFeatureDisabled,
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
@@ -1947,6 +1951,60 @@ class Archive(SQLBase):
             archive_auth_token.date_created = date_created
         IStore(ArchiveAuthToken).add(archive_auth_token)
         return archive_auth_token
+
+    def newNamedAuthToken(self, name, token=None):
+        """See `IArchive`."""
+
+        if not getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG):
+            raise NamedAuthTokenFeatureDisabled()
+
+        # Bail if the archive isn't private
+        if not self.private:
+            raise ArchiveNotPrivate("Archive must be private.")
+
+        try:
+            # Check for duplicate name.
+            self.getNamedAuthToken(name)
+            raise DuplicateTokenName(
+                "An active token with name %s for archive %s already exists." %
+                (name, self.displayname))
+        except NotFoundError:
+            # No duplicate name found: continue.
+            pass
+
+        # Now onto the actual token creation:
+        if token is None:
+            token = create_token(20)
+        archive_auth_token = ArchiveAuthToken()
+        archive_auth_token.archive = self
+        archive_auth_token.name = name
+        archive_auth_token.token = token
+        IStore(ArchiveAuthToken).add(archive_auth_token)
+        return archive_auth_token.asDict()
+
+    def getNamedAuthToken(self, name):
+        """See `IArchive`."""
+        token_set = getUtility(IArchiveAuthTokenSet)
+        auth_token = token_set.getActiveNamedTokenForArchive(self, name)
+        if auth_token is not None:
+            return auth_token.asDict()
+        else:
+            raise NotFoundError(name)
+
+    def getNamedAuthTokens(self):
+        """See `IArchive`."""
+        token_set = getUtility(IArchiveAuthTokenSet)
+        auth_tokens = token_set.getActiveNamedTokensForArchive(self)
+        return [auth_token.asDict() for auth_token in auth_tokens]
+
+    def revokeNamedAuthToken(self, name):
+        """See `IArchive`."""
+        token_set = getUtility(IArchiveAuthTokenSet)
+        auth_token = token_set.getActiveNamedTokenForArchive(self, name)
+        if auth_token is not None:
+            auth_token.deactivate()
+        else:
+            raise NotFoundError(name)
 
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
