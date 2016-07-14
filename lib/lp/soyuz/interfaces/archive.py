@@ -2097,22 +2097,25 @@ class IArchiveEdit(Interface):
         :param dependency: is an `IArchive` object.
         """
 
+    @call_with(as_dict=True)
     @operation_parameters(
         name=TextLine(title=_("Authorization token name"), required=True),
         token=TextLine(
             title=_("Optional secret for this named token"), required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def newNamedAuthToken(name, token=None):
+    def newNamedAuthToken(name, token=None, as_dict=False):
         """Create a new named authorization token.
 
         :param name: An identifier string for this token.
         :param token: Optional unicode text to use as the token. One will be
             generated if not given.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a dictionary or a full object.
 
-        :return: A dictionary where the value of `token` is the secret and
-            the value of `archive_url` is the externally-usable archive URL
-            including basic auth.
+        :return: An `ArchiveAuthToken` object or a dictionary where the value
+            of `token` is the secret and the value of `archive_url` is the
+            externally-usable archive URL including basic auth.
         """
 
     @operation_parameters(
