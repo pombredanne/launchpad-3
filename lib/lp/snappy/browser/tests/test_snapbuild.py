@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
+import soupmatchers
 from storm.locals import Store
 from testtools.matchers import StartsWith
 import transaction
@@ -77,8 +78,11 @@ class TestSnapBuildView(TestCaseWithFactory):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
         getUtility(ISnapStoreUploadJobSource).create(build)
         build_view = create_initialized_view(build, "+index")
-        self.assertEqual(
-            "Store upload in progress", build_view.store_upload_status)
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "store upload status", "li",
+                attrs={"id": "store-upload-status"},
+                text="Store upload in progress")))
 
     def test_store_upload_status_completed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -87,10 +91,14 @@ class TestSnapBuildView(TestCaseWithFactory):
         naked_job.job._status = JobStatus.COMPLETED
         naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
         build_view = create_initialized_view(build, "+index")
-        self.assertEqual(
-            '<a href="%s">Manage this package in the store</a>' % (
-                job.store_url),
-            build_view.store_upload_status.escapedtext)
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload status", "li",
+                    attrs={"id": "store-upload-status"}),
+                soupmatchers.Tag(
+                    "store link", "a", attrs={"href": job.store_url},
+                    text="Manage this package in the store"))))
 
     def test_store_upload_status_failed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -99,9 +107,11 @@ class TestSnapBuildView(TestCaseWithFactory):
         naked_job.job._status = JobStatus.FAILED
         naked_job.error_message = "Scan failed."
         build_view = create_initialized_view(build, "+index")
-        self.assertEqual(
-            "Store upload failed: Scan failed.",
-            build_view.store_upload_status.escapedtext)
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "store upload status", "li",
+                attrs={"id": "store-upload-status"},
+                text="Store upload failed: Scan failed.")))
 
 
 class TestSnapBuildOperations(BrowserTestCase):
