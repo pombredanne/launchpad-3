@@ -1952,7 +1952,7 @@ class Archive(SQLBase):
         IStore(ArchiveAuthToken).add(archive_auth_token)
         return archive_auth_token
 
-    def newNamedAuthToken(self, name, token=None, as_dict=True):
+    def newNamedAuthToken(self, name, token=None, as_dict=False):
         """See `IArchive`."""
 
         if not getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG):
