@@ -2118,30 +2118,64 @@ class IArchiveEdit(Interface):
             externally-usable archive URL including basic auth.
         """
 
+    @call_with(as_dict=True)
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def newNamedAuthTokens(names, as_dict=False):
+        """Create named authorization tokens in bulk.
+
+        :param names: A list of token names.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a list of dictionaries or a list of full objects.
+
+        :return: A list of `ArchiveAuthToken` objects or a dictionary of
+            {name: {token, archive_url} where `name` is a token name,
+            `token` is the secret and `archive_url` is the externally-usable
+            archive URL including basic auth.
+        """
+
+    @call_with(as_dict=True)
     @operation_parameters(
         name=TextLine(title=_("Authorization token name"), required=True))
     @export_read_operation()
     @operation_for_version("devel")
-    def getNamedAuthToken(name):
+    def getNamedAuthToken(name, as_dict=False):
         """Return a named authorization token for the given name in this
          archive.
 
         :param name: The identifier string for a token.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a dictionary or a full object.
 
-        :return: A dictionary where the value of `token` is the secret and
-            the value of `archive_url` is the externally-usable archive URL
-            including basic auth.
+        :return: An `ArchiveAuthToken` object or a dictionary where the value
+            of `token` is the secret and the value of `archive_url` is the
+            externally-usable archive URL including basic auth.
         :raises NotFoundError: if no matching token could be found.
         """
 
+    @call_with(as_dict=True)
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=False))
     @export_read_operation()
     @operation_for_version("devel")
-    def getNamedAuthTokens():
-        """Return a list of named authorization tokens for this archive.
+    def getNamedAuthTokens(names=None, as_dict=False):
+        """Return a subset of active named authorization tokens for this
+        archive if `names` is specified, or all active named authorization
+        tokens for this archive is `names` is null.
 
-        :return: A list of dictionaries where the value of `token` is the
-            secret and the value of `archive_url` is the externally-usable
-            archive URL including basic auth.
+        :param names: An optional list of token names.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a list of dictionares or a list of full objects.
+
+        :return: A list of `ArchiveAuthToken` objects or a list of dictionaries
+            where `token` is the secret and `archive_url` is the
+            externally-usable archive URL including basic auth.
         """
 
     @operation_parameters(
@@ -2149,10 +2183,22 @@ class IArchiveEdit(Interface):
     @export_write_operation()
     @operation_for_version("devel")
     def revokeNamedAuthToken(name):
-        """Deactivates a named authorization token.
+        """Deactivate a named authorization token.
 
         :param name: The identifier string for a token.
         :raises NotFoundError: if no matching token could be found.
+        """
+
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def revokeNamedAuthTokens(names):
+        """Deactivate named authorization tokens in bulk.
+
+        :param names: A list of token names.
         """
 
 

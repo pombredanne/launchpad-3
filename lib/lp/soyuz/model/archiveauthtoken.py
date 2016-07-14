@@ -103,7 +103,16 @@ class ArchiveAuthTokenSet:
         return self.getByArchive(archive).find(
             ArchiveAuthToken.name == name).one()
 
-    def getActiveNamedTokensForArchive(self, archive):
+    def getActiveNamedTokensForArchive(self, archive, names=None):
         """See `IArchiveAuthTokenSet`."""
-        return self.getByArchive(archive).find(
-            ArchiveAuthToken.name != None)
+        if names:
+            return self.getByArchive(archive).find(
+                ArchiveAuthToken.name.is_in(names))
+        else:
+            return self.getByArchive(archive).find(
+                ArchiveAuthToken.name != None)
+
+    def deactivateNamedTokensForArchive(self, archive, names):
+        """See `IArchiveAuthTokenSet`."""
+        tokens = self.getActiveNamedTokensForArchive(archive, names)
+        tokens.set(date_deactivated=UTC_NOW)
