@@ -119,9 +119,19 @@ class IArchiveAuthTokenSet(Interface):
         :return An object conforming to `IArchiveAuthToken` or None.
         """
 
-    def getActiveNamedTokensForArchive(archive):
-        """Retrieve all active named tokens for the given archive.
+    def getActiveNamedTokensForArchive(archive, names=None):
+        """Retrieve a subset of active named tokens for the given archive if
+        `names` is specified, or all active named tokens for the archive if
+        `names` is null.
 
         :param archive: The archive to which the tokens correspond.
+        :param names: An optional list of token names.
         :return: A result set containing `IArchiveAuthToken`s.
+        """
+
+    def deactivateNamedTokensForArchive(archive, names):
+        """Deactivate named tokens for the given archive.
+
+        :param archive: The archive to which the tokens correspond.
+        :param names: A list of token names.
         """
