@@ -1986,7 +1986,7 @@ class Archive(SQLBase):
         else:
             return archive_auth_token
 
-    def newNamedAuthTokens(self, names, as_dict=True):
+    def newNamedAuthTokens(self, names, as_dict=False):
         """See `IArchive`."""
 
         if not getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG):
@@ -1998,14 +1998,11 @@ class Archive(SQLBase):
 
         # Check for duplicate names.
         token_set = getUtility(IArchiveAuthTokenSet)
-        active_tokens = token_set.getActiveNamedTokensForArchive(self)
-        active_tokens = removeSecurityProxy(active_tokens)
-        dup_tokens = active_tokens.find(ArchiveAuthToken.name.is_in(names))
-        dup_names = [token.name for token in dup_tokens]
+        dup_tokens = token_set.getActiveNamedTokensForArchive(self, names)
+        dup_names = set(token.name for token in dup_tokens)
 
         values = [
-            (name, create_token(20), self) for name in names
-            if name not in dup_names]
+            (name, create_token(20), self) for name in set(names) - dup_names]
         tokens = create(
             (ArchiveAuthToken.name, ArchiveAuthToken.token,
             ArchiveAuthToken.archive), values, get_objects=True)
@@ -2017,7 +2014,7 @@ class Archive(SQLBase):
         else:
             return tokens
 
-    def getNamedAuthToken(self, name, as_dict=True):
+    def getNamedAuthToken(self, name, as_dict=False):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
         auth_token = token_set.getActiveNamedTokenForArchive(self, name)
@@ -2029,10 +2026,10 @@ class Archive(SQLBase):
         else:
             raise NotFoundError(name)
 
-    def getNamedAuthTokens(self, as_dict=True):
+    def getNamedAuthTokens(self, names=None, as_dict=False):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
-        auth_tokens = token_set.getActiveNamedTokensForArchive(self)
+        auth_tokens = token_set.getActiveNamedTokensForArchive(self, names)
         if as_dict:
             return [auth_token.asDict() for auth_token in auth_tokens]
         else:
@@ -2050,10 +2047,7 @@ class Archive(SQLBase):
     def revokeNamedAuthTokens(self, names):
         """See `IArchive`."""
         token_set = getUtility(IArchiveAuthTokenSet)
-        active_tokens = token_set.getActiveNamedTokensForArchive(self)
-        active_tokens = removeSecurityProxy(active_tokens)
-        tokens = active_tokens.find(ArchiveAuthToken.name.is_in(names))
-        tokens.set(date_deactivated=UTC_NOW)
+        token_set.deactivateNamedTokensForArchive(self, names)
 
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):

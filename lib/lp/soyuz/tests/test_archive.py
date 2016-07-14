@@ -1298,7 +1298,7 @@ class TestArchiveTokens(TestCaseWithFactory):
 
     def test_newNamedAuthToken_private_archive(self):
         res = self.private_ppa.newNamedAuthToken(u"tokenname", as_dict=True)
-        token = self.private_ppa.getNamedAuthToken(u"tokenname", as_dict=False)
+        token = self.private_ppa.getNamedAuthToken(u"tokenname")
         self.assertIsNotNone(token)
         self.assertIsNone(token.person)
         self.assertEqual("tokenname", token.name)
@@ -1326,8 +1326,9 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertEqual(u"secret", token.token)
 
     def test_newNamedAuthTokens_private_archive(self):
-        res = self.private_ppa.newNamedAuthTokens((u"name1", u"name2"))
-        tokens = self.private_ppa.getNamedAuthTokens(as_dict=False)
+        res = self.private_ppa.newNamedAuthTokens(
+            (u"name1", u"name2"), as_dict=True)
+        tokens = self.private_ppa.getNamedAuthTokens()
         self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
 
     def test_newNamedAuthTokens_public_archive(self):
@@ -1337,14 +1338,15 @@ class TestArchiveTokens(TestCaseWithFactory):
 
     def test_newNamedAuthTokens_duplicate_name(self):
         self.private_ppa.newNamedAuthToken(u"tok1")
-        res = self.private_ppa.newNamedAuthTokens((u"tok1", u"tok2", u"tok3"))
-        tokens = self.private_ppa.getNamedAuthTokens(as_dict=False)
+        res = self.private_ppa.newNamedAuthTokens(
+            (u"tok1", u"tok2", u"tok3"), as_dict=True)
+        tokens = self.private_ppa.getNamedAuthTokens()
         self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
 
     def test_newNamedAuthTokens_idempotent(self):
         names = (u"name1", u"name2", u"name3", u"name4", u"name5")
-        res1 = self.private_ppa.newNamedAuthTokens(names)
-        res2 = self.private_ppa.newNamedAuthTokens(names)
+        res1 = self.private_ppa.newNamedAuthTokens(names, as_dict=True)
+        res2 = self.private_ppa.newNamedAuthTokens(names, as_dict=True)
         self.assertEqual(res1, res2)
 
     def test_newNamedAuthTokens_query_count(self):
@@ -1377,7 +1379,7 @@ class TestArchiveTokens(TestCaseWithFactory):
 
     def test_revokeNamedAuthTokens(self):
         names = (u"name1", u"name2", u"name3", u"name4", u"name5")
-        tokens = self.private_ppa.newNamedAuthTokens(names, as_dict=False)
+        tokens = self.private_ppa.newNamedAuthTokens(names)
         self.assertThat(
             tokens, AllMatch(MatchesPredicate(
                 lambda x: not x.date_deactivated, '%s is not active.')))
@@ -1389,8 +1391,8 @@ class TestArchiveTokens(TestCaseWithFactory):
     def test_revokeNamedAuthTokens_with_previously_revoked_token(self):
         names = (u"name1", u"name2", u"name3", u"name4", u"name5")
         self.private_ppa.newNamedAuthTokens(names)
-        token1 = self.private_ppa.getNamedAuthToken(u"name1", as_dict=False)
-        token2 = self.private_ppa.getNamedAuthToken(u"name2", as_dict=False)
+        token1 = self.private_ppa.getNamedAuthToken(u"name1")
+        token2 = self.private_ppa.getNamedAuthToken(u"name2")
 
         # Revoke token1.
         deactivation_time_1 = datetime.now(UTC) - timedelta(seconds=90)
@@ -1422,7 +1424,16 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.private_ppa.revokeNamedAuthToken(u"tokenname3")
         self.assertContentEqual(
             [res1, res2],
-            self.private_ppa.getNamedAuthTokens())
+            self.private_ppa.getNamedAuthTokens(as_dict=True))
+
+    def test_getNamedAuthTokens_with_names(self):
+        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1", as_dict=True)
+        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2", as_dict=True)
+        self.private_ppa.newNamedAuthToken(u"tokenname3")
+        self.assertContentEqual(
+            [res1, res2],
+            self.private_ppa.getNamedAuthTokens(
+                (u"tokenname1", u"tokenname2"), as_dict=True))
 
 
 class TestGetBinaryPackageRelease(TestCaseWithFactory):
