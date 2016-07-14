@@ -2133,9 +2133,9 @@ class IArchiveEdit(Interface):
             a list of dictionaries or a list of full objects.
 
         :return: A list of `ArchiveAuthToken` objects or a dictionary of
-        {name: {token, archive_url} where `name` is a token name,
-        `token` is the secret and `archive_url` is the externally-usable
-        archive URL including basic auth.
+            {name: {token, archive_url} where `name` is a token name,
+            `token` is the secret and `archive_url` is the externally-usable
+            archive URL including basic auth.
         """
 
     @call_with(as_dict=True)
