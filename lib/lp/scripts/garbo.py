@@ -1781,6 +1781,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         AntiqueSessionPruner,
         BugSummaryJournalRollup,
+        BugWatchScheduler,
         OpenIDConsumerAssociationPruner,
         OpenIDConsumerNoncePruner,
         PopulateDistributionSourcePackageCache,
@@ -1803,7 +1804,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
         BugHeatUpdater,
-        BugWatchScheduler,
         DuplicateSessionPruner,
         RevisionCachePruner,
         UnusedSessionPruner,
