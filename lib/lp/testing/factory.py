@@ -4634,7 +4634,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                  auto_build_archive=None, auto_build_pocket=None,
                  is_stale=None, require_virtualized=True, processors=None,
                  date_created=DEFAULT, private=False, store_upload=False,
-                 store_series=None, store_name=None, store_secrets=None):
+                 store_series=None, store_name=None, store_secrets=None,
+                 store_channels=None):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4659,7 +4660,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             auto_build=auto_build, auto_build_archive=auto_build_archive,
             auto_build_pocket=auto_build_pocket, private=private,
             store_upload=store_upload, store_series=store_series,
-            store_name=store_name, store_secrets=store_secrets)
+            store_name=store_name, store_secrets=store_secrets,
+            store_channels=store_channels)
         if is_stale is not None:
             removeSecurityProxy(snap).is_stale = is_stale
         IStore(snap).flush()
