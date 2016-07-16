@@ -7,6 +7,10 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.component import getUtility
 from zope.formlib.interfaces import (
     IBrowserWidget,
@@ -16,14 +20,10 @@ from zope.formlib.interfaces import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
-from lp.snappy.interfaces.snap import (
-    ISnap,
-    SNAP_FEATURE_FLAG,
-    )
+from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.vocabularies import PPAVocabulary
@@ -34,17 +34,34 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestSnapArchiveWidgetMixin:
+def make_snap(test_case):
+    return test_case.factory.makeSnap(distroseries=test_case.distroseries)
+
+
+def make_branch(test_case):
+    return test_case.factory.makeAnyBranch()
+
+
+def make_git_repository(test_case):
+    return test_case.factory.makeGitRepository()
+
+
+class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    scenarios = [
+        ("Snap", {"context_factory": make_snap}),
+        ("Branch", {"context_factory": make_branch}),
+        ("GitRepository", {"context_factory": make_git_repository}),
+        ]
+
     def setUp(self):
-        super(TestSnapArchiveWidgetMixin, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        super(TestSnapArchiveWidget, self).setUp()
         self.distroseries = self.factory.makeDistroSeries()
         field = Reference(
             __name__="archive", schema=IArchive, title=u"Archive")
-        self.context = self.makeContext(self.distroseries)
+        self.context = self.context_factory(self)
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
         self.widget = SnapArchiveWidget(field, request)
@@ -255,22 +272,4 @@ class TestSnapArchiveWidgetMixin:
         self.assertContentEqual(expected_ids, ids)
 
 
-class TestSnapArchiveWidgetForSnap(
-    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
-
-    def makeContext(self, distroseries):
-        return self.factory.makeSnap(distroseries=distroseries)
-
-
-class TestSnapArchiveWidgetForBranch(
-    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
-
-    def makeContext(self, distroseries):
-        return self.factory.makeAnyBranch()
-
-
-class TestSnapArchiveWidgetForGitRepository(
-    TestSnapArchiveWidgetMixin, TestCaseWithFactory):
-
-    def makeContext(self, distroseries):
-        return self.factory.makeGitRepository()
+load_tests = load_tests_apply_scenarios

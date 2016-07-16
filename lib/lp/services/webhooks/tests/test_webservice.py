@@ -23,7 +23,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import (
     api_url,
     person_logged_in,
@@ -378,6 +377,5 @@ class TestWebhookTargetSnap(TestWebhookTargetBase, TestCaseWithFactory):
     event_type = 'snap:build:0.1'
 
     def makeTarget(self):
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: 'true'}))
         owner = self.factory.makePerson()
         return self.factory.makeSnap(registrant=owner, owner=owner)

@@ -38,6 +38,7 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.timeline.requesttimeline import get_request_timeline
@@ -61,6 +62,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -305,10 +307,12 @@ class TestSnapStoreClient(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-        with HTTMock(self._unscanned_upload_handler, self._snap_push_handler):
-            self.assertEqual(
-                "http://sca.example/dev/api/snaps/1/builds/1/status",
-                self.client.upload(snapbuild))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(self._unscanned_upload_handler,
+                         self._snap_push_handler):
+                self.assertEqual(
+                    "http://sca.example/dev/api/snaps/1/builds/1/status",
+                    self.client.upload(snapbuild))
         self.assertThat(self.unscanned_upload_request, RequestMatches(
             url=Equals("http://updown.example/unscanned-upload/"),
             method=Equals("POST"),
@@ -345,10 +349,11 @@ class TestSnapStoreClient(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-        with HTTMock(self._unscanned_upload_handler, snap_push_handler,
-                     self._macaroon_refresh_handler):
-            self.assertRaises(
-                UnauthorizedUploadResponse, self.client.upload, snapbuild)
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(self._unscanned_upload_handler, snap_push_handler,
+                         self._macaroon_refresh_handler):
+                self.assertRaises(
+                    UnauthorizedUploadResponse, self.client.upload, snapbuild)
 
     def test_upload_needs_discharge_macaroon_refresh(self):
         @urlmatch(path=r".*/snap-push/$")
@@ -373,11 +378,12 @@ class TestSnapStoreClient(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-        with HTTMock(self._unscanned_upload_handler, snap_push_handler,
-                     self._macaroon_refresh_handler):
-            self.assertEqual(
-                "http://sca.example/dev/api/snaps/1/builds/1/status",
-                self.client.upload(snapbuild))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(self._unscanned_upload_handler, snap_push_handler,
+                         self._macaroon_refresh_handler):
+                self.assertEqual(
+                    "http://sca.example/dev/api/snaps/1/builds/1/status",
+                    self.client.upload(snapbuild))
         self.assertEqual(2, snap_push_handler.call_count)
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])
@@ -402,10 +408,11 @@ class TestSnapStoreClient(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
-        with HTTMock(self._unscanned_upload_handler, snap_push_handler):
-            self.assertEqual(
-                "http://sca.example/dev/api/click-scan-complete/updown/1/",
-                self.client.upload(snapbuild))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(self._unscanned_upload_handler, snap_push_handler):
+                self.assertEqual(
+                    "http://sca.example/dev/api/click-scan-complete/updown/1/",
+                    self.client.upload(snapbuild))
 
     def test_refresh_discharge_macaroon(self):
         store_secrets = self._make_store_secrets()
@@ -414,8 +421,9 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_series=self.factory.makeSnappySeries(name="rolling"),
             store_name="test-snap", store_secrets=store_secrets)
 
-        with HTTMock(self._macaroon_refresh_handler):
-            self.client.refreshDischargeMacaroon(snap)
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(self._macaroon_refresh_handler):
+                self.client.refreshDischargeMacaroon(snap)
         self.assertThat(self.refresh_request, RequestMatches(
             url=Equals("http://sso.example/api/v2/tokens/refresh"),
             method=Equals("POST"),

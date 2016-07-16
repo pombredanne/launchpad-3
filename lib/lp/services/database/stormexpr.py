@@ -20,6 +20,7 @@ __all__ = [
     'NullCount',
     'NullsFirst',
     'NullsLast',
+    'RegexpMatch',
     'rank_by_fti',
     'TryAdvisoryLock',
     'Unnest',
@@ -40,6 +41,7 @@ from storm.expr import (
     EXPR,
     Expr,
     In,
+    Like,
     NamedFunc,
     Or,
     SQL,
@@ -256,6 +258,14 @@ def compile_case(compile, expr, state):
         tokens.append(compile(expr.else_, state))
     tokens.append(" END")
     return "".join(tokens)
+
+
+class RegexpMatch(BinaryOper):
+    __slots__ = ()
+    oper = " ~ "
+
+
+compile.set_precedence(compile.get_precedence(Like), RegexpMatch)
 
 
 def get_where_for_reference(reference, other):

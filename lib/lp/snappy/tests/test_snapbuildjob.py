@@ -92,7 +92,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
 
     def test_run(self):
         # The job uploads the build to the store and records the store URL.
-        snapbuild = self.factory.makeSnapBuild()
+        snapbuild = self.factory.makeSnapBuild(
+            builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
@@ -111,7 +112,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
 
     def test_run_failed(self):
         # A failed run sets the store upload status to FAILED.
-        snapbuild = self.factory.makeSnapBuild()
+        snapbuild = self.factory.makeSnapBuild(
+            builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
@@ -131,7 +133,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         # A run that gets 401 from the store sends mail.
         requester = self.factory.makePerson(name="requester")
         snapbuild = self.factory.makeSnapBuild(
-            requester=requester, name="test-snap", owner=requester)
+            requester=requester, name="test-snap", owner=requester,
+            builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
@@ -172,7 +175,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         # A run that finds that the store has not yet finished scanning the
         # package schedules itself to be retried.
         self.useFixture(FakeLogger())
-        snapbuild = self.factory.makeSnapBuild()
+        snapbuild = self.factory.makeSnapBuild(
+            builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
@@ -212,7 +216,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         # A run that gets a scan failure from the store sends mail.
         requester = self.factory.makePerson(name="requester")
         snapbuild = self.factory.makeSnapBuild(
-            requester=requester, name="test-snap", owner=requester)
+            requester=requester, name="test-snap", owner=requester,
+            builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()

@@ -11,6 +11,10 @@ __all__ = [
     ]
 
 import json
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
 import string
 import time
 from urlparse import urlsplit
@@ -294,7 +298,7 @@ class SnapStoreClient:
         if cached_channels is not None:
             try:
                 channels = json.loads(cached_channels)
-            except Exception:
+            except JSONDecodeError:
                 log.exception(
                     "Cannot load cached channels for %s; deleting" %
                     search_host)

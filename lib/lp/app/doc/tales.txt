@@ -487,8 +487,11 @@ If the person has no time_zone specified, we use UTC.
     >>> test_tales("person/fmt:local-time", person=sample_person)
     '... AWST'
 
-    >>> print mark.time_zone
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> print removeSecurityProxy(mark).location
     None
+    >>> mark.time_zone
+    u'UTC'
 
     >>> test_tales("person/fmt:local-time", person=mark)
     '... UTC'

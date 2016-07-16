@@ -58,7 +58,7 @@ for teams (as they're defined in the ITeam interface).
     sub_teams_collection_link: u'http://.../~salgado/sub_teams'
     super_teams_collection_link: u'http://.../~salgado/super_teams'
     team_owner_link: None
-    time_zone: None
+    time_zone: u'UTC'
     visibility: u'Public'
     web_link: u'http://launchpad.../~salgado'
     wiki_names_collection_link: u'http://.../~salgado/wiki_names'
@@ -124,7 +124,7 @@ for teams (as they're defined in the ITeam interface).
     super_teams_collection_link: u'http://.../~ubuntu-team/super_teams'
     team_description: u'This Team is responsible for the Ubuntu Distribution'
     team_owner_link: u'http://.../~mark'
-    time_zone: None
+    time_zone: u'UTC'
     visibility: u'Public'
     web_link: u'http://launchpad.../~ubuntu-team'
     wiki_names_collection_link: u'http://.../~ubuntu-team/wiki_names'

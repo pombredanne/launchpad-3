@@ -14,6 +14,7 @@ from difflib import unified_diff
 import hashlib
 import re
 
+from fixtures import FakeLogger
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
@@ -77,6 +78,7 @@ from lp.registry.enums import (
     )
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
+from lp.services.timeout import TimeoutError
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -1758,6 +1760,18 @@ class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
                 object=MatchesStructure.byEquality(
                     queue_status=BranchMergeProposalStatus.NEEDS_REVIEW))]))
 
+    def test_source_revid_bzr(self):
+        view = self._createView()
+        self.assertEqual(
+            self.proposal.merge_source.last_scanned_id, view.source_revid)
+
+    def test_source_revid_git(self):
+        git_proposal = self.factory.makeBranchMergeProposalForGit()
+        view = BranchMergeProposalChangeStatusView(
+            git_proposal, LaunchpadTestRequest())
+        self.assertEqual(
+            git_proposal.merge_source.commit_sha1, view.source_revid)
+
 
 class TestCommentAttachmentRendering(TestCaseWithFactory):
     """Test diff attachments are rendered correctly."""
@@ -1913,6 +1927,16 @@ class TestBranchMergeProposal(GitHostingClientMixin, BrowserTestCase):
         browser = self.getUserBrowser(mp_url)
         self.assertThat(browser.contents, Not(has_read_more))
         self.assertEqual(mp_url, browser.url)
+
+    def test_timeout(self):
+        """The page renders even if fetching revisions times out."""
+        self.useFixture(FakeLogger())
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        comment = self.factory.makeCodeReviewComment(
+            body='x y' * 100, merge_proposal=bmp)
+        self.hosting_client.getLog.failure = TimeoutError
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        self.assertIn('x y' * 100, browser.contents)
 
 
 class TestLatestProposalsForEachBranchMixin:

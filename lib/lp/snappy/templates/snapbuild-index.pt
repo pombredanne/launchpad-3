@@ -159,7 +159,8 @@
            tal:attributes="href context/upload_log_url">uploadlog</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
-      <li tal:define="store_upload_status view/store_upload_status"
+      <li id="store-upload-status"
+          tal:define="store_upload_status view/store_upload_status"
           tal:condition="store_upload_status"
           tal:content="structure store_upload_status" />
     </ul>

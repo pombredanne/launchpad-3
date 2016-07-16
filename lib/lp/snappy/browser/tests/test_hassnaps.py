@@ -5,9 +5,7 @@
 
 __metaclass__ = type
 
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
@@ -16,10 +14,6 @@ from lp.testing.views import create_initialized_view
 class TestRelatedSnapsMixin:
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestRelatedSnapsMixin, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
 
     def test_snaps_link_no_snaps(self):
         # An object with no snap packages does not show a snap packages link.

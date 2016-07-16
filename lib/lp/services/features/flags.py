@@ -148,6 +148,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.dsp_picker.enabled',
+     'boolean',
+     'Enables the use of the new DistributionSourcePackage vocabulary for '
+     'the source and binary package name pickers.',
+     '',
+     '',
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
@@ -227,6 +234,12 @@ flag_info = sorted([
      'disabled',
      'Git recipes',
      'https://help.launchpad.net/Packaging/SourceBuilds'),
+    ('soyuz.named_auth_token.allow_new',
+     'boolean',
+     'If true, allow creation of named authorization tokens for archives.',
+     'disabled',
+     'Named authorization tokens for archives',
+     ''),
     ])
 
 # The set of all flag names that are documented.

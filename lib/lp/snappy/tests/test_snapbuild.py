@@ -35,10 +35,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
-from lp.snappy.interfaces.snap import (
-    SNAP_TESTING_FLAGS,
-    SnapFeatureDisabled,
-    )
+from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
     ISnapBuildSet,
@@ -59,21 +56,6 @@ from lp.testing.layers import (
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.pages import webservice_for_person
-
-
-class TestSnapBuildFeatureFlag(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, we will not create new SnapBuilds.
-        class MockSnap:
-            require_virtualized = False
-
-        self.assertRaises(
-            SnapFeatureDisabled, getUtility(ISnapBuildSet).new,
-            None, MockSnap(), self.factory.makeArchive(),
-            self.factory.makeDistroArchSeries(), None)
 
 
 expected_body = """\

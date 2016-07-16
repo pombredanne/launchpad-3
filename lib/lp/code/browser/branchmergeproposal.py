@@ -107,6 +107,11 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.scripts import log
+from lp.services.timeout import (
+    reduced_timeout,
+    TimeoutError,
+    )
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -343,7 +348,17 @@ class UnmergedRevisionsMixin:
     @cachedproperty
     def unlanded_revisions(self):
         """Return the unlanded revisions from the source branch."""
-        return self.context.getUnlandedSourceBranchRevisions()
+        with reduced_timeout(1.0, webapp_max=5.0):
+            try:
+                return self.context.getUnlandedSourceBranchRevisions()
+            except TimeoutError:
+                log.exception(
+                    "Timeout fetching unlanded source revisions for merge "
+                    "proposal %s (%s => %s)" % (
+                        self.context.id,
+                        self.context.merge_source.identity,
+                        self.context.merge_target.identity))
+                return []
 
     @property
     def pending_writes(self):
@@ -476,6 +491,14 @@ class BranchMergeProposalStatusMixin:
                 title = status.title
             terms.append(SimpleTerm(status, status.name, title))
         return SimpleVocabulary(terms)
+
+    @property
+    def source_revid(self):
+        if IBranch.providedBy(self.context.merge_source):
+            source_revid = self.context.merge_source.last_scanned_id
+        else:
+            source_revid = self.context.merge_source.commit_sha1
+        return source_revid
 
 
 class DiffRenderingMixin:
@@ -615,7 +638,17 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
         merge_proposal = self.context
-        groups = list(merge_proposal.getRevisionsSinceReviewStart())
+        with reduced_timeout(1.0, webapp_max=5.0):
+            try:
+                groups = list(merge_proposal.getRevisionsSinceReviewStart())
+            except TimeoutError:
+                log.exception(
+                    "Timeout fetching revisions since review start for "
+                    "merge proposal %s (%s => %s)" % (
+                        merge_proposal.id,
+                        merge_proposal.merge_source.identity,
+                        merge_proposal.merge_target.identity))
+                groups = []
         source = merge_proposal.merge_source
         if IBranch.providedBy(source):
             source = DecoratedBranch(source)
@@ -758,16 +791,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def status_config(self):
         """The config to configure the ChoiceSource JS widget."""
-        if IBranch.providedBy(self.context.merge_source):
-            source_revid = self.context.merge_source.last_scanned_id
-        else:
-            source_revid = self.context.merge_source.commit_sha1
         return simplejson.dumps({
             'status_widget_items': vocabulary_to_choice_edit_items(
                 self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
-            'source_revid': source_revid,
+            'source_revid': self.source_revid,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
             })

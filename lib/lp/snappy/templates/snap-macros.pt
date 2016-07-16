@@ -6,7 +6,7 @@
 
 <div
   metal:define-macro="related-snaps"
-  tal:condition="view/show_snap_information"
+  tal:condition="not: view/snaps/is_empty"
   tal:define="context_menu context/menu:context"
   id="related-snaps">
 
