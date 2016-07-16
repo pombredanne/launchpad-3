@@ -113,6 +113,25 @@ class TestSnapBuildView(TestCaseWithFactory):
                 attrs={"id": "store-upload-status"},
                 text="Store upload failed: Scan failed.")))
 
+    def test_store_upload_status_release_failed(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
+        naked_job.error_message = "Failed to publish"
+        build_view = create_initialized_view(build, "+index")
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload status", "li",
+                    attrs={"id": "store-upload-status"},
+                    text=(
+                        "Releasing package to channels failed: "
+                        "Failed to publish")),
+                soupmatchers.Tag(
+                    "store link", "a", attrs={"href": job.store_url}))))
+
 
 class TestSnapBuildOperations(BrowserTestCase):
 

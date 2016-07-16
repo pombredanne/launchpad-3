@@ -48,4 +48,15 @@
         <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
     </class>
 
+    <securedutility
+        name="SnapStoreChannel"
+        component="lp.snappy.vocabularies.SnapStoreChannelVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory" />
+    </securedutility>
+
+    <class class="lp.snappy.vocabularies.SnapStoreChannelVocabulary">
+        <allow interface="zope.schema.interfaces.IVocabularyTokenized" />
+    </class>
+
 </configure>
