@@ -439,7 +439,7 @@ class TestSnapAddView(BrowserTestCase):
 
     def test_create_new_snap_display_processors(self):
         branch = self.factory.makeAnyBranch()
-        distroseries = self.setUpDistroSeries()
+        self.setUpDistroSeries()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
         processors = browser.getControl(name="field.processors")
@@ -466,7 +466,7 @@ class TestSnapAddView(BrowserTestCase):
 
     def test_create_new_snap_processors(self):
         branch = self.factory.makeAnyBranch()
-        distroseries = self.setUpDistroSeries()
+        self.setUpDistroSeries()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
         processors = browser.getControl(name="field.processors")
@@ -1285,6 +1285,23 @@ class TestSnapView(BrowserTestCase):
         for build in builds[:9]:
             self.setStatus(build, BuildStatus.FULLYBUILT)
         self.assertEqual(list(reversed(builds[1:])), view.builds)
+
+    def test_store_channels_none(self):
+        snap = self.factory.makeSnap()
+        view = create_initialized_view(snap, "+index")
+        self.assertIsNone(view.store_channels)
+
+    def test_store_channels_uses_titles(self):
+        snap_store_client = FakeMethod()
+        snap_store_client.listChannels = FakeMethod(result=[
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ])
+        self.useFixture(
+            ZopeUtilityFixture(snap_store_client, ISnapStoreClient))
+        snap = self.factory.makeSnap(store_channels=["stable", "nonexistent"])
+        view = create_initialized_view(snap, "+index")
+        self.assertEqual("Stable, nonexistent", view.store_channels)
 
 
 class TestSnapRequestBuildsView(BrowserTestCase):

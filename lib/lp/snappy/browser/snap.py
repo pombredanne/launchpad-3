@@ -34,6 +34,7 @@ from zope.schema import (
     List,
     TextLine,
     )
+from zope.schema.interfaces import IVocabularyFactory
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -61,6 +62,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
@@ -185,6 +187,22 @@ class SnapView(LaunchpadView):
             return 'Built automatically'
         else:
             return 'Built on request'
+
+    @cachedproperty
+    def store_channels(self):
+        if self.context.store_channels is not None:
+            vocabulary = getUtility(
+                IVocabularyFactory, name='SnapStoreChannel')(self.context)
+            channel_titles = []
+            for channel in self.context.store_channels:
+                try:
+                    channel_titles.append(
+                        vocabulary.getTermByToken(channel).title)
+                except LookupError:
+                    channel_titles.append(channel)
+            return ', '.join(channel_titles)
+        else:
+            return None
 
 
 def builds_for_snap(snap):
