@@ -10,6 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from storm.expr import (
     And,
@@ -96,6 +97,7 @@ from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotModifySnapProcessor,
+    CannotRequestAutoBuilds,
     DuplicateSnapName,
     ISnap,
     ISnapSet,
@@ -379,6 +381,40 @@ class Snap(Storm, WebhookTargetMixin):
         result = Store.of(self).find(SnapBuild, *query_args)
         result.order_by(order_by)
         return result
+
+    def requestAutoBuilds(self, logger=None):
+        """See `ISnapSet`."""
+        builds = []
+        if self.auto_build_archive is None:
+            raise CannotRequestAutoBuilds("auto_build_archive")
+        if self.auto_build_pocket is None:
+            raise CannotRequestAutoBuilds("auto_build_pocket")
+        self.is_stale = False
+        if logger is not None:
+            logger.debug(
+                "Scheduling builds of snap package %s/%s",
+                self.owner.name, self.name)
+        for arch in self.getAllowedArchitectures():
+            try:
+                build = self.requestBuild(
+                    self.owner, self.auto_build_archive, arch,
+                    self.auto_build_pocket)
+                if logger is not None:
+                    logger.debug(
+                        " - %s/%s/%s: Build requested.",
+                        self.owner.name, self.name, arch.architecturetag)
+                builds.append(build)
+            except SnapBuildAlreadyPending as e:
+                if logger is not None:
+                    logger.warning(
+                        " - %s/%s/%s: %s",
+                        self.owner.name, self.name, arch.architecturetag, e)
+            except Exception as e:
+                if logger is not None:
+                    logger.exception(
+                        " - %s/%s/%s: %s",
+                        self.owner.name, self.name, arch.architecturetag, e)
+        return builds
 
     def getBuildSummariesForSnapBuildIds(self, snap_build_ids):
         """See `ISnap`."""
@@ -720,33 +756,7 @@ class SnapSet:
         snaps = cls._findStaleSnaps()
         builds = []
         for snap in snaps:
-            snap.is_stale = False
-            if logger is not None:
-                logger.debug(
-                    "Scheduling builds of snap package %s/%s",
-                    snap.owner.name, snap.name)
-            for arch in snap.getAllowedArchitectures():
-                try:
-                    build = snap.requestBuild(
-                        snap.owner, snap.auto_build_archive, arch,
-                        snap.auto_build_pocket)
-                    if logger is not None:
-                        logger.debug(
-                            " - %s/%s/%s: Build requested.",
-                            snap.owner.name, snap.name, arch.architecturetag)
-                    builds.append(build)
-                except SnapBuildAlreadyPending as e:
-                    if logger is not None:
-                        logger.warning(
-                            " - %s/%s/%s: %s",
-                            snap.owner.name, snap.name, arch.architecturetag,
-                            e)
-                except Exception as e:
-                    if logger is not None:
-                        logger.exception(
-                            " - %s/%s/%s: %s",
-                            snap.owner.name, snap.name, arch.architecturetag,
-                            e)
+            builds.extend(snap.requestAutoBuilds(logger=logger))
         return builds
 
     def detachFromBranch(self, branch):
