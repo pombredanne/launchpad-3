@@ -468,16 +468,21 @@ class ISnapSet(Interface):
     export_as_webservice_collection(ISnap)
 
     @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=False))
     @export_factory_operation(
         ISnap, [
             "owner", "distro_series", "name", "description", "branch",
-            "git_ref", "private"])
+            "git_ref", "auto_build", "auto_build_archive", "auto_build_pocket",
+            "private"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
-            branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=None, private=False,
-            store_upload=False, store_series=None, store_name=None,
-            store_secrets=None):
+            branch=None, git_ref=None, auto_build=False,
+            auto_build_archive=None, auto_build_pocket=None,
+            require_virtualized=True, processors=None, date_created=None,
+            private=False, store_upload=False, store_series=None,
+            store_name=None, store_secrets=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):
