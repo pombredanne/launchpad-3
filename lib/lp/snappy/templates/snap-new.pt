@@ -61,6 +61,10 @@
                 <tal:widget define="widget nocall:view/widgets/store_name">
                   <metal:block use-macro="context/@@launchpad_form/widget_row" />
                 </tal:widget>
+                <tal:widget define="widget nocall:view/widgets/store_channels"
+                            condition="widget/context/value_type/vocabulary">
+                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                </tal:widget>
               </table>
               <p class="formHelp">
                 If you ask Launchpad to automatically upload builds of this
