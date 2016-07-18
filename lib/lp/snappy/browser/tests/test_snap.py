@@ -60,6 +60,7 @@ from lp.snappy.browser.snap import (
 from lp.snappy.interfaces.snap import (
     CannotModifySnapProcessor,
     ISnapSet,
+    SNAP_PRIVATE_FEATURE_FLAG,
     SNAP_TESTING_FLAGS,
     SnapPrivateFeatureDisabled,
     )
@@ -321,9 +322,13 @@ class TestSnapAddView(BrowserTestCase):
             owner=self.person,
             information_type=InformationType.USERDATA)
 
-        browser = self.getViewBrowser(branch, user=self.person)
-        self.assertRaises(
-            LinkNotFoundError, browser.getLink, "Create snap package")
+        with self.useFixture(FeatureFixture({SNAP_PRIVATE_FEATURE_FLAG: u""})):
+            browser = self.getViewBrowser(branch, user=self.person)
+            self.assertRaises(
+                LinkNotFoundError, browser.getLink, "Create snap package")
+        with self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS)):
+            browser = self.getViewBrowser(branch, user=self.person)
+            browser.getLink("Create snap package")
 
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.
