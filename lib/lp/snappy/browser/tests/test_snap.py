@@ -63,6 +63,7 @@ from lp.snappy.interfaces.snap import (
     SNAP_TESTING_FLAGS,
     SnapPrivateFeatureDisabled,
     )
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.testing import (
     admin_logged_in,
@@ -439,7 +440,7 @@ class TestSnapAddView(BrowserTestCase):
 
     def test_create_new_snap_display_processors(self):
         branch = self.factory.makeAnyBranch()
-        distroseries = self.setUpDistroSeries()
+        self.setUpDistroSeries()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
         processors = browser.getControl(name="field.processors")
@@ -466,7 +467,7 @@ class TestSnapAddView(BrowserTestCase):
 
     def test_create_new_snap_processors(self):
         branch = self.factory.makeAnyBranch()
-        distroseries = self.setUpDistroSeries()
+        self.setUpDistroSeries()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
         processors = browser.getControl(name="field.processors")
@@ -858,6 +859,47 @@ class TestSnapEditView(BrowserTestCase):
         browser.getControl("Update snap package").click()
         login_person(self.person)
         self.assertSnapProcessors(snap, ["386", "armhf"])
+
+    def assertNeedStoreReauth(self, expected, initial_kwargs, data):
+        initial_kwargs.setdefault("store_upload", True)
+        initial_kwargs.setdefault("store_series", self.snappyseries)
+        initial_kwargs.setdefault("store_name", u"one")
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=self.distroseries, **initial_kwargs)
+        view = create_initialized_view(snap, "+edit", principal=self.person)
+        data.setdefault("store_upload", snap.store_upload)
+        data.setdefault("store_distro_series", snap.store_distro_series)
+        data.setdefault("store_name", snap.store_name)
+        self.assertEqual(expected, view._needStoreReauth(data))
+
+    def test__needStoreReauth_no_change(self):
+        # If the user didn't change any store settings, no reauthorization
+        # is needed.
+        self.assertNeedStoreReauth(False, {}, {})
+
+    def test__needStoreReauth_different_series(self):
+        # Changing the store series requires reauthorization.
+        with admin_logged_in():
+            new_snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.distroseries])
+        sds = getUtility(ISnappyDistroSeriesSet).getByBothSeries(
+            new_snappyseries, self.distroseries)
+        self.assertNeedStoreReauth(True, {}, {"store_distro_series": sds})
+
+    def test__needStoreReauth_different_name(self):
+        # Changing the store name requires reauthorization.
+        self.assertNeedStoreReauth(True, {}, {"store_name": u"two"})
+
+    def test__needStoreReauth_enable_upload(self):
+        # Enabling store upload requires reauthorization.  (This can happen
+        # on its own if both store_series and store_name were set to begin
+        # with, which is especially plausible for Git-based snap packages,
+        # or if this option is disabled and then re-enabled.  In the latter
+        # case, we can't tell if store_series or store_name were also
+        # changed in between, so reauthorizing is the conservative course.)
+        self.assertNeedStoreReauth(
+            True, {"store_upload": False}, {"store_upload": True})
 
     def test_edit_store_upload(self):
         # Changing store upload settings on a snap sets all the appropriate
