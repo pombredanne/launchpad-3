@@ -16,7 +16,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -29,7 +28,6 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    structured,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.interfaces.binarypackagebuild import IBuildRescoreForm
@@ -84,25 +82,9 @@ class SnapBuildView(LaunchpadView):
     def has_files(self):
         return bool(self.files)
 
-    @cachedproperty
-    def store_upload_status(self):
-        job = self.context.store_upload_jobs.first()
-        if job is None:
-            return None
-        elif job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
-            return "Store upload in progress"
-        elif job.job.status == JobStatus.COMPLETED:
-            return structured(
-                '<a href="%s">Manage this package in the store</a>',
-                job.store_url).escapedtext
-        elif job.store_url:
-            return structured(
-                '<a href="%s">Manage this package in the store</a><br />'
-                'Releasing package to channels failed: %s',
-                job.store_url, job.error_message).escapedtext
-        else:
-            return structured(
-                "Store upload failed: %s", job.error_message).escapedtext
+    @property
+    def last_upload_job(self):
+        return self.context.store_upload_jobs.first()
 
 
 class SnapBuildCancelView(LaunchpadFormView):

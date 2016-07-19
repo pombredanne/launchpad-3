@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import re
+
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 import soupmatchers
@@ -82,7 +84,7 @@ class TestSnapBuildView(TestCaseWithFactory):
             soupmatchers.Tag(
                 "store upload status", "li",
                 attrs={"id": "store-upload-status"},
-                text="Store upload in progress")))
+                text=re.compile(r"^\s*Store upload in progress\s*$"))))
 
     def test_store_upload_status_completed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -98,7 +100,8 @@ class TestSnapBuildView(TestCaseWithFactory):
                     attrs={"id": "store-upload-status"}),
                 soupmatchers.Tag(
                     "store link", "a", attrs={"href": job.store_url},
-                    text="Manage this package in the store"))))
+                    text=re.compile(
+                        r"^\s*Manage this package in the store\s*$")))))
 
     def test_store_upload_status_failed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -111,7 +114,8 @@ class TestSnapBuildView(TestCaseWithFactory):
             soupmatchers.Tag(
                 "store upload status", "li",
                 attrs={"id": "store-upload-status"},
-                text="Store upload failed: Scan failed.")))
+                text=re.compile(
+                    r"^\s*Store upload failed:\s+Scan failed.\s*$"))))
 
     def test_store_upload_status_release_failed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -126,9 +130,9 @@ class TestSnapBuildView(TestCaseWithFactory):
                 soupmatchers.Tag(
                     "store upload status", "li",
                     attrs={"id": "store-upload-status"},
-                    text=(
-                        "Releasing package to channels failed: "
-                        "Failed to publish")),
+                    text=re.compile(
+                        r"^\s*Releasing package to channels failed:\s+"
+                        r"Failed to publish\s*$")),
                 soupmatchers.Tag(
                     "store link", "a", attrs={"href": job.store_url}))))
 
