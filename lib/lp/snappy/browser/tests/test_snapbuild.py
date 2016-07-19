@@ -236,6 +236,130 @@ class TestSnapBuildOperations(BrowserTestCase):
             "Cannot rescore this build because it is not queued.",
             browser.contents)
 
+    def setUpStoreUpload(self):
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.build.snap.distro_series])
+        with person_logged_in(self.requester):
+            self.build.snap.store_series = snappyseries
+            self.build.snap.store_name = self.factory.getUniqueUnicode()
+            self.build.snap.store_secrets = {
+                "root": "dummy-root", "discharge": "dummy-discharge"}
+
+    def test_store_upload(self):
+        # A build not previously uploaded to the store can be uploaded
+        # manually.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Upload this package to the store").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        [job] = getUtility(ISnapStoreUploadJobSource).iterReady()
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertEqual(self.build, job.snapbuild)
+        self.assertEqual(
+            "An upload has been scheduled and will run as soon as possible.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_retry(self):
+        # A build with a previously-failed store upload can have the upload
+        # retried.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        old_job = getUtility(ISnapStoreUploadJobSource).create(self.build)
+        removeSecurityProxy(old_job).job._status = JobStatus.FAILED
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Retry").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        [job] = getUtility(ISnapStoreUploadJobSource).iterReady()
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertEqual(self.build, job.snapbuild)
+        self.assertEqual(
+            "An upload has been scheduled and will run as soon as possible.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_not_configured(self):
+        # A build that is not properly configured cannot be uploaded to the
+        # store.  (This requires changing configuration between requests.)
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        with person_logged_in(self.requester):
+            self.build.snap.store_name = None
+        browser.getControl("Upload this package to the store").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+        self.assertEqual(
+            "Cannot upload this package to the store because it is not "
+            "properly configured.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_no_files(self):
+        # A build with no files cannot be uploaded to the store.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Upload this package to the store").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+        self.assertEqual(
+            "Cannot upload this package because it has no files.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_already_in_progress(self):
+        # A build with an upload already in progress will not have another
+        # one created.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        with person_logged_in(self.requester):
+            old_job = getUtility(ISnapStoreUploadJobSource).create(self.build)
+        browser.getControl("Upload this package to the store").click()
+        login(ANONYMOUS)
+        self.assertEqual(
+            [old_job], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+        self.assertEqual(
+            "An upload of this package is already in progress.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_already_uploaded(self):
+        # A build with an upload that has already completed will not have
+        # another one created.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        with person_logged_in(self.requester):
+            old_job = getUtility(ISnapStoreUploadJobSource).create(self.build)
+            removeSecurityProxy(old_job).job._status = JobStatus.COMPLETED
+        browser.getControl("Upload this package to the store").click()
+        login(ANONYMOUS)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+        self.assertEqual(
+            "Cannot upload this package because it has already been uploaded.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
     def test_builder_history(self):
         Store.of(self.build).flush()
         self.build.updateStatus(

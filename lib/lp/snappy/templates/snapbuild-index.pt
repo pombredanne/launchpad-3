@@ -180,8 +180,21 @@
               Releasing package to channels failed:
             </tal:failed-release>
             <tal:error-message replace="job/error_message" />
+            <form action="" method="POST">
+              <input type="submit" name="field.actions.upload" value="Retry" />
+            </form>
           </tal:failed>
         </tal:job-status>
+      </li>
+      <li id="store-upload-status"
+          tal:condition="python:
+            context.status.title == 'Successfully built' and
+            context.snap.can_upload_to_store and
+            view.last_upload_job is None">
+        <form action="" method="POST">
+          <input type="submit" name="field.actions.upload"
+                 value="Upload this package to the store" />
+        </form>
       </li>
     </ul>
 

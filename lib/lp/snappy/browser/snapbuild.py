@@ -10,12 +10,14 @@ __all__ = [
     'SnapBuildView',
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface
 
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -25,11 +27,11 @@ from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
-    LaunchpadView,
     Link,
     Navigation,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
+from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.soyuz.interfaces.binarypackagebuild import IBuildRescoreForm
 
 
@@ -59,8 +61,11 @@ class SnapBuildContextMenu(ContextMenu):
             enabled=self.context.can_be_rescored)
 
 
-class SnapBuildView(LaunchpadView):
+class SnapBuildView(LaunchpadFormView):
     """Default view of a SnapBuild."""
+
+    class schema(Interface):
+        """Schema for uploading a build."""
 
     @property
     def label(self):
@@ -85,6 +90,37 @@ class SnapBuildView(LaunchpadView):
     @property
     def last_upload_job(self):
         return self.context.store_upload_jobs.first()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Upload build to store', name='upload')
+    def upload_action(self, action, data):
+        """Schedule an upload of this build to the store."""
+        if not self.context.snap.can_upload_to_store:
+            self.request.response.addWarningNotification(
+                "Cannot upload this package to the store because it is not "
+                "properly configured.")
+            return
+        if not self.has_files:
+            self.request.response.addWarningNotification(
+                "Cannot upload this package because it has no files.")
+            return
+        job = self.last_upload_job
+        if job is not None:
+            if job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
+                self.request.response.addWarningNotification(
+                    "An upload of this package is already in progress.")
+                return
+            if job.job.status == JobStatus.COMPLETED:
+                self.request.response.addWarningNotification(
+                    "Cannot upload this package because it has already "
+                    "been uploaded.")
+                return
+        getUtility(ISnapStoreUploadJobSource).create(self.context)
+        self.request.response.addInfoNotification(
+            "An upload has been scheduled and will run as soon as possible.")
 
 
 class SnapBuildCancelView(LaunchpadFormView):
