@@ -381,8 +381,8 @@ class ISnapEditableAttributes(IHasOwner):
         title=_("Pocket for automatic builds"),
         vocabulary=PackagePublishingPocket, required=False, readonly=False,
         description=_(
-            "The pocket for which automatic builds of this snap package "
-            "should be built.")))
+            "The set of packages with which automatic builds of this snap "
+            "package should be built.")))
 
     is_stale = Bool(
         title=_("Snap package is stale and is due to be rebuilt."),
