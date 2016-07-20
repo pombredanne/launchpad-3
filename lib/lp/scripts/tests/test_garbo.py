@@ -1497,6 +1497,41 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
 
+    def test_SnapStoreSeriesPopulator(self):
+        switch_dbuser('testadmin')
+        # Make some series.
+        dses = [self.factory.makeDistroSeries() for _ in range(4)]
+        sses = [
+            self.factory.makeSnappySeries(usable_distro_series=[dses[1]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[2]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
+            ]
+        # Make some snap packages.
+        snaps = [
+            self.factory.makeSnap(distroseries=dses[0]),
+            self.factory.makeSnap(distroseries=dses[1], store_series=sses[1]),
+            self.factory.makeSnap(distroseries=dses[1]),
+            self.factory.makeSnap(distroseries=dses[2], store_series=sses[0]),
+            self.factory.makeSnap(distroseries=dses[2]),
+            self.factory.makeSnap(distroseries=dses[3]),
+            ]
+        transaction.commit()
+
+        self.runDaily()
+
+        # Snaps with no possible store series are untouched.
+        self.assertIsNone(snaps[0].store_series)
+        # Snaps that already have a store series are untouched.
+        self.assertEqual(sses[1], snaps[1].store_series)
+        self.assertEqual(sses[0], snaps[3].store_series)
+        # Snaps with no current store series and exactly one possible store
+        # series have it filled in.
+        self.assertEqual(sses[0], snaps[2].store_series)
+        self.assertEqual(sses[1], snaps[4].store_series)
+        # Snaps with more than one possible store series are untouched.
+        self.assertIsNone(snaps[5].store_series)
+
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
