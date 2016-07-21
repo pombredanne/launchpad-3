@@ -29,6 +29,7 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.widgets.popup import VocabularyPickerWidget
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -194,3 +195,13 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()
+
+
+class LaunchpadTargetPopupWidget(VocabularyPickerWidget):
+    """Custom popup widget for choosing distribution/package combinations."""
+
+    __call__ = ViewPageTemplateFile('templates/launchpad-target-picker.pt')
+
+    @property
+    def distribution_id(self):
+        return self._prefix + "distribution"
