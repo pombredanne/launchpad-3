@@ -14,20 +14,19 @@
   <body>
     <h1>Pocket for snap builds</h1>
 
-    <p>Package repositories may contain many versions of a package, each in a different subdirectory or <em>pocket</em>.</p>
+    <p>Each distribution series in a package repository is divided into several parts, called <em>pockets</em>. These refer to different update streams that users of that series may wish to use. You can similarly choose to build snap packages based on any of those different update streams.</p>
     <p>If unsure, choose <strong>Updates</strong>.</p>
     <dl>
         <dt><strong>Release</strong></dt>
-        <dd>The current stable Ubuntu release. Package versions are frozen and do not change.</dd>
+        <dd>The package versions that were published when the distribution release was made.</dd>
         <dt><strong>Security</strong></dt>
-        <dd>Patches for security vulnerabilities in Ubuntu packages. They are managed by the Ubuntu Security Team and are designed to change the behavior of the package as little as possible -- in fact, the minimum required to resolve the security problem. As a result, they tend to be very low-risk to apply and all users are urged to apply security updates. Packages in <em>Security</em> are built with dependencies from <em>Release</em> and <em>Security</em>.</dd>
+        <dd>Package versions containing security fixes for the released distribution. Packages in <em>Security</em> are built with dependencies from <em>Release</em> and <em>Security</em>.</dd>
         <dt><strong>Updates</strong></dt>
-        <dd>Updates for serious bugs in Ubuntu packaging that do not affect the security of the system. Packages in <em>Updates</em> are copied from <em>Proposed</em> once they have been tested.</dd>
+        <dd>Updates for serious bugs that do not affect the security of the system. Packages in <em>Updates</em> are copied from <em>Proposed</em> or <em>Security</em> once they have been tested.</dd>
         <dt><strong>Proposed</strong></dt>
         <dd>The testing area for updates. This repository is recommended only to those interested in helping to test updates and provide feedback. Packages in <em>Proposed</em> are built with dependencies from <em>Release</em>, <em>Security</em>, <em>Updates</em> and <em>Proposed</em>.</dd>
         <dt><strong>Backports</strong></dt>
-        <dd>As the name states, these are unsupported new versions of packages which have been backported to an older release. Packages may contain new features, may introduce new interfaces, and bugs. Packages in <em>Backports</em> are built with dependencies from <em>Release</em>, <em>Security</em> and <em>Backports</em>.</dd>
+        <dd>As the name states, these are unsupported new versions of packages which have been backported to an older release. Packages may contain new features, may introduce new interfaces, and bugs. Packages in <em>Backports</em> are built with dependencies from <em>Release</em>, <em>Security</em>, <em>Updates</em> and <em>Backports</em>.</dd>
     </dl>
   </body>
 </html>
-
