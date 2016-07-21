@@ -285,4 +285,6 @@ class DistributionSourcePackagePickerWidget(VocabularyPickerWidget):
 
     @property
     def distribution_id(self):
-        return self._prefix + "distribution"
+        return self._prefix + 'distribution'
+
+    distribution_name = ''

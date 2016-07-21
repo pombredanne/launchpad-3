@@ -7,9 +7,15 @@
   <script metal:fill-slot="add-picker" tal:content="structure string:
   LPJS.use('node', 'lp.app.picker', function(Y) {
       var config = ${view/json_config};
-      if ('${view/distribution_id|nothing}' !== '') {
+      var distribution_name = '${view/distribution_name}';
+      var distribution_id = '${view/distribution_id}';
+      if (distribution_name !== '') {
           config.getContextPath = function() {
-              return '/' + Y.DOM.byId('${view/distribution_id|nothing}').value;
+              return '/' + distribution_name;
+          }
+      } else if (distribution_id !== '') {
+          config.getContextPath = function() {
+              return '/' + Y.DOM.byId(distribution_id).value;
           };
       }
       var show_widget_id = '${view/show_widget_id}';

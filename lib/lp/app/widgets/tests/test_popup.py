@@ -222,4 +222,4 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             bound_field, vocabulary, self.request)
         dsp_picker_widget.setPrefix('field.target')
         markup = dsp_picker_widget()
-        self.assertIn("Y.DOM.byId('field.target.distribution').value", markup)
+        self.assertIn("distribution_id = 'field.target.distribution'", markup)
