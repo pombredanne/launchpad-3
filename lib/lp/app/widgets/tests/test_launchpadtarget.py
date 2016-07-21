@@ -6,10 +6,7 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
-from lazr.restful.fields import (
-    Reference,
-    ReferenceChoice,
-    )
+from lazr.restful.fields import Reference
 from zope.formlib.interfaces import (
     IBrowserWidget,
     IInputWidget,
@@ -19,13 +16,9 @@ from zope.interface import (
     implementer,
     Interface,
     )
-from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.app.validators import LaunchpadValidationError
-from lp.app.widgets.launchpadtarget import (
-    LaunchpadTargetPopupWidget,
-    LaunchpadTargetWidget,
-    )
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.registry.vocabularies import (
     DistributionSourcePackageVocabulary,
     DistributionVocabulary,
@@ -336,33 +329,3 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         fields = soup.findAll(['input', 'select'], {'id': re.compile('.*')})
         ids = [field['id'] for field in fields]
         self.assertContentEqual(expected_ids, ids)
-
-
-class LaunchpadTargetPopupWidgetTestCase(TestCaseWithFactory):
-    """Test the LaunchpadTargetPopupWidget class."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(LaunchpadTargetPopupWidgetTestCase, self).setUp()
-        context = Thing()
-        field = ReferenceChoice(
-            __name__='target', schema=Interface, title=u'target',
-            vocabulary='DistributionSourcePackage')
-        field = field.bind(context)
-        vocabulary = getVocabularyRegistry().get(
-            context, 'DistributionSourcePackage')
-        request = LaunchpadTestRequest()
-        self.widget = LaunchpadTargetPopupWidget(field, vocabulary, request)
-        self.widget.setPrefix('field.target')
-
-    def test_distribution_id(self):
-        self.assertEqual(
-            'field.target.distribution', self.widget.distribution_id)
-
-    def test_call(self):
-        markup = self.widget()
-        # It's difficult to do a particularly accurate test here, but we can
-        # at least check that code to get the value of the distribution
-        # field is present.
-        self.assertIn("Y.DOM.byId('field.target.distribution').value", markup)

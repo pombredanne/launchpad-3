@@ -420,7 +420,7 @@
       for="zope.schema.interfaces.IChoice
         lp.registry.vocabularies.DistributionSourcePackageVocabulary"
       provides="zope.formlib.interfaces.IInputWidget"
-      factory="lp.app.widgets.launchpadtarget.LaunchpadTargetPopupWidget"
+      factory="lp.app.widgets.popup.DistributionSourcePackagePickerWidget"
       permission="zope.Public"
       />
 

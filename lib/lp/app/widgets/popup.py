@@ -275,3 +275,14 @@ class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
                 "looking for? "
                 '<a href="%s/+affects-new-product">Register it</a>.</strong>'
                 % canonical_url(self.context.context))
+
+
+class DistributionSourcePackagePickerWidget(VocabularyPickerWidget):
+    """Custom popup widget for choosing distribution/package combinations."""
+
+    __call__ = ViewPageTemplateFile(
+        'templates/distributionsourcepackage-picker.pt')
+
+    @property
+    def distribution_id(self):
+        return self._prefix + "distribution"

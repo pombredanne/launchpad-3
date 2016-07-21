@@ -10,6 +10,7 @@ from zope.schema import Choice
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.app.widgets.popup import (
+    DistributionSourcePackagePickerWidget,
     PersonPickerWidget,
     VocabularyPickerWidget,
     )
@@ -23,12 +24,11 @@ class TestMetaClass(InterfaceClass):
     def __init__(self, name, bases=(), attrs=None, __doc__=None,
                  __module__=None):
         attrs = {
-            "test_invalid_chars+":
-            Choice(vocabulary='ValidTeamOwner'),
-            "test_valid.item":
-            Choice(vocabulary='ValidTeamOwner'),
-            "test_filtered.item":
-            Choice(vocabulary='DistributionOrProduct')}
+            "test_invalid_chars+": Choice(vocabulary='ValidTeamOwner'),
+            "test_valid.item": Choice(vocabulary='ValidTeamOwner'),
+            "test_filtered.item": Choice(vocabulary='DistributionOrProduct'),
+            "test_target": Choice(vocabulary='DistributionSourcePackage'),
+            }
         super(TestMetaClass, self).__init__(
             name, bases=bases, attrs=attrs, __doc__=__doc__,
             __module__=__module__)
@@ -197,3 +197,29 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         person_picker_widget.setRenderedValue(team)
         self.assertEqual('team',
             person_picker_widget.config['selected_value_metadata'])
+
+    def test_distribution_source_package_widget_distribution_id(self):
+        # The distribution source package picker refers to the correct field
+        # in distribution_id.
+        field = ITest['test_target']
+        bound_field = field.bind(self.context)
+        vocabulary = self.vocabulary_registry.get(
+            self.context, 'DistributionSourcePackage')
+        dsp_picker_widget = DistributionSourcePackagePickerWidget(
+            bound_field, vocabulary, self.request)
+        dsp_picker_widget.setPrefix('field.target')
+        self.assertEqual(
+            'field.target.distribution', dsp_picker_widget.distribution_id)
+
+    def test_distribution_source_package_widget_gets_distribution(self):
+        # The distribution source package picker gets the value of the
+        # distribution field.
+        field = ITest['test_target']
+        bound_field = field.bind(self.context)
+        vocabulary = self.vocabulary_registry.get(
+            self.context, 'DistributionSourcePackage')
+        dsp_picker_widget = DistributionSourcePackagePickerWidget(
+            bound_field, vocabulary, self.request)
+        dsp_picker_widget.setPrefix('field.target')
+        markup = dsp_picker_widget()
+        self.assertIn("Y.DOM.byId('field.target.distribution').value", markup)
