@@ -8,11 +8,14 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'BadRefreshResponse',
+    'BadReleaseResponse',
     'BadRequestPackageUploadResponse',
     'BadScanStatusResponse',
+    'BadSearchResponse',
     'BadUploadResponse',
     'ISnapStoreClient',
     'NeedsRefreshResponse',
+    'ReleaseFailedResponse',
     'ScanFailedResponse',
     'UnauthorizedUploadResponse',
     'UploadNotScannedYetResponse',
@@ -50,6 +53,18 @@ class UploadNotScannedYetResponse(Exception):
 
 
 class ScanFailedResponse(Exception):
+    pass
+
+
+class BadSearchResponse(Exception):
+    pass
+
+
+class BadReleaseResponse(Exception):
+    pass
+
+
+class ReleaseFailedResponse(Exception):
     pass
 
 
@@ -91,6 +106,26 @@ class ISnapStoreClient(Interface):
             scanned the upload.
         :raises BadScanStatusResponse: if the store failed to scan the
             upload.
-        :return: A URL on the store with further information about this
-            upload.
+        :return: A tuple of (`url`, `revision`), where `url` is a URL on the
+            store with further information about this upload, and `revision`
+            is the store revision number for the upload or None.
+        """
+
+    def listChannels():
+        """Fetch the current list of channels from the store.
+
+        :raises BadSearchResponse: if the attempt to fetch the list of
+            channels from the store fails.
+        :return: A list of dictionaries, one per channel, each of which
+            contains at least "name" and "display_name" keys.
+        """
+
+    def release(snapbuild, revision):
+        """Tell the store to release a snap build to specified channels.
+
+        :param snapbuild: The `ISnapBuild` to release.
+        :param revision: The revision returned by the store when uploading
+            the build.
+        :raises BadReleaseResponse: if the store failed to release the
+            build.
         """

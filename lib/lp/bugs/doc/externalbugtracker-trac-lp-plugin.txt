@@ -7,10 +7,8 @@ instances having the LP XML-RPC plugin installed.
 For testing purposes, a custom XML-RPC transport can be passed to it,
 so that we can avoid network traffic in tests.
 
-    >>> from lp.bugs.externalbugtracker import (
-    ...     TracLPPlugin)
-    >>> from lp.bugs.tests.externalbugtracker import (
-    ...     TestTracXMLRPCTransport)
+    >>> from lp.bugs.externalbugtracker.trac import TracLPPlugin
+    >>> from lp.bugs.tests.externalbugtracker import TestTracXMLRPCTransport
     >>> test_transport = TestTracXMLRPCTransport('http://example.com/')
     >>> trac = TracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)

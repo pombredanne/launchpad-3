@@ -50,7 +50,7 @@
     <div id="regenerate_token" class="portlet" style="clear:both">
       <h2>Reset password</h2>
       <p>If you believe the security of your password for this access
-         has been compromised, you reset your password. After you've
+         has been compromised, you should reset your password. After you've
          requested a new password, you'll see new "sources.list" entries
          on this page. You'll need to update them on your computer.
       </p>

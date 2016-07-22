@@ -35,26 +35,56 @@
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
 
-        <tr tal:condition="view/has_snappy_distro_series">
+        <tal:widget define="widget nocall:view/widgets/auto_build">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tr>
           <td>
-            <tal:widget define="widget nocall:view/widgets/store_upload">
-              <metal:block use-macro="context/@@launchpad_form/widget_row" />
-            </tal:widget>
             <table class="subordinate">
-              <tal:widget define="widget nocall:view/widgets/store_name">
+              <tal:widget define="widget nocall:view/widgets/auto_build_archive">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tal:widget define="widget nocall:view/widgets/auto_build_pocket">
                 <metal:block use-macro="context/@@launchpad_form/widget_row" />
               </tal:widget>
             </table>
-            <p class="formHelp">
-              If you ask Launchpad to automatically upload builds of this
-              snap to the store on your behalf, then the login service
-              will prompt you to authorize this request.
-            </p>
           </td>
         </tr>
+
+        <tal:has-sds condition="view/has_snappy_distro_series">
+          <tal:widget define="widget nocall:view/widgets/store_upload">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tr>
+            <td>
+              <table class="subordinate">
+                <tal:widget define="widget nocall:view/widgets/store_name">
+                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                </tal:widget>
+                <tal:widget define="widget nocall:view/widgets/store_channels"
+                            condition="widget/context/value_type/vocabulary">
+                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                </tal:widget>
+              </table>
+              <p class="formHelp">
+                If you ask Launchpad to automatically upload builds of this
+                snap to the store on your behalf, then the login service
+                will prompt you to authorize this request.
+              </p>
+            </td>
+          </tr>
+        </tal:has-sds>
       </table>
     </metal:formbody>
   </div>
+
+  <script type="text/javascript">
+    LPJS.use('lp.snappy.snap.edit', function(Y) {
+      Y.on('domready', function(e) {
+        Y.lp.snappy.snap.edit.setup();
+      }, window);
+    });
+  </script>
 </div>
 
 </body>

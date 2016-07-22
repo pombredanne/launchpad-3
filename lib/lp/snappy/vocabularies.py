@@ -11,13 +11,18 @@ __all__ = [
     ]
 
 from storm.locals import Desc
-from zope.schema.vocabulary import SimpleTerm
+from zope.component import getUtility
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.services.database.interfaces import IStore
 from lp.services.webapp.vocabulary import StormVocabularyBase
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snappyseries import (
     SnappyDistroSeries,
     SnappySeries,
@@ -109,3 +114,15 @@ class BuildableSnappyDistroSeriesVocabulary(SnappyDistroSeriesVocabulary):
     _clauses = SnappyDistroSeriesVocabulary._clauses + [
         SnappySeries.status.is_in(ACTIVE_STATUSES),
         ]
+
+
+class SnapStoreChannelVocabulary(SimpleVocabulary):
+    """A vocabulary for searching store channels."""
+
+    def __init__(self, context=None):
+        channels = getUtility(ISnapStoreClient).listChannels()
+        terms = [
+            self.createTerm(
+                channel["name"], channel["name"], channel["display_name"])
+            for channel in channels]
+        super(SnapStoreChannelVocabulary, self).__init__(terms)

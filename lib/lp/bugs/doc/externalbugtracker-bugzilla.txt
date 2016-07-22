@@ -113,7 +113,7 @@ will return a standard Bugzilla instance.
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker.bugzilla import (
     ...     BugzillaAPI, BugzillaLPPlugin)
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 

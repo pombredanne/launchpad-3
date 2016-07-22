@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for IDiff, etc."""
@@ -58,7 +58,10 @@ from lp.services.librarian.interfaces.client import (
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
 from lp.services.propertycache import get_property_cache
-from lp.services.webapp.adapter import get_request_remaining_seconds
+from lp.services.timeout import (
+    get_default_timeout_function,
+    reduced_timeout,
+    )
 
 
 @implementer(IDiff)
@@ -97,31 +100,15 @@ class Diff(SQLBase):
         if self.diff_text is None:
             return ''
         else:
-            self.diff_text.open(self._getDiffTimeout())
+            with reduced_timeout(
+                    0.01, webapp_max=2.0,
+                    default=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+                timeout = get_default_timeout_function()()
+            self.diff_text.open(timeout)
             try:
                 return self.diff_text.read(config.diff.max_read_size)
             finally:
                 self.diff_text.close()
-
-    def _getDiffTimeout(self):
-        """Return the seconds allocated to get the diff from the librarian.
-
-         the value will be Non for scripts, 2 for the webapp, or if thre is
-         little request time left, the number will be smaller or equal to
-         the remaining request time.
-        """
-        remaining = get_request_remaining_seconds()
-        if remaining is None:
-            return LIBRARIAN_SERVER_DEFAULT_TIMEOUT
-        elif remaining > 2.0:
-            # The maximum permitted time for webapp requests.
-            return 2.0
-        elif remaining > 0.01:
-            # Shave off 1 hundreth of a second off so that the call site
-            # has a chance to recover.
-            return remaining - 0.01
-        else:
-            return remaining
 
     @property
     def oversized(self):

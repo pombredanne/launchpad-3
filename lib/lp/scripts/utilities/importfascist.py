@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import __builtin__
@@ -27,6 +27,8 @@ def text_lines_to_set(text):
 valid_imports_not_in_all = {
     'bzrlib.lsprof': set(['BzrProfiler']),
     'cookielib': set(['domain_match']),
+    # Exported in Python 3, but missing and so not exported in Python 2.
+    'json.decoder': set(['JSONDecodeError']),
     'openid.fetchers': set(['Urllib2Fetcher']),
     'openid.message': set(['NamespaceAliasRegistrationError']),
     'storm.database': set(['STATE_DISCONNECTED']),

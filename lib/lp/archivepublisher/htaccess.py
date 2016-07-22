@@ -58,43 +58,51 @@ def write_htpasswd(filename, users):
 
     file = open(filename, "a")
     try:
-        for entry in users:
-            user, password, salt = entry
+        for user, password, salt in users:
             encrypted = crypt.crypt(password, salt)
             file.write("%s:%s\n" % (user, encrypted))
     finally:
         file.close()
 
 
-def htpasswd_credentials_for_archive(archive, tokens=None):
+def htpasswd_credentials_for_archive(archive):
     """Return credentials for an archive for use with write_htpasswd.
 
     :param archive: An `IArchive` (must be private)
-    :param tokens: Optional iterable of `IArchiveAuthToken`s.
     :return: Iterable of tuples with (user, password, salt) for use with
         write_htpasswd.
     """
     assert archive.private, "Archive %r must be private" % archive
 
-    if tokens is None:
-        tokens = IStore(ArchiveAuthToken).find(
-            (ArchiveAuthToken.person_id, ArchiveAuthToken.token),
-            ArchiveAuthToken.archive == archive,
-            ArchiveAuthToken.date_deactivated == None)
+    tokens = IStore(ArchiveAuthToken).find(
+        (ArchiveAuthToken.person_id, ArchiveAuthToken.name,
+            ArchiveAuthToken.token),
+        ArchiveAuthToken.archive == archive,
+        ArchiveAuthToken.date_deactivated == None)
     # We iterate tokens more than once - materialise it.
     tokens = list(tokens)
 
-    # The first .htpasswd entry is the buildd_secret.
-    yield (BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
-
+    # Preload map with person ID to person name.
     person_ids = map(itemgetter(0), tokens)
     names = dict(
         IStore(Person).find(
             (Person.id, Person.name), Person.id.is_in(set(person_ids))))
-    # Combine the token list with the person list, sorting by person ID
-    # so the file can be compared later.
-    sorted_tokens = [(token[1], names[token[0]]) for token in sorted(tokens)]
-    # Iterate over tokens and write the appropriate htpasswd
-    # entries for them.
-    for token, person_name in sorted_tokens:
-        yield (person_name, token, person_name[:2])
+
+    # Format the user field by combining the token list with the person list
+    # (when token has person_id) or prepending a '+' (for named tokens).
+    output = []
+    for person_id, token_name, token in tokens:
+        if token_name:
+            # A named auth token.
+            output.append(('+' + token_name, token, token_name[:2]))
+        else:
+            # A subscription auth token.
+            output.append((names[person_id], token, names[person_id][:2]))
+
+    # The first .htpasswd entry is the buildd_secret.
+    yield (BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
+
+    # Iterate over tokens and write the appropriate htpasswd entries for them.
+    # Sort by name/person ID so the file can be compared later.
+    for user, password, salt in sorted(output):
+        yield (user, password, salt)

@@ -15,6 +15,8 @@ from lp.archivepublisher.htaccess import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.features.testing import FeatureFixture
+from lp.soyuz.interfaces.archive import NAMED_AUTH_TOKEN_FEATURE_FLAG
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer
 
@@ -35,6 +37,9 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         # does, so override the PPA's distro here.
         ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.ppa.distribution = ubuntutest
+
+        # Enable named auth tokens.
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
 
     def test_write_htpasswd(self):
         """Test that writing the .htpasswd file works properly."""
@@ -109,15 +114,20 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         self.ppa.newSubscription(name12, self.ppa.owner)
         self.ppa.newSubscription(name16, self.ppa.owner)
         first_created_token = self.ppa.newAuthToken(name16)
-        tokens = [
-            (token.person_id, token.token)
-            for token in [self.ppa.newAuthToken(name12), first_created_token]]
+        second_created_token = self.ppa.newAuthToken(name12)
+        named_token_20 = self.ppa.newNamedAuthToken(u"name20", as_dict=False)
+        named_token_14 = self.ppa.newNamedAuthToken(u"name14", as_dict=False)
+        named_token_99 = self.ppa.newNamedAuthToken(u"name99", as_dict=False)
+        named_token_99.deactivate()
 
-        credentials = list(htpasswd_credentials_for_archive(self.ppa, tokens))
+        credentials = list(htpasswd_credentials_for_archive(self.ppa))
 
-        self.assertContentEqual(
+        # Use assertEqual instead of assertContentEqual to verify order.
+        self.assertEqual(
             credentials, [
                 ("buildd", "geheim", "bu"),
-                ("name12", tokens[0][1], "na"),
-                ("name16", tokens[1][1], "na")
+                ("+name14", named_token_14.token, "na"),
+                ("+name20", named_token_20.token, "na"),
+                ("name12", second_created_token.token, "na"),
+                ("name16", first_created_token.token, "na"),
                 ])

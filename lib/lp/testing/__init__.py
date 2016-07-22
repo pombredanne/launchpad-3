@@ -619,14 +619,15 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
 
-    def assertIsInstance(self, instance, assert_class):
+    def assertIsInstance(self, instance, assert_class, msg=None):
         """Assert that an instance is an instance of assert_class.
 
         instance and assert_class have the same semantics as the parameters
         to isinstance.
         """
-        self.assertTrue(zope_isinstance(instance, assert_class),
-            '%r is not an instance of %r' % (instance, assert_class))
+        if msg is None:
+            msg = '%r is not an instance of %r' % (instance, assert_class)
+        self.assertTrue(zope_isinstance(instance, assert_class), msg)
 
     def assertIsNot(self, expected, observed, msg=None):
         """Assert that `expected` is not the same object as `observed`."""

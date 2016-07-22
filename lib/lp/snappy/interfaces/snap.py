@@ -381,8 +381,8 @@ class ISnapEditableAttributes(IHasOwner):
         title=_("Pocket for automatic builds"),
         vocabulary=PackagePublishingPocket, required=False, readonly=False,
         description=_(
-            "The pocket for which automatic builds of this snap package "
-            "should be built.")))
+            "The package stream within the source distribution series to use "
+            "when building the snap package.")))
 
     is_stale = Bool(
         title=_("Snap package is stale and is due to be rebuilt."),
@@ -420,6 +420,13 @@ class ISnapEditableAttributes(IHasOwner):
         description=_(
             "Serialized secrets issued by the store and the login service to "
             "authorize uploads of this snap package."))
+
+    store_channels = List(
+        value_type=TextLine(), title=_("Store channels"),
+        required=False, readonly=False,
+        description=_(
+            "Channels to release this snap package to after uploading it to "
+            "the store."))
 
 
 class ISnapAdminAttributes(Interface):

@@ -94,9 +94,15 @@ class SnapBuildView(LaunchpadView):
         elif job.job.status == JobStatus.COMPLETED:
             return structured(
                 '<a href="%s">Manage this package in the store</a>',
-                job.store_url)
+                job.store_url).escapedtext
+        elif job.store_url:
+            return structured(
+                '<a href="%s">Manage this package in the store</a><br />'
+                'Releasing package to channels failed: %s',
+                job.store_url, job.error_message).escapedtext
         else:
-            return structured("Store upload failed: %s", job.error_message)
+            return structured(
+                "Store upload failed: %s", job.error_message).escapedtext
 
 
 class SnapBuildCancelView(LaunchpadFormView):

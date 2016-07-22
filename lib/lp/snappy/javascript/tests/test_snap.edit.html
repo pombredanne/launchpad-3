@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-Copyright 2015 Canonical Ltd.  This software is licensed under the
+Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -131,6 +131,95 @@ GNU Affero General Public License version 3 (see the file LICENSE).
                     </tr>
                   </table>
                 </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <div>
+                  <label for="field.auto_build">Automatically build when branch changes</label>
+                  <input class="checkboxType"
+                         id="field.auto_build"
+                         name="field.auto_build"
+                         type="checkbox"
+                         value="" />
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table class="subordinate">
+                  <tr>
+                    <td colspan="2">
+                      <div>
+                        <label for="field.auto_build_archive">Source archive for automatic builds:</label>
+                        <div>
+                          <table>
+                            <tr>
+                              <td colspan="2">
+                                <label>
+                                  <input class="radioType"
+                                         id="field.auto_build_archive.option.primary"
+                                         name="field.auto_build_archive"
+                                         type="radio"
+                                         value="primary" />
+                                  Primary Archive for Ubuntu
+                                </label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <label>
+                                  <input class="radioType"
+                                         id="field.auto_build_archive.option.ppa"
+                                         name="field.auto_build_archive"
+                                         type="radio"
+                                         value="ppa" />
+                                  PPA
+                                </label>
+                              </td>
+                              <td>
+                                <input type="text"
+                                       value=""
+                                       id="field.auto_build_archive.ppa"
+                                       name="field.auto_build_archive.ppa"
+                                       size="20"
+                                       maxlength=""
+                                       onKeyPress=""
+                                       style=""
+                                       class="" />
+                              </td>
+                            </tr>
+                          </table>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2">
+                      <div>
+                        <label for="field.auto_build_pocket">Pocket for automatic builds:</label>
+                        <div>
+                          <div>
+                            <div class="value">
+                              <select id="field.auto_build_pocket"
+                                      name="field.auto_build_pocket"
+                                      size="1">
+                                <option value="RELEASE">Release</option>
+                                <option value="SECURITY">Security</option>
+                                <option selected="selected" value="UPDATES">Updates</option>
+                                <option value="PROPOSED">Proposed</option>
+                                <option value="BACKPORTS">Backports</option>
+                              </select>
+                            </div>
+                            <input name="field.auto_build_pocket-empty-marker"
+                                   type="hidden"
+                                   value="1" />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>

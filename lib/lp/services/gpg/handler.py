@@ -504,6 +504,7 @@ class GPGHandler:
                     raise GPGKeyDoesNotExistOnServer(fingerprint)
                 errorlog.globalErrorUtility.raising(sys.exc_info(), request)
                 raise GPGKeyTemporarilyNotFoundError(fingerprint)
+            raise
         except (TimeoutError, requests.RequestException) as exc:
             errorlog.globalErrorUtility.raising(sys.exc_info(), request)
             raise GPGKeyTemporarilyNotFoundError(fingerprint)

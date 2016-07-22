@@ -89,8 +89,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.temproot)
         os.close(fd)
 
-        write_htpasswd(
-            temp_filename, htpasswd_credentials_for_archive(ppa))
+        write_htpasswd(temp_filename, htpasswd_credentials_for_archive(ppa))
 
         return temp_filename
 
@@ -176,6 +175,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         store = IStore(ArchiveSubscriber)
         valid_tokens = store.find(
             ArchiveAuthToken,
+            ArchiveAuthToken.name == None,
             ArchiveAuthToken.date_deactivated == None,
             ArchiveAuthToken.archive_id == ArchiveSubscriber.archive_id,
             ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT,
@@ -186,6 +186,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # all active tokens and valid tokens.
         all_active_tokens = store.find(
             ArchiveAuthToken,
+            ArchiveAuthToken.name == None,
             ArchiveAuthToken.date_deactivated == None)
 
         return all_active_tokens.difference(valid_tokens)
@@ -274,6 +275,22 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             *extra_expr)
         return new_ppa_tokens
 
+    def getDeactivatedNamedTokens(self, since=None):
+        """Return result set of named tokens deactivated since given time."""
+        now = datetime.now(pytz.UTC)
+
+        store = IStore(ArchiveAuthToken)
+        extra_expr = []
+        if since:
+            extra_expr = [ArchiveAuthToken.date_deactivated >= since]
+        tokens = store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.name != None,
+            ArchiveAuthToken.date_deactivated != None,
+            ArchiveAuthToken.date_deactivated <= now,
+            *extra_expr)
+        return tokens
+
     def getNewPrivatePPAs(self, since=None):
         """Return the recently created private PPAs."""
         store = IStore(Archive)
@@ -293,6 +310,18 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             '%s PPAs with deactivated tokens' % current_ppa_count)
 
         last_success = self.getTimeToSyncFrom()
+
+        # Include ppas with named tokens deactivated since last time we ran.
+        num_tokens = 0
+        for token in self.getDeactivatedNamedTokens(since=last_success):
+            affected_ppas.add(token.archive)
+            num_tokens += 1
+
+        new_ppa_count = len(affected_ppas)
+        self.logger.debug(
+            "%s deactivated named tokens since last run, %s PPAs affected"
+            % (num_tokens, new_ppa_count - current_ppa_count))
+        current_ppa_count = new_ppa_count
 
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
@@ -316,7 +345,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         self.logger.debug('%s PPAs require updating' % new_ppa_count)
         for ppa in affected_ppas:
-            # If this PPA is blacklisted, do not touch it's htaccess/pwd
+            # If this PPA is blacklisted, do not touch its htaccess/pwd
             # files.
             blacklisted_ppa_names_for_owner = self.blacklist.get(
                 ppa.owner.name, [])

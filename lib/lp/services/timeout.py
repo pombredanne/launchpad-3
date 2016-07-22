@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     "get_default_timeout_function",
+    "reduced_timeout",
     "SafeTransportWithTimeout",
     "set_default_timeout_function",
     "TimeoutError",
@@ -14,6 +15,7 @@ __all__ = [
     "with_timeout",
     ]
 
+from contextlib import contextmanager
 import socket
 import sys
 from threading import (
@@ -51,6 +53,42 @@ def set_default_timeout_function(timeout_function):
     """Change the function returning the default timeout value to use."""
     global default_timeout_function
     default_timeout_function = timeout_function
+
+
+@contextmanager
+def reduced_timeout(clearance, webapp_max=None, default=None):
+    """A context manager that reduces the default timeout.
+
+    :param clearance: The number of seconds by which to reduce the default
+        timeout, to give the call site a chance to recover.
+    :param webapp_max: The maximum permitted time for webapp requests.
+    :param default: The default timeout to use if none is set.
+    """
+    # Circular import.
+    from lp.services.webapp.adapter import get_request_start_time
+
+    original_timeout_function = get_default_timeout_function()
+
+    def timeout():
+        if original_timeout_function is None:
+            return default
+        remaining = original_timeout_function()
+
+        if remaining is None:
+            return default
+        elif (webapp_max is not None and remaining > webapp_max and
+                get_request_start_time() is not None):
+            return webapp_max
+        elif remaining > clearance:
+            return remaining - clearance
+        else:
+            return remaining
+
+    set_default_timeout_function(timeout)
+    try:
+        yield
+    finally:
+        set_default_timeout_function(original_timeout_function)
 
 
 class TimeoutError(Exception):
