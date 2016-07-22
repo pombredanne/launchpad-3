@@ -1335,6 +1335,9 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             Updates
             Proposed
             Backports
+            (?)
+            The package stream within the source distribution series to use """
+            """when building the snap package.
             or
             Cancel""")
         main_text = self.getMainText(
