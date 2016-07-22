@@ -242,10 +242,16 @@ class SnapRequestBuildsView(LaunchpadFormView):
             Choice(vocabulary='SnapDistroArchSeries'),
             title=u'Architectures', required=True)
         pocket = Choice(
-            title=u'Pocket', vocabulary=PackagePublishingPocket, required=True)
+            title=u'Pocket', vocabulary=PackagePublishingPocket, required=True,
+            description=u'The package stream within the source distribution '
+                'series to use when building the snap package.')
 
     custom_widget('archive', SnapArchiveWidget)
     custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
+
+    help_links = {
+        "pocket": u"/+help-snappy/snap-build-pocket.html",
+        }
 
     @property
     def cancel_url(self):
@@ -376,6 +382,10 @@ class SnapAddView(
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
     custom_widget('store_channels', LabeledMultiCheckBoxWidget)
+
+    help_links = {
+        "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
+        }
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -663,6 +673,10 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
+
+    help_links = {
+        "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
+        }
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
