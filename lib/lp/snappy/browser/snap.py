@@ -50,6 +50,7 @@ from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
 from lp.buildmaster.interfaces.processor import IProcessorSet
@@ -248,6 +249,7 @@ class SnapRequestBuildsView(LaunchpadFormView):
 
     custom_widget('archive', SnapArchiveWidget)
     custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
+    custom_widget('pocket', LaunchpadDropdownWidget)
 
     help_links = {
         "pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -382,6 +384,7 @@ class SnapAddView(
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
     custom_widget('store_channels', LabeledMultiCheckBoxWidget)
+    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -673,6 +676,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
+    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
