@@ -137,9 +137,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             spph.sourcepackagerelease.sourcepackagename)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(dsp.sourcepackagename)
-        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertEqual(expected_token, term.token)
-        self.assertEqual(expected_token, term.title)
+        self.assertEqual(dsp.name, term.token)
+        self.assertEqual(dsp.name, term.title)
         self.assertEqual(dsp, term.value)
 
     def test_toTerm_spn_and_distribution(self):
@@ -149,9 +148,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             spph.sourcepackagerelease.sourcepackagename)
         vocabulary = DistributionSourcePackageVocabulary(None)
         term = vocabulary.toTerm(dsp.sourcepackagename, dsp.distribution)
-        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertEqual(expected_token, term.token)
-        self.assertEqual(expected_token, term.title)
+        self.assertEqual(dsp.name, term.token)
+        self.assertEqual(dsp.name, term.title)
         self.assertEqual(dsp, term.value)
 
     def test_toTerm_dsp(self):
@@ -161,9 +159,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             spph.sourcepackagerelease.sourcepackagename)
         vocabulary = DistributionSourcePackageVocabulary(dsp)
         term = vocabulary.toTerm(dsp)
-        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertEqual(expected_token, term.token)
-        self.assertEqual(expected_token, term.title)
+        self.assertEqual(dsp.name, term.token)
+        self.assertEqual(dsp.name, term.title)
         self.assertEqual(dsp, term.value)
 
     def test_toTerm_dsp_and_binary_names(self):
@@ -174,9 +171,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             spph.sourcepackagerelease.sourcepackagename)
         vocabulary = DistributionSourcePackageVocabulary(dsp)
         term = vocabulary.toTerm((dsp, 'one two'))
-        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertEqual(expected_token, term.token)
-        self.assertEqual(expected_token, term.title)
+        self.assertEqual(dsp.name, term.token)
+        self.assertEqual(dsp.name, term.title)
         self.assertEqual(dsp, term.value)
         self.assertEqual(['one', 'two'], term.value.binary_names)
 
@@ -226,7 +222,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(query='fnord/snarf')
         terms = list(results)
         self.assertEqual(1, len(terms))
-        self.assertEqual('fnord/snarf', terms[0].token)
+        self.assertEqual('snarf', terms[0].token)
 
     def test_searchForTerms_similar_official_source_name(self):
         # Partial source name matches are found.
@@ -238,7 +234,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(query='fnord/snarf')
         terms = list(results)
         self.assertEqual(1, len(terms))
-        self.assertEqual('fnord/pting-snarf-ack', terms[0].token)
+        self.assertEqual('pting-snarf-ack', terms[0].token)
 
     def test_searchForTerms_exact_binary_name(self):
         # Exact binary name matches are found.
@@ -251,7 +247,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(query='fnord/pting')
         terms = list(results)
         self.assertEqual(1, len(terms))
-        self.assertEqual('fnord/snarf', terms[0].token)
+        self.assertEqual('snarf', terms[0].token)
 
     def test_searchForTerms_similar_binary_name(self):
         # Partial binary name matches are found.
@@ -264,7 +260,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(query='fnord/pting')
         terms = list(results)
         self.assertEqual(1, len(terms))
-        self.assertEqual('fnord/snarf', terms[0].token)
+        self.assertEqual('snarf', terms[0].token)
 
     def test_searchForTerms_exact_unofficial_source_name(self):
         # Unofficial source packages are not found by search.
@@ -308,10 +304,10 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(query='fnord/snarf')
         terms = list(results)
         self.assertEqual(4, len(terms))
-        self.assertEqual('fnord/snarf', terms[0].token)
-        self.assertEqual('fnord/pting-devel', terms[1].token)
-        self.assertEqual('fnord/snarf-server', terms[2].token)
-        self.assertEqual('fnord/pting-client', terms[3].token)
+        self.assertEqual('snarf', terms[0].token)
+        self.assertEqual('pting-devel', terms[1].token)
+        self.assertEqual('snarf-server', terms[2].token)
+        self.assertEqual('pting-client', terms[3].token)
 
     def test_searchForTerms_partner_archive(self):
         # Packages in partner archives are searched.
@@ -325,7 +321,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(query='fnord/snarf')
         terms = list(results)
         self.assertEqual(1, len(terms))
-        self.assertEqual('fnord/snarf', terms[0].token)
+        self.assertEqual('snarf', terms[0].token)
 
     def test_searchForTerms_ppa_archive(self):
         # Packages in PPAs are ignored.

@@ -2100,8 +2100,13 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 # Search already did the hard work of looking up binary names.
                 cache = get_property_cache(dsp)
                 cache.binary_names = binary_names
-            token = '%s/%s' % (dsp.distribution.name, dsp.name)
-            return SimpleTerm(dsp, token, token)
+            # XXX cjwatson 2016-07-22: It's a bit odd for the token to
+            # return just the source package name and not the distribution
+            # name as well, but at the moment this is always fed into a
+            # package name box so things work much better this way.  If we
+            # ever do a true combined distribution/package picker, then this
+            # may need to be revisited.
+            return SimpleTerm(dsp, dsp.name, dsp.name)
         raise LookupError(distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):
