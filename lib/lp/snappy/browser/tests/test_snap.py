@@ -11,7 +11,6 @@ from datetime import (
     )
 import json
 import re
-from textwrap import dedent
 from urllib2 import HTTPError
 from urlparse import (
     parse_qs,
@@ -1317,7 +1316,7 @@ class TestSnapRequestBuildsView(BrowserTestCase):
 
     def test_request_builds_page(self):
         # The +request-builds page is sane.
-        pattern = dedent("""\
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
             Request builds for snap-name
             Snap packages
             snap-name
@@ -1325,7 +1324,7 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             Source archive:
             Primary Archive for Ubuntu Linux
             PPA
-            (Find&hellip;)
+            \(Find&hellip;\)
             Architectures:
             amd64
             i386
@@ -1335,14 +1334,13 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             Updates
             Proposed
             Backports
-            (?)
-            The package stream within the source distribution series to use """
-            """when building the snap package.
+            \(\?\)
+            The package stream within the source distribution series to use
+            when building the snap package.
             or
-            Cancel""")
-        main_text = self.getMainText(
-            self.snap, "+request-builds", user=self.person)
-        self.assertEqual(pattern, main_text)
+            Cancel
+            """,
+            self.getMainText(self.snap, "+request-builds", user=self.person))
 
     def test_request_builds_not_owner(self):
         # A user without launchpad.Edit cannot request builds.
