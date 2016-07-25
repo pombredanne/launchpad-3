@@ -168,7 +168,7 @@ class GPGKeySet:
             key_data = client.getKeyByFingerprint(fingerprint)
             if key_data:
                 owner_id = key_data['owner']
-            allowed_owner_ids = self._getAllOwnerIdsForPerson(requester)
+            allowed_owner_ids = self.getAllOwnerIdsForPerson(requester)
             assert owner_id in allowed_owner_ids
             gpgservice_key = GPGServiceKey(
                 client.addKeyForOwner(owner_id, key.fingerprint))
@@ -222,7 +222,7 @@ class GPGKeySet:
     def getGPGKeysForPerson(self, owner, active=True):
         if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
             client = getUtility(IGPGClient)
-            owner_ids = self._getAllOwnerIdsForPerson(owner)
+            owner_ids = self.getAllOwnerIdsForPerson(owner)
             if not owner_ids:
                 return []
             gpg_keys = []
@@ -261,10 +261,10 @@ class GPGKeySet:
         assert url is not None
         return url
 
-    def _getAllOwnerIdsForPerson(self, owner):
+    def getAllOwnerIdsForPerson(self, owner):
         identifiers = IStore(OpenIdIdentifier).find(
             OpenIdIdentifier, account=owner.account)
-        openid_provider_root = config.launchpad.openid_provider_root
+        openid_provider_root = config.launchpad.openid_canonical_root
         return [
             openid_provider_root + '+id/' + i.identifier.encode('ascii')
             for i in identifiers]
