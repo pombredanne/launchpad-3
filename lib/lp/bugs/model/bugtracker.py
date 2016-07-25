@@ -149,9 +149,8 @@ def make_bugtracker_name(uri):
             raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
     elif base_uri.host == 'github.com' and base_uri.path.endswith('/issues'):
-        base_name = (
-            'github-' +
-            base_uri.path[:-len('/issues')].lstrip('/').replace('/', '-'))
+        repository_id = base_uri.path[:-len('/issues')].lstrip('/')
+        base_name = 'github-' + repository_id.replace('/', '-').lower()
     else:
         base_name = base_uri.host
 
