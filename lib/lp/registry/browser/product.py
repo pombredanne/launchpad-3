@@ -42,7 +42,9 @@ __all__ = [
 
 
 from operator import attrgetter
+from urlparse import urlunsplit
 
+from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 from lazr.delegates import delegate_to
 from lazr.restful.interface import (
@@ -212,6 +214,7 @@ from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import UnsafeFormGetSubmissionError
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.url import urlsplit
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
@@ -1741,6 +1744,14 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             branch_location=self.series.branch,
             git_repository_location=repository_set.getDefaultRepository(
                 self.context.pillar))
+
+    @property
+    def git_ssh_url(self):
+        base_url = urlsplit(
+            urlutils.join(config.codehosting.git_ssh_root, self.context.name))
+        url = list(base_url)
+        url[1] = "{}@{}".format(self.user.name, base_url.hostname)
+        return urlunsplit(url)
 
     @property
     def next_url(self):
