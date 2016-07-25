@@ -414,6 +414,9 @@ class TestMakeBugtrackerName(TestCase):
         self.assertEqual(
             'auto-github-user-repository',
             make_bugtracker_name('https://github.com/user/repository/issues'))
+        self.assertEqual(
+            'auto-github-user-repository',
+            make_bugtracker_name('https://github.com/user/Repository/issues'))
         # Invalid on the GitHub side, but let's make sure these don't blow up.
         self.assertEqual(
             'auto-github-user',
