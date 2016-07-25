@@ -851,7 +851,7 @@ class TestProductSetBranchView(TestCaseWithFactory):
                 method='GET')
             git_ssh_url = 'git+ssh://{username}@{host}/{project}'.format(
                 username=project.owner.name,
-                host=urlsplit(config.codehosting.git_ssh_root).netloc,
+                host=urlsplit(config.codehosting.git_ssh_root).hostname,
                 project=project.name)
             self.assertEqual(git_ssh_url, view.git_ssh_url)
 
