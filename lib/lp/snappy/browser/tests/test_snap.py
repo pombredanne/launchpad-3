@@ -1168,13 +1168,12 @@ class TestSnapView(BrowserTestCase):
             name="test-person", displayname="Test Person")
         self.factory.makeBuilder(virtualized=True)
 
-    def makeSnap(self, branch=None, git_ref=None):
-        if branch is None and git_ref is None:
-            branch = self.factory.makeAnyBranch()
+    def makeSnap(self, **kwargs):
+        if kwargs.get("branch") is None and kwargs.get("git_ref") is None:
+            kwargs["branch"] = self.factory.makeAnyBranch()
         return self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name=u"snap-name", branch=branch,
-            git_ref=git_ref)
+            distroseries=self.distroseries, name=u"snap-name", **kwargs)
 
     def makeBuild(self, snap=None, archive=None, date_created=None, **kwargs):
         if snap is None:
@@ -1304,6 +1303,27 @@ class TestSnapView(BrowserTestCase):
             Needs building in .* \(estimated\) i386
             Primary Archive for Ubuntu Linux
             """, self.getMainText(build.snap))
+
+    def test_index_store_upload(self):
+        # If the snap package is to be automatically uploaded to the store,
+        # the index page shows details of this.
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.distroseries])
+        snap = self.makeSnap(
+            store_upload=True, store_series=snappyseries,
+            store_name=self.getUniqueString(u"store-name"))
+        view = create_initialized_view(snap, "+index")
+        store_upload_tag = soupmatchers.Tag(
+            "store upload", "div", attrs={"id": "store_upload"})
+        self.assertThat(view(), soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                store_upload_tag,
+                soupmatchers.Tag(
+                    "store series name", "span", text=snappyseries.title)),
+            soupmatchers.Within(
+                store_upload_tag,
+                soupmatchers.Tag("store name", "span", text=snap.store_name))))
 
     def setStatus(self, build, status):
         build.updateStatus(
