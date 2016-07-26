@@ -12,6 +12,7 @@ __all__ = [
     'save_garbo_job_state',
     ]
 
+from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
@@ -119,6 +120,8 @@ from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webhooks.interfaces import IWebhookJobSource
 from lp.services.webhooks.model import WebhookJob
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
+from lp.snappy.model.snap import Snap
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagecache import (
@@ -1553,6 +1556,45 @@ class LiveFSFilePruner(BulkPruner):
         """
 
 
+class SnapStoreSeriesPopulator(TunableLoop):
+    """Populates Snap.store_series based on Snap.distro_series.
+
+    This only touches rows where there is exactly one SnappySeries that
+    could be built from the relevant DistroSeries.
+    """
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(SnapStoreSeriesPopulator, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Snap)
+        all_series_map = defaultdict(list)
+        for sds in getUtility(ISnappyDistroSeriesSet).getAll():
+            all_series_map[sds.distro_series.id].append(sds.snappy_series)
+        self.series_map = {
+            distro_series_id: snappy_serieses[0]
+            for distro_series_id, snappy_serieses in all_series_map.items()
+            if len(snappy_serieses) == 1}
+
+    def findSnaps(self):
+        return self.store.find(
+            Snap,
+            Snap.id >= self.start_at,
+            Snap.distro_series_id.is_in(self.series_map),
+            Snap.store_series == None).order_by(Snap.id)
+
+    def isDone(self):
+        return self.findSnaps().is_empty()
+
+    def __call__(self, chunk_size):
+        snaps = list(self.findSnaps()[:chunk_size])
+        for snap in snaps:
+            snap.store_series = self.series_map[snap.distro_series_id]
+        self.start_at = snaps[-1].id + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1781,6 +1823,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         AntiqueSessionPruner,
         BugSummaryJournalRollup,
+        BugWatchScheduler,
         OpenIDConsumerAssociationPruner,
         OpenIDConsumerNoncePruner,
         PopulateDistributionSourcePackageCache,
@@ -1803,7 +1846,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
         BugHeatUpdater,
-        BugWatchScheduler,
         DuplicateSessionPruner,
         RevisionCachePruner,
         UnusedSessionPruner,
@@ -1844,6 +1886,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
         SnapBuildJobPruner,
+        SnapStoreSeriesPopulator,
         SuggestiveTemplatesCacheUpdater,
         TeamMembershipPruner,
         UnlinkedAccountPruner,
