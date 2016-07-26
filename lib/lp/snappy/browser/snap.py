@@ -577,6 +577,8 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
         if (not store_upload or
                 store_distro_series is None or store_name is None):
             return False
+        if not self.context.store_upload:
+            return True
         if store_distro_series.snappy_series != self.context.store_series:
             return True
         if store_name != self.context.store_name:
