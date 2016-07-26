@@ -93,7 +93,7 @@
       <dl id="store_series">
         <dt>Store series:</dt>
         <dd>
-          <a tal:replace="structure context/store_series/fmt:link"/>
+          <span tal:content="context/store_series/title"/>
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
@@ -104,10 +104,10 @@
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
-      <dl id="store_channels" tal:condition="context/store_channels">
+      <dl id="store_channels" tal:condition="view/store_channels">
         <dt>Store channels:</dt>
         <dd>
-          <span tal:content="context/store_channels"/>
+          <span tal:content="view/store_channels"/>
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>

@@ -11,8 +11,12 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 
+from lp.app.interfaces.security import IAuthorization
 from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
@@ -67,6 +71,12 @@ class TestSnappySeries(TestCaseWithFactory):
         self.assertContentEqual(dses, snappy_series.usable_distro_series)
         snappy_series.usable_distro_series = []
         self.assertContentEqual([], snappy_series.usable_distro_series)
+
+    def test_anonymous(self):
+        # Anyone can view an `ISnappySeries`.
+        series = self.factory.makeSnappySeries(name="dummy")
+        authz = getAdapter(series, IAuthorization, name="launchpad.View")
+        self.assertTrue(authz.checkUnauthenticated())
 
 
 class TestSnappySeriesSet(TestCaseWithFactory):

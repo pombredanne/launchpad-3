@@ -63,6 +63,7 @@ from lp.snappy.interfaces.snap import (
     SNAP_TESTING_FLAGS,
     SnapPrivateFeatureDisabled,
     )
+from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.testing import (
     admin_logged_in,
@@ -443,7 +444,7 @@ class TestSnapAddView(BrowserTestCase):
 
     def test_create_new_snap_display_processors(self):
         branch = self.factory.makeAnyBranch()
-        distroseries = self.setUpDistroSeries()
+        self.setUpDistroSeries()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
         processors = browser.getControl(name="field.processors")
@@ -470,7 +471,7 @@ class TestSnapAddView(BrowserTestCase):
 
     def test_create_new_snap_processors(self):
         branch = self.factory.makeAnyBranch()
-        distroseries = self.setUpDistroSeries()
+        self.setUpDistroSeries()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
         processors = browser.getControl(name="field.processors")
@@ -863,6 +864,47 @@ class TestSnapEditView(BrowserTestCase):
         login_person(self.person)
         self.assertSnapProcessors(snap, ["386", "armhf"])
 
+    def assertNeedStoreReauth(self, expected, initial_kwargs, data):
+        initial_kwargs.setdefault("store_upload", True)
+        initial_kwargs.setdefault("store_series", self.snappyseries)
+        initial_kwargs.setdefault("store_name", u"one")
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            distroseries=self.distroseries, **initial_kwargs)
+        view = create_initialized_view(snap, "+edit", principal=self.person)
+        data.setdefault("store_upload", snap.store_upload)
+        data.setdefault("store_distro_series", snap.store_distro_series)
+        data.setdefault("store_name", snap.store_name)
+        self.assertEqual(expected, view._needStoreReauth(data))
+
+    def test__needStoreReauth_no_change(self):
+        # If the user didn't change any store settings, no reauthorization
+        # is needed.
+        self.assertNeedStoreReauth(False, {}, {})
+
+    def test__needStoreReauth_different_series(self):
+        # Changing the store series requires reauthorization.
+        with admin_logged_in():
+            new_snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.distroseries])
+        sds = getUtility(ISnappyDistroSeriesSet).getByBothSeries(
+            new_snappyseries, self.distroseries)
+        self.assertNeedStoreReauth(True, {}, {"store_distro_series": sds})
+
+    def test__needStoreReauth_different_name(self):
+        # Changing the store name requires reauthorization.
+        self.assertNeedStoreReauth(True, {}, {"store_name": u"two"})
+
+    def test__needStoreReauth_enable_upload(self):
+        # Enabling store upload requires reauthorization.  (This can happen
+        # on its own if both store_series and store_name were set to begin
+        # with, which is especially plausible for Git-based snap packages,
+        # or if this option is disabled and then re-enabled.  In the latter
+        # case, we can't tell if store_series or store_name were also
+        # changed in between, so reauthorizing is the conservative course.)
+        self.assertNeedStoreReauth(
+            True, {"store_upload": False}, {"store_upload": True})
+
     def test_edit_store_upload(self):
         # Changing store upload settings on a snap sets all the appropriate
         # fields and redirects to SSO for reauthorization.
@@ -1126,13 +1168,12 @@ class TestSnapView(BrowserTestCase):
             name="test-person", displayname="Test Person")
         self.factory.makeBuilder(virtualized=True)
 
-    def makeSnap(self, branch=None, git_ref=None):
-        if branch is None and git_ref is None:
-            branch = self.factory.makeAnyBranch()
+    def makeSnap(self, **kwargs):
+        if kwargs.get("branch") is None and kwargs.get("git_ref") is None:
+            kwargs["branch"] = self.factory.makeAnyBranch()
         return self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name=u"snap-name", branch=branch,
-            git_ref=git_ref)
+            distroseries=self.distroseries, name=u"snap-name", **kwargs)
 
     def makeBuild(self, snap=None, archive=None, date_created=None, **kwargs):
         if snap is None:
@@ -1263,6 +1304,27 @@ class TestSnapView(BrowserTestCase):
             Primary Archive for Ubuntu Linux
             """, self.getMainText(build.snap))
 
+    def test_index_store_upload(self):
+        # If the snap package is to be automatically uploaded to the store,
+        # the index page shows details of this.
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.distroseries])
+        snap = self.makeSnap(
+            store_upload=True, store_series=snappyseries,
+            store_name=self.getUniqueString(u"store-name"))
+        view = create_initialized_view(snap, "+index")
+        store_upload_tag = soupmatchers.Tag(
+            "store upload", "div", attrs={"id": "store_upload"})
+        self.assertThat(view(), soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                store_upload_tag,
+                soupmatchers.Tag(
+                    "store series name", "span", text=snappyseries.title)),
+            soupmatchers.Within(
+                store_upload_tag,
+                soupmatchers.Tag("store name", "span", text=snap.store_name))))
+
     def setStatus(self, build, status):
         build.updateStatus(
             BuildStatus.BUILDING, date_started=build.date_created)
@@ -1289,6 +1351,23 @@ class TestSnapView(BrowserTestCase):
         for build in builds[:9]:
             self.setStatus(build, BuildStatus.FULLYBUILT)
         self.assertEqual(list(reversed(builds[1:])), view.builds)
+
+    def test_store_channels_none(self):
+        snap = self.factory.makeSnap()
+        view = create_initialized_view(snap, "+index")
+        self.assertIsNone(view.store_channels)
+
+    def test_store_channels_uses_titles(self):
+        snap_store_client = FakeMethod()
+        snap_store_client.listChannels = FakeMethod(result=[
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ])
+        self.useFixture(
+            ZopeUtilityFixture(snap_store_client, ISnapStoreClient))
+        snap = self.factory.makeSnap(store_channels=["stable", "nonexistent"])
+        view = create_initialized_view(snap, "+index")
+        self.assertEqual("Stable, nonexistent", view.store_channels)
 
 
 class TestSnapRequestBuildsView(BrowserTestCase):

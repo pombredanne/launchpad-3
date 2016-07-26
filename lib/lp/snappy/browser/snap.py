@@ -34,6 +34,7 @@ from zope.schema import (
     List,
     TextLine,
     )
+from zope.schema.interfaces import IVocabularyFactory
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -50,6 +51,7 @@ from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
 from lp.buildmaster.interfaces.processor import IProcessorSet
@@ -61,6 +63,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
@@ -186,6 +189,22 @@ class SnapView(LaunchpadView):
         else:
             return 'Built on request'
 
+    @cachedproperty
+    def store_channels(self):
+        if self.context.store_channels is not None:
+            vocabulary = getUtility(
+                IVocabularyFactory, name='SnapStoreChannel')(self.context)
+            channel_titles = []
+            for channel in self.context.store_channels:
+                try:
+                    channel_titles.append(
+                        vocabulary.getTermByToken(channel).title)
+                except LookupError:
+                    channel_titles.append(channel)
+            return ', '.join(channel_titles)
+        else:
+            return None
+
 
 def builds_for_snap(snap):
     """A list of interesting builds.
@@ -248,6 +267,7 @@ class SnapRequestBuildsView(LaunchpadFormView):
 
     custom_widget('archive', SnapArchiveWidget)
     custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
+    custom_widget('pocket', LaunchpadDropdownWidget)
 
     help_links = {
         "pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -382,6 +402,7 @@ class SnapAddView(
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
     custom_widget('store_channels', LabeledMultiCheckBoxWidget)
+    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -577,6 +598,8 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
         if (not store_upload or
                 store_distro_series is None or store_name is None):
             return False
+        if not self.context.store_upload:
+            return True
         if store_distro_series.snappy_series != self.context.store_series:
             return True
         if store_name != self.context.store_name:
@@ -673,6 +696,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
+    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
