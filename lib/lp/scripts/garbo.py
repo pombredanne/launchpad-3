@@ -1218,16 +1218,24 @@ class SnapBuildJobPruner(BulkPruner):
     """Prune `SnapBuildJob`s that are in a final state and more than a month
     old.
 
-    When a SnapBuildJob is completed, it gets set to a final state. These jobs
-    should be pruned from the database after a month.
+    When a SnapBuildJob is completed, it gets set to a final state. These
+    jobs should be pruned from the database after a month, unless they are
+    the most recent job for their SnapBuild.
     """
     target_table_class = Job
     ids_to_prune_query = """
-        SELECT DISTINCT Job.id
-        FROM Job, SnapBuildJob
+        SELECT id
+        FROM (
+            SELECT
+                Job.id,
+                Job.date_finished,
+                rank() OVER (
+                    PARTITION BY SnapBuildJob.snapbuild
+                    ORDER BY SnapBuildJob.job DESC) AS rank
+            FROM Job JOIN SnapBuildJob ON Job.id = SnapBuildJob.job) AS jobs
         WHERE
-            Job.id = SnapBuildJob.job
-            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            rank > 1
+            AND date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                 - CAST('30 days' AS interval)
         """
 

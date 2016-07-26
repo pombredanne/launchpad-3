@@ -987,7 +987,49 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(1, store.find(GitJob).count())
 
     def test_SnapBuildJobPruner(self):
-        # Garbo should remove jobs completed over 30 days ago.
+        # Garbo removes jobs completed over 30 days ago.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        snapbuild_job.job.date_finished = THIRTY_DAYS_AGO
+        SnapStoreUploadJob.create(snapbuild)
+
+        self.assertEqual(2, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(1, store.find(SnapBuildJob).count())
+
+    def test_SnapBuildJobPruner_doesnt_prune_recent_jobs(self):
+        # Garbo doesn't remove jobs under thirty days old.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        SnapStoreUploadJob.create(snapbuild)
+
+        snapbuild2 = self.factory.makeSnapBuild()
+        snapbuild_job2 = SnapStoreUploadJob.create(snapbuild2)
+        snapbuild_job2.job.date_finished = THIRTY_DAYS_AGO
+        SnapStoreUploadJob.create(snapbuild2)
+
+        self.assertEqual(4, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        snapbuild_jobs = set(store.find(SnapBuildJob))
+        self.assertEqual(3, len(snapbuild_jobs))
+        self.assertIn(snapbuild_job.context, snapbuild_jobs)
+
+    def test_SnapBuildJobPruner_doesnt_prune_most_recent_job_for_build(self):
+        # Garbo doesn't remove the most recent job for a build.
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         switch_dbuser('testadmin')
         store = IMasterStore(Job)
@@ -1001,28 +1043,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runDaily()
 
         switch_dbuser('testadmin')
-        self.assertEqual(0, store.find(SnapBuildJob).count())
-
-    def test_SnapBuildJobPruner_doesnt_prune_recent_jobs(self):
-        # Check to make sure the garbo doesn't remove jobs that aren't more
-        # than thirty days old.
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
-        switch_dbuser('testadmin')
-        store = IMasterStore(Job)
-
-        snapbuild = self.factory.makeSnapBuild()
-        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
-
-        snapbuild2 = self.factory.makeSnapBuild()
-        snapbuild_job2 = SnapStoreUploadJob.create(snapbuild2)
-        snapbuild_job2.job.date_finished = THIRTY_DAYS_AGO
-
-        self.assertEqual(2, store.find(SnapBuildJob).count())
-
-        self.runDaily()
-
-        switch_dbuser('testadmin')
-        self.assertEqual(snapbuild_job.context, store.find(SnapBuildJob).one())
+        self.assertEqual(1, store.find(SnapBuildJob).count())
 
     def test_WebhookJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
