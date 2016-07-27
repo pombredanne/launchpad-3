@@ -29,7 +29,7 @@
     </tal:search_results>
 
     <tal:chooseLink replace="structure view/chooseLink" />
-    <script tal:content="structure string:
+    <script metal:define-slot="add-picker" tal:content="structure string:
     LPJS.use('node', 'lp.app.picker', function(Y) {
         var config = ${view/json_config};
         var show_widget_id = '${view/show_widget_id}';

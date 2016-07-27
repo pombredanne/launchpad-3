@@ -53,8 +53,8 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
+    DistributionSourcePackagePickerWidget,
     PersonPickerWidget,
-    VocabularyPickerWidget,
     )
 from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
@@ -478,11 +478,16 @@ class BugTaskTargetWidget(LaunchpadTargetWidget):
         return vocabulary
 
 
-class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
+class BugTaskSourcePackageNameWidget(DistributionSourcePackagePickerWidget):
     """A widget for associating a bugtask with a SourcePackageName.
 
     It accepts both binary and source package names.
     """
+
+    # Pages that use this widget don't display the distribution, but this
+    # can only be used by bugtasks on the distribution in question so the
+    # vocabulary will be able to work it out for itself.
+    distribution_id = ''
 
     def __init__(self, field, vocabulary, request):
         super(BugTaskSourcePackageNameWidget, self).__init__(
@@ -542,6 +547,8 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
     except that it gets the distribution from the request.
     """
 
+    distribution_id = 'field.distribution'
+
     def getDistribution(self):
         """See `BugTaskSourcePackageNameWidget`"""
         distribution_name = self.request.form.get('field.distribution')
@@ -558,6 +565,8 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
 
 class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
     """A widget to select Ubuntu packages."""
+
+    distribution_name = 'ubuntu'
 
     def getDistribution(self):
         """See `BugTaskSourcePackageNameWidget`"""

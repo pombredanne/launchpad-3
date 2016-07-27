@@ -1,0 +1,29 @@
+<tal:root
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    omit-tag="">
+
+<metal:form-picker use-macro="context/@@form-picker-macros/form-picker">
+  <script metal:fill-slot="add-picker" tal:content="structure string:
+  LPJS.use('node', 'lp.app.picker', function(Y) {
+      var config = ${view/json_config};
+      var distribution_name = '${view/distribution_name}';
+      var distribution_id = '${view/distribution_id}';
+      if (distribution_name !== '') {
+          config.getContextPath = function() {
+              return '/' + distribution_name;
+          }
+      } else if (distribution_id !== '') {
+          config.getContextPath = function() {
+              return '/' + Y.DOM.byId(distribution_id).value;
+          };
+      }
+      var show_widget_id = '${view/show_widget_id}';
+      Y.on('domready', function(e) {
+          Y.lp.app.picker.addPicker(config, show_widget_id);
+      });
+  });
+  "/>
+</metal:form-picker>
+
+</tal:root>

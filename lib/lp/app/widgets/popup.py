@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Single selection widget using a popup to select one item from many."""
@@ -275,3 +275,16 @@ class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
                 "looking for? "
                 '<a href="%s/+affects-new-product">Register it</a>.</strong>'
                 % canonical_url(self.context.context))
+
+
+class DistributionSourcePackagePickerWidget(VocabularyPickerWidget):
+    """Custom popup widget for choosing distribution/package combinations."""
+
+    __call__ = ViewPageTemplateFile(
+        'templates/distributionsourcepackage-picker.pt')
+
+    @property
+    def distribution_id(self):
+        return self._prefix + 'distribution'
+
+    distribution_name = ''
