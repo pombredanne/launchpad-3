@@ -173,6 +173,53 @@ of content as the latest bugs feed for a product.
     >>> assert check_entries_order(entries), (
     ...     "Published dates are not sorted.")
 
+=== Private teams as assignees ===
+
+Create a private team and assign an ubuntu distro bug to that team.
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import PersonVisibility
+
+    >>> login('foo.bar@canonical.com')
+    >>> priv_team = factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> print bug.title
+    Firefox does not support SVG
+    >>> print len(bug.bugtasks)
+    3
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> bugtask = removeSecurityProxy(bug.bugtasks[1])
+    >>> print bugtask.distribution
+    <Distribution 'Ubuntu' (ubuntu)>
+    >>> bugtask.assignee = priv_team
+    >>> logout()
+
+Get the ubuntu/latest-bugs feed.
+
+    >>> browser.open('http://feeds.launchpad.dev/ubuntu/latest-bugs.atom')
+    >>> validate_feed(browser.contents,
+    ...              browser.headers['content-type'], browser.url)
+    No Errors
+
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    4
+
+The bug should be included in the feed.
+
+    >>> entry = entries[3]
+    >>> print extract_text(entry.title)
+    [1] Firefox does not support SVG
+
+Private teams should show as '-'.
+
+    >>> entry_content = BSS(
+    ...     entry.find('content').text,
+    ...     convertEntities=BSS.HTML_ENTITIES)
+    >>> soup = BSS(entry_content.text)
+    >>> print [tr.findAll('td')[4].text for tr in soup.findAll('tr')[1:4]]
+    [u'Mark Shuttleworth', u'-', u'-']
 
 == Latest bugs for a source package ==
 
