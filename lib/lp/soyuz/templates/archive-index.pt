@@ -90,7 +90,7 @@
               target="help">Read about installing</a>)
         </p>
 
-        <pre class="command subordinate">
+        <pre class="command subordinate" tal:condition="not: context/private">
 sudo add-apt-repository <tal:reference tal:replace="context/fmt:reference" />
 sudo apt-get update
         </pre>
