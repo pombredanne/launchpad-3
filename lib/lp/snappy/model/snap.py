@@ -10,6 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from storm.expr import (
     And,
@@ -329,7 +330,6 @@ class Snap(Storm, WebhookTargetMixin):
         return (
             config.snappy.store_upload_url is not None and
             config.snappy.store_url is not None and
-            self.store_upload and
             self.store_series is not None and
             self.store_name is not None and
             self.store_secrets is not None and

@@ -6,13 +6,17 @@
 __metaclass__ = type
 
 __all__ = [
+    'CannotScheduleStoreUpload',
     'ISnapBuild',
     'ISnapBuildSet',
     'ISnapBuildStatusChangedEvent',
     'ISnapFile',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
     export_read_operation,
     export_write_operation,
@@ -43,6 +47,11 @@ from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotScheduleStoreUpload(Exception):
+    """This build cannot be uploaded to the store."""
 
 
 class ISnapBuildStatusChangedEvent(IObjectEvent):
@@ -163,6 +172,15 @@ class ISnapBuildEdit(Interface):
 
         :param lfa: An `ILibraryFileAlias`.
         :return: An `ISnapFile`.
+        """
+
+    @export_write_operation()
+    @operation_for_version("devel")
+    def scheduleStoreUpload():
+        """Schedule an upload of this build to the store.
+
+        :raises CannotScheduleStoreUpload: if the build is not in a state
+            where an upload can be scheduled.
         """
 
     @export_write_operation()

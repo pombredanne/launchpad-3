@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import re
+
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 import soupmatchers
@@ -82,7 +84,7 @@ class TestSnapBuildView(TestCaseWithFactory):
             soupmatchers.Tag(
                 "store upload status", "li",
                 attrs={"id": "store-upload-status"},
-                text="Store upload in progress")))
+                text=re.compile(r"^\s*Store upload in progress\s*$"))))
 
     def test_store_upload_status_completed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -98,7 +100,8 @@ class TestSnapBuildView(TestCaseWithFactory):
                     attrs={"id": "store-upload-status"}),
                 soupmatchers.Tag(
                     "store link", "a", attrs={"href": job.store_url},
-                    text="Manage this package in the store"))))
+                    text=re.compile(
+                        r"^\s*Manage this package in the store\s*$")))))
 
     def test_store_upload_status_failed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -111,7 +114,8 @@ class TestSnapBuildView(TestCaseWithFactory):
             soupmatchers.Tag(
                 "store upload status", "li",
                 attrs={"id": "store-upload-status"},
-                text="Store upload failed: Scan failed.")))
+                text=re.compile(
+                    r"^\s*Store upload failed:\s+Scan failed.\s*$"))))
 
     def test_store_upload_status_release_failed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
@@ -126,9 +130,9 @@ class TestSnapBuildView(TestCaseWithFactory):
                 soupmatchers.Tag(
                     "store upload status", "li",
                     attrs={"id": "store-upload-status"},
-                    text=(
-                        "Releasing package to channels failed: "
-                        "Failed to publish")),
+                    text=re.compile(
+                        r"^\s*Releasing package to channels failed:\s+"
+                        r"Failed to publish\s*$")),
                 soupmatchers.Tag(
                     "store link", "a", attrs={"href": job.store_url}))))
 
@@ -231,6 +235,74 @@ class TestSnapBuildOperations(BrowserTestCase):
         self.assertIn(
             "Cannot rescore this build because it is not queued.",
             browser.contents)
+
+    def setUpStoreUpload(self):
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.build.snap.distro_series])
+        with person_logged_in(self.requester):
+            self.build.snap.store_series = snappyseries
+            self.build.snap.store_name = self.factory.getUniqueUnicode()
+            self.build.snap.store_secrets = {
+                "root": "dummy-root", "discharge": "dummy-discharge"}
+
+    def test_store_upload(self):
+        # A build not previously uploaded to the store can be uploaded
+        # manually.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Upload this package to the store").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        [job] = getUtility(ISnapStoreUploadJobSource).iterReady()
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertEqual(self.build, job.snapbuild)
+        self.assertEqual(
+            "An upload has been scheduled and will run as soon as possible.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_retry(self):
+        # A build with a previously-failed store upload can have the upload
+        # retried.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        old_job = getUtility(ISnapStoreUploadJobSource).create(self.build)
+        removeSecurityProxy(old_job).job._status = JobStatus.FAILED
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Retry").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        [job] = getUtility(ISnapStoreUploadJobSource).iterReady()
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertEqual(self.build, job.snapbuild)
+        self.assertEqual(
+            "An upload has been scheduled and will run as soon as possible.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_error_notifies(self):
+        # If a build cannot be scheduled for uploading to the store, we
+        # issue a notification.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Upload this package to the store").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+        self.assertEqual(
+            "Cannot upload this package because it has no files.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
 
     def test_builder_history(self):
         Store.of(self.build).flush()
