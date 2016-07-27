@@ -16,7 +16,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -26,12 +25,13 @@ from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
-    LaunchpadView,
     Link,
     Navigation,
-    structured,
     )
-from lp.snappy.interfaces.snapbuild import ISnapBuild
+from lp.snappy.interfaces.snapbuild import (
+    CannotScheduleStoreUpload,
+    ISnapBuild,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBuildRescoreForm
 
 
@@ -61,8 +61,11 @@ class SnapBuildContextMenu(ContextMenu):
             enabled=self.context.can_be_rescored)
 
 
-class SnapBuildView(LaunchpadView):
+class SnapBuildView(LaunchpadFormView):
     """Default view of a SnapBuild."""
+
+    class schema(Interface):
+        """Schema for uploading a build."""
 
     @property
     def label(self):
@@ -84,25 +87,25 @@ class SnapBuildView(LaunchpadView):
     def has_files(self):
         return bool(self.files)
 
-    @cachedproperty
-    def store_upload_status(self):
-        job = self.context.store_upload_jobs.first()
-        if job is None:
-            return None
-        elif job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
-            return "Store upload in progress"
-        elif job.job.status == JobStatus.COMPLETED:
-            return structured(
-                '<a href="%s">Manage this package in the store</a>',
-                job.store_url).escapedtext
-        elif job.store_url:
-            return structured(
-                '<a href="%s">Manage this package in the store</a><br />'
-                'Releasing package to channels failed: %s',
-                job.store_url, job.error_message).escapedtext
+    @property
+    def last_upload_job(self):
+        return self.context.store_upload_jobs.first()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Upload build to store', name='upload')
+    def upload_action(self, action, data):
+        """Schedule an upload of this build to the store."""
+        try:
+            self.context.scheduleStoreUpload()
+        except CannotScheduleStoreUpload as e:
+            self.request.response.addWarningNotification(str(e))
         else:
-            return structured(
-                "Store upload failed: %s", job.error_message).escapedtext
+            self.request.response.addInfoNotification(
+                "An upload has been scheduled and will run as soon as "
+                "possible.")
 
 
 class SnapBuildCancelView(LaunchpadFormView):
