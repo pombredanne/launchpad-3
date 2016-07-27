@@ -1005,8 +1005,9 @@ class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
 
     linked_bugbranches = exported(
         CollectionField(
-            title=_("Branches associated with this bug, usually "
-            "branches on which this bug is being fixed."),
+            title=_(
+                "Bazaar branches associated with this bug, usually "
+                "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
             readonly=True),
         exported_as='linked_branches')
@@ -1020,7 +1021,9 @@ class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
 
     linked_merge_proposals = exported(
         CollectionField(
-            title=_("Merge proposals associated with this bug."),
+            title=_(
+                "Merge proposals associated with this bug (currently only "
+                "Git-based merge proposals)."),
             # Really IBranchMergeProposal, patched in
             # _schema_circular_imports.py.
             value_type=Reference(schema=Interface),
