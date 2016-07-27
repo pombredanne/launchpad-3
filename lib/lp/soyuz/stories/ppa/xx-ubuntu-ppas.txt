@@ -240,7 +240,7 @@ Let's start by adding an extra package to Celso's archive:
     >>> def publishToPPA(person_name, distroseries_name, name, version):
     ...     person = getUtility(IPersonSet).getByName(person_name)
     ...     distroseries = person.archive.distribution[distroseries_name]
-    ...     ign = factory.makeSourcePackagePublishingHistory(
+    ...     factory.makeSourcePackagePublishingHistory(
     ...         distroseries=distroseries, archive=person.archive,
     ...         sourcepackagename=name, version=version)
 
@@ -267,6 +267,8 @@ context PPA in their systems.
     You can update your system with unsupported packages from this
     untrusted PPA by adding ppa:cprov/ppa to your system's Software Sources.
     (Read about installing)
+    sudo add-apt-repository ppa:cprov/ppa
+    sudo apt-get update
     Technical details about this PPA
     ...
     For questions and bugs with software in this PPA please contact
@@ -395,7 +397,6 @@ If the ppa has some current activity (building or waiting builds) then this
 is also included in the statistics portlet.
 
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> login('foo.bar@canonical.com')
