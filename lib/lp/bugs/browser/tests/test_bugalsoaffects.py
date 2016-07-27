@@ -54,24 +54,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
             browser = self.openBugPage(bug)
             browser.getLink(url='+distrotask').click()
             browser.getControl('Distribution').value = [self.distribution.name]
-            browser.getControl('Source Package Name').value = (
-                dsp.sourcepackagename.name)
-            browser.getControl('Continue').click()
-        self.assertEqual([], get_feedback_messages(browser.contents))
-
-    def test_bug_alsoaffects_dsp_exists_dsp_picker_feature_flag(self):
-        # If the distribution source package is official, there is no error.
-        bug = self.factory.makeBug()
-        distroseries = self.factory.makeDistroSeries(
-            distribution=self.distribution)
-        dsp = self.factory.makeDSPCache(
-            distroseries=distroseries, sourcepackagename='snarf')
-        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
-            browser = self.openBugPage(bug)
-            browser.getLink(url='+distrotask').click()
-            browser.getControl('Distribution').value = [self.distribution.name]
-            browser.getControl('Source Package Name').value = (
-                '%s/%s' % (self.distribution.name, dsp.name))
+            browser.getControl('Source Package Name').value = dsp.name
             browser.getControl('Continue').click()
         self.assertEqual([], get_feedback_messages(browser.contents))
 

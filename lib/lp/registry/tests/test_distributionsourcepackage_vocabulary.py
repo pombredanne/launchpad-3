@@ -69,52 +69,24 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary.setDistribution(new_distro)
         self.assertEqual(new_distro, vocabulary.distribution)
 
-    def test_parseToken_distro_and_package(self):
-        # parseToken returns a tuple of distribution and package name when
-        # the text contains both.
-        new_distro = self.factory.makeDistribution(name='fnord')
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        distribution, package_name = vocabulary.parseToken('fnord/pting')
-        self.assertEqual(new_distro, distribution)
-        self.assertEqual('pting', package_name)
-
-    def test_parseToken_default_distro_and_package(self):
-        # parseToken returns a tuple of the default distribution and package
-        # name when the text is just a package name.
-        default_distro = self.factory.makeDistribution(name='fnord')
-        vocabulary = DistributionSourcePackageVocabulary(default_distro)
-        distribution, package_name = vocabulary.parseToken('pting')
-        self.assertEqual(default_distro, distribution)
-        self.assertEqual('pting', package_name)
-
-    def test_parseToken_bad_distro_and_package(self):
-        # parseToken returns a tuple of the default distribution and package
-        # name when the distro in the text cannot be matched to a real
-        # distro.
-        default_distro = self.factory.makeDistribution(name='fnord')
-        vocabulary = DistributionSourcePackageVocabulary(default_distro)
-        distribution, package_name = vocabulary.parseToken('misspelled/pting')
-        self.assertEqual(default_distro, distribution)
-        self.assertEqual('pting', package_name)
-
-    def test_contains_true_without_init(self):
+    def test_contains_true_with_distribution(self):
         # The vocabulary contains official DSPs.
         dsp = self.factory.makeDistributionSourcePackage(with_db=True)
-        vocabulary = DistributionSourcePackageVocabulary(None)
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         self.assertIn(dsp, vocabulary)
 
-    def test_contains_true_with_init(self):
+    def test_contains_true_with_dsp(self):
         # The vocabulary contains the DSP passed to init when it is not
         # official.
         dsp = self.factory.makeDistributionSourcePackage(with_db=False)
         vocabulary = DistributionSourcePackageVocabulary(dsp)
         self.assertIn(dsp, vocabulary)
 
-    def test_contains_false_without_init(self):
+    def test_contains_false_with_distribution(self):
         # The vocabulary does not contain DSPs that are not official that
         # were not passed to init.
         dsp = self.factory.makeDistributionSourcePackage(with_db=False)
-        vocabulary = DistributionSourcePackageVocabulary(None)
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         self.assertNotIn(dsp, vocabulary)
 
     def test_toTerm_raises_error(self):
@@ -123,11 +95,12 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage(
             sourcepackagename='foo')
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
-        self.assertRaises(LookupError, vocabulary.toTerm, dsp.name)
+        self.assertRaises(LookupError, vocabulary.toTerm, dsp)
 
     def test_toTerm_none_raises_error(self):
         # An error is raised for an SPN that does not exist.
-        vocabulary = DistributionSourcePackageVocabulary(None)
+        vocabulary = DistributionSourcePackageVocabulary(
+            self.factory.makeDistribution())
         self.assertRaises(LookupError, vocabulary.toTerm, 'nonexistent')
 
     def test_toTerm_spn_and_default_distribution(self):
@@ -137,17 +110,6 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             spph.sourcepackagerelease.sourcepackagename)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(dsp.sourcepackagename)
-        self.assertEqual(dsp.name, term.token)
-        self.assertEqual(dsp.name, term.title)
-        self.assertEqual(dsp, term.value)
-
-    def test_toTerm_spn_and_distribution(self):
-        # The distribution is used with the spn if it is passed.
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        dsp = spph.distroseries.distribution.getSourcePackage(
-            spph.sourcepackagerelease.sourcepackagename)
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        term = vocabulary.toTerm(dsp.sourcepackagename, dsp.distribution)
         self.assertEqual(dsp.name, term.token)
         self.assertEqual(dsp.name, term.title)
         self.assertEqual(dsp, term.value)
@@ -181,8 +143,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage(
             sourcepackagename='foo')
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
-        token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertRaises(LookupError, vocabulary.getTermByToken, token)
+        self.assertRaises(LookupError, vocabulary.getTermByToken, dsp.name)
 
     def test_getTermByToken_token(self):
         # The term is returned if it matches an official DSP.
@@ -190,20 +151,16 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = spph.distroseries.distribution.getSourcePackage(
             spph.sourcepackagerelease.sourcepackagename)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
-        token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        term = vocabulary.getTermByToken(token)
+        term = vocabulary.getTermByToken(dsp.name)
         self.assertEqual(dsp, term.value)
 
     def test_searchForTerms_without_distribution(self):
-        # An empty result set is returned if the vocabulary has no
-        # distribution and the search does not provide distribution
-        # information.
+        # searchForTerms asserts that the vocabulary has a distribution.
         spph = self.factory.makeSourcePackagePublishingHistory()
         dsp = spph.distroseries.distribution.getSourcePackage(
             spph.sourcepackagerelease.sourcepackagename)
         vocabulary = DistributionSourcePackageVocabulary(dsp.name)
-        results = vocabulary.searchForTerms(dsp.name)
-        self.assertEqual(0, results.count())
+        self.assertRaises(AssertionError, vocabulary.searchForTerms, dsp.name)
 
     def test_searchForTerms_None(self):
         # Searching for nothing gets you that.
@@ -218,8 +175,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='snarf')
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/snarf')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='snarf')
         terms = list(results)
         self.assertEqual(1, len(terms))
         self.assertEqual('snarf', terms[0].token)
@@ -230,8 +187,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='pting-snarf-ack')
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/snarf')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='snarf')
         terms = list(results)
         self.assertEqual(1, len(terms))
         self.assertEqual('pting-snarf-ack', terms[0].token)
@@ -243,8 +200,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='snarf',
             binary_names='pting-dev pting ack')
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/pting')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='pting')
         terms = list(results)
         self.assertEqual(1, len(terms))
         self.assertEqual('snarf', terms[0].token)
@@ -256,8 +213,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='snarf',
             binary_names='thrpp pting-dev ack')
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/pting')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='pting')
         terms = list(results)
         self.assertEqual(1, len(terms))
         self.assertEqual('snarf', terms[0].token)
@@ -269,8 +226,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='snarf',
             official=False)
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/snarf')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='snarf')
         terms = list(results)
         self.assertEqual(0, len(terms))
 
@@ -281,8 +238,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='snarf',
             official=False, binary_names='thrpp pting ack')
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/pting')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='pting')
         terms = list(results)
         self.assertEqual(0, len(terms))
 
@@ -300,8 +257,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='pting-client',
             binary_names='snarf-common')
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/snarf')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='snarf')
         terms = list(results)
         self.assertEqual(4, len(terms))
         self.assertEqual('snarf', terms[0].token)
@@ -317,8 +274,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             distroseries=distroseries, sourcepackagename='snarf',
             archive=self.factory.makeArchive(
                 distribution=distro, purpose=ArchivePurpose.PARTNER))
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/snarf')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='snarf')
         terms = list(results)
         self.assertEqual(1, len(terms))
         self.assertEqual('snarf', terms[0].token)
@@ -332,6 +289,6 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             official=False,
             archive=self.factory.makeArchive(
                 distribution=distro, purpose=ArchivePurpose.PPA))
-        vocabulary = DistributionSourcePackageVocabulary(None)
-        results = vocabulary.searchForTerms(query='fnord/snarf')
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='snarf')
         self.assertEqual(0, results.count())

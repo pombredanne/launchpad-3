@@ -111,10 +111,7 @@ from lp.registry.enums import (
     PersonVisibility,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.interfaces.distribution import (
-    IDistribution,
-    IDistributionSet,
-    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -2028,7 +2025,7 @@ class SourcePackageNameVocabulary(NamedStormHugeVocabulary):
 class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     displayname = 'Select a package'
-    step_title = 'Search by name or distro/name'
+    step_title = 'Search by name'
 
     def __init__(self, context):
         self.context = context
@@ -2068,19 +2065,15 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         """Set the distribution after the vocabulary was instantiated."""
         self.distribution = distribution
 
-    def parseToken(self, text):
-        """Return the distribution and package name from the parsed token."""
-        # Match the toTerm() format, but also use it to select a distribution.
-        distribution = None
-        if '/' in text:
-            distro_name, text = text.split('/', 1)
-            distribution = getUtility(IDistributionSet).getByName(distro_name)
-        if distribution is None:
-            distribution = self.distribution
-        return distribution, text
+    def _assertHasDistribution(self):
+        if self.distribution is None:
+            raise AssertionError(
+                "DistributionSourcePackageVocabulary cannot be used without "
+                "setting a distribution.")
 
-    def toTerm(self, spn_or_dsp, distribution=None):
+    def toTerm(self, spn_or_dsp):
         """See `IVocabulary`."""
+        self._assertHasDistribution()
         dsp = None
         binary_names = None
         if isinstance(spn_or_dsp, tuple):
@@ -2088,13 +2081,14 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             spn_or_dsp, binary_names = spn_or_dsp
             if binary_names is not None:
                 binary_names = binary_names.split()
+        # XXX cjwatson 2016-07-27: Eventually this should just take a DSP
+        # and drop the complication of also accepting SPNs; but, for now,
+        # accepting an SPN reduces the amount of feature-flag checks
+        # required by users of this vocabulary.
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
-            distribution = spn_or_dsp.distribution
-        else:
-            distribution = distribution or self.distribution
-            if distribution is not None and spn_or_dsp is not None:
-                dsp = distribution.getSourcePackage(spn_or_dsp)
+        elif spn_or_dsp is not None:
+            dsp = self.distribution.getSourcePackage(spn_or_dsp)
         if dsp is not None and (dsp == self.dsp or dsp.is_official):
             if binary_names:
                 # Search already did the hard work of looking up binary names.
@@ -2107,7 +2101,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             # ever do a true combined distribution/package picker, then this
             # may need to be revisited.
             return SimpleTerm(dsp, dsp.name, dsp.name)
-        raise LookupError(distribution, spn_or_dsp)
+        raise LookupError(self.distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):
         """See `IBaseVocabulary`."""
@@ -2115,18 +2109,12 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        distribution, package_name = self.parseToken(token)
-        return self.toTerm(package_name, distribution)
+        return self.toTerm(token)
 
     def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
+        self._assertHasDistribution()
         if not query:
-            return EmptyResultSet()
-        distribution, query = self.parseToken(query)
-        if distribution is None:
-            # This could failover to ubuntu, but that is non-obvious. The
-            # Python widget must set the default distribution and the JS
-            # widget must encourage the <distro>/<package> search format.
             return EmptyResultSet()
 
         query = unicode(query)
@@ -2148,9 +2136,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                     ),
                 Or(
                     DistributionSourcePackageCache.archiveID.is_in(
-                        distribution.all_distro_archive_ids),
+                        self.distribution.all_distro_archive_ids),
                     DistributionSourcePackageCache.archive == None),
-                DistributionSourcePackageCache.distribution == distribution,
+                DistributionSourcePackageCache.distribution ==
+                    self.distribution,
                 ),
             tables=DistributionSourcePackageCache))
         SearchableDSPC = Table("SearchableDSPC")
@@ -2183,7 +2172,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 (DistributionSourcePackageInDatabase,
                  searchable_dspc_binpkgnames),
                 DistributionSourcePackageInDatabase.distribution ==
-                    distribution,
+                    self.distribution,
                 DistributionSourcePackageInDatabase.sourcepackagename_id ==
                     searchable_dspc_sourcepackagename)
         results.order_by(Desc(rank), searchable_dspc_name)
