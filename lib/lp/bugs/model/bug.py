@@ -1417,13 +1417,17 @@ class Bug(SQLBase, InformationTypeMixin):
         """See `IBug`."""
         linked_merge_proposal_ids = set(
             bmp.id for bmp in self.linked_merge_proposals)
-        # XXX cjwatson 2016-06-24: This will also need to look at
-        # IAllBranches in the event that we start linking bugs directly to
-        # Bazaar-based merge proposals rather than to their source branches.
-        collection = getUtility(IAllGitRepositories).visibleByUser(user)
-        return collection.getMergeProposals(
-            merge_proposal_ids=linked_merge_proposal_ids,
-            eager_load=eager_load)
+        if not linked_merge_proposal_ids:
+            return EmptyResultSet()
+        else:
+            # XXX cjwatson 2016-06-24: This will also need to look at
+            # IAllBranches in the event that we start linking bugs directly
+            # to Bazaar-based merge proposals rather than to their source
+            # branches.
+            collection = getUtility(IAllGitRepositories).visibleByUser(user)
+            return collection.getMergeProposals(
+                merge_proposal_ids=linked_merge_proposal_ids,
+                eager_load=eager_load)
 
     @cachedproperty
     def has_cves(self):
