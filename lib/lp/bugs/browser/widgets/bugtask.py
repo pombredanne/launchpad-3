@@ -520,7 +520,7 @@ class BugTaskSourcePackageNameWidget(DistributionSourcePackagePickerWidget):
             try:
                 self.context.vocabulary.setDistribution(distribution)
                 return self.context.vocabulary.getTermByToken(input).value
-            except NotFoundError:
+            except LookupError:
                 raise ConversionError(
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
