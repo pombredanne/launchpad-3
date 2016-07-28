@@ -86,11 +86,11 @@
                 <tal:widget define="widget nocall:view/widgets/store_name">
                   <metal:block use-macro="context/@@launchpad_form/widget_row" />
                 </tal:widget>
+                <tal:widget define="widget nocall:view/widgets/store_channels"
+                            condition="widget/context/value_type/vocabulary">
+                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                </tal:widget>
               </table>
-              <tal:widget define="widget nocall:view/widgets/store_channels"
-                          condition="widget/context/value_type/vocabulary">
-                <metal:block use-macro="context/@@launchpad_form/widget_row" />
-              </tal:widget>
               <p class="formHelp">
                 If you change any settings related to automatically uploading
                 builds of this snap to the store, then the login service will
