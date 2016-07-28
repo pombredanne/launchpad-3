@@ -1705,8 +1705,13 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
         """
         if getFeatureFlag(GPG_HIDE_PERSON_KEY_LISTING):
             return False
-        return bool(self.context.gpg_keys) or (
+        return bool(self.gpg_keys) or (
             check_permission('launchpad.Edit', self.context))
+
+    @cachedproperty
+    def gpg_keys(self):
+        """A cached version of the users OpenPGP keys."""
+        return self.context.gpg_keys
 
     @cachedproperty
     def is_probationary_or_invalid_user(self):
