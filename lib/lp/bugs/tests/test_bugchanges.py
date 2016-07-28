@@ -572,7 +572,9 @@ class TestBugChanges(TestCaseWithFactory):
             'newvalue': canonical_url(bmp),
             }
         added_notification = {
-            'text': "** Merge proposal linked: %s" % canonical_url(bmp),
+            'text': (
+                "** Merge proposal linked:\n"
+                "   %s" % canonical_url(bmp)),
             'person': self.user,
             }
         self.assertRecordedChange(
@@ -626,7 +628,9 @@ class TestBugChanges(TestCaseWithFactory):
             'oldvalue': canonical_url(bmp),
             }
         added_notification = {
-            'text': "** Merge proposal unlinked: %s" % canonical_url(bmp),
+            'text': (
+                "** Merge proposal unlinked:\n"
+                "   %s" % canonical_url(bmp)),
             'person': self.user,
             }
         self.assertRecordedChange(
