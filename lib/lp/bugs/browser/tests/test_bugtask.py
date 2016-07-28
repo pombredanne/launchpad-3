@@ -1489,15 +1489,16 @@ class TestBugTaskEditView(WithScenarios, TestCaseWithFactory):
             self.assertEqual(1, len(notifications))
             expected = html_escape(
                 "'%s' is a binary package. This bug has been assigned to its "
-                "source package '%s' instead."
-                % (bpr.binarypackagename.name, spn.name))
+                "source package '%s' instead." % (
+                    bpr.binarypackagename.name, spn.name))
             self.assertTrue(notifications.pop().message.startswith(expected))
         else:
             self.assertEqual(1, len(view.errors))
             self.assertIsInstance(view.errors[0], ConversionError)
             self.assertEqual(
                 "Launchpad doesn't know of any source package named "
-                "'binarypackage-100413' in Distribution-100372.",
+                "'%s' in %s." % (
+                    bpr.binarypackagename.name, ds.distribution.display_name),
                 view.errors[0].error_name)
 
     def test_retarget_sourcepackage_to_distroseries(self):
