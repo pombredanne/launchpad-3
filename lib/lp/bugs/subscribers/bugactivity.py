@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,11 +17,14 @@ from lp.bugs.adapters.bugchange import (
     BugWatchRemoved,
     CveLinkedToBug,
     CveUnlinkedFromBug,
+    MergeProposalLinkedToBug,
+    MergeProposalUnlinkedFromBug,
     )
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.cve import ICve
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
@@ -125,6 +128,28 @@ def record_cve_unlinked_from_bug(bug, event):
     bug.addChange(
         CveUnlinkedFromBug(
             when=None, person=IPerson(event.user), cve=event.other_object))
+
+
+@block_implicit_flushes
+def record_merge_proposal_linked_to_bug(bug, event):
+    """Record when a merge proposal is linked to a bug."""
+    if not IBranchMergeProposal.providedBy(event.other_object):
+        return
+    bug.addChange(
+        MergeProposalLinkedToBug(
+            when=None, person=IPerson(event.user),
+            merge_proposal=event.other_object, bug=event.object))
+
+
+@block_implicit_flushes
+def record_merge_proposal_unlinked_from_bug(bug, event):
+    """Record when a merge proposal is unlinked from a bug."""
+    if not IBranchMergeProposal.providedBy(event.other_object):
+        return
+    bug.addChange(
+        MergeProposalUnlinkedFromBug(
+            when=None, person=IPerson(event.user),
+            merge_proposal=event.other_object, bug=event.object))
 
 
 @block_implicit_flushes

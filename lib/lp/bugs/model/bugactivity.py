@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -24,6 +24,8 @@ from lp.bugs.adapters.bugchange import (
     CVE_LINKED,
     CVE_UNLINKED,
     MARKED_AS_DUPLICATE,
+    MERGE_PROPOSAL_LINKED,
+    MERGE_PROPOSAL_UNLINKED,
     REMOVED_DUPLICATE_MARKER,
     REMOVED_SUBSCRIBER,
     )
@@ -101,6 +103,8 @@ class BugActivity(SQLBase):
                 result = 'watches'
             elif result in (CVE_LINKED, CVE_UNLINKED):
                 result = 'cves'
+            elif result in (MERGE_PROPOSAL_LINKED, MERGE_PROPOSAL_UNLINKED):
+                result = 'linked_merge_proposals'
             elif str(result).startswith(REMOVED_SUBSCRIBER):
                 result = 'removed_subscriber'
             elif result == 'summary':
