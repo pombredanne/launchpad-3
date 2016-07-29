@@ -217,6 +217,10 @@
                 <tal:bug-branch replace="structure linked_branch/@@+bug-branch" />
               </tal:bug-branches>
               <tal:bug-mps repeat="linked_merge_proposal linked_merge_proposals">
+                <tal:comment replace="nothing">
+                  This is for Git-based MPs only at present; Bazaar-based
+                  MPs show up under linked_branches instead.
+                </tal:comment>
                 <tal:bug-mp define="proposal linked_merge_proposal;
                                     bug context/bug">
                   <metal:bug-mp use-macro="linked_merge_proposal/@@+bmp-macros/bug-summary" />
