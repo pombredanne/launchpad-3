@@ -812,6 +812,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 eager_load=True))
         return linked_branches
 
+    @cachedproperty
+    def linked_merge_proposals(self):
+        """Filter out the links to non-visible private MPs."""
+        return list(self.context.bug.getVisibleLinkedMergeProposals(
+            self.user, eager_load=True))
+
     @property
     def days_to_expiration(self):
         """Return the number of days before the bug is expired, or None."""

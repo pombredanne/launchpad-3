@@ -88,6 +88,8 @@ The summary reflects the selected target and prerequisite.
     lp://dev/~name12/gnome-terminal/pushed
     To merge this branch:
     bzr merge lp://dev/~name12/gnome-terminal/klingon
+    Related bugs:
+    Link a bug report
 
 
 Editing a commit message
@@ -457,23 +459,25 @@ A branch merge proposal should show the bugs fixed and/or specs implemented
 in the source branch.
 
     >>> def print_bugs_and_specs(browser):
-    ...     links = find_tag_by_id(browser.contents,
-    ...         'related-bugs-and-blueprints')
-    ...     if links == None:
-    ...         print links
-    ...     else:
-    ...         print extract_text(links)
+    ...     for id in 'related-bugs', 'related-blueprints':
+    ...         links = find_tag_by_id(browser.contents, id)
+    ...         if links == None:
+    ...             print links
+    ...         else:
+    ...             print extract_text(links)
 
     >>> login('admin@canonical.com')
     >>> bmp = factory.makeBranchMergeProposal()
     >>> bmp_url = canonical_url(bmp)
     >>> logout()
 
-There shouldn't be a 'Linked bug reports and blueprints' section if there are
-none
+If there are no related bugs, the corresponding section should only show a
+"Link to bug report" link; if there are no related blueprints, there should
+be no corresponding section.
 
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
+    Related bugs: Link a bug report
     None
 
     >>> login('admin@canonical.com')
@@ -485,7 +489,8 @@ The section is shown if there are links.
 
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
-    Related bugs and blueprints: Bug #...: Bug for linking Undecided New
+    Related bugs: Bug #...: Bug for linking Undecided New Link a bug report
+    None
 
 
 Target branch edge cases

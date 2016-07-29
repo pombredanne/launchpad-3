@@ -695,6 +695,24 @@ class IBranchMergeProposalAnyAllowedPerson(IBugLinkTarget):
         :param comments: The comments.
         """
 
+    @export_write_operation()
+    @operation_parameters(
+        # Really IBug, patched in _schema_circular_imports.py.
+        bug=Reference(schema=Interface))
+    @call_with(user=REQUEST_USER)
+    @operation_for_version('devel')
+    def linkBug(bug, user=None, check_permissions=True):
+        """Link a bug to this merge proposal."""
+
+    @export_write_operation()
+    @operation_parameters(
+        # Really IBug, patched in _schema_circular_imports.py.
+        bug=Reference(schema=Interface))
+    @call_with(user=REQUEST_USER)
+    @operation_for_version('devel')
+    def unlinkBug(bug, user=None, check_permissions=True):
+        """Unlink a bug from this merge proposal."""
+
 
 class IBranchMergeProposal(IBranchMergeProposalPublic,
                            IBranchMergeProposalView, IBranchMergeProposalEdit,

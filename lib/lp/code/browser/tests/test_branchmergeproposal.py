@@ -1,7 +1,6 @@
 # Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
 """Unit tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -11,6 +10,7 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
+import doctest
 import hashlib
 import re
 
@@ -24,6 +24,7 @@ from soupmatchers import (
     Tag,
     )
 from testtools.matchers import (
+    DocTestMatches,
     Equals,
     Is,
     MatchesDict,
@@ -83,6 +84,7 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     EventRecorder,
     feature_flags,
@@ -104,6 +106,7 @@ from lp.testing.layers import (
 from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
+    find_tags_by_class,
     first_tag_by_class,
     get_feedback_messages,
     )
@@ -1398,7 +1401,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         return PreviewDiff.create(
             self.bmp, preview_diff_bytes, u'a', u'b', None, u'')
 
-    def test_linked_bugs_excludes_mutual_bugs(self):
+    def test_linked_bugtasks_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
         bug = self.factory.makeBug()
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
@@ -1406,7 +1409,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugtasks)
 
-    def test_linked_bugs_excludes_private_bugs(self):
+    def test_linked_bugtasks_excludes_private_bugs(self):
         """List bugs that are linked to the source only."""
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
@@ -1416,6 +1419,15 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         with person_logged_in(person):
             self.bmp.source_branch.linkBug(private_bug, self.bmp.registrant)
         view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual([bug.default_bugtask], view.linked_bugtasks)
+
+    def test_linked_bugtasks_includes_direct_links(self):
+        # linked_bugtasks includes bugs that are linked directly to the
+        # merge proposal, as is the case for Git-based MPs.
+        bug = self.factory.makeBug()
+        bmp = self.factory.makeBranchMergeProposalForGit(registrant=self.user)
+        bmp.linkBug(bug, bmp.registrant)
+        view = create_initialized_view(bmp, '+index')
         self.assertEqual([bug.default_bugtask], view.linked_bugtasks)
 
     def makeRevisionGroups(self):
@@ -2007,6 +2019,134 @@ class TestLatestProposalsForEachBranchGit(
     def _setBranchInvisible(branch):
         removeSecurityProxy(branch.repository).transitionToInformationType(
             InformationType.USERDATA, branch.owner, verify_policy=False)
+
+
+class TestBranchMergeProposalLinkBugViewMixin:
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBranchMergeProposalLinkBugViewMixin, self).setUp()
+        self.bmp = self._makeBranchMergeProposal()
+
+    def test_anonymous(self):
+        # The "Link a bug report" link on BranchMergeProposal:+index is
+        # visible to all, but anonymous users will need to log in to use it.
+        self.useFixture(FakeLogger())
+        browser = self.getViewBrowser(
+            self.bmp, view_name="+index", no_login=True)
+        self.assertRaises(
+            Unauthorized, browser.getLink("Link a bug report").click)
+
+    def test_logged_in(self):
+        # Any logged-in user can use the "Link a bug report" link.
+        browser = self.getViewBrowser(self.bmp, view_name="+index")
+        browser.getLink("Link a bug report").click()
+        self.assertStartsWith(browser.title, "Link a bug report")
+
+    def assertBugLinks(self, bugtasks, browser):
+        expected_text = []
+        for bugtask in bugtasks:
+            expected_text.append(
+                "Bug #%d: %s\n%s\n%s" % (
+                    bugtask.bug.id, bugtask.bug.title,
+                    bugtask.importance.title, bugtask.status.title))
+        self.assertEqual(
+            expected_text,
+            [extract_text(tag) for tag in find_tags_by_class(
+                 browser.contents, "bug-mp-summary")])
+
+    def test_link(self):
+        # A user can enter a bug number to link from an MP to a bug.
+        bug = self.factory.makeBug()
+        bugtask = bug.default_bugtask
+        browser = self.getViewBrowser(self.bmp, view_name="+linkbug")
+        browser.getControl("Bug ID").value = str(bug.id)
+        browser.getControl("Link").click()
+        with person_logged_in(self.user):
+            self.assertBugLinks([bugtask], browser)
+
+    def test_same_link_twice(self):
+        # Attempting to link to the same bug twice only creates a single
+        # link.
+        bug = self.factory.makeBug()
+        bugtask = bug.default_bugtask
+        with person_logged_in(self.user):
+            self.bmp.linkBug(bug, self.user)
+        browser = self.getViewBrowser(self.bmp, view_name="+linkbug")
+        browser.getControl("Bug ID").value = str(bug.id)
+        browser.getControl("Link").click()
+        with person_logged_in(self.user):
+            self.assertBugLinks([bugtask], browser)
+
+
+class TestBranchMergeProposalLinkBugViewBzr(
+    TestBranchMergeProposalLinkBugViewMixin, BrowserTestCase):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+
+class TestBranchMergeProposalLinkBugViewGit(
+    TestBranchMergeProposalLinkBugViewMixin, GitHostingClientMixin,
+    BrowserTestCase):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
+
+    def assertMergeProposalLinks(self, mps, browser):
+        matchers = []
+        for mp in mps:
+            matchers.append(DocTestMatches(
+                "%s\n...\nfor merging\ninto\n%s\n..." % (
+                    mp.merge_source.identity, mp.merge_target.identity),
+                flags=doctest.ELLIPSIS))
+        self.assertThat(
+            [extract_text(tag) for tag in find_tags_by_class(
+                 browser.contents, "bug-mp-summary")],
+            MatchesListwise(matchers))
+
+    def test_bug_page_shows_link(self):
+        # The bug-MP link is shown on the bug page.
+        bug = self.factory.makeBug()
+        title = bug.title
+        with person_logged_in(self.user):
+            self.bmp.linkBug(bug, self.user)
+        browser = self.getViewBrowser(self.bmp)
+        browser.getLink(title).click()
+        with person_logged_in(self.user):
+            self.assertMergeProposalLinks([self.bmp], browser)
+
+    def test_link_to_private_bug_only_shown_if_visible(self):
+        # The MP page only shows links to private bugs if the user can see
+        # the bugs in question.
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
+        with admin_logged_in() as admin:
+            bugtask = bug.default_bugtask
+            self.bmp.linkBug(bug, admin)
+        admin_browser = self.getViewBrowser(self.bmp, user=admin)
+        with admin_logged_in():
+            self.assertBugLinks([bugtask], admin_browser)
+        user_browser = self.getViewBrowser(self.bmp)
+        self.assertBugLinks([], user_browser)
+
+    def test_unlink_from_merge_proposal(self):
+        # The MP page has a delete button to unlink the bug.
+        bug = self.factory.makeBug()
+        with person_logged_in(self.user):
+            self.bmp.linkBug(bug, self.user)
+        browser = self.getViewBrowser(self.bmp)
+        browser.getLink(url="+unlinkbug").click()
+        self.assertBugLinks([], browser)
+
+    def test_unlink_from_bug(self):
+        # The bug page has a delete button to unlink the MP.
+        bug = self.factory.makeBug()
+        with person_logged_in(self.user):
+            self.bmp.linkBug(bug, self.user)
+        browser = self.getViewBrowser(bug)
+        browser.getLink(url="+unlinkbug").click()
+        self.assertMergeProposalLinks([], browser)
 
 
 class TestBranchMergeProposalDeleteViewMixin:
