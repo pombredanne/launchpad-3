@@ -1375,49 +1375,48 @@ class TestBranchMergeProposalDeletion(TestCaseWithFactory):
             SQLObjectNotFound, BranchMergeProposalJob.get, job_id)
 
 
-class TestBranchMergeProposalBugs(TestCaseWithFactory):
+class TestBranchMergeProposalBugsMixin:
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchMergeProposalBugsMixin, self).setUp()
         self.user = self.factory.makePerson()
         login_person(self.user)
 
+    def test_bugs(self):
+        # bugs includes all linked bugs.
+        bmp = self._makeBranchMergeProposal()
+        self.assertEqual([], bmp.bugs)
+        bugs = [self.factory.makeBug() for _ in range(2)]
+        bmp.linkBug(bugs[0], bmp.registrant)
+        self.assertEqual([bugs[0]], bmp.bugs)
+        bmp.linkBug(bugs[1], bmp.registrant)
+        self.assertContentEqual(bugs, bmp.bugs)
+        bmp.unlinkBug(bugs[0], bmp.registrant)
+        self.assertEqual([bugs[1]], bmp.bugs)
+        bmp.unlinkBug(bugs[1], bmp.registrant)
+        self.assertEqual([], bmp.bugs)
+
     def test_related_bugtasks_includes_source_bugtasks(self):
-        """related_bugtasks includes bugtasks linked to the source branch."""
-        bmp = self.factory.makeBranchMergeProposal()
-        source_branch = bmp.source_branch
+        # related_bugtasks includes bugtasks linked to the source branch in
+        # the Bazaar case.
+        bmp = self._makeBranchMergeProposal()
         bug = self.factory.makeBug()
-        source_branch.linkBug(bug, bmp.registrant)
+        bmp.linkBug(bug, bmp.registrant)
         self.assertEqual(
             bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
 
-    def test_related_bugtasks_excludes_target_bugs(self):
-        """related_bugtasks ignores bugs linked to the source branch."""
-        bmp = self.factory.makeBranchMergeProposal()
-        bug = self.factory.makeBug()
-        bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
-
-    def test_related_bugtasks_excludes_mutual_bugs(self):
-        """related_bugtasks ignores bugs linked to both branches."""
-        bmp = self.factory.makeBranchMergeProposal()
-        bug = self.factory.makeBug()
-        bmp.source_branch.linkBug(bug, bmp.registrant)
-        bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
-
     def test_related_bugtasks_excludes_private_bugs(self):
-        """related_bugtasks ignores private bugs for non-authorised users."""
-        bmp = self.factory.makeBranchMergeProposal()
+        # related_bugtasks ignores private bugs for non-authorised users.
+        bmp = self._makeBranchMergeProposal()
         bug = self.factory.makeBug()
-        bmp.source_branch.linkBug(bug, bmp.registrant)
+        bmp.linkBug(bug, bmp.registrant)
         person = self.factory.makePerson()
         with person_logged_in(person):
             private_bug = self.factory.makeBug(
                 owner=person, information_type=InformationType.USERDATA)
-            bmp.source_branch.linkBug(private_bug, person)
+            bmp.linkBug(private_bug, person)
             private_tasks = private_bug.bugtasks
         self.assertEqual(
             bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
@@ -1425,6 +1424,28 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         all_bugtasks.extend(private_tasks)
         self.assertEqual(
             all_bugtasks, list(bmp.getRelatedBugTasks(person)))
+
+
+class TestBranchMergeProposalBugsBzr(
+    TestBranchMergeProposalBugsMixin, TestCaseWithFactory):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+    def test_related_bugtasks_excludes_target_bugs(self):
+        # related_bugtasks ignores bugs linked to the target branch.
+        bmp = self._makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+    def test_related_bugtasks_excludes_mutual_bugs(self):
+        # related_bugtasks ignores bugs linked to both branches.
+        bmp = self._makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
 
 
 class TestNotifyModified(TestCaseWithFactory):
