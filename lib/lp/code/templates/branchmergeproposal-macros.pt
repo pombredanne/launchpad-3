@@ -73,6 +73,8 @@
     This macro requires the following defined variables:
       proposal - the linked merge proposal
       bug - the linked bug
+
+    lib/lp/bugs/templates/bug-branch.pt has similar code for Bazaar.
   </tal:comment>
 
   <div class="bug-mp-summary"
@@ -95,6 +97,11 @@
 </metal:bug-summary>
 
 <metal:bug-links define-macro="bug-links">
+
+  <tal:comment condition="nothing">
+    The bug-branch-links macro in lib/lp/code/templates/branch-macros.pt has
+    similar code for Bazaar.
+  </tal:comment>
 
   <table tal:condition="view/linked_bugtasks">
     <tal:bug-tasks repeat="bugtask view/linked_bugtasks">

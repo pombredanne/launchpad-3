@@ -98,6 +98,10 @@
       branch - the branch that has the bug branch links
     The following variables define what is shown and are optional.
       show_edit - show the edit form
+
+    The bug-links macro in
+    lib/lp/code/templates/branchmergeproposal-macros.pt has similar code for
+    Git.
   </tal:comment>
 
   <table>
