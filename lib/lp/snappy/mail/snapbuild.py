@@ -46,6 +46,48 @@ class SnapBuildMailer(BaseMailer):
             config.canonical.noreply_from_address,
             "snap-build-upload-unauthorized", build)
 
+    @classmethod
+    def forUploadScanFailure(cls, build):
+        """Create a mailer for notifying about store upload scan failures.
+
+        :param build: The relevant build.
+        """
+        requester = build.requester
+        recipients = {requester: RecipientReason.forBuildRequester(requester)}
+        return cls(
+            "Store upload scan failed for %(snap_name)s",
+            "snapbuild-scanfailed.txt", recipients,
+            config.canonical.noreply_from_address,
+            "snap-build-upload-scan-failed", build)
+
+    @classmethod
+    def forManualReview(cls, build):
+        """Create a mailer for notifying about manual review.
+
+        :param build: The relevant build.
+        """
+        requester = build.requester
+        recipients = {requester: RecipientReason.forBuildRequester(requester)}
+        return cls(
+            "%(snap_name)s held for manual review",
+            "snapbuild-manualreview.txt", recipients,
+            config.canonical.noreply_from_address,
+            "snap-build-release-manual-review", build)
+
+    @classmethod
+    def forReleaseFailure(cls, build):
+        """Create a mailer for notifying about store release failures.
+
+        :param build: The relevant build.
+        """
+        requester = build.requester
+        recipients = {requester: RecipientReason.forBuildRequester(requester)}
+        return cls(
+            "Store release failed for %(snap_name)s",
+            "snapbuild-releasefailed.txt", recipients,
+            config.canonical.noreply_from_address,
+            "snap-build-release-failed", build)
+
     def __init__(self, subject, template_name, recipients, from_address,
                  notification_type, build):
         super(SnapBuildMailer, self).__init__(
@@ -62,6 +104,13 @@ class SnapBuildMailer(BaseMailer):
     def _getTemplateParams(self, email, recipient):
         """See `BaseMailer`."""
         build = self.build
+        upload_job = build.store_upload_jobs.first()
+        if upload_job is None:
+            error_message = ""
+            store_url = ""
+        else:
+            error_message = upload_job.error_message or ""
+            store_url = upload_job.store_url or ""
         params = super(SnapBuildMailer, self)._getTemplateParams(
             email, recipient)
         params.update({
@@ -80,6 +129,8 @@ class SnapBuildMailer(BaseMailer):
             "build_url": canonical_url(build),
             "snap_authorize_url": canonical_url(
                 build.snap, view_name="+authorize"),
+            "store_error_message": error_message,
+            "store_url": store_url,
             })
         if build.duration is not None:
             duration_formatter = DurationFormatterAPI(build.duration)

@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <title>Snap package build schedule</title>
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssreset/reset.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssfonts/fonts.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssbase/base.css" />
+    <style type="text/css">
+      dt { font-weight: bold }
+      dd p { margin-bottom: 0.5em }
+    </style>
+  </head>
+  <body>
+    <h1>Snap package build schedule</h1>
+
+    <p>There are two options for when snap packages get built:</p>
+    <dl>
+      <dt>Built automatically</dt>
+      <dd>
+        <p>A build will be scheduled automatically once a change to the
+          top-level source branch for the snap package is detected.</p>
+        <p>If there has been a build of the snap package within the previous
+          hour from the source archive, the build will not be scheduled
+          until an hour since the last build from the source archive.</p>
+        <p>If the snap package has been built within the last hour from a
+          different archive using the "Request builds" action, this will not
+          delay the automatic build.</p>
+        <p>If you really want the build to happen before the one-hour period
+          is up, you can use the "Request builds" action.</p>
+      </dd>
+      <dt>Built on request</dt>
+      <dd>
+        <p>Builds of the snap package have to be manually requested using
+          the "Request builds" action.</p>
+      </dd>
+    </dl>
+
+  </body>
+</html>
+

@@ -422,8 +422,10 @@ class MergeProposalLinkedToBug(BugChangeBase):
         if self.merge_proposal.private or self.bug.is_complete:
             return None
         return {
-            'text': '** Merge proposal linked: %s' % (
-                canonical_url(self.merge_proposal))}
+            'text': (
+                '** Merge proposal linked:\n'
+                '   %s' % canonical_url(self.merge_proposal)),
+            }
 
 
 class MergeProposalUnlinkedFromBug(BugChangeBase):
@@ -447,8 +449,10 @@ class MergeProposalUnlinkedFromBug(BugChangeBase):
         if self.merge_proposal.private or self.bug.is_complete:
             return None
         return {
-            'text': '** Merge proposal unlinked: %s' % (
-                canonical_url(self.merge_proposal))}
+            'text': (
+                '** Merge proposal unlinked:\n'
+                '   %s' % canonical_url(self.merge_proposal)),
+            }
 
 
 class BugDescriptionChange(AttributeChange):

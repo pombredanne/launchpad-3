@@ -12,6 +12,8 @@ __all__ = [
     'SnapStoreUploadJob',
     ]
 
+from datetime import timedelta
+
 from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
@@ -48,8 +50,13 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJobSource,
     )
 from lp.snappy.interfaces.snapstoreclient import (
+    BadReleaseResponse,
+    BadScanStatusResponse,
     ISnapStoreClient,
+    ReleaseFailedResponse,
+    ScanFailedResponse,
     UnauthorizedUploadResponse,
+    UploadNotScannedYetResponse,
     )
 from lp.snappy.mail.snapbuild import SnapBuildMailer
 
@@ -152,6 +159,10 @@ class SnapBuildJobDerived(BaseRunnableJob):
         return oops_vars
 
 
+class ManualReview(Exception):
+    pass
+
+
 @implementer(ISnapStoreUploadJob)
 @provider(ISnapStoreUploadJobSource)
 class SnapStoreUploadJob(SnapBuildJobDerived):
@@ -159,7 +170,17 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
 
     class_job_type = SnapBuildJobType.STORE_UPLOAD
 
+    user_error_types = (
+        UnauthorizedUploadResponse,
+        ScanFailedResponse,
+        ManualReview,
+        ReleaseFailedResponse,
+        )
+
     # XXX cjwatson 2016-05-04: identify transient upload failures and retry
+    retry_error_types = (UploadNotScannedYetResponse,)
+    retry_delay = timedelta(minutes=1)
+    max_retries = 20
 
     config = config.ISnapStoreUploadJobSource
 
@@ -181,18 +202,50 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         """See `ISnapStoreUploadJob`."""
         self.metadata["error_message"] = message
 
+    @property
+    def store_url(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.metadata.get("store_url")
+
+    @store_url.setter
+    def store_url(self, url):
+        """See `ISnapStoreUploadJob`."""
+        self.metadata["store_url"] = url
+
     def run(self):
         """See `IRunnableJob`."""
+        client = getUtility(ISnapStoreClient)
         try:
-            getUtility(ISnapStoreClient).upload(self.snapbuild)
+            if "status_url" not in self.metadata:
+                self.metadata["status_url"] = client.upload(self.snapbuild)
+            if self.store_url is None:
+                self.store_url, self.metadata["store_revision"] = (
+                    client.checkStatus(self.metadata["status_url"]))
+            if self.snapbuild.snap.store_channels:
+                if self.metadata["store_revision"] is None:
+                    raise ManualReview(
+                        "Package held for manual review on the store; "
+                        "cannot release it automatically.")
+                client.release(self.snapbuild, self.metadata["store_revision"])
             self.error_message = None
+        except self.retry_error_types:
+            raise
         except Exception as e:
-            # Abort work done so far, but make sure that we commit the error
-            # message.
-            transaction.abort()
             self.error_message = str(e)
             if isinstance(e, UnauthorizedUploadResponse):
                 mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)
                 mailer.sendAll()
+            elif isinstance(e, (BadScanStatusResponse, ScanFailedResponse)):
+                mailer = SnapBuildMailer.forUploadScanFailure(self.snapbuild)
+                mailer.sendAll()
+            elif isinstance(e, ManualReview):
+                mailer = SnapBuildMailer.forManualReview(self.snapbuild)
+                mailer.sendAll()
+            elif isinstance(e, (BadReleaseResponse, ReleaseFailedResponse)):
+                mailer = SnapBuildMailer.forReleaseFailure(self.snapbuild)
+                mailer.sendAll()
+            # The normal job infrastructure will abort the transaction, but
+            # we want to commit instead: the only database changes we make
+            # are to this job's metadata and should be preserved.
             transaction.commit()
             raise

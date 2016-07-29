@@ -11,8 +11,13 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 
+from lp.app.interfaces.security import IAuthorization
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
@@ -21,6 +26,10 @@ from lp.snappy.interfaces.snappyseries import (
     ISnappySeries,
     ISnappySeriesSet,
     NoSuchSnappySeries,
+    )
+from lp.snappy.model.snappyseries import (
+    SnappyDistroSeries,
+    SnappySeries,
     )
 from lp.testing import (
     admin_logged_in,
@@ -63,6 +72,12 @@ class TestSnappySeries(TestCaseWithFactory):
         snappy_series.usable_distro_series = []
         self.assertContentEqual([], snappy_series.usable_distro_series)
 
+    def test_anonymous(self):
+        # Anyone can view an `ISnappySeries`.
+        series = self.factory.makeSnappySeries(name="dummy")
+        authz = getAdapter(series, IAuthorization, name="launchpad.View")
+        self.assertTrue(authz.checkUnauthenticated())
+
 
 class TestSnappySeriesSet(TestCaseWithFactory):
 
@@ -97,9 +112,11 @@ class TestSnappySeriesSet(TestCaseWithFactory):
             snappy_series_set.getByDistroSeries(dses[2]))
 
     def test_getAll(self):
+        sample_snappy_serieses = list(IStore(SnappySeries).find(SnappySeries))
         snappy_serieses = [self.factory.makeSnappySeries() for _ in range(3)]
         self.assertContentEqual(
-            snappy_serieses, getUtility(ISnappySeriesSet).getAll())
+            snappy_serieses + sample_snappy_serieses,
+            getUtility(ISnappySeriesSet).getAll())
 
 
 class TestSnappySeriesWebservice(TestCaseWithFactory):
@@ -227,7 +244,7 @@ class TestSnappySeriesWebservice(TestCaseWithFactory):
         response = webservice.get("/+snappy-series")
         self.assertEqual(200, response.status)
         self.assertContentEqual(
-            ["ss-0", "ss-1", "ss-2"],
+            ["ss-0", "ss-1", "ss-2", "15.04-core", "16"],
             [entry["name"] for entry in response.jsonBody()["entries"]])
 
 
@@ -279,18 +296,6 @@ class TestSnappyDistroSeriesSet(TestCaseWithFactory):
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], dses[1]))
 
     def test_getAll(self):
-        dses = [self.factory.makeDistroSeries() for _ in range(2)]
-        snappy_serieses = [self.factory.makeSnappySeries() for _ in range(2)]
-        snappy_serieses[0].usable_distro_series = dses
-        snappy_serieses[1].usable_distro_series = [dses[0]]
+        sdses = list(IStore(SnappyDistroSeries).find(SnappyDistroSeries))
         sds_set = getUtility(ISnappyDistroSeriesSet)
-        self.assertThat(
-            sds_set.getAll(),
-            MatchesSetwise(
-                MatchesStructure.byEquality(
-                    snappy_series=snappy_serieses[0], distro_series=dses[0]),
-                MatchesStructure.byEquality(
-                    snappy_series=snappy_serieses[0], distro_series=dses[1]),
-                MatchesStructure.byEquality(
-                    snappy_series=snappy_serieses[1], distro_series=dses[0]),
-                ))
+        self.assertContentEqual(sds_set.getAll(), sdses)

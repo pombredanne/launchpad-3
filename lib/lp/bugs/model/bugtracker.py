@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -148,6 +148,9 @@ def make_bugtracker_name(uri):
         else:
             raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
+    elif base_uri.host == 'github.com' and base_uri.path.endswith('/issues'):
+        repository_id = base_uri.path[:-len('/issues')].lstrip('/')
+        base_name = 'github-' + repository_id.replace('/', '-').lower()
     else:
         base_name = base_uri.host
 
@@ -331,6 +334,8 @@ class BugTracker(SQLBase):
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
+        BugTrackerType.GITHUB: (
+            "%(base_url)s/new?title=%(summary)s&body=%(description)s"),
         BugTrackerType.GOOGLE_CODE: (
             "%(base_url)s/entry?summary=%(summary)s&"
             "comment=%(description)s"),
@@ -360,6 +365,9 @@ class BugTracker(SQLBase):
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/query.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s"),
+        BugTrackerType.GITHUB: (
+            "%(base_url)s?utf8=%%E2%%9C%%93"
+            "&q=is%%3Aissue%%20is%%3Aopen%%20%(summary)s"),
         BugTrackerType.GOOGLE_CODE: "%(base_url)s/list?q=%(summary)s",
         BugTrackerType.DEBBUGS: (
             "%(base_url)s/cgi-bin/search.cgi?phrase=%(summary)s"

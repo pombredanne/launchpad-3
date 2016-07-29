@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SnapBuild views."""
@@ -25,11 +25,13 @@ from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
-    LaunchpadView,
     Link,
     Navigation,
     )
-from lp.snappy.interfaces.snapbuild import ISnapBuild
+from lp.snappy.interfaces.snapbuild import (
+    CannotScheduleStoreUpload,
+    ISnapBuild,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBuildRescoreForm
 
 
@@ -59,8 +61,11 @@ class SnapBuildContextMenu(ContextMenu):
             enabled=self.context.can_be_rescored)
 
 
-class SnapBuildView(LaunchpadView):
+class SnapBuildView(LaunchpadFormView):
     """Default view of a SnapBuild."""
+
+    class schema(Interface):
+        """Schema for uploading a build."""
 
     @property
     def label(self):
@@ -81,6 +86,26 @@ class SnapBuildView(LaunchpadView):
     @cachedproperty
     def has_files(self):
         return bool(self.files)
+
+    @property
+    def last_upload_job(self):
+        return self.context.store_upload_jobs.first()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Upload build to store', name='upload')
+    def upload_action(self, action, data):
+        """Schedule an upload of this build to the store."""
+        try:
+            self.context.scheduleStoreUpload()
+        except CannotScheduleStoreUpload as e:
+            self.request.response.addWarningNotification(str(e))
+        else:
+            self.request.response.addInfoNotification(
+                "An upload has been scheduled and will run as soon as "
+                "possible.")
 
 
 class SnapBuildCancelView(LaunchpadFormView):

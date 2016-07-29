@@ -521,6 +521,17 @@
                 interface="lp.bugs.interfaces.bugtracker.IRemoteBug"/>
         </class>
 
+        <!-- GitHubRateLimit -->
+
+        <class
+            class="lp.bugs.externalbugtracker.github.GitHubRateLimit">
+            <allow
+                interface="lp.bugs.externalbugtracker.github.IGitHubRateLimit"/>
+        </class>
+        <utility
+            factory="lp.bugs.externalbugtracker.github.GitHubRateLimit"
+            provides="lp.bugs.externalbugtracker.github.IGitHubRateLimit"/>
+
     <!-- IBugBranch -->
 
     <class

@@ -987,7 +987,49 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(1, store.find(GitJob).count())
 
     def test_SnapBuildJobPruner(self):
-        # Garbo should remove jobs completed over 30 days ago.
+        # Garbo removes jobs completed over 30 days ago.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        snapbuild_job.job.date_finished = THIRTY_DAYS_AGO
+        SnapStoreUploadJob.create(snapbuild)
+
+        self.assertEqual(2, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(1, store.find(SnapBuildJob).count())
+
+    def test_SnapBuildJobPruner_doesnt_prune_recent_jobs(self):
+        # Garbo doesn't remove jobs under thirty days old.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        SnapStoreUploadJob.create(snapbuild)
+
+        snapbuild2 = self.factory.makeSnapBuild()
+        snapbuild_job2 = SnapStoreUploadJob.create(snapbuild2)
+        snapbuild_job2.job.date_finished = THIRTY_DAYS_AGO
+        SnapStoreUploadJob.create(snapbuild2)
+
+        self.assertEqual(4, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        snapbuild_jobs = set(store.find(SnapBuildJob))
+        self.assertEqual(3, len(snapbuild_jobs))
+        self.assertIn(snapbuild_job.context, snapbuild_jobs)
+
+    def test_SnapBuildJobPruner_doesnt_prune_most_recent_job_for_build(self):
+        # Garbo doesn't remove the most recent job for a build.
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         switch_dbuser('testadmin')
         store = IMasterStore(Job)
@@ -1001,28 +1043,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runDaily()
 
         switch_dbuser('testadmin')
-        self.assertEqual(0, store.find(SnapBuildJob).count())
-
-    def test_SnapBuildJobPruner_doesnt_prune_recent_jobs(self):
-        # Check to make sure the garbo doesn't remove jobs that aren't more
-        # than thirty days old.
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
-        switch_dbuser('testadmin')
-        store = IMasterStore(Job)
-
-        snapbuild = self.factory.makeSnapBuild()
-        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
-
-        snapbuild2 = self.factory.makeSnapBuild()
-        snapbuild_job2 = SnapStoreUploadJob.create(snapbuild2)
-        snapbuild_job2.job.date_finished = THIRTY_DAYS_AGO
-
-        self.assertEqual(2, store.find(SnapBuildJob).count())
-
-        self.runDaily()
-
-        switch_dbuser('testadmin')
-        self.assertEqual(snapbuild_job.context, store.find(SnapBuildJob).one())
+        self.assertEqual(1, store.find(SnapBuildJob).count())
 
     def test_WebhookJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
@@ -1496,6 +1517,41 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # retained.
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
+
+    def test_SnapStoreSeriesPopulator(self):
+        switch_dbuser('testadmin')
+        # Make some series.
+        dses = [self.factory.makeDistroSeries() for _ in range(4)]
+        sses = [
+            self.factory.makeSnappySeries(usable_distro_series=[dses[1]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[2]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
+            ]
+        # Make some snap packages.
+        snaps = [
+            self.factory.makeSnap(distroseries=dses[0]),
+            self.factory.makeSnap(distroseries=dses[1], store_series=sses[1]),
+            self.factory.makeSnap(distroseries=dses[1]),
+            self.factory.makeSnap(distroseries=dses[2], store_series=sses[0]),
+            self.factory.makeSnap(distroseries=dses[2]),
+            self.factory.makeSnap(distroseries=dses[3]),
+            ]
+        transaction.commit()
+
+        self.runDaily()
+
+        # Snaps with no possible store series are untouched.
+        self.assertIsNone(snaps[0].store_series)
+        # Snaps that already have a store series are untouched.
+        self.assertEqual(sses[1], snaps[1].store_series)
+        self.assertEqual(sses[0], snaps[3].store_series)
+        # Snaps with no current store series and exactly one possible store
+        # series have it filled in.
+        self.assertEqual(sses[0], snaps[2].store_series)
+        self.assertEqual(sses[1], snaps[4].store_series)
+        # Snaps with more than one possible store series are untouched.
+        self.assertIsNone(snaps[5].store_series)
 
 
 class TestGarboTasks(TestCaseWithFactory):

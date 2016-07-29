@@ -1,12 +1,15 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build views."""
 
 __metaclass__ = type
 
+import re
+
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
+import soupmatchers
 from storm.locals import Store
 from testtools.matchers import StartsWith
 import transaction
@@ -16,9 +19,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
-from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
+from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -44,10 +47,6 @@ class TestCanonicalUrlForSnapBuild(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestCanonicalUrlForSnapBuild, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
-
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
         snap = self.factory.makeSnap(
@@ -61,10 +60,6 @@ class TestCanonicalUrlForSnapBuild(TestCaseWithFactory):
 class TestSnapBuildView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestSnapBuildView, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
 
     def test_files(self):
         # SnapBuildView.files returns all the associated files.
@@ -81,6 +76,66 @@ class TestSnapBuildView(TestCaseWithFactory):
         build_view = create_initialized_view(build, "+index")
         self.assertEqual([], build_view.files)
 
+    def test_store_upload_status_in_progress(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        getUtility(ISnapStoreUploadJobSource).create(build)
+        build_view = create_initialized_view(build, "+index")
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "store upload status", "li",
+                attrs={"id": "store-upload-status"},
+                text=re.compile(r"^\s*Store upload in progress\s*$"))))
+
+    def test_store_upload_status_completed(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.COMPLETED
+        naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
+        build_view = create_initialized_view(build, "+index")
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload status", "li",
+                    attrs={"id": "store-upload-status"}),
+                soupmatchers.Tag(
+                    "store link", "a", attrs={"href": job.store_url},
+                    text=re.compile(
+                        r"^\s*Manage this package in the store\s*$")))))
+
+    def test_store_upload_status_failed(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.error_message = "Scan failed."
+        build_view = create_initialized_view(build, "+index")
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "store upload status", "li",
+                attrs={"id": "store-upload-status"},
+                text=re.compile(
+                    r"^\s*Store upload failed:\s+Scan failed.\s*$"))))
+
+    def test_store_upload_status_release_failed(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
+        naked_job.error_message = "Failed to publish"
+        build_view = create_initialized_view(build, "+index")
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload status", "li",
+                    attrs={"id": "store-upload-status"},
+                    text=re.compile(
+                        r"^\s*Releasing package to channels failed:\s+"
+                        r"Failed to publish\s*$")),
+                soupmatchers.Tag(
+                    "store link", "a", attrs={"href": job.store_url}))))
+
 
 class TestSnapBuildOperations(BrowserTestCase):
 
@@ -88,7 +143,6 @@ class TestSnapBuildOperations(BrowserTestCase):
 
     def setUp(self):
         super(TestSnapBuildOperations, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
         self.useFixture(FakeLogger())
         self.build = self.factory.makeSnapBuild()
         self.build_url = canonical_url(self.build)
@@ -181,6 +235,74 @@ class TestSnapBuildOperations(BrowserTestCase):
         self.assertIn(
             "Cannot rescore this build because it is not queued.",
             browser.contents)
+
+    def setUpStoreUpload(self):
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.build.snap.distro_series])
+        with person_logged_in(self.requester):
+            self.build.snap.store_series = snappyseries
+            self.build.snap.store_name = self.factory.getUniqueUnicode()
+            self.build.snap.store_secrets = {
+                "root": "dummy-root", "discharge": "dummy-discharge"}
+
+    def test_store_upload(self):
+        # A build not previously uploaded to the store can be uploaded
+        # manually.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Upload this package to the store").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        [job] = getUtility(ISnapStoreUploadJobSource).iterReady()
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertEqual(self.build, job.snapbuild)
+        self.assertEqual(
+            "An upload has been scheduled and will run as soon as possible.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_retry(self):
+        # A build with a previously-failed store upload can have the upload
+        # retried.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        old_job = getUtility(ISnapStoreUploadJobSource).create(self.build)
+        removeSecurityProxy(old_job).job._status = JobStatus.FAILED
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Retry").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        [job] = getUtility(ISnapStoreUploadJobSource).iterReady()
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertEqual(self.build, job.snapbuild)
+        self.assertEqual(
+            "An upload has been scheduled and will run as soon as possible.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
+
+    def test_store_upload_error_notifies(self):
+        # If a build cannot be scheduled for uploading to the store, we
+        # issue a notification.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        browser = self.getViewBrowser(self.build, user=self.requester)
+        browser.getControl("Upload this package to the store").click()
+        self.assertEqual(self.build_url, browser.url)
+        login(ANONYMOUS)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+        self.assertEqual(
+            "Cannot upload this package because it has no files.",
+            extract_text(find_tags_by_class(browser.contents, "message")[0]))
 
     def test_builder_history(self):
         Store.of(self.build).flush()

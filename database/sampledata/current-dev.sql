@@ -1,6 +1,6 @@
 -- Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.3.5
+-- Created using pg_dump (PostgreSQL) 9.3.12
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -3465,6 +3465,23 @@ ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
 
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (1, 1, 20, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (2, 1, 23, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (3, 1, 9, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (4, 1, 24, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (5, 1, 22, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (6, 8, 19, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (7, 3, 19, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (8, 1, 21, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (9, 9, 1, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (10, 1, 19, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (11, 1, 26, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (12, 9, 9, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (13, 1, 27, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (14, 1, 14, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (15, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (16, 1, 10, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
+INSERT INTO distributionsourcepackage (id, distribution, sourcepackagename, bug_reporting_guidelines, max_bug_heat, bug_reported_acknowledgement, total_bug_heat, bug_count, po_message_count, is_upstream_link_allowed, enable_bugfiling_duplicate_search) VALUES (17, 9, 19, NULL, NULL, NULL, NULL, NULL, NULL, false, true);
 
 
 ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
@@ -9487,6 +9504,15 @@ ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE snappyseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (1, '2016-06-22 16:25:51.474348', 1, '15.04-core', 'Ubuntu Core 15.04', 4);
+INSERT INTO snappyseries (id, date_created, registrant, name, display_name, status) VALUES (2, '2016-06-22 16:25:51.474348', 1, '16', 'Ubuntu Core 16', 4);
+
+
+ALTER TABLE snappyseries ENABLE TRIGGER ALL;
+
+
 ALTER TABLE snap DISABLE TRIGGER ALL;
 
 
@@ -9519,6 +9545,19 @@ ALTER TABLE snapfile DISABLE TRIGGER ALL;
 
 
 ALTER TABLE snapfile ENABLE TRIGGER ALL;
+
+
+
+
+
+ALTER TABLE snappydistroseries DISABLE TRIGGER ALL;
+
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 1);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (1, 3);
+INSERT INTO snappydistroseries (snappy_series, distro_series) VALUES (2, 3);
+
+
+ALTER TABLE snappydistroseries ENABLE TRIGGER ALL;
 
 
 

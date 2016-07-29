@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -210,10 +210,8 @@ from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPG_DATABASE_READONLY_FEATURE_FLAG,
     GPG_HIDE_PERSON_KEY_LISTING,
-    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyNotFoundError,
     GPGReadOnly,
-    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -1707,8 +1705,13 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
         """
         if getFeatureFlag(GPG_HIDE_PERSON_KEY_LISTING):
             return False
-        return bool(self.context.gpg_keys) or (
+        return bool(self.gpg_keys) or (
             check_permission('launchpad.Edit', self.context))
+
+    @cachedproperty
+    def gpg_keys(self):
+        """A cached version of the users OpenPGP keys."""
+        return self.context.gpg_keys
 
     @cachedproperty
     def is_probationary_or_invalid_user(self):
@@ -2561,8 +2564,8 @@ class PersonGPGView(LaunchpadView):
             self.key_already_imported = True
             return
 
-        # Launchpad talks to the keyserver directly to check if the key has been
-        # uploaded to the key server.
+        # Launchpad talks to the keyserver directly to check if the key has
+        # been uploaded to the key server.
         try:
             key = gpghandler.retrieveKey(self.fingerprint)
         except GPGKeyNotFoundError:
@@ -4006,10 +4009,7 @@ class PersonEditTimeZoneView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        if self.context.time_zone is None:
-            return {}
-        else:
-            return dict(time_zone=self.context.time_zone)
+        return {'time_zone': self.context.time_zone}
 
     @property
     def next_url(self):

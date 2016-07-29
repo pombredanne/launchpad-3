@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,6 +17,10 @@ from lazr.restful.interfaces import IJSONRequestCache
 from pytz import UTC
 import simplejson
 import soupmatchers
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from testtools.matchers import (
     LessThan,
     Not,
@@ -27,6 +31,7 @@ from zope.component import (
     getUtility,
     )
 from zope.event import notify
+from zope.formlib.interfaces import ConversionError
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
@@ -1316,10 +1321,23 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
             view.form_fields['assignee'].field.vocabularyName)
 
 
-class TestBugTaskEditView(TestCaseWithFactory):
+class TestBugTaskEditView(WithScenarios, TestCaseWithFactory):
     """Test the bug task edit form."""
 
     layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ("spn_picker", {"features": {}, "allow_binarypackagename": True}),
+        ("dsp_picker", {
+            "features": {u"disclosure.dsp_picker.enabled": u"on"},
+            "allow_binarypackagename": False,
+            }),
+        ]
+
+    def setUp(self):
+        super(TestBugTaskEditView, self).setUp()
+        if self.features:
+            self.useFixture(FeatureFixture(self.features))
 
     def test_retarget_already_exists_error(self):
         user = self.factory.makePerson()
@@ -1448,6 +1466,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
     def test_retarget_sourcepackage_to_binary_name(self):
         # The sourcepackagename of a SourcePackage task can be changed
         # to a binarypackagename, which gets mapped back to the source.
+        # (This is not allowed for the DistributionSourcePackage picker,
+        # where the vocabulary takes care of doing an appropriate mapping.)
         ds = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(distroseries=ds)
         sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
@@ -1462,15 +1482,24 @@ class TestBugTaskEditView(TestCaseWithFactory):
 
         view = self.createNameChangingViewForSourcePackageTask(
             bug_task, bpr.binarypackagename.name)
-        self.assertEqual([], view.errors)
-        self.assertEqual(sp2, bug_task.target)
-        notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        expected = html_escape(
-            "'%s' is a binary package. This bug has been assigned to its "
-            "source package '%s' instead."
-            % (bpr.binarypackagename.name, spn.name))
-        self.assertTrue(notifications.pop().message.startswith(expected))
+        if self.allow_binarypackagename:
+            self.assertEqual([], view.errors)
+            self.assertEqual(sp2, bug_task.target)
+            notifications = view.request.response.notifications
+            self.assertEqual(1, len(notifications))
+            expected = html_escape(
+                "'%s' is a binary package. This bug has been assigned to its "
+                "source package '%s' instead." % (
+                    bpr.binarypackagename.name, spn.name))
+            self.assertTrue(notifications.pop().message.startswith(expected))
+        else:
+            self.assertEqual(1, len(view.errors))
+            self.assertIsInstance(view.errors[0], ConversionError)
+            self.assertEqual(
+                "Launchpad doesn't know of any source package named "
+                "'%s' in %s." % (
+                    bpr.binarypackagename.name, ds.distribution.display_name),
+                view.errors[0].error_name)
 
     def test_retarget_sourcepackage_to_distroseries(self):
         # A SourcePackage task can be changed to a DistroSeries one.
@@ -2536,3 +2565,6 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             bug.date_last_message = datetime(2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
+
+
+load_tests = load_tests_apply_scenarios

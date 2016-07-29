@@ -31,6 +31,6 @@ def snap_build_status_changed(snapbuild, event):
         getUtility(IWebhookSet).trigger(
             snapbuild.snap, "snap:build:0.1", payload)
 
-    if (snapbuild.snap.can_upload_to_store and
+    if (snapbuild.snap.can_upload_to_store and snapbuild.snap.store_upload and
             snapbuild.status == BuildStatus.FULLYBUILT):
         getUtility(ISnapStoreUploadJobSource).create(snapbuild)

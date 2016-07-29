@@ -684,6 +684,8 @@ def _build_query(params):
         return Exists(Select(1, tables=[XRef], where=And(*where)))
 
     if zope_isinstance(params.linked_branches, BaseItem):
+        # BUGS_WITH_BRANCHES/BUGS_WITHOUT_BRANCHES will find bugs with
+        # linked merge proposals too.
         if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
             extra_clauses.append(
                 Or(make_branch_clause(), make_merge_proposal_clause()))
@@ -697,7 +699,7 @@ def _build_query(params):
         # branch IDs.
         extra_clauses.append(make_branch_clause(params.linked_branches))
 
-    if zope_isinstance(params.linked_merge_proposals, (any, all, int)):
+    if params.linked_merge_proposals is not None:
         # This is normally only used internally by
         # BranchMergeProposal.getRelatedBugTasks.
         extra_clauses.append(

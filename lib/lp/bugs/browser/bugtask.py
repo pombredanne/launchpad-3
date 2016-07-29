@@ -1079,11 +1079,30 @@ class BugTaskPrivilegeMixin:
         return self.context.userHasBugSupervisorPrivileges(self.user)
 
 
+class IBugTaskEditForm(IBugTask):
+
+    sourcepackagename = copy_field(
+        IBugTask['sourcepackagename'],
+        vocabularyName='DistributionSourcePackage')
+
+
 class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
                       BugTaskPrivilegeMixin):
     """The view class used for the task +editstatus page."""
 
-    schema = IBugTask
+    @property
+    def schema(self):
+        """See `LaunchpadFormView`."""
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return IBugTaskEditForm
+        else:
+            return IBugTask
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`."""
+        return {IBugTaskEditForm: self.context}
+
     milestone_source = None
     user_is_subscribed = None
     edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
@@ -1330,8 +1349,12 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
     def validate(self, data):
         if self.show_sourcepackagename_widget and 'sourcepackagename' in data:
             data['target'] = self.context.distroseries
-            spn = data.get('sourcepackagename')
-            if spn:
+            spn_or_dsp = data.get('sourcepackagename')
+            if spn_or_dsp:
+                if IDistributionSourcePackage.providedBy(spn_or_dsp):
+                    spn = spn_or_dsp.sourcepackagename
+                else:
+                    spn = spn_or_dsp
                 data['target'] = data['target'].getSourcePackage(spn)
             del data['sourcepackagename']
             error_field = 'sourcepackagename'

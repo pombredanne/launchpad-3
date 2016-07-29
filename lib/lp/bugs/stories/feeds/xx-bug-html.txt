@@ -92,6 +92,33 @@ as the latest bugs feed for a product.
     >>> get_bug_numbers(entries)
     [15, 15, 9, 9, 5, 5, 5, 4, 1, 1, 1]
 
+=== Private teams as assignees ===
+
+Create a private team and assign a mozilla bug to that team.
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import PersonVisibility
+
+    >>> login('foo.bar@canonical.com')
+    >>> priv_team = factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> print bug.title
+    Firefox does not support SVG
+    >>> print len(bug.bugtasks)
+    3
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> bugtask = removeSecurityProxy(bug.bugtasks[1])
+    >>> bugtask.assignee = priv_team
+    >>> logout()
+
+Get the mozilla/latest-bugs feed. The previous bug should be included.
+
+    >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html?'
+    ...              'show_column=bugtargetdisplayname')
+    >>> entries = parse_entries(browser.contents)
+    >>> get_bug_numbers(entries)
+    [15, 15, 9, 9, 5, 5, 5, 4, 1, 1, 1]
 
 == Latest bugs for a person ==
 

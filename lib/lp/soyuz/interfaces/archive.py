@@ -20,6 +20,7 @@ __all__ = [
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'CannotUploadToSeries',
+    'DuplicateTokenName',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAdmin',
@@ -38,6 +39,8 @@ __all__ = [
     'InvalidPocketForPPA',
     'IPPA',
     'MAIN_ARCHIVE_PURPOSES',
+    'NAMED_AUTH_TOKEN_FEATURE_FLAG',
+    'NamedAuthTokenFeatureDisabled',
     'NoRightsForArchive',
     'NoRightsForComponent',
     'NoSuchPPA',
@@ -92,6 +95,7 @@ from zope.schema import (
     Text,
     TextLine,
     )
+from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.app.errors import NameLookupFailed
@@ -109,6 +113,9 @@ from lp.services.fields import (
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent
+
+
+NAMED_AUTH_TOKEN_FEATURE_FLAG = u"soyuz.named_auth_token.allow_new"
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -310,6 +317,21 @@ class CannotModifyArchiveProcessor(Exception):
     def __init__(self, processor):
         super(CannotModifyArchiveProcessor, self).__init__(
             self._fmt % {'processor': processor.name})
+
+
+@error_status(httplib.CONFLICT)
+class DuplicateTokenName(Exception):
+    """Raised when creating a named token and an active token for this archive
+     with this name already exists."""
+
+
+@error_status(httplib.UNAUTHORIZED)
+class NamedAuthTokenFeatureDisabled(Unauthorized):
+    """Only certain users can create named authorization tokens."""
+
+    def __init__(self):
+        super(NamedAuthTokenFeatureDisabled, self).__init__(
+            "You do not have permission to create named authorization tokens")
 
 
 class IArchivePublic(IPrivacy, IHasOwner):
@@ -526,12 +548,12 @@ class IArchiveSubscriberView(Interface):
         """
 
     def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
+        """Create a new authorization token.
 
-        :param person: An IPerson whom this token is for
+        :param person: An IPerson whom this token is for.
         :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
+            generated if not given.
+        :param date_created: Optional, defaults to now.
 
         :return: A new IArchiveAuthToken
         """
@@ -1324,7 +1346,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getQueueAdminsForComponent(component_name):
-        """Return `IArchivePermission` records for authorised queue admins.
+        """Return `IArchivePermission` records for authorized queue admins.
 
         :param component_name: An `IComponent` or textual name for the
             component.
@@ -1377,7 +1399,7 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     @operation_for_version("devel")
     def getQueueAdminsForPocket(pocket, distroseries=None):
-        """Return `IArchivePermission` records for authorised queue admins.
+        """Return `IArchivePermission` records for authorized queue admins.
 
         :param pocket: A `PackagePublishingPocket`.
         :param distroseries: An optional `IDistroSeries`.
@@ -2062,6 +2084,7 @@ class IArchiveEdit(Interface):
         :return: a `IArchiveDependency` object targeted to the context
             `IArchive` requiring 'dependency' `IArchive`.
         """
+
     @operation_parameters(
         dependency=Reference(schema=Interface, required=True),
         # Really IArchive
@@ -2072,6 +2095,110 @@ class IArchiveEdit(Interface):
         """Remove the `IArchiveDependency` record for the given dependency.
 
         :param dependency: is an `IArchive` object.
+        """
+
+    @call_with(as_dict=True)
+    @operation_parameters(
+        name=TextLine(title=_("Authorization token name"), required=True),
+        token=TextLine(
+            title=_("Optional secret for this named token"), required=False))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def newNamedAuthToken(name, token=None, as_dict=False):
+        """Create a new named authorization token.
+
+        :param name: An identifier string for this token.
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a dictionary or a full object.
+
+        :return: An `ArchiveAuthToken` object or a dictionary where the value
+            of `token` is the secret and the value of `archive_url` is the
+            externally-usable archive URL including basic auth.
+        """
+
+    @call_with(as_dict=True)
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def newNamedAuthTokens(names, as_dict=False):
+        """Create named authorization tokens in bulk.
+
+        :param names: A list of token names.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a list of dictionaries or a list of full objects.
+
+        :return: A list of `ArchiveAuthToken` objects or a dictionary of
+            {name: {token, archive_url} where `name` is a token name,
+            `token` is the secret and `archive_url` is the externally-usable
+            archive URL including basic auth.
+        """
+
+    @call_with(as_dict=True)
+    @operation_parameters(
+        name=TextLine(title=_("Authorization token name"), required=True))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getNamedAuthToken(name, as_dict=False):
+        """Return a named authorization token for the given name in this
+         archive.
+
+        :param name: The identifier string for a token.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a dictionary or a full object.
+
+        :return: An `ArchiveAuthToken` object or a dictionary where the value
+            of `token` is the secret and the value of `archive_url` is the
+            externally-usable archive URL including basic auth.
+        :raises NotFoundError: if no matching token could be found.
+        """
+
+    @call_with(as_dict=True)
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=False))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getNamedAuthTokens(names=None, as_dict=False):
+        """Return a subset of active named authorization tokens for this
+        archive if `names` is specified, or all active named authorization
+        tokens for this archive is `names` is null.
+
+        :param names: An optional list of token names.
+        :param as_dict: Optional boolean, controls whether the return value is
+            a list of dictionares or a list of full objects.
+
+        :return: A list of `ArchiveAuthToken` objects or a list of dictionaries
+            where `token` is the secret and `archive_url` is the
+            externally-usable archive URL including basic auth.
+        """
+
+    @operation_parameters(
+        name=TextLine(title=_("Authorization token name"), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def revokeNamedAuthToken(name):
+        """Deactivate a named authorization token.
+
+        :param name: The identifier string for a token.
+        :raises NotFoundError: if no matching token could be found.
+        """
+
+    @operation_parameters(
+        names=List(
+            title=_("Authorization token names"),
+            value_type=TextLine(), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def revokeNamedAuthTokens(names):
+        """Deactivate named authorization tokens in bulk.
+
+        :param names: A list of token names.
         """
 
 

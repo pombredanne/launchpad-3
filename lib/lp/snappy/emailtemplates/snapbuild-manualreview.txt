@@ -1,0 +1,5 @@
+This snap package could not be released automatically because it was held
+for manual review.  Once it has been approved, you will need to release it
+manually from here:
+
+  %(store_url)s

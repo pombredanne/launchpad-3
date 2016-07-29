@@ -139,13 +139,13 @@
         <a tal:replace="structure overview_menu/editpgpkeys/fmt:icon" />
       </dt>
       <dd>
-        <tal:keys repeat="key context/gpg_keys">
+        <tal:keys repeat="key view/gpg_keys">
           <a tal:attributes="href key/keyserverURL"
              tal:omit-tag="not: request/lp:person">
             <tal:keyid replace="key/keyid"
               /></a><span tal:condition="not: repeat/key/end">,</span>
         </tal:keys>
-        <div tal:condition="not: context/gpg_keys">
+        <div tal:condition="not: view/gpg_keys">
           No OpenPGP keys registered.
         </div>
       </dd>
@@ -177,7 +177,7 @@
       </dd>
     </dl>
 
-    <dl id="timezone" tal:condition="context/time_zone">
+    <dl id="timezone">
       <dt>Time zone:
         <a tal:replace="structure overview_menu/editlocation/fmt:icon" />
       </dt>

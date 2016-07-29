@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,18 +7,23 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
+from zope.component import getUtility
 from zope.formlib.interfaces import (
     IBrowserWidget,
     IInputWidget,
     WidgetInputError,
     )
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
-from lp.snappy.interfaces.snap import SNAP_FEATURE_FLAG
+from lp.snappy.interfaces.snap import ISnap
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.vocabularies import PPAVocabulary
@@ -29,16 +34,34 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestSnapArchiveWidget(TestCaseWithFactory):
+def make_snap(test_case):
+    return test_case.factory.makeSnap(distroseries=test_case.distroseries)
+
+
+def make_branch(test_case):
+    return test_case.factory.makeAnyBranch()
+
+
+def make_git_repository(test_case):
+    return test_case.factory.makeGitRepository()
+
+
+class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    scenarios = [
+        ("Snap", {"context_factory": make_snap}),
+        ("Branch", {"context_factory": make_branch}),
+        ("GitRepository", {"context_factory": make_git_repository}),
+        ]
+
     def setUp(self):
         super(TestSnapArchiveWidget, self).setUp()
-        self.useFixture(FeatureFixture({SNAP_FEATURE_FLAG: u"on"}))
+        self.distroseries = self.factory.makeDistroSeries()
         field = Reference(
             __name__="archive", schema=IArchive, title=u"Archive")
-        self.context = self.factory.makeSnap()
+        self.context = self.context_factory(self)
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
         self.widget = SnapArchiveWidget(field, request)
@@ -130,7 +153,7 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         # Passing a primary archive will set the widget's render state to
         # 'primary'.
         self.widget.setUpSubWidgets()
-        self.widget.setRenderedValue(self.context.distro_series.main_archive)
+        self.widget.setRenderedValue(self.distroseries.main_archive)
         self.assertEqual("primary", self.widget.default_option)
         self.assertIsNone(self.widget.ppa_widget._getCurrentValue())
 
@@ -139,10 +162,10 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         # 'primary', even if it was initially something else.
         self.widget.setUpSubWidgets()
         archive = self.factory.makeArchive(
-            distribution=self.context.distro_series.distribution,
+            distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PPA)
         self.widget.setRenderedValue(archive)
-        self.widget.setRenderedValue(self.context.distro_series.main_archive)
+        self.widget.setRenderedValue(self.distroseries.main_archive)
         self.assertEqual("primary", self.widget.default_option)
         self.assertIsNone(self.widget.ppa_widget._getCurrentValue())
 
@@ -150,7 +173,7 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         # Passing a person will set the widget's render state to 'personal'.
         self.widget.setUpSubWidgets()
         archive = self.factory.makeArchive(
-            distribution=self.context.distro_series.distribution,
+            distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PPA)
         self.widget.setRenderedValue(archive)
         self.assertEqual("ppa", self.widget.default_option)
@@ -194,13 +217,17 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
         self.assertEqual(html_escape(message), self.widget.error())
 
     def test_getInputValue_primary(self):
-        # The field value is the context's primary archive when the primary
-        # radio button is selected.
+        # When the primary radio button is selected, the field value is the
+        # context's primary archive if the context is a Snap, or the Ubuntu
+        # primary archive otherwise.
         self.widget.request = LaunchpadTestRequest(
             form={"field.archive": "primary"})
-        self.assertEqual(
-            self.context.distro_series.main_archive,
-            self.widget.getInputValue())
+        if ISnap.providedBy(self.context):
+            expected_main_archive = self.distroseries.main_archive
+        else:
+            expected_main_archive = (
+                getUtility(ILaunchpadCelebrities).ubuntu.main_archive)
+        self.assertEqual(expected_main_archive, self.widget.getInputValue())
 
     def test_getInputValue_ppa_missing(self):
         # An error is raised when the ppa field is missing.
@@ -243,3 +270,6 @@ class TestSnapArchiveWidget(TestCaseWithFactory):
             ]
         ids = [field["id"] for field in fields]
         self.assertContentEqual(expected_ids, ids)
+
+
+load_tests = load_tests_apply_scenarios

@@ -181,7 +181,6 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.gpg import IGPGKeySet
-from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -224,6 +223,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
@@ -4630,10 +4630,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             active, secret)
 
     def makeSnap(self, registrant=None, owner=None, distroseries=None,
-                 name=None, branch=None, git_ref=None,
-                 require_virtualized=True, processors=None,
+                 name=None, branch=None, git_ref=None, auto_build=False,
+                 auto_build_archive=None, auto_build_pocket=None,
+                 is_stale=None, require_virtualized=True, processors=None,
                  date_created=DEFAULT, private=False, store_upload=False,
-                 store_series=None, store_name=None, store_secrets=None):
+                 store_series=None, store_name=None, store_secrets=None,
+                 store_channels=None):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4645,13 +4647,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString(u"snap-name")
         if branch is None and git_ref is None:
             branch = self.makeAnyBranch()
+        if auto_build:
+            if auto_build_archive is None:
+                auto_build_archive = self.makeArchive(
+                    distribution=distroseries.distribution, owner=owner)
+            if auto_build_pocket is None:
+                auto_build_pocket = PackagePublishingPocket.UPDATES
         snap = getUtility(ISnapSet).new(
             registrant, owner, distroseries, name,
             require_virtualized=require_virtualized, processors=processors,
             date_created=date_created, branch=branch, git_ref=git_ref,
-            private=private, store_upload=store_upload,
-            store_series=store_series, store_name=store_name,
-            store_secrets=store_secrets)
+            auto_build=auto_build, auto_build_archive=auto_build_archive,
+            auto_build_pocket=auto_build_pocket, private=private,
+            store_upload=store_upload, store_series=store_series,
+            store_name=store_name, store_secrets=store_secrets,
+            store_channels=store_channels)
+        if is_stale is not None:
+            removeSecurityProxy(snap).is_stale = is_stale
         IStore(snap).flush()
         return snap
 

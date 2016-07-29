@@ -32,17 +32,17 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
-from lp.snappy.interfaces.snap import (
-    SNAP_TESTING_FLAGS,
-    SnapFeatureDisabled,
-    )
+from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapbuild import (
+    CannotScheduleStoreUpload,
     ISnapBuild,
     ISnapBuildSet,
     )
+from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
@@ -59,21 +59,6 @@ from lp.testing.layers import (
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.pages import webservice_for_person
-
-
-class TestSnapBuildFeatureFlag(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_feature_flag_disabled(self):
-        # Without a feature flag, we will not create new SnapBuilds.
-        class MockSnap:
-            require_virtualized = False
-
-        self.assertRaises(
-            SnapFeatureDisabled, getUtility(ISnapBuildSet).new,
-            None, MockSnap(), self.factory.makeArchive(),
-            self.factory.makeDistroArchSeries(), None)
 
 
 expected_body = """\
@@ -354,6 +339,87 @@ class TestSnapBuild(TestCaseWithFactory):
         self.assertTrue(self.build.estimate)
         self.build.updateStatus(BuildStatus.FULLYBUILT)
         self.assertFalse(self.build.estimate)
+
+    def setUpStoreUpload(self):
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
+        self.build.snap.store_series = self.factory.makeSnappySeries(
+            usable_distro_series=[self.build.snap.distro_series])
+        self.build.snap.store_name = self.factory.getUniqueUnicode()
+        self.build.snap.store_secrets = {
+            "root": "dummy-root", "discharge": "dummy-discharge"}
+
+    def test_scheduleStoreUpload(self):
+        # A build not previously uploaded to the store can be uploaded
+        # manually.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        self.build.scheduleStoreUpload()
+        [job] = getUtility(ISnapStoreUploadJobSource).iterReady()
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertEqual(self.build, job.snapbuild)
+
+    def test_scheduleStoreUpload_not_configured(self):
+        # A build that is not properly configured cannot be uploaded to the
+        # store.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.build.snap.store_name = None
+        self.assertRaisesWithContent(
+            CannotScheduleStoreUpload,
+            "Cannot upload this package to the store because it is not "
+            "properly configured.",
+            self.build.scheduleStoreUpload)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+
+    def test_scheduleStoreUpload_no_files(self):
+        # A build with no files cannot be uploaded to the store.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertRaisesWithContent(
+            CannotScheduleStoreUpload,
+            "Cannot upload this package because it has no files.",
+            self.build.scheduleStoreUpload)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+
+    def test_scheduleStoreUpload_already_in_progress(self):
+        # A build with an upload already in progress will not have another
+        # one created.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        old_job = getUtility(ISnapStoreUploadJobSource).create(self.build)
+        self.assertRaisesWithContent(
+            CannotScheduleStoreUpload,
+            "An upload of this package is already in progress.",
+            self.build.scheduleStoreUpload)
+        self.assertEqual(
+            [old_job], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+
+    def test_scheduleStoreUpload_already_uploaded(self):
+        # A build with an upload that has already completed will not have
+        # another one created.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        old_job = getUtility(ISnapStoreUploadJobSource).create(self.build)
+        removeSecurityProxy(old_job).job._status = JobStatus.COMPLETED
+        self.assertRaisesWithContent(
+            CannotScheduleStoreUpload,
+            "Cannot upload this package because it has already been uploaded.",
+            self.build.scheduleStoreUpload)
+        self.assertEqual(
+            [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
 
 
 class TestSnapBuildSet(TestCaseWithFactory):

@@ -3197,6 +3197,11 @@ class AdminSnapBuild(AdminByBuilddAdmin):
     usedfor = ISnapBuild
 
 
+class ViewSnappySeries(AnonymousAuthorization):
+    """Anyone can view an `ISnappySeries`."""
+    usedfor = ISnappySeries
+
+
 class EditSnappySeries(EditByRegistryExpertsOrAdmins):
     usedfor = ISnappySeries
 

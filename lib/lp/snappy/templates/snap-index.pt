@@ -61,6 +61,31 @@
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
+
+      <dl id="auto_build">
+        <dt>Build schedule:
+          <a href="/+help-snappy/snap-build-frequency.html" target="help"
+             class="sprite maybe action-icon">(?)</a>
+        </dt>
+        <dd>
+          <span tal:replace="view/build_frequency"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
+      <dl id="auto_build_archive">
+        <dt>Source archive for automatic builds:</dt>
+        <dd>
+          <a tal:replace="structure context/auto_build_archive/fmt:link"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
+      <dl id="auto_build_pocket">
+        <dt>Pocket for automatic builds:</dt>
+        <dd>
+          <span tal:replace="context/auto_build_pocket/title|nothing"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
     </div>
 
     <div id="store_upload" class="two-column-list"
@@ -68,7 +93,7 @@
       <dl id="store_series">
         <dt>Store series:</dt>
         <dd>
-          <a tal:replace="structure context/store_series/fmt:link"/>
+          <span tal:content="context/store_series/title"/>
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
@@ -79,6 +104,16 @@
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
+      <dl id="store_channels" tal:condition="view/store_channels">
+        <dt>Store channels:</dt>
+        <dd>
+          <span tal:content="view/store_channels"/>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
+      <p id="store_channels" tal:condition="not: context/store_channels">
+        This snap package will not be released to any channels on the store.
+      </p>
     </div>
     <p id="store_upload" tal:condition="not: context/store_upload">
       Builds of this snap package are not automatically uploaded to the store.

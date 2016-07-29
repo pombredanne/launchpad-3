@@ -40,6 +40,7 @@ requires manual set up of a bug archive mirror.
     Savane
     PHP Project Bugtracker
     Google Code
+    GitHub Issues
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.

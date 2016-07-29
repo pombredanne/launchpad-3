@@ -48,24 +48,22 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.features import getFeatureFlag
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.snappy.interfaces.snap import (
-    ISnapSet,
-    SNAP_FEATURE_FLAG,
-    SnapFeatureDisabled,
-    )
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import (
+    CannotScheduleStoreUpload,
     ISnapBuild,
     ISnapBuildSet,
     ISnapBuildStatusChangedEvent,
     ISnapFile,
     )
+from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.snappy.mail.snapbuild import SnapBuildMailer
 from lp.snappy.model.snapbuildjob import (
     SnapBuildJob,
@@ -160,8 +158,6 @@ class SnapBuild(PackageBuildMixin, Storm):
                  distro_arch_series, pocket, processor, virtualized,
                  date_created):
         """Construct a `SnapBuild`."""
-        if not getFeatureFlag(SNAP_FEATURE_FLAG):
-            raise SnapFeatureDisabled
         super(SnapBuild, self).__init__()
         self.build_farm_job = build_farm_job
         self.requester = requester
@@ -398,6 +394,26 @@ class SnapBuild(PackageBuildMixin, Storm):
 
         return DecoratedResultSet(
             jobs, lambda job: job.makeDerived(), pre_iter_hook=preload_jobs)
+
+    def scheduleStoreUpload(self):
+        """See `ISnapBuild`."""
+        if not self.snap.can_upload_to_store:
+            raise CannotScheduleStoreUpload(
+                "Cannot upload this package to the store because it is not "
+                "properly configured.")
+        if not self.was_built or self.getFiles().is_empty():
+            raise CannotScheduleStoreUpload(
+                "Cannot upload this package because it has no files.")
+        job = self.store_upload_jobs.first()
+        if job is not None:
+            if job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
+                raise CannotScheduleStoreUpload(
+                    "An upload of this package is already in progress.")
+            if job.job.status == JobStatus.COMPLETED:
+                raise CannotScheduleStoreUpload(
+                    "Cannot upload this package because it has already "
+                    "been uploaded.")
+        getUtility(ISnapStoreUploadJobSource).create(self)
 
 
 @implementer(ISnapBuildSet)

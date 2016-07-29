@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -53,8 +53,8 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
+    DistributionSourcePackagePickerWidget,
     PersonPickerWidget,
-    VocabularyPickerWidget,
     )
 from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
@@ -67,6 +67,7 @@ from lp.bugs.interfaces.bugwatch import (
     )
 from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
@@ -477,11 +478,16 @@ class BugTaskTargetWidget(LaunchpadTargetWidget):
         return vocabulary
 
 
-class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
+class BugTaskSourcePackageNameWidget(DistributionSourcePackagePickerWidget):
     """A widget for associating a bugtask with a SourcePackageName.
 
     It accepts both binary and source package names.
     """
+
+    # Pages that use this widget don't display the distribution, but this
+    # can only be used by bugtasks on the distribution in question so the
+    # vocabulary will be able to work it out for itself.
+    distribution_id = ''
 
     def __init__(self, field, vocabulary, request):
         super(BugTaskSourcePackageNameWidget, self).__init__(
@@ -510,6 +516,16 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
         cached_value = self.cached_values.get(input)
         if cached_value:
             return cached_value
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            try:
+                self.context.vocabulary.setDistribution(distribution)
+                return self.context.vocabulary.getTermByToken(input).value
+            except LookupError:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+        # Else the untrusted SPN vocab was used so it needs secondary
+        # verification.
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
@@ -531,6 +547,8 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
     except that it gets the distribution from the request.
     """
 
+    distribution_id = 'field.distribution'
+
     def getDistribution(self):
         """See `BugTaskSourcePackageNameWidget`"""
         distribution_name = self.request.form.get('field.distribution')
@@ -547,6 +565,8 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
 
 class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
     """A widget to select Ubuntu packages."""
+
+    distribution_name = 'ubuntu'
 
     def getDistribution(self):
         """See `BugTaskSourcePackageNameWidget`"""

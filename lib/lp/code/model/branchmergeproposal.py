@@ -424,7 +424,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             # this would require a complicated data migration.
             return self.source_branch.unlinkBug(bug, user)
         else:
-            # Otherwise, link the bug to the merge proposal directly.
+            # Otherwise, unlink the bug from the merge proposal directly.
             return super(BranchMergeProposal, self).unlinkBug(
                 bug, user=user, check_permissions=check_permissions)
 
