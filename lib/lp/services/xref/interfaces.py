@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import, print_function, unicode_literals
@@ -28,8 +28,9 @@ class IXRefSet(Interface):
 
         :param xrefs: A dict of
             {from_object_id: {to_object_id:
-                {'creator': `IPerson`, 'metadata': value}}}.
-            The creator and metadata keys are optional.
+                {'creator': `IPerson`, 'date_created': `datetime`,
+                 'metadata': value}}}.
+            The creator, date_created, and metadata keys are optional.
         """
 
     def findFromMany(object_ids, types=None):
@@ -39,8 +40,9 @@ class IXRefSet(Interface):
         :param types: An optional collection of the types to include.
         :return: A dict of
             {from_object_id: {to_object_id:
-                {'creator': `IPerson`, 'metadata': value}}}.
-            The creator and metadata keys are optional.
+                {'creator': `IPerson`, 'date_created': `datetime`,
+                 'metadata': value}}}.
+            The creator, date_created, and metadata keys are optional.
         """
 
     def delete(xrefs):
@@ -57,6 +59,8 @@ class IXRefSet(Interface):
         :param object_id: An object ID.
         :param types: An optional collection of the types to include.
         :return: A dict of
-            {to_object_id: {'creator': `IPerson`, 'metadata': value}}.
-            The creator and metadata keys are optional.
+            {to_object_id:
+                {'creator': `IPerson`, 'date_created': `datetime`,
+                 'metadata': value}}.
+            The creator, date_created, and metadata keys are optional.
         """

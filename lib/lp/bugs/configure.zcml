@@ -718,7 +718,9 @@
                 attributes="
                     linked_branches
                     linked_bugbranches
-                    getVisibleLinkedBranches"/>
+                    getVisibleLinkedBranches
+                    linked_merge_proposals
+                    getVisibleLinkedMergeProposals"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.bugs.interfaces.bug.IBugEdit"
