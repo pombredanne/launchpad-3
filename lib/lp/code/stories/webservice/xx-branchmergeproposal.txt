@@ -47,6 +47,8 @@ Branch merge proposals can be created through the API.
     address: u'mp+...@code.launchpad.dev'
     all_comments_collection_link:
         u'http://api.launchpad.dev/devel/~.../+merge/.../all_comments'
+    bugs_collection_link:
+        u'http://api.launchpad.dev/devel/~.../+merge/.../bugs'
     commit_message: u'It was merged!\n'
     date_created: u'...'
     date_merged: None
@@ -148,7 +150,9 @@ We use the webservice as an unrelated, unprivileged user.
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
     >>> pprint_entry(merge_proposal)
     address: u'mp+...@code.launchpad.dev'
-    all_comments_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../all_comments'
+    all_comments_collection_link:
+        u'http://.../~source/fooix/fix-it/+merge/.../all_comments'
+    bugs_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../bugs'
     commit_message: None
     date_created: ...
     date_merged: None

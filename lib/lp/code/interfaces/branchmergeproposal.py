@@ -67,6 +67,7 @@ from zope.schema import (
 
 from lp import _
 from lp.app.interfaces.launchpad import IPrivacy
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -627,7 +628,7 @@ class IBranchMergeProposalEdit(Interface):
         """
 
 
-class IBranchMergeProposalAnyAllowedPerson(Interface):
+class IBranchMergeProposalAnyAllowedPerson(IBugLinkTarget):
 
     @operation_parameters(
         subject=Text(), content=Text(),

@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from email.utils import make_msgid
+from operator import attrgetter
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
@@ -42,6 +43,7 @@ from zope.event import notify
 from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -172,7 +174,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
 
 
 @implementer(IBranchMergeProposal, IHasBranchTarget)
-class BranchMergeProposal(SQLBase):
+class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
     """A relationship between a person and a branch."""
 
     _table = 'BranchMergeProposal'
@@ -354,19 +356,51 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
+    @property
+    def bugs(self):
+        if self.source_branch is not None:
+            # For Bazaar, we currently only store bug/branch links.
+            bugs = self.source_branch.linked_bugs
+        else:
+            # XXX cjwatson 2016-06-24: Implement for Git.
+            bugs = []
+        return list(sorted(bugs, key=attrgetter('id')))
+
     def getRelatedBugTasks(self, user):
         """Bug tasks which are linked to the source but not the target.
 
         Implies that these would be fixed, in the target, by the merge.
         """
-        if self.source_branch is None:
-            # XXX cjwatson 2015-04-16: Implement once Git refs have linked
-            # bug tasks.
+        if self.source_branch is not None:
+            source_tasks = self.source_branch.getLinkedBugTasks(user)
+            target_tasks = self.target_branch.getLinkedBugTasks(user)
+            return [bugtask
+                for bugtask in source_tasks if bugtask not in target_tasks]
+        else:
+            # XXX cjwatson 2016-06-24: Implement for Git.
             return []
-        source_tasks = self.source_branch.getLinkedBugTasks(user)
-        target_tasks = self.target_branch.getLinkedBugTasks(user)
-        return [bugtask
-            for bugtask in source_tasks if bugtask not in target_tasks]
+
+    def linkBug(self, bug, user=None, check_permissions=True):
+        """See `BugLinkTargetMixin`."""
+        if self.source_branch is not None:
+            # For Bazaar, we currently only store bug/branch links.
+            return self.source_branch.linkBug(bug, user)
+        else:
+            # XXX cjwatson 2016-06-24: Implement for Git.
+            raise NotImplementedError
+
+    def unlinkBug(self, bug, user=None, check_permissions=True):
+        """See `BugLinkTargetMixin`."""
+        if self.source_branch is not None:
+            # For Bazaar, we currently only store bug/branch links.
+            # XXX cjwatson 2016-06-11: This may behave strangely in some
+            # cases: if a branch is the source for multiple merge proposals,
+            # then unlinking a bug from one will unlink them all.  Fixing
+            # this would require a complicated data migration.
+            return self.source_branch.unlinkBug(bug, user)
+        else:
+            # XXX cjwatson 2016-06-24: Implement for Git.
+            raise NotImplementedError
 
     @property
     def address(self):
@@ -385,9 +419,12 @@ class BranchMergeProposal(SQLBase):
     @property
     def target(self):
         """See `IHasBranchTarget`."""
-        # XXX cjwatson 2015-04-12: This is not an IBranchTarget for Git,
-        # although it has similar semantics.
-        return self.merge_source.target
+        if self.source_branch is not None:
+            return self.source_branch.target
+        else:
+            # XXX cjwatson 2015-04-12: This is not an IBranchTarget for Git,
+            # although it has similar semantics.
+            return self.source_git_repository.namespace
 
     root_message_id = StringCol(default=None)
 
