@@ -3,6 +3,12 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
+ <tal:comment condition="nothing">
+   The bug-summary macro in
+   lib/lp/code/templates/branchmergeproposal-macros.pt has similar code for
+   Git.
+ </tal:comment>
+
  <div class="bug-branch-summary"
       tal:define="bug_branch context;
                   branch bug_branch/branch;
