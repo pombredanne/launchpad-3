@@ -86,6 +86,9 @@
         for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.karma.branch_linked"/>
     <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+        handler="lp.bugs.subscribers.karma.merge_proposal_linked"/>
+    <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
     <subscriber
@@ -829,6 +832,12 @@
     <subscriber
         for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_unlinked_from_bug"/>
+    <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+        handler="lp.bugs.subscribers.bugactivity.record_merge_proposal_linked_to_bug"/>
+    <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
+        handler="lp.bugs.subscribers.bugactivity.record_merge_proposal_unlinked_from_bug"/>
     <subscriber
         for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_added"/>

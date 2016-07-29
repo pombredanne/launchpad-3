@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions related to sending bug notifications."""
@@ -65,7 +65,8 @@ def get_activity_key(notification):
         key = activity.attribute
         if activity.target is not None:
             key = ':'.join((activity.target, key))
-        if key in ('attachments', 'watches', 'cves', 'linked_branches'):
+        if key in ('attachments', 'watches', 'cves', 'linked_branches',
+                   'linked_merge_proposals'):
             # We are intentionally leaving bug task bugwatches out of this
             # list, so we use the key rather than the activity.attribute.
             if activity.oldvalue is not None:

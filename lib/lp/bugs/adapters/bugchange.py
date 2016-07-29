@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations for bug changes."""
@@ -9,16 +9,10 @@ __all__ = [
     'ATTACHMENT_REMOVED',
     'BRANCH_LINKED',
     'BRANCH_UNLINKED',
-    'BUG_WATCH_ADDED',
-    'BUG_WATCH_REMOVED',
-    'CHANGED_DUPLICATE_MARKER',
-    'CVE_LINKED',
-    'CVE_UNLINKED',
-    'MARKED_AS_DUPLICATE',
-    'REMOVED_DUPLICATE_MARKER',
-    'REMOVED_SUBSCRIBER',
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
+    'BUG_WATCH_ADDED',
+    'BUG_WATCH_REMOVED',
     'BugAttachmentChange',
     'BugConvertedToQuestion',
     'BugDescriptionChange',
@@ -36,12 +30,22 @@ __all__ = [
     'BugTitleChange',
     'BugWatchAdded',
     'BugWatchRemoved',
+    'CHANGED_DUPLICATE_MARKER',
+    'CVE_LINKED',
+    'CVE_UNLINKED',
     'CveLinkedToBug',
     'CveUnlinkedFromBug',
-    'SeriesNominated',
-    'UnsubscribedFromBug',
     'get_bug_change_class',
     'get_bug_changes',
+    'MARKED_AS_DUPLICATE',
+    'MERGE_PROPOSAL_LINKED',
+    'MERGE_PROPOSAL_UNLINKED',
+    'MergeProposalLinkedToBug',
+    'MergeProposalUnlinkedFromBug',
+    'REMOVED_DUPLICATE_MARKER',
+    'REMOVED_SUBSCRIBER',
+    'SeriesNominated',
+    'UnsubscribedFromBug',
     ]
 
 from textwrap import dedent
@@ -73,6 +77,8 @@ CHANGED_DUPLICATE_MARKER = 'changed duplicate marker'
 CVE_LINKED = 'cve linked'
 CVE_UNLINKED = 'cve unlinked'
 MARKED_AS_DUPLICATE = 'marked as duplicate'
+MERGE_PROPOSAL_LINKED = 'merge proposal linked'
+MERGE_PROPOSAL_UNLINKED = 'merge proposal unlinked'
 REMOVED_DUPLICATE_MARKER = 'removed duplicate marker'
 REMOVED_SUBSCRIBER = 'removed subscriber'
 
@@ -393,6 +399,60 @@ class BranchUnlinkedFromBug(BugChangeBase):
         if self.branch.private or self.bug.is_complete:
             return None
         return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
+
+
+class MergeProposalLinkedToBug(BugChangeBase):
+    """A merge proposal got linked to the bug."""
+
+    def __init__(self, when, person, merge_proposal, bug):
+        super(MergeProposalLinkedToBug, self).__init__(when, person)
+        self.merge_proposal = merge_proposal
+        self.bug = bug
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        if self.merge_proposal.private:
+            return None
+        return dict(
+            whatchanged=MERGE_PROPOSAL_LINKED,
+            newvalue=canonical_url(self.merge_proposal))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        if self.merge_proposal.private or self.bug.is_complete:
+            return None
+        return {
+            'text': (
+                '** Merge proposal linked:\n'
+                '   %s' % canonical_url(self.merge_proposal)),
+            }
+
+
+class MergeProposalUnlinkedFromBug(BugChangeBase):
+    """A merge proposal got unlinked from the bug."""
+
+    def __init__(self, when, person, merge_proposal, bug):
+        super(MergeProposalUnlinkedFromBug, self).__init__(when, person)
+        self.merge_proposal = merge_proposal
+        self.bug = bug
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        if self.merge_proposal.private:
+            return None
+        return dict(
+            whatchanged=MERGE_PROPOSAL_UNLINKED,
+            oldvalue=canonical_url(self.merge_proposal))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        if self.merge_proposal.private or self.bug.is_complete:
+            return None
+        return {
+            'text': (
+                '** Merge proposal unlinked:\n'
+                '   %s' % canonical_url(self.merge_proposal)),
+            }
 
 
 class BugDescriptionChange(AttributeChange):
