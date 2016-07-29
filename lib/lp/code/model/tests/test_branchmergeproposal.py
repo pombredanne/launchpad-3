@@ -1400,7 +1400,7 @@ class TestBranchMergeProposalBugsMixin:
 
     def test_related_bugtasks_includes_source_bugtasks(self):
         # related_bugtasks includes bugtasks linked to the source branch in
-        # the Bazaar case.
+        # the Bazaar case, or directly to the MP in the Git case.
         bmp = self._makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.linkBug(bug, bmp.registrant)
@@ -1446,6 +1446,22 @@ class TestBranchMergeProposalBugsBzr(
         bmp.source_branch.linkBug(bug, bmp.registrant)
         bmp.target_branch.linkBug(bug, bmp.registrant)
         self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+
+class TestBranchMergeProposalBugsGit(
+    TestBranchMergeProposalBugsMixin, TestCaseWithFactory):
+
+    def setUp(self):
+        super(TestBranchMergeProposalBugsGit, self).setUp()
+        # Disable GitRef._getLog's use of memcache; we don't need it here,
+        # it requires more time-consuming test setup, and it makes it harder
+        # to repeatedly run updateRelatedBugsFromSource with different log
+        # responses.
+        self.useFixture(FeatureFixture(
+            {u"code.git.log.disable_memcache": u"on"}))
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
 
 
 class TestNotifyModified(TestCaseWithFactory):
@@ -2353,11 +2369,21 @@ class TestWebservice(WebServiceTestCase):
             [mp], list(target.getMergeProposals(
                 status=['Merged'], merged_revnos=[123])))
 
-    def test_getRelatedBugTasks(self):
-        """Test the getRelatedBugTasks API."""
+    def test_getRelatedBugTasks_bzr(self):
+        """Test the getRelatedBugTasks API for Bazaar."""
         db_bmp = self.factory.makeBranchMergeProposal()
         db_bug = self.factory.makeBug()
         db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+        transaction.commit()
+        bmp = self.wsObject(db_bmp)
+        bugtask = self.wsObject(db_bug.default_bugtask)
+        self.assertEqual([bugtask], list(bmp.getRelatedBugTasks()))
+
+    def test_getRelatedBugTasks_git(self):
+        """Test the getRelatedBugTasks API for Git."""
+        db_bmp = self.factory.makeBranchMergeProposalForGit()
+        db_bug = self.factory.makeBug()
+        db_bmp.linkBug(db_bug, db_bmp.registrant)
         transaction.commit()
         bmp = self.wsObject(db_bmp)
         bugtask = self.wsObject(db_bug.default_bugtask)

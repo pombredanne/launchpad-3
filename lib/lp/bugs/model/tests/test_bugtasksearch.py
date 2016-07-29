@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -393,16 +393,18 @@ class OnceTests:
 
     def test_branches_linked(self):
         # Search results can be limited to bugs with or without linked
-        # branches.
+        # branches and merge proposals.
         with person_logged_in(self.owner):
             branch = self.factory.makeBranch()
             self.bugtasks[0].bug.linkBranch(branch, self.owner)
+            bmp = self.factory.makeBranchMergeProposalForGit()
+            self.bugtasks[1].bug.linkMergeProposal(bmp, self.owner)
         params = self.getBugTaskSearchParams(
             user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
-        self.assertSearchFinds(params, self.bugtasks[:1])
+        self.assertSearchFinds(params, self.bugtasks[:2])
         params = self.getBugTaskSearchParams(
             user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
-        self.assertSearchFinds(params, self.bugtasks[1:])
+        self.assertSearchFinds(params, self.bugtasks[2:])
 
     def test_blueprints_linked(self):
         # Search results can be limited to bugs with or without linked

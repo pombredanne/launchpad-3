@@ -43,6 +43,9 @@ from zope.event import notify
 from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -111,6 +114,7 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     )
+from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import validate_message
@@ -118,6 +122,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.xref.interfaces import IXRefSet
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -358,12 +363,15 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
 
     @property
     def bugs(self):
+        from lp.bugs.model.bug import Bug
         if self.source_branch is not None:
             # For Bazaar, we currently only store bug/branch links.
             bugs = self.source_branch.linked_bugs
         else:
-            # XXX cjwatson 2016-06-24: Implement for Git.
-            bugs = []
+            bug_ids = [
+                int(id) for _, id in getUtility(IXRefSet).findFrom(
+                    (u'merge_proposal', unicode(self.id)), types=[u'bug'])]
+            bugs = load(Bug, bug_ids)
         return list(sorted(bugs, key=attrgetter('id')))
 
     def getRelatedBugTasks(self, user):
@@ -377,8 +385,24 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             return [bugtask
                 for bugtask in source_tasks if bugtask not in target_tasks]
         else:
-            # XXX cjwatson 2016-06-24: Implement for Git.
-            return []
+            params = BugTaskSearchParams(
+                user=user, linked_merge_proposals=self.id)
+            tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
+            return filter_bugtasks_by_context(
+                self.source_git_repository.target, tasks)
+
+    def createBugLink(self, bug):
+        """See `BugLinkTargetMixin`."""
+        # XXX cjwatson 2016-06-11: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'merge_proposal', unicode(self.id)):
+                {(u'bug', unicode(bug.id)): {}}})
+
+    def deleteBugLink(self, bug):
+        """See `BugLinkTargetMixin`."""
+        getUtility(IXRefSet).delete(
+            {(u'merge_proposal', unicode(self.id)):
+                [(u'bug', unicode(bug.id))]})
 
     def linkBug(self, bug, user=None, check_permissions=True):
         """See `BugLinkTargetMixin`."""
@@ -386,8 +410,9 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             # For Bazaar, we currently only store bug/branch links.
             return self.source_branch.linkBug(bug, user)
         else:
-            # XXX cjwatson 2016-06-24: Implement for Git.
-            raise NotImplementedError
+            # Otherwise, link the bug to the merge proposal directly.
+            return super(BranchMergeProposal, self).linkBug(
+                bug, user=user, check_permissions=check_permissions)
 
     def unlinkBug(self, bug, user=None, check_permissions=True):
         """See `BugLinkTargetMixin`."""
@@ -399,8 +424,9 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             # this would require a complicated data migration.
             return self.source_branch.unlinkBug(bug, user)
         else:
-            # XXX cjwatson 2016-06-24: Implement for Git.
-            raise NotImplementedError
+            # Otherwise, unlink the bug from the merge proposal directly.
+            return super(BranchMergeProposal, self).unlinkBug(
+                bug, user=user, check_permissions=check_permissions)
 
     @property
     def address(self):

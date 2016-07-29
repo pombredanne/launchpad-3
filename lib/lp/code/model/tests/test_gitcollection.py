@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repository collections."""
@@ -530,6 +530,21 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_repositories.inProject(project)
         proposals = collection.getMergeProposals()
         self.assertEqual([mp1], list(proposals))
+
+    def test_merge_proposals_by_id(self):
+        # merge_proposal_ids limits the returned merge proposals by ID.
+        [target] = self.factory.makeGitRefs()
+        mp1 = self.factory.makeBranchMergeProposalForGit(target_ref=target)
+        mp2 = self.factory.makeBranchMergeProposalForGit(target_ref=target)
+        self.factory.makeBranchMergeProposalForGit(target_ref=target)
+        result = self.all_repositories.getMergeProposals(
+            target_repository=target.repository, target_path=target.path,
+            merge_proposal_ids=[mp1.id, mp2.id])
+        self.assertContentEqual([mp1, mp2], result)
+        result = self.all_repositories.getMergeProposals(
+            target_repository=target.repository, target_path=target.path,
+            merge_proposal_ids=[])
+        self.assertContentEqual([], result)
 
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the
