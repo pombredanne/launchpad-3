@@ -91,7 +91,6 @@ The signer can also be None for packages that were synced (e.g. from Debian):
     >>> from lp.services.propertycache import get_property_cache
     >>> spph.sourcepackagerelease.signing_key_owner = None
     >>> spph.sourcepackagerelease.signing_key_fingerprint = None
-    >>> del get_property_cache(spph.sourcepackagerelease).dscsigningkey
     >>> print spph.package_signer
     None
 
