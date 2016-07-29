@@ -107,12 +107,12 @@ class BinaryPackageBuildMailer(BaseMailer):
                         reason = BinaryPackageBuildRecipientReason.forCreator(
                             creator, recipient)
                         recipients[recipient] = reason
-            dsc_key = build.source_package_release.dscsigningkey
-            if dsc_key:
-                for recipient in get_recipients(dsc_key.owner):
+            signer = build.source_package_release.signing_key_owner
+            if signer:
+                for recipient in get_recipients(signer):
                     if recipient not in recipients:
                         reason = BinaryPackageBuildRecipientReason.forSigner(
-                            dsc_key.owner, recipient)
+                            signer, recipient)
                         recipients[recipient] = reason
 
         if not build.archive.is_ppa:

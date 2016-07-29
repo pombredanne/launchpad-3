@@ -36,6 +36,8 @@ class ISourcePackageRelease(Interface):
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
     dscsigningkey = Attribute("DSC Signing Key")
+    signing_key_owner = Attribute("Signing key owner")
+    signing_key_fingerprint = Attribute("Signing key fingerprint")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
     changelog = Attribute("LibraryFileAlias containing debian/changelog.")
