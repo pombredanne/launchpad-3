@@ -233,6 +233,10 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+        # Truncate name to 64 character maximum.
+        common_name = "PPA %s %s" % (self.archive.owner.name, self.archive.name)
+        common_name = common_name[0:59] + " kmod"
+
         old_mask = os.umask(0o077)
         try:
             with tempfile.NamedTemporaryFile(suffix='.keygen') as tf:
@@ -245,14 +249,14 @@ class SigningUpload(CustomUpload):
                     x509_extensions = myexts
 
                     [ req_distinguished_name ]
-                    CN = PPA %s %s kmod
+                    CN = %s
 
                     [ myexts ]
                     basicConstraints=critical,CA:FALSE
                     keyUsage=digitalSignature
                     subjectKeyIdentifier=hash
                     authorityKeyIdentifier=keyid
-                    """ % (self.archive.owner.name, self.archive.name))
+                    """ % common_name)
 
                 print(genkey_text, file=tf)
 
