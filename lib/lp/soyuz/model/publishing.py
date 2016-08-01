@@ -379,9 +379,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def package_signer(self):
         """See `ISourcePackagePublishingHistory`."""
-        if self.sourcepackagerelease.dscsigningkey is not None:
-            return self.sourcepackagerelease.dscsigningkey.owner
-        return None
+        return self.sourcepackagerelease.signing_key_owner
 
     @cachedproperty
     def newer_distroseries_version(self):

@@ -701,14 +701,6 @@ class Archive(SQLBase):
             ids.discard(None)
             if ids:
                 list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
-            keys = {
-                key.fingerprint: key for key in
-                getUtility(IGPGKeySet).getByFingerprints(
-                    set(map(attrgetter('signing_key_fingerprint'), releases))
-                    - set([None]))}
-            for spr in releases:
-                get_property_cache(spr).dscsigningkey = keys.get(
-                    spr.signing_key_fingerprint)
         return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getSourcesForDeletion(self, name=None, status=None, distroseries=None):

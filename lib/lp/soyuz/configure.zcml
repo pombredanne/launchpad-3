@@ -75,7 +75,6 @@
         class="lp.soyuz.model.sourcepackagerelease.SourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"/>
-        <allow attributes="signing_key_fingerprint signing_key_owner" />
         <!-- changelog needs to be updated when unembargoing -->
         <require
             permission="launchpad.Edit"
