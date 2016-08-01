@@ -199,14 +199,14 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        common_name = '/CN=PPA %s %s/' % (
-            self.archive.owner.name, self.archive.name)
+        common_name = 'PPA %s %s' % (self.archive.owner.name, self.archive.name)
+        subject = '/CN=%s/' % (common_name[0:64])
 
         old_mask = os.umask(0o077)
         try:
             new_key_cmd = [
                 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-                '-subj', common_name, '-keyout', self.uefi_key,
+                '-subj', subject, '-keyout', self.uefi_key,
                 '-out', self.uefi_cert, '-days', '3650', '-nodes', '-sha256',
                 ]
             self.callLog("UEFI keygen", new_key_cmd)
