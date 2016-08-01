@@ -245,7 +245,7 @@ class SigningUpload(CustomUpload):
                     x509_extensions = myexts
 
                     [ req_distinguished_name ]
-                    CN = /CN=PPA %s %s kmod/
+                    CN = PPA %s %s kmod
 
                     [ myexts ]
                     basicConstraints=critical,CA:FALSE
