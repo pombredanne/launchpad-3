@@ -41,7 +41,7 @@ class ObjectUnlinkedEvent(lazr.lifecycle.event.LifecyleEventBase):
 class BugLinkTargetMixin:
     """Mixin class for IBugLinkTarget implementation."""
 
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """Subclass should override that method to create a BugLink instance.
         """
         raise NotImplementedError("missing createBugLink() implementation")
@@ -52,14 +52,14 @@ class BugLinkTargetMixin:
         raise NotImplementedError("missing deleteBugLink() implementation")
 
     # IBugLinkTarget implementation
-    def linkBug(self, bug, user=None, check_permissions=True):
+    def linkBug(self, bug, user=None, check_permissions=True, props=None):
         """See IBugLinkTarget."""
         if check_permissions and not bug.userCanView(user):
             raise Unauthorized(
                 "Cannot link a private bug you don't have access to")
         if bug in self.bugs:
             return False
-        self.createBugLink(bug)
+        self.createBugLink(bug, props=props)
         notify(ObjectLinkedEvent(bug, self, user=user))
         notify(ObjectLinkedEvent(self, bug, user=user))
         return True

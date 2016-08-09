@@ -69,7 +69,7 @@ class IBugLinkTarget(Interface):
                         value_type=Reference(schema=IBug), readonly=True),
         as_of="devel")
 
-    def linkBug(bug, user=None, check_permissions=True):
+    def linkBug(bug, user=None, check_permissions=True, props=None):
         """Link the object with this bug.
 
         If a new link is created by this method, an ObjectLinkedEvent is

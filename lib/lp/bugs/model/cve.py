@@ -91,11 +91,13 @@ class Cve(SQLBase, BugLinkTargetMixin):
         assert ref.cve == self
         CveReference.delete(ref.id)
 
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See BugLinkTargetMixin."""
+        if props is None:
+            props = {}
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
-            {(u'cve', self.sequence): {(u'bug', unicode(bug.id)): {}}})
+            {(u'cve', self.sequence): {(u'bug', unicode(bug.id)): props}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""

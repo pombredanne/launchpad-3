@@ -43,6 +43,7 @@ from zope.event import notify
 from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -395,12 +396,14 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             return filter_bugtasks_by_context(
                 self.source_git_repository.target, tasks)
 
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See `BugLinkTargetMixin`."""
+        if props is None:
+            props = {}
         # XXX cjwatson 2016-06-11: Should set creator.
         getUtility(IXRefSet).create(
             {(u'merge_proposal', unicode(self.id)):
-                {(u'bug', unicode(bug.id)): {}}})
+                {(u'bug', unicode(bug.id)): props}})
 
     def deleteBugLink(self, bug):
         """See `BugLinkTargetMixin`."""
@@ -408,7 +411,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             {(u'merge_proposal', unicode(self.id)):
                 [(u'bug', unicode(bug.id))]})
 
-    def linkBug(self, bug, user=None, check_permissions=True):
+    def linkBug(self, bug, user=None, check_permissions=True, props=None):
         """See `BugLinkTargetMixin`."""
         if self.source_branch is not None:
             # For Bazaar, we currently only store bug/branch links.
@@ -416,7 +419,8 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         else:
             # Otherwise, link the bug to the merge proposal directly.
             return super(BranchMergeProposal, self).linkBug(
-                bug, user=user, check_permissions=check_permissions)
+                bug, user=user, check_permissions=check_permissions,
+                props=props)
 
     def unlinkBug(self, bug, user=None, check_permissions=True):
         """See `BugLinkTargetMixin`."""
@@ -453,6 +457,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
 
     def updateRelatedBugsFromSource(self):
         """See `IBranchMergeProposal`."""
+        from lp.bugs.model.bug import Bug
         # Only currently used for Git.
         assert self.source_git_ref is not None
         current_bug_ids_from_source = {
@@ -462,25 +467,22 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         current_bug_ids = set(current_bug_ids_from_source)
         new_bug_ids = self._fetchRelatedBugIDsFromSource()
         # Only remove links marked as originating in the source branch.
-        remove_bug_ids = set(
+        remove_bugs = load(Bug, set(
             bug_id for bug_id in current_bug_ids - new_bug_ids
-            if current_bug_ids_from_source[bug_id])
-        if remove_bug_ids:
-            getUtility(IXRefSet).delete(
-                {(u'merge_proposal', unicode(self.id)):
-                    [(u'bug', unicode(bug_id)) for bug_id in remove_bug_ids]})
-        add_bug_ids = new_bug_ids - current_bug_ids
+            if current_bug_ids_from_source[bug_id]))
+        for bug in remove_bugs:
+            self.unlinkBug(bug, check_permissions=False)
+        add_bugs = load(Bug, new_bug_ids - current_bug_ids)
         # XXX cjwatson 2016-06-11: We could perhaps set creator and
         # date_created based on commit information, but then we'd have to
         # work out what to do in the case of multiple commits referring to
         # the same bug, updating properties if more such commits arrive
         # later, etc.  This is simple and does the job for now.
-        if add_bug_ids:
-            getUtility(IXRefSet).create(
-                {(u'merge_proposal', unicode(self.id)):
-                    {(u'bug', unicode(bug_id)):
-                        {'metadata': {'from_source': True}}
-                     for bug_id in add_bug_ids}})
+        for bug in add_bugs:
+            self.linkBug(
+                bug, user=getUtility(ILaunchpadCelebrities).janitor,
+                check_permissions=False,
+                props={'metadata': {'from_source': True}})
 
     @property
     def address(self):
