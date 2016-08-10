@@ -193,14 +193,24 @@ class SigningUpload(CustomUpload):
             return [None for k in keynames]
         return keynames
 
+    def generateKeyCommonName(self, owner, archive, suffix=''):
+        # PPA <owner> <archive> <suffix>
+        # truncate <owner> <archive> to ensure the overall form is shorter
+        # than 64 characters but the suffix is maintained
+        if suffix:
+            suffix = " " + suffix
+        common_name = "PPA %s %s" % (owner, archive)
+        return common_name[0:64 - len(suffix)] + suffix
+
     def generateUefiKeys(self):
         """Generate new UEFI Keys for this archive."""
         directory = os.path.dirname(self.uefi_key)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        common_name = 'PPA %s %s' % (self.archive.owner.name, self.archive.name)
-        subject = '/CN=%s/' % (common_name[0:64])
+        common_name = self.generateKeyCommonName(
+            self.archive.owner.name, self.archive.name)
+        subject = '/CN=' + common_name + '/'
 
         old_mask = os.umask(0o077)
         try:
@@ -234,8 +244,8 @@ class SigningUpload(CustomUpload):
             os.makedirs(directory)
 
         # Truncate name to 64 character maximum.
-        common_name = "PPA %s %s" % (self.archive.owner.name, self.archive.name)
-        common_name = common_name[0:59] + " kmod"
+        common_name = self.generateKeyCommonName(
+            self.archive.owner.name, self.archive.name, "kmod")
 
         old_mask = os.umask(0o077)
         try:
