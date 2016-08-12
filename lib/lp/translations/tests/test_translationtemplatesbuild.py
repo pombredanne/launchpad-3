@@ -126,10 +126,10 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
             ubuntu.currentseries.nominatedarchindep.processor, bq.processor)
 
     def test_score(self):
-        # For now, these jobs always score themselves at 2510.  In the
+        # For now, these jobs always score themselves at 2515.  In the
         # future however the scoring system is to be revisited.
         build = self.factory.makeTranslationTemplatesBuild()
-        self.assertEqual(2510, build.calculateScore())
+        self.assertEqual(2515, build.calculateScore())
 
     def test_build_cookie(self):
         build = self.factory.makeTranslationTemplatesBuild()

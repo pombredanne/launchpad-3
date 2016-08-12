@@ -1445,7 +1445,7 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             [PackagePublishingPocket.UPDATES],
             set(build.pocket for build in builds))
         self.assertContentEqual(
-            [2505], set(build.buildqueue_record.lastscore for build in builds))
+            [2510], set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_ppa(self):
         # Selecting a different archive creates builds in that archive.
