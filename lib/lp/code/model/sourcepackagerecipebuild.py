@@ -302,7 +302,7 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         store.remove(self.build_farm_job)
 
     def calculateScore(self):
-        return 2505 + self.archive.relative_build_score
+        return 2510 + self.archive.relative_build_score
 
     @classmethod
     def getByID(cls, build_id):

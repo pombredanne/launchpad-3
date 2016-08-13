@@ -52,7 +52,7 @@ from lp.translations.interfaces.translationtemplatesbuild import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
+HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2515
 
 
 @implementer(ITranslationTemplatesBuild)
@@ -247,7 +247,7 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
 
     def calculateScore(self):
         """See `IBuildFarmJob`."""
-        # Hard-code score for now.  Most PPA jobs start out at 2505;
+        # Hard-code score for now.  Most PPA jobs start out at 2510;
         # TranslationTemplateBuild are fast so we want them at a higher
         # priority.
         return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
