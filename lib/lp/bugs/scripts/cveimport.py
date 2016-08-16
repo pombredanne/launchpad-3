@@ -33,7 +33,7 @@ from lp.services.scripts.base import (
     )
 
 
-CVEDB_NS = '{http://cve.mitre.org/cve/downloads}'
+CVEDB_NS = '{http://cve.mitre.org/cve/downloads/1.0}'
 
 
 def getText(elem):

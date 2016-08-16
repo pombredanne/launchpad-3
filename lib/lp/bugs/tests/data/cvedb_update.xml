@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<cve xmlns="http://cve.mitre.org/cve/downloads" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<cve xmlns="http://cve.mitre.org/cve/downloads/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <item type="CVE" name="CVE-1999-0002" seq="1999-0002">
 <desc>Buffer overflow in NFS mountd gives root access to remote attackers, mostly in Linux systems.</desc>
 <refs>
