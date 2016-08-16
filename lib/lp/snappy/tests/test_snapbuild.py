@@ -562,7 +562,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         buildd_admin_webservice.default_api_version = "devel"
         logout()
         build = self.webservice.get(build_url).jsonBody()
-        self.assertEqual(2505, build["score"])
+        self.assertEqual(2510, build["score"])
         self.assertTrue(build["can_be_rescored"])
         response = self.webservice.named_post(
             build["self_link"], "rescore", score=5000)

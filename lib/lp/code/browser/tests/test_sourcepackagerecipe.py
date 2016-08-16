@@ -1513,7 +1513,7 @@ class TestSourcePackageRecipeViewMixin:
         # Our recipe has a Warty distroseries
         self.assertEqual(['Warty'], build_distros)
         self.assertEqual(
-            set([2505]),
+            set([2510]),
             set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_daily_builds_disabled_archive(self):
@@ -1580,7 +1580,7 @@ class TestSourcePackageRecipeViewMixin:
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
         build_scores = [build.buildqueue_record.lastscore for build in builds]
-        self.assertContentEqual([2605, 2605], build_scores)
+        self.assertContentEqual([2610, 2610], build_scores)
 
     def test_request_builds_action_not_logged_in(self):
         """Requesting a build creates pending builds."""
@@ -1793,7 +1793,7 @@ class TestSourcePackageRecipeBuildViewMixin:
             created .*
             Build status
             Needs building
-            Start in .* \\(2505\\) What's this?.*
+            Start in .* \\(2510\\) What's this?.*
             Estimated finish in .*
             Build details
             Recipe:        Recipe my-recipe for Owner

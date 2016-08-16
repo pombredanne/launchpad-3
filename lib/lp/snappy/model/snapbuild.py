@@ -249,7 +249,7 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.buildqueue_record.cancel()
 
     def calculateScore(self):
-        return 2505 + self.archive.relative_build_score
+        return 2510 + self.archive.relative_build_score
 
     def getMedianBuildDuration(self):
         """Return the median duration of our successful builds."""
