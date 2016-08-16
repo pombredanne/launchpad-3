@@ -55,6 +55,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.propertycache import cachedproperty
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import (
     CannotScheduleStoreUpload,
@@ -348,7 +349,7 @@ class SnapBuild(PackageBuildMixin, Storm):
     def getFileUrls(self):
         return [self.lfaUrl(lfa) for _, lfa, _ in self.getFiles()]
 
-    @property
+    @cachedproperty
     def eta(self):
         """The datetime when the build job is estimated to complete.
 
