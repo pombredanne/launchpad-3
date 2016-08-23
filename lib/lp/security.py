@@ -2093,9 +2093,10 @@ class EditFAQ(AuthorizationBase):
     usedfor = IFAQ
 
     def checkAuthenticated(self, user):
-        """Everybody who has launchpad.Append on the FAQ target is allowed.
-        """
-        return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
+        """Allow only admins and owners of the FAQ target."""
+        return (
+            user.in_admin or user.in_registry_experts or
+            user.inTeam(self.obj.target.owner))
 
 
 class DeleteFAQ(AuthorizationBase):
