@@ -2042,7 +2042,7 @@ class EditQuestion(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return (
-            AppendQuestion(self.obj).checkAuthenticated(user)
+            AdminQuestion(self.obj).checkAuthenticated(user)
             or QuestionOwner(self.obj).checkAuthenticated(user))
 
 
