@@ -56,16 +56,16 @@ class TestFAQPermissions(TestCaseWithFactory):
         login_person(self.owner)
         self.assertCanEdit(self.owner, self.faq)
 
-    def test_direct_answer_contact_can_edit(self):
-        # A direct answer contact for an FAQ target can edit its FAQs.
+    def test_direct_answer_contact_cannot_edit(self):
+        # A direct answer contact for an FAQ target cannot edit its FAQs.
         direct_answer_contact = self.factory.makePerson()
         login_person(direct_answer_contact)
         self.addAnswerContact(direct_answer_contact)
-        self.assertCanEdit(direct_answer_contact, self.faq)
+        self.assertCannotEdit(direct_answer_contact, self.faq)
 
-    def test_indirect_answer_contact_can_edit(self):
+    def test_indirect_answer_contact_cannot_edit(self):
         # A indirect answer contact (a member of a team that is an answer
-        # contact) for an FAQ target can edit its FAQs.
+        # contact) for an FAQ target cannot edit its FAQs.
         indirect_answer_contact = self.factory.makePerson()
         direct_answer_contact = self.factory.makeTeam()
         with person_logged_in(direct_answer_contact.teamowner):
@@ -73,11 +73,10 @@ class TestFAQPermissions(TestCaseWithFactory):
                 indirect_answer_contact, direct_answer_contact.teamowner)
             self.addAnswerContact(direct_answer_contact)
         login_person(indirect_answer_contact)
-        self.assertCanEdit(indirect_answer_contact, self.faq)
+        self.assertCannotEdit(indirect_answer_contact, self.faq)
 
     def test_nonparticipating_user_cannot_edit(self):
-        # A user that is neither an owner of, or answer contact for, an
-        # FAQ target's cannot edit a its FAQs.
+        # A user that is not an owner of an FAQ target cannot edit its FAQs.
         nonparticipant = self.factory.makePerson()
         login_person(nonparticipant)
         self.assertCannotEdit(nonparticipant, self.faq)

@@ -2,8 +2,8 @@
 
 To edit the title and description of question, one uses the 'Edit
 Question' menu item. You need to be logged in to see the edit form, and
-only the question creator or an answer contact can change the title and
-description.
+only the question creator or an owner of the question target can change the
+title and description.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> anon_browser.getLink('Edit question').click()
