@@ -12,6 +12,7 @@ __all__ = [
 
 from email.utils import make_msgid
 from operator import attrgetter
+import sys
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
@@ -39,6 +40,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implementer
 
@@ -123,6 +125,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.errorlog import ScriptRequest
 from lp.services.xref.interfaces import IXRefSet
 from lp.soyuz.enums import (
     re_bug_numbers,
@@ -181,6 +184,10 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
             return True
     else:
         return True
+
+
+class TooManyRelatedBugs(Exception):
+    """A source branch has too many related bugs linked from commits."""
 
 
 @implementer(IBranchMergeProposal, IHasBranchTarget)
@@ -436,6 +443,20 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             return super(BranchMergeProposal, self).unlinkBug(
                 bug, user=user, check_permissions=check_permissions)
 
+    def _reportTooManyRelatedBugs(self):
+        properties = [
+            ("error-explanation", (
+                "Number of related bugs exceeds limit %d." %
+                config.codehosting.related_bugs_from_source_limit)),
+            ("source", self.merge_source.identity),
+            ("target", self.merge_target.identity),
+            ]
+        if self.merge_prerequisite is not None:
+            properties.append(
+                ("prerequisite", self.merge_prerequisite.identity))
+        request = ScriptRequest(properties)
+        getUtility(IErrorReportingUtility).raising(sys.exc_info(), request)
+
     def _fetchRelatedBugIDsFromSource(self):
         """Fetch related bug IDs from the source branch."""
         from lp.bugs.model.bug import Bug
@@ -447,11 +468,19 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         # turnip's log API to be able to take multiple stop parameters.
         commits = self.getUnlandedSourceBranchRevisions()
         bug_ids = set()
-        for commit in commits:
-            if "commit_message" in commit:
-                for match in re_lp_closes.finditer(commit["commit_message"]):
-                    for bug_id in re_bug_numbers.findall(match.group(0)):
-                        bug_ids.add(int(bug_id))
+        limit = config.codehosting.related_bugs_from_source_limit
+        try:
+            for commit in commits:
+                if "commit_message" in commit:
+                    for match in re_lp_closes.finditer(
+                            commit["commit_message"]):
+                        for bug_num in re_bug_numbers.findall(match.group(0)):
+                            bug_id = int(bug_num)
+                            if bug_id not in bug_ids and len(bug_ids) == limit:
+                                raise TooManyRelatedBugs()
+                            bug_ids.add(bug_id)
+        except TooManyRelatedBugs:
+            self._reportTooManyRelatedBugs()
         # Only return bug IDs that exist.
         return set(IStore(Bug).find(Bug.id, Bug.id.is_in(bug_ids)))
 

@@ -1589,6 +1589,23 @@ class TestBranchMergeProposalBugsGit(
                 (u"merge_proposal", unicode(bmp.id)), types=[u"bug"]),
             matches_expected_xref)
 
+    def test_updateRelatedBugsFromSource_honours_limit(self):
+        # If the number of bugs to be linked exceeds the configured limit,
+        # updateRelatedBugsFromSource only links that many bugs and logs an
+        # OOPS.
+        self.pushConfig("codehosting", related_bugs_from_source_limit=3)
+        bugs = [self.factory.makeBug() for _ in range(5)]
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bugs[0]])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bugs[0]], bmp.bugs)
+        self.assertEqual([], self.oopses)
+        self._setUpLog(bugs)
+        bmp.updateRelatedBugsFromSource()
+        self.assertContentEqual(bugs[:3], bmp.bugs)
+        self.assertEqual(1, len(self.oopses))
+        self.assertEqual("TooManyRelatedBugs", self.oopses[0]["type"])
+
 
 class TestNotifyModified(TestCaseWithFactory):
 
