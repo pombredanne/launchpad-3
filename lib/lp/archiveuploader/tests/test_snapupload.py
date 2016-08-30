@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test uploads of SnapBuilds."""
@@ -53,6 +53,7 @@ class TestSnapBuildUploads(TestUploadProcessorBase):
         upload_dir = os.path.join(
             self.incoming_folder, "test", str(self.build.id), "ubuntu")
         write_file(os.path.join(upload_dir, "wget_0_all.snap"), "snap")
+        write_file(os.path.join(upload_dir, "wget_0_all.manifest"), "manifest")
         handler = UploadHandler.forProcessor(
             self.uploadprocessor, self.incoming_folder, "test", self.build)
         result = handler.processSnap(self.log)
@@ -61,6 +62,23 @@ class TestSnapBuildUploads(TestUploadProcessorBase):
             "Snap upload failed\nGot: %s" % self.log.getLogBuffer())
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
         self.assertTrue(self.build.verifySuccessfulUpload())
+
+    def test_requires_snap(self):
+        # The upload processor fails if the upload does not contain any
+        # .snap files.
+        self.assertFalse(self.build.verifySuccessfulUpload())
+        upload_dir = os.path.join(
+            self.incoming_folder, "test", str(self.build.id), "ubuntu")
+        write_file(os.path.join(upload_dir, "wget_0_all.manifest"), "manifest")
+        handler = UploadHandler.forProcessor(
+            self.uploadprocessor, self.incoming_folder, "test", self.build)
+        result = handler.processSnap(self.log)
+        self.assertEqual(UploadStatusEnum.REJECTED, result)
+        self.assertIn(
+            "ERROR Build did not produce any snap packages.",
+            self.log.getLogBuffer())
+        self.assertEqual(BuildStatus.UPLOADING, self.build.status)
+        self.assertFalse(self.build.verifySuccessfulUpload())
 
     def test_triggers_store_uploads(self):
         # The upload processor triggers store uploads if appropriate.
