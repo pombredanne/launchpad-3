@@ -433,6 +433,17 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
         votes = {(vote.reviewer, vote.review_type) for vote in bmp.votes}
         self.assertEqual({(person1, "review1"), (person2, "review2")}, votes)
 
+    def test_updates_related_bugs(self):
+        """The merge proposal has its related bugs updated."""
+        bug = self.factory.makeBug()
+        self.log.append({
+            u"sha1": unicode(hashlib.sha1("tip").hexdigest()),
+            u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
+            })
+        proposal = self.source.addLandingTarget(self.user, self.target)
+        self.assertEqual([bug], proposal.bugs)
+        self.assertEqual([proposal], bug.linked_merge_proposals)
+
 
 class TestGitRefWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
