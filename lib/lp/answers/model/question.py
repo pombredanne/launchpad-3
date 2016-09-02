@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question models."""
@@ -669,11 +669,14 @@ class Question(SQLBase, BugLinkTargetMixin):
             bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
     # IBugLinkTarget implementation
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See BugLinkTargetMixin."""
+        if props is None:
+            props = {}
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
-            {(u'question', unicode(self.id)): {(u'bug', unicode(bug.id)): {}}})
+            {(u'question', unicode(self.id)):
+                {(u'bug', unicode(bug.id)): props}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""

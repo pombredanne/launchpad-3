@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Event subscribers for branch merge proposals."""
@@ -63,9 +63,10 @@ def _trigger_webhook(merge_proposal, payload):
 def merge_proposal_created(merge_proposal, event):
     """A new merge proposal has been created.
 
-    Create a job to update the diff for the merge proposal.
-    Also create a job to email the subscribers about the new proposal.
+    Update related bug links based on commits in the source branch; create a
+    job to update the diff for the merge proposal; trigger webhooks.
     """
+    merge_proposal.updateRelatedBugsFromSource()
     getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
     if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
         payload = {

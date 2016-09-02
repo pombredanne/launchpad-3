@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for objects that can be linked to bugs."""
@@ -69,7 +69,7 @@ class IBugLinkTarget(Interface):
                         value_type=Reference(schema=IBug), readonly=True),
         as_of="devel")
 
-    def linkBug(bug, user=None, check_permissions=True):
+    def linkBug(bug, user=None, check_permissions=True, props=None):
         """Link the object with this bug.
 
         If a new link is created by this method, an ObjectLinkedEvent is

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -800,12 +800,14 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         return list(sorted(
             bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See BugLinkTargetMixin."""
+        if props is None:
+            props = {}
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
             {(u'specification', unicode(self.id)):
-                {(u'bug', unicode(bug.id)): {}}})
+                {(u'bug', unicode(bug.id)): props}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
