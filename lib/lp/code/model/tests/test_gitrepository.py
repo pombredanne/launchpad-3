@@ -986,7 +986,7 @@ class TestGitRepositoryPrivacy(TestCaseWithFactory):
 class TestGitRepositoryRefs(TestCaseWithFactory):
     """Tests for ref handling."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test__convertRefInfo(self):
         # _convertRefInfo converts a valid info dictionary.
@@ -1107,9 +1107,6 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         return [UpdatePreviewDiffJob(job) for job in jobs]
 
     def test_update_schedules_diff_update(self):
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         repository = self.factory.makeGitRepository()
         [ref] = self.factory.makeGitRefs(repository=repository)
         self.assertRefsMatch(repository.refs, repository, [ref.path])
@@ -1821,31 +1818,10 @@ class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
 
 class TestGitRepositoryUpdateLandingTargets(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
-
-    def test_updates_related_bugs(self):
-        """All non-final merge proposals have their related bugs updated."""
-        bug = self.factory.makeBug()
-        bmp = self.factory.makeBranchMergeProposalForGit()
-        self.assertEqual([], bmp.bugs)
-        self.assertEqual([], bug.linked_merge_proposals)
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[
-            {
-                u"sha1": bmp.source_git_commit_sha1,
-                u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
-                },
-            ])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
-        bmp.source_git_repository.updateLandingTargets([bmp.source_git_path])
-        self.assertEqual([bug], bmp.bugs)
-        self.assertEqual([bmp], bug.linked_merge_proposals)
+    layer = DatabaseFunctionalLayer
 
     def test_schedules_diff_updates(self):
         """Create jobs for all merge proposals."""
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         bmp1 = self.factory.makeBranchMergeProposalForGit()
         bmp2 = self.factory.makeBranchMergeProposalForGit(
             source_ref=bmp1.source_git_ref)

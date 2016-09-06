@@ -63,10 +63,8 @@ def _trigger_webhook(merge_proposal, payload):
 def merge_proposal_created(merge_proposal, event):
     """A new merge proposal has been created.
 
-    Update related bug links based on commits in the source branch; create a
-    job to update the diff for the merge proposal; trigger webhooks.
+    Create a job to update the diff for the merge proposal; trigger webhooks.
     """
-    merge_proposal.updateRelatedBugsFromSource()
     getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
     if getFeatureFlag(BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG):
         payload = {
