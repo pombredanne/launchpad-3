@@ -511,8 +511,7 @@ class IGitRepositoryView(IHasRecipes):
     def updateLandingTargets(paths):
         """Update landing targets (MPs where this repository is the source).
 
-        For each merge proposal, update linked bugs and create
-        `UpdatePreviewDiffJob`s.
+        For each merge proposal, create `UpdatePreviewDiffJob`s.
 
         :param paths: A list of reference paths.  Any merge proposals whose
             source is this repository and one of these paths will have their

@@ -148,10 +148,11 @@ class DiffTestCase(TestCaseWithFactory):
                 prerequisite)
 
     def installFakeGitMergeDiff(self, result=None, failure=None):
-        hosting_client = FakeGitHostingClient()
-        hosting_client.getMergeDiff = FakeMethod(
+        self.hosting_client = FakeGitHostingClient()
+        self.hosting_client.getMergeDiff = FakeMethod(
             result=result, failure=failure)
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(
+            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
 
     def createExampleGitMerge(self):
         """Create an example Git-based merge scenario.

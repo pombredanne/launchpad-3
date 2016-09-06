@@ -972,7 +972,6 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = []
         for merge_proposal in self.getActiveLandingTargets(paths):
-            merge_proposal.updateRelatedBugsFromSource()
             jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
         return jobs
 
