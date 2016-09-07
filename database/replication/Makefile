@@ -54,6 +54,11 @@ default:
 # place.
 stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
+	# List the dump first to make sure it is usable before destroying
+	# anything.
+	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
+
 	# Deny new connections to the main DBs and kill any leftovers.
 	${STAGING_PGBOUNCER} -c 'DISABLE launchpad_staging'
 	${STAGING_PGBOUNCER} -c 'DISABLE launchpad_staging_slave'
@@ -74,8 +79,6 @@ stagingsetup:
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
-	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
-	    > ${DUMPLIST}
 	cat ${STAGING_DUMP} \
 	    | ./walblock.py -n 5000 -d /var/lib/postgresql/9.3/staging/pg_xlog \
 	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
