@@ -98,6 +98,7 @@ from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import (
     load,
+    load_referencing,
     load_related,
     )
 from lp.services.database.constants import (
@@ -436,7 +437,11 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         dbName='superseded_by', foreignKey='BranchMergeProposal',
         notNull=False, default=None)
 
-    supersedes = Reference("<primary key>", "superseded_by", on_remote=True)
+    _supersedes = Reference("<primary key>", "superseded_by", on_remote=True)
+
+    @cachedproperty
+    def supersedes(self):
+        return self._supersedes
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
@@ -1203,9 +1208,21 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
                 Desc(PreviewDiff.date_created)).config(
                     distinct=[PreviewDiff.branch_merge_proposal_id])
         load_related(Diff, preview_diffs, ['diff_id'])
+        preview_diff_map = {}
         for previewdiff in preview_diffs:
-            cache = get_property_cache(previewdiff.branch_merge_proposal)
-            cache.preview_diff = previewdiff
+            preview_diff_map[previewdiff.branch_merge_proposal_id] = (
+                previewdiff)
+        for mp in branch_merge_proposals:
+            get_property_cache(mp).preview_diff = preview_diff_map.get(mp.id)
+
+        # Preload other merge proposals that supersede these.
+        supersedes_map = {}
+        for other_mp in load_referencing(
+                BranchMergeProposal, branch_merge_proposals,
+                ['superseded_byID']):
+            supersedes_map[other_mp.superseded_byID] = other_mp
+        for mp in branch_merge_proposals:
+            get_property_cache(mp).supersedes = supersedes_map.get(mp.id)
 
         # Add source branch/repository owners' to the list of pre-loaded
         # persons.  We need the target repository owner as well; unlike
