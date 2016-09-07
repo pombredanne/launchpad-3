@@ -15,9 +15,9 @@ import soupmatchers
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.job.runner import JobRunner
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -25,8 +25,6 @@ from lp.testing import (
     BrowserTestCase,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.pages import (
     extract_text,
@@ -44,10 +42,7 @@ class TestGitRefView(BrowserTestCase):
 
     def setUp(self):
         super(TestGitRefView, self).setUp()
-        self.hosting_client = FakeMethod()
-        self.hosting_client.getLog = FakeMethod(result=[])
-        self.useFixture(
-            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
+        self.hosting_fixture = self.useFixture(GitHostingFixture())
 
     def test_rendering(self):
         repository = self.factory.makeGitRepository(
@@ -121,13 +116,13 @@ class TestGitRefView(BrowserTestCase):
             for i in range(5)]
 
     def scanRef(self, ref, tip):
-        self.hosting_client.getRefs = FakeMethod(
-            result={
-                ref.path: {"object": {"sha1": tip["sha1"], "type": "commit"}},
-                })
-        self.hosting_client.getCommits = FakeMethod(result=[tip])
-        self.hosting_client.getProperties = FakeMethod(
-            result={"default_branch": ref.path})
+        self.hosting_fixture.getRefs.result = {
+            ref.path: {"object": {"sha1": tip["sha1"], "type": "commit"}},
+            }
+        self.hosting_fixture.getCommits.result = [tip]
+        self.hosting_fixture.getProperties.result = {
+            "default_branch": ref.path,
+            }
         job = getUtility(IGitRefScanJobSource).create(
             removeSecurityProxy(ref.repository))
         with dbuser("branchscanner"):
@@ -136,7 +131,7 @@ class TestGitRefView(BrowserTestCase):
     def test_recent_commits(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
         log = self.makeCommitLog()
-        self.hosting_client.getLog.result = list(reversed(log))
+        self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
         view = create_initialized_view(ref, "+index")
         expected_texts = list(reversed([
@@ -156,7 +151,7 @@ class TestGitRefView(BrowserTestCase):
     def test_recent_commits_with_merge(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
         log = self.makeCommitLog()
-        self.hosting_client.getLog.result = list(reversed(log))
+        self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
         mp = self.factory.makeBranchMergeProposalForGit(target_ref=ref)
         merged_tip = dict(log[-1])
@@ -182,7 +177,7 @@ class TestGitRefView(BrowserTestCase):
     def test_recent_commits_with_merge_from_deleted_ref(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
         log = self.makeCommitLog()
-        self.hosting_client.getLog.result = list(reversed(log))
+        self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
         mp = self.factory.makeBranchMergeProposalForGit(target_ref=ref)
         merged_tip = dict(log[-1])
@@ -209,7 +204,7 @@ class TestGitRefView(BrowserTestCase):
     def test_all_commits_link(self):
         [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
         log = self.makeCommitLog()
-        self.hosting_client.getLog.result = list(reversed(log))
+        self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
         view = create_initialized_view(ref, "+index")
         recent_commits_tag = soupmatchers.Tag(
