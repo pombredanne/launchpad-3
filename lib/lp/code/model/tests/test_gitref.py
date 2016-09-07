@@ -27,7 +27,7 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.errors import InvalidBranchMergeProposal
-from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
@@ -39,8 +39,6 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -142,10 +140,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 u"tree": unicode(hashlib.sha1("").hexdigest()),
                 },
             ]
-        self.hosting_client = FakeMethod()
-        self.hosting_client.getLog = FakeMethod(result=self.log)
-        self.useFixture(
-            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
+        self.hosting_fixture = self.useFixture(GitHostingFixture(log=self.log))
 
     def test_basic(self):
         commits = self.ref.getCommits(self.sha1_tip)
@@ -153,7 +148,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": None, "stop": None, "logger": None})],
-            self.hosting_client.getLog.calls)
+            self.hosting_fixture.getLog.calls)
         self.assertThat(commits, MatchesListwise([
             ContainsDict({
                 "sha1": Equals(self.sha1_tip),
@@ -189,7 +184,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "commit_message": Is(None),
                 }),
             ]))
-        self.assertEqual([], self.hosting_client.getLog.calls)
+        self.assertEqual([], self.hosting_fixture.getLog.calls)
         path = self.ref.repository.getInternalPath()
         key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertIsNone(getUtility(IMemcacheClient).get(key.encode("UTF-8")))
@@ -210,7 +205,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": 10, "stop": self.sha1_root, "logger": None})],
-            self.hosting_client.getLog.calls)
+            self.hosting_fixture.getLog.calls)
         key = u"git.launchpad.dev:git-log:%s:%s:limit=10:stop=%s" % (
             path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
@@ -228,7 +223,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": None, "stop": self.sha1_root, "logger": None})],
-            self.hosting_client.getLog.calls)
+            self.hosting_fixture.getLog.calls)
         key = u"git.launchpad.dev:git-log:%s:%s:stop=%s" % (
             path, self.sha1_tip, self.sha1_root)
         self.assertEqual(

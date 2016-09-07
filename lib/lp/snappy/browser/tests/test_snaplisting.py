@@ -8,7 +8,7 @@ __metaclass__ = type
 import soupmatchers
 from testtools.matchers import Not
 
-from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.database.constants import (
     ONE_DAY_AGO,
     UTC_NOW,
@@ -21,8 +21,6 @@ from lp.testing import (
     person_logged_in,
     record_two_runs,
     )
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
@@ -57,9 +55,7 @@ class TestSnapListing(BrowserTestCase):
         self.assertSnapsLink(repository, "2 snap packages", git_ref=ref)
 
     def test_git_ref_links_to_snaps(self):
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture())
         [ref] = self.factory.makeGitRefs()
         self.assertSnapsLink(ref, "2 snap packages", git_ref=ref)
 

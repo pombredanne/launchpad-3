@@ -19,14 +19,12 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
-from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitObjectType
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
     )
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitJob,
     IGitRefScanJob,
@@ -39,6 +37,7 @@ from lp.code.model.gitjob import (
     GitRefScanJob,
     ReclaimGitRepositorySpaceJob,
     )
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -49,30 +48,10 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
-
-
-@implementer(IGitHostingClient)
-class FakeGitHostingClient:
-
-    def __init__(self, refs, commits, default_branch=u"refs/heads/master"):
-        self._refs = refs
-        self._commits = commits
-        self._default_branch = default_branch
-
-    def getRefs(self, paths):
-        return self._refs
-
-    def getCommits(self, path, commit_oids, logger=None):
-        return self._commits
-
-    def getProperties(self, path):
-        return {u"default_branch": self._default_branch}
 
 
 class TestGitJob(TestCaseWithFactory):
@@ -90,7 +69,7 @@ class TestGitJob(TestCaseWithFactory):
 class TestGitJobDerived(TestCaseWithFactory):
     """Tests for `GitJobDerived`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_getOopsMailController(self):
         """By default, no mail is sent about failed BranchJobs."""
@@ -103,7 +82,7 @@ class TestGitJobDerived(TestCaseWithFactory):
 class TestGitRefScanJob(TestCaseWithFactory):
     """Tests for `GitRefScanJob`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     @staticmethod
     def makeFakeRefs(paths):
@@ -165,10 +144,9 @@ class TestGitRefScanJob(TestCaseWithFactory):
         author = repository.owner
         author_date_start = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         author_date_gen = time_counter(author_date_start, timedelta(days=1))
-        hosting_client = FakeGitHostingClient(
-            self.makeFakeRefs(paths),
-            self.makeFakeCommits(author, author_date_gen, paths))
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture(
+            refs=self.makeFakeRefs(paths),
+            commits=self.makeFakeCommits(author, author_date_gen, paths)))
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
@@ -177,8 +155,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
     def test_logs_bad_ref_info(self):
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
-        hosting_client = FakeGitHostingClient({u"refs/heads/master": {}}, [])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture(refs={u"refs/heads/master": {}}))
         expected_message = (
             'Unconvertible ref refs/heads/master {}: '
             'ref info does not contain "object" key')
@@ -197,8 +174,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
             target=repository, event_types=['git:push:0.1'])
         job = GitRefScanJob.create(repository)
         paths = (u'refs/heads/master', u'refs/tags/2.0')
-        hosting_client = FakeGitHostingClient(self.makeFakeRefs(paths), [])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture(refs=self.makeFakeRefs(paths)))
         with dbuser('branchscanner'):
             JobRunner([job]).runAll()
         delivery = hook.deliveries.one()
@@ -244,11 +220,8 @@ class TestGitRefScanJob(TestCaseWithFactory):
                 'type': 'commit',
                 }},
             }
-        hosting_client = FakeGitHostingClient(new_refs, [])
-        hosting_client.getLog = FakeMethod(result=[])
-        hosting_client.detectMerges = FakeMethod(
-            result={source.commit_sha1: u'0' * 40})
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        new_merges = {source.commit_sha1: u'0' * 40}
+        self.useFixture(GitHostingFixture(refs=new_refs, merges=new_merges))
         job = GitRefScanJob.create(repository)
         with dbuser('branchscanner'):
             JobRunner([job]).runAll()
@@ -307,7 +280,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
 class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
     """Tests for `ReclaimGitRepositorySpaceJob`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_provides_interface(self):
         # `ReclaimGitRepositorySpaceJob` objects provide
@@ -352,17 +325,15 @@ class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
     def test_run(self):
         # Running a job to reclaim space sends a request to the hosting
         # service.
-        hosting_client = FakeGitHostingClient({}, [])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        hosting_fixture = self.useFixture(GitHostingFixture())
         name = "/~owner/+git/gone"
         path = "1"
         job = ReclaimGitRepositorySpaceJob.create(name, path)
         self.makeJobReady(job)
         [job] = list(ReclaimGitRepositorySpaceJob.iterReady())
         with dbuser("branchscanner"):
-            hosting_client.delete = FakeMethod()
             JobRunner([job]).runAll()
-        self.assertEqual([(path,)], hosting_client.delete.extract_args())
+        self.assertEqual([(path,)], hosting_fixture.delete.extract_args())
 
 
 # XXX cjwatson 2015-03-12: We should test that the jobs work via Celery too,

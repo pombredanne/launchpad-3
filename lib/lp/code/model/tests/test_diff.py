@@ -17,7 +17,6 @@ from bzrlib.patches import (
     RemoveLine,
     )
 import transaction
-from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
@@ -26,12 +25,12 @@ from lp.code.interfaces.diff import (
     IIncrementalDiff,
     IPreviewDiff,
     )
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
     )
 from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.librarian.interfaces.client import (
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
@@ -52,7 +51,6 @@ from lp.testing import (
     verifyObject,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -99,12 +97,6 @@ def create_example_bzr_merge(test_case):
     return bmp, source_rev_id, target_rev_id
 
 
-@implementer(IGitHostingClient)
-class FakeGitHostingClient:
-
-    pass
-
-
 class DiffTestCase(TestCaseWithFactory):
 
     def createExampleBzrMerge(self):
@@ -147,13 +139,6 @@ class DiffTestCase(TestCaseWithFactory):
         return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
                 prerequisite)
 
-    def installFakeGitMergeDiff(self, result=None, failure=None):
-        self.hosting_client = FakeGitHostingClient()
-        self.hosting_client.getMergeDiff = FakeMethod(
-            result=result, failure=failure)
-        self.useFixture(
-            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
-
     def createExampleGitMerge(self):
         """Create an example Git-based merge scenario.
 
@@ -178,10 +163,10 @@ class DiffTestCase(TestCaseWithFactory):
              a
             +b
             """) % (target_sha1[:7], source_sha1[:7])
-        self.installFakeGitMergeDiff(result={
+        self.hosting_fixture = self.useFixture(GitHostingFixture(merge_diff={
             "patch": patch,
             "conflicts": ["foo"],
-            })
+            }))
         return bmp, source_sha1, target_sha1, patch
 
 

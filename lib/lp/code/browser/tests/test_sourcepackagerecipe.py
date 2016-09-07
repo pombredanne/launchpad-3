@@ -35,13 +35,15 @@ from lp.code.browser.sourcepackagerecipe import (
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.sourcepackagerecipe import (
     GIT_RECIPES_FEATURE_FLAG,
     MINIMAL_RECIPE_TEXT_BZR,
     MINIMAL_RECIPE_TEXT_GIT,
     )
-from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.code.tests.helpers import (
+    GitHostingFixture,
+    recipe_parser_newest_version,
+    )
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -64,8 +66,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.deprecated import LaunchpadFormHarness
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -857,9 +857,7 @@ class TestSourcePackageRecipeAddViewGit(
 
     def setUp(self):
         super(TestSourcePackageRecipeAddViewGit, self).setUp()
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture())
 
     def makeBranchAndPackage(self):
         product = self.factory.makeProduct(

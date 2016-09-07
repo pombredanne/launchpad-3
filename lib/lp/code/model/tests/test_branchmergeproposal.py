@@ -60,7 +60,6 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter,
     notify_modified,
     )
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposalGetter,
     is_valid_transition,
@@ -72,6 +71,7 @@ from lp.code.model.branchmergeproposaljob import (
     )
 from lp.code.tests.helpers import (
     add_revision_to_branch,
+    GitHostingFixture,
     make_merge_proposal_without_reviewers,
     )
 from lp.registry.enums import TeamMembershipPolicy
@@ -80,6 +80,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.memcache.testing import MemcacheFixture
 from lp.services.webapp import canonical_url
 from lp.services.xref.interfaces import IXRefSet
 from lp.testing import (
@@ -95,8 +96,6 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -1460,12 +1459,9 @@ class TestBranchMergeProposalBugsGit(
 
     def setUp(self):
         super(TestBranchMergeProposalBugsGit, self).setUp()
-        # Disable GitRef._getLog's use of memcache; we don't need it here,
-        # it requires more time-consuming test setup, and it makes it harder
-        # to repeatedly run updateRelatedBugsFromSource with different log
-        # responses.
-        self.useFixture(FeatureFixture(
-            {u"code.git.log.disable_memcache": u"on"}))
+        self.hosting_fixture = self.useFixture(GitHostingFixture(
+            disable_memcache=False))
+        self.memcache_fixture = self.useFixture(MemcacheFixture())
 
     def _makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
@@ -1475,8 +1471,7 @@ class TestBranchMergeProposalBugsGit(
         # parses commit messages.
         bugs = [self.factory.makeBug() for _ in range(3)]
         bmp = self._makeBranchMergeProposal()
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[
+        self.hosting_fixture.getLog.result = [
             {
                 u"sha1": bmp.source_git_commit_sha1,
                 u"message": u"Commit 1\n\nLP: #%d" % bugs[0].id,
@@ -1495,8 +1490,7 @@ class TestBranchMergeProposalBugsGit(
                 # Non-existent bug ID will not be returned.
                 u"message": u"Non-existent bug; LP: #%d" % (bugs[2].id + 100),
                 },
-            ])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+            ]
         related_bugs = bmp._fetchRelatedBugIDsFromSource()
         path = "%s:%s" % (
             bmp.target_git_repository.getInternalPath(),
@@ -1505,22 +1499,18 @@ class TestBranchMergeProposalBugsGit(
             [((path, bmp.source_git_commit_sha1),
               {"limit": 10, "stop": bmp.target_git_commit_sha1,
                "logger": None})],
-            hosting_client.getLog.calls)
+            self.hosting_fixture.getLog.calls)
         self.assertContentEqual([bugs[0].id, bugs[2].id], related_bugs)
 
     def _setUpLog(self, bugs):
         """Set up a fake log response referring to the given bugs."""
-        if getattr(self, "hosting_client", None) is None:
-            self.hosting_client = FakeMethod()
-            self.hosting_client.getLog = FakeMethod()
-            self.useFixture(
-                ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
-        self.hosting_client.getLog = FakeMethod(result=[
+        self.hosting_fixture.getLog.result = [
             {
                 u"sha1": unicode(hashlib.sha1(str(i)).hexdigest()),
                 u"message": u"LP: #%d" % bug.id,
                 }
-            for i, bug in enumerate(bugs)])
+            for i, bug in enumerate(bugs)]
+        self.memcache_fixture.clear()
 
     def test_updateRelatedBugsFromSource_no_links(self):
         # updateRelatedBugsFromSource does nothing if there are no related
