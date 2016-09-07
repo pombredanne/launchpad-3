@@ -1816,23 +1816,23 @@ class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
         self.assertNotEqual(ref2_2, bmp2.source_git_ref)
 
 
-class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
+class TestGitRepositoryUpdateLandingTargets(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_scheduleDiffUpdates(self):
+    def test_schedules_diff_updates(self):
         """Create jobs for all merge proposals."""
         bmp1 = self.factory.makeBranchMergeProposalForGit()
         bmp2 = self.factory.makeBranchMergeProposalForGit(
             source_ref=bmp1.source_git_ref)
-        jobs = bmp1.source_git_repository.scheduleDiffUpdates(
+        jobs = bmp1.source_git_repository.updateLandingTargets(
             [bmp1.source_git_path])
         self.assertEqual(2, len(jobs))
         bmps_to_update = [
             removeSecurityProxy(job).branch_merge_proposal for job in jobs]
         self.assertContentEqual([bmp1, bmp2], bmps_to_update)
 
-    def test_scheduleDiffUpdates_ignores_final(self):
+    def test_ignores_final(self):
         """Diffs for proposals in final states aren't updated."""
         [source_ref] = self.factory.makeGitRefs()
         for state in FINAL_STATES:
@@ -1843,7 +1843,7 @@ class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
         for bmp in source_ref.landing_targets:
             if bmp.queue_status not in FINAL_STATES:
                 removeSecurityProxy(bmp).deleteProposal()
-        jobs = source_ref.repository.scheduleDiffUpdates([source_ref.path])
+        jobs = source_ref.repository.updateLandingTargets([source_ref.path])
         self.assertEqual(0, len(jobs))
 
 

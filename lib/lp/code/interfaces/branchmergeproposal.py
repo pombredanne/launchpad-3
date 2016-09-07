@@ -386,6 +386,12 @@ class IBranchMergeProposalView(Interface):
     def getRelatedBugTasks(user):
         """Return the Bug tasks related to this merge proposal."""
 
+    def updateRelatedBugsFromSource():
+        """Update related bug links based on commits in the source branch.
+
+        This is currently only meaningful for Git-based merge proposals.
+        """
+
     def getRevisionsSinceReviewStart():
         """Return all the revisions added since the review began.
 

@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
@@ -75,6 +76,7 @@ from lp.testing import (
     verifyObject,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     CeleryBzrsyncdJobLayer,
     CeleryJobLayer,
@@ -256,9 +258,27 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_run_git(self):
         bmp, _, _, patch = self.createExampleGitMerge()
+        self.hosting_client.getLog = FakeMethod(result=[])
         job = UpdatePreviewDiffJob.create(bmp)
         with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
+        self.assertEqual(patch, bmp.preview_diff.text)
+
+    def test_run_git_updates_related_bugs(self):
+        # The merge proposal has its related bugs updated.
+        bug = self.factory.makeBug()
+        bmp, _, _, patch = self.createExampleGitMerge()
+        self.hosting_client.getLog = FakeMethod(result=[
+            {
+                u"sha1": unicode(hashlib.sha1("tip").hexdigest()),
+                u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
+                },
+            ])
+        job = UpdatePreviewDiffJob.create(bmp)
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertEqual([bug], bmp.bugs)
+        self.assertEqual([bmp], bug.linked_merge_proposals)
         self.assertEqual(patch, bmp.preview_diff.text)
 
     def test_run_object_events(self):
@@ -363,6 +383,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.useFixture(FeatureFixture(
             {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: "on"}))
         bmp = self.createExampleGitMerge()[0]
+        self.hosting_client.getLog = FakeMethod(result=[])
         hook = self.factory.makeWebhook(
             target=bmp.target_git_repository,
             event_types=["merge-proposal:0.1"])

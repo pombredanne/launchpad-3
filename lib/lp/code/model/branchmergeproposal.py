@@ -12,6 +12,7 @@ __all__ = [
 
 from email.utils import make_msgid
 from operator import attrgetter
+import sys
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
@@ -39,10 +40,12 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -122,7 +125,12 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.errorlog import ScriptRequest
 from lp.services.xref.interfaces import IXRefSet
+from lp.soyuz.enums import (
+    re_bug_numbers,
+    re_lp_closes,
+    )
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -176,6 +184,10 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
             return True
     else:
         return True
+
+
+class TooManyRelatedBugs(Exception):
+    """A source branch has too many related bugs linked from commits."""
 
 
 @implementer(IBranchMergeProposal, IHasBranchTarget)
@@ -391,12 +403,14 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             return filter_bugtasks_by_context(
                 self.source_git_repository.target, tasks)
 
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See `BugLinkTargetMixin`."""
+        if props is None:
+            props = {}
         # XXX cjwatson 2016-06-11: Should set creator.
         getUtility(IXRefSet).create(
             {(u'merge_proposal', unicode(self.id)):
-                {(u'bug', unicode(bug.id)): {}}})
+                {(u'bug', unicode(bug.id)): props}})
 
     def deleteBugLink(self, bug):
         """See `BugLinkTargetMixin`."""
@@ -404,7 +418,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             {(u'merge_proposal', unicode(self.id)):
                 [(u'bug', unicode(bug.id))]})
 
-    def linkBug(self, bug, user=None, check_permissions=True):
+    def linkBug(self, bug, user=None, check_permissions=True, props=None):
         """See `BugLinkTargetMixin`."""
         if self.source_branch is not None:
             # For Bazaar, we currently only store bug/branch links.
@@ -412,7 +426,8 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         else:
             # Otherwise, link the bug to the merge proposal directly.
             return super(BranchMergeProposal, self).linkBug(
-                bug, user=user, check_permissions=check_permissions)
+                bug, user=user, check_permissions=check_permissions,
+                props=props)
 
     def unlinkBug(self, bug, user=None, check_permissions=True):
         """See `BugLinkTargetMixin`."""
@@ -427,6 +442,76 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             # Otherwise, unlink the bug from the merge proposal directly.
             return super(BranchMergeProposal, self).unlinkBug(
                 bug, user=user, check_permissions=check_permissions)
+
+    def _reportTooManyRelatedBugs(self):
+        properties = [
+            ("error-explanation", (
+                "Number of related bugs exceeds limit %d." %
+                config.codehosting.related_bugs_from_source_limit)),
+            ("source", self.merge_source.identity),
+            ("target", self.merge_target.identity),
+            ]
+        if self.merge_prerequisite is not None:
+            properties.append(
+                ("prerequisite", self.merge_prerequisite.identity))
+        request = ScriptRequest(properties)
+        getUtility(IErrorReportingUtility).raising(sys.exc_info(), request)
+
+    def _fetchRelatedBugIDsFromSource(self):
+        """Fetch related bug IDs from the source branch."""
+        from lp.bugs.model.bug import Bug
+        # Only currently used for Git.
+        assert self.source_git_ref is not None
+        # XXX cjwatson 2016-06-11: This may return too many bugs in the case
+        # where a prerequisite branch fixes a bug which is not fixed by
+        # further commits on the source branch.  To fix this, we need
+        # turnip's log API to be able to take multiple stop parameters.
+        commits = self.getUnlandedSourceBranchRevisions()
+        bug_ids = set()
+        limit = config.codehosting.related_bugs_from_source_limit
+        try:
+            for commit in commits:
+                if "commit_message" in commit:
+                    for match in re_lp_closes.finditer(
+                            commit["commit_message"]):
+                        for bug_num in re_bug_numbers.findall(match.group(0)):
+                            bug_id = int(bug_num)
+                            if bug_id not in bug_ids and len(bug_ids) == limit:
+                                raise TooManyRelatedBugs()
+                            bug_ids.add(bug_id)
+        except TooManyRelatedBugs:
+            self._reportTooManyRelatedBugs()
+        # Only return bug IDs that exist.
+        return set(IStore(Bug).find(Bug.id, Bug.id.is_in(bug_ids)))
+
+    def updateRelatedBugsFromSource(self):
+        """See `IBranchMergeProposal`."""
+        from lp.bugs.model.bug import Bug
+        # Only currently used for Git.
+        assert self.source_git_ref is not None
+        current_bug_ids_from_source = {
+            int(id): (props['metadata'] or {}).get('from_source', False)
+            for (_, id), props in getUtility(IXRefSet).findFrom(
+                (u'merge_proposal', unicode(self.id)), types=[u'bug']).items()}
+        current_bug_ids = set(current_bug_ids_from_source)
+        new_bug_ids = self._fetchRelatedBugIDsFromSource()
+        # Only remove links marked as originating in the source branch.
+        remove_bugs = load(Bug, set(
+            bug_id for bug_id in current_bug_ids - new_bug_ids
+            if current_bug_ids_from_source[bug_id]))
+        for bug in remove_bugs:
+            self.unlinkBug(bug, check_permissions=False)
+        add_bugs = load(Bug, new_bug_ids - current_bug_ids)
+        # XXX cjwatson 2016-06-11: We could perhaps set creator and
+        # date_created based on commit information, but then we'd have to
+        # work out what to do in the case of multiple commits referring to
+        # the same bug, updating properties if more such commits arrive
+        # later, etc.  This is simple and does the job for now.
+        for bug in add_bugs:
+            self.linkBug(
+                bug, user=getUtility(ILaunchpadCelebrities).janitor,
+                check_permissions=False,
+                props={'metadata': {'from_source': True}})
 
     @property
     def address(self):
