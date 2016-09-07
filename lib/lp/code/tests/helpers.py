@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -23,6 +23,7 @@ from difflib import unified_diff
 from itertools import count
 
 from bzrlib.plugins.builder.recipe import RecipeParser
+import fixtures
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import (
@@ -34,6 +35,7 @@ from lp.app.enums import InformationType
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.seriessourcepackagebranch import (
@@ -42,10 +44,13 @@ from lp.code.model.seriessourcepackagebranch import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import cursor
+from lp.services.memcache.testing import MemcacheFixture
 from lp.testing import (
     run_with_login,
     time_counter,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 
 
 def mark_all_merge_proposal_jobs_done():
@@ -291,3 +296,38 @@ def remove_all_sample_data_branches():
     c.execute('delete from codeimportjob')
     c.execute('delete from codeimport')
     c.execute('delete from branch')
+
+
+class GitHostingFixture(fixtures.Fixture):
+    """A fixture that temporarily registers a fake Git hosting client."""
+
+    def __init__(self, default_branch=u"refs/heads/master",
+                 refs=None, commits=None, log=None, diff=None, merge_diff=None,
+                 merges=None, blob=None, disable_memcache=True):
+        self.create = FakeMethod()
+        self.getProperties = FakeMethod(
+            result={u"default_branch": default_branch})
+        self.setProperties = FakeMethod()
+        self.getRefs = FakeMethod(result=({} if refs is None else refs))
+        self.getCommits = FakeMethod(
+            result=([] if commits is None else commits))
+        self.getLog = FakeMethod(result=([] if log is None else log))
+        self.getDiff = FakeMethod(result=({} if diff is None else diff))
+        self.getMergeDiff = FakeMethod(
+            result={} if merge_diff is None else merge_diff)
+        self.detectMerges = FakeMethod(
+            result=({} if merges is None else merges))
+        self.getBlob = FakeMethod(result=blob)
+        self.delete = FakeMethod()
+        self.disable_memcache = disable_memcache
+
+    def setUp(self):
+        super(GitHostingFixture, self).setUp()
+        self.useFixture(ZopeUtilityFixture(self, IGitHostingClient))
+        if self.disable_memcache:
+            # Most tests that involve GitRef._getLog don't want to cache the
+            # result: doing so requires more time-consuming test setup and
+            # makes it awkward to repeat the same call with different log
+            # responses.  For convenience, we make it easy to disable that
+            # here.
+            self.useFixture(MemcacheFixture())
