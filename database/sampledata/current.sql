@@ -3434,7 +3434,7 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (6, 1, 19, 'alsa-utils', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (7, 1, 20, 'cnews', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', 'linux-2.6.12', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 12);
 
