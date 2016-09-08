@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -41,6 +41,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
@@ -57,6 +58,12 @@ class GitRepositoryTargetWidgetBase(BrowserWidget):
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
+        if bool(getFeatureFlag("disclosure.dsp_picker.enabled")):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            package_vocab = "DistributionSourcePackage"
+        else:
+            package_vocab = "BinaryAndSourcePackageName"
         fields = [
             Choice(
                 __name__="project", title=u"Project",
@@ -67,7 +74,7 @@ class GitRepositoryTargetWidgetBase(BrowserWidget):
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__="package", title=u"Package",
-                required=False, vocabulary="BinaryAndSourcePackageName"),
+                required=False, vocabulary=package_vocab),
             ]
         if not self._read_only:
             self.distribution_widget = CustomWidgetFactory(
@@ -182,6 +189,9 @@ class GitRepositoryTargetWidget(GitRepositoryTargetWidgetBase, InputWidget):
                         "Launchpad" % entered_name))
             try:
                 if self.package_widget.hasInput():
+                    if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                        self.package_widget.vocabulary.setDistribution(
+                            distribution)
                     package_name = self.package_widget.getInputValue()
                 else:
                     package_name = None
