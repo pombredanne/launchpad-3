@@ -76,7 +76,6 @@ from lp.testing import (
     verifyObject,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     CeleryBzrsyncdJobLayer,
     CeleryJobLayer,
@@ -258,7 +257,6 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_run_git(self):
         bmp, _, _, patch = self.createExampleGitMerge()
-        self.hosting_client.getLog = FakeMethod(result=[])
         job = UpdatePreviewDiffJob.create(bmp)
         with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
@@ -267,13 +265,17 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
     def test_run_git_updates_related_bugs(self):
         # The merge proposal has its related bugs updated.
         bug = self.factory.makeBug()
+        # Create a structural subscription to ensure we don't short-circuit
+        # in _get_structural_subscription_filter_id_query.
+        subscriber = self.factory.makePerson()
+        bug.default_bugtask.target.addSubscription(subscriber, subscriber)
         bmp, _, _, patch = self.createExampleGitMerge()
-        self.hosting_client.getLog = FakeMethod(result=[
+        self.hosting_fixture.getLog.result = [
             {
                 u"sha1": unicode(hashlib.sha1("tip").hexdigest()),
                 u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
                 },
-            ])
+            ]
         job = UpdatePreviewDiffJob.create(bmp)
         with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
@@ -383,7 +385,6 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.useFixture(FeatureFixture(
             {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: "on"}))
         bmp = self.createExampleGitMerge()[0]
-        self.hosting_client.getLog = FakeMethod(result=[])
         hook = self.factory.makeWebhook(
             target=bmp.target_git_repository,
             event_types=["merge-proposal:0.1"])

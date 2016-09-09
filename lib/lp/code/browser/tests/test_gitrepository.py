@@ -22,8 +22,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
@@ -39,8 +39,6 @@ from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
     )
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Contains,
@@ -648,9 +646,7 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
     def test_change_default_branch(self):
         # An authorised user can change the default branch to one that
         # exists.  They may omit "refs/heads/".
-        hosting_client = FakeMethod()
-        hosting_client.setProperties = FakeMethod()
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        hosting_fixture = self.useFixture(GitHostingFixture())
         person = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=person)
         master, new = self.factory.makeGitRefs(
@@ -665,7 +661,7 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
             self.assertEqual(
                 [((repository.getInternalPath(),),
                  {u"default_branch": u"refs/heads/new"})],
-                hosting_client.setProperties.calls)
+                hosting_fixture.setProperties.calls)
             self.assertEqual(u"refs/heads/new", repository.default_branch)
 
     def test_change_default_branch_nonexistent(self):
@@ -762,10 +758,9 @@ class TestGitRepositoryDiffView(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_render(self):
-        hosting_client = FakeMethod()
         diff = u"A fake diff\n"
-        hosting_client.getDiff = FakeMethod(result={"patch": diff})
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        hosting_fixture = self.useFixture(GitHostingFixture(
+            diff={"patch": diff}))
         person = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=person)
         browser = self.getUserBrowser(
@@ -773,22 +768,20 @@ class TestGitRepositoryDiffView(BrowserTestCase):
         with person_logged_in(person):
             self.assertEqual(
                 [((repository.getInternalPath(), "0123456^", "0123456"), {})],
-                hosting_client.getDiff.calls)
+                hosting_fixture.getDiff.calls)
         self.assertEqual(
             'text/x-patch;charset=UTF-8', browser.headers["Content-Type"])
         self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
         self.assertEqual(
             "attachment; filename=0123456^_0123456.diff",
             browser.headers["Content-Disposition"])
-        self.assertEqual("A fake diff\n", browser.contents)
+        self.assertEqual(diff, browser.contents)
 
     def test_security(self):
         # A user who can see a private repository can fetch diffs from it,
         # but other users cannot.
-        hosting_client = FakeMethod()
         diff = u"A fake diff\n"
-        hosting_client.getDiff = FakeMethod(result={"patch": diff})
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture(diff={"patch": diff}))
         person = self.factory.makePerson()
         project = self.factory.makeProduct(
             owner=person, information_type=InformationType.PROPRIETARY)
@@ -799,7 +792,7 @@ class TestGitRepositoryDiffView(BrowserTestCase):
             repository_url = canonical_url(repository)
         browser = self.getUserBrowser(
             repository_url + "/+diff/0123456/0123456^", user=person)
-        self.assertEqual("A fake diff\n", browser.contents)
+        self.assertEqual(diff, browser.contents)
         self.useFixture(FakeLogger())
         self.assertRaises(
             Unauthorized, self.getUserBrowser,

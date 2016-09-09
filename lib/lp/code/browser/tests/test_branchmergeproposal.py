@@ -66,10 +66,10 @@ from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     )
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
+    GitHostingFixture,
     make_merge_proposal_without_reviewers,
     )
 from lp.code.xmlrpc.git import GitAPI
@@ -97,8 +97,6 @@ from lp.testing import (
     time_counter,
     verifyObject,
     )
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -117,10 +115,7 @@ class GitHostingClientMixin:
 
     def setUp(self):
         super(GitHostingClientMixin, self).setUp()
-        self.hosting_client = FakeMethod()
-        self.hosting_client.getLog = FakeMethod(result=[])
-        self.useFixture(
-            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture())
 
 
 class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
@@ -246,8 +241,6 @@ class TestBranchMergeProposalMergedViewGit(
     TestBranchMergeProposalMergedViewMixin, GitHostingClientMixin,
     BrowserTestCase):
     """Tests for `BranchMergeProposalMergedView` for Git."""
-
-    layer = LaunchpadFunctionalLayer
 
     arbitrary_revisions = ("0" * 40, "1" * 40, "2" * 40)
     merged_revision_text = 'Merged Revision ID'
@@ -1046,8 +1039,6 @@ class TestBranchMergeProposalRequestReviewViewGit(
     BrowserTestCase):
     """Test `BranchMergeProposalRequestReviewView` for Git."""
 
-    layer = LaunchpadFunctionalLayer
-
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
 
@@ -1278,7 +1269,7 @@ class TestResubmitBrowserBzr(BrowserTestCase):
 class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
     """Browser tests for resubmitting branch merge proposals for Git."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_resubmit_text(self):
         """The text of the resubmit page is as expected."""
@@ -1488,8 +1479,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         commit_date = self.factory.getUniqueDate()
         bmp = self.factory.makeBranchMergeProposalForGit(
             date_created=review_date)
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[
+        self.useFixture(GitHostingFixture(log=[
             {
                 u'sha1': unicode(hashlib.sha1(b'0').hexdigest()),
                 u'message': u'0',
@@ -1499,8 +1489,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                     u'time': int((commit_date - epoch).total_seconds()),
                     },
                 }
-            ])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+            ]))
 
         view = create_initialized_view(bmp, '+index')
         new_commits = view.conversation.comments[0]
@@ -1586,8 +1575,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         sha1 = unicode(hashlib.sha1(b'0').hexdigest())
         epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         commit_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
-        hosting_client = FakeMethod()
-        hosting_client.getLog = FakeMethod(result=[
+        self.useFixture(GitHostingFixture(log=[
             {
                 u'sha1': sha1,
                 u'message': u'Sample message',
@@ -1597,9 +1585,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                     u'time': int((commit_date - epoch).total_seconds()),
                     },
                 }
-            ])
+            ]))
         bmp.source_git_repository.removeRefs([bmp.source_git_path])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
         browser = self.getUserBrowser(canonical_url(bmp, rootsite='code'))
         tag = first_tag_by_class(browser.contents, 'commit-details')
         self.assertEqual(
@@ -1607,10 +1594,9 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             "on 2015-01-01" % sha1, extract_text(tag))
 
 
-class TestBranchMergeProposalBrowserView(
-    GitHostingClientMixin, BrowserTestCase):
+class TestBranchMergeProposalBrowserView(BrowserTestCase):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_prerequisite_bzr(self):
         # A prerequisite branch is rendered in the Bazaar case.
@@ -1623,6 +1609,7 @@ class TestBranchMergeProposalBrowserView(
 
     def test_prerequisite_git(self):
         # A prerequisite reference is rendered in the Git case.
+        self.useFixture(GitHostingFixture())
         [ref] = self.factory.makeGitRefs()
         identity = ref.identity
         bmp = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref)
@@ -1634,9 +1621,10 @@ class TestBranchMergeProposalBrowserView(
         # Rendering a Git-based merge proposal makes the correct calls to
         # the hosting service, including requesting cross-repository
         # information.
+        hosting_fixture = self.useFixture(GitHostingFixture())
         bmp = self.factory.makeBranchMergeProposalForGit()
         self.getMainText(bmp, '+index')
-        self.assertThat(self.hosting_client.getLog.calls, MatchesSetwise(
+        self.assertThat(hosting_fixture.getLog.calls, MatchesSetwise(
             # _getNewerRevisions
             MatchesListwise([
                 Equals((
@@ -1857,7 +1845,7 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
         self.assertEqual('Eric on 2008-09-10', view.status_title)
 
 
-class TestBranchMergeProposal(GitHostingClientMixin, BrowserTestCase):
+class TestBranchMergeProposal(BrowserTestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -1946,7 +1934,8 @@ class TestBranchMergeProposal(GitHostingClientMixin, BrowserTestCase):
         bmp = self.factory.makeBranchMergeProposalForGit()
         comment = self.factory.makeCodeReviewComment(
             body='x y' * 100, merge_proposal=bmp)
-        self.hosting_client.getLog.failure = TimeoutError
+        hosting_fixture = self.useFixture(GitHostingFixture())
+        hosting_fixture.getLog.failure = TimeoutError
         browser = self.getViewBrowser(comment.branch_merge_proposal)
         self.assertIn('x y' * 100, browser.contents)
 
@@ -2190,8 +2179,6 @@ class TestBranchMergeProposalDeleteViewGit(
     TestBranchMergeProposalDeleteViewMixin, GitHostingClientMixin,
     BrowserTestCase):
     """Test the BranchMergeProposal deletion view for Git."""
-
-    layer = LaunchpadFunctionalLayer
 
     def _makeBranchMergeProposal(self, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(**kwargs)

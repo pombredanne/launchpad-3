@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal Git API."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -16,12 +15,12 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_SERVICES,
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitrepository import (
     GIT_REPOSITORY_NAME_VALIDATION_ERROR_MESSAGE,
     IGitRepositorySet,
     )
+from lp.code.tests.helpers import GitHostingFixture
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import TeamMembershipPolicy
 from lp.services.webapp.escaping import html_escape
@@ -32,31 +31,11 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.xmlrpc import faults
-
-
-@implementer(IGitHostingClient)
-class FakeGitHostingClient:
-    """A GitHostingClient lookalike that just logs calls."""
-
-    def __init__(self):
-        self.calls = []
-
-    def create(self, path, clone_from=None):
-        self.calls.append(("create", path, clone_from))
-
-
-@implementer(IGitHostingClient)
-class BrokenGitHostingClient:
-    """A GitHostingClient lookalike that pretends the remote end is down."""
-
-    def create(self, path, clone_from=None):
-        raise GitRepositoryCreationFault("nothing here")
 
 
 class TestGitAPIMixin:
@@ -65,9 +44,7 @@ class TestGitAPIMixin:
     def setUp(self):
         super(TestGitAPIMixin, self).setUp()
         self.git_api = GitAPI(None, None)
-        self.hosting_client = FakeGitHostingClient()
-        self.useFixture(
-            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
+        self.hosting_fixture = self.useFixture(GitHostingFixture())
         self.repository_set = getUtility(IGitRepositorySet)
 
     def assertGitRepositoryNotFound(self, requester, path, permission="read",
@@ -174,15 +151,16 @@ class TestGitAPIMixin:
              "trailing": "", "private": private},
             translation)
         self.assertEqual(
-            ("create", repository.getInternalPath()),
-            self.hosting_client.calls[0][0:2])
+            (repository.getInternalPath(),),
+            self.hosting_fixture.create.extract_args()[0])
         return repository
 
     def assertCreatesFromClone(self, requester, path, cloned_from,
                                can_authenticate=False):
         self.assertCreates(requester, path, can_authenticate)
         self.assertEqual(
-            cloned_from.getInternalPath(), self.hosting_client.calls[0][2])
+            {"clone_from": cloned_from.getInternalPath()},
+            self.hosting_fixture.create.extract_kwargs()[0])
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
@@ -610,8 +588,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_translatePath_create_broken_hosting_service(self):
         # If the hosting service is down, trying to create a repository
         # fails and doesn't leave junk around in the Launchpad database.
-        hosting_client = BrokenGitHostingClient()
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.hosting_fixture.create.failure = GitRepositoryCreationFault(
+            "nothing here")
         requester = self.factory.makePerson()
         initial_count = getUtility(IAllGitRepositories).count()
         oops_id = self.assertOopsOccurred(
