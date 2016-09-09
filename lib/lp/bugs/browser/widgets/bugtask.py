@@ -15,13 +15,11 @@ __all__ = [
     "DBItemDisplayWidget",
     "FileBugSourcePackageNameWidget",
     "NewLineToSpacesWidget",
-    "UbuntuSourcePackageNameWidget",
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib.interfaces import (
-    ConversionError,
     IDisplayWidget,
     IInputWidget,
     InputErrors,
@@ -39,24 +37,17 @@ from zope.interface import (
     implementer,
     Interface,
     )
-from zope.schema.interfaces import (
-    InvalidValue,
-    ValidationError,
-    )
+from zope.schema.interfaces import ValidationError
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp import _
 from lp.app.browser.tales import TeamFormatterAPI
-from lp.app.errors import (
-    NotFoundError,
-    UnexpectedFormData,
-    )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.errors import UnexpectedFormData
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
-    DistributionSourcePackagePickerWidget,
     PersonPickerWidget,
+    SourcePackageNameWidgetBase,
     )
 from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
@@ -483,27 +474,14 @@ class BugTaskTargetWidget(LaunchpadTargetWidget):
         return vocabulary
 
 
-class BugTaskSourcePackageNameWidget(DistributionSourcePackagePickerWidget):
+class BugTaskSourcePackageNameWidget(SourcePackageNameWidgetBase):
     """A widget for associating a bugtask with a SourcePackageName.
 
     It accepts both binary and source package names.
     """
 
-    # Pages that use this widget don't display the distribution, but this
-    # can only be used by bugtasks on the distribution in question so the
-    # vocabulary will be able to work it out for itself.
-    distribution_id = ''
-
-    def __init__(self, field, vocabulary, request):
-        super(BugTaskSourcePackageNameWidget, self).__init__(
-            field, vocabulary, request)
-        self.cached_values = {}
-
     def getDistribution(self):
-        """Get the distribution used for package validation.
-
-        The package name has to be published in the returned distribution.
-        """
+        """See `SourcePackageNameWidgetBase`."""
         field = self.context
         distribution = field.context.distribution
         if distribution is None and field.context.distroseries is not None:
@@ -513,39 +491,8 @@ class BugTaskSourcePackageNameWidget(DistributionSourcePackagePickerWidget):
             " bugtasks on distributions or on distribution series.")
         return distribution
 
-    def _toFieldValue(self, input):
-        if not input:
-            return self.context.missing_value
 
-        distribution = self.getDistribution()
-        cached_value = self.cached_values.get(input)
-        if cached_value:
-            return cached_value
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            try:
-                self.context.vocabulary.setDistribution(distribution)
-                return self.context.vocabulary.getTermByToken(input).value
-            except LookupError:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-        # Else the untrusted SPN vocab was used so it needs secondary
-        # verification.
-        try:
-            source = distribution.guessPublishedSourcePackageName(input)
-        except NotFoundError:
-            try:
-                source = self.convertTokensToValues([input])[0]
-            except InvalidValue:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-        self.cached_values[input] = source
-        return source
-
-
-class BugTaskAlsoAffectsSourcePackageNameWidget(
-    BugTaskSourcePackageNameWidget):
+class BugTaskAlsoAffectsSourcePackageNameWidget(SourcePackageNameWidgetBase):
     """Package widget for +distrotask.
 
     This widget works the same as `BugTaskSourcePackageNameWidget`, except
@@ -555,7 +502,7 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
     distribution_id = 'field.distribution'
 
     def getDistribution(self):
-        """See `BugTaskSourcePackageNameWidget`."""
+        """See `SourcePackageNameWidgetBase`."""
         distribution_name = self.request.form.get('field.distribution')
         if distribution_name is None:
             raise UnexpectedFormData(
@@ -568,7 +515,7 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
         return distribution
 
 
-class FileBugSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
+class FileBugSourcePackageNameWidget(SourcePackageNameWidgetBase):
     """Package widget for +filebug.
 
     This widget works the same as `BugTaskSourcePackageNameWidget`, except
@@ -577,7 +524,7 @@ class FileBugSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
     """
 
     def getDistribution(self):
-        """See `BugTaskSourcePackageNameWidget`."""
+        """See `SourcePackageNameWidgetBase`."""
         field = self.context
         pillar = field.context.pillar
         assert IDistribution.providedBy(pillar), (
@@ -586,7 +533,7 @@ class FileBugSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
         return pillar
 
     def _toFieldValue(self, input):
-        """See `BugTaskSourcePackageNameWidget`."""
+        """See `SourcePackageNameWidgetBase`."""
         source = super(FileBugSourcePackageNameWidget, self)._toFieldValue(
             input)
         if (source is not None and
@@ -602,16 +549,6 @@ class FileBugSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
             return bspn
         else:
             return source
-
-
-class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
-    """A widget to select Ubuntu packages."""
-
-    distribution_name = 'ubuntu'
-
-    def getDistribution(self):
-        """See `BugTaskSourcePackageNameWidget`"""
-        return getUtility(ILaunchpadCelebrities).ubuntu
 
 
 @implementer(IDisplayWidget)
