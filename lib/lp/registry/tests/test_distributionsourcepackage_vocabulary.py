@@ -175,6 +175,17 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(dsp.name, term.title)
         self.assertEqual(dsp, term.value)
 
+    def test_toTerm_dsp_no_distribution(self):
+        # The vocabulary can convert a DSP to a term even if it does not yet
+        # have a distribution.
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='foo', with_db=False)
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        term = vocabulary.toTerm(dsp)
+        self.assertEqual(dsp.name, term.token)
+        self.assertEqual(dsp.name, term.title)
+        self.assertEqual(dsp, term.value)
+
     def test_getTermByToken_error(self):
         # An error is raised if the token does not match a official DSP.
         distro = self.factory.makeDistribution()

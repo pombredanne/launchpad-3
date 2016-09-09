@@ -2073,7 +2073,6 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     def toTerm(self, spn_or_dsp):
         """See `IVocabulary`."""
-        self._assertHasDistribution()
         dsp = None
         binary_names = None
         if isinstance(spn_or_dsp, tuple):
@@ -2088,9 +2087,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
         elif spn_or_dsp is not None:
+            self._assertHasDistribution()
             dsp = self.distribution.getSourcePackage(spn_or_dsp)
         if dsp is not None:
-            if dsp == self.dsp or dsp.is_official:
+            if dsp == self.dsp or dsp.is_official or self.distribution is None:
                 if binary_names:
                     # Search already did the hard work of looking up binary
                     # names.

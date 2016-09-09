@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -28,6 +28,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
@@ -57,6 +58,7 @@ from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.popup import UbuntuSourcePackageNameWidget
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -86,6 +88,9 @@ from lp.registry.browser.pillar import (
 from lp.registry.browser.product import ProductSetBranchView
 from lp.registry.enums import VCSType
 from lp.registry.errors import CannotPackageProprietaryProduct
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -93,6 +98,7 @@ from lp.registry.interfaces.packaging import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -482,10 +488,25 @@ class ProductSeriesDetailedDisplayView(ProductSeriesView):
         return list(self.context.releases[:12])
 
 
+class IPackagingForm(IPackaging):
+
+    sourcepackagename = copy_field(
+        IPackaging['sourcepackagename'],
+        vocabularyName='DistributionSourcePackage')
+
+
 class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
 
-    schema = IPackaging
+    @property
+    def schema(self):
+        """See `LaunchpadFormView`."""
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return IPackagingForm
+        else:
+            return IPackaging
+
     field_names = ['sourcepackagename', 'distroseries']
+    custom_widget('sourcepackagename', UbuntuSourcePackageNameWidget)
     page_title = 'Ubuntu source packaging'
     label = page_title
 
@@ -497,7 +518,11 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         self._ubuntu_series = self._ubuntu.currentseries
         try:
             package = self.context.getPackage(self._ubuntu_series)
-            self.default_sourcepackagename = package.sourcepackagename
+            if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                self.default_sourcepackagename = self._ubuntu.getSourcePackage(
+                    package.sourcepackagename)
+            else:
+                self.default_sourcepackagename = package.sourcepackagename
         except NotFoundError:
             # The package has never been set.
             self.default_sourcepackagename = None
@@ -555,6 +580,8 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
     def validate(self, data):
         productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
+        if IDistributionSourcePackage.providedBy(sourcepackagename):
+            sourcepackagename = sourcepackagename.sourcepackagename
         distroseries = self._getSubmittedSeries(data)
 
         packaging_util = getUtility(IPackagingUtil)
@@ -595,6 +622,8 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         # ubuntu series. if none exists, one will be created
         distroseries = self._getSubmittedSeries(data)
         sourcepackagename = data['sourcepackagename']
+        if IDistributionSourcePackage.providedBy(sourcepackagename):
+            sourcepackagename = sourcepackagename.sourcepackagename
         if getUtility(IPackagingUtil).packagingEntryExists(
             sourcepackagename, distroseries, productseries=self.context):
             # There is no change.
@@ -602,7 +631,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         try:
             self.context.setPackaging(
                 distroseries, sourcepackagename, self.user)
-        except CannotPackageProprietaryProduct, e:
+        except CannotPackageProprietaryProduct as e:
             self.request.response.addErrorNotification(str(e))
 
 
