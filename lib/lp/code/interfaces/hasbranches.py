@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface definitions for IHas<code related bits>."""
@@ -87,15 +87,17 @@ class IHasMergeProposals(Interface):
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary=BranchMergeProposalStatus)))
-    @call_with(visible_by_user=REQUEST_USER)
+    @call_with(visible_by_user=REQUEST_USER, eager_load=True)
     @operation_returns_collection_of(Interface)  # Really IBranchMergeProposal.
     @export_read_operation()
     @operation_for_version('beta')
-    def getMergeProposals(status=None, visible_by_user=None):
+    def getMergeProposals(status=None, visible_by_user=None, eager_load=False):
         """Returns all merge proposals of a given status.
 
         :param status: A list of statuses to filter with.
         :param visible_by_user: Normally the user who is asking.
+        :param eager_load: If True, load related objects for the whole
+            collection.
         :returns: A list of `IBranchMergeProposal`.
         """
 
