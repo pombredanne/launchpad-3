@@ -305,6 +305,7 @@ class DistributionSourcePackagePickerWidget(VocabularyPickerWidget):
         return self._prefix + 'distribution'
 
     distribution_name = ''
+    distroseries_id = ''
 
 
 class SourcePackageNameWidgetBase(DistributionSourcePackagePickerWidget):
