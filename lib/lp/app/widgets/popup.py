@@ -325,6 +325,13 @@ class SourcePackageNameWidgetBase(DistributionSourcePackagePickerWidget):
         super(SourcePackageNameWidgetBase, self).__init__(
             field, vocabulary, request)
         self.cached_values = {}
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # The distribution may change later when we process form input,
+            # but setting it here makes it easier to construct some views,
+            # particularly edit views where we need to render the context.
+            distribution = self.getDistribution()
+            if distribution is not None:
+                self.context.vocabulary.setDistribution(distribution)
 
     def getDistribution(self):
         """Get the distribution used for package validation.
