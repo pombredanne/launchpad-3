@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for translation import queue views."""
@@ -6,12 +6,18 @@
 from datetime import datetime
 
 from pytz import timezone
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    celebrity_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -23,14 +29,23 @@ from lp.translations.interfaces.translationimportqueue import (
     )
 
 
-class TestTranslationImportQueueEntryView(TestCaseWithFactory):
+class TestTranslationImportQueueEntryView(WithScenarios, TestCaseWithFactory):
     """Tests for the queue entry review form."""
 
     layer = LaunchpadFunctionalLayer
 
+    scenarios = [
+        ("spn_picker", {"features": {}}),
+        ("dsp_picker", {
+            "features": {u"disclosure.dsp_picker.enabled": u"on"},
+            }),
+        ]
+
     def setUp(self):
         super(TestTranslationImportQueueEntryView, self).setUp(
             'foo.bar@canonical.com')
+        if self.features:
+            self.useFixture(FeatureFixture(self.features))
         self.queue = getUtility(ITranslationImportQueue)
         self.uploader = self.factory.makePerson()
 
@@ -201,6 +216,32 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
 
         self.assertEqual(name, view.initial_values['name'])
 
+    def test_change_sourcepackage(self):
+        # Changing the source package is honoured.
+        series = self.factory.makeDistroSeries()
+        packagename = self.factory.makeSourcePackageName()
+        potemplate = self.factory.makePOTemplate(
+            distroseries=series, sourcepackagename=packagename)
+        entry = self._makeEntry(
+            distroseries=series, sourcepackagename=packagename,
+            potemplate=potemplate)
+        dsp = self.factory.makeDSPCache(distroseries=series)
+        form = {
+            'field.file_type': 'POT',
+            'field.path': entry.path,
+            'field.sourcepackagename': dsp.sourcepackagename.name,
+            'field.name': potemplate.name,
+            'field.translation_domain': potemplate.translation_domain,
+            'field.languagepack': '',
+            'field.actions.approve': 'Approve',
+            }
+        with celebrity_logged_in('rosetta_experts'):
+            view = create_initialized_view(entry, '+index', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            dsp.sourcepackagename.name,
+            entry.potemplate.sourcepackagename.name)
+
 
 class TestEscapeJSString(TestCase):
     """Test `escape_js_string`."""
@@ -222,3 +263,6 @@ class TestEscapeJSString(TestCase):
 
     def test_escape_js_string_ampersand(self):
         self.assertEqual('&', escape_js_string('&'))
+
+
+load_tests = load_tests_apply_scenarios
