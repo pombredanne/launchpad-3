@@ -602,7 +602,7 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
                 'Strict-Transport-Security', 'max-age=15552000')
 
         # Publish revision information.
-        self.response.setHeader('X-Launchpad-Revision', versioninfo.revno)
+        self.response.setHeader('X-Launchpad-Revision', versioninfo.revision)
 
     @property
     def stepstogo(self):
