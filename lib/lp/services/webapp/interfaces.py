@@ -701,24 +701,6 @@ class IErrorReportEvent(IObjectEvent):
     """A new error report has been created."""
 
 
-class IErrorReport(Interface):
-    id = TextLine(description=u"The name of this error report.")
-    type = TextLine(description=u"The type of the exception that occurred.")
-    value = TextLine(description=u"The value of the exception that occurred.")
-    time = Datetime(description=u"The time at which the exception occurred.")
-    pageid = TextLine(
-        description=u"""
-            The context class plus the page template where the exception
-            occurred.
-            """)
-    branch_nick = TextLine(description=u"The branch nickname.")
-    revno = TextLine(description=u"The revision number of the branch.")
-    tb_text = Text(description=u"A text version of the traceback.")
-    username = TextLine(description=u"The user associated with the request.")
-    url = TextLine(description=u"The URL for the failed request.")
-    req_vars = Attribute("The request variables.")
-
-
 class IErrorReportRequest(Interface):
     oopsid = TextLine(
         description=u"""an identifier for the exception, or None if no

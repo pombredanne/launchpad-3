@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Error logging facilities."""
@@ -18,7 +18,6 @@ from lazr.restful.utils import (
 import oops.createhooks
 import oops_amqp
 from oops_datedir_repo import DateDirRepo
-import oops_datedir_repo.serializer
 import oops_timeline
 import pytz
 from zope.component.interfaces import ObjectEvent
@@ -39,7 +38,6 @@ from lp.services.webapp.adapter import (
     soft_timeout_expired,
     )
 from lp.services.webapp.interfaces import (
-    IErrorReport,
     IErrorReportEvent,
     IErrorReportRequest,
     IUnloggedException,
@@ -85,40 +83,6 @@ def _is_sensitive(request, name):
 @implementer(IErrorReportEvent)
 class ErrorReportEvent(ObjectEvent):
     """A new error report has been created."""
-
-
-@implementer(IErrorReport)
-class ErrorReport:
-
-    def __init__(self, id, type, value, time, tb_text, username,
-                 url, duration, req_vars, timeline, informational=None,
-                 branch_nick=None, revno=None, topic=None, reporter=None):
-        self.id = id
-        self.type = type
-        self.value = value
-        self.time = time
-        self.topic = topic
-        if reporter is not None:
-            self.reporter = reporter
-        self.tb_text = tb_text
-        self.username = username
-        self.url = url
-        self.duration = duration
-        # informational is ignored - will be going from the oops module
-        # soon too.
-        self.req_vars = req_vars
-        self.timeline = timeline
-        self.branch_nick = branch_nick or versioninfo.branch_nick
-        self.revno = revno or versioninfo.revno
-
-    def __repr__(self):
-        return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
-
-    @classmethod
-    def read(cls, fp):
-        # Deprecated: use the oops module directly now, when possible.
-        report = oops_datedir_repo.serializer.read(fp)
-        return cls(**report)
 
 
 def notify_publisher(report):
