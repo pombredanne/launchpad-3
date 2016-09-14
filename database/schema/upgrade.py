@@ -32,7 +32,7 @@ from lp.services.scripts import (
     )
 
 
-SCHEMA_DIR = os.path.dirname(__file__)
+SCHEMA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def main(con=None):
