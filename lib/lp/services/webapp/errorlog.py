@@ -282,7 +282,9 @@ class ErrorReportingUtility:
         # What do we want in our reports?
         # Constants:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
-        self._oops_config.template['revision'] = versioninfo.revision
+        # XXX cjwatson 2016-09-14: This should really be 'revision', but
+        # that requires coordination with python-oops-tools.
+        self._oops_config.template['revno'] = versioninfo.revision
         reporter = config[self._default_config_section].oops_prefix
         if section_name != self._default_config_section:
             reporter = '%s-%s' % (reporter, section_name)
