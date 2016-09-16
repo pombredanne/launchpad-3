@@ -77,7 +77,6 @@ class TestSnapBuildUploads(TestUploadProcessorBase):
         self.assertIn(
             "ERROR Build did not produce any snap packages.",
             self.log.getLogBuffer())
-        self.assertEqual(BuildStatus.UPLOADING, self.build.status)
         self.assertFalse(self.build.verifySuccessfulUpload())
 
     def test_triggers_store_uploads(self):
