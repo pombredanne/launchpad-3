@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -151,7 +151,7 @@ class CommitLogger:
 
     def afterCompletion(self, txn):
         action = get_request_timeline(get_current_browser_request()).start(
-            "SQL-nostore", 'Transaction completed, status: %s' % txn.status)
+            u"SQL-nostore", u'Transaction completed, status: %s' % txn.status)
         action.finish()
 
 
@@ -653,6 +653,9 @@ class LaunchpadStatementTracer:
         if params:
             statement_to_log = raw_cursor.mogrify(
                 statement, tuple(connection.to_database(params)))
+        if isinstance(statement_to_log, bytes):
+            statement_to_log = statement_to_log.decode(
+                'UTF-8', errors='replace')
         # Record traceback to log, if requested.
         print_traceback = self._debug_sql_extra
         log_sql = getattr(_local, 'sql_logging', None)
@@ -690,11 +693,11 @@ class LaunchpadStatementTracer:
                 # SQL execution.
                 connection._lp_statement_info = (
                     int(time() * 1000),
-                    'SQL-%s' % connection._database.name,
+                    u'SQL-%s' % connection._database.name,
                     statement_to_log)
             return
         action = get_request_timeline(get_current_browser_request()).start(
-            'SQL-%s' % connection._database.name, statement_to_log)
+            u'SQL-%s' % connection._database.name, statement_to_log)
         connection._lp_statement_action = action
 
     def connection_raw_execute_success(self, connection, raw_cursor,
