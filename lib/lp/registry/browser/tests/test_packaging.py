@@ -5,6 +5,10 @@
 
 __metaclass__ = type
 
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -15,6 +19,7 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login,
     logout,
@@ -28,13 +33,22 @@ from lp.testing.pages import setupBrowser
 from lp.testing.views import create_initialized_view
 
 
-class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
-    """Browser tests for deletion of Packaging objects."""
+class TestProductSeriesUbuntuPackagingView(WithScenarios, TestCaseWithFactory):
+    """Browser tests for adding Packaging objects."""
 
     layer = DatabaseFunctionalLayer
 
+    scenarios = [
+        ("spn_picker", {"features": {}}),
+        ("dsp_picker", {
+            "features": {u"disclosure.dsp_picker.enabled": u"on"},
+            }),
+        ]
+
     def setUp(self):
         super(TestProductSeriesUbuntuPackagingView, self).setUp()
+        if self.features:
+            self.useFixture(FeatureFixture(self.features))
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.hoary = self.ubuntu.getSeries('hoary')
         self.sourcepackagename = self.factory.makeSourcePackageName('hot')
@@ -88,7 +102,7 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
              'hot</a> package in Hoary is already linked to another series.']
         self.assertEqual(view_errors, view.errors)
 
-    def test_sourcepackgename_required(self):
+    def test_sourcepackagename_required(self):
         # A source package name must be provided.
         form = {
             'field.distroseries': 'hoary',
@@ -188,3 +202,6 @@ class TestBrowserDeletePackaging(TestCaseWithFactory):
             productseries=productseries,
             sourcepackagename=package_name,
             distroseries=distroseries))
+
+
+load_tests = load_tests_apply_scenarios
