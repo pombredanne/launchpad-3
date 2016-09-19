@@ -37,6 +37,34 @@ __all__ = [
     ]
 
 
+def fsync_path(path, dir=False):
+    fd = os.open(path, os.O_RDONLY | (os.O_DIRECTORY if dir else 0))
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def makedirs_fsync(name, mode=0777):
+    """makedirs_fsync(path [, mode=0777])
+
+    os.makedirs, but fsyncing on the way up to ensure durability.
+    """
+    head, tail = os.path.split(name)
+    if not tail:
+        head, tail = os.path.split(head)
+    if head and tail and not os.path.exists(head):
+        try:
+            makedirs_fsync(head, mode)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+        if tail == os.curdir:
+            return
+    os.mkdir(name, mode)
+    fsync_path(head, dir=True)
+
+
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file."""
 
@@ -272,12 +300,14 @@ class LibraryFileUpload(object):
         if os.path.exists(location):
             raise DuplicateFileIDError(fileID)
         try:
-            os.makedirs(os.path.dirname(location))
+            makedirs_fsync(os.path.dirname(location))
         except OSError as e:
             # If the directory already exists, that's ok.
             if e.errno != errno.EEXIST:
                 raise
         shutil.move(self.tmpfilepath, location)
+        fsync_path(location)
+        fsync_path(os.path.dirname(location), dir=True)
 
 
 def _sameFile(path1, path2):
