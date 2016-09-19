@@ -505,8 +505,7 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(SourcePackageNameWidgetBase):
         """See `SourcePackageNameWidgetBase`."""
         distribution_name = self.request.form.get('field.distribution')
         if distribution_name is None:
-            raise UnexpectedFormData(
-                "field.distribution wasn't in the request")
+            return None
         distribution = getUtility(IDistributionSet).getByName(
             distribution_name)
         if distribution is None:

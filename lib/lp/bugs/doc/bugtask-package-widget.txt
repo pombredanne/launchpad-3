@@ -118,33 +118,30 @@ distribution from the request.
     >>> request = LaunchpadTestRequest(
     ...     form={'field.distribution': 'debian',
     ...           'field.sourcepackagename': 'linux-2.6.12'})
-    >>> widget = BugTaskAlsoAffectsSourcePackageNameWidget(
-    ...     package_field, package_field.vocabulary, request)
-    >>> widget.getDistribution().name
+    >>> BugTaskAlsoAffectsSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary,
+    ...     request).getDistribution().name
     u'debian'
 
-+distrotask always supplies a valid distribution name. If the widget
-doesn't get a name, or the name isn't the name of a distro,
-UnexpectedFormData is raised.
++distrotask always supplies a valid distribution name or none at all. If the
+name isn't the name of a distro, UnexpectedFormData is raised.
 
     >>> request = LaunchpadTestRequest(
     ...     form={'field.distribution': 'non-existing',
     ...           'field.sourcepackagename': 'linux-2.6.12'})
-    >>> widget = BugTaskAlsoAffectsSourcePackageNameWidget(
-    ...     package_field, package_field.vocabulary, request)
-    >>> widget.getDistribution().name
+    >>> BugTaskAlsoAffectsSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary,
+    ...     request).getDistribution().name
     Traceback (most recent call last):
     ...
     UnexpectedFormData: ...
 
-    >>> request = LaunchpadTestRequest(
-    ...     form={'field.sourcepackagename': 'linux-2.6.12'})
-    >>> widget = BugTaskAlsoAffectsSourcePackageNameWidget(
-    ...     package_field, package_field.vocabulary, request)
-    >>> widget.getDistribution().name
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: ...
+A GET request usually won't supply a distribution name at all.
+
+    >>> request = LaunchpadTestRequest(form={})
+    >>> BugTaskAlsoAffectsSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary,
+    ...     request).getDistribution()
 
 
 FileBugSourcePackageNameWidget

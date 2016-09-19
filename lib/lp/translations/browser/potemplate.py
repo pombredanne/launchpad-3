@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for PO templates."""
 
@@ -26,6 +26,7 @@ import datetime
 import operator
 import os.path
 
+from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 import pytz
 from storm.expr import (
@@ -41,6 +42,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadEditFormView,
     ReturnToReferrerMixin,
     )
@@ -51,11 +53,15 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import is_tar_filename
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -85,6 +91,10 @@ from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
     TranslationSharingDetailsMixin,
+    )
+from lp.translations.browser.widgets.potemplate import (
+    POTemplateAdminSourcePackageNameWidget,
+    POTemplateEditSourcePackageNameWidget,
     )
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
@@ -492,10 +502,29 @@ class POTemplateViewPreferred(POTemplateView):
         return POTemplateView.pofiles(self, preferred_only=True)
 
 
+class IPOTemplateEditForm(IPOTemplate):
+
+    sourcepackagename = copy_field(
+        IPOTemplate['sourcepackagename'],
+        vocabularyName='DistributionSourcePackage')
+
+    from_sourcepackagename = copy_field(
+        IPOTemplate['from_sourcepackagename'],
+        vocabularyName='DistributionSourcePackage')
+
+
 class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
-    schema = IPOTemplate
+    @property
+    def schema(self):
+        """See `LaunchpadFormView`."""
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return IPOTemplateEditForm
+        else:
+            return IPOTemplate
+
+    custom_widget('sourcepackagename', POTemplateEditSourcePackageNameWidget)
     label = 'Edit translation template details'
     page_title = 'Edit details'
     PRIORITY_MIN_VALUE = 0
@@ -514,6 +543,14 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         else:
             field_names.append('owner')
         return field_names
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`."""
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return {IPOTemplateEditForm: self.context}
+        else:
+            return {}
 
     @property
     def _return_url(self):
@@ -548,6 +585,9 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         context.setActive(iscurrent)
         old_description = context.description
         old_translation_domain = context.translation_domain
+        for field in ('sourcepackagename', 'from_sourcepackagename'):
+            if IDistributionSourcePackage.providedBy(data.get(field)):
+                data[field] = data[field].sourcepackagename
         self.updateContextFromData(data)
         if old_description != context.description:
             self.user.assignKarma(
@@ -565,6 +605,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         """Return a POTemplateSubset corresponding to the chosen target."""
         sourcepackagename = data.get('sourcepackagename',
                                      self.context.sourcepackagename)
+        if IDistributionSourcePackage.providedBy(sourcepackagename):
+            sourcepackagename = sourcepackagename.sourcepackagename
         return getUtility(IPOTemplateSet).getSubset(
             distroseries=self.context.distroseries,
             sourcepackagename=sourcepackagename,
@@ -582,6 +624,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         distroseries = data.get('distroseries', self.context.distroseries)
         sourcepackagename = data.get(
             'sourcepackagename', self.context.sourcepackagename)
+        if IDistributionSourcePackage.providedBy(sourcepackagename):
+            sourcepackagename = sourcepackagename.sourcepackagename
         productseries = data.get('productseries', None)
         sourcepackage_changed = (
             distroseries is not None and
@@ -656,6 +700,9 @@ class POTemplateAdminView(POTemplateEditView):
         'from_sourcepackagename', 'sourcepackageversion',
         'languagepack', 'path', 'source_file_format', 'priority',
         'date_last_updated']
+    custom_widget('sourcepackagename', POTemplateAdminSourcePackageNameWidget)
+    custom_widget(
+        'from_sourcepackagename', POTemplateAdminSourcePackageNameWidget)
     label = 'Administer translation template'
     page_title = "Administer"
 
@@ -663,6 +710,8 @@ class POTemplateAdminView(POTemplateEditView):
         """Return a POTemplateSubset corresponding to the chosen target."""
         distroseries = data.get('distroseries')
         sourcepackagename = data.get('sourcepackagename')
+        if IDistributionSourcePackage.providedBy(sourcepackagename):
+            sourcepackagename = sourcepackagename.sourcepackagename
         productseries = data.get('productseries')
 
         if distroseries is not None and productseries is not None:
