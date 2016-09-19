@@ -10,6 +10,11 @@
 newfile=version-info-${RANDOM}.py
 
 if [ -d .git ]; then
+    if ! which git > /dev/null || ! test -x $(which git); then
+        echo "No working 'git' executable found" >&2
+        exit 1
+    fi
+
     branch_nick="$(git rev-parse --abbrev-ref HEAD)"
     revision_id="$(git rev-parse HEAD)"
     cat > $newfile <<EOF
@@ -26,7 +31,7 @@ if __name__ == '__main__':
     print('revision id: %(revision_id)s' % version_info)
 EOF
 elif [ -d .bzr ]; then
-    if ! which bzr > /dev/null || !  test -x $(which bzr); then
+    if ! which bzr > /dev/null || ! test -x $(which bzr); then
         echo "No working 'bzr' executable found" >&2
         exit 1
     fi
