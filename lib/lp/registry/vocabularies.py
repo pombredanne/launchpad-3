@@ -2071,6 +2071,16 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 "DistributionSourcePackageVocabulary cannot be used without "
                 "setting a distribution.")
 
+    @property
+    def _cache_location_clauses(self):
+        return [
+            Or(
+                DistributionSourcePackageCache.archiveID.is_in(
+                    self.distribution.all_distro_archive_ids),
+                DistributionSourcePackageCache.archive == None),
+            DistributionSourcePackageCache.distribution == self.distribution,
+            ]
+
     def toTerm(self, spn_or_dsp):
         """See `IVocabulary`."""
         self._assertHasDistribution()
@@ -2107,12 +2117,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             else:
                 # Does this vocabulary have any package names at all?
                 empty = IStore(DistributionSourcePackageCache).find(
-                    Or(
-                        DistributionSourcePackageCache.archiveID.is_in(
-                            self.distribution.all_distro_archive_ids),
-                        DistributionSourcePackageCache.archive == None),
-                    DistributionSourcePackageCache.distribution ==
-                        self.distribution).is_empty()
+                    DistributionSourcePackageCache.sourcepackagenameID,
+                    *self._cache_location_clauses).is_empty()
                 if empty:
                     # If the vocabulary has no package names, then this is
                     # probably a distribution not managed in Launchpad.  In
@@ -2154,13 +2160,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                     DistributionSourcePackageCache.binpkgnames.contains_string(
                         query),
                     ),
-                Or(
-                    DistributionSourcePackageCache.archiveID.is_in(
-                        self.distribution.all_distro_archive_ids),
-                    DistributionSourcePackageCache.archive == None),
-                DistributionSourcePackageCache.distribution ==
-                    self.distribution,
-                ),
+                *self._cache_location_clauses),
             tables=DistributionSourcePackageCache))
         SearchableDSPC = Table("SearchableDSPC")
         searchable_dspc_name = Column("name", SearchableDSPC)
