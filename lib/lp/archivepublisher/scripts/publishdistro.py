@@ -19,7 +19,12 @@ from lp.archivepublisher.publishing import (
     GLOBAL_PUBLISHER_LOCK,
     )
 from lp.archivepublisher.scripts.base import PublisherScript
+from lp.services.limitedlist import LimitedList
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -331,23 +336,30 @@ class PublishDistro(PublisherScript):
         for distribution in self.findDistros():
             allowed_suites = self.findAllowedSuites(distribution)
             for archive in self.getTargetArchives(distribution):
-                if archive.status == ArchiveStatus.DELETING:
-                    publisher = self.getPublisher(
-                        distribution, archive, allowed_suites)
-                    work_done = self.deleteArchive(archive, publisher)
-                elif archive.can_be_published:
-                    publisher = self.getPublisher(
-                        distribution, archive, allowed_suites)
-                    for suite in self.options.dirty_suites:
-                        distroseries, pocket = self.findSuite(
-                            distribution, suite)
-                        if not cannot_modify_suite(
-                                archive, distroseries, pocket):
-                            publisher.markPocketDirty(distroseries, pocket)
-                    self.publishArchive(archive, publisher)
-                    work_done = True
-                else:
-                    work_done = False
+                set_request_started(
+                    request_statements=LimitedList(10000),
+                    txn=self.txn, enable_timeout=False)
+                try:
+                    if archive.status == ArchiveStatus.DELETING:
+                        publisher = self.getPublisher(
+                            distribution, archive, allowed_suites)
+                        work_done = self.deleteArchive(archive, publisher)
+                    elif archive.can_be_published:
+                        publisher = self.getPublisher(
+                            distribution, archive, allowed_suites)
+                        for suite in self.options.dirty_suites:
+                            distroseries, pocket = self.findSuite(
+                                distribution, suite)
+                            if not cannot_modify_suite(
+                                    archive, distroseries, pocket):
+                                publisher.markPocketDirty(
+                                    distroseries, pocket)
+                        self.publishArchive(archive, publisher)
+                        work_done = True
+                    else:
+                        work_done = False
+                finally:
+                    clear_request_started()
 
                 if work_done:
                     self.txn.commit()

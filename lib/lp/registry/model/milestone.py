@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone model classes."""
@@ -38,12 +38,6 @@ from zope.component import getUtility
 from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.specificationsearch import (
-    get_specification_active_product_filter,
-    get_specification_privacy_filter,
-    )
-from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import (
@@ -161,11 +155,19 @@ class MilestoneData:
 
     @property
     def all_specifications(self):
+        from lp.blueprints.model.specification import Specification
         return Store.of(self).find(
             Specification, Specification.milestoneID == self.id)
 
     def getSpecifications(self, user):
         """See `IMilestoneData`"""
+        from lp.blueprints.model.specification import Specification
+        from lp.blueprints.model.specificationsearch import (
+            get_specification_active_product_filter,
+            get_specification_privacy_filter,
+            )
+        from lp.blueprints.model.specificationworkitem import (
+            SpecificationWorkItem)
         from lp.registry.model.person import Person
         origin = [Specification]
         product_origin, clauses = get_specification_active_product_filter(

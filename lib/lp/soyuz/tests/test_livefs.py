@@ -138,7 +138,7 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertEqual(BuildQueueStatus.WAITING, build_queue.status)
 
     def test_requestBuild_score(self):
-        # Build requests have a relatively low queue score (2505).
+        # Build requests have a relatively low queue score (2510).
         livefs = self.factory.makeLiveFS()
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=livefs.distro_series)
@@ -147,7 +147,7 @@ class TestLiveFS(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2505, queue_record.lastscore)
+        self.assertEqual(2510, queue_record.lastscore)
 
     def test_requestBuild_relative_build_score(self):
         # Offsets for archives are respected.
@@ -161,7 +161,7 @@ class TestLiveFS(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2605, queue_record.lastscore)
+        self.assertEqual(2610, queue_record.lastscore)
 
     def test_requestBuild_rejects_repeats(self):
         # requestBuild refuses if there is already a pending build.

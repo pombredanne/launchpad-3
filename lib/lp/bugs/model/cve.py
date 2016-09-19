@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -91,11 +91,13 @@ class Cve(SQLBase, BugLinkTargetMixin):
         assert ref.cve == self
         CveReference.delete(ref.id)
 
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See BugLinkTargetMixin."""
+        if props is None:
+            props = {}
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
-            {(u'cve', self.sequence): {(u'bug', unicode(bug.id)): {}}})
+            {(u'cve', self.sequence): {(u'bug', unicode(bug.id)): props}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""

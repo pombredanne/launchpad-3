@@ -26,7 +26,8 @@ from zope.component import getUtility
 from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.errors import InvalidBranchMergeProposal
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
@@ -38,8 +39,6 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -141,10 +140,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 u"tree": unicode(hashlib.sha1("").hexdigest()),
                 },
             ]
-        self.hosting_client = FakeMethod()
-        self.hosting_client.getLog = FakeMethod(result=self.log)
-        self.useFixture(
-            ZopeUtilityFixture(self.hosting_client, IGitHostingClient))
+        self.hosting_fixture = self.useFixture(GitHostingFixture(log=self.log))
 
     def test_basic(self):
         commits = self.ref.getCommits(self.sha1_tip)
@@ -152,7 +148,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": None, "stop": None, "logger": None})],
-            self.hosting_client.getLog.calls)
+            self.hosting_fixture.getLog.calls)
         self.assertThat(commits, MatchesListwise([
             ContainsDict({
                 "sha1": Equals(self.sha1_tip),
@@ -188,7 +184,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "commit_message": Is(None),
                 }),
             ]))
-        self.assertEqual([], self.hosting_client.getLog.calls)
+        self.assertEqual([], self.hosting_fixture.getLog.calls)
         path = self.ref.repository.getInternalPath()
         key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertIsNone(getUtility(IMemcacheClient).get(key.encode("UTF-8")))
@@ -209,7 +205,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": 10, "stop": self.sha1_root, "logger": None})],
-            self.hosting_client.getLog.calls)
+            self.hosting_fixture.getLog.calls)
         key = u"git.launchpad.dev:git-log:%s:%s:limit=10:stop=%s" % (
             path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
@@ -227,7 +223,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertEqual(
             [((path, self.sha1_tip),
               {"limit": None, "stop": self.sha1_root, "logger": None})],
-            self.hosting_client.getLog.calls)
+            self.hosting_fixture.getLog.calls)
         key = u"git.launchpad.dev:git-log:%s:%s:stop=%s" % (
             path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
@@ -268,6 +264,164 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "merge_proposal": Is(None),
                 }),
             ]))
+
+
+class TestGitRefCreateMergeProposal(TestCaseWithFactory):
+    """Exercise all the code paths for creating a merge proposal."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGitRefCreateMergeProposal, self).setUp()
+        with admin_logged_in():
+            self.project = self.factory.makeProduct()
+            self.user = self.factory.makePerson()
+            self.reviewer = self.factory.makePerson(name=u"reviewer")
+            [self.source] = self.factory.makeGitRefs(
+                name=u"source", owner=self.user, target=self.project)
+            [self.target] = self.factory.makeGitRefs(
+                name=u"target", owner=self.user, target=self.project)
+            [self.prerequisite] = self.factory.makeGitRefs(
+                name=u"prerequisite", owner=self.user, target=self.project)
+
+    def assertOnePendingReview(self, proposal, reviewer, review_type=None):
+        # There should be one pending vote for the reviewer with the specified
+        # review type.
+        [vote] = proposal.votes
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual(self.user, vote.registrant)
+        self.assertIsNone(vote.comment)
+        if review_type is None:
+            self.assertIsNone(vote.review_type)
+        else:
+            self.assertEqual(review_type, vote.review_type)
+
+    def test_personal_source(self):
+        """Personal repositories cannot be used as a source for MPs."""
+        self.source.repository.setTarget(
+            target=self.source.owner, user=self.source.owner)
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target)
+
+    def test_target_repository_same_target(self):
+        """The target repository's target must match that of the source."""
+        self.target.repository.setTarget(
+            target=self.target.owner, user=self.target.owner)
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target)
+
+        project = self.factory.makeProduct()
+        self.target.repository.setTarget(
+            target=project, user=self.target.owner)
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target)
+
+    def test_target_must_not_be_the_source(self):
+        """The target and source references cannot be the same."""
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.source)
+
+    def test_prerequisite_repository_same_target(self):
+        """The prerequisite repository, if any, must be for the same target."""
+        self.prerequisite.repository.setTarget(
+            target=self.prerequisite.owner, user=self.prerequisite.owner)
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.prerequisite)
+
+        project = self.factory.makeProduct()
+        self.prerequisite.repository.setTarget(
+            target=project, user=self.prerequisite.owner)
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.prerequisite)
+
+    def test_prerequisite_must_not_be_the_source(self):
+        """The target and source references cannot be the same."""
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.source)
+
+    def test_prerequisite_must_not_be_the_target(self):
+        """The target and source references cannot be the same."""
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.target)
+
+    def test_existingMergeProposal(self):
+        """If there is an existing merge proposal for the source and target
+        reference pair, then another landing target specifying the same pair
+        raises.
+        """
+        self.source.addLandingTarget(self.user, self.target, self.prerequisite)
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.prerequisite)
+
+    def test_existingRejectedMergeProposal(self):
+        """If there is an existing rejected merge proposal for the source
+        and target reference pair, then another landing target specifying
+        the same pair is fine.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target, self.prerequisite)
+        proposal.rejectBranch(self.user, "some_revision")
+        self.source.addLandingTarget(self.user, self.target, self.prerequisite)
+
+    def test_default_reviewer(self):
+        """If the target repository has a default reviewer set, this
+        reviewer should be assigned to the merge proposal.
+        """
+        [target_with_default_reviewer] = self.factory.makeGitRefs(
+            name=u"target-branch-with-reviewer", owner=self.user,
+            target=self.project, reviewer=self.reviewer)
+        proposal = self.source.addLandingTarget(
+            self.user, target_with_default_reviewer)
+        self.assertOnePendingReview(proposal, self.reviewer)
+
+    def test_default_reviewer_when_owner(self):
+        """If the target repository has a no default reviewer set, the
+        repository owner should be assigned as the reviewer for the merge
+        proposal.
+        """
+        proposal = self.source.addLandingTarget(self.user, self.target)
+        self.assertOnePendingReview(proposal, self.source.owner)
+
+    def test_attribute_assignment(self):
+        """Smoke test to make sure the assignments are there."""
+        commit_message = u"Some commit message"
+        proposal = self.source.addLandingTarget(
+            self.user, self.target, self.prerequisite,
+            commit_message=commit_message)
+        self.assertEqual(self.user, proposal.registrant)
+        self.assertEqual(self.source, proposal.merge_source)
+        self.assertEqual(self.target, proposal.merge_target)
+        self.assertEqual(self.prerequisite, proposal.merge_prerequisite)
+        self.assertEqual(commit_message, proposal.commit_message)
+
+    def test_createMergeProposal_with_reviewers(self):
+        person1 = self.factory.makePerson()
+        person2 = self.factory.makePerson()
+        e = self.assertRaises(
+            ValueError, self.source.createMergeProposal,
+            self.user, self.target, reviewers=[person1, person2])
+        self.assertEqual(
+            "reviewers and review_types must be equal length.", str(e))
+        e = self.assertRaises(
+            ValueError, self.source.createMergeProposal,
+            self.user, self.target, reviewers=[person1, person2],
+            review_types=["review1"])
+        self.assertEqual(
+            "reviewers and review_types must be equal length.", str(e))
+        bmp = self.source.createMergeProposal(
+            self.user, self.target, reviewers=[person1, person2],
+            review_types=["review1", "review2"])
+        votes = {(vote.reviewer, vote.review_type) for vote in bmp.votes}
+        self.assertEqual({(person1, "review1"), (person2, "review2")}, votes)
 
 
 class TestGitRefWebservice(TestCaseWithFactory):

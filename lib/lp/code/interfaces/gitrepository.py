@@ -508,8 +508,10 @@ class IGitRepositoryView(IHasRecipes):
         kept up to date.
         """
 
-    def scheduleDiffUpdates(paths):
-        """Create UpdatePreviewDiffJobs for landing targets.
+    def updateLandingTargets(paths):
+        """Update landing targets (MPs where this repository is the source).
+
+        For each merge proposal, create `UpdatePreviewDiffJob`s.
 
         :param paths: A list of reference paths.  Any merge proposals whose
             source is this repository and one of these paths will have their

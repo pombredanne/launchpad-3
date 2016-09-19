@@ -2161,7 +2161,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                         query),
                     ),
                 *self._cache_location_clauses),
-            tables=DistributionSourcePackageCache))
+            tables=DistributionSourcePackageCache,
+            distinct=(DistributionSourcePackageCache.name,)))
         SearchableDSPC = Table("SearchableDSPC")
         searchable_dspc_name = Column("name", SearchableDSPC)
         searchable_dspc_sourcepackagename = Column(

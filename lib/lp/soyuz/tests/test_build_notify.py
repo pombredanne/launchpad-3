@@ -438,7 +438,6 @@ class TestBuildNotify(TestCaseWithFactory):
         # Push past the security proxy
         removeSecurityProxy(spr).signing_key_owner = key.owner
         removeSecurityProxy(spr).signing_key_fingerprint = key.fingerprint
-        del get_property_cache(spr).dscsigningkey
         with dbuser(config.builddmaster.dbuser):
             build.notify()
         expected_reasons = [

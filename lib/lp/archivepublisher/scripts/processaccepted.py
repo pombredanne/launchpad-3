@@ -15,6 +15,11 @@ from zope.component import getUtility
 
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.archivepublisher.scripts.base import PublisherScript
+from lp.services.limitedlist import LimitedList
+from lp.services.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -105,22 +110,28 @@ class ProcessAccepted(PublisherScript):
         """
         processed_queue_ids = []
         for archive in self.getTargetArchives(distribution):
-            for distroseries in distribution.series:
+            set_request_started(
+                request_statements=LimitedList(10000),
+                txn=self.txn, enable_timeout=False)
+            try:
+                for distroseries in distribution.series:
 
-                self.logger.debug("Processing queue for %s %s" % (
-                    archive.reference, distroseries.name))
+                    self.logger.debug("Processing queue for %s %s" % (
+                        archive.reference, distroseries.name))
 
-                queue_items = distroseries.getPackageUploads(
-                    status=PackageUploadStatus.ACCEPTED, archive=archive)
-                for queue_item in queue_items:
-                    if self.processQueueItem(queue_item):
-                        processed_queue_ids.append(queue_item.id)
-                    # Commit even on error; we may have altered the
-                    # on-disk archive, so the partial state must
-                    # make it to the DB.
-                    self.txn.commit()
-                    close_bugs_for_queue_item(queue_item)
-                    self.txn.commit()
+                    queue_items = distroseries.getPackageUploads(
+                        status=PackageUploadStatus.ACCEPTED, archive=archive)
+                    for queue_item in queue_items:
+                        if self.processQueueItem(queue_item):
+                            processed_queue_ids.append(queue_item.id)
+                        # Commit even on error; we may have altered the
+                        # on-disk archive, so the partial state must
+                        # make it to the DB.
+                        self.txn.commit()
+                        close_bugs_for_queue_item(queue_item)
+                        self.txn.commit()
+            finally:
+                clear_request_started()
         return processed_queue_ids
 
     def main(self):

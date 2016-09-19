@@ -41,7 +41,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.errors import GitRepositoryScanFault
-from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -251,9 +251,7 @@ class TestSnapAddView(BrowserTestCase):
             MatchesTagText(content, "store_upload"))
 
     def test_create_new_snap_git(self):
-        hosting_client = FakeMethod()
-        hosting_client.getBlob = FakeMethod(result="")
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture(blob=""))
         [git_ref] = self.factory.makeGitRefs()
         source_display = git_ref.display_name
         browser = self.getViewBrowser(
@@ -1445,7 +1443,7 @@ class TestSnapRequestBuildsView(BrowserTestCase):
             [PackagePublishingPocket.UPDATES],
             set(build.pocket for build in builds))
         self.assertContentEqual(
-            [2505], set(build.buildqueue_record.lastscore for build in builds))
+            [2510], set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_ppa(self):
         # Selecting a different archive creates builds in that archive.

@@ -34,6 +34,7 @@ from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
@@ -50,6 +51,7 @@ from lp.testing import (
     login,
     logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
@@ -58,6 +60,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import webservice_for_person
 
 
@@ -329,7 +332,16 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.queueBuild()
         self.assertIsNone(self.build.eta)
         self.factory.makeBuilder(processors=[self.build.processor])
+        clear_property_cache(self.build)
         self.assertIsNotNone(self.build.eta)
+
+    def test_eta_cached(self):
+        # The expensive completion time estimate is cached.
+        self.build.queueBuild()
+        self.build.eta
+        with StormStatementRecorder() as recorder:
+            self.build.eta
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_estimate(self):
         # SnapBuild.estimate returns True until the job is completed.
@@ -338,6 +350,7 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.updateStatus(BuildStatus.BUILDING)
         self.assertTrue(self.build.estimate)
         self.build.updateStatus(BuildStatus.FULLYBUILT)
+        clear_property_cache(self.build)
         self.assertFalse(self.build.estimate)
 
     def setUpStoreUpload(self):
@@ -562,7 +575,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         buildd_admin_webservice.default_api_version = "devel"
         logout()
         build = self.webservice.get(build_url).jsonBody()
-        self.assertEqual(2505, build["score"])
+        self.assertEqual(2510, build["score"])
         self.assertTrue(build["can_be_rescored"])
         response = self.webservice.named_post(
             build["self_link"], "rescore", score=5000)

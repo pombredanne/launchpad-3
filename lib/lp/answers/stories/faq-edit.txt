@@ -4,9 +4,8 @@ It is possible to modify the title, keywords and content of an existing
 FAQ. To do this, the user goes to the FAQ that they want to modify and
 clicks the 'Edit FAQ' action.
 
-That action is only available to project owners and answer contacts.
-That's why the link doesn't appear for the anonymous user nor
-No Privileges Person:
+That action is only available to project owners. That's why the link doesn't
+appear for the anonymous user nor No Privileges Person:
 
     >>> from lp.services.helpers import backslashreplace
     >>> anon_browser.open('http://answers.launchpad.dev/firefox/+faq/7')

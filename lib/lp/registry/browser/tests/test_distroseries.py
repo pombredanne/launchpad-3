@@ -945,7 +945,6 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
                     removeSecurityProxy(spr).signing_key_owner = key.owner
                     removeSecurityProxy(spr).signing_key_fingerprint = (
                         key.fingerprint)
-                    del get_property_cache(spr).dscsigningkey
 
         def flush_and_render():
             flush_database_caches()
@@ -1365,7 +1364,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             dsd.source_package_release.sourcepackagerelease)
         naked_spr.signing_key_fingerprint = key.fingerprint
         naked_spr.signing_key_owner = key.owner
-        del get_property_cache(naked_spr).dscsigningkey
         view = self.makeView(dsd.derived_series)
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
@@ -1373,7 +1371,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         matches = DocTestMatches(
             "... ago by %s (uploaded by %s)" % (
                 dsd.source_package_release.creator.displayname,
-                dsd.source_package_release.dscsigningkey.owner.displayname))
+                dsd.source_package_release.signing_key_owner.displayname))
         self.assertThat(creator_cell.text_content(), matches)
 
     def test_diff_row_links_to_parent_changelog(self):
@@ -2445,7 +2443,6 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
             dsd.parent_source_package_release.sourcepackagerelease)
         naked_spr.signing_key_fingerprint = key.fingerprint
         naked_spr.signing_key_owner = key.owner
-        del get_property_cache(naked_spr).dscsigningkey
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 dsd.derived_series, '+missingpackages',
@@ -2457,7 +2454,7 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         matches = DocTestMatches(
             "... ago by %s (uploaded by %s)" % (
                 parent_spr.creator.displayname,
-                parent_spr.dscsigningkey.owner.displayname))
+                parent_spr.signing_key_owner.displayname))
         self.assertThat(creator_cell.text_content(), matches)
 
 

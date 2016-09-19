@@ -12,16 +12,11 @@ from testscenarios import (
     )
 
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -96,27 +91,24 @@ class TestHasSnapsView(WithScenarios, TestCaseWithFactory):
 
 class TestHasSnapsMenu(WithScenarios, TestCaseWithFactory):
 
-    needs_hosting_client = False
+    layer = DatabaseFunctionalLayer
+
+    needs_hosting_fixture = False
 
     scenarios = [
         ("Branch", {
-            "layer": DatabaseFunctionalLayer,
             "context_factory": make_branch,
             }),
         ("GitRef", {
-            "layer": LaunchpadFunctionalLayer,
             "context_factory": make_git_ref,
-            "needs_hosting_client": True,
+            "needs_hosting_fixture": True,
             }),
         ]
 
     def setUp(self):
         super(TestHasSnapsMenu, self).setUp()
-        if self.needs_hosting_client:
-            hosting_client = FakeMethod()
-            hosting_client.getLog = FakeMethod(result=[])
-            self.useFixture(
-                ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        if self.needs_hosting_fixture:
+            self.useFixture(GitHostingFixture())
 
     def makeSnap(self, context):
         if IBranch.providedBy(context):

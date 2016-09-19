@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
@@ -259,6 +260,27 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job = UpdatePreviewDiffJob.create(bmp)
         with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
+        self.assertEqual(patch, bmp.preview_diff.text)
+
+    def test_run_git_updates_related_bugs(self):
+        # The merge proposal has its related bugs updated.
+        bug = self.factory.makeBug()
+        # Create a structural subscription to ensure we don't short-circuit
+        # in _get_structural_subscription_filter_id_query.
+        subscriber = self.factory.makePerson()
+        bug.default_bugtask.target.addSubscription(subscriber, subscriber)
+        bmp, _, _, patch = self.createExampleGitMerge()
+        self.hosting_fixture.getLog.result = [
+            {
+                u"sha1": unicode(hashlib.sha1("tip").hexdigest()),
+                u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
+                },
+            ]
+        job = UpdatePreviewDiffJob.create(bmp)
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertEqual([bug], bmp.bugs)
+        self.assertEqual([bmp], bug.linked_merge_proposals)
         self.assertEqual(patch, bmp.preview_diff.text)
 
     def test_run_object_events(self):

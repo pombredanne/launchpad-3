@@ -10,6 +10,7 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
+import hashlib
 from unittest import TestCase
 
 from lazr.lifecycle.event import (
@@ -21,7 +22,9 @@ from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 from testtools.matchers import (
+    ContainsDict,
     Equals,
+    Is,
     MatchesDict,
     MatchesStructure,
     )
@@ -68,6 +71,7 @@ from lp.code.model.branchmergeproposaljob import (
     )
 from lp.code.tests.helpers import (
     add_revision_to_branch,
+    GitHostingFixture,
     make_merge_proposal_without_reviewers,
     )
 from lp.registry.enums import TeamMembershipPolicy
@@ -76,7 +80,9 @@ from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.memcache.testing import MemcacheFixture
 from lp.services.webapp import canonical_url
+from lp.services.xref.interfaces import IXRefSet
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -1453,15 +1459,142 @@ class TestBranchMergeProposalBugsGit(
 
     def setUp(self):
         super(TestBranchMergeProposalBugsGit, self).setUp()
-        # Disable GitRef._getLog's use of memcache; we don't need it here,
-        # it requires more time-consuming test setup, and it makes it harder
-        # to repeatedly run updateRelatedBugsFromSource with different log
-        # responses.
-        self.useFixture(FeatureFixture(
-            {u"code.git.log.disable_memcache": u"on"}))
+        self.hosting_fixture = self.useFixture(GitHostingFixture(
+            disable_memcache=False))
+        self.memcache_fixture = self.useFixture(MemcacheFixture())
 
     def _makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
+
+    def test__fetchRelatedBugIDsFromSource(self):
+        # _fetchRelatedBugIDsFromSource makes a reasonable backend call and
+        # parses commit messages.
+        bugs = [self.factory.makeBug() for _ in range(3)]
+        bmp = self._makeBranchMergeProposal()
+        self.hosting_fixture.getLog.result = [
+            {
+                u"sha1": bmp.source_git_commit_sha1,
+                u"message": u"Commit 1\n\nLP: #%d" % bugs[0].id,
+                },
+            {
+                u"sha1": unicode(hashlib.sha1("1").hexdigest()),
+                # Will not be matched.
+                u"message": u"Commit 2; see LP #%d" % bugs[1].id,
+                },
+            {
+                u"sha1": unicode(hashlib.sha1("2").hexdigest()),
+                u"message": u"Commit 3; LP: #%d" % bugs[2].id,
+                },
+            {
+                u"sha1": unicode(hashlib.sha1("3").hexdigest()),
+                # Non-existent bug ID will not be returned.
+                u"message": u"Non-existent bug; LP: #%d" % (bugs[2].id + 100),
+                },
+            ]
+        related_bugs = bmp._fetchRelatedBugIDsFromSource()
+        path = "%s:%s" % (
+            bmp.target_git_repository.getInternalPath(),
+            bmp.source_git_repository.getInternalPath())
+        self.assertEqual(
+            [((path, bmp.source_git_commit_sha1),
+              {"limit": 10, "stop": bmp.target_git_commit_sha1,
+               "logger": None})],
+            self.hosting_fixture.getLog.calls)
+        self.assertContentEqual([bugs[0].id, bugs[2].id], related_bugs)
+
+    def _setUpLog(self, bugs):
+        """Set up a fake log response referring to the given bugs."""
+        self.hosting_fixture.getLog.result = [
+            {
+                u"sha1": unicode(hashlib.sha1(str(i)).hexdigest()),
+                u"message": u"LP: #%d" % bug.id,
+                }
+            for i, bug in enumerate(bugs)]
+        self.memcache_fixture.clear()
+
+    def test_updateRelatedBugsFromSource_no_links(self):
+        # updateRelatedBugsFromSource does nothing if there are no related
+        # bugs in either the database or the source branch.
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([], bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_new_links(self):
+        # If the source branch has related bugs not yet reflected in the
+        # database, updateRelatedBugsFromSource creates the links.
+        bugs = [self.factory.makeBug() for _ in range(3)]
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bugs[0]])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bugs[0]], bmp.bugs)
+        self._setUpLog(bugs)
+        bmp.updateRelatedBugsFromSource()
+        self.assertContentEqual(bugs, bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_same_links(self):
+        # If the database and the source branch list the same related bugs,
+        # updateRelatedBugsFromSource does nothing.
+        bug = self.factory.makeBug()
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bug])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+        # The second run is a no-op.
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_removes_old_links(self):
+        # If the database records a source-branch-originating related bug
+        # that is no longer listed by the source branch,
+        # updateRelatedBugsFromSource removes the link.
+        bug = self.factory.makeBug()
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bug])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+        self._setUpLog([])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([], bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_leaves_manual_links(self):
+        # If a bug was linked to the merge proposal manually,
+        # updateRelatedBugsFromSource leaves the link alone regardless of
+        # whether it is listed by the source branch.
+        bug = self.factory.makeBug()
+        bmp = self._makeBranchMergeProposal()
+        bmp.linkBug(bug)
+        self._setUpLog([])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+        matches_expected_xref = MatchesDict(
+            {(u"bug", unicode(bug.id)): ContainsDict({"metadata": Is(None)})})
+        self.assertThat(
+            getUtility(IXRefSet).findFrom(
+                (u"merge_proposal", unicode(bmp.id)), types=[u"bug"]),
+            matches_expected_xref)
+        self._setUpLog([bug])
+        self.assertThat(
+            getUtility(IXRefSet).findFrom(
+                (u"merge_proposal", unicode(bmp.id)), types=[u"bug"]),
+            matches_expected_xref)
+
+    def test_updateRelatedBugsFromSource_honours_limit(self):
+        # If the number of bugs to be linked exceeds the configured limit,
+        # updateRelatedBugsFromSource only links that many bugs and logs an
+        # OOPS.
+        self.pushConfig("codehosting", related_bugs_from_source_limit=3)
+        bugs = [self.factory.makeBug() for _ in range(5)]
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bugs[0]])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bugs[0]], bmp.bugs)
+        self.assertEqual([], self.oopses)
+        self._setUpLog(bugs)
+        bmp.updateRelatedBugsFromSource()
+        self.assertContentEqual(bugs[:3], bmp.bugs)
+        self.assertEqual(1, len(self.oopses))
+        self.assertEqual("TooManyRelatedBugs", self.oopses[0]["type"])
 
 
 class TestNotifyModified(TestCaseWithFactory):

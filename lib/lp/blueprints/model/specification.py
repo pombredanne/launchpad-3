@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -26,9 +26,11 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.expr import Join
-from storm.locals import (
+from storm.expr import (
+    Count,
     Desc,
+    Join,
+    Or,
     SQL,
     )
 from storm.store import Store
@@ -87,6 +89,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.milestone import Milestone
 from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
@@ -97,7 +100,6 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
-    cursor,
     SQLBase,
     sqlvalues,
     )
@@ -800,12 +802,14 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         return list(sorted(
             bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
 
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See BugLinkTargetMixin."""
+        if props is None:
+            props = {}
         # XXX: Should set creator.
         getUtility(IXRefSet).create(
             {(u'specification', unicode(self.id)):
-                {(u'bug', unicode(bug.id)): {}}})
+                {(u'bug', unicode(bug.id)): props}})
 
     def deleteBugLink(self, bug):
         """See BugLinkTargetMixin."""
@@ -1024,21 +1028,16 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getStatusCountsForProductSeries(self, product_series):
         """See `ISpecificationSet`."""
-        cur = cursor()
-        condition = """
-            (Specification.productseries = %s
-                 OR Milestone.productseries = %s)
-            """ % sqlvalues(product_series, product_series)
-        query = """
-            SELECT Specification.implementation_status, count(*)
-            FROM Specification
-                LEFT JOIN Milestone ON Specification.milestone = Milestone.id
-            WHERE
-                %s
-            GROUP BY Specification.implementation_status
-            """ % condition
-        cur.execute(query)
-        return cur.fetchall()
+        # Find specs targeted to the series or a milestone in the
+        # series. The milestone set is materialised client-side to
+        # get a good plan for the specification query.
+        return list(IStore(Specification).find(
+            (Specification.implementation_status, Count()),
+            Or(
+                Specification.productseries == product_series,
+                Specification.milestoneID.is_in(list(
+                    product_series.all_milestones.values(Milestone.id)))))
+            .group_by(Specification.implementation_status))
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        need_people=True, need_branches=True,

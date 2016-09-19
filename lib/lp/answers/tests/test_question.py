@@ -4,9 +4,11 @@
 __metaclass__ = type
 
 from testtools.testcase import ExpectedException
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,
@@ -33,6 +35,14 @@ class TestQuestionSecurity(TestCaseWithFactory):
                 question.title = 'foo random'
             with ExpectedException(Unauthorized):
                 question.description = 'foo random'
+        answer_contact = self.factory.makePerson()
+        with person_logged_in(answer_contact):
+            answer_contact.addLanguage(getUtility(ILanguageSet)['en'])
+            question.target.addAnswerContact(answer_contact, answer_contact)
+            with ExpectedException(Unauthorized):
+                question.title = 'foo contact'
+            with ExpectedException(Unauthorized):
+                question.description = 'foo contact'
         with person_logged_in(question.owner):
             question.title = question.description = 'foo owner'
         with person_logged_in(question.target.owner):

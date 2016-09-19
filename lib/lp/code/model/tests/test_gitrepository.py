@@ -56,7 +56,6 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
-from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitRefScanJobSource,
     IGitRepositoryModifiedMailJobSource,
@@ -91,6 +90,7 @@ from lp.code.model.gitrepository import (
     DeletionOperation,
     GitRepository,
     )
+from lp.code.tests.helpers import GitHostingFixture
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -130,12 +130,9 @@ from lp.testing import (
     verifyObject,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
@@ -514,7 +511,7 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
     """Test determination and application of repository deletion
     consequences."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestGitRepositoryDeletionConsequences, self).setUp(
@@ -1141,8 +1138,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertRefsMatch(repository.refs, repository, paths)
         master_sha1 = repository.getRefByPath(u"refs/heads/master").commit_sha1
         foo_sha1 = repository.getRefByPath(u"refs/heads/foo").commit_sha1
-        hosting_client = FakeMethod()
-        hosting_client.getRefs = FakeMethod(result={
+        self.useFixture(GitHostingFixture(refs={
             u"refs/heads/master": {
                 u"object": {
                     u"sha1": u"1111111111111111111111111111111111111111",
@@ -1161,8 +1157,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     u"type": u"commit",
                     },
                 },
-            })
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+            }))
         refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
 
         expected_upsert = {
@@ -1195,16 +1190,14 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 },
             }
         repository.createOrUpdateRefs(refs_info)
-        hosting_client = FakeMethod()
-        hosting_client.getRefs = FakeMethod(result={
+        self.useFixture(GitHostingFixture(refs={
             u"refs/heads/blob": {
                 u"object": {
                     u"sha1": blob_sha1,
                     u"type": u"blob",
                     },
                 },
-            })
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+            }))
         self.assertEqual(({}, set()), repository.planRefChanges("dummy"))
 
     def test_fetchRefCommits(self):
@@ -1218,8 +1211,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         author_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
-        hosting_client = FakeMethod()
-        hosting_client.getCommits = FakeMethod(result=[
+        hosting_fixture = self.useFixture(GitHostingFixture(commits=[
             {
                 u"sha1": master_sha1,
                 u"message": u"tip of master",
@@ -1235,8 +1227,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                     },
                 u"parents": [],
                 u"tree": unicode(hashlib.sha1("").hexdigest()),
-                }])
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+                }]))
         refs = {
             u"refs/heads/master": {
                 u"sha1": master_sha1,
@@ -1250,7 +1241,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         GitRepository.fetchRefCommits("dummy", refs)
 
         expected_oids = [master_sha1, foo_sha1]
-        [(_, observed_oids)] = hosting_client.getCommits.extract_args()
+        [(_, observed_oids)] = hosting_fixture.getCommits.extract_args()
         self.assertContentEqual(expected_oids, observed_oids)
         expected_author_addr = u"%s <%s>" % (author.displayname, author_email)
         [expected_author] = getUtility(IRevisionSet).acquireRevisionAuthors(
@@ -1320,9 +1311,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertThat(repository.refs, MatchesSetwise(*matchers))
 
     def test_set_default_branch(self):
-        hosting_client = FakeMethod()
-        hosting_client.setProperties = FakeMethod()
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        hosting_fixture = self.useFixture(GitHostingFixture())
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRefs(
             repository=repository,
@@ -1333,20 +1322,18 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertEqual(
             [((repository.getInternalPath(),),
              {u"default_branch": u"refs/heads/new"})],
-            hosting_client.setProperties.calls)
+            hosting_fixture.setProperties.calls)
         self.assertEqual(u"refs/heads/new", repository.default_branch)
 
     def test_set_default_branch_unchanged(self):
-        hosting_client = FakeMethod()
-        hosting_client.setProperties = FakeMethod()
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        hosting_fixture = self.useFixture(GitHostingFixture())
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRefs(
             repository=repository, paths=[u"refs/heads/master"])
         removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
         with person_logged_in(repository.owner):
             repository.default_branch = u"master"
-        self.assertEqual([], hosting_client.setProperties.calls)
+        self.assertEqual([], hosting_fixture.setProperties.calls)
         self.assertEqual(u"refs/heads/master", repository.default_branch)
 
 
@@ -1816,23 +1803,23 @@ class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
         self.assertNotEqual(ref2_2, bmp2.source_git_ref)
 
 
-class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
+class TestGitRepositoryUpdateLandingTargets(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_scheduleDiffUpdates(self):
+    def test_schedules_diff_updates(self):
         """Create jobs for all merge proposals."""
         bmp1 = self.factory.makeBranchMergeProposalForGit()
         bmp2 = self.factory.makeBranchMergeProposalForGit(
             source_ref=bmp1.source_git_ref)
-        jobs = bmp1.source_git_repository.scheduleDiffUpdates(
+        jobs = bmp1.source_git_repository.updateLandingTargets(
             [bmp1.source_git_path])
         self.assertEqual(2, len(jobs))
         bmps_to_update = [
             removeSecurityProxy(job).branch_merge_proposal for job in jobs]
         self.assertContentEqual([bmp1, bmp2], bmps_to_update)
 
-    def test_scheduleDiffUpdates_ignores_final(self):
+    def test_ignores_final(self):
         """Diffs for proposals in final states aren't updated."""
         [source_ref] = self.factory.makeGitRefs()
         for state in FINAL_STATES:
@@ -1843,7 +1830,7 @@ class TestGitRepositoryScheduleDiffUpdates(TestCaseWithFactory):
         for bmp in source_ref.landing_targets:
             if bmp.queue_status not in FINAL_STATES:
                 removeSecurityProxy(bmp).deleteProposal()
-        jobs = source_ref.repository.scheduleDiffUpdates([source_ref.path])
+        jobs = source_ref.repository.updateLandingTargets([source_ref.path])
         self.assertEqual(0, len(jobs))
 
 
@@ -1979,7 +1966,7 @@ class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
 
 class TestGitRepositoryDetectMerges(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_markProposalMerged(self):
         # A merge proposal that is merged is marked as such.
@@ -2026,10 +2013,8 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
             target_ref=target_1, source_ref=source_2)
         bmp3 = self.factory.makeBranchMergeProposalForGit(
             target_ref=target_2, source_ref=source_1)
-        hosting_client = FakeMethod()
-        hosting_client.detectMerges = FakeMethod(
-            result={source_1.commit_sha1: u"0" * 40})
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        hosting_fixture = self.useFixture(GitHostingFixture(
+            merges={source_1.commit_sha1: u"0" * 40}))
         refs_info = {
             u"refs/heads/target-1": {
                 u"sha1": u"0" * 40,
@@ -2051,7 +2036,7 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
              set([source_1.commit_sha1])),
             ]
         self.assertContentEqual(
-            expected_args, hosting_client.detectMerges.extract_args())
+            expected_args, hosting_fixture.detectMerges.extract_args())
         self.assertEqual(BranchMergeProposalStatus.MERGED, bmp1.queue_status)
         self.assertEqual(u"0" * 40, bmp1.merged_revision_id)
         self.assertEqual(
@@ -2076,17 +2061,13 @@ class TestGitRepositoryGetBlob(TestCaseWithFactory):
 
     def test_getBlob_with_default_rev(self):
         repository = self.factory.makeGitRepository()
-        hosting_client = FakeMethod()
-        hosting_client.getBlob = FakeMethod(result='Some text')
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture(blob='Some text'))
         ret = repository.getBlob('src/README.txt')
         self.assertEqual('Some text', ret)
 
     def test_getBlob_with_rev(self):
         repository = self.factory.makeGitRepository()
-        hosting_client = FakeMethod()
-        hosting_client.getBlob = FakeMethod(result='Some text')
-        self.useFixture(ZopeUtilityFixture(hosting_client, IGitHostingClient))
+        self.useFixture(GitHostingFixture(blob='Some text'))
         ret = repository.getBlob('src/README.txt', 'some-rev')
         self.assertEqual('Some text', ret)
 

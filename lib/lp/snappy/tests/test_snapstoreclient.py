@@ -213,9 +213,6 @@ class TestSnapStoreClient(TestCaseWithFactory):
             "status_code": 202,
             "content": {
                 "success": True,
-                "status_url": (
-                    "http://sca.example/dev/api/"
-                    "click-scan-complete/updown/1/"),
                 "status_details_url": (
                     "http://sca.example/dev/api/snaps/1/builds/1/status"),
                 }}
@@ -388,32 +385,6 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])
 
-    def test_upload_old_status_url(self):
-        @urlmatch(path=r".*/snap-push/$")
-        def snap_push_handler(url, request):
-            return {
-                "status_code": 202,
-                "content": {
-                    "success": True,
-                    "status_url": (
-                        "http://sca.example/dev/api/"
-                        "click-scan-complete/updown/1/"),
-                    }}
-
-        snap = self.factory.makeSnap(
-            store_upload=True,
-            store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=self._make_store_secrets())
-        snapbuild = self.factory.makeSnapBuild(snap=snap)
-        lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
-        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
-        transaction.commit()
-        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(self._unscanned_upload_handler, snap_push_handler):
-                self.assertEqual(
-                    "http://sca.example/dev/api/click-scan-complete/updown/1/",
-                    self.client.upload(snapbuild))
-
     def test_refresh_discharge_macaroon(self):
         store_secrets = self._make_store_secrets()
         snap = self.factory.makeSnap(
@@ -432,59 +403,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])
 
-    def test_checkStatus_old_pending(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 200,
-                "content": {
-                    "completed": False, "application_url": "",
-                    "revision": None,
-                    "message": "Task 1 is waiting for execution.",
-                    "package_name": None,
-                    }}
-
-        status_url = "http://sca.example/dev/api/click-scan-complete/updown/1/"
-        with HTTMock(handler):
-            self.assertRaises(
-                UploadNotScannedYetResponse, self.client.checkStatus,
-                status_url)
-
-    def test_checkStatus_old_error(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 200,
-                "content": {
-                    "completed": True, "application_url": "", "revision": None,
-                    "message": "You cannot use that reserved namespace.",
-                    "package_name": None,
-                    }}
-
-        status_url = "http://sca.example/dev/api/click-scan-complete/updown/1/"
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                ScanFailedResponse, b"You cannot use that reserved namespace.",
-                self.client.checkStatus, status_url)
-
-    def test_checkStatus_old_success(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 200,
-                "content": {
-                    "completed": True,
-                    "application_url": "http://sca.example/dev/click-apps/1/",
-                    "revision": 1, "message": "", "package_name": "test",
-                    }}
-
-        status_url = "http://sca.example/dev/api/click-scan-complete/updown/1/"
-        with HTTMock(handler):
-            self.assertEqual(
-                ("http://sca.example/dev/click-apps/1/", 1),
-                self.client.checkStatus(status_url))
-
-    def test_checkStatus_new_pending(self):
+    def test_checkStatus_pending(self):
         @all_requests
         def handler(url, request):
             return {
@@ -500,7 +419,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 UploadNotScannedYetResponse, self.client.checkStatus,
                 status_url)
 
-    def test_checkStatus_new_error(self):
+    def test_checkStatus_error(self):
         @all_requests
         def handler(url, request):
             return {
@@ -521,7 +440,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 b"You cannot use that reserved namespace.",
                 self.client.checkStatus, status_url)
 
-    def test_checkStatus_new_review_error(self):
+    def test_checkStatus_review_error(self):
         @all_requests
         def handler(url, request):
             return {
@@ -539,7 +458,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 ScanFailedResponse, b"Review failed.",
                 self.client.checkStatus, status_url)
 
-    def test_checkStatus_new_complete(self):
+    def test_checkStatus_complete(self):
         @all_requests
         def handler(url, request):
             return {

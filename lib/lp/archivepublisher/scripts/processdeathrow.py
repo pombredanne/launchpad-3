@@ -17,6 +17,11 @@ __all__ = [
 
 from lp.archivepublisher.deathrow import getDeathRow
 from lp.archivepublisher.scripts.base import PublisherScript
+from lp.services.limitedlist import LimitedList
+from lp.services.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 
 
 class DeathRowProcessor(PublisherScript):
@@ -58,6 +63,9 @@ class DeathRowProcessor(PublisherScript):
             archive, self.logger, self.options.pool_root)
         self.logger.debug(
             "Unpublishing death row for %s." % archive.displayname)
+        set_request_started(
+            request_statements=LimitedList(10000),
+            txn=self.txn, enable_timeout=False)
         try:
             death_row.reap(self.options.dry_run)
         except Exception:
@@ -71,3 +79,5 @@ class DeathRowProcessor(PublisherScript):
             else:
                 self.logger.debug("Committing")
                 self.txn.commit()
+        finally:
+            clear_request_started()

@@ -173,15 +173,6 @@ class SourcePackageRelease(SQLBase):
             "UPDATE sourcepackagerelease SET copyright=%s WHERE id=%s",
             (content, self.id))
 
-    @cachedproperty
-    def dscsigningkey(self):
-        if self.signing_key_fingerprint is not None:
-            # Stripping proxy as some tests expect this former FK to
-            # hold an unsecured object. self is always proxied by things
-            # that hold it, so no issue here.
-            return removeSecurityProxy(getUtility(IGPGKeySet).getByFingerprint(
-                self.signing_key_fingerprint))
-
     @property
     def user_defined_fields(self):
         """See `IBinaryPackageRelease`."""

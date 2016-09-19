@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to BranchMergeProposals are in here.
@@ -369,6 +369,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             # A no-op context manager.  (This could be simplified with
             # contextlib.ExitStack from Python 3.3.)
             server_context = contextmanager(lambda: (None for _ in [None]))()
+            # Update related bug links based on commits in the source branch.
+            self.branch_merge_proposal.updateRelatedBugsFromSource()
         with server_context:
             with BranchMergeProposalDelta.monitor(self.branch_merge_proposal):
                 PreviewDiff.fromBranchMergeProposal(self.branch_merge_proposal)

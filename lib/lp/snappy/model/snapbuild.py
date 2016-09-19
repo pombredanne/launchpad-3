@@ -55,6 +55,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.propertycache import cachedproperty
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import (
     CannotScheduleStoreUpload,
@@ -249,7 +250,7 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.buildqueue_record.cancel()
 
     def calculateScore(self):
-        return 2505 + self.archive.relative_build_score
+        return 2510 + self.archive.relative_build_score
 
     def getMedianBuildDuration(self):
         """Return the median duration of our successful builds."""
@@ -348,7 +349,7 @@ class SnapBuild(PackageBuildMixin, Storm):
     def getFileUrls(self):
         return [self.lfaUrl(lfa) for _, lfa, _ in self.getFiles()]
 
-    @property
+    @cachedproperty
     def eta(self):
         """The datetime when the build job is estimated to complete.
 
