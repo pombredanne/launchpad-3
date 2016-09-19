@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `WebhookJob`s."""
@@ -37,7 +37,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.versioninfo import revno
+from lp.app import versioninfo
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
@@ -371,7 +371,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([
             ('POST', 'http://example.com/ep',
              {'Content-Type': 'application/json',
-              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % (
+                  versioninfo.revision),
               'X-Launchpad-Event-Type': 'test',
               'X-Launchpad-Delivery': str(job.job_id)}),
             ], reqs)
@@ -386,7 +387,8 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([
             ('POST', 'http://example.com/ep',
              {'Content-Type': 'application/json',
-              'User-Agent': 'launchpad.dev-Webhooks/r%s' % revno,
+              'User-Agent': 'launchpad.dev-Webhooks/r%s' % (
+                  versioninfo.revision),
               'X-Hub-Signature':
                   'sha1=de75f136c37d89f5eb24834468c1ecd602fa95dd',
               'X-Launchpad-Event-Type': 'test',

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A configuration class describing the Launchpad web service."""
@@ -58,7 +58,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     @property
     def code_revision(self):
-        return str(versioninfo.revno)
+        return str(versioninfo.revision)
 
     def createRequest(self, body_instream, environ):
         """See `IWebServiceConfiguration`."""

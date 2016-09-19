@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -15,6 +15,7 @@ import glob
 from optparse import OptionParser
 import os.path
 import re
+import subprocess
 from textwrap import dedent
 
 from bzrlib.branch import Branch
@@ -31,7 +32,7 @@ from lp.services.scripts import (
     )
 
 
-SCHEMA_DIR = os.path.dirname(__file__)
+SCHEMA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def main(con=None):
@@ -161,7 +162,7 @@ def apply_patches_normal(con):
 
     # Repair patch timestamps if necessary.
     cur.execute(
-        FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
+        FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_vcs_details()))
 
     # Update comments.
     apply_comments(con)
@@ -245,26 +246,38 @@ def apply_comments(con):
         log.debug("Skipping comments.sql per command line settings")
 
 
-_bzr_details_cache = None
+_vcs_details_cache = None
 
 
-def get_bzr_details():
-    """Return (branch_nick, revno, revision_id) of this Bazaar branch.
+def get_vcs_details():
+    """Return (branch_nick, revno, revision_id) of this VCS branch.
+
+    If this is a Git branch, then revno will be None.
 
     Returns (None, None, None) if the tree this code is running from
-    is not a Bazaar branch.
+    is not a VCS branch.
     """
-    global _bzr_details_cache
-    if _bzr_details_cache is None:
-        try:
-            branch = Branch.open_containing(SCHEMA_DIR)[0]
-            revno, revision_id = branch.last_revision_info()
-            branch_nick = branch.get_config().get_nickname()
-        except NotBranchError:
-            log.warning("Not a Bazaar branch - branch details unavailable")
-            revision_id, revno, branch_nick = None, None, None
-        _bzr_details_cache = (branch_nick, revno, revision_id)
-    return _bzr_details_cache
+    global _vcs_details_cache
+    if _vcs_details_cache is None:
+        top = os.path.dirname(os.path.dirname(SCHEMA_DIR))
+        if os.path.exists(os.path.join(top, ".git")):
+            branch_nick = subprocess.check_output(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                universal_newlines=True).rstrip("\n")
+            revno = None
+            revision_id = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                universal_newlines=True).rstrip("\n")
+        else:
+            try:
+                branch = Branch.open_containing(SCHEMA_DIR)[0]
+                revno, revision_id = branch.last_revision_info()
+                branch_nick = branch.get_config().get_nickname()
+            except NotBranchError:
+                log.warning("Not a Bazaar branch - branch details unavailable")
+                revision_id, revno, branch_nick = None, None, None
+        _vcs_details_cache = (branch_nick, revno, revision_id)
+    return _vcs_details_cache
 
 
 if __name__ == '__main__':

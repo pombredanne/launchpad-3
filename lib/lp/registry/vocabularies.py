@@ -2071,9 +2071,18 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 "DistributionSourcePackageVocabulary cannot be used without "
                 "setting a distribution.")
 
+    @property
+    def _cache_location_clauses(self):
+        return [
+            Or(
+                DistributionSourcePackageCache.archiveID.is_in(
+                    self.distribution.all_distro_archive_ids),
+                DistributionSourcePackageCache.archive == None),
+            DistributionSourcePackageCache.distribution == self.distribution,
+            ]
+
     def toTerm(self, spn_or_dsp):
         """See `IVocabulary`."""
-        self._assertHasDistribution()
         dsp = None
         binary_names = None
         if isinstance(spn_or_dsp, tuple):
@@ -2088,19 +2097,36 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
         elif spn_or_dsp is not None:
+            self._assertHasDistribution()
             dsp = self.distribution.getSourcePackage(spn_or_dsp)
-        if dsp is not None and (dsp == self.dsp or dsp.is_official):
-            if binary_names:
-                # Search already did the hard work of looking up binary names.
-                cache = get_property_cache(dsp)
-                cache.binary_names = binary_names
-            # XXX cjwatson 2016-07-22: It's a bit odd for the token to
-            # return just the source package name and not the distribution
-            # name as well, but at the moment this is always fed into a
-            # package name box so things work much better this way.  If we
-            # ever do a true combined distribution/package picker, then this
-            # may need to be revisited.
-            return SimpleTerm(dsp, dsp.name, dsp.name)
+        if dsp is not None:
+            if dsp == self.dsp or dsp.is_official or self.distribution is None:
+                if binary_names:
+                    # Search already did the hard work of looking up binary
+                    # names.
+                    cache = get_property_cache(dsp)
+                    cache.binary_names = binary_names
+                # XXX cjwatson 2016-07-22: It's a bit odd for the token to
+                # return just the source package name and not the
+                # distribution name as well, but at the moment this is
+                # always fed into a package name box so things work much
+                # better this way.  If we ever do a true combined
+                # distribution/package picker, then this may need to be
+                # revisited.
+                return SimpleTerm(dsp, dsp.name, dsp.name)
+            else:
+                # Does this vocabulary have any package names at all?
+                empty = IStore(DistributionSourcePackageCache).find(
+                    DistributionSourcePackageCache.sourcepackagenameID,
+                    *self._cache_location_clauses).is_empty()
+                if empty:
+                    # If the vocabulary has no package names, then this is
+                    # probably a distribution not managed in Launchpad.  In
+                    # that case we are more liberal about allowing unknown
+                    # package names, in order to support existing uses such
+                    # as noting that the same bug exists in the same package
+                    # in multiple distributions.
+                    return SimpleTerm(dsp, dsp.name, dsp.name)
         raise LookupError(self.distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):
@@ -2134,13 +2160,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                     DistributionSourcePackageCache.binpkgnames.contains_string(
                         query),
                     ),
-                Or(
-                    DistributionSourcePackageCache.archiveID.is_in(
-                        self.distribution.all_distro_archive_ids),
-                    DistributionSourcePackageCache.archive == None),
-                DistributionSourcePackageCache.distribution ==
-                    self.distribution,
-                ),
+                *self._cache_location_clauses),
             tables=DistributionSourcePackageCache,
             distinct=(DistributionSourcePackageCache.name,)))
         SearchableDSPC = Table("SearchableDSPC")

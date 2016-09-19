@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -43,7 +43,7 @@ class ExportedFolder:
     """View that gives access to the files in a folder.
 
     The URL to the folder can start with an optional path step like
-    /revNNN/ where NNN is one or more digits.  This path step will
+    /revNNN/ where NNN is one or more hex digits.  This path step will
     be ignored.  It is useful for having a different path for
     all resources being served, to ensure that we don't use cached
     files in browsers.
@@ -52,7 +52,7 @@ class ExportedFolder:
     to True to change this.
     """
 
-    rev_part_re = re.compile('rev\d+$')
+    rev_part_re = re.compile('rev[0-9a-f]+$')
 
     export_subdirectories = False
 

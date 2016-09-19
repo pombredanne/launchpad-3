@@ -9,6 +9,7 @@
       var config = ${view/json_config};
       var distribution_name = '${view/distribution_name}';
       var distribution_id = '${view/distribution_id}';
+      var distroseries_id = '${view/distroseries_id}';
       if (distribution_name !== '') {
           config.getContextPath = function() {
               return '/' + distribution_name;
@@ -16,6 +17,10 @@
       } else if (distribution_id !== '') {
           config.getContextPath = function() {
               return '/' + Y.DOM.byId(distribution_id).value;
+          };
+      } else if (distroseries_id !== '') {
+          config.getContextPath = function() {
+              return '/' + Y.DOM.byId(distroseries_id).value.split('/', 2)[0];
           };
       }
       var show_widget_id = '${view/show_widget_id}';

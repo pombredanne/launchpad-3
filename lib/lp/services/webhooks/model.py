@@ -43,8 +43,8 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app import versioninfo
 from lp.app.interfaces.security import IAuthorization
-import lp.app.versioninfo
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.person import Person
 from lp.services.config import config
@@ -488,7 +488,7 @@ class WebhookDeliveryJob(WebhookJobDerived):
             transaction.commit()
             raise WebhookDeliveryFailure(self.error_message)
         user_agent = '%s-Webhooks/r%s' % (
-            config.vhost.mainsite.hostname, lp.app.versioninfo.revno)
+            config.vhost.mainsite.hostname, versioninfo.revision)
         secret = self.webhook.secret
         result = getUtility(IWebhookClient).deliver(
             self.webhook.delivery_url, config.webhooks.http_proxy,
