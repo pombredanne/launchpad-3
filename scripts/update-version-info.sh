@@ -15,7 +15,7 @@ if [ -d .git ]; then
         exit 1
     fi
 
-    branch_nick="$(git rev-parse --abbrev-ref HEAD)"
+    branch_nick="$(git rev-parse --abbrev-ref HEAD | sed "s/'/\\\\'/g")"
     revision_id="$(git rev-parse HEAD)"
     cat > $newfile <<EOF
 #! /usr/bin/env python
