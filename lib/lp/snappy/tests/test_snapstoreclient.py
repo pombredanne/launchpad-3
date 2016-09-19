@@ -31,6 +31,7 @@ from testtools.matchers import (
     KeysEqual,
     Matcher,
     MatchesDict,
+    MatchesListwise,
     MatchesStructure,
     Mismatch,
     StartsWith,
@@ -180,6 +181,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.pushConfig(
             "launchpad", openid_provider_root="http://sso.example/")
         self.client = getUtility(ISnapStoreClient)
+        self.unscanned_upload_requests = []
 
     def _make_store_secrets(self):
         self.root_key = hashlib.sha256(
@@ -200,7 +202,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
 
     @urlmatch(path=r".*/unscanned-upload/$")
     def _unscanned_upload_handler(self, url, request):
-        self.unscanned_upload_request = request
+        self.unscanned_upload_requests.append(request)
         return {
             "status_code": 200,
             "content": {"successful": True, "upload_id": 1},
@@ -301,8 +303,13 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_series=self.factory.makeSnappySeries(name="rolling"),
             store_name="test-snap", store_secrets=self._make_store_secrets())
         snapbuild = self.factory.makeSnapBuild(snap=snap)
-        lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
-        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
+        snap_lfa = self.factory.makeLibraryFileAlias(
+            filename="test-snap.snap", content="dummy snap content")
+        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=snap_lfa)
+        manifest_lfa = self.factory.makeLibraryFileAlias(
+            filename="test-snap.manifest", content="dummy manifest content")
+        self.factory.makeSnapFile(
+            snapbuild=snapbuild, libraryfile=manifest_lfa)
         transaction.commit()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             with HTTMock(self._unscanned_upload_handler,
@@ -310,15 +317,16 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 self.assertEqual(
                     "http://sca.example/dev/api/snaps/1/builds/1/status",
                     self.client.upload(snapbuild))
-        self.assertThat(self.unscanned_upload_request, RequestMatches(
-            url=Equals("http://updown.example/unscanned-upload/"),
-            method=Equals("POST"),
-            form_data={
-                "binary": MatchesStructure.byEquality(
-                    name="binary", filename="filename",
-                    value="dummy snap content",
-                    type="application/octet-stream",
-                    )}))
+        self.assertThat(self.unscanned_upload_requests, MatchesListwise([
+            RequestMatches(
+                url=Equals("http://updown.example/unscanned-upload/"),
+                method=Equals("POST"),
+                form_data={
+                    "binary": MatchesStructure.byEquality(
+                        name="binary", filename="test-snap.snap",
+                        value="dummy snap content",
+                        type="application/octet-stream",
+                        )})]))
         self.assertThat(self.snap_push_request, RequestMatches(
             url=Equals("http://sca.example/dev/api/snap-push/"),
             method=Equals("POST"),
@@ -343,7 +351,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_series=self.factory.makeSnappySeries(name="rolling"),
             store_name="test-snap", store_secrets=store_secrets)
         snapbuild = self.factory.makeSnapBuild(snap=snap)
-        lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
+        lfa = self.factory.makeLibraryFileAlias(
+            filename="test-snap.snap", content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
@@ -372,7 +381,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_series=self.factory.makeSnappySeries(name="rolling"),
             store_name="test-snap", store_secrets=store_secrets)
         snapbuild = self.factory.makeSnapBuild(snap=snap)
-        lfa = self.factory.makeLibraryFileAlias(content="dummy snap content")
+        lfa = self.factory.makeLibraryFileAlias(
+            filename="test-snap.snap", content="dummy snap content")
         self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
         transaction.commit()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
