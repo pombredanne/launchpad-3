@@ -34,13 +34,13 @@ Make revisions for the branch so it has a codebrowse link.
     >>> def print_code_trunk(browser):
     ...     """Print out code trunk part of the project info."""
     ...     project_info = find_tag_by_id(browser.contents, 'code-info')
-    ...     dev_focus = project_info.find(attrs={'id':'dev-focus'})
+    ...     code_trunk = project_info.find(attrs={'id':'code-trunk'})
     ...     try:
-    ...         print extract_text(dev_focus)
+    ...         print extract_text(code_trunk)
     ...     except TypeError:
     ...         return
     ...     print "Links:"
-    ...     for a in dev_focus.findAll('a'):
+    ...     for a in code_trunk.findAll('a'):
     ...         for content in a.contents:
     ...             print content
     ...         title = a.get('title', '')
@@ -111,7 +111,6 @@ The owner is taken back to the project page.
      trunk series (/fooix/trunk)
      Change details (http://launchpad.dev/fooix/+edit)
     >>> print_code_trunk(owner_browser)
-    Development focus:
     lp://dev/fooix  Configure Code
     Browse the code
     Links:
@@ -138,7 +137,6 @@ branch.
     Links:
      trunk series (/fooix/trunk)
     >>> print_code_trunk(anon_browser)
-    Development focus:
     lp://dev/fooix
     Browse the code
     Links:
@@ -153,7 +151,6 @@ branch.
      trunk series (/fooix/trunk)
      Change details (http://launchpad.dev/fooix/+edit)
     >>> print_code_trunk(owner_browser)
-    Development focus:
     lp://dev/fooix   Configure Code
     Browse the code
     Links:
@@ -192,7 +189,6 @@ appears as if there is no series branch set.
       Change details
         (http://launchpad.dev/fooix/+edit)
     >>> print_code_trunk(owner_browser)
-    Development focus:
     lp://dev/fooix   Configure Code
     Browse the code
     Links:

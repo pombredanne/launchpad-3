@@ -1132,6 +1132,16 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
             true_text='Approved',
             header='Does the licence qualifiy the project for free hosting?')
 
+    @property
+    def code_trunk(self):
+        if self.context.inferred_vcs == VCSType.GIT:
+            return getUtility(IGitRepositorySet).getDefaultRepository(
+                self.context)
+        elif self.context.inferred_vcs == VCSType.BZR:
+            return self.context.development_focus.branch
+        else:
+            return None
+
 
 class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
