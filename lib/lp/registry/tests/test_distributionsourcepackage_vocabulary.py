@@ -5,10 +5,14 @@
 
 __metaclass__ = type
 
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.vocabularies import DistributionSourcePackageVocabulary
 from lp.services.webapp.vocabulary import IHugeVocabulary
 from lp.soyuz.enums import ArchivePurpose
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -265,6 +269,23 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual('pting-devel', terms[1].token)
         self.assertEqual('snarf-server', terms[2].token)
         self.assertEqual('pting-client', terms[3].token)
+
+    def test_searchForTerms_deduplication(self):
+        # Search deduplicates cache rows with the same name, e.g. an
+        # official source package that also has an official branch.
+        distro = self.factory.makeDistribution(name='fnord')
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDSPCache(
+            distroseries=distroseries, sourcepackagename='snarf')
+        branch = self.factory.makePackageBranch(distroseries=distroseries)
+        with person_logged_in(distro.owner):
+            distroseries.getSourcePackage('snarf').setBranch(
+                PackagePublishingPocket.RELEASE, branch, distro.owner)
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        results = vocabulary.searchForTerms(query='snarf')
+        terms = list(results)
+        self.assertEqual(1, len(terms))
+        self.assertEqual('snarf', terms[0].token)
 
     def test_searchForTerms_partner_archive(self):
         # Packages in partner archives are searched.
