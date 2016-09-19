@@ -56,7 +56,7 @@ def makedirs_fsync(name, mode=0777):
     if head and tail and not os.path.exists(head):
         try:
             makedirs_fsync(head, mode)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
         if tail == os.curdir:
