@@ -91,6 +91,7 @@ from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
     )
+from lp.bugs.browser.widgets.bugtask import FileBugSourcePackageNameWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -131,6 +132,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
@@ -225,6 +227,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
     custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget('packagename', FileBugSourcePackageNameWidget)
 
     extra_data_token = None
 
@@ -419,8 +422,17 @@ class FileBugViewBase(LaunchpadFormView):
                     distribution = self.context.distribution
 
                 try:
-                    distribution.guessPublishedSourcePackageName(packagename)
-                except NotFoundError:
+                    if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                        dsp_vocab = self.widgets.get("packagename").vocabulary
+                        dsp_vocab.setDistribution(distribution)
+                        dsp_vocab.getTermByToken(packagename)
+                    else:
+                        # The untrusted BinaryAndSourcePackageName
+                        # vocabulary was used, so it needs secondary
+                        # verification.
+                        distribution.guessPublishedSourcePackageName(
+                            packagename)
+                except (LookupError, NotFoundError):
                     if distribution.series:
                         # If a distribution doesn't have any series,
                         # it won't have any source packages published at
@@ -525,24 +537,28 @@ class FileBugViewBase(LaunchpadFormView):
             information_type=information_type,
             tags=data.get('tags'))
         if IDistribution.providedBy(context) and packagename:
-            # We don't know if the package name we got was a source or binary
-            # package name, so let the Soyuz API figure it out for us.
-            packagename = str(packagename.name)
-            try:
-                sourcepackagename = context.guessPublishedSourcePackageName(
-                    packagename)
-            except NotFoundError:
-                notifications.append(
-                    "The package %s is not published in %s; the "
-                    "bug was targeted only to the distribution."
-                    % (packagename, context.displayname))
-                params.comment += (
-                    "\r\n\r\nNote: the original reporter indicated "
-                    "the bug was in package %r; however, that package "
-                    "was not published in %s." % (
-                        packagename, context.displayname))
+            if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                context = packagename
             else:
-                context = context.getSourcePackage(sourcepackagename.name)
+                # We don't know if the package name we got was a source or
+                # binary package name, so let the Soyuz API figure it out
+                # for us.
+                packagename = str(packagename.name)
+                try:
+                    sourcepackagename = (
+                        context.guessPublishedSourcePackageName(packagename))
+                except NotFoundError:
+                    notifications.append(
+                        "The package %s is not published in %s; the "
+                        "bug was targeted only to the distribution."
+                        % (packagename, context.displayname))
+                    params.comment += (
+                        "\r\n\r\nNote: the original reporter indicated "
+                        "the bug was in package %r; however, that package "
+                        "was not published in %s." % (
+                            packagename, context.displayname))
+                else:
+                    context = context.getSourcePackage(sourcepackagename.name)
 
         extra_data = self.extra_data
         if extra_data.extra_description:
@@ -895,13 +911,25 @@ class FileBugAdvancedView(LaunchpadView):
             filebug_url, status=httplib.MOVED_PERMANENTLY)
 
 
+class IDistroBugAddForm(IBugAddForm):
+
+    packagename = copy_field(
+        IBugAddForm['packagename'], vocabularyName='DistributionSourcePackage')
+
+
 class FilebugShowSimilarBugsView(FileBugViewBase):
     """A view for showing possible dupes for a bug.
 
     This view will only be used to populate asynchronously-driven parts
     of a page.
     """
-    schema = IBugAddForm
+
+    @property
+    def schema(self):
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return IDistroBugAddForm
+        else:
+            return IBugAddForm
 
     # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
     # hack to make the action decorator Just Work across inheritance.

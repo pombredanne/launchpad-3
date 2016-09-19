@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -11,6 +11,7 @@ import unittest
 
 from lp.code.tests.test_doc import branchscannerSetUp
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
@@ -128,6 +129,18 @@ def bugmessageSetUp(test):
     login('no-priv@canonical.com')
 
 
+def enableDSPPickerSetUp(test):
+    setUp(test)
+    ff = FeatureFixture({u'disclosure.dsp_picker.enabled': u'on'})
+    ff.setUp()
+    test.globs['dsp_picker_feature_fixture'] = ff
+
+
+def enableDSPPickerTearDown(test):
+    test.globs['dsp_picker_feature_fixture'].cleanUp()
+    tearDown(test)
+
+
 special = {
     'cve-update.txt': LayeredDocFileSuite(
         '../doc/cve-update.txt',
@@ -205,6 +218,18 @@ special = {
         setUp=bugtaskExpirationSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
+        ),
+    'bugtask-package-widget.txt': LayeredDocFileSuite(
+        '../doc/bugtask-package-widget.txt',
+        id_extensions=['bugtask-package-widget.txt'],
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer
+        ),
+    'bugtask-package-widget.txt-dsp-picker': LayeredDocFileSuite(
+        '../doc/bugtask-package-widget.txt',
+        id_extensions=['bugtask-package-widget.txt-dsp-picker'],
+        setUp=enableDSPPickerSetUp, tearDown=enableDSPPickerTearDown,
+        layer=LaunchpadFunctionalLayer
         ),
     'bugmessage.txt': LayeredDocFileSuite(
         '../doc/bugmessage.txt',

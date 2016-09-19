@@ -86,18 +86,32 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary = DistributionSourcePackageVocabulary(dsp)
         self.assertIn(dsp, vocabulary)
 
+    def test_contains_true_with_cacheless_distribution(self):
+        # The vocabulary contains DSPs that are not official, provided that
+        # the distribution has no cached package names.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=False)
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
+        self.assertIn(dsp, vocabulary)
+
     def test_contains_false_with_distribution(self):
         # The vocabulary does not contain DSPs that are not official that
         # were not passed to init.
-        dsp = self.factory.makeDistributionSourcePackage(with_db=False)
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDSPCache(distroseries=distroseries)
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distro, with_db=False)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         self.assertNotIn(dsp, vocabulary)
 
     def test_toTerm_raises_error(self):
         # An error is raised for DSP/SPNs that are not official and are not
         # in the vocabulary.
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDSPCache(distroseries=distroseries)
         dsp = self.factory.makeDistributionSourcePackage(
-            sourcepackagename='foo')
+            sourcepackagename='foo', distribution=distro, with_db=False)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         self.assertRaises(LookupError, vocabulary.toTerm, dsp)
 
@@ -117,6 +131,18 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(dsp.name, term.token)
         self.assertEqual(dsp.name, term.title)
         self.assertEqual(dsp, term.value)
+
+    def test_toTerm_spn_with_cacheless_distribution(self):
+        # An SPN with no official DSP is accepted, provided that the
+        # distribution has no cached package names.
+        distro = self.factory.makeDistribution()
+        spn = self.factory.makeSourcePackageName()
+        vocabulary = DistributionSourcePackageVocabulary(distro)
+        term = vocabulary.toTerm(spn)
+        self.assertEqual(spn.name, term.token)
+        self.assertEqual(spn.name, term.title)
+        self.assertEqual(distro, term.value.distribution)
+        self.assertEqual(spn, term.value.sourcepackagename)
 
     def test_toTerm_dsp(self):
         # The DSP's distribution is used when a DSP is passed.
@@ -142,10 +168,24 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(dsp, term.value)
         self.assertEqual(['one', 'two'], term.value.binary_names)
 
+    def test_toTerm_dsp_with_cacheless_distribution(self):
+        # A DSP that is not official is accepted, provided that the
+        # distribution has no cached package names.
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='foo', with_db=False)
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
+        term = vocabulary.toTerm(dsp)
+        self.assertEqual(dsp.name, term.token)
+        self.assertEqual(dsp.name, term.title)
+        self.assertEqual(dsp, term.value)
+
     def test_getTermByToken_error(self):
         # An error is raised if the token does not match a official DSP.
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDSPCache(distroseries=distroseries)
         dsp = self.factory.makeDistributionSourcePackage(
-            sourcepackagename='foo')
+            distribution=distro, sourcepackagename='foo', with_db=False)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         self.assertRaises(LookupError, vocabulary.getTermByToken, dsp.name)
 
@@ -154,6 +194,15 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         spph = self.factory.makeSourcePackagePublishingHistory()
         dsp = spph.distroseries.distribution.getSourcePackage(
             spph.sourcepackagerelease.sourcepackagename)
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
+        term = vocabulary.getTermByToken(dsp.name)
+        self.assertEqual(dsp, term.value)
+
+    def test_getTermByToken_token_with_cacheless_distribution(self):
+        # The term is returned if it does not match an official DSP,
+        # provided that the distribution has no cached package names.
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='foo', with_db=False)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.getTermByToken(dsp.name)
         self.assertEqual(dsp, term.value)

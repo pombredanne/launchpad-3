@@ -13,6 +13,7 @@ __all__ = [
     "BugTaskTargetWidget",
     "BugWatchEditForm",
     "DBItemDisplayWidget",
+    "FileBugSourcePackageNameWidget",
     "NewLineToSpacesWidget",
     "UbuntuSourcePackageNameWidget",
     ]
@@ -42,6 +43,7 @@ from zope.schema.interfaces import (
     InvalidValue,
     ValidationError,
     )
+from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp import _
 from lp.app.browser.tales import TeamFormatterAPI
@@ -66,7 +68,10 @@ from lp.bugs.interfaces.bugwatch import (
     UnrecognizedBugTrackerURL,
     )
 from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.webapp import canonical_url
@@ -497,7 +502,7 @@ class BugTaskSourcePackageNameWidget(DistributionSourcePackagePickerWidget):
     def getDistribution(self):
         """Get the distribution used for package validation.
 
-        The package name has be to published in the returned distribution.
+        The package name has to be published in the returned distribution.
         """
         field = self.context
         distribution = field.context.distribution
@@ -543,14 +548,14 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
     BugTaskSourcePackageNameWidget):
     """Package widget for +distrotask.
 
-    This widgets works the same as `BugTaskSourcePackageNameWidget`,
-    except that it gets the distribution from the request.
+    This widget works the same as `BugTaskSourcePackageNameWidget`, except
+    that it gets the distribution from the request.
     """
 
     distribution_id = 'field.distribution'
 
     def getDistribution(self):
-        """See `BugTaskSourcePackageNameWidget`"""
+        """See `BugTaskSourcePackageNameWidget`."""
         distribution_name = self.request.form.get('field.distribution')
         if distribution_name is None:
             raise UnexpectedFormData(
@@ -561,6 +566,42 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
             raise UnexpectedFormData(
                 "No such distribution: %s" % distribution_name)
         return distribution
+
+
+class FileBugSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
+    """Package widget for +filebug.
+
+    This widget works the same as `BugTaskSourcePackageNameWidget`, except
+    that it expects the field's context to be a bug target rather than a bug
+    task.
+    """
+
+    def getDistribution(self):
+        """See `BugTaskSourcePackageNameWidget`."""
+        field = self.context
+        pillar = field.context.pillar
+        assert IDistribution.providedBy(pillar), (
+            "FileBugSourcePackageNameWidget should be used only for"
+            " distribution bug targets.")
+        return pillar
+
+    def _toFieldValue(self, input):
+        """See `BugTaskSourcePackageNameWidget`."""
+        source = super(FileBugSourcePackageNameWidget, self)._toFieldValue(
+            input)
+        if (source is not None and
+                not bool(getFeatureFlag('disclosure.dsp_picker.enabled'))):
+            # XXX cjwatson 2016-07-25: Convert to a value that the
+            # IBug.packagename vocabulary will accept.  This is a fiddly
+            # hack, but it only needs to survive until we can switch to the
+            # DistributionSourcePackage picker across the board.
+            bspn_vocab = getVocabularyRegistry().get(
+                None, "BinaryAndSourcePackageName")
+            bspn = bspn_vocab.getTermByToken(source.name).value
+            self.cached_values[input] = bspn
+            return bspn
+        else:
+            return source
 
 
 class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):

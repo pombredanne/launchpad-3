@@ -8,13 +8,17 @@ can't file a bug on that package. To allow people to enter a binary
 package name, and to convert it to a source package name, we have a
 custom widget.
 
+    >>> from lazr.restful.interface import copy_field
     >>> from lp.bugs.browser.widgets.bugtask import (
     ...     BugTaskSourcePackageNameWidget)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.services.features import getFeatureFlag
+    >>> from lp.testing import person_logged_in
 
 If we pass a valid source package name to it, the corresponding
-SourcePackageName will be returned by getInputValue(). In order for us
-to map the package names, we need a distribution, so we give the widget
-a distribution task to work with.
+SourcePackageName (or DistributionSourcePackage, for the new picker) will be
+returned by getInputValue(). In order for us to map the package names, we
+need a distribution, so we give the widget a distribution task to work with.
 
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
@@ -24,52 +28,67 @@ a distribution task to work with.
     >>> ubuntu_task.distribution.name
     u'ubuntu'
 
-    >>> package_field = IBugTask['sourcepackagename'].bind(ubuntu_task)
+    >>> unbound_package_field = IBugTask['sourcepackagename']
+    >>> if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+    ...     unbound_package_field = copy_field(
+    ...         unbound_package_field,
+    ...         vocabularyName='DistributionSourcePackage')
+    ...     expected_input_class = 'DistributionSourcePackage'
+    ... else:
+    ...     expected_input_class = 'SourcePackageName'
+    >>> package_field = unbound_package_field.bind(ubuntu_task)
 
     >>> request = LaunchpadTestRequest(
     ...     form={'field.sourcepackagename': 'evolution'})
     >>> widget = BugTaskSourcePackageNameWidget(
     ...     package_field, package_field.vocabulary, request)
-    >>> widget.getInputValue()
-    <SourcePackageName ...>
+    >>> widget.getInputValue().__class__.__name__ == expected_input_class
+    True
     >>> widget.getInputValue().name
     u'evolution'
 
+If we pass in a binary package name, which can be mapped to a source package
+name, the corresponding SourcePackageName is returned.  (In the case of the
+new picker, this instead requires searching first.)
 
-If we pass in a binary package name, which can be mapped to a source
-package name, the corresponding SourcePackageName is returned.
-
+    >>> package_name = 'linux-2.6.12'
+    >>> if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+    ...     package_field.vocabulary.setDistribution(ubuntu_task.distribution)
+    ...     results = package_field.vocabulary.searchForTerms(package_name)
+    ...     package_name = list(results)[0].value
     >>> request = LaunchpadTestRequest(
-    ...     form={'field.sourcepackagename': 'linux-2.6.12'})
+    ...     form={'field.sourcepackagename': package_name})
     >>> widget = BugTaskSourcePackageNameWidget(
     ...     package_field, package_field.vocabulary, request)
-    >>> widget.getInputValue()
-    <SourcePackageName ...>
+    >>> widget.getInputValue().__class__.__name__ == expected_input_class
+    True
     >>> widget.getInputValue().name
     u'linux-source-2.6.15'
 
-For some distribution we don't know exactly which source packages it
-contains, so IDistribution.guessPublishedSourcePackageName will raise a
+For some distributions we don't know exactly which source packages they
+contain, so IDistribution.guessPublishedSourcePackageName will raise a
 NotFoundError.
 
-    >>> debian_task = bug_one.bugtasks[-1]
-    >>> debian_task.distribution.name
-    u'debian'
-    >>> debian_task.distribution.guessPublishedSourcePackageName('evolution')
+    >>> gentoo = getUtility(IDistributionSet)['gentoo']
+    >>> gentoo.guessPublishedSourcePackageName('evolution')
     Traceback (most recent call last):
     ...
     NotFoundError...
 
-At that point we'll fallback to the vocabulary, so a SourcePackageName
+At that point we'll fall back to the vocabulary, so a SourcePackageName
 will still be returned.
 
-    >>> package_field = IBugTask['sourcepackagename'].bind(debian_task)
+    >>> with person_logged_in(ubuntu_task.owner):
+    ...     gentoo_task = bug_one.addTask(ubuntu_task.owner, gentoo)
+    >>> package_field = unbound_package_field.bind(gentoo_task)
+    >>> if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+    ...     package_field.vocabulary.setDistribution(gentoo)
     >>> request = LaunchpadTestRequest(
     ...     form={'field.sourcepackagename': 'evolution'})
     >>> widget = BugTaskSourcePackageNameWidget(
     ...     package_field, package_field.vocabulary, request)
-    >>> widget.getInputValue()
-    <SourcePackageName ...>
+    >>> widget.getInputValue().__class__.__name__ == expected_input_class
+    True
     >>> widget.getInputValue().name
     u'evolution'
 
@@ -126,3 +145,89 @@ UnexpectedFormData is raised.
     Traceback (most recent call last):
     ...
     UnexpectedFormData: ...
+
+
+FileBugSourcePackageNameWidget
+------------------------------
+
+The +filebug page uses a widget that works much the same way as
+BugTaskSourcePackageNameWidget, except that in this case the context is a
+bug target rather than a bug task.
+
+    >>> from lp.bugs.browser.widgets.bugtask import (
+    ...     FileBugSourcePackageNameWidget)
+    >>> from lp.bugs.interfaces.bug import IBugAddForm
+
+    >>> unbound_package_field = IBugAddForm['packagename']
+    >>> if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+    ...     unbound_package_field = copy_field(
+    ...         unbound_package_field,
+    ...         vocabularyName='DistributionSourcePackage')
+    ...     expected_input_class = 'DistributionSourcePackage'
+    ... else:
+    ...     expected_input_class = 'BinaryAndSourcePackageName'
+    >>> package_field = unbound_package_field.bind(ubuntu_task.distribution)
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.packagename': 'evolution'})
+    >>> widget = FileBugSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary, request)
+    >>> widget.getInputValue().__class__.__name__ == expected_input_class
+    True
+    >>> widget.getInputValue().name
+    u'evolution'
+
+If we pass in a binary package name, which can be mapped to a source
+package name, the corresponding source package name (albeit as a
+BinaryAndSourcePackageName) is returned.  (In the case of the new picker,
+this instead requires searching first.)
+
+    >>> package_name = 'linux-2.6.12'
+    >>> if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+    ...     package_field.vocabulary.setDistribution(ubuntu_task.distribution)
+    ...     results = package_field.vocabulary.searchForTerms(package_name)
+    ...     package_name = list(results)[0].value
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.packagename': package_name})
+    >>> widget = FileBugSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary, request)
+    >>> widget.getInputValue().__class__.__name__ == expected_input_class
+    True
+    >>> widget.getInputValue().name
+    u'linux-source-2.6.15'
+
+For some distributions we don't know exactly which source packages they
+contain, so IDistribution.guessPublishedSourcePackageName will raise a
+NotFoundError.
+
+    >>> gentoo_task.distribution.guessPublishedSourcePackageName('evolution')
+    Traceback (most recent call last):
+    ...
+    NotFoundError...
+
+At that point we'll fall back to the vocabulary, so a SourcePackageName
+will still be returned.
+
+    >>> package_field = unbound_package_field.bind(gentoo_task.distribution)
+    >>> if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+    ...     package_field.vocabulary.setDistribution(gentoo)
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.packagename': 'evolution'})
+    >>> widget = FileBugSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary, request)
+    >>> widget.getInputValue().__class__.__name__ == expected_input_class
+    True
+    >>> widget.getInputValue().name
+    u'evolution'
+
+If we pass in a package name that doesn't exist in Launchpad, we get a
+ConversionError saying that the package name doesn't exist.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.packagename': 'no-package'})
+    >>> widget = FileBugSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary, request)
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    ConversionError...
