@@ -208,10 +208,7 @@ class SnapStoreClient:
                     snap.store_secrets["root"],
                     snap.store_secrets["discharge"]))
             response_data = response.json()
-            if "status_details_url" in response_data:
-                return response_data["status_details_url"]
-            else:
-                return response_data["status_url"]
+            return response_data["status_details_url"]
         except requests.HTTPError as e:
             if e.response.status_code == 401:
                 if (e.response.headers.get("WWW-Authenticate") ==
@@ -260,28 +257,16 @@ class SnapStoreClient:
         try:
             response = urlfetch(status_url)
             response_data = response.json()
-            if "completed" in response_data:
-                # Old status format.
-                if not response_data["completed"]:
-                    raise UploadNotScannedYetResponse()
-                elif not response_data["application_url"]:
-                    raise ScanFailedResponse(response_data["message"])
-                else:
-                    return (
-                        response_data["application_url"],
-                        response_data["revision"])
+            if not response_data["processed"]:
+                raise UploadNotScannedYetResponse()
+            elif "errors" in response_data:
+                error_message = "\n".join(
+                    error["message"] for error in response_data["errors"])
+                raise ScanFailedResponse(error_message)
+            elif not response_data["can_release"]:
+                return response_data["url"], None
             else:
-                # New status format.
-                if not response_data["processed"]:
-                    raise UploadNotScannedYetResponse()
-                elif "errors" in response_data:
-                    error_message = "\n".join(
-                        error["message"] for error in response_data["errors"])
-                    raise ScanFailedResponse(error_message)
-                elif not response_data["can_release"]:
-                    return response_data["url"], None
-                else:
-                    return response_data["url"], response_data["revision"]
+                return response_data["url"], response_data["revision"]
         except requests.HTTPError as e:
             raise BadScanStatusResponse(e.args[0])
 
