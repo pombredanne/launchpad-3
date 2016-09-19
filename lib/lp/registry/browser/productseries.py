@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -61,7 +61,6 @@ from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
@@ -448,11 +447,8 @@ class ProductSeriesView(
     def specification_status_counts(self):
         """A list StatusCounts summarising the targeted specification."""
         specification_set = getUtility(ISpecificationSet)
-        status_id_counts = specification_set.getStatusCountsForProductSeries(
-            self.context)
-        SpecStatus = SpecificationImplementationStatus
-        status_counts = dict([(SpecStatus.items[status_id], count)
-                              for status_id, count in status_id_counts])
+        status_counts = dict(
+            specification_set.getStatusCountsForProductSeries(self.context))
         return [StatusCount(status, status_counts[status])
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
