@@ -386,7 +386,7 @@ class TestBasicLaunchpadRequest(TestCase):
     def test_baserequest_revision_header(self):
         response = LaunchpadBrowserRequest(StringIO.StringIO(''), {}).response
         self.assertEqual(
-            versioninfo.revno, response.getHeader('X-Launchpad-Revision'))
+            versioninfo.revision, response.getHeader('X-Launchpad-Revision'))
 
     def test_baserequest_recovers_from_bad_path_info_encoding(self):
         # The request object recodes PATH_INFO to ensure sane_environment

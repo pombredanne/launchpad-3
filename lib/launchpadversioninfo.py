@@ -1,1 +1,1 @@
-../bzr-version-info.py
+../version-info.py

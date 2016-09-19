@@ -35,7 +35,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 CONVOY_ROOT?=/srv/launchpad.dev/convoy
 
-BZR_VERSION_INFO = bzr-version-info.py
+VERSION_INFO = version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
 APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
@@ -73,7 +73,7 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(API_INDEX): $(BZR_VERSION_INFO) $(PY)
+$(API_INDEX): $(VERSION_INFO) $(PY)
 	$(RM) -r $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
@@ -238,7 +238,7 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
-compile: $(PY) $(BZR_VERSION_INFO)
+compile: $(PY) $(VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -295,10 +295,10 @@ start_librarian: compile
 stop_librarian:
 	bin/killservice librarian
 
-$(BZR_VERSION_INFO):
-	scripts/update-bzr-version-info.sh
+$(VERSION_INFO):
+	scripts/update-version-info.sh
 
-support_files: $(API_INDEX) $(BZR_VERSION_INFO)
+support_files: $(API_INDEX) $(VERSION_INFO)
 
 # Intended for use on developer machines
 start: inplace stop support_files initscript-start
@@ -393,7 +393,7 @@ lxc-clean: clean_js clean_mailman clean_buildout clean_logs
 	$(RM) -r $(APIDOC_DIR)
 	$(RM) -r $(APIDOC_DIR).tmp
 	$(RM) -r build
-	$(RM) $(BZR_VERSION_INFO)
+	$(RM) $(VERSION_INFO)
 	$(RM) +config-overrides.zcml
 	$(RM) -r /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \

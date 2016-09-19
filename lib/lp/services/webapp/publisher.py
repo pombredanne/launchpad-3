@@ -63,10 +63,10 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lp.app import versioninfo
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.app.versioninfo import revno
 from lp.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -412,7 +412,7 @@ class LaunchpadView(UserAttributeCache):
         from lp.services.config import config
         combo_url = '/+combo'
         if not config.devmode:
-            combo_url += '/rev%s' % revno
+            combo_url += '/rev%s' % versioninfo.revision
         return combo_url
 
     def render(self):
