@@ -171,7 +171,7 @@ class SnapStoreClient:
             encoder = MultipartEncoder(
                 fields={
                     "binary": (
-                        "filename", lfa_wrapper, "application/octet-stream"),
+                        lfa.filename, lfa_wrapper, "application/octet-stream"),
                     })
             # XXX cjwatson 2016-05-09: This should add timeline information,
             # but that's currently difficult in jobs.
@@ -222,6 +222,8 @@ class SnapStoreClient:
         """See `ISnapStoreClient`."""
         assert snapbuild.snap.can_upload_to_store
         for _, lfa, lfc in snapbuild.getFiles():
+            if not lfa.filename.endswith(".snap"):
+                continue
             upload_data = self._uploadFile(lfa, lfc)
             try:
                 return self._uploadApp(snapbuild.snap, upload_data)
