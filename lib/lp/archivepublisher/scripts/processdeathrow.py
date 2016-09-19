@@ -79,4 +79,5 @@ class DeathRowProcessor(PublisherScript):
             else:
                 self.logger.debug("Committing")
                 self.txn.commit()
+        finally:
             clear_request_started()
