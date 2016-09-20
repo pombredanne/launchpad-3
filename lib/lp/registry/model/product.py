@@ -34,6 +34,7 @@ from storm.expr import (
     And,
     Coalesce,
     Desc,
+    Exists,
     Join,
     LeftJoin,
     Not,
@@ -1812,7 +1813,7 @@ class ProductSet:
     def get_all_active(cls, user, eager_load=True):
         clause = cls.getProductPrivacyFilter(user)
         result = IStore(Product).find(Product, Product.active,
-                    clause).order_by(Desc(Product.datecreated))
+                    clause).order_by(Desc(Product.datecreated), Product.id)
         if not eager_load:
             return result
 
@@ -1960,71 +1961,59 @@ class ProductSet:
                 created_before = dateToDatetime(created_before)
             conditions.append(Product.datecreated <= created_before)
 
-        needs_join = False
-
+        subscription_conditions = []
         if subscription_expires_after is not None:
             if not isinstance(subscription_expires_after, datetime.datetime):
                 subscription_expires_after = (
                     dateToDatetime(subscription_expires_after))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_expires >=
                     subscription_expires_after)
-            needs_join = True
 
         if subscription_expires_before is not None:
             if not isinstance(subscription_expires_before, datetime.datetime):
                 subscription_expires_before = (
                     dateToDatetime(subscription_expires_before))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_expires <=
                     subscription_expires_before)
-            needs_join = True
 
         if subscription_modified_after is not None:
             if not isinstance(subscription_modified_after, datetime.datetime):
                 subscription_modified_after = (
                     dateToDatetime(subscription_modified_after))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_last_modified >=
                     subscription_modified_after)
-            needs_join = True
         if subscription_modified_before is not None:
             if not isinstance(subscription_modified_before,
                               datetime.datetime):
                 subscription_modified_before = (
                     dateToDatetime(subscription_modified_before))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_last_modified <=
                     subscription_modified_before)
-            needs_join = True
 
-        if needs_join or has_subscription:
-            conditions.append(
-                CommercialSubscription.productID == Product.id)
+        assert not subscription_conditions or has_subscription is not False
+        if subscription_conditions or has_subscription is not None:
+            subscription_expr = Exists(Select(
+                1, tables=[CommercialSubscription],
+                where=And(*
+                    [CommercialSubscription.productID == Product.id]
+                    + subscription_conditions)))
+            if has_subscription is False:
+                subscription_expr = Not(subscription_expr)
+            conditions.append(subscription_expr)
 
-        if has_subscription is False:
-            conditions.append(SQL('''
-                NOT EXISTS (
-                    SELECT 1
-                    FROM CommercialSubscription
-                    WHERE CommercialSubscription.product = Product.id
-                    LIMIT 1)
-                '''))
+        if licenses:
+            conditions.append(Exists(Select(
+                1, tables=[ProductLicense],
+                where=And(
+                    ProductLicense.productID == Product.id,
+                    ProductLicense.license.is_in(licenses)))))
 
-        if licenses is not None and len(licenses) > 0:
-            conditions.append(SQL('''EXISTS (
-                SELECT 1
-                FROM ProductLicense
-                WHERE ProductLicense.product = Product.id
-                    AND license IN %s
-                LIMIT 1
-                )
-                ''' % sqlvalues(tuple(licenses))))
-
-        result = IStore(Product).find(
-            Product, *conditions).config(
-                distinct=True).order_by(
-                    Product.datecreated, Product.display_name)
+        result = IStore(Product).find(Product, *conditions).order_by(
+            Product.datecreated, Desc(Product.id))
 
         def eager_load(products):
             return get_precached_products(
