@@ -1812,7 +1812,7 @@ class ProductSet:
     def get_all_active(cls, user, eager_load=True):
         clause = cls.getProductPrivacyFilter(user)
         result = IStore(Product).find(Product, Product.active,
-                    clause).order_by(Desc(Product.datecreated))
+                    clause).order_by(Desc(Product.datecreated), Product.id)
         if not eager_load:
             return result
 
@@ -2021,10 +2021,8 @@ class ProductSet:
                 )
                 ''' % sqlvalues(tuple(licenses))))
 
-        result = IStore(Product).find(
-            Product, *conditions).config(
-                distinct=True).order_by(
-                    Product.datecreated, Product.display_name)
+        result = IStore(Product).find(Product, *conditions).order_by(
+            Product.datecreated, Desc(Product.id))
 
         def eager_load(products):
             return get_precached_products(
