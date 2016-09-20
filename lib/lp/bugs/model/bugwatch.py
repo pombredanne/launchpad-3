@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -36,7 +36,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 
@@ -81,6 +81,7 @@ from lp.services.webapp import (
 BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
     BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
+    BugTrackerType.GITHUB: '%s',
     BugTrackerType.GOOGLE_CODE: 'detail?id=%s',
     BugTrackerType.MANTIS: 'view.php?id=%s',
     BugTrackerType.ROUNDUP: 'issue%s',
@@ -117,9 +118,9 @@ class BugWatchDeletionError(Exception):
     """Raised when someone attempts to delete a linked watch."""
 
 
+@implementer(IBugWatch)
 class BugWatch(SQLBase):
     """See `IBugWatch`."""
-    implements(IBugWatch)
     _table = 'BugWatch'
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     bugtracker = ForeignKey(dbName='bugtracker',
@@ -379,16 +380,16 @@ class BugWatch(SQLBase):
         self.remotestatus = None
 
 
+@implementer(IBugWatchSet)
 class BugWatchSet:
     """A set for BugWatch"""
-
-    implements(IBugWatchSet)
 
     def __init__(self, bug=None):
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS: self.parseDebbugsURL,
             BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
+            BugTrackerType.GITHUB: self.parseGitHubURL,
             BugTrackerType.GOOGLE_CODE: self.parseGoogleCodeURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.PHPPROJECT: self.parsePHPProjectURL,
@@ -689,6 +690,18 @@ class BugWatchSet:
         base_url = urlunsplit((scheme, host, tracker_path, '', ''))
         return base_url, remote_bug
 
+    def parseGitHubURL(self, scheme, host, path, query):
+        """Extract a GitHub Issues base URL and bug ID."""
+        if host != 'github.com':
+            return None
+        match = re.match(r'(.*/issues)/(\d+)$', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = match.group(2)
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
     def extractBugTrackerAndBug(self, url):
         """See `IBugWatchSet`."""
         for trackertype, parse_func in (
@@ -743,10 +756,9 @@ class BugWatchSet:
              for bug_watch_id in set(get_bug_watch_ids(references))])
 
 
+@implementer(IBugWatchActivity)
 class BugWatchActivity(StormBase):
     """See `IBugWatchActivity`."""
-
-    implements(IBugWatchActivity)
 
     __storm_table__ = 'BugWatchActivity'
 

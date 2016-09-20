@@ -848,10 +848,10 @@ class DistroMirrorProber:
             # XXX: salgado 2006-05-26:
             # Some people registered mirrors on distros other than Ubuntu back
             # in the old times, so now we need to do this small hack here.
-            if not mirror.distribution.full_functionality:
+            if not mirror.distribution.supports_mirrors:
                 self.logger.debug(
                     "Mirror '%s' of distribution '%s' can't be probed --we "
-                    "only probe Ubuntu mirrors."
+                    "only probe distros that support mirrors."
                     % (mirror.name, mirror.distribution.name))
                 continue
 

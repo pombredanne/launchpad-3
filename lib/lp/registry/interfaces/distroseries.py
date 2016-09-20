@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistroSeries."""
@@ -26,7 +26,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
-    LAZR_WEBSERVICE_EXPORTED,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -91,6 +90,8 @@ from lp.services.fields import (
     Title,
     UniqueField,
     )
+from lp.services.webservice.apihelpers import patch_plain_parameter_type
+from lp.soyuz.enums import IndexCompressionType
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -185,10 +186,12 @@ class IDistroSeriesPublic(
             title=_("Name"), required=True,
             description=_("The name of this series."),
             constraint=name_validator))
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_("Display name"), required=True,
-            description=_("The series displayname.")))
+            description=_("The series displayname.")),
+        exported_as="displayname")
+    displayname = Attribute("Display name (deprecated)")
     fullseriesname = exported(
         TextLine(
             title=_("Series full name"), required=False,
@@ -265,8 +268,8 @@ class IDistroSeriesPublic(
             required=False, vocabulary='ValidPersonOrTeam', schema=IPerson))
     changeslist = exported(
         TextLine(
-            title=_("E-mail changes to"), required=True,
-            description=_("The mailing list or other e-mail address that "
+            title=_("Email changes to"), required=True,
+            description=_("The mailing list or other email address that "
                           "Launchpad should notify about new uploads."),
             constraint=email_validator))
     sourcecount = Attribute("Source Packages Counter")
@@ -327,13 +330,13 @@ class IDistroSeriesPublic(
             language pack update for this distribution series.
             '''), vocabulary='FilteredLanguagePack')
 
-    language_pack_full_export_requested = Bool(
+    language_pack_full_export_requested = exported(Bool(
         title=_('Request a full language pack export'), required=True,
         description=_('''
             Whether next language pack generation will be a full export. This
             information is useful when update packs are too big and want to
             merge all those changes in the base pack.
-            '''))
+            ''')))
 
     last_full_language_pack_exported = Object(
         title=_('Latest exported language pack with all translation files.'),
@@ -376,6 +379,41 @@ class IDistroSeriesPublic(
                 on clients, which requires downloading Packages files for
                 multiple architectures.""")))
 
+    index_compressors = exported(List(
+        value_type=Choice(vocabulary=IndexCompressionType),
+        title=_("Compression types to use for published index files"),
+        required=True,
+        description=_("""
+            A list of compression types to use for published index files
+            (Packages, Sources, etc.).""")))
+
+    publish_by_hash = exported(Bool(
+        title=_("Publish by-hash directories"), required=True,
+        description=_("""
+            Publish archive index files in by-hash directories so that apt
+            can retrieve them based on their hash, avoiding race conditions
+            between InRelease and other files during mirror updates.""")))
+
+    advertise_by_hash = exported(Bool(
+        title=_("Advertise by-hash directories"), required=True,
+        description=_("""
+            Advertise by-hash directories with a flag in the Release file so
+            that apt uses them by default.  Only effective if
+            publish_by_hash is also set.""")))
+
+    strict_supported_component_dependencies = exported(Bool(
+        title=_("Strict dependencies of supported components"), required=True,
+        description=_("""
+            If True, packages in supported components (main and restricted)
+            may not build-depend on packages in unsupported components.  Do
+            not rely on the name of this attribute, even for reading; it is
+            currently subject to change.""")),
+        as_of="devel")
+
+    inherit_overrides_from_parents = Bool(
+        title=_("Inherit overrides from parents"),
+        readonly=False, required=True)
+
     main_archive = exported(
         Reference(
             Interface,  # Really IArchive, see below for circular import fix.
@@ -399,7 +437,7 @@ class IDistroSeriesPublic(
         """Return the latest five source uploads for this DistroSeries.
 
         It returns a list containing up to five elements as
-        IDistroSeriesSourcePackageRelease instances
+        IDistributionSourcePackageRelease instances
         """
 
     # DistroArchSeries lookup properties/methods.
@@ -568,12 +606,6 @@ class IDistroSeriesPublic(
         binary package may not be published in the distro series.
         """
 
-    def getSourcePackageRelease(sourcepackagerelease):
-        """Return a IDistroSeriesSourcePackageRelease
-
-        sourcepackagerelease is an ISourcePackageRelease.
-        """
-
     def getCurrentSourceReleases(source_package_names):
         """Get the current release of a list of source packages.
 
@@ -581,7 +613,7 @@ class IDistroSeriesPublic(
             instances.
 
         :return: a dict where the key is a `ISourcePackage`
-            and the value is a `IDistroSeriesSourcePackageRelease`.
+            and the value is a `IDistributionSourcePackageRelease`.
         """
 
     def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,
@@ -767,23 +799,8 @@ class IDistroSeriesPublic(
         :return: A new `PackageUpload`.
         """
 
-    def newArch(architecturetag, processor, official, owner,
-                supports_virtualized=False, enabled=True):
+    def newArch(architecturetag, processor, official, owner, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
-
-    def copyTranslationsFromParent(ztm):
-        """Copy any translation done in parent that we lack.
-
-        If there is another translation already added to this one, we ignore
-        the one from parent.
-
-        The supplied transaction manager will be used for intermediate
-        commits to break up large copying jobs into palatable smaller
-        chunks.
-
-        This method starts and commits transactions, so don't rely on `self`
-        or any other database object remaining valid across this call!
-        """
 
     def getPOFileContributorsByLanguage(language):
         """People who translated strings to the given language.
@@ -984,8 +1001,8 @@ class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
 
 # We assign the schema for an `IHasBugs` method argument here
 # in order to avoid circular dependencies.
-IHasBugs['searchTasks'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)[
-    'params']['nominated_for'].schema = IDistroSeries
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'nominated_for', IDistroSeries)
 
 
 class IDistroSeriesSet(Interface):

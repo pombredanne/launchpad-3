@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -39,17 +39,15 @@ from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.tales import WebLayerAPI
 from lazr.restful.utils import get_current_browser_request
 import simplejson
-from zope import i18n
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
 from zope.component.interfaces import ComponentLookupError
-from zope.i18nmessageid import Message
 from zope.interface import (
     directlyProvides,
-    implements,
+    implementer,
     )
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.defaultview import getDefaultViewName
@@ -65,10 +63,10 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lp.app import versioninfo
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.app.versioninfo import revno
 from lp.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -79,6 +77,7 @@ from lp.services.features import (
     defaultFlagValue,
     getFeatureFlag,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.utils import obfuscate_structure
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
@@ -413,7 +412,7 @@ class LaunchpadView(UserAttributeCache):
         from lp.services.config import config
         combo_url = '/+combo'
         if not config.devmode:
-            combo_url += '/rev%s' % revno
+            combo_url += '/rev%s' % versioninfo.revision
         return combo_url
 
     def render(self):
@@ -568,20 +567,18 @@ class LaunchpadView(UserAttributeCache):
         return beta_info
 
 
+@implementer(IXMLRPCView, IMethodPublisher)
 class LaunchpadXMLRPCView(UserAttributeCache):
     """Base class for writing XMLRPC view code."""
-
-    implements(IXMLRPCView, IMethodPublisher)
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
 
+@implementer(ICanonicalUrlData)
 class LaunchpadRootUrlData:
     """ICanonicalUrlData for the ILaunchpadRoot object."""
-
-    implements(ICanonicalUrlData)
 
     path = ''
     inside = None
@@ -621,13 +618,13 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
+@implementer(IAbsoluteURL)
 class CanonicalAbsoluteURL:
     """A bridge between Zope's IAbsoluteURL and Launchpad's canonical_url.
 
     We don't implement the whole interface; only what's needed to
     make absoluteURL() succceed.
     """
-    implements(IAbsoluteURL)
 
     def __init__(self, context, request):
         """Initialize with respect to a context and request."""
@@ -825,7 +822,7 @@ def get_raw_form_value_from_current_request(field, field_name):
     assert isinstance(request, WebServiceClientRequest)
     # Zope wrongly encodes any form element that doesn't look like a file,
     # so re-fetch the file content if it has been encoded.
-    if request and request.form.has_key(field_name) and isinstance(
+    if request and field_name in request.form and isinstance(
         request.form[field_name], unicode):
         request._environ['wsgi.input'].seek(0)
         fs = FieldStorage(fp=request._body_instream, environ=request._environ)
@@ -834,35 +831,59 @@ def get_raw_form_value_from_current_request(field, field_name):
         return field
 
 
+@implementer(ILaunchpadApplication, ILaunchpadRoot)
 class RootObject:
-    implements(ILaunchpadApplication, ILaunchpadRoot)
+    pass
 
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 
 
+@implementer(ILaunchpadContainer)
 class LaunchpadContainer:
-    implements(ILaunchpadContainer)
 
     def __init__(self, context):
         self.context = context
 
-    def isWithin(self, scope):
-        """Is this object within the given scope?
+    @cachedproperty
+    def _context_url(self):
+        try:
+            return canonical_url(self.context, force_local_path=True)
+        except NoCanonicalUrl:
+            return None
 
-        By default all objects are only within itself.  More specific adapters
-        must override this and implement the logic they want.
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`.
+
+        By default, we only consider the parent of this object in the
+        canonical URL iteration.  Adapters for objects with more complex
+        parentage rules must override this method.
         """
-        return self.context == scope
+        # Circular import.
+        from lp.services.webapp.canonicalurl import nearest_adapter
+        urldata = ICanonicalUrlData(self.context, None)
+        if urldata is not None and urldata.inside is not None:
+            container = nearest_adapter(urldata.inside, ILaunchpadContainer)
+            yield container
+
+    def isWithin(self, scope_url):
+        """See `ILaunchpadContainer`."""
+        if self._context_url is None:
+            return False
+        if self._context_url == scope_url:
+            return True
+        return any(
+            parent.isWithin(scope_url)
+            for parent in self.getParentContainers())
 
 
+@implementer(IBrowserPublisher)
 class Navigation:
     """Base class for writing browser navigation components.
 
     Note that the canonical_url part of Navigation is used outside of
     the browser context.
     """
-    implements(IBrowserPublisher)
 
     def __init__(self, context, request=None):
         """Initialize with context and maybe with a request."""
@@ -1010,34 +1031,6 @@ class Navigation:
                             nextobj = handler(self, nextstep)
                         except NotFoundError:
                             nextobj = None
-                        else:
-                            # Circular import; breaks make.
-                            from lp.services.webapp.breadcrumb import (
-                                Breadcrumb,
-                            )
-                            stepthrough_page = queryMultiAdapter(
-                                    (self.context, self.request), name=name)
-                            if stepthrough_page:
-                                # Not all stepthroughs have a page; if they
-                                # don't, there's no need for a breadcrumb.
-                                page_title = getattr(
-                                    stepthrough_page, 'page_title', None)
-                                label = getattr(
-                                    stepthrough_page, 'label', None)
-                                stepthrough_text = page_title or label
-                                if isinstance(stepthrough_text, Message):
-                                    stepthrough_text = i18n.translate(
-                                        stepthrough_text,
-                                        context=self.request)
-                                stepthrough_url = canonical_url(
-                                    self.context, view_name=name)
-                                stepthrough_breadcrumb = Breadcrumb(
-                                    context=self.context,
-                                    url=stepthrough_url,
-                                    text=stepthrough_text)
-                                self.request.traversed_objects.append(
-                                    stepthrough_breadcrumb)
-
                         return self._handle_next_object(nextobj, request,
                             nextstep)
 
@@ -1070,8 +1063,8 @@ class Navigation:
         return self.context, (view_name, )
 
 
+@implementer(IBrowserPublisher)
 class RedirectionView:
-    implements(IBrowserPublisher)
 
     def __init__(self, target, request, status=None, cache_view=None):
         self.target = target
@@ -1097,6 +1090,7 @@ class RedirectionView:
         return self, ()
 
 
+@implementer(IBrowserPublisher)
 class RenamedView:
     """Redirect permanently to the new name of the view.
 
@@ -1106,7 +1100,6 @@ class RenamedView:
     :param rootsite: (optional) the virtual host to redirect to,
             e.g. 'answers'.
     """
-    implements(IBrowserPublisher)
 
     def __init__(self, context, request, new_name, rootsite=None):
         self.context = context

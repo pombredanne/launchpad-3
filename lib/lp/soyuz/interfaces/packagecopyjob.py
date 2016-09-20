@@ -129,7 +129,7 @@ class IPlainPackageCopyJobSource(IJobSource):
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
                sponsored=None, unembargo=False, auto_approve=False,
-               source_distroseries=None, source_pocket=None,
+               silent=False, source_distroseries=None, source_pocket=None,
                phased_update_percentage=None):
         """Create a new `IPlainPackageCopyJob`.
 
@@ -152,6 +152,8 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param auto_approve: if True and the user requesting the sync has
             queue admin permissions on the target, accept the copy
             immediately rather than setting it to unapproved.
+        :param silent: Suppress any emails that the copy would generate.
+            Only usable with queue admin permissions on the target.
         :param source_distroseries: The `IDistroSeries` from which to copy
             the packages. If omitted, copy from any series with a matching
             version.
@@ -165,7 +167,7 @@ class IPlainPackageCopyJobSource(IJobSource):
     def createMultiple(target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False, unembargo=False,
-                       auto_approve=False):
+                       auto_approve=False, silent=False):
         """Create multiple new `IPlainPackageCopyJob`s at once.
 
         :param target_distroseries: The `IDistroSeries` to which to copy the
@@ -177,10 +179,12 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param include_binaries: As in `do_copy`.
         :param unembargo: As in `do_copy`.
-        :return: An iterable of `PackageCopyJob` ids.
         :param auto_approve: if True and the user requesting the sync has
             queue admin permissions on the target, accept the copy
             immediately rather than setting it to unapproved.
+        :param silent: Suppress any emails that the copy would generate.
+            Only usable with queue admin permissions on the target.
+        :return: An iterable of `PackageCopyJob` ids.
         """
 
     def getActiveJobs(target_archive):
@@ -236,6 +240,8 @@ class IPlainPackageCopyJob(IRunnableJob):
     auto_approve = Bool(
         title=_("Automatic approval"),
         required=False, readonly=True)
+
+    silent = Bool(title=_("Silent"), required=False, readonly=True)
 
     source_distroseries = Reference(
         schema=IDistroSeries, title=_('Source DistroSeries.'),

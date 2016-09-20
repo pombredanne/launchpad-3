@@ -613,7 +613,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self.runScript(
             extra_args=extra_args, exception_type=SoyuzScriptError,
             exception_text=(
-                "Cannot copy from private archive ('joe/ppa')"))
+                "Cannot copy from private archive (~joe/ubuntu/ppa)"))
 
     def testDisabledDestinationArchive(self):
         """Try copying to a disabled archive.

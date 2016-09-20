@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -143,13 +143,14 @@ def get_error_message(filename, error_templates=None, **interpolation_items):
     If the error message requires some parameters, those are given in
     interpolation_items.
 
-    The files are searched for in lib/lp.services/mail/errortemplates.
+    The files are searched for in lib/lp/services/mail/errortemplates.
     """
     if error_templates is None:
         error_templates = os.path.join(
             os.path.dirname(__file__), 'errortemplates')
     fullpath = os.path.join(error_templates, filename)
-    error_template = open(fullpath).read()
+    with open(fullpath) as f:
+        error_template = f.read()
     return error_template % interpolation_items
 
 
@@ -160,6 +161,11 @@ def get_person_or_team(person_name_or_email):
     """
     # Avoid circular import problems.
     from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+
+    # "me" is a special case meaning the sender of the email.
+    if person_name_or_email == "me":
+        return getUtility(ILaunchBag).user
+
     valid_person_vocabulary = ValidPersonOrTeamVocabulary()
     try:
         person_term = valid_person_vocabulary.getTermByToken(
@@ -244,7 +250,8 @@ def save_mail_to_librarian(raw_mail, restricted=False):
 def get_email_template(filename, app=None):
     """Returns the email template with the given file name.
 
-    The templates are located in 'lib/canonical/launchpad/emailtemplates'.
+    The templates are located in lib/lp/services/mail/emailtemplates or
+    lib/lp/<app>/emailtemplates.
     """
     if app is None:
         base = os.path.dirname(__file__)
@@ -253,7 +260,8 @@ def get_email_template(filename, app=None):
         import lp
         base = os.path.dirname(lp.__file__)
         fullpath = os.path.join(base, app, 'emailtemplates', filename)
-    return open(fullpath).read()
+    with open(fullpath) as f:
+        return f.read()
 
 
 def get_contact_email_addresses(person):

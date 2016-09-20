@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common build interfaces."""
@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuilderCleanStatus',
+    'BuilderResetProtocol',
     'BuildStatus',
     'BuildQueueStatus',
     'BuildFarmJobType',
@@ -149,6 +151,18 @@ class BuildFarmJobType(DBEnumeratedType):
         Generate translation templates from a bazaar branch.
         """)
 
+    LIVEFSBUILD = DBItem(5, """
+        Live filesystem build
+
+        Build a live filesystem from an archive.
+        """)
+
+    SNAPBUILD = DBItem(6, """
+        Snap package build
+
+        Build a snap package from a recipe.
+        """)
+
 
 class BuildQueueStatus(DBEnumeratedType):
     """Build queue status.
@@ -182,4 +196,45 @@ class BuildQueueStatus(DBEnumeratedType):
         Suspended
 
         The job is suspended, so should not be run.
+        """)
+
+
+class BuilderCleanStatus(DBEnumeratedType):
+
+    CLEAN = DBItem(0, """
+        Clean
+
+        The builder slave is ready for use.
+        """)
+
+    DIRTY = DBItem(1, """
+        Dirty
+
+        The builder slave is dirty and needs to be cleaned before use.
+        """)
+
+    CLEANING = DBItem(2, """
+        Cleaning
+
+        The builder slave is being cleaned.
+        """)
+
+
+class BuilderResetProtocol(DBEnumeratedType):
+
+    PROTO_1_1 = DBItem(11, """
+        1.1
+
+        Original synchronous protocol with vm_host and buildd_name. The
+        reset trigger must exit cleanly once the slave is reset and
+        accepting requests.
+        """)
+
+    PROTO_2_0 = DBItem(20, """
+        2.0
+
+        Asynchronous protocol with vm_host and buildd_name. The reset
+        trigger must exit cleanly once the request is accepted, and use
+        the webservice to set Builder.clean_status back to 'Clean' when
+        the slave is reset and accepting requests.
         """)

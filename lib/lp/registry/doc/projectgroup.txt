@@ -34,7 +34,7 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> test_project = projectset.new(
-    ...     name='project-test', displayname='Test Project',
+    ...     name='project-test', display_name='Test Project',
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
     ...     owner=no_priv)
@@ -348,7 +348,7 @@ A project group with no translatable products is shown by
 
     >>> product = factory.makeProduct()
     >>> project_group = factory.makeProject()
-    >>> product.project = project_group
+    >>> product.projectgroup = project_group
     >>> project_group.has_translatable()
     False
 
@@ -366,7 +366,7 @@ And that translatable product is 'Evolution'.
 
     >>> evolution = translatables[0]
     >>> print evolution.title
-    The Evolution Groupware Application
+    Evolution
 
 With its 'trunk' series translatable.
 
@@ -386,7 +386,7 @@ GNOME project has also another product, netapplet.
 
     >>> netapplet = gnome.getProduct('netapplet')
     >>> print netapplet.title
-    Network Applet
+    NetApplet
 
 But it was not returned from 'translatables' method because it's not using
 Rosetta officially.

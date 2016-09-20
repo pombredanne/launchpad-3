@@ -9,3 +9,7 @@ Test that byMsgid is working:
 >>> got == created
 True
 
+>>> created = POMsgID(msgid="This is a very \t\n\b'?'\\ odd test")
+>>> got = POMsgID.byMsgid("This is a very \t\n\b'?'\\ odd test")
+>>> got == created
+True

@@ -64,7 +64,7 @@ For instance, here's a user called a+b.
     >>> person_url = canonical_url(ab, rootsite='translations')
     >>> logout()
 
-When a+b goes to see the translations she has done, she sees a correctly
+When a+b goes to see the translations they have done, they see a correctly
 encoded link to a filtered PO file page.
 
     >>> user_browser.open(person_url + '/+activity')

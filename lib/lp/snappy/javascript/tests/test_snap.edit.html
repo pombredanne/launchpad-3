@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<!--
+Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<html>
+  <head>
+      <title>snappy.snap.edit Tests</title>
+
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test-console/assets/skins/sam/test-console.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
+
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
+
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+
+      <!-- Dependencies -->
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/lp.js"></script>
+
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../snap.edit.js"></script>
+
+      <!-- The test suite -->
+      <script type="text/javascript" src="test_snap.edit.js"></script>
+
+      <script type="text/javascript">
+        YUI().use('lp.snappy.snap.edit', function(Y) {
+          Y.on('domready', Y.lp.snappy.snap.edit.setup);
+        });
+      </script>
+
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <li>lp.snappy.snap.edit.test</li>
+        </ul>
+        <div id="snap.edit">
+        <form action="." name="launchpadform" method="post"
+              enctype="multipart/form-data"
+              accept-charset="UTF-8">
+
+          <table class="form">
+            <tr>
+              <td colspan="2">
+                <div>
+                  <label for="field.vcs">Source:</label>
+                  <table>
+                    <tr>
+                      <td>
+                        <label>
+                          <input class="radioType"
+                                 id="field.vcs.Bazaar"
+                                 name="field.vcs"
+                                 type="radio"
+                                 value="BZR" />
+                          Bazaar
+                        </label>
+                        <table class="subordinate">
+                          <tr>
+                            <td colspan="2">
+                              <div>
+                                <label for="field.branch">Bazaar branch:</label>
+                                <div>
+                                  <input type="text"
+                                         value=""
+                                         id="field.branch"
+                                         name="field.branch"
+                                         size="35"
+                                         class="" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <label>
+                          <input class="radioType"
+                                 id="field.vcs.Git"
+                                 name="field.vcs"
+                                 type="radio"
+                                 value="GIT" />
+                          Git
+                        </label>
+                        <table class="subordinate">
+                          <tr>
+                            <td colspan="2">
+                              <div>
+                                <label for="field.git_ref.repository">Git repository:</label>
+                                <div>
+                                  <input type="text"
+                                         value=""
+                                         id="field.git_ref.repository"
+                                         name="field.git_ref.repository"
+                                         size="20"
+                                         class="" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2">
+                              <div>
+                                <label for="field.git_ref.path">Git path:</label>
+                                <div>
+                                  <input class="textType"
+                                         id="field.git_ref.path"
+                                         name="field.git_ref.path"
+                                         size="20"
+                                         type="text"
+                                         value="" />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <div>
+                  <label for="field.auto_build">Automatically build when branch changes</label>
+                  <input class="checkboxType"
+                         id="field.auto_build"
+                         name="field.auto_build"
+                         type="checkbox"
+                         value="" />
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table class="subordinate">
+                  <tr>
+                    <td colspan="2">
+                      <div>
+                        <label for="field.auto_build_archive">Source archive for automatic builds:</label>
+                        <div>
+                          <table>
+                            <tr>
+                              <td colspan="2">
+                                <label>
+                                  <input class="radioType"
+                                         id="field.auto_build_archive.option.primary"
+                                         name="field.auto_build_archive"
+                                         type="radio"
+                                         value="primary" />
+                                  Primary Archive for Ubuntu
+                                </label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <label>
+                                  <input class="radioType"
+                                         id="field.auto_build_archive.option.ppa"
+                                         name="field.auto_build_archive"
+                                         type="radio"
+                                         value="ppa" />
+                                  PPA
+                                </label>
+                              </td>
+                              <td>
+                                <input type="text"
+                                       value=""
+                                       id="field.auto_build_archive.ppa"
+                                       name="field.auto_build_archive.ppa"
+                                       size="20"
+                                       maxlength=""
+                                       onKeyPress=""
+                                       style=""
+                                       class="" />
+                              </td>
+                            </tr>
+                          </table>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2">
+                      <div>
+                        <label for="field.auto_build_pocket">Pocket for automatic builds:</label>
+                        <div>
+                          <div>
+                            <div class="value">
+                              <select id="field.auto_build_pocket"
+                                      name="field.auto_build_pocket"
+                                      size="1">
+                                <option value="RELEASE">Release</option>
+                                <option value="SECURITY">Security</option>
+                                <option selected="selected" value="UPDATES">Updates</option>
+                                <option value="PROPOSED">Proposed</option>
+                                <option value="BACKPORTS">Backports</option>
+                              </select>
+                            </div>
+                            <input name="field.auto_build_pocket-empty-marker"
+                                   type="hidden"
+                                   value="1" />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <input type="submit" id="field.actions.update"
+                 name="field.actions.update" value="Update snap package"
+                 class="button" />
+          or&nbsp;
+          <a href="https://launchpad.dev/~me/+snap/s">Cancel</a>
+        </form>
+        </div>
+    </body>
+</html>

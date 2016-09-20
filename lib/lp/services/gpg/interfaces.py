@@ -1,36 +1,62 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'GPG_DATABASE_READONLY_FEATURE_FLAG',
+    'GPG_HIDE_PERSON_KEY_LISTING',
+    'GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG',
+    'GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG',
     'GPGKeyAlgorithm',
     'GPGKeyDoesNotExistOnServer',
     'GPGKeyExpired',
-    'GPGKeyRevoked',
     'GPGKeyNotFoundError',
+    'GPGKeyRevoked',
     'GPGKeyTemporarilyNotFoundError',
+    'GPGReadOnly',
+    'GPGServiceException',
     'GPGUploadFailure',
     'GPGVerificationError',
+    'IGPGClient',
     'IGPGHandler',
-    'IPymeSignature',
     'IPymeKey',
+    'IPymeSignature',
     'IPymeUserId',
     'MoreThanOneGPGKeyFound',
     'SecretGPGKeyImportDetected',
-    'valid_keyid',
     'valid_fingerprint',
+    'valid_keyid',
     ]
 
-
+import httplib
 import re
 
+from gpgservice_client import GPGServiceException
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
     )
+from zope.security.interfaces import Forbidden
+
+
+@error_status(httplib.FORBIDDEN)
+class GPGReadOnly(Forbidden):
+    """GPG Service is in read-only mode."""
+
+    def __init__(self):
+        super(GPGReadOnly, self).__init__(
+            "The GPG key storage facilities of Launchpad are currently "
+            "read-only. Please try again later.")
+
+
+GPG_DATABASE_READONLY_FEATURE_FLAG = u"gpg.database_read_only"
+GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG = u"gpg.write_to_gpgservice"
+GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG = u"gpg.read_from_gpgservice"
+GPG_HIDE_PERSON_KEY_LISTING = u"gpg.hide_person_key_listing"
 
 
 def valid_fingerprint(fingerprint):
@@ -266,27 +292,26 @@ class IGPGHandler(Interface):
         :return: a `PymeKey` object for the just-generated secret key.
         """
 
-    def encryptContent(content, fingerprint):
-        """Encrypt the given content for the given fingerprint.
+    def encryptContent(content, key):
+        """Encrypt the given content for the given key.
 
         content must be a traditional string. It's up to the caller to
-        encode or decode properly. Fingerprint must be hexadecimal string.
+        encode or decode properly.
 
         :param content: the Unicode content to be encrypted.
-        :param fingerprint: the OpenPGP key's fingerprint.
+        :param key: the `IPymeKey` to encrypt the content for.
 
         :return: the encrypted content or None if failed.
         """
 
-    def signContent(content, key_fingerprint, password='', mode=None):
-        """Signs content with a given GPG fingerprint.
+    def signContent(content, key, password='', mode=None):
+        """Signs content with a given GPG key.
 
         :param content: the content to sign.
-        :param key_fingerprint: the fingerprint of the key to use when
-            signing the content.
+        :param key: the `IPymeKey` to use when signing the content.
         :param password: optional password to the key identified by
             key_fingerprint, the default value is '',
-        :param mode: optional he type of GPG signature to produce, the
+        :param mode: optional type of GPG signature to produce, the
             default mode is gpgme.SIG_MODE_CLEAR (clearsigned signatures)
 
         :return: The ASCII-armored signature for the content.
@@ -362,6 +387,7 @@ class IPymeKey(Interface):
     """pyME key model."""
 
     fingerprint = Attribute("Key Fingerprint")
+    key = Attribute("Underlying GpgmeKey object")
     algorithm = Attribute("Key Algorithm")
     revoked = Attribute("Key Revoked")
     expired = Attribute("Key Expired")
@@ -402,3 +428,79 @@ class IPymeUserId(Interface):
     name = Attribute("The name portion of this user ID")
     email = Attribute("The email portion of this user ID")
     comment = Attribute("The comment portion of this user ID")
+
+
+class IGPGClient(Interface):
+
+    """A client for querying a gpgservice instance."""
+
+    def getKeysForOwner(owner_id):
+        """Get a list of keys for a given owner.
+
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
+
+    def addKeyForOwner(owner_id, fingerprint):
+        """Add a GPG key.
+
+        :raises ValueError: if the fingerprint isn't valid.
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
+
+    def disableKeyForOwner(owner_id, fingerprint):
+        """Disable a GPG key.
+
+        :raises ValueError: if the fingerprint isn't valid.
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        :raises socket.error" on socket-level errors (connection timeouts etc)
+        """
+
+    def getKeyByFingerprint(fingerprint):
+        """Get a GPG key by its fingerprint.
+
+        :raises ValueError: if the fingerprint isn't valid.
+        """
+
+    def getKeysByFingerprints(fingerprints):
+        """Bulk retrieve GPG keys by a list of fingerprints.
+
+        :param fingerprints: A list of fingerprints to retrieve.
+        :returns: A list of keys that were found.
+        """
+
+    def registerWriteHook(hook_callable):
+        """Register a write hook.
+
+        The hook_callable will be called with no arguments whenever an operation
+        is performed that modifies the GPG database.
+
+        :raises TypeError: if hook_callable is not a callable.
+        :raises GPGServiceException: If we get an error from the gpgservice.
+        """
+
+    def unregisterWriteHook(hook_callable):
+        """Deregister a write hook that was registered with register_write_hook.
+
+        :raises ValueError: if hook_callable was not registered.
+        """
+
+    def addKeyForTest(owner_id, keyid, fingerprint, keysize, algorithm, enabled,
+                      can_encrypt):
+        """Add a key to the gpgservice without checking the keyserver.
+
+        This method is to be used for TESTING purposes only. The running
+        gpgservice instance must have its test methods configured - something
+        that should not be done in production. If this requirement is not met
+        a RuntimeError will be raised.
+
+        :param owner_id: A string representing the owner, as returned by
+                         IGPGKeySet.getOwnerIdForPerson
+        :param keyid: A string describing the short-form gpg key id.
+        :param fingerprint: A string containing the full GPG fingerprint.
+        :param keysize: An integer, containing the keysize.
+        :param algorithm: The key algorithm code, a single letter.
+        :param enabled: Whether the key is enabled or not.
+        :param can_encrypt: Whether the key can be used for encryption.
+        """

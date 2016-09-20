@@ -168,5 +168,3 @@ class MozillaZipTraversal:
         """Overridable hook: post-traversal actions."""
         raise NotImplementedError(
             "XPI traversal class provides no _finish().")
-
-

@@ -33,6 +33,8 @@ URL_RE = re.compile("url\([ \"\']*([^ \"\']+)[ \"\']*\)")
 def relative_path(from_file, to_file):
     """Return the relative path between from_file and to_file."""
     dir_from, base_from = os.path.split(from_file)
+    if dir_from == to_file:
+        return "."
     dir_to, base_to = os.path.split(to_file)
     path = os.path.relpath(dir_to, dir_from)
     if path == ".":
@@ -152,8 +154,11 @@ class CSSComboFile(ComboFile):
         """URLs are made relative to the target and the CSS is minified."""
         if self.rewrite_urls:
             src_dir = os.path.dirname(path)
-            relative_parts = relative_path(self.target_file, src_dir).split(
-                os.path.sep)
+            relative_src_dir = relative_path(self.target_file, src_dir)
+            if relative_src_dir == ".":
+                relative_parts = []
+            else:
+                relative_parts = relative_src_dir.split(os.path.sep)
 
             def fix_relative_url(match):
                 url = match.group(1)

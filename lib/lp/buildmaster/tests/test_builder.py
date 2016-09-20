@@ -7,6 +7,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -14,19 +15,19 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import make_publisher
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
+    celebrity_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -43,7 +44,8 @@ class TestBuilder(TestCaseWithFactory):
     def test_providesInterface(self):
         # Builder provides IBuilder
         builder = self.factory.makeBuilder()
-        self.assertProvides(builder, IBuilder)
+        with celebrity_logged_in('buildd_admin'):
+            self.assertProvides(builder, IBuilder)
 
     def test_default_values(self):
         builder = self.factory.makeBuilder()
@@ -60,11 +62,19 @@ class TestBuilder(TestCaseWithFactory):
         builder.builderok = True
         self.assertEqual(0, builder.failure_count)
 
-    def test_handleFailure_increments_failure_count(self):
+    def test_setting_builderok_dirties(self):
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.builderok = False
+        builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        builder.builderok = True
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
+
+    def test_setCleanStatus(self):
         builder = self.factory.makeBuilder()
-        self.assertEqual(0, builder.failure_count)
-        builder.handleFailure(BufferLogger())
-        self.assertEqual(1, builder.failure_count)
+        self.assertEqual(BuilderCleanStatus.DIRTY, builder.clean_status)
+        with celebrity_logged_in('buildd_admin'):
+            builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+        self.assertEqual(BuilderCleanStatus.CLEAN, builder.clean_status)
 
     def test_set_processors(self):
         builder = self.factory.makeBuilder()

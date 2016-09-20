@@ -22,5 +22,5 @@ class TestPPAVocabulary(TestCaseWithFactory):
         term = vocab.toTerm(archive)
         self.assertThat(term, MatchesStructure.byEquality(
             value=archive,
-            token='%s/%s' % (archive.owner.name, archive.name),
+            token=archive.reference,
             title='No description available'))

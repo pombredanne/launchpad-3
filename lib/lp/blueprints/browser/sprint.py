@@ -30,7 +30,7 @@ from lazr.restful.utils import smartquote
 import pytz
 from zope.component import getUtility
 from zope.formlib.widgets import TextAreaWidget
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -39,7 +39,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.interfaces.headings import (
+    IHeadingBreadcrumb,
+    IMajorHeadingView,
+    )
 from lp.app.widgets.date import DateTimeWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -77,7 +80,11 @@ from lp.services.webapp import (
     StandardLaunchpadFacets,
     )
 from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import (
+    Breadcrumb,
+    TitleBreadcrumb,
+    )
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -93,6 +100,11 @@ class SprintFacets(StandardLaunchpadFacets):
 class SprintNavigation(Navigation):
 
     usedfor = ISprint
+
+
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
+class SprintBreadcrumb(TitleBreadcrumb):
+    pass
 
 
 class SprintOverviewMenu(NavigationMenu):
@@ -159,9 +171,8 @@ class HasSprintsView(LaunchpadView):
     page_title = 'Events'
 
 
+@implementer(IMajorHeadingView)
 class SprintView(HasSpecificationsView):
-
-    implements(IMajorHeadingView)
 
     # XXX Michael Nelson 20090923 bug=435255
     # This class inherits a label from HasSpecificationsView, which causes
@@ -242,7 +253,8 @@ class SprintAddView(LaunchpadFormView):
     schema = ISprint
     label = "Register a meeting"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'time_zone', 'time_starts', 'time_ends', 'is_physical',
+                   'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', DateTimeWidget, display_zone=False)
@@ -281,6 +293,7 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
+            is_physical=data['is_physical'],
             address=data['address'],
             )
         self.request.response.addInfoNotification('Sprint created.')
@@ -310,7 +323,8 @@ class SprintEditView(LaunchpadEditFormView):
     label = "Edit sprint details"
 
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   'time_zone', 'time_starts', 'time_ends', 'is_physical',
+                   'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', DateTimeWidget, display_zone=False)
@@ -518,10 +532,9 @@ class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
         return Link('+all', text, icon='list')
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class SprintSetView(LaunchpadView):
     """View for the /sprints top level collection page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = 'Meetings and sprints registered in Launchpad'
 

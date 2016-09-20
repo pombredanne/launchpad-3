@@ -10,7 +10,6 @@ __all__ = [
     'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
-    'TranslationsFacetBreadcrumb',
     ]
 
 from zope.component import getUtility
@@ -18,7 +17,6 @@ from zope.component import getUtility
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.services.config import config
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -91,9 +89,6 @@ class RosettaApplicationView(LaunchpadView, TranslationsMixin):
         return BatchNavigator(products.getTranslatables(),
                               self.request)
 
-    def rosettaAdminEmail(self):
-        return config.rosettaadmin.email
-
     @property
     def launchpad_users_team(self):
         """The url of the launchpad-users team."""
@@ -162,11 +157,6 @@ class TranslationsRedirectView(RedirectionView):
             context, rootsite='translations', view_name='+translations')
         super(TranslationsRedirectView, self).__init__(
             target, request, status=301)
-
-
-class TranslationsFacetBreadcrumb(Breadcrumb):
-    rootsite = 'translations'
-    text = 'Translations'
 
 
 class TranslationsLanguageBreadcrumb(Breadcrumb):

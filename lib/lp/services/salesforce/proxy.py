@@ -18,7 +18,7 @@ from xmlrpclib import (
     )
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
@@ -54,10 +54,9 @@ def fault_mapper(func):
     return decorator
 
 
+@implementer(ISalesforceVoucher)
 class Voucher:
     """A Commercial Subscription voucher."""
-
-    implements(ISalesforceVoucher)
 
     def __init__(self, values):
         """Initialize using the values as returned from the SF proxy.
@@ -88,9 +87,8 @@ class Voucher:
                                 project_name)
 
 
+@implementer(ISalesforceVoucherProxy)
 class SalesforceVoucherProxy:
-
-    implements(ISalesforceVoucherProxy)
 
     def __init__(self):
         self.xmlrpc_transport = SafeTransportWithTimeout(
@@ -101,6 +99,7 @@ class SalesforceVoucherProxy:
         """Get the proxy URL with port."""
         return "%s:%d" % (config.commercial.voucher_proxy_url,
                           config.commercial.voucher_proxy_port)
+
     @property
     def server(self):
         """See `ISalesforceVoucherProxy`."""

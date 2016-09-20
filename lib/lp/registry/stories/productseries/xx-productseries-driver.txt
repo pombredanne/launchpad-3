@@ -1,8 +1,8 @@
 Appointing a Product Series Driver (release manager)
 ====================================================
 
-Sample Person is the driver of Firefox 1.0 series because he is also
-the project owner. He can delegate the responsibility of release manager
+Sample Person is the driver of Firefox 1.0 series because they are also
+the project owner. They can delegate the responsibility of release manager
 by appointing someone else as the driver.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')

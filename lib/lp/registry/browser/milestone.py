@@ -28,7 +28,7 @@ from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import (
@@ -46,7 +46,7 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.widgets.date import DateWidget
-from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.browser.buglisting import BugTaskListingItem
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
@@ -352,11 +352,11 @@ class MilestoneViewMixin(object):
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
 
 
+@implementer(IMilestoneInline)
 class MilestoneView(
     LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin,
     InformationTypePortletMixin):
     """A View for listing milestones and releases."""
-    implements(IMilestoneInline)
     show_series_context = False
 
     def __init__(self, context, request):

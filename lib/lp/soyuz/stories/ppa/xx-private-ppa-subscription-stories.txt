@@ -46,7 +46,7 @@ and a browser for Celso currently navigated to the Manage Subscriptions page,
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions")
 
 and a client of Celso's who has a launchpad name of 'joesmith'
 
@@ -93,7 +93,7 @@ a description of "Launchpad developer access." and clicks on the
 "Add subscriber" button,
 
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions")
     >>> cprov_browser.getControl(name='field.subscriber').value = 'launchpad'
     >>> cprov_browser.getControl(
     ...     name='field.date_expires').value = '2200-08-01'
@@ -116,7 +116,7 @@ new subscriber.
     from PPA named p3a for Celso Providelo. Members of Launchpad Developers
     will be notified of the access via email.
 
-== Story 2: An owner edits a subscription for his private archive ==
+== Story 2: An owner edits a subscription for their private archive ==
 
  * As a software developer who has released some private software
  * I want to edit subscriptions to my private PPA
@@ -129,13 +129,13 @@ for the Launchpad Developers team and a browser for Celso currently
 navigated to the Manage Subscriptions page,
 
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions")
 
 when Celso clicks 'Edit/Cancel' for the Launchpad Developers subscription,
 modifies the description field and clicks Update,
 
     >>> cprov_browser.getLink(
-    ...     url='/~cprov/+archive/p3a/+subscriptions/launchpad/+edit').click()
+    ...     url='/~cprov/+archive/ubuntu/p3a/+subscriptions/launchpad/+edit').click()
     >>> cprov_browser.getControl(name="field.description").value = (
     ...     "a different description")
     >>> cprov_browser.getControl(name="field.actions.update").click()
@@ -145,7 +145,7 @@ subscription for the launchpad team is displayed as well as a notification
 about the update.
 
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/p3a/+subscriptions
+    http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
     Joe Smith                             Joe is my friend    ...
@@ -161,13 +161,13 @@ the Launchpad Developers team and a browser for Celso currently navigated
 to the Manage Subscriptions page,
 
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions")
 
 when Celso clicks 'Edit/Cancel' for the Launchpad Developers subscription
 and clicks Cancel,
 
     >>> cprov_browser.getLink(
-    ...     url='/~cprov/+archive/p3a/+subscriptions/launchpad/+edit').click()
+    ...     url='/~cprov/+archive/ubuntu/p3a/+subscriptions/launchpad/+edit').click()
     >>> cprov_browser.getControl(name="field.actions.cancel").click()
 
 then the browser is redirected back to the subscriptions page, the canceled
@@ -175,7 +175,7 @@ subscription is no longer displayed and a notification about the
 cancellation is displayed.
 
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/p3a/+subscriptions
+    http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
     Joe Smith                             Joe is my friend    Edit/Cancel

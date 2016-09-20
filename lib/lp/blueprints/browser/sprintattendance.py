@@ -28,12 +28,19 @@ from lp.services.webapp import canonical_url
 class BaseSprintAttendanceAddView(LaunchpadFormView):
 
     schema = ISprintAttendance
-    field_names = ['time_starts', 'time_ends', 'is_physical']
     custom_widget('time_starts', DateTimeWidget)
     custom_widget('time_ends', DateTimeWidget)
     custom_widget(
         'is_physical', LaunchpadBooleanRadioWidget, orientation='vertical',
         true_label="Physically", false_label="Remotely", hint=None)
+
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        field_names = ['time_starts', 'time_ends']
+        if self.context.is_physical:
+            field_names.append('is_physical')
+        return field_names
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
@@ -153,7 +160,7 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     @action(_('Register'), name='register')
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
-        is_physical = data['is_physical']
+        is_physical = self.context.is_physical and data['is_physical']
         self.context.attend(self.user, time_starts, time_ends, is_physical)
 
 
@@ -161,7 +168,12 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
     label = 'Register someone else'
-    field_names = ['attendee'] + list(BaseSprintAttendanceAddView.field_names)
+
+    @property
+    def field_names(self):
+        return (
+            ['attendee'] +
+            super(SprintAttendanceRegisterView, self).field_names)
 
     @property
     def initial_values(self):
@@ -172,6 +184,6 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     @action(_('Register'), name='register')
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
-        is_physical = data['is_physical']
+        is_physical = self.context.is_physical and data['is_physical']
         self.context.attend(
             data['attendee'], time_starts, time_ends, is_physical)

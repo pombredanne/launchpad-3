@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The implementation of the Notification Rec."""
@@ -6,12 +6,13 @@
 __metaclass__ = type
 __all__ = [
     'NotificationRecipientSet',
+    'StubPerson',
 ]
 
 
 from operator import attrgetter
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.registry.interfaces.person import IPerson
@@ -21,10 +22,26 @@ from lp.services.mail.interfaces import (
     )
 
 
+class StubPerson:
+    """A stub recipient person.
+
+    This can be used when sending to special email addresses that do not
+    correspond to a real Person.
+    """
+
+    name = None
+    displayname = None
+    is_team = False
+    expanded_notification_footers = False
+
+    def __init__(self, email):
+        self.preferredemail = type(
+            "StubEmailAddress", (object,), {"email": email})
+
+
+@implementer(INotificationRecipientSet)
 class NotificationRecipientSet:
     """Set of recipients along the rationale for being in the set."""
-
-    implements(INotificationRecipientSet)
 
     def __init__(self):
         """Create a new empty set."""
@@ -88,17 +105,24 @@ class NotificationRecipientSet:
         """See `INotificationRecipientSet`."""
         from zope.security.proxy import removeSecurityProxy
         from lp.registry.model.person import get_recipients
-        if IPerson.providedBy(persons):
+        if (IPerson.providedBy(persons) or
+                zope_isinstance(persons, StubPerson)):
             persons = [persons]
 
         for person in persons:
-            assert IPerson.providedBy(person), (
-                'You can only add() an IPerson: %r' % person)
+            assert (
+                IPerson.providedBy(person) or
+                zope_isinstance(person, StubPerson)), (
+                'You can only add() an IPerson or a StubPerson: %r' % person)
             # If the person already has a rationale, keep the first one.
             if person in self._personToRationale:
                 continue
             self._personToRationale[person] = reason, header
-            for receiving_person in get_recipients(person):
+            if IPerson.providedBy(person):
+                recipients = get_recipients(person)
+            else:
+                recipients = [person]
+            for receiving_person in recipients:
                 # Bypass zope's security because IEmailAddress.email is not
                 # public.
                 preferred_email = removeSecurityProxy(

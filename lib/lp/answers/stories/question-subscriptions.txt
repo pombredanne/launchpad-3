@@ -8,7 +8,7 @@ will receive notifications for any changes to the question.
 
 To subscribe, users use the 'Subscribe' link and then confirm that
 they want to subscribe by clicking on the 'Subscribe' button. The user
-sees a link to his subscribed questions.
+sees a link to their subscribed questions.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
@@ -21,7 +21,7 @@ sees a link to his subscribed questions.
 
     >>> user_browser.getControl('Subscribe').click()
 
-A message confirming that he was subscribed is displayed:
+A message confirming that they were subscribed is displayed:
 
     >>> print_feedback_messages(user_browser.contents)
     You have subscribed to this question.
@@ -52,7 +52,7 @@ A confirmation is displayed:
 == Subscribing While Posting A Message ==
 
 It is also possible to subscribe at the same time than posting a message
-on an existing question. The user can simply check the 'E-mail me future
+on an existing question. The user can simply check the 'Email me future
 discussion about this question' checkbox:
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/6')
@@ -60,7 +60,7 @@ discussion about this question' checkbox:
     ...     "Try starting firefox from the command-line. Are there any "
     ...     "messages appearing?")
     >>> user_browser.getControl(
-    ...     'E-mail me future discussion about this question').selected = True
+    ...     'Email me future discussion about this question').selected = True
     >>> user_browser.getControl("Add Information Request").click()
 
 A notification message is displayed notifying of the subscription:

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,7 +17,10 @@ from lazr.restful.interfaces import IJSONRequestCache
 from pytz import UTC
 import simplejson
 import soupmatchers
-from storm.store import Store
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from testtools.matchers import (
     LessThan,
     Not,
@@ -28,17 +31,20 @@ from zope.component import (
     getUtility,
     )
 from zope.event import notify
+from zope.formlib.interfaces import ConversionError
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
+from lp.bugs.browser.buglisting import (
+    BugListingBatchNavigator,
+    BugTaskListingItem,
+    )
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
-    BugListingBatchNavigator,
     BugTaskEditView,
-    BugTaskListingItem,
     BugTasksNominationsView,
     BugTasksTableView,
     )
@@ -78,9 +84,9 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -113,65 +119,29 @@ class TestBugTaskView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def invalidate_caches(self, obj):
-        store = Store.of(obj)
-        # Make sure everything is in the database.
-        store.flush()
-        # And invalidate the cache (not a reset, because that stops us using
-        # the domain objects)
-        store.invalidate()
-
     def test_rendered_query_counts_constant_with_team_memberships(self):
-        login(ADMIN_EMAIL)
         task = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson()
-        person_with_teams = self.factory.makePerson()
-        for _ in range(10):
-            self.factory.makeTeam(members=[person_with_teams])
-        # count with no teams
+        person = self.factory.makePerson()
         url = canonical_url(task)
-        recorder = QueryCollector()
-        recorder.register()
-        self.addCleanup(recorder.unregister)
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, person_no_teams)
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, person),
+            lambda: self.factory.makeTeam(members=[person]),
+            0, 10, login_method=lambda: login(ADMIN_EMAIL))
         # This may seem large: it is; there is easily another 25% fat in
         # there.
-        # If this test is run in isolation, the query count is 80.
-        # Other tests in this TestCase could cache the
-        # "SELECT id, product, project, distribution FROM PillarName ..."
-        # query by previously browsing the task url, in which case the
-        # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(83)))
-        count_with_no_teams = recorder.count
-        # count with many teams
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, person_with_teams)
-        # Allow an increase of one because storm bug 619017 causes additional
-        # queries, revalidating things unnecessarily. An increase which is
-        # less than the number of new teams shows it is definitely not
-        # growing per-team.
-        self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_teams + 3),
-            ))
+        self.assertThat(recorder1, HasQueryCount(LessThan(84)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_rendered_query_counts_constant_with_attachments(self):
-        with celebrity_logged_in('admin'):
-            browses_under_limit = BrowsesWithQueryLimit(
-                85, self.factory.makePerson())
-
-            # First test with a single attachment.
-            task = self.factory.makeBugTask()
-            self.factory.makeBugAttachment(bug=task.bug)
-        self.assertThat(task, browses_under_limit)
-
-        with celebrity_logged_in('admin'):
-            # And now with 10.
-            task = self.factory.makeBugTask()
-            self.factory.makeBugTask(bug=task.bug)
-            for i in range(10):
-                self.factory.makeBugAttachment(bug=task.bug)
-        self.assertThat(task, browses_under_limit)
+        task = self.factory.makeBugTask()
+        person = self.factory.makePerson()
+        url = canonical_url(task)
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, person),
+            lambda: self.factory.makeBugAttachment(bug=task.bug),
+            1, 9, login_method=lambda: login(ADMIN_EMAIL))
+        self.assertThat(recorder1, HasQueryCount(LessThan(85)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def makeLinkedBranchMergeProposal(self, sourcepackage, bug, owner):
         with person_logged_in(owner):
@@ -197,22 +167,19 @@ class TestBugTaskView(TestCaseWithFactory):
             self.factory.makeBugTask(bug=bug, owner=owner, target=sp)
         task = bug.default_bugtask
         url = canonical_url(task)
-        recorder = QueryCollector()
-        recorder.register()
-        self.addCleanup(recorder.unregister)
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, owner)
-        # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(114)))
-        count_with_no_branches = recorder.count
-        for sp in sourcepackages:
-            self.makeLinkedBranchMergeProposal(sp, bug, owner)
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, owner)  # This triggers the query recorder.
+
+        def make_merge_proposals():
+            for sp in sourcepackages:
+                self.makeLinkedBranchMergeProposal(sp, bug, owner)
+
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, owner),
+            make_merge_proposals, 0, 1)
+        self.assertThat(recorder1, HasQueryCount(LessThan(90)))
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(
-            recorder, HasQueryCount(LessThan(count_with_no_branches + 46)))
+            recorder2, HasQueryCount(LessThan(recorder1.count + 41)))
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting
@@ -243,27 +210,19 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_activities(self):
         # More queries are not used for extra bug activities.
         task = self.factory.makeBugTask()
+        person = self.factory.makePerson()
+        url = canonical_url(task)
 
         def add_activity(what, who):
             getUtility(IBugActivitySet).new(
                 task.bug, datetime.now(UTC), who, whatchanged=what)
 
-        # Render the view with one activity.
-        with celebrity_logged_in('admin'):
-            browses_under_limit = BrowsesWithQueryLimit(
-                83, self.factory.makePerson())
-            person = self.factory.makePerson()
-            add_activity("description", person)
-
-        self.assertThat(task, browses_under_limit)
-
-        # Render the view with many more activities by different people.
-        with celebrity_logged_in('admin'):
-            for _ in range(20):
-                person = self.factory.makePerson()
-                add_activity("description", person)
-
-        self.assertThat(task, browses_under_limit)
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url, person),
+            lambda: add_activity("description", self.factory.makePerson()),
+            1, 20, login_method=lambda: login(ADMIN_EMAIL))
+        self.assertThat(recorder1, HasQueryCount(LessThan(85)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_rendered_query_counts_constant_with_milestones(self):
         # More queries are not used for extra milestones.
@@ -272,7 +231,7 @@ class TestBugTaskView(TestCaseWithFactory):
 
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                88, self.factory.makePerson())
+                85, self.factory.makePerson())
 
         self.assertThat(bug, browses_under_limit)
 
@@ -439,7 +398,7 @@ class TestBugTasksNominationsView(TestCaseWithFactory):
 
     def test_other_users_affected_count(self):
         # The number of other users affected does not change when the
-        # logged-in user marked him or herself as affected or not.
+        # logged-in user marked themselves as affected or not.
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
         self.bug.markUserAffected(self.view.user, True)
@@ -834,6 +793,44 @@ class TestBugTasksTableView(TestCaseWithFactory):
         task_and_nomination_views = (
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
         self.assertEqual([], task_and_nomination_views)
+
+    def test_bugtask_sorting(self):
+        # Product tasks come first, sorted by product then series.
+        # Distro tasks follow, sorted by package, distribution, then
+        # series.
+        foo = self.factory.makeProduct(displayname='Foo')
+        self.factory.makeProductSeries(product=foo, name='2.0')
+        self.factory.makeProductSeries(product=foo, name='1.0')
+        bar = self.factory.makeProduct(displayname='Bar')
+        self.factory.makeProductSeries(product=bar, name='0.0')
+
+        barix = self.factory.makeDistribution(displayname='Barix')
+        self.factory.makeDistroSeries(distribution=barix, name='beta')
+        self.factory.makeDistroSeries(distribution=barix, name='alpha')
+        fooix = self.factory.makeDistribution(displayname='Fooix')
+        self.factory.makeDistroSeries(distribution=fooix, name='beta')
+
+        foo_spn = self.factory.makeSourcePackageName('foo')
+        bar_spn = self.factory.makeSourcePackageName('bar')
+
+        expected_targets = [
+            bar, bar.getSeries('0.0'),
+            foo, foo.getSeries('1.0'), foo.getSeries('2.0'),
+            barix.getSourcePackage(bar_spn),
+            barix.getSeries('beta').getSourcePackage(bar_spn),
+            fooix.getSourcePackage(bar_spn),
+            fooix.getSeries('beta').getSourcePackage(bar_spn),
+            barix.getSourcePackage(foo_spn),
+            barix.getSeries('alpha').getSourcePackage(foo_spn),
+            ]
+
+        bug = self.factory.makeBug(target=expected_targets[0])
+        for target in expected_targets[1:]:
+            self.factory.makeBugTask(bug=bug, target=target)
+        view = create_initialized_view(bug, "+bugtasks-and-nominations-table")
+        subviews = view.getBugTaskAndNominationViews()
+        self.assertEqual(
+            expected_targets, [v.context.target for v in subviews])
 
     def test_bugtarget_parent_shown_for_orphaned_series_tasks(self):
         # Test that a row is shown for the parent of a series task, even
@@ -1324,10 +1321,23 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
             view.form_fields['assignee'].field.vocabularyName)
 
 
-class TestBugTaskEditView(TestCaseWithFactory):
+class TestBugTaskEditView(WithScenarios, TestCaseWithFactory):
     """Test the bug task edit form."""
 
     layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ("spn_picker", {"features": {}, "allow_binarypackagename": True}),
+        ("dsp_picker", {
+            "features": {u"disclosure.dsp_picker.enabled": u"on"},
+            "allow_binarypackagename": False,
+            }),
+        ]
+
+    def setUp(self):
+        super(TestBugTaskEditView, self).setUp()
+        if self.features:
+            self.useFixture(FeatureFixture(self.features))
 
     def test_retarget_already_exists_error(self):
         user = self.factory.makePerson()
@@ -1456,6 +1466,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
     def test_retarget_sourcepackage_to_binary_name(self):
         # The sourcepackagename of a SourcePackage task can be changed
         # to a binarypackagename, which gets mapped back to the source.
+        # (This is not allowed for the DistributionSourcePackage picker,
+        # where the vocabulary takes care of doing an appropriate mapping.)
         ds = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(distroseries=ds)
         sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
@@ -1470,15 +1482,24 @@ class TestBugTaskEditView(TestCaseWithFactory):
 
         view = self.createNameChangingViewForSourcePackageTask(
             bug_task, bpr.binarypackagename.name)
-        self.assertEqual([], view.errors)
-        self.assertEqual(sp2, bug_task.target)
-        notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        expected = html_escape(
-            "'%s' is a binary package. This bug has been assigned to its "
-            "source package '%s' instead."
-            % (bpr.binarypackagename.name, spn.name))
-        self.assertTrue(notifications.pop().message.startswith(expected))
+        if self.allow_binarypackagename:
+            self.assertEqual([], view.errors)
+            self.assertEqual(sp2, bug_task.target)
+            notifications = view.request.response.notifications
+            self.assertEqual(1, len(notifications))
+            expected = html_escape(
+                "'%s' is a binary package. This bug has been assigned to its "
+                "source package '%s' instead." % (
+                    bpr.binarypackagename.name, spn.name))
+            self.assertTrue(notifications.pop().message.startswith(expected))
+        else:
+            self.assertEqual(1, len(view.errors))
+            self.assertIsInstance(view.errors[0], ConversionError)
+            self.assertEqual(
+                "Launchpad doesn't know of any source package named "
+                "'%s' in %s." % (
+                    bpr.binarypackagename.name, ds.distribution.display_name),
+                view.errors[0].error_name)
 
     def test_retarget_sourcepackage_to_distroseries(self):
         # A SourcePackage task can be changed to a DistroSeries one.
@@ -1639,7 +1660,7 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
         """Create a new product and add it to the project group."""
         product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
         with person_logged_in(product.owner):
-            product.project = self.target
+            product.projectgroup = self.target
 
     def test_empty_project_group(self):
         # An empty project group does not use Launchpad for bugs.
@@ -2006,29 +2027,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         view.initialize()
         return view
 
-    def invalidate_caches(self, obj):
-        store = Store.of(obj)
-        store.flush()
-        store.invalidate()
-
     def test_rendered_query_counts_constant_with_many_bugtasks(self):
         product = self.factory.makeProduct()
         url = canonical_url(product, view_name='+bugs')
-        bug = self.factory.makeBug(target=product)
-        buggy_product = self.factory.makeProduct()
-        buggy_url = canonical_url(buggy_product, view_name='+bugs')
-        for _ in range(10):
-            self.factory.makeBug(target=buggy_product)
-        recorder = QueryCollector()
-        recorder.register()
-        self.addCleanup(recorder.unregister)
-        self.invalidate_caches(bug)
-        # count with single task
-        self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(35)))
-        # count with many tasks
-        self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(35)))
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(url),
+            lambda: self.factory.makeBug(target=product),
+            1, 10, login_method=lambda: login(ANONYMOUS))
+        self.assertThat(recorder1, HasQueryCount(LessThan(46)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.
@@ -2478,7 +2485,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
     def test_tag_urls_use_view_context(self):
         """urls contain the correct project group if target_context is None"""
         project_group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project_group)
+        product = self.factory.makeProduct(projectgroup=project_group)
         bug = self.factory.makeBug(target=product)
         with person_logged_in(bug.owner):
             bug.tags = ['foo']
@@ -2558,3 +2565,6 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             bug.date_last_message = datetime(2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
+
+
+load_tests = load_tests_apply_scenarios

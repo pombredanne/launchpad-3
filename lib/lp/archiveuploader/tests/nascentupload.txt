@@ -331,9 +331,13 @@ Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 Check if we have rebuid the change's author line properly (as
 mentioned in bug # 30621)
 
-    >>> print ed_spr.changelog_entry
+    >>> print ed_spr.changelog_entry #doctest: -NORMALIZE_WHITESPACE
     ed (0.2-20) unstable; urgency=low
+    <BLANKLINE>
+      * Move to dpatch; existing non-debian/ changes split into
     ...
+        Closes: #130327
+    <BLANKLINE>
      -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
 
 Some new fields required for NoMoreAptFtparchive implementation are
@@ -485,17 +489,6 @@ The upload will be rejected.
     cannot upload the same version within the same distribution. You
     have to modify the source version and re-upload.
 
-We rely on process-upload transaction rollback to not store bogus
-queue entry in the database.
-
-    >>> print ed_src_dup.queue_root.status.name
-    REJECTED
-
-    >>> from lp.soyuz.enums import PackageUploadStatus
-    >>> hoary.getPackageUploads(
-    ...     status=PackageUploadStatus.REJECTED, name=u"ed").count()
-    1
-
 
 Staged Source and Binary upload with multiple binaries
 ......................................................
@@ -558,9 +551,11 @@ Then the source gets accepted and published, step 3 and 4:
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-    >>> multibar_build = multibar_spr.createBuild(
-    ...     hoary['i386'], PackagePublishingPocket.RELEASE,
-    ...     multibar_src_queue.archive)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> multibar_build = getUtility(IBinaryPackageBuildSet).new(
+    ...     multibar_spr, multibar_src_queue.archive, hoary['i386'],
+    ...     PackagePublishingPocket.RELEASE)
 
     >>> multibar_build.status.name
     'NEEDSBUILD'
@@ -711,6 +706,7 @@ Look for the respective SourcePackageRelease entry and inspect its
 content, it should have all the required fields except the
 'dsc_standards_version':
 
+    >>> from lp.soyuz.enums import PackageUploadStatus
     >>> inst_queue = hoary.getPackageUploads(
     ...     PackageUploadStatus.NEW, name=u'test75874', exact_match=True)[0]
     >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
@@ -819,8 +815,8 @@ for further checks:
 The ACL rules also enable us to specify that a user has a
 package-specific upload right.  In the test package data, bar_1.0-1 is
 signed by "Foo Bar" who is name16 in the sample data.  As shown above,
-he currently has no upload rights at all to Ubuntu.  However, we can add
-an ArchivePermission record to permit him to upload "bar" specifically.
+they currently have no upload rights at all to Ubuntu.  However, we can add
+an ArchivePermission record to permit them to upload "bar" specifically.
 
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)

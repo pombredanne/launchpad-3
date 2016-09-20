@@ -1,7 +1,7 @@
-Launchpad Bugs e-mail interface
-===============================
+Launchpad Bugs email interface
+==============================
 
-Launchpad's bugtracker has an e-mail interface, with which you may report new
+Launchpad's bugtracker has an email interface, with which you may report new
 bugs, add comments, and change the details of existing bug reports. Commands
 can be interleaved within a comment, so to distinguish them from the comment,
 they must be indented with at least one space or tab character.
@@ -9,7 +9,7 @@ they must be indented with at least one space or tab character.
 Submit a new bug
 ----------------
 
-To report a bug, you send an OpenPGP-signed e-mail message to
+To report a bug, you send an OpenPGP-signed email message to
 new@bugs.launchpad-domain. You must have registered your key in
 Launchpad as well. The subject of the email will be used as the summary
 of the bug, and the body will be used as the description. In the body of
@@ -52,10 +52,10 @@ to sign each email, we'll create a class which fakes a signed email:
 
     >>> from lp.testing import sampledata
 
-    >>> import email.Message
-    >>> class MockSignedMessage(email.Message.Message):
+    >>> import email.message
+    >>> class MockSignedMessage(email.message.Message):
     ...     def __init__(self, *args, **kws):
-    ...         email.Message.Message.__init__(self, *args, **kws)
+    ...         email.message.Message.__init__(self, *args, **kws)
     ...         self.signature = 'fake'
     ...     @property
     ...     def signedMessage(self):
@@ -75,7 +75,7 @@ bug got submitted correctly:
     >>> def construct_email(raw_mail):
     ...     msg = email.message_from_string(
     ...         raw_mail, _class=MockSignedMessage)
-    ...     if not msg.has_key('Message-Id'):
+    ...     if 'Message-Id' not in msg:
     ...         msg['Message-Id'] = factory.makeUniqueRFC822MsgId()
     ...     return msg
 
@@ -434,7 +434,7 @@ changes was made to the bug, and the comment wasn't added.
     >>> print bug_one.title
     Better summary
 
-And an error message was sent to the Sample Person, telling him what's
+And an error message was sent to the Sample Person, telling them what's
 wrong.
 
     >>> print_latest_email()
@@ -449,7 +449,7 @@ wrong.
 
 The same will happen if we send the same email without signing it:
 
-    >>> class MockUnsignedMessage(email.Message.Message):
+    >>> class MockUnsignedMessage(email.message.Message):
     ...     signedMessage = None
     ...     signature = None
     >>> msg = email.message_from_string(
@@ -794,7 +794,7 @@ the unsubscribe request, an error message wil be sent.
 
 Unsubscribing from a bug also unsubscribes you from its duplicates. To
 demonstrate, let's first make no_privs an indirect subscriber from bug
-#5, by subscribing him directly to a dupe of bug #5, bug #6.
+#5, by subscribing them directly to a dupe of bug #5, bug #6.
 
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -817,7 +817,7 @@ demonstrate, let's first make no_privs an indirect subscriber from bug
     ...  for subscriber in bug_five.getIndirectSubscribers()])
     [u'No Privileges Person', u'Sample Person']
 
-Now, if we unsubscribe no-priv from bug #5, he will actually get
+Now, if we unsubscribe no-priv from bug #5, they will actually get
 unsubscribed from bug #6, thus no longer being indirectly subscribed to
 bug #5.
 
@@ -1028,8 +1028,8 @@ user.
     >>> bug = new_firefox_bug()
     >>> transaction.commit()
     >>> submit_commands(bug, 'cve no-such-cve')
-    >>> bug.cves.count()
-    0
+    >>> bug.cves
+    []
 
     >>> print_latest_email()
     Subject: Submit Request Failure
@@ -1197,6 +1197,14 @@ Like the web UI, we can assign a bug to nobody.
     >>> debian_task.assignee is None
     True
 
+Also like the web UI, we can assign a bug to "me", the current user.
+
+    >>> submit_commands(
+    ...     bug_four, 'affects debian',
+    ...     'assignee me')
+    >>> debian_task.assignee.name
+    u'name12'
+
 To set which source package the bug affects, we use:
 
     >>> submit_commands(bug_four, 'affects debian/mozilla-firefox')
@@ -1234,7 +1242,7 @@ generic Ubuntu task, though.
     Mozilla Firefox
     Ubuntu
 
-Because Sample Person isn't a driver of Ubuntu, he's not allowed to
+Because Sample Person isn't a driver of Ubuntu, they're not allowed to
 target a bug directly, instead a nomination was created.
 
     >>> for nomination in bug.getNominations():
@@ -1269,7 +1277,7 @@ Targeting an existing nomination won't create another nomination.
     Ubuntu Hoary
     Ubuntu Warty
 
-If Sample Person would be the Ubuntu driver, he'll be able to target
+If Sample Person would be the Ubuntu driver, they'll be able to target
 bugs directly to series.
 
     >>> from lp.testing.dbuser import lp_dbuser
@@ -1294,7 +1302,7 @@ Now a new bugtask for the series will be created directly.
     Ubuntu
     Ubuntu Grumpy
 
-He can also approve existing nominations.
+They can also approve existing nominations.
 
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
@@ -1764,7 +1772,7 @@ No matching bug task
 ~~~~~~~~~~~~~~~~~~~~
 
 If none of the bug tasks can be chosen, an error message is sent to the
-user, telling him that he has to use the 'affects' command.
+user, telling them that they have to use the 'affects' command.
 
     >>> del stub.test_emails[:]
     >>> login('stuart.bishop@canonical.com')
@@ -1794,7 +1802,7 @@ More About Error Handling
 -------------------------
 
 If an error is encountered, an email is sent to the sender informing
-him about the error. Let's start with trying to submit a bug without
+them about the error. Let's start with trying to submit a bug without
 signing the mail:
 
     >>> del stub.test_emails[:]
@@ -1803,8 +1811,8 @@ signing the mail:
 
     >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> msg = signed_message_from_string(submit_mail)
-    >>> import email.Utils
-    >>> msg['Message-Id'] = email.Utils.make_msgid()
+    >>> import email.utils
+    >>> msg['Message-Id'] = email.utils.make_msgid()
     >>> handler.process(
     ...     msg, msg['To'],
     ...     )
@@ -2061,7 +2069,7 @@ The first part is the error message, explaining what went wrong.
     Some error message.
     <BLANKLINE>
     --
-    For more information about using Launchpad by e-mail, see
+    For more information about using Launchpad by email, see
     https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 
@@ -2204,7 +2212,7 @@ failure in an email.
     There's no such person with the specified name or email: nonexistentuser
     <BLANKLINE>
     --
-    For more information about using Launchpad by e-mail, see
+    For more information about using Launchpad by email, see
     https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 
@@ -2256,7 +2264,7 @@ And the sender receives an email to let them know about the failing
         security yes
     <BLANKLINE>
     --
-    For more information about using Launchpad by e-mail, see
+    For more information about using Launchpad by email, see
     https://help.launchpad.net/EmailInterface
     or send an email to help@launchpad.net
 

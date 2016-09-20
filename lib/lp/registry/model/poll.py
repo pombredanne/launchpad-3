@@ -14,7 +14,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import random
 
 import pytz
 from sqlobject import (
@@ -28,7 +27,7 @@ from sqlobject import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.poll import (
@@ -51,12 +50,12 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.tokens import create_token
 
 
+@implementer(IPoll)
 class Poll(SQLBase):
     """See IPoll."""
-
-    implements(IPoll)
     _table = 'Poll'
     sortingColumns = ['title', 'id']
     _defaultOrder = sortingColumns
@@ -152,7 +151,7 @@ class Poll(SQLBase):
         secret one.
         """
         assert self.isOpen(when=when), "This poll is not open"
-        assert not self.personVoted(person), "Can't vote twice in the same poll"
+        assert not self.personVoted(person), "Can't vote twice in one poll"
         assert person.inTeam(self.team), (
             "Person %r is not a member of this poll's team." % person)
 
@@ -170,7 +169,7 @@ class Poll(SQLBase):
         assert self.type == PollAlgorithm.CONDORCET
         voteset = getUtility(IVoteSet)
 
-        token = voteset.newToken()
+        token = create_token(20)
         votes = []
         activeoptions = self.getActiveOptions()
         for option, preference in options.items():
@@ -200,7 +199,7 @@ class Poll(SQLBase):
             assert option.poll == self, (
                 "The option %r doesn't belong to this poll" % option)
             assert option.active, "Option %r is not active" % option
-        token = voteset.newToken()
+        token = create_token(20)
         # This is a simple-style poll, so you can vote only on a single option
         # and this option's preference must be 1
         preference = 1
@@ -272,10 +271,9 @@ class Poll(SQLBase):
         return pairwise_matrix
 
 
+@implementer(IPollSet)
 class PollSet:
     """See IPollSet."""
-
-    implements(IPollSet)
 
     def new(self, team, name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
@@ -285,14 +283,14 @@ class PollSet:
                 datecloses=datecloses, secrecy=secrecy,
                 allowspoilt=allowspoilt, type=poll_type)
 
-    def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None, when=None):
+    def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None,
+                     when=None):
         """See IPollSet."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
 
         if orderBy is None:
             orderBy = Poll.sortingColumns
-
 
         status = set(status)
         status_clauses = []
@@ -320,10 +318,9 @@ class PollSet:
             return default
 
 
+@implementer(IPollOption)
 class PollOption(SQLBase):
     """See IPollOption."""
-
-    implements(IPollOption)
     _table = 'PollOption'
     _defaultOrder = ['title', 'id']
 
@@ -336,10 +333,9 @@ class PollOption(SQLBase):
     active = BoolCol(notNull=True, default=False)
 
 
+@implementer(IPollOptionSet)
 class PollOptionSet:
     """See IPollOptionSet."""
-
-    implements(IPollOptionSet)
 
     def new(self, poll, name, title, active=True):
         """See IPollOptionSet."""
@@ -362,10 +358,9 @@ class PollOptionSet:
             return default
 
 
+@implementer(IVoteCast)
 class VoteCast(SQLBase):
     """See IVoteCast."""
-
-    implements(IVoteCast)
     _table = 'VoteCast'
     _defaultOrder = 'id'
 
@@ -376,20 +371,18 @@ class VoteCast(SQLBase):
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
 
+@implementer(IVoteCastSet)
 class VoteCastSet:
     """See IVoteCastSet."""
-
-    implements(IVoteCastSet)
 
     def new(self, poll, person):
         """See IVoteCastSet."""
         return VoteCast(poll=poll, person=person)
 
 
+@implementer(IVote)
 class Vote(SQLBase):
     """See IVote."""
-
-    implements(IVote)
     _table = 'Vote'
     _defaultOrder = ['preference', 'id']
 
@@ -406,19 +399,9 @@ class Vote(SQLBase):
     token = StringCol(dbName='token', notNull=True, unique=True)
 
 
+@implementer(IVoteSet)
 class VoteSet:
     """See IVoteSet."""
-
-    implements(IVoteSet)
-
-    def newToken(self):
-        """See IVoteSet."""
-        chars = '23456789bcdfghjkmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        length = 10
-        token = ''.join([random.choice(chars) for c in range(length)])
-        while self.getByToken(token):
-            token = ''.join([random.choice(chars) for c in range(length)])
-        return token
 
     def new(self, poll, option, preference, token, person):
         """See IVoteSet."""
@@ -435,4 +418,3 @@ class VoteSet:
             raise OptionIsNotFromSimplePoll(
                 '%r is not an option of a simple-style poll.' % option)
         return Vote.selectBy(option=option).count()
-

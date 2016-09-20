@@ -55,4 +55,3 @@ class ILaunchpadStatisticSet(Interface):
 
     def updateStatistics(ztm):
         """Update the statistics in the system."""
-

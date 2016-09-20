@@ -49,8 +49,8 @@ Matsubara can.
     True
     >>> matsubara.account.status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> matsubara.account.status_comment
-    u'test'
+    >>> removeSecurityProxy(matsubara.account).status_history
+    u'...: Unactivated -> Active: test\n'
     >>> removeSecurityProxy(matsubara.preferredemail).email
     u'matsubara@async.com.br'
 
@@ -58,13 +58,13 @@ Matsubara can.
 Deactivating user accounts
 --------------------------
 
-Any user can deactivate his own account, in case they don't want it
+Any user can deactivate their own account, in case they don't want it
 anymore or they don't want to be shown as Launchpad users.
 
-As seen below, Foo Bar has a bunch of stuff assigned/owned to/by him in
-Launchpad which we'll want to be reassigned/unassigned if his account is
+As seen below, Foo Bar has a bunch of stuff assigned/owned to/by them in
+Launchpad which we'll want to be reassigned/unassigned if their account is
 deactivated.  Unfortunately, Foo Bar has no specifications assigned to
-him, so we'll assign one just to prove that deactivating his account
+them, so we'll assign one just to prove that deactivating their account
 will cause this spec to be reassigned.
 
 
@@ -123,7 +123,7 @@ will cause this spec to be reassigned.
     >>> comment = ("I'm a person who doesn't want to be listed "
     ...            "as a Launchpad user.")
 
-The deactivate method is restricted to the user himself --not
+The deactivate method is restricted to the user themselves --not
 even launchpad admins can use it.
 
     >>> login('mark@example.com')
@@ -144,11 +144,12 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...an account status of DEACTIVATED...
 
-    >>> foobar.account_status
+    >>> foobar.account.status
     <DBItem AccountStatus.DEACTIVATED...
 
-    >>> foobar.account_status_comment
-    u"I'm a person who doesn't want to be listed as a Launchpad user."
+    >>> removeSecurityProxy(foobar.account).status_history
+    u"... name16: Active -> Deactivated:
+    I'm a person who doesn't want to be listed as a Launchpad user.\n"
 
 ...to have no team memberships...
 
@@ -222,8 +223,11 @@ Accounts can be reactivated.
     >>> foobar.account.status
     <DBItem AccountStatus.ACTIVE...
 
-    >>> foobar.account.status_comment
-    u'User reactivated the account using reset password.'
+    >>> removeSecurityProxy(foobar.account).status_history
+    u"... name16: Active -> Deactivated: I'm a person
+    who doesn't want to be listed as a Launchpad user.\n...:
+    Deactivated -> Active:
+    User reactivated the account using reset password.\n"
 
 The person name is fixed if it was altered when it was deactivated.
 

@@ -27,8 +27,10 @@ from lp.testing.layers import LaunchpadZopelessLayer
 class StubTransactionManager:
     def __init__(self):
         self.log = []
+
     def abort(self):
         self.log.append('abort')
+
     def commit(self):
         self.log.append('commit')
 

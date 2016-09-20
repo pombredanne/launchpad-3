@@ -13,11 +13,11 @@ __all__ = [
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
 import email
-from email.Header import (
+from email.header import (
     decode_header,
     make_header,
     )
-from email.Utils import (
+from email.utils import (
     make_msgid,
     mktime_tz,
     parseaddr,
@@ -47,7 +47,7 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zisinstance
 
 from lp.app.errors import NotFoundError
@@ -91,12 +91,11 @@ def utcdatetime_from_field(field_value):
         raise InvalidEmailMessage('Invalid date %s' % field_value)
 
 
+@implementer(IMessage)
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
     coming into the bug system, or coming in from a mailing list.
     """
-
-    implements(IMessage)
 
     _table = 'Message'
     _defaultOrder = '-id'
@@ -191,8 +190,8 @@ def get_parent_msgids(parsed_message):
     return []
 
 
+@implementer(IMessageSet)
 class MessageSet:
-    implements(IMessageSet)
 
     extra_encoding_aliases = {
         'macintosh': 'mac_roman',
@@ -250,7 +249,7 @@ class MessageSet:
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())
 
-        bits = email.Header.decode_header(header)
+        bits = email.header.decode_header(header)
         # Re-encode the header parts using utf-8, replacing undecodable
         # characters with question marks.
         re_encoded_bits = []
@@ -260,7 +259,7 @@ class MessageSet:
             # 2008-09-26 gary:
             # The RFC 2047 encoding names and the Python encoding names are
             # not always the same. A safer and more correct approach would use
-            #   bytes.decode(email.Charset.Charset(charset).input_codec,
+            #   bytes.decode(email.charset.Charset(charset).input_codec,
             #                'replace')
             # or similar, rather than
             #   bytes.decode(charset, 'replace')
@@ -270,7 +269,7 @@ class MessageSet:
             re_encoded_bits.append(
                 (self.decode(bytes, charset).encode('utf-8'), 'utf-8'))
 
-        return unicode(email.Header.make_header(re_encoded_bits))
+        return unicode(email.header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
                   parsed_message=None, create_missing_persons=False,
@@ -284,7 +283,7 @@ class MessageSet:
                 'email_message must be a normal string.  Got: %r'
                 % email_message)
 
-        # Parse the raw message into an email.Message.Message instance,
+        # Parse the raw message into an email.message.Message instance,
         # if we haven't been given one already.
         if parsed_message is None:
             parsed_message = email.message_from_string(email_message)
@@ -521,9 +520,9 @@ class MessageSet:
                 yield depth, message
 
 
+@implementer(IMessageChunk)
 class MessageChunk(SQLBase):
     """One part of a possibly multipart Message"""
-    implements(IMessageChunk)
 
     _table = 'MessageChunk'
     _defaultOrder = 'sequence'
@@ -555,10 +554,9 @@ class MessageChunk(SQLBase):
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url))
 
 
+@implementer(IUserToUserEmail)
 class UserToUserEmail(Storm):
     """See `IUserToUserEmail`."""
-
-    implements(IUserToUserEmail)
 
     __storm_table__ = 'UserToUserEmail'
 
@@ -622,10 +620,9 @@ class UserToUserEmail(Storm):
         Store.of(sender).add(self)
 
 
+@implementer(IDirectEmailAuthorization)
 class DirectEmailAuthorization:
     """See `IDirectEmailAuthorization`."""
-
-    implements(IDirectEmailAuthorization)
 
     def __init__(self, sender):
         """Create a `UserContactBy` instance.

@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import re
 
 from pytz import utc
 from storm.locals import Store
@@ -21,23 +20,20 @@ from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource,
-    )
-from lp.code.mail.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildMailer,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
-from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     login,
     person_logged_in,
@@ -61,8 +57,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         distroseries_i386 = distroseries.newArch(
-            'i386', getUtility(IProcessorSet).getByName('386'), False, person,
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False, person)
         removeSecurityProxy(distroseries).nominatedarchindep = (
             distroseries_i386)
         if archive is None:
@@ -79,7 +74,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # SourcePackageRecipeBuild provides IPackageBuild and
         # ISourcePackageRecipeBuild.
         spb = self.makeSourcePackageRecipeBuild()
-        self.assertProvides(spb, ISourcePackageRecipeBuild)
+        with admin_logged_in():
+            self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_implements_interface(self):
         build = self.makeSourcePackageRecipeBuild()
@@ -89,7 +85,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # A source package recipe build can be stored in the database
         spb = self.makeSourcePackageRecipeBuild()
         transaction.commit()
-        self.assertProvides(spb, ISourcePackageRecipeBuild)
+        with admin_logged_in():
+            self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()
@@ -109,10 +106,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(bq, spb.buildqueue_record)
 
     def test_title(self):
-        # A recipe build's title currently consists of the base
-        # branch's unique name.
+        # A recipe build's title currently consists of the base source
+        # location's unique name.
         spb = self.makeSourcePackageRecipeBuild()
-        title = "%s recipe build" % spb.recipe.base_branch.unique_name
+        title = "%s recipe build in %s %s" % (
+            spb.recipe.base.unique_name, spb.distribution.name,
+            spb.distroseries.name)
         self.assertEqual(spb.title, title)
 
     def test_distribution(self):
@@ -176,6 +175,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
                 BuildStatus.FULLYBUILT,
                 date_finished=cur_date + timedelta(minutes=minutes))
         self.assertEqual(timedelta(minutes=5), spb.estimateDuration())
+
+    def test_build_cookie(self):
+        build = self.factory.makeSourcePackageRecipeBuild()
+        self.assertEqual(
+            'RECIPEBRANCHBUILD-%d' % build.id, build.build_cookie)
 
     def test_getFileByName(self):
         """getFileByName returns the logs when requested by name."""
@@ -401,45 +405,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             "DEBUG  - cannot build against Warty (4.10).",
             logger.getLogBuffer())
 
-    def test_getRecentBuilds(self):
-        """Recent builds match the same person, series and receipe.
-
-        Builds do not match if they are older than 24 hours, or have a
-        different requester, series or recipe.
-        """
-        requester = self.factory.makePerson()
-        recipe = self.factory.makeSourcePackageRecipe()
-        series = self.factory.makeDistroSeries()
-        removeSecurityProxy(series).nominatedarchindep = (
-            self.factory.makeDistroArchSeries(distroseries=series))
-        now = self.factory.getUniqueDate()
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe,
-            requester=requester)
-        self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=series)
-        self.factory.makeSourcePackageRecipeBuild(
-            requester=requester, distroseries=series)
-
-        def get_recent():
-            Store.of(build).flush()
-            return SourcePackageRecipeBuild.getRecentBuilds(
-                requester, recipe, series, _now=now)
-        self.assertContentEqual([], get_recent())
-        yesterday = now - timedelta(days=1)
-        self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=series, requester=requester,
-            date_created=yesterday)
-        self.assertContentEqual([], get_recent())
-        more_recent_build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=series, requester=requester,
-            date_created=yesterday + timedelta(seconds=1))
-        self.assertContentEqual([more_recent_build], get_recent())
-
     def test_destroySelf(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
 
     def test_destroySelf_clears_release(self):
         # Destroying a sourcepackagerecipebuild removes references to it from
@@ -448,7 +419,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         release = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=build)
         self.assertEqual(build, release.source_package_recipe_build)
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
         self.assertIs(None, release.source_package_recipe_build)
         transaction.commit()
 
@@ -461,18 +433,19 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # Ensure database ids are set.
         store.flush()
         build_farm_job_id = naked_build.build_farm_job_id
-        build.destroySelf()
+        with admin_logged_in():
+            build.destroySelf()
         self.assertIs(None, store.get(BuildFarmJob, build_farm_job_id))
 
-    def test_cancelBuild(self):
+    def test_cancel(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.cancelBuild()
+        build.queueBuild()
+        with admin_logged_in():
+            build.cancel()
 
-        self.assertEqual(
-            BuildStatus.SUPERSEDED,
-            build.status)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the build requester.
@@ -524,22 +497,6 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build.notify()
         self.assertEquals(0, len(pop_notifications()))
 
-    def assertBuildMessageValid(self, build, message):
-        # Not currently used; can be used if we do want to check about any
-        # notifications sent in other cases.
-        requester = build.requester
-        requester_address = format_address(
-            requester.displayname, requester.preferredemail.email)
-        mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        expected = mailer.generateEmail(
-            requester.preferredemail.email, requester)
-        self.assertEqual(
-            requester_address, re.sub(r'\n\t+', ' ', message['To']))
-        self.assertEqual(expected.subject, message['Subject'].replace(
-            '\n\t', ' '))
-        self.assertEqual(
-            expected.body, message.get_payload(decode=True))
-
     def test_notify_when_recipe_deleted(self):
         """Notify does nothing if recipe has been deleted."""
         person = self.factory.makePerson(name='person')
@@ -552,7 +509,8 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         build.updateStatus(BuildStatus.FULLYBUILT)
-        cake.destroySelf()
+        with admin_logged_in():
+            cake.destroySelf()
         IStore(build).flush()
         build.notify()
         notifications = pop_notifications()

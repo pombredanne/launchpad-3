@@ -25,6 +25,8 @@
           });
       </script>
     </tal:uses_launchpad_bugtracker>
+    <meta name="go-import" tal:condition="view/golang_import_spec"
+          tal:attributes="content view/golang_import_spec" />
   </metal:block>
 
     <tal:heading metal:fill-slot="heading">

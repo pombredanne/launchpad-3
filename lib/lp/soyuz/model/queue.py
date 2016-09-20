@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,10 +12,6 @@ __all__ = [
     ]
 
 from itertools import chain
-import os
-import shutil
-import StringIO
-import tempfile
 
 from sqlobject import (
     ForeignKey,
@@ -38,15 +34,11 @@ from storm.store import (
     Store,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
-# XXX 2009-05-10 julian
-# This should not import from archivepublisher, but to avoid
-# that it needs a bit of redesigning here around the publication stuff.
-from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient
@@ -76,13 +68,11 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.librarian.utils import copy_and_close
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.soyuz.adapters.notification import notify
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
@@ -92,6 +82,7 @@ from lp.soyuz.interfaces.archive import (
     PriorityNotFound,
     SectionNotFound,
     )
+from lp.soyuz.interfaces.archivejob import IPackageUploadNotificationJobSource
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
@@ -101,6 +92,8 @@ from lp.soyuz.interfaces.publishing import (
     name_priority_map,
     )
 from lp.soyuz.interfaces.queue import (
+    CustomUploadError,
+    ICustomUploadHandler,
     IPackageUpload,
     IPackageUploadBuild,
     IPackageUploadCustom,
@@ -115,15 +108,12 @@ from lp.soyuz.interfaces.queue import (
     QueueStateWriteProtectedError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.mail.packageupload import PackageUploadMailer
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.section import Section
-
-# There are imports below in PackageUploadCustom for various bits
-# of the archivepublisher which cause circular import errors if they
-# are placed here.
 
 
 def debug(logger, msg):
@@ -152,19 +142,17 @@ def validate_status(self, attr, value):
             'provided methods to set it.')
 
 
+@implementer(IPackageUploadQueue)
 class PackageUploadQueue:
-
-    implements(IPackageUploadQueue)
 
     def __init__(self, distroseries, status):
         self.distroseries = distroseries
         self.status = status
 
 
+@implementer(IPackageUpload)
 class PackageUpload(SQLBase):
     """A Queue item for the archive uploader."""
-
-    implements(IPackageUpload)
 
     _defaultOrder = ['id']
 
@@ -186,8 +174,9 @@ class PackageUpload(SQLBase):
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
-    signing_key = ForeignKey(
-        foreignKey='GPGKey', dbName='signing_key', notNull=False)
+    signing_key_owner_id = Int(name="signing_key_owner")
+    signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
+    signing_key_fingerprint = Unicode()
 
     package_copy_job_id = Int(name='package_copy_job', allow_none=True)
     package_copy_job = Reference(package_copy_job_id, 'PackageCopyJob.id')
@@ -289,6 +278,12 @@ class PackageUpload(SQLBase):
                 "customformat": file.customformat.title,
                 })
         return properties
+
+    @cachedproperty
+    def signing_key(self):
+        if self.signing_key_fingerprint is not None:
+            return getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint)
 
     @property
     def copy_source_archive(self):
@@ -439,26 +434,6 @@ class PackageUpload(SQLBase):
                 'Unable to reject queue item due to status.')
         self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
-    def _closeBugs(self, changesfile_path, logger=None):
-        """Close bugs for a just-accepted source.
-
-        :param changesfile_path: path to the context changesfile.
-        :param logger: optional context Logger object (used on DEBUG level);
-
-        It does not close bugs for PPA sources.
-        """
-        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
-
-        if self.isPPA():
-            debug(logger, "Not closing bugs for PPA source.")
-            return
-
-        debug(logger, "Closing bugs.")
-        changesfile_object = open(changesfile_path, 'r')
-        close_bugs_for_queue_item(
-            self, changesfile_object=changesfile_object)
-        changesfile_object.close()
-
     def _validateBuildsForSource(self, sourcepackagerelease, builds):
         """Check if the sourcepackagerelease generates at least one build.
 
@@ -491,7 +466,7 @@ class PackageUpload(SQLBase):
         sourcepackagename = self.sources[
             0].sourcepackagerelease.sourcepackagename
 
-        # The package creator always gets his karma.
+        # The package creator always gets their karma.
         changed_by.assignKarma(
             main_karma_action, distribution=distribution,
             sourcepackagename=sourcepackagename)
@@ -499,7 +474,7 @@ class PackageUpload(SQLBase):
         if self.archive.is_ppa:
             return
 
-        # If a sponsor was involved, give him some too.
+        # If a sponsor was involved, give them some too.
         if uploader is not None and changed_by != uploader:
             uploader.assignKarma(
                 'sponsoruploadaccepted', distribution=distribution,
@@ -507,6 +482,9 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
+        from lp.soyuz.model.processacceptedbugsjob import (
+            close_bugs_for_queue_item,
+            )
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -521,7 +499,9 @@ class PackageUpload(SQLBase):
         [pub_source] = self.realiseUpload()
         builds = pub_source.createMissingBuilds(logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
-        self._closeBugs(changesfile_path, logger)
+        with open(changesfile_path, 'r') as changesfile_object:
+            close_bugs_for_queue_item(
+                self, changesfile_object=changesfile_object)
         self._giveKarma()
 
     def _acceptSyncFromQueue(self):
@@ -546,14 +526,15 @@ class PackageUpload(SQLBase):
         # should probably give karma but that needs more work to
         # fix here.
 
-    def _acceptNonSyncFromQueue(self, logger=None, dry_run=False):
+    def _acceptNonSyncFromQueue(self):
         """Accept a "regular" upload from the queue.
 
         This is the normal case, for uploads that are not delayed and are not
         attached to package copy jobs.
         """
-        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
-
+        from lp.soyuz.model.processacceptedbugsjob import (
+            close_bugs_for_queue_item,
+            )
         assert self.package_copy_job is None, (
             "This method is not for copy-job uploads.")
         assert self.changesfile is not None, (
@@ -562,13 +543,7 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
 
-        changes_file_object = StringIO.StringIO(self.changesfile.read())
-        # We explicitly allow unsigned uploads here since the .changes file
-        # is pulled from the librarian which are stripped of their
-        # signature just before being stored.
-        self.notify(
-            logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+        getUtility(IPackageUploadNotificationJobSource).create(self)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -588,17 +563,17 @@ class PackageUpload(SQLBase):
         # Give some karma!
         self._giveKarma()
 
-    def acceptFromQueue(self, logger=None, dry_run=False, user=None):
+    def acceptFromQueue(self, user=None):
         """See `IPackageUpload`."""
         if self.package_copy_job is None:
-            self._acceptNonSyncFromQueue(logger, dry_run)
+            self._acceptNonSyncFromQueue()
         else:
             self._acceptSyncFromQueue()
         if bool(getFeatureFlag('auditor.enabled')):
             client = AuditorClient()
             client.send(self, 'packageupload-accepted', user)
 
-    def rejectFromQueue(self, user, logger=None, dry_run=False, comment=None):
+    def rejectFromQueue(self, user, comment=None):
         """See `IPackageUpload`."""
         self.setRejected()
         if self.package_copy_job is not None:
@@ -613,19 +588,12 @@ class PackageUpload(SQLBase):
             # don't think we need them for sync rejections.
             return
 
-        if self.changesfile is None:
-            changes_file_object = None
-        else:
-            changes_file_object = StringIO.StringIO(self.changesfile.read())
         if comment:
             summary_text = "Rejected by %s: %s" % (user.displayname, comment)
         else:
             summary_text = "Rejected by %s." % user.displayname
-        # We allow unsigned uploads since they come from the librarian,
-        # which are now stored unsigned.
-        self.notify(
-            logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object, summary_text=summary_text)
+        getUtility(IPackageUploadNotificationJobSource).create(
+            self, summary_text=summary_text)
         self.syncUpdate()
         if bool(getFeatureFlag('auditor.enabled')):
             client = AuditorClient()
@@ -689,6 +657,11 @@ class PackageUpload(SQLBase):
     def contains_uefi(self):
         """See `IPackageUpload`."""
         return PackageUploadCustomFormat.UEFI in self._customFormats
+
+    @cachedproperty
+    def contains_signing(self):
+        """See `IPackageUpload`."""
+        return PackageUploadCustomFormat.SIGNING in self._customFormats
 
     @property
     def package_name(self):
@@ -893,7 +866,7 @@ class PackageUpload(SQLBase):
         first_build = self.builds[:1]
         if first_build:
             [first_build] = first_build
-            return first_build.build._getLatestPublication()
+            return first_build.build.getLatestSourcePublication()
         else:
             return None
 
@@ -915,9 +888,11 @@ class PackageUpload(SQLBase):
         else:
             return None
 
-    def notify(self, summary_text=None, changes_file_object=None,
-               logger=None, dry_run=False):
+    def notify(self, status=None, summary_text=None, changes_file_object=None,
+               logger=None):
         """See `IPackageUpload`."""
+        if status is None:
+            status = self.status
         status_action = {
             PackageUploadStatus.NEW: 'new',
             PackageUploadStatus.UNAPPROVED: 'unapproved',
@@ -931,11 +906,13 @@ class PackageUpload(SQLBase):
         else:
             changesfile_content = 'No changes file content available.'
         blamee = self.findPersonToNotify()
-        notify(
-            blamee, self.sourcepackagerelease, self.builds, self.customfiles,
-            self.archive, self.distroseries, self.pocket, summary_text,
-            changes, changesfile_content, changes_file_object,
-            status_action[self.status], dry_run=dry_run, logger=logger)
+        mailer = PackageUploadMailer.forAction(
+            status_action[status], blamee, self.sourcepackagerelease,
+            self.builds, self.customfiles, self.archive, self.distroseries,
+            self.pocket, summary_text=summary_text, changes=changes,
+            changesfile_content=changesfile_content,
+            changesfile_object=changes_file_object, logger=logger)
+        mailer.sendAll()
 
     @property
     def components(self):
@@ -997,8 +974,7 @@ class PackageUpload(SQLBase):
         if copy_job.component_name not in allowed_component_names:
             raise QueueAdminUnauthorizedError(
                 "No rights to override from %s" % copy_job.component_name)
-        copy_job.addSourceOverride(SourceOverride(
-            copy_job.package_name, new_component, new_section))
+        copy_job.addSourceOverride(SourceOverride(new_component, new_section))
 
         return True
 
@@ -1171,9 +1147,9 @@ def get_properties_for_binary(bpr):
         }
 
 
+@implementer(IPackageUploadBuild)
 class PackageUploadBuild(SQLBase):
     """A Queue item's related builds."""
-    implements(IPackageUploadBuild)
 
     _defaultOrder = ['id']
 
@@ -1231,10 +1207,9 @@ class PackageUploadBuild(SQLBase):
             self.packageupload.pocket, bins)
 
 
+@implementer(IPackageUploadSource)
 class PackageUploadSource(SQLBase):
     """A Queue item's related sourcepackagereleases."""
-
-    implements(IPackageUploadSource)
 
     _defaultOrder = ['id']
 
@@ -1340,12 +1315,12 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        debug(logger, "Publishing source %s/%s to %s/%s in the %s archive" % (
+        debug(logger, "Publishing source %s/%s to %s/%s in %s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name,
-            self.packageupload.archive.name))
+            self.packageupload.archive.reference))
 
         return getUtility(IPublishingSet).newSourcePublication(
             archive=self.packageupload.archive,
@@ -1357,9 +1332,9 @@ class PackageUploadSource(SQLBase):
             packageupload=self.packageupload)
 
 
+@implementer(IPackageUploadCustom)
 class PackageUploadCustom(SQLBase):
     """A Queue item's related custom format uploads."""
-    implements(IPackageUploadCustom)
 
     _defaultOrder = ['id']
 
@@ -1375,137 +1350,18 @@ class PackageUploadCustom(SQLBase):
 
     def publish(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # This is a marker as per the comment in lib/lp/soyuz/enums.py:
-        ##CUSTOMFORMAT##
-        # Essentially, if you alter anything to do with what custom formats
-        # are, what their tags are, or anything along those lines, you should
-        # grep for the marker in the source tree and fix it up in every place
-        # so marked.
         debug(logger, "Publishing custom %s to %s/%s" % (
             self.packageupload.displayname,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
-
-        self.publisher_dispatch[self.customformat](self, logger)
-
-    def temp_filename(self):
-        """See `IPackageUploadCustom`."""
-        temp_dir = tempfile.mkdtemp()
-        temp_file_name = os.path.join(
-            temp_dir, self.libraryfilealias.filename)
-        temp_file = file(temp_file_name, "wb")
-        self.libraryfilealias.open()
-        copy_and_close(self.libraryfilealias, temp_file)
-        return temp_file_name
-
-    def _publishCustom(self, action_method, logger=None):
-        """Publish custom formats.
-
-        Publish Either an installer, an upgrader or a ddtp upload using the
-        supplied action method.
-        """
-        temp_filename = self.temp_filename()
-        suite = self.packageupload.distroseries.getSuite(
-            self.packageupload.pocket)
-        try:
-            # See the XXX near the import for getPubConfig.
-            archive_config = getPubConfig(self.packageupload.archive)
-            action_method(archive_config, temp_filename, suite, logger=logger)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
-
-    def publishDebianInstaller(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.debian_installer import (
-            process_debian_installer)
-
-        self._publishCustom(process_debian_installer, logger=logger)
-
-    def publishDistUpgrader(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.dist_upgrader import process_dist_upgrader
-
-        self._publishCustom(process_dist_upgrader, logger=logger)
-
-    def publishDdtpTarball(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.ddtp_tarball import process_ddtp_tarball
-
-        self._publishCustom(process_ddtp_tarball, logger=logger)
-
-    def publishRosettaTranslations(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        from lp.archivepublisher.rosetta_translations import (
-            process_rosetta_translations)
-
-        process_rosetta_translations(self.packageupload,
-                                     self.libraryfilealias, logger=logger)
-
-    def publishStaticTranslations(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # Static translations are not published.  Currently, they're
-        # only exposed via webservice methods so that third parties can
-        # retrieve them from the librarian.
-        debug(logger, "Skipping publishing of static translations.")
-        return
-
-    def publishMetaData(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # In the future this could use the existing custom upload file
-        # processing which deals with versioning, etc., but that's too
-        # complicated for our needs right now.  Also, the existing code
-        # assumes that everything is a tarball and tries to unpack it.
-
-        archive = self.packageupload.archive
-        # See the XXX near the import for getPubConfig.
-        archive_config = getPubConfig(archive)
-        dest_file = os.path.join(
-            archive_config.metaroot, self.libraryfilealias.filename)
-        if not os.path.isdir(archive_config.metaroot):
-            os.makedirs(archive_config.metaroot, 0755)
-
-        # At this point we now have a directory of the format:
-        # <person_name>/meta/<ppa_name>
-        # We're ready to copy the file out of the librarian into it.
-
-        file_obj = file(dest_file, "wb")
-        self.libraryfilealias.open()
-        copy_and_close(self.libraryfilealias, file_obj)
-
-    def publishUefi(self, logger=None):
-        """See `IPackageUploadCustom`."""
-        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
-        # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.uefi import process_uefi
-
-        self._publishCustom(process_uefi, logger=logger)
-
-    publisher_dispatch = {
-        PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,
-        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
-            publishRosettaTranslations,
-        PackageUploadCustomFormat.DIST_UPGRADER: publishDistUpgrader,
-        PackageUploadCustomFormat.DDTP_TARBALL: publishDdtpTarball,
-        PackageUploadCustomFormat.STATIC_TRANSLATIONS:
-            publishStaticTranslations,
-        PackageUploadCustomFormat.META_DATA: publishMetaData,
-        PackageUploadCustomFormat.UEFI: publishUefi,
-        }
-
-    # publisher_dispatch must have an entry for each value of
-    # PackageUploadCustomFormat.
-    assert len(publisher_dispatch) == len(PackageUploadCustomFormat)
+        handler = getUtility(ICustomUploadHandler, self.customformat.name)
+        handler.publish(
+            self.packageupload, self.libraryfilealias, logger=logger)
 
 
+@implementer(IPackageUploadSet)
 class PackageUploadSet:
     """See `IPackageUploadSet`"""
-    implements(IPackageUploadSet)
 
     def __iter__(self):
         """See `IPackageUploadSet`."""

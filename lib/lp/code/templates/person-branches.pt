@@ -10,17 +10,16 @@
 
 <metal:side fill-slot="side">
 
-  <div tal:define="menu context/menu:branches"
-       tal:condition="view/show_action_menu"
-       class="first portlet">
-  </div>
-
   <tal:summary replace="structure context/@@+codesummary"/>
 
 </metal:side>
 
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
+
+  <span class="see-all" tal:condition="view/show_git_link">
+    <a tal:attributes="href context/fmt:url:code/+git">View Git repositories</a>
+  </span>
 
   <p id="junk-branch-directions" tal:condition="view/show_junk_directions">
     You can push (upload) personal branches
@@ -29,18 +28,8 @@
     <tt class="command">bzr push lp:~<tal:name
       replace="view/user/name"/>/+junk/<em>BRANCHNAME</em></tt>
   </p>
-
-  <div id="no-branch-message" tal:condition="view/is_branch_count_zero">
-    <p tal:content="view/no_branch_message">
-      There are no branches related to Eric the Viking today.
-    </p>
-  </div>
-
-  <tal:has-branches condition="not: view/is_branch_count_zero">
-    <tal:branchlisting
-        content="structure branches/@@+branch-listing" />
-  </tal:has-branches>
-
+  <tal:branchlisting
+      content="structure branches/@@+branch-listing" />
   <tal:teambranches replace="structure context/@@+portlet-teambranches" />
 </div>
 </body>

@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUploadFile functionality."""
@@ -12,6 +12,12 @@ import subprocess
 from debian.deb822 import (
     Changes,
     Dsc,
+    )
+from testtools.matchers import (
+    Contains,
+    Equals,
+    MatchesAny,
+    MatchesListwise,
     )
 
 from lp.archiveuploader.changesfile import ChangesFile
@@ -159,6 +165,12 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         # UEFI uploads are auto-approved.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-uefi", "extra")
+        self.assertFalse(uploadfile.autoApprove())
+
+    def test_signing_not_auto_approved(self):
+        # UEFI uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-signing", "extra")
         self.assertFalse(uploadfile.autoApprove())
 
 
@@ -348,14 +360,15 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
                 "protocols",
             }
 
-    def createDeb(self, filename, data_format):
+    def createDeb(self, filename, data_format, members=None):
         """Return the contents of a dummy .deb file."""
         tempdir = self.makeTemporaryDirectory()
-        members = [
-            "debian-binary",
-            "control.tar.gz",
-            "data.tar.%s" % data_format,
-            ]
+        if members is None:
+            members = [
+                "debian-binary",
+                "control.tar.gz",
+                "data.tar.%s" % data_format,
+                ]
         for member in members:
             write_file(os.path.join(tempdir, member), "")
         retcode = subprocess.call(
@@ -366,10 +379,10 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
 
     def createDebBinaryUploadFile(self, filename, component_and_section,
                                   priority_name, package, version, changes,
-                                  data_format=None):
+                                  data_format=None, members=None):
         """Create a DebBinaryUploadFile."""
-        if data_format:
-            data = self.createDeb(filename, data_format)
+        if data_format is not None or members is not None:
+            data = self.createDeb(filename, data_format, members=members)
         else:
             data = "DUMMY DATA"
         (path, md5, sha1, size) = self.writeUploadFile(filename, data)
@@ -403,6 +416,18 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         control = self.getBaseControl()
         uploadfile.parseControl(control)
         self.assertEqual([], list(uploadfile.verifyFormat()))
+
+    def test_verifyDebTimestamp_SystemError(self):
+        # verifyDebTimestamp produces a reasonable error if we provoke a
+        # SystemError from apt_inst.DebFile.
+        uploadfile = self.createDebBinaryUploadFile(
+            "empty_0.1_all.deb", "main/admin", "extra", "empty", "0.1", None,
+            members=[])
+        self.assertThat(
+            ["".join(error.args) for error in uploadfile.verifyDebTimestamp()],
+            MatchesListwise([MatchesAny(
+                Equals("No debian archive, missing control.tar.gz"),
+                Contains("could not locate member control.tar."))]))
 
     def test_storeInDatabase(self):
         # storeInDatabase creates a BinaryPackageRelease.

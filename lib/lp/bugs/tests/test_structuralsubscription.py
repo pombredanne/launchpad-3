@@ -464,7 +464,7 @@ class TestStructuralSubscriptionFiltersForProjectGroup(
 
     def makeBugTask(self):
         return self.factory.makeBugTask(
-            target=self.factory.makeProduct(project=self.target))
+            target=self.factory.makeProduct(projectgroup=self.target))
 
 
 class TestStructuralSubscriptionFiltersForProductSeries(
@@ -532,18 +532,18 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
     def test_product_with_project_group(self):
         # get_structural_subscription_targets() will yield both a
         # product and its parent project group if it has one.
-        project = self.factory.makeProject()
+        projectgroup = self.factory.makeProject()
         product = self.factory.makeProduct(
-            project=project, owner=project.owner)
+            projectgroup=projectgroup, owner=projectgroup.owner)
         subscriber = self.factory.makePerson()
         with person_logged_in(subscriber):
-            project.addBugSubscription(subscriber, subscriber)
+            projectgroup.addBugSubscription(subscriber, subscriber)
         # This is a sanity check.
-        self.assertEqual(project, product.parent_subscription_target)
+        self.assertEqual(projectgroup, product.parent_subscription_target)
         bug = self.factory.makeBug(target=product)
         result = get_structural_subscription_targets(bug.bugtasks)
         self.assertEqual(
-            set([(bug.bugtasks[0], product), (bug.bugtasks[0], project)]),
+            set([(bug.bugtasks[0], product), (bug.bugtasks[0], projectgroup)]),
             set(result))
 
 
@@ -634,13 +634,13 @@ class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
         # get_structural_subscriptions_for_bug() will return any
         # structural subscriptions from the parents of the targets of
         # that bug.
-        project = self.factory.makeProject()
+        projectgroup = self.factory.makeProject()
         product = self.factory.makeProduct(
-            project=project, owner=project.owner)
+            projectgroup=projectgroup, owner=projectgroup.owner)
         subscriber = self.factory.makePerson()
-        self_sub = project.addBugSubscription(subscriber, subscriber)
+        self_sub = projectgroup.addBugSubscription(subscriber, subscriber)
         # This is a sanity check.
-        self.assertEqual(project, product.parent_subscription_target)
+        self.assertEqual(projectgroup, product.parent_subscription_target)
         bug = self.factory.makeBug(target=product)
         subscriptions = get_structural_subscriptions_for_bug(
             bug, subscriber)
@@ -938,7 +938,7 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
             non_team_person.name,)
         self.assertRaisesWithContent(
             MuteNotAllowed, expected, self.filter.mute, non_team_person)
-        
+
     def test_mute_on_team_with_contact_address(self):
         # BugSubscriptionFilter.mute() will raise an error if called on
         # a subscription if the team has a contact address.

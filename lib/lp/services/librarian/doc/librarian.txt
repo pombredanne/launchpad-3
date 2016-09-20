@@ -80,14 +80,15 @@ date_created attribute.
     datetime.datetime(...)
 
 We can retrieve the LibraryFileAlias we just created using its ID or
-sha1.
+sha256.
 
     >>> org_alias_id = alias.id
     >>> alias = lfas[org_alias_id]
     >>> alias.id == org_alias_id
     True
 
-    >>> org_alias_id in [a.id for a in lfas.findBySHA1(alias.content.sha1)]
+    >>> org_alias_id in [
+    ...     a.id for a in lfas.findBySHA256(alias.content.sha256)]
     True
 
 We can get its URL too
@@ -333,6 +334,7 @@ to their private_url. Possession of a token is sufficient to grant
 access to a file, regardless of who is logged in. getURL can be asked to
 provide such a token.
 
+    >>> import hashlib
     >>> token_url = file_alias.getURL(include_token=True)
     >>> print token_url
     https://i...restricted.../private.txt?token=...
@@ -342,8 +344,9 @@ provide such a token.
 
     >>> private_path = TimeLimitedToken.url_to_token_path(
     ...        file_alias.private_url)
-    >>> token_url.endswith(session_store().find(
-    ...     TimeLimitedToken, path=private_path).any().token)
+    >>> url_token = token_url.split('=')[1]
+    >>> hashlib.sha256(url_token).hexdigest() == session_store().find(
+    ...     TimeLimitedToken, path=private_path).any().token
     True
 
 LibraryFileAliasView doesn't work on restricted files. This is a

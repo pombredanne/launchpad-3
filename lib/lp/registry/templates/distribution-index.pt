@@ -41,7 +41,7 @@
           class="description"
           tal:content="structure context/description/fmt:text-to-html"/>
 
-        <tal:search-packages condition="context/full_functionality">
+        <tal:search-packages condition="context/official_packages">
           <h2>Packages</h2>
 
           <form name="search" action="+search" method="get">
@@ -95,18 +95,19 @@
       define="overview_menu context/menu:overview">
       <tal:menu replace="structure context/@@+global-actions" />
 
-      <div id="packages-archives" class="portlet">
+      <div id="packages-archives" class="portlet"
+           tal:condition="python: context.supports_mirrors or context.supports_ppas or context.official_packages">
         <ul>
-          <li>
+          <li tal:condition="context/supports_mirrors">
             <a tal:replace="structure overview_menu/cdimage_mirrors/fmt:link" />
           </li>
-          <li>
+          <li tal:condition="context/supports_mirrors">
             <a tal:replace="structure overview_menu/archive_mirrors/fmt:link" />
           </li>
-          <li>
+          <li tal:condition="context/supports_ppas">
             <a tal:replace="structure overview_menu/ppas/fmt:link" />
           </li>
-          <li>
+          <li tal:condition="context/official_packages">
             <a tal:replace="structure overview_menu/builds/fmt:link" />
           </li>
         </ul>

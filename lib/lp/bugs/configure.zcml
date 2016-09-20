@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -22,6 +22,10 @@
   <utility
       component="lp.bugs.publisher.BugsLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="bugs" />
+  <utility
+      component="lp.bugs.publisher.BugsFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
       name="bugs" />
 
     <lp:help-folder folder="help" name="+help-bugs" />
@@ -73,17 +77,17 @@
         for="lp.bugs.interfaces.bugattachment.IBugAttachment                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
     <subscriber
-        for="lp.bugs.interfaces.bugbranch.IBugBranch                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
-    <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.buglastupdated.update_bug_date_last_updated"/>
-    <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.karma.cve_added"/>
+    <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+        handler="lp.bugs.subscribers.karma.branch_linked"/>
+    <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+        handler="lp.bugs.subscribers.karma.merge_proposal_linked"/>
     <subscriber
         for="lp.bugs.interfaces.bugmessage.IBugMessage                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_comment_added"/>
@@ -517,27 +521,24 @@
                 interface="lp.bugs.interfaces.bugtracker.IRemoteBug"/>
         </class>
 
+        <!-- GitHubRateLimit -->
+
+        <class
+            class="lp.bugs.externalbugtracker.github.GitHubRateLimit">
+            <allow
+                interface="lp.bugs.externalbugtracker.github.IGitHubRateLimit"/>
+        </class>
+        <utility
+            factory="lp.bugs.externalbugtracker.github.GitHubRateLimit"
+            provides="lp.bugs.externalbugtracker.github.IGitHubRateLimit"/>
+
     <!-- IBugBranch -->
 
     <class
         class="lp.bugs.model.bugbranch.BugBranch">
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranch"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
-                destroySelf"/>
     </class>
-    <adapter
-        for="lp.bugs.interfaces.bugbranch.IBugBranch"
-        provides="lp.services.webapp.interfaces.IPrimaryContext"
-        factory="lp.bugs.browser.bugbranch.BugBranchPrimaryContext"/>
-
-    <!-- hierarchy -->
-
-    <subscriber
-        for="lp.bugs.interfaces.bugbranch.IBugBranch                                                lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.karma.bug_branch_created"/>
 
     <!-- BugBranchSet -->
 
@@ -552,14 +553,6 @@
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranchSet"/>
     </securedutility>
-
-    <!-- BugCve -->
-
-    <class
-        class="lp.bugs.model.cve.BugCve">
-        <allow
-            interface="lp.bugs.interfaces.bugcve.IBugCve"/>
-    </class>
 
         <!-- CVE -->
 
@@ -727,7 +720,10 @@
                 interface="lp.bugs.interfaces.bug.IBugView"
                 attributes="
                     linked_branches
-                    getVisibleLinkedBranches"/>
+                    linked_bugbranches
+                    getVisibleLinkedBranches
+                    linked_merge_proposals
+                    getVisibleLinkedMergeProposals"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.bugs.interfaces.bug.IBugEdit"
@@ -791,10 +787,6 @@
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessageSet"/>
     </securedutility>
-    <adapter
-        for="lp.bugs.interfaces.bugnomination.IBugNomination"
-        provides="lp.services.webapp.interfaces.IPrimaryContext"
-        factory="lp.bugs.browser.bugnomination.BugNominationPrimaryContext"/>
         <class
             class="lp.bugs.model.bugnomination.BugNomination">
             <require
@@ -835,11 +827,17 @@
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_linked_to_bug"/>
     <subscriber
-        for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_unlinked_from_bug"/>
+    <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectLinkedEvent"
+        handler="lp.bugs.subscribers.bugactivity.record_merge_proposal_linked_to_bug"/>
+    <subscriber
+        for="lp.bugs.interfaces.bug.IBug lp.bugs.interfaces.buglink.IObjectUnlinkedEvent"
+        handler="lp.bugs.subscribers.bugactivity.record_merge_proposal_unlinked_from_bug"/>
     <subscriber
         for="lp.bugs.interfaces.bugsubscription.IBugSubscription                     zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_added"/>
@@ -982,18 +980,6 @@
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationSet"/>
     </securedutility>
-    <adapter
-        name="bugs"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.bugs.interfaces.bugtarget.IBugTarget"
-        factory="lp.bugs.browser.bugtarget.BugsFacetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        name="bugs"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="lp.bugs.browser.bugtarget.BugsFacetBreadcrumb"
-        permission="zope.Public"/>
 
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">

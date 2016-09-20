@@ -30,6 +30,7 @@
     <include package="lp.code" />
     <include package="lp.coop.answersbugs" />
     <include package="lp.hardwaredb" />
+    <include package="lp.snappy" />
     <include package="lp.soyuz" />
     <include package="lp.translations" />
     <include package="lp.testing" />

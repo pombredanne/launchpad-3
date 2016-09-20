@@ -17,7 +17,7 @@ Distro Arch Series Binary Package
 `DistroArchSeriesBinaryPackage`s have a title property:
 
     >>> print pmount_hoary_i386.title
-    "pmount" binary package in Ubuntu Hoary i386
+    pmount binary package in Ubuntu Hoary i386
 
 First, we create a new version of pmount, and a version of mozilla-
 firefox that coincides with pmount's. We're hitch-hiking on two existing
@@ -215,8 +215,7 @@ First, update the cache tables for Celso's PPA:
     >>> DistributionSourcePackageCache.updateAll(
     ...       ubuntu, archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
     ...       log=FakeLogger())
-    DEBUG ...
-    DEBUG Considering source 'pmount'
+    DEBUG Considering sources cdrkit, iceweasel, pmount
     ...
 
     >>> from lp.soyuz.model.distroseriespackagecache import (
@@ -224,7 +223,7 @@ First, update the cache tables for Celso's PPA:
     >>> DistroSeriesPackageCache.updateAll(
     ...       warty, archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
     ...       log=FakeLogger())
-    DEBUG Considering binary 'mozilla-firefox'
+    DEBUG Considering binaries mozilla-firefox, pmount
     ...
 
     >>> cprov.archive.updateArchiveCache()

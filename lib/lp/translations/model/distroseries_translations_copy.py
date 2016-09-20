@@ -1,7 +1,7 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Functions to copy translations from previous to child distroseries."""
+"""Functions to copy translations from one distroseries to another."""
 
 __metaclass__ = type
 
@@ -47,16 +47,19 @@ def omit_redundant_pofiles(from_table, to_table, batch_size, begin_id,
         """ % params)
 
 
-def copy_active_translations(child, transaction, logger):
-    """Furnish untranslated child `DistroSeries` with previous series's
-    translations.
+def copy_active_translations(source, target, transaction, logger,
+                             sourcepackagenames=None, skip_duplicates=False):
+    """Populate target `DistroSeries` with source series' translations.
+
+    The target must not already have any translations.
 
     This method uses `MultiTableCopy` to copy data.
 
-    Translation data for the new series ("child") is first copied into holding
-    tables called e.g. "temp_POTemplate_holding_ubuntu_feisty" and processed
-    there.  Then, near the end of the procedure, the contents of these holding
-    tables are all poured back into the original tables.
+    Translation data for the new series ("target") is first copied into
+    holding tables called e.g. "temp_POTemplate_holding_ubuntu_feisty"
+    and processed there.  Then, near the end of the procedure, the
+    contents of these holding tables are all poured back into the
+    original tables.
 
     If this procedure fails, it may leave holding tables behind.  This was
     done deliberately to leave some forensics information for failures, and
@@ -68,24 +71,24 @@ def copy_active_translations(child, transaction, logger):
     process of being poured back into its source table.  In that case the
     sensible thing to do is probably to continue pouring it.
     """
-    previous_series = child.previous_series
-    if previous_series is None:
-        # We don't have a previous series from where we could copy
-        # translations.
-        return
-
     translation_tables = ['potemplate', 'translationtemplateitem', 'pofile']
 
-    full_name = "%s_%s" % (child.distribution.name, child.name)
+    full_name = "%s_%s" % (target.distribution.name, target.name)
     copier = MultiTableCopy(full_name, translation_tables, logger=logger)
 
-    # Incremental copy of updates is no longer supported
-    assert not child.has_translation_templates, (
-           "The child series must not yet have any translation templates.")
+    # Incremental copy of updates is no longer supported.  skip_duplicates
+    # is not a real incremental copy, since it doesn't update any
+    # POTemplates/POFiles for sources that already have a template in the
+    # target, but it is useful when digging ourselves out of situations
+    # where a few templates already exist in the target.
+    if not skip_duplicates:
+        assert not target.has_translation_templates, (
+            "The target series must not yet have any translation templates.")
 
     logger.info(
-        "Populating blank distroseries %s with translations from %s." %
-        (child.name, previous_series.name))
+        "Populating blank distroseries %s %s with translations from %s %s." %
+        (target.distribution.name, target.name, source.distribution.name,
+         source.name))
 
     # 1. Extraction phase--for every table involved (called a "source table"
     # in MultiTableCopy parlance), we create a "holding table."  We fill that
@@ -110,7 +113,20 @@ def copy_active_translations(child, transaction, logger):
 
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
-    where = 'distroseries = %s AND iscurrent' % quote(previous_series)
+    where = 'distroseries = %s AND iscurrent' % quote(source)
+    if sourcepackagenames is not None:
+        if not sourcepackagenames:
+            where += " AND false"
+        else:
+            where += (
+                ' AND sourcepackagename IN %s'
+                % quote([spn.id for spn in sourcepackagenames]))
+    if skip_duplicates:
+        where += ('''
+            AND sourcepackagename NOT IN (
+                SELECT sourcepackagename FROM potemplate
+                WHERE distroseries = %s)
+            ''' % quote(target))
     copier.extract('potemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
@@ -126,14 +142,14 @@ def copy_active_translations(child, transaction, logger):
             datecreated =
                 timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone)
-    ''' % (copier.getHoldingTableName('potemplate'), quote(child)))
+    ''' % (copier.getHoldingTableName('potemplate'), quote(target)))
 
     # Copy each TranslationTemplateItem whose template we copied, and let
     # MultiTableCopy replace each potemplate reference with a reference to
     # our copy of the original POTMsgSet's potemplate.
     copier.extract('translationtemplateitem', ['potemplate'], 'sequence > 0')
 
-    # Copy POFiles, making them refer to the child's copied POTemplates.
+    # Copy POFiles, making them refer to the target's copied POTemplates.
     copier.extract(
         'pofile', ['potemplate'],
         batch_pouring_callback=omit_redundant_pofiles)

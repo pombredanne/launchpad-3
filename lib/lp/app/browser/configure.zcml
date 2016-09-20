@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -72,7 +72,7 @@
         />
 
     <browser:page
-        for="Exception"
+        for="zope.browser.interfaces.ISystemErrorView"
         name="+hierarchy"
         class="lp.app.browser.launchpad.ExceptionHierarchy"
         template="../templates/launchpad-hierarchy.pt"
@@ -539,7 +539,7 @@
       />
 
   <adapter
-      for="lp.bugs.browser.bugtask.BugTaskListingItem"
+      for="lp.bugs.browser.buglisting.BugTaskListingItem"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugTaskListingItemImageDisplayAPI"
       name="image"
@@ -560,6 +560,18 @@
       />
   <adapter
       for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.BuildImageDisplayAPI"
+      name="image"
+      />
+  <adapter
+      for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.BuildImageDisplayAPI"
+      name="image"
+      />
+  <adapter
+      for="lp.snappy.interfaces.snapbuild.ISnapBuild"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BuildImageDisplayAPI"
       name="image"
@@ -723,6 +735,20 @@
       />
 
   <adapter
+      for="lp.code.interfaces.gitrepository.IGitRepository"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.GitRepositoryFormatterAPI"
+      name="fmt"
+      />
+
+  <adapter
+      for="lp.code.interfaces.gitref.IGitRef"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.GitRefFormatterAPI"
+      name="fmt"
+      />
+
+  <adapter
       for="lp.bugs.interfaces.bugbranch.IBugBranch"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BugBranchFormatterAPI"
@@ -815,6 +841,24 @@
       name="fmt"
       />
   <adapter
+      for="lp.soyuz.interfaces.livefs.ILiveFS"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.LiveFSFormatterAPI"
+      name="fmt"
+      />
+  <adapter
+      for="lp.snappy.interfaces.snap.ISnap"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.SnapFormatterAPI"
+      name="fmt"
+      />
+  <adapter
+      for="lp.snappy.interfaces.snappyseries.ISnappySeries"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.SnappySeriesFormatterAPI"
+      name="fmt"
+      />
+  <adapter
       for="lp.blueprints.interfaces.specification.ISpecification"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SpecificationFormatterAPI"
@@ -891,14 +935,6 @@
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PermissionRequiredQuery"
       name="required"
-      />
-
-  <!-- TALES watermark: namespace -->
-  <adapter
-      for="*"
-      provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.watermark.WatermarkTalesAdapter"
-      name="watermark"
       />
 
   <!-- TALES fmt: namespace for strings -->
@@ -1082,7 +1118,7 @@
     <!-- virtual host: code -->
     <browser:defaultView
         for="lp.services.webapp.interfaces.ILaunchpadRoot"
-        name="+code"
+        name="+code-index"
         layer="lp.code.publisher.CodeLayer"
         />
     <browser:page

@@ -174,103 +174,7 @@ Bugs for Bug Supervisor
 -----------------------
 
 Malone can generate bug reports for packages on which a user is a bug
-supervisor. The Person context is used only to get a list of packages that
-the user has chosen to subscribe to, but any package could be searched
-from these reports, simply by hacking the URL.
-
-    >>> form = {
-    ...     'search': "Search", 'field.distribution': "debian",
-    ...     'field.sourcepackagename': "mozilla-firefox"}
-
-    >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", form=form)
-
-Let's look at some example searches:
-
-No search criteria (ordered by importance):
-
-    >>> bugtask_batch_navigator = packagebugs_search_view.search()
-    >>> [(bugtask.bug.id, bugtask.importance.name)
-    ...  for bugtask in bugtask_batch_navigator.batch]
-    [(3, 'UNKNOWN'),
-     (1, 'LOW'),
-     (2, 'LOW')]
-
-Simple keyword searching:
-
-    >>> form = {
-    ...     'search': "Search",
-    ...     'field.distribution': "debian",
-    ...     'field.sourcepackagename': "mozilla-firefox",
-    ...     'field.searchtext': "trash"}
-
-    >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", form=form)
-
-    >>> bugtask_batch_navigator = packagebugs_search_view.search()
-    >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
-    [2]
-
-Searching for all open bugs on Debian mozilla-firefox:
-
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     UNRESOLVED_BUGTASK_STATUSES)
-
-    >>> form = {
-    ...     'search': "Search",
-    ...     'field.distribution': "debian",
-    ...     'field.sourcepackagename': "mozilla-firefox",
-    ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
-
-    >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", form=form)
-
-    >>> bugtask_batch_navigator = packagebugs_search_view.search()
-    >>> [(bugtask.bug.id, bugtask.importance.name)
-    ...  for bugtask in bugtask_batch_navigator.batch]
-    [(3, 'UNKNOWN'),
-     (1, 'LOW'),
-     (2, 'LOW')]
-
-There are helper methods to calculate links to the Open, Critical,
-Unassigned, and In Progress bug lists.
-
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-    >>> packagebugs_view = create_view(name12, name='+packagebugs')
-
-    >>> packagebugs_view.getOpenBugsURL(
-    ...     ubuntu_mozilla_firefox, u'/~name12')
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
-
-    >>> packagebugs_view.getCriticalBugsURL(
-    ...     ubuntu_mozilla_firefox, u'/~name12')
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
-
-    >>> packagebugs_view.getUnassignedBugsURL(
-    ...     ubuntu_mozilla_firefox, u'/~name12')
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.unassigned=on&search=Search'
-
-    >>> packagebugs_view.getInProgressBugsURL(
-    ...     ubuntu_mozilla_firefox, u'/~name12')
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
-
-A helper method is used to calculate the package bug search URL for the
-"My other packages" portlet:
-
-    >>> packagebugs_search_view.getBugSubscriberPackageSearchURL(
-    ...     ubuntu_mozilla_firefox)
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
-
-There's also a getBugSubscriberPackageAdvancedSearchURL method. If called
-without a package argument, it defaults to the "current package", found
-by looking in the request.
-
-    >>> packagebugs_search_view.getBugSubscriberPackageAdvancedSearchURL()
-    u'.../~name12/+packagebugs-search?advanced=1&field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search'
+supervisor.
 
 Finally, there is a helper method that returns a list of dicts used to
 render the overview report.
@@ -286,7 +190,7 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts['package_name']
     u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_bugcounts['package_search_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
+    u'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox?field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
     >>> print ubuntu_firefox_bugcounts['open_bugs_count']
     1
@@ -298,13 +202,13 @@ render the overview report.
     0
 
     >>> ubuntu_firefox_bugcounts['open_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
+    u'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox?field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['critical_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
+    u'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox?field.importance=Critical&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['unassigned_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.unassigned=on&search=Search'
+    u'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox?assignee_option=none&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+    u'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox?field.status=In+Progress&search=Search'
 
 The total number of bugs, broken down in the same ways as the package
 bug counts, is also available.
@@ -322,9 +226,13 @@ bug counts, is also available.
 Adding another bug will update the totals returned by
 packagebugs_search_view.total_bug_counts.
 
+    >>> import transaction
+    >>> from zope.component import getUtility
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
-    >>> import transaction
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
     >>> bug_params = CreateBugParams(
     ...     owner=name16,
     ...     title="Some new bug",
@@ -419,53 +327,13 @@ And the pmount counts make up the difference between the two:
 
     >>> transaction.abort()
 
-Only active milestones relevant to the distribution being searched will
-be shown on the advanced search form.
-
-    >>> form = {
-    ...     'advanced': '1',
-    ...     'search': "Search",
-    ...     'field.distribution': "ubuntu",
-    ...     'field.sourcepackagename': "mozilla-firefox",
-    ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
-
-    >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs-search", form=form)
-
-    >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
-    []
-
-If we add an active milestone to an Ubuntu series we'll see it in the
-package bugs search view.
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> hoary_series = ubuntu.getSeries('hoary')
-    >>> new_milestone = hoary_series.newMilestone(name='testing')
-
-    >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs-search", form=form)
-
-    >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
-    [{'checked': False,
-      'title': u'Ubuntu testing',
-      'value': '13'}]
-
-If we deactivate our new milestone it'll disappear from the list again.
-
-    >>> new_milestone.active = False
-    >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs-search", form=form)
-
-    >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
-    []
-
 
 Bugs commented on by a Person
 -----------------------------
 
 It is possible to search for all the bugs commented on by a specific Person
 using that Person's +commentedbugs page. Since No Privileges Person hasn't
-commented on any bugs, viewing his +commentedbugs page will return no bugs:
+commented on any bugs, viewing their +commentedbugs page will return no bugs:
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> commented_bugtasks_view = create_view(no_priv, '+commentedbugs')
@@ -473,10 +341,10 @@ commented on any bugs, viewing his +commentedbugs page will return no bugs:
     >>> [bugtask.bug.id for bugtask in sorted(commented_bugs)]
     []
 
-If No Privileges Person comments on bug one, his +commentedbugs page will list
-that bug as being one of the bugs on which he has commented. The bug will be
-listed three times since there are three BugTasks for that particular bug (see
-bug 1357):
+If No Privileges Person comments on bug one, their +commentedbugs page will
+list that bug as being one of the bugs on which they have commented. The bug
+will be listed three times since there are three BugTasks for that
+particular bug (see bug 1357):
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)

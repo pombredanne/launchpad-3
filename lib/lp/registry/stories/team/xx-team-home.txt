@@ -110,8 +110,8 @@ members, the empty lists are hidden using the "hidden" css class:
     hidden
 
 In the above case there's no user logged in, so it doesn't actually show
-what's the user's involvement with the team. If the user logs in, he'll see
-that, though.
+what's the user's involvement with the team. If the user logs in, they'll
+see that, though.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
@@ -216,7 +216,7 @@ No Privileges Person is not a member of the Ubuntu team.
     Join...
     You are not a member of this team...
 
-He can see the contact address, and the link explains the email
+They can see the contact address, and the link explains the email
 will actually go to the team's administrators.
 
     >>> print extract_text(find_tag_by_id(

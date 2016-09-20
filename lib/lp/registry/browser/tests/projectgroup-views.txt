@@ -18,7 +18,7 @@ with less than 10 projects is considered not have many projects.
     ...         name = '%s-%s' % (letter, projectgroup.name)
     ...         product = factory.makeProduct(
     ...             name=name, owner=projectgroup.owner)
-    ...         product.project = projectgroup
+    ...         product.projectgroup = projectgroup
 
     >>> owner = projectgroup.owner
     >>> ignored = login_person(owner)

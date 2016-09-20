@@ -39,21 +39,21 @@ The `DistributionSourcePackageRelease` page is accessed from the
 Its title describes exactly what it is about.
 
     >>> anon_browser.title
-    '1.0 : \xe2\x80\x9ctesting-dspr\xe2\x80\x9d package : ubuntutest'
+    '1.0 : testing-dspr package : ubuntutest'
 
 Its application bar has enabled entries for Code, Bugs and Answers, and
 they all point to the `DistributionSourcePackage` (parent) url.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: ubuntutest > ?testing-dspr? package > 1.0
+    Hierarchy: ubuntutest > testing-dspr package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
     * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
     * Bugs - http://bugs.launchpad.dev/ubuntutest/+source/testing-dspr
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/ubuntutest/+source/testing-dspr
     * Answers - http://answers.launchpad.dev/ubuntutest/+source/testing-dspr
-    Main heading: ?testing-dspr? 1.0 source package in ubuntutest
+    Main heading: testing-dspr 1.0 source package in ubuntutest
 
 The first section presented ('top-porlet') contains the source package
 release changelog. It shows the reason why this version of the package
@@ -105,8 +105,6 @@ uploaded to.
     Breezy Badger Autotest
     Original maintainer:
     Maintainer
-    Component:
-    main
     Architectures:
     all
     Section:
@@ -164,12 +162,10 @@ of this source in the context distribution are listed.
 
     >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
-    Publishing history : 1.0 : ...testing-dspr... package : ubuntutest
+    Publishing history : 1.0 : testing-dspr package : ubuntutest
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Publishing history of ...testing-dspr... 1.0 source package in ubuntutest
-    ubuntutest
-    ...testing-dspr... package
     1.0
     Publishing history
     ...
@@ -199,8 +195,10 @@ via `dget`.
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Downloads'))
     Downloads
-    File                  Size      MD5 Checksum
-    testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
+    File                  Size      SHA-256 Checksum
+    testing-dspr_1.0.dsc  28 bytes
+    ac512102db9724bee18f26945efeeb82fdab89819e64e120fbfda755ca50c2c6
+    View changes file
 
     >>> print anon_browser.getLink('testing-dspr_1.0.dsc').url
     http://.../ubuntutest/+archive/primary/+files/testing-dspr_1.0.dsc
@@ -221,13 +219,15 @@ are available.
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Downloads'))
     Downloads
-    File                  Size      MD5 Checksum
-    testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
+    File                  Size      SHA-256 Checksum
+    testing-dspr_1.0.dsc  28 bytes
+    ac512102db9724bee18f26945efeeb82fdab89819e64e120fbfda755ca50c2c6
     Available diffs
     diff from 0.9 to 1.0 (7 bytes)
+    View changes file
 
     >>> print anon_browser.getLink('0.9 to 1.0').url
-    http://.../101/testing-dspr_0.9_1.0.diff.gz
+    http://.../.../testing-dspr_0.9_1.0.diff.gz
 
 Finally, the 'Binary packages' section lists all binary packages
 produced by this source. Each binary links to its specific
@@ -288,9 +288,6 @@ The full change log can be viewed as follows:
 
     >>> print extract_text(find_main_content(user_browser.contents))
     Change log for ...testing-dspr... package in ubuntutest
-    ubuntutest
-    ...testing-dspr... package
-    Change log
     ...
     0.9
     Pending in breezy-autotest-release

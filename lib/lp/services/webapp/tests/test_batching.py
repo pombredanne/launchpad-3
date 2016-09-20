@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -94,7 +94,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
     def test_getOrderValuesFor__two_sort_columns(self):
         # Sorting by more than one column is supported.
         resultset = self.makeStormResultSet()
-        resultset.order_by(Person.displayname, Person.name)
+        resultset.order_by(Person.display_name, Person.name)
         range_factory = StormRangeFactory(resultset)
         order_values = range_factory.getOrderValuesFor(resultset[0])
         self.assertEqual(
@@ -394,18 +394,18 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         order_by = [
-            Person.id, Person.datecreated, Person.name, Person.displayname]
-        limits = [1, datetime(2011, 07, 25, 0, 0, 0), 'foo', 'bar']
+            Person.id, Person.datecreated, Person.name, Person.display_name]
+        limits = [1, datetime(2011, 7, 25, 0, 0, 0), 'foo', 'bar']
         result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         self.assertEqual([(order_by, limits)], result)
         order_by = [
             Desc(Person.id), Desc(Person.datecreated), Desc(Person.name),
-            Desc(Person.displayname)]
+            Desc(Person.display_name)]
         result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         self.assertEqual([(order_by, limits)], result)
         order_by = [
             Person.id, Person.datecreated, Desc(Person.name),
-            Desc(Person.displayname)]
+            Desc(Person.display_name)]
         result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         self.assertEqual(
             [(order_by[:2], limits[:2]), (order_by[2:], limits[2:])], result)
@@ -420,7 +420,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         limit_expression = range_factory.lessThanOrGreaterThanExpression(
             expressions, limits)
         self.assertEqual(
-            "(Person.id, Person.name) > (1, 'foo')",
+            "(Person.id, Person.name) > (1, E'foo')",
             compile(limit_expression))
 
     def test_lessThanOrGreaterThanExpression__desc(self):
@@ -433,7 +433,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         limit_expression = range_factory.lessThanOrGreaterThanExpression(
             expressions, limits)
         self.assertEqual(
-            "(Person.id, Person.name) < (1, 'foo')",
+            "(Person.id, Person.name) < (1, E'foo')",
             compile(limit_expression))
 
     def test_equalsExpressionsFromLimits(self):
@@ -441,9 +441,9 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         order_by = [
             Person.id, Person.datecreated, Desc(Person.name),
-            Desc(Person.displayname)]
+            Desc(Person.display_name)]
         limits = [
-            1, datetime(2011, 07, 25, 0, 0, 0, tzinfo=pytz.UTC), 'foo', 'bar']
+            1, datetime(2011, 7, 25, 0, 0, 0, tzinfo=pytz.UTC), 'foo', 'bar']
         limits = range_factory.limitsGroupedByOrderDirection(order_by, limits)
         equals_expressions = range_factory.equalsExpressionsFromLimits(limits)
         equals_expressions = map(compile, equals_expressions)
@@ -484,7 +484,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         [where_clause] = range_factory.whereExpressions(
             [Person.id, Person.name], [1, 'foo'])
         self.assertEquals(
-            "(Person.id, Person.name) > (1, 'foo')", compile(where_clause))
+            "(Person.id, Person.name) > (1, E'foo')", compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_desc_desc(self):
         """If the descending sort columns c1, c2 and the memo values
@@ -499,7 +499,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         [where_clause] = range_factory.whereExpressions(
             [Desc(Person.id), Desc(Person.name)], [1, 'foo'])
         self.assertEquals(
-            "(Person.id, Person.name) < (1, 'foo')", compile(where_clause))
+            "(Person.id, Person.name) < (1, E'foo')", compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_asc_desc(self):
         """If the ascending sort column c1, the descending sort column
@@ -517,7 +517,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         [where_clause_1, where_clause_2] = range_factory.whereExpressions(
             [Person.id, Desc(Person.name)], [1, 'foo'])
         self.assertEquals(
-            "Person.id = ? AND ((Person.name) < ('foo'))",
+            "Person.id = ? AND ((Person.name) < (E'foo'))",
             compile(where_clause_1))
         self.assertEquals('(Person.id) > (1)', compile(where_clause_2))
 

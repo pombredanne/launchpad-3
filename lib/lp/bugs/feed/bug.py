@@ -15,7 +15,7 @@ __all__ = [
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 
-from lp.bugs.browser.bugtask import (
+from lp.bugs.browser.buglisting import (
     BugsBugTaskSearchListingView,
     BugTargetView,
     )

@@ -9,6 +9,7 @@ from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 import soupmatchers
 from testtools.matchers import (
+    MatchesAll,
     MatchesAny,
     Not,
     )
@@ -19,6 +20,7 @@ from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    admin_logged_in,
     login_celebrity,
     login_person,
     TestCaseWithFactory,
@@ -97,6 +99,37 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Active series and milestones'))
         self.assertThat(view.render(), series_header_match)
         self.assertThat(view.render(), Not(add_series_match))
+
+    def test_mirrors_links(self):
+        view = create_initialized_view(self.distro, "+index")
+        cd_mirrors_link = soupmatchers.HTMLContains(soupmatchers.Tag(
+            "CD mirrors link", "a", text="CD mirrors"))
+        archive_mirrors_link = soupmatchers.HTMLContains(soupmatchers.Tag(
+            "Archive mirrors link", "a", text="Archive mirrors"))
+        self.assertThat(
+            view(), Not(MatchesAny(cd_mirrors_link, archive_mirrors_link)))
+        with admin_logged_in():
+            self.distro.supports_mirrors = True
+        self.assertThat(
+            view(), MatchesAll(cd_mirrors_link, archive_mirrors_link))
+
+    def test_ppas_link(self):
+        view = create_initialized_view(self.distro, "+index")
+        ppas_link = soupmatchers.HTMLContains(soupmatchers.Tag(
+            "PPAs link", "a", text="Personal Package Archives"))
+        self.assertThat(view(), Not(ppas_link))
+        with admin_logged_in():
+            self.distro.supports_ppas = True
+        self.assertThat(view(), ppas_link)
+
+    def test_builds_link(self):
+        view = create_initialized_view(self.distro, "+index")
+        builds_link = soupmatchers.HTMLContains(soupmatchers.Tag(
+            "Builds link", "a", text="Builds"))
+        self.assertThat(view(), Not(builds_link))
+        with admin_logged_in():
+            self.distro.official_packages = True
+        self.assertThat(view(), builds_link)
 
 
 class TestDistributionView(TestCaseWithFactory):

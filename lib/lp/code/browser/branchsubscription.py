@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,12 +9,9 @@ __all__ = [
     'BranchSubscriptionAddView',
     'BranchSubscriptionEditOwnView',
     'BranchSubscriptionEditView',
-    'BranchSubscriptionPrimaryContext',
     ]
 
-from lazr.restful.utils import smartquote
 from zope.component import getUtility
-from zope.interface import implements
 
 from lp.app.browser.launchpadform import (
     action,
@@ -34,16 +31,6 @@ from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.interfaces import IPrimaryContext
-
-
-class BranchSubscriptionPrimaryContext:
-    """The primary context is the subscription is that of the branch."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, branch_subscription):
-        self.context = IPrimaryContext(branch_subscription.branch).context
 
 
 class BranchPortletSubscribersContent(LaunchpadView):
@@ -119,8 +106,6 @@ class _BranchSubscriptionView(LaunchpadFormView):
 
 class BranchSubscriptionAddView(_BranchSubscriptionView):
 
-    subscribing_self = True
-
     page_title = label = "Subscribe to branch"
 
     @action("Subscribe")
@@ -153,8 +138,7 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Edit subscription to branch "%s"' % self.context.displayname)
+        return 'Edit subscription to branch %s' % self.context.displayname
 
     @property
     def initial_values(self):
@@ -209,12 +193,11 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     # Since we are subscribing other people, the current user
     # is never considered subscribed.
     user_is_subscribed = False
-    subscribing_self = False
 
     page_title = label = "Subscribe to branch"
 
     def validate(self, data):
-        if data.has_key('person'):
+        if 'person' in data:
             person = data['person']
             subscription = self.context.getSubscription(person)
             if subscription is None and not self.context.userCanBeSubscribed(
@@ -264,8 +247,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Edit subscription to branch "%s"' % self.branch.displayname)
+        return 'Edit subscription to branch %s' % self.branch.displayname
 
     @property
     def label(self):
@@ -294,7 +276,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         url = canonical_url(self.branch)
         # If the subscriber can no longer see the branch, redirect them away.
         service = getUtility(IService, 'sharing')
-        ignored, branches, ignored = service.getVisibleArtifacts(
+        _, branches, _, _ = service.getVisibleArtifacts(
             self.person, branches=[self.branch], ignore_permissions=True)
         if not branches:
             url = canonical_url(self.branch.target)

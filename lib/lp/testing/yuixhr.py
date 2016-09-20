@@ -1,4 +1,4 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture code for YUITest + XHR integration testing."""
@@ -23,7 +23,7 @@ from lazr.restful.utils import get_current_browser_request
 import simplejson
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.http import IResult
 from zope.security.checker import (
@@ -33,7 +33,7 @@ from zope.security.checker import (
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import IClientIdManager
 
-from lp.app.versioninfo import revno
+from lp.app import versioninfo
 from lp.services.config import config
 from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
@@ -117,8 +117,8 @@ def login_as_person(person):
     logInPrincipal(request, principal, email)
 
 
+@implementer(IResult)
 class CloseDbResult:
-    implements(IResult)
 
     # This is machinery, not content.  We specify our security checker here
     # directly for clarity.
@@ -207,7 +207,7 @@ class YUITestFixtureControllerView(LaunchpadView):
               href="/+yuitest/build/js/yui/console/assets/skins/sam/console.css"/>
             <link rel="stylesheet"
               href="/+yuitest/build/js/yui/test/assets/skins/sam/test.css"/>
-            <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
+            <link rel="stylesheet" href="/+icing/rev%(revision)s/combo.css"/>
             <script type="text/javascript" src="%(test_module)s"></script>
           </head>
         <body class="yui3-skin-sam">
@@ -234,7 +234,7 @@ class YUITestFixtureControllerView(LaunchpadView):
           <title>YUI XHR Tests</title>
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
-          <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
+          <link rel="stylesheet" href="/+icing/rev%(revision)s/combo.css"/>
           <style>
           ul {
             text-align: left;
@@ -358,7 +358,7 @@ class YUITestFixtureControllerView(LaunchpadView):
                 warning = ' <span class="warning">%s</span>' % warning
             test_lines.append('<li>%s%s</li>' % (link, warning))
         return self.index_template % {
-            'revno': revno,
+            'revision': versioninfo.revision,
             'tests': '\n'.join(test_lines)}
 
     def renderCOMBOFILE(self):
@@ -390,7 +390,7 @@ class YUITestFixtureControllerView(LaunchpadView):
         return self.page_template % dict(
             test_module='/+yuitest/%s.js' % self.traversed_path,
             test_namespace=self.traversed_path.replace('/', '.'),
-            revno=revno,
+            revision=versioninfo.revision,
             javascript_block=self.renderYUI())
 
     def renderSETUP(self):
@@ -445,7 +445,7 @@ class YUITestFixtureControllerView(LaunchpadView):
 
         """
         return self.yui_block_combo % dict(
-            revno=revno,
+            revision=versioninfo.revision,
             combo_url=self.combo_url)
 
     def render(self):

@@ -82,7 +82,7 @@ assumptions done in the lookups.
     >>> for archive in ubuntutest.all_distro_archives:
     ...     check_upload_lookups(archive)
     * Primary Archive for Ubuntu Test
-    1 of 2 sources and 0 of 0 builds missing uploads
+    1 of 1 sources and 0 of 0 builds missing uploads
     * Partner Archive for Ubuntu Test
     0 of 0 sources and 0 of 0 builds missing uploads
 

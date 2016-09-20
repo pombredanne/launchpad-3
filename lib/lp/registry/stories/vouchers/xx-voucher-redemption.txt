@@ -27,7 +27,7 @@ page.
     Purchase and Redeem Commercial Subscription Vouchers
     ...Select the project you wish to subscribe...
 
-A user can access her voucher page but not someone else's.  Here
+A user can access their voucher page but not someone else's.  Here
 no-priv tries to access '+vouchers' on another user and is not
 allowed.
 
@@ -37,7 +37,7 @@ allowed.
     ...
     Unauthorized: ...
 
-Unless, of course, that user is an administrator.  Then he can access
+Unless, of course, that user is an administrator.  Then they can access
 the '+vouchers' page on any user.
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
@@ -88,8 +88,8 @@ results in an error.
     There is 1 error.
     Invalid value
 
-If, however, a person is a member of the Launchpad Commercial team he
-can apply a voucher to any project, not just those he administers.
+If, however, a person is a member of the Launchpad Commercial team they
+can apply a voucher to any project, not just those they administer.
 This ability is provided so that commercial admins in Launchpad can
 help projects with voucher issues, which is especially useful when
 setting up Canonical-internal projects.
@@ -98,7 +98,7 @@ setting up Canonical-internal projects.
     ...     auth='Basic commercial-member@canonical.com:test')
 
 Show that the commercial member does not own or drive any projects by
-viewing his +related-projects page.
+viewing their +related-projects page.
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
@@ -119,8 +119,8 @@ viewing his +related-projects page.
     ...
     Commercial Member doesn't own or drive any projects.
 
-He can still redeem a voucher against a commercial project even though
-he is not responsible for it.
+They can still redeem a voucher against a commercial project even though
+they are not responsible for it.
 
     >>> browser.open('http://launchpad.dev/~commercial-member/+vouchers')
     >>> browser.getControl(name='field.project').value='mega-money-maker'

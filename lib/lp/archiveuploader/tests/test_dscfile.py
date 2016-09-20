@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dscfile.py"""
@@ -41,6 +41,7 @@ from lp.testing.layers import (
 
 
 ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL
+ORIG_TARBALL_SIGNATURE = SourcePackageFileType.ORIG_TARBALL_SIGNATURE
 DEBIAN_TARBALL = SourcePackageFileType.DEBIAN_TARBALL
 NATIVE_TARBALL = SourcePackageFileType.NATIVE_TARBALL
 DIFF = SourcePackageFileType.DIFF
@@ -187,6 +188,16 @@ class TestSignableTagFile(TestCaseWithFactory):
             UploadError,
             self.makeSignableTagFile().parseAddress, "invalid@bad-address")
 
+    def test_parseAddress_decodes_utf8(self):
+        name = u'B\u0105r'
+        email = u'bar@example.com'
+        results = self.makeSignableTagFile().parseAddress(
+            '%s <%s>' % (name.encode('utf-8'), email.encode('utf-8')))
+        self.assertEqual(email, results['email'])
+        self.assertEqual(name, results['name'])
+        self.assertEqual(name, results['person'].displayname)
+        self.assertEqual(email, results['person'].guessedemails[0].email)
+
 
 class TestDscFileLibrarian(TestCaseWithFactory):
     """Tests for DscFile that may use the Librarian."""
@@ -209,31 +220,34 @@ class TestDscFileLibrarian(TestCaseWithFactory):
     def test_ReadOnlyCWD(self):
         """Processing a file should work when cwd is read-only."""
         tempdir = self.useTempDir()
-        os.chmod(tempdir, 0555)
+        os.chmod(tempdir, 0o555)
         try:
             dsc_file = self.getDscFile('bar_1.0-1')
             list(dsc_file.verify())
         finally:
-            os.chmod(tempdir, 0755)
+            os.chmod(tempdir, 0o755)
 
 
 class BaseTestSourceFileVerification(TestCase):
 
-    def assertErrorsForFiles(self, expected, files, components={},
+    def assertErrorsForFiles(self, expected, files,
+                             components={}, component_signatures={},
                              bzip2_count=0, xz_count=0):
         """Check problems with the given set of files for the given format.
 
         :param expected: a list of expected errors, as strings.
         :param format: the `SourcePackageFormat` to check against.
         :param files: a dict mapping `SourcePackageFileType`s to counts.
-        :param components: a dict mapping orig component tarball components
-            to counts.
+        :param components: a dict mapping orig component tarballs to counts.
+        :param component_signatures: a dict mapping orig component tarball
+            signatures to counts.
         :param bzip2_count: number of files using bzip2 compression.
         :param xz_count: number of files using xz compression.
         """
         full_files = {
             NATIVE_TARBALL: 0,
             ORIG_TARBALL: 0,
+            ORIG_TARBALL_SIGNATURE: 0,
             DIFF: 0,
             DEBIAN_TARBALL: 0,
             }
@@ -241,20 +255,23 @@ class BaseTestSourceFileVerification(TestCase):
         self.assertEquals(
             expected,
             [str(e) for e in format_to_file_checker_map[self.format](
-                'foo_1.dsc', full_files, components, bzip2_count, xz_count)])
+                'foo_1.dsc', full_files, components, component_signatures,
+                bzip2_count, xz_count)])
 
-    def assertFilesOK(self, files, components={}, bzip2_count=0, xz_count=0):
+    def assertFilesOK(self, files, components={}, component_signatures={},
+                      bzip2_count=0, xz_count=0):
         """Check that the given set of files is OK for the given format.
 
         :param format: the `SourcePackageFormat` to check against.
         :param files: a dict mapping `SourcePackageFileType`s to counts.
-        :param components: a dict mapping orig component tarball components
-            to counts.
+        :param components: a dict mapping orig component tarball to counts.
+        :param component_signatures: a dict mapping orig component tarball
+            signatures to counts.
         :param bzip2_count: number of files using bzip2 compression.
         :param xz_count: number of files using xz compression.
         """
         self.assertErrorsForFiles(
-            [], files, components, bzip2_count, xz_count)
+            [], files, components, component_signatures, bzip2_count, xz_count)
 
 
 class Test10SourceFormatVerification(BaseTestSourceFileVerification):
@@ -270,6 +287,11 @@ class Test10SourceFormatVerification(BaseTestSourceFileVerification):
         # A 1.0 source can contain an original tarball and a Debian diff
         self.assertFilesOK({ORIG_TARBALL: 1, DIFF: 1})
 
+    def testFormat10DebianWithOrigSignature(self):
+        # A 1.0 source can contain an original tarball signature.
+        self.assertFilesOK(
+            {ORIG_TARBALL: 1, ORIG_TARBALL_SIGNATURE: 1, DIFF: 1})
+
     def testFormat10Native(self):
         # A 1.0 source can contain a native tarball.
         self.assertFilesOK({NATIVE_TARBALL: 1})
@@ -277,25 +299,33 @@ class Test10SourceFormatVerification(BaseTestSourceFileVerification):
     def testFormat10CannotHaveWrongFiles(self):
         # A 1.0 source cannot have a combination of native and
         # non-native files, and cannot have just one of the non-native
-        # files.
+        # files or an original tarball signature without an original
+        # tarball.
         for combination in (
-            {DIFF: 1}, {ORIG_TARBALL: 1}, {ORIG_TARBALL: 1, DIFF: 1,
-            NATIVE_TARBALL: 1}):
+            {DIFF: 1}, {ORIG_TARBALL: 1}, {ORIG_TARBALL_SIGNATURE: 1},
+            {ORIG_TARBALL_SIGNATURE: 1, DIFF: 1}):
+            {ORIG_TARBALL: 1, DIFF: 1, NATIVE_TARBALL: 1},
             self.assertErrorsForFiles([self.wrong_files_error], combination)
 
         # A 1.0 source with component tarballs is invalid.
         self.assertErrorsForFiles(
-            [self.wrong_files_error], {ORIG_TARBALL: 1, DIFF: 1}, {'foo': 1})
+            [self.wrong_files_error], {ORIG_TARBALL: 1, DIFF: 1},
+            components={'foo': 1})
+
+        # A 1.0 source with component tarball signatures is invalid.
+        self.assertErrorsForFiles(
+            [self.wrong_files_error], {ORIG_TARBALL: 1, DIFF: 1},
+            component_signatures={'foo': 1})
 
     def testFormat10CannotUseBzip2(self):
         # 1.0 sources cannot use bzip2 compression.
         self.assertErrorsForFiles(
-            [self.bzip2_error], {NATIVE_TARBALL: 1}, {}, 1, 0)
+            [self.bzip2_error], {NATIVE_TARBALL: 1}, {}, bzip2_count=1)
 
     def testFormat10CannotUseXz(self):
         # 1.0 sources cannot use xz compression.
         self.assertErrorsForFiles(
-            [self.xz_error], {NATIVE_TARBALL: 1}, {}, 0, 1)
+            [self.xz_error], {NATIVE_TARBALL: 1}, {}, xz_count=1)
 
 
 class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
@@ -308,14 +338,21 @@ class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
 
     def testFormat30Quilt(self):
         # A 3.0 (quilt) source must contain an orig tarball and a debian
-        # tarball. It may also contain at most one component tarball for
-        # each component, and can use gzip, bzip2, or xz compression.
+        # tarball. It may also contain at most one component tarball (with
+        # optional signature) for each component, and can use gzip, bzip2,
+        # or xz compression.
         for components in ({}, {'foo': 1}, {'foo': 1, 'bar': 1}):
-            for bzip2_count in (0, 1):
-                for xz_count in (0, 1):
-                    self.assertFilesOK(
-                        {ORIG_TARBALL: 1, DEBIAN_TARBALL: 1}, components,
-                        bzip2_count, xz_count)
+            for component_signatures in ({}, components):
+                for orig_signature in (0, 1):
+                    for bzip2_count in (0, 1):
+                        for xz_count in (0, 1):
+                            self.assertFilesOK(
+                                {ORIG_TARBALL: 1,
+                                 ORIG_TARBALL_SIGNATURE: orig_signature,
+                                 DEBIAN_TARBALL: 1},
+                                components=components,
+                                component_signatures=component_signatures,
+                                bzip2_count=bzip2_count, xz_count=xz_count)
 
     def testFormat30QuiltCannotHaveConflictingComponentTarballs(self):
         # Multiple conflicting tarballs for a single component are
@@ -342,19 +379,24 @@ class Test30NativeSourceFormatVerification(BaseTestSourceFileVerification):
         # 3.0 (native) sources must contain just a native tarball. They
         # may use gzip, bzip2, or xz compression.
         for bzip2_count in (0, 1):
-            self.assertFilesOK({NATIVE_TARBALL: 1}, {},
-            bzip2_count, 0)
-        self.assertFilesOK({NATIVE_TARBALL: 1}, {}, 0, 1)
+            self.assertFilesOK({NATIVE_TARBALL: 1}, bzip2_count=bzip2_count)
+        self.assertFilesOK({NATIVE_TARBALL: 1}, xz_count=1)
 
     def testFormat30NativeCannotHaveWrongFiles(self):
         # 3.0 (quilt) sources may not have a diff, Debian tarball, orig
-        # tarball, or any component tarballs.
-        for filetype in (DIFF, DEBIAN_TARBALL, ORIG_TARBALL):
+        # tarball, orig tarball signature, or any component tarballs.
+        for filetype in (
+                DIFF, DEBIAN_TARBALL, ORIG_TARBALL, ORIG_TARBALL_SIGNATURE):
             self.assertErrorsForFiles(
                 [self.wrong_files_error], {NATIVE_TARBALL: 1, filetype: 1})
         # A 3.0 (native) source with component tarballs is invalid.
         self.assertErrorsForFiles(
-            [self.wrong_files_error], {NATIVE_TARBALL: 1}, {'foo': 1})
+            [self.wrong_files_error], {NATIVE_TARBALL: 1},
+            components={'foo': 1})
+        # A 3.0 (native) source with component tarball signatures is invalid.
+        self.assertErrorsForFiles(
+            [self.wrong_files_error], {NATIVE_TARBALL: 1},
+            component_signatures={'foo': 1})
 
 
 class UnpackedDirTests(TestCase):
@@ -390,7 +432,7 @@ class UnpackedDirTests(TestCase):
         os.mkdir(unpacked_dir)
         bar_path = os.path.join(unpacked_dir, "bar_1.0")
         os.mkdir(bar_path)
-        os.chmod(bar_path, 0600)
-        os.chmod(unpacked_dir, 0600)
+        os.chmod(bar_path, 0o600)
+        os.chmod(unpacked_dir, 0o600)
         cleanup_unpacked_dir(unpacked_dir)
         self.assertFalse(os.path.exists(unpacked_dir))

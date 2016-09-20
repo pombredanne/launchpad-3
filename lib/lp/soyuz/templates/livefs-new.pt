@@ -1,0 +1,45 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+
+<body>
+  <div metal:fill-slot="main">
+    <div>
+      <p>
+        A live filesystem image is a copy of an operating system that can
+        start from a removable medium such as a DVD or a USB drive, without
+        needing to be installed to a hard disk. It is typically used as part
+        of installation media released by distributions.
+      </p>
+      <p>
+        Launchpad can build a limited variety of live filesystem images
+        using <tt>live-build</tt> and <tt>livecd-rootfs</tt>.
+      </p>
+    </div>
+
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <metal:formbody fill-slot="widgets">
+        <table class="form">
+          <tal:widget define="widget nocall:view/widgets/name">
+            <metal:block use-macro="context/@@launchpad_form/widget_row"/>
+          </tal:widget>
+          <tal:widget define="widget nocall:view/widgets/owner">
+            <metal:block use-macro="context/@@launchpad_form/widget_row"/>
+          </tal:widget>
+          <tal:widget define="widget nocall:view/widgets/distro_series">
+            <metal:block use-macro="context/@@launchpad_form/widget_row"/>
+          </tal:widget>
+          <tal:widget define="widget nocall:view/widgets/metadata">
+            <metal:block use-macro="context/@@launchpad_form/widget_row"/>
+          </tal:widget>
+        </table>
+      </metal:formbody>
+    </div>
+  </div>
+</body>
+</html>

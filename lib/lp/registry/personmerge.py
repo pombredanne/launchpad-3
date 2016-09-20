@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person/team merger implementation."""
@@ -14,6 +14,7 @@ from lp.code.interfaces.branchcollection import (
     IAllBranches,
     IBranchCollection,
     )
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -32,8 +33,10 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.helpers import get_email_template
+from lp.snappy.interfaces.snap import ISnapSet
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 
 
 def _merge_person_decoration(to_person, from_person, skip,
@@ -145,10 +148,11 @@ def _mergeBranches(from_person, to_person):
         removeSecurityProxy(branch).setOwner(to_person, to_person)
 
 
-def _mergeBranchMergeQueues(cur, from_id, to_id):
-    cur.execute('''
-        UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
-        %(from_id)s''', dict(to_id=to_id, from_id=from_id))
+def _mergeGitRepositories(from_person, to_person):
+    # This shouldn't use removeSecurityProxy.
+    repositories = getUtility(IGitCollection).ownedBy(from_person)
+    for repository in repositories.getRepositories():
+        removeSecurityProxy(repository).setOwner(to_person, to_person)
 
 
 def _mergeSourcePackageRecipes(from_person, to_person):
@@ -196,6 +200,24 @@ def _mergeBranchSubscription(cur, from_id, to_id):
     # and delete those left over.
     cur.execute('''
         DELETE FROM BranchSubscription WHERE person=%(from_id)d
+        ''' % vars())
+
+
+def _mergeGitSubscription(cur, from_id, to_id):
+    # Update only the GitSubscription that will not conflict.
+    cur.execute('''
+        UPDATE GitSubscription
+        SET person=%(to_id)d
+        WHERE person=%(from_id)d AND repository NOT IN
+            (
+            SELECT repository
+            FROM GitSubscription
+            WHERE person = %(to_id)d
+            )
+        ''' % vars())
+    # and delete those left over.
+    cur.execute('''
+        DELETE FROM GitSubscription WHERE person=%(from_id)d
         ''' % vars())
 
 
@@ -577,6 +599,42 @@ def _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id):
     ''' % params)
 
 
+def _mergeLiveFS(cur, from_person, to_person):
+    # This shouldn't use removeSecurityProxy.
+    livefses = getUtility(ILiveFSSet).getByPerson(from_person)
+    existing_names = [
+        l.name for l in getUtility(ILiveFSSet).getByPerson(to_person)]
+    for livefs in livefses:
+        new_name = livefs.name
+        count = 1
+        while new_name in existing_names:
+            new_name = '%s-%s' % (livefs.name, count)
+            count += 1
+        naked_livefs = removeSecurityProxy(livefs)
+        naked_livefs.owner = to_person
+        naked_livefs.name = new_name
+    if not livefses.is_empty():
+        IStore(livefses[0]).flush()
+
+
+def _mergeSnap(cur, from_person, to_person):
+    # This shouldn't use removeSecurityProxy.
+    snaps = getUtility(ISnapSet).findByOwner(from_person)
+    existing_names = [
+        s.name for s in getUtility(ISnapSet).findByOwner(to_person)]
+    for snap in snaps:
+        new_name = snap.name
+        count = 1
+        while new_name in existing_names:
+            new_name = '%s-%s' % (snap.name, count)
+            count += 1
+        naked_snap = removeSecurityProxy(snap)
+        naked_snap.owner = to_person
+        naked_snap.name = new_name
+    if not snaps.is_empty():
+        IStore(snaps[0]).flush()
+
+
 def _purgeUnmergableTeamArtifacts(from_team, to_team, reviewer):
     """Purge team artifacts that cannot be merged, but can be removed."""
     # A team cannot have more than one mailing list.
@@ -672,6 +730,8 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('bugsummaryjournal', 'viewed_by'),
         ('latestpersonsourcepackagereleasecache', 'creator'),
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
+        # Obsolete table.
+        ('branchmergequeue', 'owner'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -719,8 +779,10 @@ def merge_people(from_person, to_person, reviewer, delete=False):
     _mergeBranches(from_person, to_person)
     skip.append(('branch', 'owner'))
 
-    _mergeBranchMergeQueues(cur, from_id, to_id)
-    skip.append(('branchmergequeue', 'owner'))
+    # Update the GitRepositories that will not conflict, and fudge the names
+    # of ones that *do* conflict.
+    _mergeGitRepositories(from_person, to_person)
+    skip.append(('gitrepository', 'owner'))
 
     _mergeSourcePackageRecipes(from_person, to_person)
     skip.append(('sourcepackagerecipe', 'owner'))
@@ -730,6 +792,9 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeBranchSubscription(cur, from_id, to_id)
     skip.append(('branchsubscription', 'person'))
+
+    _mergeGitSubscription(cur, from_id, to_id)
+    skip.append(('gitsubscription', 'person'))
 
     _mergeBugAffectsPerson(cur, from_id, to_id)
     skip.append(('bugaffectsperson', 'person'))
@@ -795,6 +860,12 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id)
     skip.append(('codereviewinlinecommentdraft', 'person'))
+
+    _mergeLiveFS(cur, from_person, to_person)
+    skip.append(('livefs', 'owner'))
+
+    _mergeSnap(cur, from_person, to_person)
+    skip.append(('snap', 'owner'))
 
     # Sanity check. If we have a reference that participates in a
     # UNIQUE index, it must have already been handled by this point.

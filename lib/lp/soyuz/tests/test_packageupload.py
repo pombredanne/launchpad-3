@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -16,12 +16,13 @@ from lazr.restfulclient.errors import (
     )
 from testtools.matchers import Equals
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    getUtility,
+    queryUtility,
+    )
 from zope.schema import getFields
 from zope.security.interfaces import Unauthorized as ZopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
-from zope.testbrowser.browser import Browser
-from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -29,18 +30,19 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.mail import stub
-from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.archivejob import IPackageUploadNotificationJobSource
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
+    ICustomUploadHandler,
     IPackageUpload,
     IPackageUploadSet,
     QueueAdminUnauthorizedError,
@@ -54,12 +56,16 @@ from lp.testing import (
     api_url,
     launchpadlib_for,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessLayer,
     )
 from lp.testing.matchers import (
     HasQueryCount,
@@ -185,10 +191,18 @@ class PackageUploadTestCase(TestCaseWithFactory):
         transaction.commit()
         return upload, uploader
 
-    def assertEmail(self, expected_to_addrs):
-        """Pop an email from the stub queue and check its recipients."""
-        _, to_addrs, _ = stub.test_emails.pop()
-        self.assertEqual(expected_to_addrs, to_addrs)
+    def runPackageUploadNotificationJob(self):
+        """Expect one package upload notification job, and run it."""
+        job_source = getUtility(IPackageUploadNotificationJobSource)
+        [job] = list(job_source.iterReady())
+        with dbuser(config.IPackageUploadNotificationJobSource.dbuser):
+            JobRunner([job]).runAll()
+
+    def assertEmails(self, expected_to_addrs):
+        """Pop emails from the stub queue and check their recipients."""
+        notifications = self.assertEmailQueueLength(len(expected_to_addrs))
+        for expected_to_addr, msg in zip(expected_to_addrs, notifications):
+            self.assertEqual(expected_to_addr, msg["X-Envelope-To"])
 
     def test_acceptFromQueue_source_sends_email(self):
         # Accepting a source package sends emails to the announcement list
@@ -196,10 +210,12 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeSourcePackageUpload()
         upload.acceptFromQueue()
-        self.assertEqual(2, len(stub.test_emails))
-        # Emails sent are the announcement and the uploader's notification:
-        self.assertEmail(["autotest_changes@ubuntu.com"])
-        self.assertEmail([format_address_for_person(uploader)])
+        self.runPackageUploadNotificationJob()
+        # Emails sent are the uploader's notification and the announcement:
+        self.assertEmails([
+            uploader.preferredemail.email,
+            "autotest_changes@ubuntu.com",
+            ])
 
     def test_acceptFromQueue_source_backports_sends_no_announcement(self):
         # Accepting a source package into BACKPORTS does not send an
@@ -210,10 +226,10 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload(
             pocket=PackagePublishingPocket.BACKPORTS)
         upload.acceptFromQueue()
-        self.assertEqual(1, len(stub.test_emails))
+        self.runPackageUploadNotificationJob()
         # Only one email is sent, to the person in the changed-by field.  No
         # announcement email is sent.
-        self.assertEmail([format_address_for_person(uploader)])
+        self.assertEmails([uploader.preferredemail.email])
 
     def test_acceptFromQueue_source_translations_sends_no_email(self):
         # Accepting source packages in the "translations" section (i.e.
@@ -224,8 +240,9 @@ class PackageUploadTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.PROPOSED,
             section_name="translations")
         upload.acceptFromQueue()
+        self.runPackageUploadNotificationJob()
         self.assertEqual("DONE", upload.status.name)
-        self.assertEqual(0, len(stub.test_emails))
+        self.assertEmailQueueLength(0)
 
     def test_acceptFromQueue_source_creates_builds(self):
         # Accepting a source package creates build records.
@@ -270,7 +287,8 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, _ = self.makeBuildPackageUpload()
         upload.acceptFromQueue()
-        self.assertEqual(0, len(stub.test_emails))
+        self.runPackageUploadNotificationJob()
+        self.assertEmailQueueLength(0)
 
     def test_acceptFromQueue_handles_duplicates(self):
         # Duplicate queue entries are handled sensibly.
@@ -317,16 +335,16 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeSourcePackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
-        self.assertEqual(1, len(stub.test_emails))
-        self.assertEmail([format_address_for_person(uploader)])
+        self.runPackageUploadNotificationJob()
+        self.assertEmails([uploader.preferredemail.email])
 
     def test_rejectFromQueue_binary_sends_email(self):
         # Rejecting a binary package sends an email to the uploader.
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeBuildPackageUpload()
         upload.rejectFromQueue(self.factory.makePerson())
-        self.assertEqual(1, len(stub.test_emails))
-        self.assertEmail([format_address_for_person(uploader)])
+        self.runPackageUploadNotificationJob()
+        self.assertEmails([uploader.preferredemail.email])
 
     def test_rejectFromQueue_source_translations_sends_no_email(self):
         # Rejecting a language pack sends no email.
@@ -336,7 +354,8 @@ class PackageUploadTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.PROPOSED,
             section_name="translations")
         upload.rejectFromQueue(self.factory.makePerson())
-        self.assertEqual(0, len(stub.test_emails))
+        self.runPackageUploadNotificationJob()
+        self.assertEmailQueueLength(0)
 
     def test_rejectFromQueue_source_with_reason(self):
         # Rejecting a source package with a reason includes it in the email to
@@ -345,13 +364,14 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, uploader = self.makeSourcePackageUpload()
         person = self.factory.makePerson()
         upload.rejectFromQueue(user=person, comment='Because.')
-        self.assertEqual(1, len(stub.test_emails))
+        self.runPackageUploadNotificationJob()
+        [msg] = self.assertEmailQueueLength(1)
         self.assertIn(
             'Rejected:\nRejected by %s: Because.' % person.displayname,
-            stub.test_emails[0][-1])
+            str(msg))
 
 
-class TestPackageUploadPrivacy(TestCaseWithFactory):
+class TestPackageUploadSecurity(TestCaseWithFactory):
     """Test PackageUpload security."""
 
     layer = LaunchpadFunctionalLayer
@@ -368,6 +388,25 @@ class TestPackageUploadPrivacy(TestCaseWithFactory):
         with person_logged_in(self.factory.makePerson()):
             self.assertRaises(
                 ZopeUnauthorized, getattr, upload, "contains_source")
+
+    def test_non_queue_admin_cannot_edit_upload(self):
+        upload = self.factory.makePackageUpload()
+        with admin_logged_in():
+            upload.addSource(
+                self.factory.makeSourcePackageRelease(component="main"))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(ZopeUnauthorized, getattr, upload, "setDone")
+
+    def test_queue_admin_can_edit_upload(self):
+        archive = self.factory.makeArchive()
+        queue_admin = self.factory.makePerson()
+        with admin_logged_in():
+            archive.newQueueAdmin(queue_admin, "main")
+            upload = self.factory.makePackageUpload(archive=archive)
+            upload.addSource(
+                self.factory.makeSourcePackageRelease(component="main"))
+        with person_logged_in(queue_admin):
+            upload.setDone()
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
@@ -523,7 +562,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         upload, pcj = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
         component = self.factory.makeComponent()
         section = self.factory.makeSection()
-        pcj.addSourceOverride(SourceOverride(spn, component, section))
+        pcj.addSourceOverride(SourceOverride(component, section))
         self.assertEqual(component.name, upload.component_name)
 
     def test_displayname_is_package_name(self):
@@ -538,6 +577,18 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         # SourcePackageRelease.
         pu, pcj = self.makeUploadWithPackageCopyJob()
         self.assertIs(None, pu.sourcepackagerelease)
+
+
+class TestPackageUploadCustom(TestCase):
+    """Unit tests for `PackageUploadCustom`."""
+
+    layer = ZopelessLayer
+
+    def test_handlers(self):
+        # Each element of `PackageUploadCustomFormat` has a handler.
+        for customformat in PackageUploadCustomFormat.items:
+            self.assertIsNotNone(
+                queryUtility(ICustomUploadHandler, customformat.name))
 
 
 class TestPackageUploadSet(TestCaseWithFactory):
@@ -861,14 +912,6 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
-class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
-    """A `mechanize.Browser` that does not handle redirects."""
-
-    default_features = [
-        feature for feature in PublisherMechanizeBrowser.default_features
-        if feature != "_redirect"]
-
-
 class TestPackageUploadWebservice(TestCaseWithFactory):
     """Test the exposure of queue methods to the web service."""
 
@@ -946,17 +989,6 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 distroseries=self.distroseries, **kwargs)
         transaction.commit()
         return upload, self.load(upload, person)
-
-    def makeNonRedirectingBrowser(self, person):
-        # The test browser can only work with the appserver, not the
-        # librarian, so follow one layer of redirection through the
-        # appserver and then ask the librarian for the real file.
-        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
-        browser.handleErrors = False
-        with person_logged_in(person):
-            browser.addHeader(
-                "Authorization", "Basic %s:test" % person.preferredemail.email)
-        return browser
 
     def assertCanOpenRedirectedUrl(self, browser, url):
         redirection = self.assertRaises(HTTPError, browser.open, url)
@@ -1042,7 +1074,7 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in upload.sourcepackagerelease.files]
         self.assertContentEqual(source_file_urls, ws_source_file_urls)
 
-        browser = self.makeNonRedirectingBrowser(person)
+        browser = self.getNonRedirectingBrowser(user=person)
         for ws_source_file_url in ws_source_file_urls:
             self.assertCanOpenRedirectedUrl(browser, ws_source_file_url)
         self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
@@ -1131,7 +1163,7 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in bpr.files]
         self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
 
-        browser = self.makeNonRedirectingBrowser(person)
+        browser = self.getNonRedirectingBrowser(user=person)
         for ws_binary_file_url in ws_binary_file_urls:
             self.assertCanOpenRedirectedUrl(browser, ws_binary_file_url)
         self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
@@ -1294,7 +1326,7 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in upload.customfiles]
         self.assertContentEqual(custom_file_urls, ws_custom_file_urls)
 
-        browser = self.makeNonRedirectingBrowser(person)
+        browser = self.getNonRedirectingBrowser(user=person)
         for ws_custom_file_url in ws_custom_file_urls:
             self.assertCanOpenRedirectedUrl(browser, ws_custom_file_url)
         self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
@@ -1348,13 +1380,10 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
 
     def test_getPackageUploads_query_count(self):
         person = self.makeQueueAdmin([self.universe])
-        uploads = []
-        for i in range(5):
-            upload, _ = self.makeBinaryPackageUpload(
-                person, component=self.universe)
-            uploads.append(upload)
         ws_distroseries = self.load(self.distroseries, person)
-        IStore(uploads[0].__class__).invalidate()
-        with StormStatementRecorder() as recorder:
-            ws_distroseries.getPackageUploads()
-        self.assertThat(recorder, HasQueryCount(Equals(32)))
+        recorder1, recorder2 = record_two_runs(
+            ws_distroseries.getPackageUploads,
+            lambda: self.makeBinaryPackageUpload(
+                person, component=self.universe),
+            5)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

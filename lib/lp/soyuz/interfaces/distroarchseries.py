@@ -39,11 +39,11 @@ from zope.schema import (
 
 from lp import _
 from lp.app.validators.name import name_validator
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -99,7 +99,7 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
             title=_("PPA support available"),
             description=_("Indicate whether or not this port has support "
                           "for building PPA packages."),
-            required=False))
+            readonly=True, required=False))
     enabled = exported(
         Bool(
             title=_("Enabled"),
@@ -165,29 +165,6 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
     def searchBinaryPackages(text):
         """Search BinaryPackageRelease published in this series for those
         matching the given text."""
-
-    def getReleasedPackages(binary_name, pocket=None, include_pending=False,
-                            archive=None):
-        """Get the publishing records for the given binary package name.
-
-        :param: binary_name: should either be a `BinaryPackageName` instance
-            or else a string which will be looked up as a `BinaryPackageName`;
-        :param: pocket: optional `PackagePublishingPocket` filter, if it is
-            not specified, we look in all pockets.
-        :param: include_pending: optionally return also the pending
-            publication records, those packages that will get published in the
-            next publisher run (it's only useful when we need to know if a
-            given package is known during a publisher run, mostly in
-            pre-upload checks)
-        :param: archive: optional IArchive filter, if is not specified,
-            consider publication in the main_archives, otherwise respect the
-            given value.
-
-        If the BinaryPackageName cannot be found, NotFoundError will be
-        raised.
-
-        :return: a `shortlist` of `IBinaryPackagePublishingHistory` records.
-        """
 
     def __getitem__(name):
         """Getter"""

@@ -27,7 +27,7 @@ We can override this behaviour by adding the `no-redirect` query parameter.
     >>> user_browser.open(
     ...    'http://bugs.launchpad.dev/ubuntu/+filebug?no-redirect')
     >>> print user_browser.title
-    Report a bug about Ubuntu...
+    Report a bug : Bugs : Ubuntu
 
 The no-redirect parameter is retained when we redirect a user to the bug
 filing view of another context.
@@ -58,7 +58,7 @@ Ubuntu's bug supervisor doesn't get automatically redirected either.
 
     >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+filebug')
     >>> print admin_browser.title
-    Report a bug about Ubuntu...
+    Report a bug : Bugs : Ubuntu
 
 Filing bugs with Apport also allows us to get to the bug filing interface.
 

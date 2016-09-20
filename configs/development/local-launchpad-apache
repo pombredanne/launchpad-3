@@ -1,7 +1,14 @@
-NameVirtualHost %LISTEN_ADDRESS%:80
-NameVirtualHost %LISTEN_ADDRESS%:443
+<IfVersion < 2.3.11>
+  NameVirtualHost %LISTEN_ADDRESS%:80
+  NameVirtualHost %LISTEN_ADDRESS%:443
+</IfVersion>
 
-RewriteLock /var/tmp/rewrite-lock
+<IfVersion >= 2.3.4>
+  Mutex file:/var/tmp rewrite-map
+</IfVersion>
+<IfVersion < 2.3.4>
+  RewriteLock /var/tmp/rewrite-lock
+</IfVersion>
 
 # These have to be first so non-Host/non-SNI requests don't hit bazaar etc.
 # But they can't have a ServerAlias wildcard or they'll shadow bazaar.
@@ -21,8 +28,13 @@ RewriteLock /var/tmp/rewrite-lock
   ServerAlias bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev
   ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev testopenid.dev
   <Proxy *>
-    Order deny,allow
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order deny,allow
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
   </Proxy>
   SSLEngine On
   SSLCertificateFile /etc/apache2/ssl/launchpad.crt
@@ -55,8 +67,14 @@ RewriteLock /var/tmp/rewrite-lock
 
   ProxyRequests off
   <Proxy *>
-    Order deny,allow
-    Allow from localhost 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require host localhost
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order deny,allow
+      Allow from localhost 127.0.0.0/255.0.0.0
+    </IfVersion>
   </Proxy>
   ProxyTimeout 20
 
@@ -91,8 +109,14 @@ RewriteLock /var/tmp/rewrite-lock
 
   ProxyRequests off
   <Proxy *>
-    Order deny,allow
-    Allow from localhost 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require host localhost
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order deny,allow
+      Allow from localhost 127.0.0.0/255.0.0.0
+    </IfVersion>
   </Proxy>
   ProxyTimeout 20
 
@@ -114,9 +138,14 @@ RewriteLock /var/tmp/rewrite-lock
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/mirrors
   <Directory /var/tmp/bazaar.launchpad.dev/mirrors/>
-    Order Deny,Allow
-    Deny from all
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order Deny,Allow
+      Deny from all
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
     Options SymLinksIfOwnerMatch
     AllowOverride None
     Options Indexes
@@ -139,9 +168,14 @@ RewriteLock /var/tmp/rewrite-lock
 
   DocumentRoot /var/tmp/ppa
   <Directory /var/tmp/ppa/>
-    Order Deny,Allow
-    Deny from all
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order Deny,Allow
+      Deny from all
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
     AllowOverride AuthConfig
     Options Indexes
   </Directory>
@@ -153,9 +187,14 @@ RewriteLock /var/tmp/rewrite-lock
 
   DocumentRoot /var/tmp/archive
   <Directory /var/tmp/archive/>
-    Order Deny,Allow
-    Deny from all
-    Allow from 127.0.0.0/255.0.0.0
+    <IfVersion >= 2.4>
+      Require ip 127.0.0.0/255.0.0.0
+    </IfVersion>
+    <IfVersion < 2.4>
+      Order Deny,Allow
+      Deny from all
+      Allow from 127.0.0.0/255.0.0.0
+    </IfVersion>
     Options Indexes
   </Directory>
 </VirtualHost>

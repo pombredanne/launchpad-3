@@ -38,7 +38,7 @@ class RemoteProductUpdater:
 
     def update(self):
         """Update `remote_product` for all Products it can be set for."""
-        # We can't interact with an e-mail address, so don't try to
+        # We can't interact with an email address, so don't try to
         # update products with such trackers.
         types_to_exclude = (
             SINGLE_PRODUCT_BUGTRACKERTYPES + [BugTrackerType.EMAILADDRESS])

@@ -1,0 +1,121 @@
+<!-- Copyright 2015 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:webservice="http://namespaces.canonical.com/webservice">
+
+    <class class="lp.services.webhooks.model.Webhook">
+        <require
+            permission="launchpad.View"
+            interface="lp.services.webhooks.interfaces.IWebhook"
+            set_schema="lp.services.webhooks.interfaces.IWebhook"/>
+    </class>
+    <subscriber
+        for="lp.services.webhooks.interfaces.IWebhook zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler="lp.services.webhooks.model.webhook_modified"/>
+    <securedutility
+        class="lp.services.webhooks.model.WebhookSet"
+        provides="lp.services.webhooks.interfaces.IWebhookSet">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookSet"/>
+    </securedutility>
+    <securedutility
+        name="AnyWebhookEventType"
+        component="lp.services.webhooks.interfaces.AnyWebhookEventTypeVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+    <class class="lp.services.webhooks.interfaces.AnyWebhookEventTypeVocabulary">
+        <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+    </class>
+    <securedutility
+        name="ValidWebhookEventType"
+        component="lp.services.webhooks.interfaces.ValidWebhookEventTypeVocabulary"
+        provides="zope.schema.interfaces.IVocabularyFactory">
+        <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+    <class class="lp.services.webhooks.interfaces.ValidWebhookEventTypeVocabulary">
+        <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+    </class>
+
+    <securedutility
+        component="lp.services.webhooks.model.WebhookJob"
+        provides="lp.services.webhooks.interfaces.IWebhookJobSource">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookJobSource"/>
+    </securedutility>
+    <securedutility
+        component="lp.services.webhooks.model.WebhookDeliveryJob"
+        provides="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource">
+        <allow interface="lp.services.webhooks.interfaces.IWebhookDeliveryJobSource"/>
+    </securedutility>
+    <class class="lp.services.webhooks.model.WebhookDeliveryJob">
+        <require
+            permission="launchpad.View"
+            interface="lp.services.webhooks.interfaces.IWebhookDeliveryJob"/>
+    </class>
+
+    <utility
+        provides="lp.services.webhooks.interfaces.IWebhookClient"
+        factory="lp.services.webhooks.client.WebhookClient"
+        permission="zope.Public"/>
+
+    <adapter
+        for="zope.interface.Interface
+             lp.services.webhooks.payload.IWebhookPayloadRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="lp.services.webhooks.payload.WebhookAbsoluteURL"
+        />
+
+    <browser:url
+       for="lp.services.webhooks.interfaces.IWebhook"
+       path_expression="string:+webhook/${id}"
+       attribute_to_parent="target"
+       />
+    <browser:navigation
+        module="lp.services.webhooks.browser" classes="WebhookNavigation" />
+
+    <browser:url
+       for="lp.services.webhooks.interfaces.IWebhookDeliveryJob"
+       path_expression="string:+delivery/${job_id}"
+       attribute_to_parent="webhook"
+       />
+
+    <webservice:register module="lp.services.webhooks.webservice" />
+
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhookTarget"
+        name="+webhooks"
+        permission="launchpad.Edit"
+        class="lp.services.webhooks.browser.WebhooksView"
+        template="templates/webhooktarget-webhooks.pt" />
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhookTarget"
+        name="+new-webhook"
+        permission="launchpad.Edit"
+        class="lp.services.webhooks.browser.WebhookAddView"
+        template="../../app/templates/generic-edit.pt" />
+
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.services.webhooks.interfaces.IWebhook"
+        factory="lp.services.webhooks.browser.WebhookBreadcrumb"
+        permission="zope.Public"/>
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhook"
+        name="+index"
+        permission="launchpad.View"
+        class="lp.services.webhooks.browser.WebhookView"
+        template="templates/webhook-index.pt" />
+    <browser:defaultView
+        for="lp.services.webhooks.interfaces.IWebhook"
+        name="+index" />
+    <browser:page
+        for="lp.services.webhooks.interfaces.IWebhook"
+        name="+delete"
+        permission="launchpad.View"
+        class="lp.services.webhooks.browser.WebhookDeleteView"
+        template="templates/webhook-delete.pt" />
+
+</configure>

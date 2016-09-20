@@ -9,7 +9,7 @@ __all__ = [
     'revision_cache_for_distro_series',
     'revision_cache_for_person',
     'revision_cache_for_product',
-    'revision_cache_for_project',
+    'revision_cache_for_project_group',
     'revision_cache_for_source_package',
     'revision_cache_for_distro_source_package',
     ]
@@ -25,9 +25,9 @@ def revision_cache_for_product(product):
     return getUtility(IRevisionCache).inProduct(product)
 
 
-def revision_cache_for_project(project):
-    """Adapt a project to a revision cache."""
-    return getUtility(IRevisionCache).inProject(project)
+def revision_cache_for_project_group(project_group):
+    """Adapt a project group to a revision cache."""
+    return getUtility(IRevisionCache).inProjectGroup(project_group)
 
 
 def revision_cache_for_person(person):

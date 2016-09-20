@@ -127,4 +127,3 @@ class ModifiedBranchesScript(LaunchpadScript):
             print location
 
         self.logger.info("Done.")
-

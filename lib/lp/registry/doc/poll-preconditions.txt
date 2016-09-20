@@ -43,7 +43,7 @@ Trying to vote two times is a programming error.
   ...     ubuntu_team_member, leader_options[0], when=opendate)
   Traceback (most recent call last):
   ...
-  AssertionError: Can't vote twice in the same poll
+  AssertionError: Can't vote twice in one poll
 
 
 It's not possible for a non-member to vote, neither to vote when the poll is

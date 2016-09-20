@@ -35,7 +35,10 @@
             <dd class="subordinate">
               <p tal:content="change/comment">comment</p>
 
-              <div tal:content="structure change/diff/fmt:diff" />
+              <div tal:condition="not: request/ss|nothing"
+                   tal:content="structure change/diff/fmt:diff" />
+              <div tal:condition="request/ss|nothing"
+                   tal:content="structure change/diff/fmt:ssdiff" />
             </dd>
           </tal:item>
         </dl>

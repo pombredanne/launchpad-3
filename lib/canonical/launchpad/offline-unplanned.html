@@ -1,36 +1,54 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>Please try again</title>
-    <style type="text/css" media="screen, print">
-      html, body {
-        font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
-        }
-      .offline {
-        max-width: 60em;
-        text-align: center;
-        margin-left: auto;
-        margin-right: auto;
-        }
-    </style>
-  </head>
-  <body>
-    <div id="topline"></div>
-    <div id="locationbar"></div>
-    <div class="offline">
-
-        <h1>Please try again</h1>
-        <p>
-          Sorry, there was a problem connecting to the Launchpad server.
-        </p>
-        <p>
-          Try reloading this page in a minute or two.
-          If the problem persists, let us know in
-          <a href="irc://chat.freenode.net/#launchpad"
-          >the #launchpad IRC channel on freenode</a>.
-        </p>
-        <p>Thanks for your patience.</p>
-
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+>
+<head>
+  <title>Launchpad is temporarily unavailable</title>
+  <link
+    type="text/css" rel="stylesheet" media="screen, print"
+    href="https://launchpad.net/+icing/basic-error.css" />
+</head>
+<body>
+  <div class="page-center-wrap">
+    <div class="page-center">
+      <div class="page-center-content">
+        <div id="header">
+          <div class="graphic">
+            :(
+          </div>
+          <div class="content">
+            <h1>Uh oh!</h1>
+            <h2>Something has gone wrong. We're sorry!</h2>
+            <p>
+              If we are in the middle of an update, Launchpad will be
+              back in a couple of minutes.  Otherwise, we are working to
+              fix the unexpected problems. Check
+              <a href="https://twitter.com/launchpadstatus">@launchpadstatus</a>
+              on Twitter for updates.
+            </p>
+            <p>
+              If the problem persists, let us know in
+              <a href="irc://chat.freenode.net/#launchpad"
+              >the #launchpad IRC channel on freenode</a>.
+            </p>
+            <p class="sub">
+              Technically, the load balancer took too long to connect to
+              an application server.
+            </p>
+            <p><a href="javascript:window.location.reload()">Reload</a>
+              this page or try again in a few minutes</p>
+          </div>
+        </div>
+        <div id="footer">
+          <a href="https://launchpad.net/">
+            <img src="https://launchpad.net/@@/launchpad-logo-and-name-hierarchy.png"
+            alt="Launchpad" />
+          </a>
+        </div>
+      </div>
     </div>
-  </body>
+  </div>
+</body>
 </html>

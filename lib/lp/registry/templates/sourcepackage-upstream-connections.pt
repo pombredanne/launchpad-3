@@ -11,8 +11,8 @@
 <div id="upstreams" tal:define="series context/productseries">
   <dl>
     <dd>
-      <tal:has_pg condition="series/product/project">
-        <a tal:replace="structure series/product/project/fmt:link" /> &rArr;
+      <tal:has_pg condition="series/product/projectgroup">
+        <a tal:replace="structure series/product/projectgroup/fmt:link" /> &rArr;
       </tal:has_pg>
       <a tal:replace="structure series/product/fmt:link" /> &rArr;
       <a tal:content="series/name"

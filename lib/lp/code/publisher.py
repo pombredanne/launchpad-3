@@ -1,10 +1,11 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code's custom publication."""
 
 __metaclass__ = type
 __all__ = [
+    'BranchesFacet',
     'CodeBrowserRequest',
     'CodeLayer',
     'code_request_publication_factory',
@@ -12,13 +13,17 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.component import queryAdapter
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
     IDefaultBrowserLayer,
     )
 
-from lp.services.webapp.interfaces import ILaunchpadContainer
+from lp.services.webapp.interfaces import (
+    IFacet,
+    ILaunchpadContainer,
+    )
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.publisher import LaunchpadContainer
 from lp.services.webapp.servers import (
@@ -27,13 +32,22 @@ from lp.services.webapp.servers import (
     )
 
 
+@implementer(IFacet)
+class BranchesFacet:
+
+    name = "branches"
+    rootsite = "code"
+    text = "Code"
+    default_view = "+branches"
+
+
 class CodeLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Code layer."""
 
 
+@implementer(CodeLayer)
 class CodeBrowserRequest(LaunchpadBrowserRequest):
     """Instances of CodeBrowserRequest provide `CodeLayer`."""
-    implements(CodeLayer)
 
 
 def code_request_publication_factory():
@@ -43,12 +57,20 @@ def code_request_publication_factory():
 
 class LaunchpadBranchContainer(LaunchpadContainer):
 
-    def isWithin(self, scope):
-        """Is this branch within the given scope?
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`."""
+        # A branch is within its target.
+        adapter = queryAdapter(
+            self.context.target.context, ILaunchpadContainer)
+        if adapter is not None:
+            yield adapter
 
-        If a branch has a product, it is always in the scope that product or
-        its project.  Otherwise it's not in any scope.
-        """
-        if self.context.product is None:
-            return False
-        return ILaunchpadContainer(self.context.product).isWithin(scope)
+
+class LaunchpadGitRepositoryContainer(LaunchpadContainer):
+
+    def getParentContainers(self):
+        """See `ILaunchpadContainer`."""
+        # A repository is within its target.
+        adapter = queryAdapter(self.context.target, ILaunchpadContainer)
+        if adapter is not None:
+            yield adapter

@@ -90,5 +90,3 @@ class TestAuditSecuritySettings(TestCase):
             '#public.foo = SELECT\n')
         data = sa._strip(test_data)
         self.assertEqual('', data)
-
-

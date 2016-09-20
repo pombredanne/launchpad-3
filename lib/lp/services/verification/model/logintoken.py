@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,6 +6,8 @@ __all__ = [
     'LoginToken',
     'LoginTokenSet',
     ]
+
+import hashlib
 
 import pytz
 from sqlobject import (
@@ -15,7 +17,7 @@ from sqlobject import (
     )
 from storm.expr import And
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
@@ -25,7 +27,10 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -36,7 +41,7 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
-from lp.services.tokens import create_unique_token_for_table
+from lp.services.tokens import create_token
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import (
     ILoginToken,
@@ -48,8 +53,8 @@ from lp.services.webapp import canonical_url
 MAIL_APP = 'services/verification'
 
 
+@implementer(ILoginToken)
 class LoginToken(SQLBase):
-    implements(ILoginToken)
     _table = 'LoginToken'
 
     redirection_url = StringCol(default=None)
@@ -57,7 +62,10 @@ class LoginToken(SQLBase):
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
                                default=None)
     email = StringCol(dbName='email', notNull=True)
-    token = StringCol(dbName='token', unique=True)
+
+    # The hex SHA-256 hash of the token.
+    _token = StringCol(dbName='token', unique=True)
+
     tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
     date_created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False, default=None)
@@ -65,6 +73,23 @@ class LoginToken(SQLBase):
     password = ''  # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
+
+    def __init__(self, *args, **kwargs):
+        token = kwargs.pop('token', None)
+        if token is not None:
+            self._plaintext_token = token
+            kwargs['_token'] = hashlib.sha256(token).hexdigest()
+        super(LoginToken, self).__init__(*args, **kwargs)
+
+    _plaintext_token = None
+
+    @property
+    def token(self):
+        if self._plaintext_token is None:
+            raise AssertionError(
+                "Token only available for LoginTokens obtained by token in "
+                "the first place. The DB only stores the hashed version.")
+        return self._plaintext_token
 
     def consume(self):
         """See ILoginToken."""
@@ -142,8 +167,8 @@ class LoginToken(SQLBase):
         # Encrypt this part's content if requested.
         if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
-            token_text = gpghandler.encryptContent(token_text.encode('utf-8'),
-                                                   key.fingerprint)
+            token_text = gpghandler.encryptContent(
+                token_text.encode('utf-8'), key)
             # In this case, we need to include some clear text instructions
             # for people who do not have an MUA that can decrypt the ASCII
             # armored text.
@@ -155,20 +180,6 @@ class LoginToken(SQLBase):
         from_name = 'Launchpad OpenPGP Key Confirmation'
         subject = 'Launchpad: Confirm your OpenPGP Key'
         self._send_email(from_name, subject, text)
-
-    def sendProfileCreatedEmail(self, profile, comment):
-        """See ILoginToken."""
-        template = get_email_template('profile-created.txt', app=MAIL_APP)
-        replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.displayname,
-                        'comment': comment,
-                        'profile_url': canonical_url(profile)}
-        message = template % replacements
-
-        headers = {'Reply-To': self.requester.preferredemail.email}
-        from_name = "Launchpad"
-        subject = "Launchpad profile"
-        self._send_email(from_name, subject, message, headers=headers)
 
     def sendMergeRequestEmail(self):
         """See ILoginToken."""
@@ -200,20 +211,6 @@ class LoginToken(SQLBase):
                         'admin_email': config.canonical.admin_address,
                         'token_url': canonical_url(self)}
         message = template % replacements
-        self._send_email(from_name, subject, message)
-
-    def sendClaimProfileEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('claim-profile.txt', app=MAIL_APP)
-        from_name = "Launchpad"
-        profile = getUtility(IPersonSet).getByEmail(self.email)
-        replacements = {'profile_name': (
-                            "%s (%s)" % (profile.displayname, profile.name)),
-                        'email': self.email,
-                        'token_url': canonical_url(self)}
-        message = template % replacements
-
-        subject = "Launchpad: Claim Profile"
         self._send_email(from_name, subject, message)
 
     def sendClaimTeamEmail(self):
@@ -250,11 +247,11 @@ class LoginToken(SQLBase):
         return lpkey, new
 
 
+@implementer(ILoginTokenSet)
 class LoginTokenSet:
-    implements(ILoginTokenSet)
 
     def __init__(self):
-        self.title = 'Launchpad e-mail address confirmation'
+        self.title = 'Launchpad email address confirmation'
 
     def get(self, id, default=None):
         """See ILoginTokenSet."""
@@ -339,7 +336,7 @@ class LoginTokenSet:
             # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
-        token = create_unique_token_for_table(20, LoginToken.token)
+        token = create_token(20)
         return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
                           created=UTC_NOW, fingerprint=fingerprint,
@@ -347,7 +344,9 @@ class LoginTokenSet:
 
     def __getitem__(self, tokentext):
         """See ILoginTokenSet."""
-        token = LoginToken.selectOneBy(token=tokentext)
+        token = IStore(LoginToken).find(
+            LoginToken, _token=hashlib.sha256(tokentext).hexdigest()).one()
         if token is None:
             raise NotFoundError(tokentext)
+        token._plaintext_token = tokentext
         return token

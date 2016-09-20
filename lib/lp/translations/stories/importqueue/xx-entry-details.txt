@@ -74,7 +74,7 @@ and there will be a link to the templates list.
 
     >>> admin_browser.getLink('1 template').click()
     >>> print admin_browser.title
-    All templates : Translations : Series trunk : ...
+    All templates : Series trunk : Translations : ...
 
 In that case, the product is also shown to have translatable series.
 

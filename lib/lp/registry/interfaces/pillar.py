@@ -9,11 +9,13 @@ Pillars are currently Product, ProjectGroup and Distribution.
 __metaclass__ = type
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_read_operation,
     exported,
     operation_parameters,
     operation_returns_collection_of,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -32,6 +34,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.launchpad import IHeadingContext
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -50,7 +53,7 @@ __all__ = [
     ]
 
 
-class IPillar(Interface):
+class IPillar(IHeadingContext):
     """An object that might be a project, a project group, or a distribution.
 
     This is a polymorphic object served by the pillar set. Check the
@@ -115,7 +118,7 @@ class IPillarName(Interface):
     id = Int(title=_('The PillarName ID'))
     name = TextLine(title=u"The name.")
     product = Attribute('The project that has this name, or None')
-    project = Attribute('The project that has this name, or None')
+    projectgroup = Attribute('The project group that has this name, or None')
     distribution = Attribute('The distribution that has this name, or None')
     active = Attribute('The pillar is active')
     pillar = Attribute('The pillar object')
@@ -149,9 +152,10 @@ class IPillarNameSet(Interface):
         If no pillar is found, return None.
         """
 
-    def count_search_matches(text):
+    def count_search_matches(user, text):
         """Return the total number of Pillars matching :text:"""
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(text=TextLine(title=u"Search text"),
                           limit=Int(title=u"Maximum number of items to "
                                     "return. This is a hard limit: any "
@@ -160,7 +164,7 @@ class IPillarNameSet(Interface):
                                     required=False))
     @operation_returns_collection_of(IPillar)
     @export_read_operation()
-    def search(text, limit):
+    def search(user, text, limit):
         """Return Projects/Project groups/Distros matching :text:.
 
         If :limit: is None, the default batch size will be used.

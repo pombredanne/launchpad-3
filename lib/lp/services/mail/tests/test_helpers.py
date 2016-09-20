@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,12 +7,16 @@ from doctest import DocTestSuite
 import time
 import unittest
 
+from zope.component import getUtility
 from zope.interface import (
     directlyProvidedBy,
     directlyProvides,
     )
 
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
@@ -238,6 +242,12 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
             owner=owner, email='fooix-devs@lists.example.com')
         self.assertEqual(
             team, get_person_or_team('fooix-devs@lists.example.com'))
+
+    def test_me(self):
+        # The special case of "me" refers to the logged-in user, that is,
+        # the user who sent the email being processed.
+        me = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        self.assertEqual(me, get_person_or_team('me'))
 
 
 class Testget_contact_email_addresses(TestCaseWithFactory):

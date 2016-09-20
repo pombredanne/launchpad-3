@@ -12,13 +12,13 @@ import psycopg2
 from storm.exceptions import DisconnectionError
 import transaction
 from zope.component import (
-    adapts,
+    adapter,
     ComponentLookupError,
     getGlobalSiteManager,
     queryAdapter,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.sendmail.interfaces import IMailDelivery
@@ -59,18 +59,19 @@ class IBar(Interface):
     pass
 
 
+@implementer(IFoo)
 class Foo:
-    implements(IFoo)
+    pass
 
 
+@implementer(IBar)
 class Bar:
-    implements(IBar)
+    pass
 
 
+@adapter(IFoo)
+@implementer(IBar)
 class FooToBar:
-
-    adapts(IFoo)
-    implements(IBar)
 
     def __init__(self, foo):
         self.foo = foo
@@ -88,32 +89,49 @@ class TestZopeAdapterFixture(TestCase):
         self.assertIs(None, queryAdapter(context, IBar))
         with ZopeAdapterFixture(FooToBar):
             # Now there is an adapter from Foo to Bar.
-            adapter = queryAdapter(context, IBar)
-            self.assertIsNot(None, adapter)
-            self.assertIsInstance(adapter, FooToBar)
+            bar_adapter = queryAdapter(context, IBar)
+            self.assertIsNot(None, bar_adapter)
+            self.assertIsInstance(bar_adapter, FooToBar)
         # The adapter is no longer registered.
         self.assertIs(None, queryAdapter(context, IBar))
 
 
+@implementer(IMailDelivery)
 class DummyMailer(object):
 
-    implements(IMailDelivery)
+    pass
 
 
 class TestZopeUtilityFixture(TestCase):
 
     layer = BaseLayer
 
+    def getMailer(self):
+        return getGlobalSiteManager().getUtility(IMailDelivery, 'Mail')
+
     def test_fixture(self):
-        def get_mailer():
-            return getGlobalSiteManager().getUtility(
-                IMailDelivery, 'Mail')
         fake = DummyMailer()
         # In BaseLayer there should be no mailer by default.
-        self.assertRaises(ComponentLookupError, get_mailer)
+        self.assertRaises(ComponentLookupError, self.getMailer)
         with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
-            self.assertEquals(get_mailer(), fake)
-        self.assertRaises(ComponentLookupError, get_mailer)
+            self.assertEqual(fake, self.getMailer())
+        self.assertRaises(ComponentLookupError, self.getMailer)
+
+    def test_restores_previous_utility(self):
+        # If there was a previous utility, ZopeUtilityFixture restores it on
+        # cleanup.
+        original_fake = DummyMailer()
+        getGlobalSiteManager().registerUtility(
+            original_fake, IMailDelivery, 'Mail')
+        try:
+            self.assertEqual(original_fake, self.getMailer())
+            fake = DummyMailer()
+            with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
+                self.assertEqual(fake, self.getMailer())
+            self.assertEqual(original_fake, self.getMailer())
+        finally:
+            getGlobalSiteManager().unregisterUtility(
+                original_fake, IMailDelivery, 'Mail')
 
 
 class TestPGBouncerFixtureWithCA(TestCase):

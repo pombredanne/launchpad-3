@@ -4,14 +4,14 @@ DistributionMirror Pages
 Registering a mirror
 --------------------
 
-Only full functionality distributions may have mirrors.
-IDerivativeDistributions cannot use the form.
+Distributions must have mirror support enabled in order to have mirrors.
+Other distributions cannot use the form.
 
     >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> distribution = factory.makeDistribution(name='youbuntu')
-    >>> distribution.full_functionality
+    >>> distribution.supports_mirrors
     False
 
     >>> ignored = login_person(distribution.owner)
@@ -21,8 +21,7 @@ IDerivativeDistributions cannot use the form.
     >>> print extract_text(content)
     This functionality is not yet available...
 
-Ubuntu is an IBaseDistributions and is full functionality. It can have
-mirrors.
+Ubuntu has mirror support enabled, so it can have mirrors.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
@@ -37,10 +36,10 @@ mirrors.
 The view provides a label, page_title, and cancel_url
 
     >>> print view.label
-    Register a new mirror for Ubuntu Linux
+    Register a new mirror for Ubuntu
 
     >>> print view.page_title
-    Register a new mirror for Ubuntu Linux
+    Register a new mirror for Ubuntu
 
     >>> print view.cancel_url
     http://launchpad.dev/ubuntu
@@ -48,12 +47,12 @@ The view provides a label, page_title, and cancel_url
 A HTTP or FTP URL is required to register a mirror.
 
     >>> view.field_names
-    ['displayname', 'description', 'whiteboard', 'http_base_url',
+    ['display_name', 'description', 'whiteboard', 'http_base_url',
      'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
      'official_candidate']
 
     >>> form = {
-    ...     'field.displayname': 'Illuminati',
+    ...     'field.display_name': 'Illuminati',
     ...     'field.description': 'description',
     ...     'field.whiteboard': 'whiteboard',
     ...     'field.http_base_url': 'http://secret.me/',
@@ -240,7 +239,7 @@ The +edit view provides a label, page_title, and cancel_url.
 The user can edit the mirror fields.
 
     >>> view.field_names
-    ['name', 'displayname', 'description', 'whiteboard', 'http_base_url',
+    ['name', 'display_name', 'description', 'whiteboard', 'http_base_url',
      'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
      'official_candidate']
 

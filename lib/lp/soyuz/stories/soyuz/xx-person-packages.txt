@@ -71,7 +71,7 @@ user follows the "Ubuntu Hoary" link next to cnews:
     <Link text='Ubuntu Hoary' ...>
     >>> link.click()
     >>> browser.title
-    '...cnews... package : Hoary (5.04) : Ubuntu'
+    'Hoary (5.04) : cnews package : Ubuntu'
 
 The third column links to the distribution source package release page. The
 user follows the cnews version link to see the page.
@@ -82,7 +82,7 @@ user follows the cnews version link to see the page.
     <Link ... url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
-    'cr.g7-37 : \xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
+    'cr.g7-37 : cnews package : Ubuntu'
 
 
 Batched listing pages
@@ -210,6 +210,7 @@ so that they appear in his +packages page.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='source1',
     ...     archive=cprov.archive,
+    ...     distroseries=cprov.archive.distribution.currentseries,
     ...     date_uploaded=UTC_NOW - SQL("INTERVAL '1 second'"))
     >>> source1.sourcepackagerelease.creator=cprov
     >>> source1_mark = source1.copyTo(
@@ -247,17 +248,15 @@ The logged-in user's case:
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(user_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA for Celso Providelo - Ubuntu Hoary 666 ...ago None
 
 The not logged-in (anonymous) user's case:
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(anon_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA for Celso Providelo - Ubuntu Hoary 666 ...ago None
 
-However no-priv himself and any Launchpad Administrator can still see
+However no-priv themselves and any Launchpad Administrator can still see
 both packages:
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
@@ -265,15 +264,13 @@ both packages:
     >>> print_ppa_rows(nopriv_browser)
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
         ...ago None
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA for Celso Providelo - Ubuntu Hoary 666 ...ago None
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(admin_browser)
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
         ...ago None
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA for Celso Providelo - Ubuntu Hoary 666 ...ago None
 
 Let's move the publication of source1 from mark's public archive to his
 private one and the view the page again.
@@ -291,13 +288,11 @@ private one and the view the page again.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(user_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA for Celso Providelo - Ubuntu Hoary 666 ...ago None
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(anon_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA for Celso Providelo - Ubuntu Hoary 666 ...ago None
 
 Notice that the source1 package is still appearing because it is also
 published in some non-private archives, which override the private nature
@@ -342,13 +337,11 @@ archive is public.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(user_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntu Hoary 666 ...ago None
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(anon_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntu Hoary 666 ...ago None
 
 Even after the package is superseded, the package remains visible in
 the listings.
@@ -360,13 +353,11 @@ the listings.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(user_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntu Hoary 666 ...ago None
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(anon_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntu Hoary 666 ...ago None
 
 
 Packages deleted from a PPA
@@ -383,8 +374,7 @@ First list the packages in the PPA.
     >>> print_ppa_rows(admin_browser)
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
         ...ago None
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntu Hoary 666 ...ago None
 
 Then delete the 'source2' package.
 
@@ -420,8 +410,7 @@ appears.
     >>> print_ppa_rows(admin_browser)
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
         ...ago None
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntu Hoary 666 ...ago None
 
 Please note also that disabled archives are not viewable by anonymous users.
 

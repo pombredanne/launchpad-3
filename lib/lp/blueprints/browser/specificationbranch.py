@@ -11,8 +11,7 @@ __all__ = [
     'SpecificationBranchURL',
     ]
 
-from lazr.restful.utils import smartquote
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -25,10 +24,9 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
+@implementer(ICanonicalUrlData)
 class SpecificationBranchURL:
     """Specification branch URL creation rules."""
-
-    implements(ICanonicalUrlData)
 
     rootsite = "blueprints"
 
@@ -82,8 +80,7 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Link branch "%s" to a blueprint' % self.context.displayname)
+        return 'Link branch %s to a blueprint' % self.context.displayname
 
     @property
     def next_url(self):

@@ -10,12 +10,6 @@ First, check that the condensed branch listing page works:
     >>> print browser.title
     Code : Sample Person
 
-The heading in the main content is the same as the page title text.
-
-    >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main.h1)
-    Bazaar branches owned by Sample Person
-
 
 Default view for a person on code root site
 -------------------------------------------
@@ -61,12 +55,14 @@ A person's owned branches are shown on their code application overview page.
 Registered Branches
 -------------------
 
-There is also a link which points to the registered branches page.
+There is also a filter for registered branches.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Registered').click()
+    >>> browser.getControl(name='field.category').displayValue = [
+    ...     'Registered']
+    >>> browser.getControl('Filter').click()
     >>> print browser.title
-    Registered : Code : Sample Person
+    Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -77,13 +73,15 @@ There is also a link which points to the registered branches page.
 Subscribed branches
 -------------------
 
-From the persons main listing page, there is also a link to subscribed
-branches.
+From the persons main listing page, there is also a filter for
+subscribed branches.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Subscribed').click()
+    >>> browser.getControl(name='field.category').displayValue = [
+    ...     'Subscribed']
+    >>> browser.getControl('Filter').click()
     >>> print browser.title
-    Subscribed : Code : Sample Person
+    Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -112,11 +110,10 @@ The summary is shown.
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
     >>> print_tag_with_id(eric_browser.contents, 'portlet-person-codesummary')
-    Owned branches
-    Registered branches
-    Subscribed branches
+    Branches
     Active reviews
     Source package recipes
+    Snap packages
 
 Now we'll create another branch, and unsubscribe the owner from it.
 
@@ -128,26 +125,7 @@ Now we'll create another branch, and unsubscribe the owner from it.
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
     >>> print_tag_with_id(
     ...     eric_browser.contents, 'portlet-person-codesummary')
-    Owned branches
-    Registered branches
-    Subscribed branches
+    Branches
     Active reviews
     Source package recipes
-
-Teams do not show registered branches
--------------------------------------
-
-For a team, showing registered branches does not make sense, so that
-line is omitted.
-
-    >>> browser.open('http://code.launchpad.dev/~landscape-developers')
-    >>> print_tag_with_id(
-    ...     browser.contents, 'portlet-person-codesummary')
-    Owned branches
-    Subscribed branches
-    Active reviews
-    Source package recipes
-
-    >>> browser.getLink('registered').click()
-    Traceback (most recent call last):
-    LinkNotFoundError
+    Snap packages

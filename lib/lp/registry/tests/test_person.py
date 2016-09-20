@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -75,10 +75,10 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    RequestTimelineCollector,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
@@ -244,27 +244,27 @@ class TestPersonTeams(TestCaseWithFactory):
 
     def test_inTeam_person_incorrect_archive(self):
         # If a person has an archive marked incorrectly that person should
-        # still be retrieved by 'all_members_prepopulated'.  See bug #680461.
+        # still be retrieved by 'api_all_members'.  See bug #680461.
         self.factory.makeArchive(
             owner=self.user, purpose=ArchivePurpose.PARTNER)
         expected_members = sorted([self.user, self.a_team.teamowner])
-        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        retrieved_members = sorted(list(self.a_team.api_all_members))
         self.assertEqual(expected_members, retrieved_members)
 
     def test_inTeam_person_no_archive(self):
         # If a person has no archive that person should still be retrieved by
-        # 'all_members_prepopulated'.
+        # 'api_all_members'.
         expected_members = sorted([self.user, self.a_team.teamowner])
-        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        retrieved_members = sorted(list(self.a_team.api_all_members))
         self.assertEqual(expected_members, retrieved_members)
 
     def test_inTeam_person_ppa_archive(self):
         # If a person has a PPA that person should still be retrieved by
-        # 'all_members_prepopulated'.
+        # 'api_all_members'.
         self.factory.makeArchive(
             owner=self.user, purpose=ArchivePurpose.PPA)
         expected_members = sorted([self.user, self.a_team.teamowner])
-        retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
+        retrieved_members = sorted(list(self.a_team.api_all_members))
         self.assertEqual(expected_members, retrieved_members)
 
     def test_getOwnedTeams(self):
@@ -412,12 +412,12 @@ class TestPerson(TestCaseWithFactory):
             user.getAffiliatedPillars(user)]
         self.assertEqual(expected_pillars, received_pillars)
 
-    def test_getAffiliatedPillars_minus_embargoed(self):
+    def test_getAffiliatedPillars_minus_proprietary(self):
         # Skip non public products if not allowed to see them.
         owner = self.factory.makePerson()
         user = self.factory.makePerson()
         self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED,
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         public = self.factory.makeProduct(
             information_type=InformationType.PUBLIC,
@@ -432,15 +432,15 @@ class TestPerson(TestCaseWithFactory):
         # Users can see their own non-public affiliated products.
         owner = self.factory.makePerson()
         self.factory.makeProduct(
-            name=u'embargoed',
-            information_type=InformationType.EMBARGOED,
+            name=u'proprietary',
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
 
-        expected_pillars = [u'embargoed', u'public']
+        expected_pillars = [u'proprietary', u'public']
         received_pillars = [pillar.name for pillar in
             owner.getAffiliatedPillars(owner)]
         self.assertEqual(expected_pillars, received_pillars)
@@ -450,15 +450,15 @@ class TestPerson(TestCaseWithFactory):
         owner = self.factory.makePerson()
         admin = self.factory.makeAdministrator()
         self.factory.makeProduct(
-            name=u'embargoed',
-            information_type=InformationType.EMBARGOED,
+            name=u'proprietary',
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
 
-        expected_pillars = [u'embargoed', u'public']
+        expected_pillars = [u'proprietary', u'public']
         received_pillars = [pillar.name for pillar in
             owner.getAffiliatedPillars(admin)]
         self.assertEqual(expected_pillars, received_pillars)
@@ -468,15 +468,15 @@ class TestPerson(TestCaseWithFactory):
         owner = self.factory.makePerson()
         admin = self.factory.makeCommercialAdmin()
         self.factory.makeProduct(
-            name=u'embargoed',
-            information_type=InformationType.EMBARGOED,
+            name=u'proprietary',
+            information_type=InformationType.PROPRIETARY,
             owner=owner)
         self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
 
-        expected_pillars = [u'embargoed', u'public']
+        expected_pillars = [u'proprietary', u'public']
         received_pillars = [pillar.name for pillar in
             owner.getAffiliatedPillars(admin)]
         self.assertEqual(expected_pillars, received_pillars)
@@ -515,6 +515,11 @@ class TestPerson(TestCaseWithFactory):
         user = self.factory.makePerson()
         self.assertFalse(user.selfgenerated_bugnotifications)
 
+    def test_expanded_notification_footers_false_by_default(self):
+        # Default for new accounts is to disable expanded notification footers.
+        user = self.factory.makePerson()
+        self.assertFalse(user.expanded_notification_footers)
+
     def test_canAccess__anonymous(self):
         # Anonymous users cannot call Person.canAccess()
         person = self.factory.makePerson()
@@ -548,9 +553,9 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertFalse(person.canWrite(product, 'displayname'))
+            self.assertFalse(person.canWrite(product, 'display_name'))
         with person_logged_in(product.owner):
-            self.assertTrue(product.owner.canWrite(product, 'displayname'))
+            self.assertTrue(product.owner.canWrite(product, 'display_name'))
 
     def test_canWrite__checking_permissions_of_others(self):
         # Logged in users cannot call Person.canWrite() on Person
@@ -805,7 +810,7 @@ class TestPersonStates(TestCaseWithFactory):
         self.assertEquals([expected_error], user.canDeactivate())
 
     def test_deactivate_copes_with_names_already_in_use(self):
-        """When a user deactivates his account, its name is changed.
+        """When a user deactivates their account, their name is changed.
 
         We do that so that other users can use that name, which the original
         user doesn't seem to want anymore.
@@ -821,8 +826,9 @@ class TestPersonStates(TestCaseWithFactory):
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
         foo_bar.name = 'name12'
-        # If Foo Bar deactivates his account, though, we'll have to use a name
-        # other than name12-deactivatedaccount because that is already in use.
+        # If Foo Bar deactivates their account, though, we'll have to use a
+        # name other than name12-deactivatedaccount because that is already
+        # in use.
         login(foo_bar.preferredemail.email)
         foo_bar.deactivate(comment="blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
@@ -959,10 +965,10 @@ class TestPersonStates(TestCaseWithFactory):
     def test_person_snapshot(self):
         omitted = (
             'activemembers', 'adminmembers', 'allmembers',
-            'all_members_prepopulated', 'approvedmembers',
+            'api_all_members', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
-            'proposedmembers', 'time_zone',
+            'ppas', 'proposedmembers', 'time_zone',
             )
         snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
         for name in omitted:
@@ -1249,7 +1255,7 @@ class TestAPIPartipication(TestCaseWithFactory):
             team.addMember(self.factory.makePerson(), team.teamowner)
             team.addMember(self.factory.makePerson(), team.teamowner)
         webservice = LaunchpadWebServiceCaller()
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         url = "/~%s/participants" % team.name
@@ -1348,7 +1354,7 @@ class TestGetRecipients(TestCaseWithFactory):
         """
         owner = self.factory.makePerson(email='foo@bar.com')
         team = self.factory.makeTeam(owner)
-        owner.account.status = AccountStatus.DEACTIVATED
+        owner.setAccountStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         self.assertContentEqual([], get_recipients(team))
 
     def test_get_recipients_team_with_disabled_member_account(self):
@@ -1357,7 +1363,7 @@ class TestGetRecipients(TestCaseWithFactory):
         See <https://bugs.launchpad.net/launchpad/+bug/855150>
         """
         person = self.factory.makePerson(email='foo@bar.com')
-        person.account.status = AccountStatus.DEACTIVATED
+        person.setAccountStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         team = self.factory.makeTeam(members=[person])
         self.assertContentEqual([team.teamowner], get_recipients(team))
 
@@ -1367,7 +1373,7 @@ class TestGetRecipients(TestCaseWithFactory):
         See <https://bugs.launchpad.net/launchpad/+bug/855150>
         """
         person = self.factory.makePerson(email='foo@bar.com')
-        person.account.status = AccountStatus.DEACTIVATED
+        person.setAccountStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         team1 = self.factory.makeTeam(members=[person])
         team2 = self.factory.makeTeam(members=[team1])
         self.assertContentEqual(
@@ -1966,7 +1972,8 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are not listed for random users
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
-        self.assertEqual([], list_result(blueprint1.owner))
+        owner = removeSecurityProxy(blueprint1).owner
+        self.assertEqual([], list_result(owner))
 
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
@@ -1974,21 +1981,24 @@ class TestSpecifications(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         grant = self.factory.makeAccessArtifactGrant(
             concrete_artifact=blueprint1)
+        owner = removeSecurityProxy(blueprint1).owner
         self.assertEqual(
             [blueprint1],
-            list_result(blueprint1.owner, user=grant.grantee))
+            list_result(owner, user=grant.grantee))
 
     def test_proprietary_listed_for_policy_grant(self):
         # Proprietary blueprints are listed for users with a policy grant.
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
+        product = removeSecurityProxy(blueprint1).product
         policy_source = getUtility(IAccessPolicySource)
         (policy,) = policy_source.find(
-            [(blueprint1.product, InformationType.PROPRIETARY)])
+            [(product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
+        owner = removeSecurityProxy(blueprint1).owner
         self.assertEqual(
             [blueprint1],
-            list_result(blueprint1.owner, user=grant.grantee))
+            list_result(owner, user=grant.grantee))
 
     def test_storm_sort(self):
         # A Storm expression can be used to sort specs.

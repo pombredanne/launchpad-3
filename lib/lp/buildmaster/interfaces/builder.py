@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Builder interfaces."""
@@ -7,13 +7,13 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
+    'BuildDaemonIsolationError',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
     'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
-    'ProtocolVersionMismatch',
     ]
 
 from lazr.restful.declarations import (
@@ -23,7 +23,9 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
+    mutator_for,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -34,12 +36,15 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
     Bool,
+    Choice,
+    Datetime,
     Int,
     List,
     Text,
@@ -49,17 +54,25 @@ from zope.schema import (
 from lp import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
+from lp.buildmaster.enums import (
+    BuilderCleanStatus,
+    BuilderResetProtocol,
+    )
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
     Title,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
+
+
+class BuildDaemonIsolationError(BuildDaemonError):
+    """A build isolation violation has been detected."""
 
 
 class CannotFetchFile(BuildDaemonError):
@@ -69,10 +82,6 @@ class CannotFetchFile(BuildDaemonError):
         super(CannotFetchFile, self).__init__()
         self.file_url = file_url
         self.error_information = error_information
-
-
-class ProtocolVersionMismatch(BuildDaemonError):
-    """The build slave had a protocol version. This is a serious error."""
 
 
 class CannotResumeHost(BuildDaemonError):
@@ -89,19 +98,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasBuildRecords, IHasOwner):
-    """Build-slave information and state.
-
-    Builder instance represents a single builder slave machine within the
-    Launchpad Auto Build System. It should specify a 'processor' on which the
-    machine is based and is able to build packages for; a URL, by which the
-    machine is accessed through an XML-RPC interface; name, title for entity
-    identification and browsing purposes; an LP-like owner which has
-    unrestricted access to the instance; the build slave machine status
-    representation, including the field/properties: virtualized, builderok,
-    status, failnotes and currentjob.
-    """
-    export_as_webservice_entry()
+class IBuilderView(IHasBuildRecords, IHasOwner):
 
     id = Attribute("Builder identifier")
 
@@ -137,7 +134,7 @@ class IBuilder(IHasBuildRecords, IHasOwner):
 
     name = exported(TextLine(
         title=_('Name'), required=True, constraint=name_validator,
-        description=_('Builder Slave Name used for reference proposes')))
+        description=_('Builder Slave Name used for reference purposes')))
 
     title = exported(Title(
         title=_('Title'), required=True,
@@ -163,15 +160,26 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         description=_('The reason for a builder not being ok')))
 
     vm_host = exported(TextLine(
-        title=_('Virtual Machine Host'), required=False,
+        title=_('VM host'), required=False,
         description=_('The machine hostname hosting the virtual '
                       'buildd-slave, e.g.: foobar-host.ppa')))
+
+    vm_reset_protocol = exported(Choice(
+        title=_("VM reset protocol"), vocabulary=BuilderResetProtocol,
+        readonly=False, required=False,
+        description=_("The protocol version for resetting the VM.")))
 
     active = exported(Bool(
         title=_('Publicly Visible'), required=False, default=True,
         description=_('Whether or not to present the builder publicly.')))
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
+
+    current_build = exported(Reference(
+        title=_("Current build"), required=False, readonly=True,
+        schema=Interface,  # Really IBuildFarmJob.
+        description=_("The job currently running on this builder.")),
+        as_of="devel")
 
     failure_count = exported(Int(
         title=_('Failure Count'), required=False, default=0,
@@ -180,6 +188,16 @@ class IBuilder(IHasBuildRecords, IHasOwner):
     version = exported(Text(
         title=_('Version'), required=False,
         description=_('The version of launchpad-buildd on the slave.')))
+
+    clean_status = exported(Choice(
+        title=_("Clean status"), vocabulary=BuilderCleanStatus, readonly=True,
+        description=_(
+            "The readiness of the slave to take a job. Only internal build "
+            "infrastructure bots need to or should write to this.")))
+
+    date_clean_status_changed = exported(Datetime(
+        title=_("Date clean status changed"), readonly=True,
+        description=_("The date the builder's clean status last changed.")))
 
     def gotFailure():
         """Increment failure_count on the builder."""
@@ -206,11 +224,30 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         this code will need some sort of mutex.
         """
 
-    def handleFailure(logger):
-        """Handle buildd slave failures.
 
-        Increment builder and (if possible) job failure counts.
-        """
+class IBuilderEdit(Interface):
+
+    @mutator_for(IBuilderView['clean_status'])
+    @operation_parameters(status=copy_field(IBuilderView['clean_status']))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setCleanStatus(status):
+        """Update the clean status."""
+
+
+class IBuilder(IBuilderEdit, IBuilderView):
+    """Build-slave information and state.
+
+    Builder instance represents a single builder slave machine within the
+    Launchpad Auto Build System. It should specify a 'processor' on which the
+    machine is based and is able to build packages for; a URL, by which the
+    machine is accessed through an XML-RPC interface; name, title for entity
+    identification and browsing purposes; an LP-like owner which has
+    unrestricted access to the instance; the build slave machine status
+    representation, including the field/properties: virtualized, builderok,
+    status, failnotes and currentjob.
+    """
+    export_as_webservice_entry()
 
 
 class IBuilderSetAdmin(Interface):

@@ -6,10 +6,7 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 import hashlib
 import itertools
 import os
@@ -37,7 +34,6 @@ from lp.services.utils import (
     obfuscate_structure,
     run_capturing_output,
     save_bz2_pickle,
-    total_seconds,
     traceback_info,
     utc_now,
     )
@@ -388,14 +384,3 @@ class TestObfuscateStructure(TestCase):
         """Values are obfuscated recursively."""
         obfuscated = obfuscate_structure({'foo': (['a@example.com'],)})
         self.assertEqual({'foo': [['<email address hidden>']]}, obfuscated)
-
-
-class TestTotalSeconds(TestCase):
-
-    # XXX: JonathanLange 2012-05-31: Remove this when Python 2.6 support is
-    # dropped.  Replace calls with timedelta.total_seconds.
-
-    def test_total_seconds(self):
-        # Numbers are arbitrary.
-        duration = timedelta(days=3, seconds=45, microseconds=16)
-        self.assertEqual(3 * 24 * 3600 + 45.000016, total_seconds(duration))

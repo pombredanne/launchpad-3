@@ -9,7 +9,6 @@ __all__ = [
     'BugActivity',
     'BugContextMenu',
     'BugEditView',
-    'BugFacets',
     'BugInformationTypePortletView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
@@ -26,8 +25,8 @@ __all__ = [
     'MaloneView',
     ]
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import re
 
 from lazr.enum import (
@@ -51,7 +50,7 @@ from zope.component import (
 from zope.event import notify
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     providedBy,
     )
@@ -60,7 +59,6 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -120,7 +118,6 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    StandardLaunchpadFacets,
     stepthrough,
     structured,
     )
@@ -195,20 +192,6 @@ class BugNavigation(Navigation):
                 return getUtility(IBugNominationSet).get(nomination_id)
             except NotFoundError:
                 return None
-
-
-class BugFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an `IBug`.
-
-    This is rarely seen, as most bug views are actually on BugTask. But
-    it's inherited by views on objects subordinate to the Bug itself,
-    eg.  nominations and attachments, where we don't have a pillar
-    context to switch within.
-    """
-
-    usedfor = IBug
-
-    enable_only = ['overview']
 
 
 class BugSetNavigation(Navigation):
@@ -588,12 +571,15 @@ class BugView(LaunchpadView, BugViewMixin):
                 BugTaskSearchParams(self.user, bug=any(*duplicate_bugs))))
         dupes = []
         for bug in duplicate_bugs:
-            dupe = {}
-            try:
-                dupe['title'] = bug.title
-            except Unauthorized:
-                dupe['title'] = 'Private Bug'
-            dupe['id'] = bug.id
+            # Don't disclose even the ID of a private bug. The link will
+            # just 404.
+            if not check_permission('launchpad.View', bug):
+                continue
+            dupe = {
+                'title': bug.title,
+                'id': bug.id,
+                'bug': bug,
+                }
             # If the dupe has the same context as the one we're in, link
             # to that bug task directly.
             if bug in dupes_in_current_context:
@@ -1188,9 +1174,9 @@ class BugTextView(LaunchpadView):
         return "\n".join(texts)
 
 
+@implementer(ICanonicalUrlData)
 class BugURL:
     """Bug URL creation rules."""
-    implements(ICanonicalUrlData)
 
     inside = None
     rootsite = 'bugs'

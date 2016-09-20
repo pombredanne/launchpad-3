@@ -34,19 +34,17 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
     publishing_history = Attribute("Return a list of publishing "
         "records for this source package release in this distribution.")
 
-    current_publishings = Attribute("Return a list of the places where "
-        "this sourcepackage release is currently published in this "
-        "distribution. The result is a list of "
-        "DistroSeriesSourcePackageRelease objects.")
-
     builds = Attribute("The builds we have for this sourcepackage release "
         "specifically in this distribution. Note that binaries could "
         "be inherited from a parent distribution, not necessarily built "
         "here, but must be published in a main archive.")
 
-    binary_package_names = Attribute("The binary package names of "
-        "packages that were built from this source package release.")
+    def getBuildsByArchTag(arch_tag):
+        """Return the builds for this SPR on the given architecture."""
 
     sample_binary_packages = Attribute("A single binary package of each "
         "named package produced from this source package in this "
         "distribution. The are each of form DistroSeriesBinaryPackage.")
+
+    def getBinariesForSeries(distroseries):
+        """Return this SourcePackageRelease's binaries in this DistroSeries."""

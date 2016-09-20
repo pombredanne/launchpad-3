@@ -24,6 +24,7 @@ from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItemSet,
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
@@ -140,7 +141,8 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         proprietary_blocked = self.factory.makeBlueprint(
             product=product, information_type=InformationType.PROPRIETARY)
         public_blocked = self.factory.makeBlueprint(product=product)
-        proprietary_blocked.createDependency(root)
+        with person_logged_in(owner):
+            proprietary_blocked.createDependency(root)
         public_blocked.createDependency(root)
         # Anonymous (no user) requests only get public blocked specs.
         self.assertEqual(
@@ -244,7 +246,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
             new_work_item['title'],
             new_work_item['status'].name)
         [email] = stub.test_emails
-        # Actual message is part 2 of the e-mail.
+        # Actual message is part 2 of the email.
         msg = email[2]
         self.assertIn(rationale, msg)
 
@@ -265,7 +267,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         self.assertEqual(1, len(stub.test_emails))
         rationale = '- %s: %s' % (wi.title, wi.status.name)
         [email] = stub.test_emails
-        # Actual message is part 2 of the e-mail.
+        # Actual message is part 2 of the email.
         msg = email[2]
         self.assertIn(rationale, msg)
 
@@ -307,7 +309,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         rationale_added = '+ %s: %s' % (
             new_work_item['title'], new_work_item['status'].name)
         [email] = stub.test_emails
-        # Actual message is part 2 of the e-mail.
+        # Actual message is part 2 of the email.
         msg = email[2]
         self.assertIn(rationale_removed, msg)
         self.assertIn(rationale_added, msg)
@@ -657,6 +659,26 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         return dict(
             title=wi.title, status=wi.status, assignee=wi.assignee,
             milestone=wi.milestone, sequence=sequence)
+
+    def test_workitemspecificationset_can_unlink_milestones(self):
+        milestone_a = self.factory.makeMilestone()
+        milestone_b = self.factory.makeMilestone()
+        work_item_1 = self.factory.makeSpecificationWorkItem(
+            milestone=milestone_a)
+        work_item_2 = self.factory.makeSpecificationWorkItem(
+            milestone=milestone_a)
+        work_item_3 = self.factory.makeSpecificationWorkItem(
+            milestone=milestone_b)
+
+        self.assertEqual(milestone_a, work_item_1.milestone)
+        self.assertEqual(milestone_a, work_item_2.milestone)
+        self.assertEqual(milestone_b, work_item_3.milestone)
+
+        getUtility(ISpecificationWorkItemSet).unlinkMilestone(milestone_a)
+
+        self.assertIs(None, work_item_1.milestone)
+        self.assertIs(None, work_item_2.milestone)
+        self.assertEqual(milestone_b, work_item_3.milestone)
 
 
 class TestSpecificationInformationType(TestCaseWithFactory):

@@ -16,11 +16,11 @@
     </p>
 
     <ul class="horizontal"
-      tal:condition="context/project|nothing">
+      tal:condition="context/projectgroup|nothing">
       <li>
         <a class="sprite info"
-          tal:attributes="href context/project/menu:overview/milestones/fmt:url">View milestones for
-          <tal:project replace="context/project/displayname" /></a>
+          tal:attributes="href context/projectgroup/menu:overview/milestones/fmt:url">View milestones for
+          <tal:projectgroup replace="context/projectgroup/displayname" /></a>
       </li>
     </ul>
   </div>

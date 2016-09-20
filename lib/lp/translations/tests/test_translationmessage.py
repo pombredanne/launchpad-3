@@ -20,13 +20,17 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
     TranslationSide,
     )
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
+    ITranslationMessageSet,
     TranslationConflict,
     )
 from lp.translations.interfaces.translations import TranslationConstants
@@ -339,7 +343,7 @@ class TestApprove(TestCaseWithFactory):
         potmsgset = self.factory.makePOTMsgSet(potemplate=template)
         upstream_pofile = self.factory.makePOFile('nl')
         ubuntu_pofile = self.factory.makePOFile('nl', potemplate=template)
-        diverged_tm = self.factory.makeDivergedTranslationMessage(
+        self.factory.makeDivergedTranslationMessage(
             pofile=upstream_pofile, potmsgset=potmsgset)
         ubuntu_tm = self.factory.makeSuggestion(
             pofile=ubuntu_pofile, potmsgset=potmsgset)
@@ -367,7 +371,6 @@ class TestAcceptFromImport(TestCaseWithFactory):
         # An untranslated message receives an imported translation.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
-        reviewer = self.factory.makePerson()
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
 
@@ -384,7 +387,6 @@ class TestAcceptFromImport(TestCaseWithFactory):
         # side, subject to the share_with_other_side parameter.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
-        reviewer = self.factory.makePerson()
 
         self.assertFalse(suggestion.is_current_upstream)
         self.assertFalse(suggestion.is_current_ubuntu)
@@ -398,7 +400,6 @@ class TestAcceptFromImport(TestCaseWithFactory):
         # Accepting a suggestion does not update its review fields.
         pofile = self.factory.makePOFile()
         suggestion = self.factory.makeSuggestion(pofile=pofile)
-        reviewer = self.factory.makePerson()
 
         self.assertIs(None, suggestion.reviewer)
         self.assertIs(None, suggestion.date_reviewed)
@@ -598,7 +599,7 @@ class TestAcceptFromUpstreamImportOnPackage(TestCaseWithFactory):
             self._getStates(suggestion, ubuntu_message, upstream_message))
 
     def test_accept_detects_conflict(self):
-        ubuntu_message = self._makeUbuntuMessage()
+        self._makeUbuntuMessage()
         suggestion = self._makeSuggestion()
         old = datetime.now(UTC) - timedelta(days=1)
 
@@ -1096,3 +1097,30 @@ class TestShareIfPossible(TestCaseWithFactory):
         self.assertTrue(translation.is_diverged)
         translation.shareIfPossible()
         self.assertTrue(translation.is_diverged)
+
+
+class TestPreloading(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_preloadDetails_handles_orphaned_message(self):
+        # preloadDetails works when given a TranslationMessage that has
+        # no POFile. This happens occasionally on production, and the
+        # suggestion rendering code copes with it, so we should too.
+        lang = self.factory.makeLanguage()
+        tm1 = self.factory.makeCurrentTranslationMessage(language=lang)
+        tm2 = self.factory.makeCurrentTranslationMessage(language=lang)
+
+        tm1_pofile = tm1.getOnePOFile()
+        tm2_pofile = tm2.getOnePOFile()
+
+        # Get rid of tm1's POFile.
+        removeSecurityProxy(tm1_pofile).language = self.factory.makeLanguage()
+
+        getUtility(ITranslationMessageSet).preloadDetails(
+            [tm1, tm2], need_pofile=True, need_potemplate=True,
+            need_potemplate_context=True, need_potranslation=True,
+            need_potmsgset=True, need_people=True)
+
+        self.assertIs(None, tm1.browser_pofile)
+        self.assertEqual(tm2_pofile, tm2.browser_pofile)

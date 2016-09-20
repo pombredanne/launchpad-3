@@ -25,13 +25,13 @@ methods as well.
     ...     IBuildFarmJobBehaviour)
     >>> from lp.buildmaster.model.buildfarmjobbehaviour import (
     ...     BuildFarmJobBehaviourBase)
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
 
-    >>> class MyNewBuildBehaviour(BuildFarmJobBehaviourBase):
+    >>> @implementer(IBuildFarmJobBehaviour)
+    ... class MyNewBuildBehaviour(BuildFarmJobBehaviourBase):
     ...     """A custom build behaviour for building blah."""
-    ...     implements(IBuildFarmJobBehaviour)
     ...
-    ...     def dispatchBuildToSlave(self, build_queue_item_id, logger):
+    ...     def dispatchBuildToSlave(self, logger):
     ...         print "Did something special to dispatch MySpecialBuild."
 
 For this documentation, we'll also need a dummy new build farm job.
@@ -39,8 +39,9 @@ For this documentation, we'll also need a dummy new build farm job.
     >>> from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
     >>> class IMyNewBuildFarmJob(IBuildFarmJob):
     ...     "Normally defines job-type specific database fields."""
-    >>> class MyNewBuildFarmJob(object):
-    ...     implements(IMyNewBuildFarmJob)
+    >>> @implementer(IMyNewBuildFarmJob)
+    ... class MyNewBuildFarmJob(object):
+    ...     pass
 
 Custom behaviours are not normally instantiated directly, instead an adapter is
 specified for the specific IBuildFarmJob. Normaly we'd add some ZCML to

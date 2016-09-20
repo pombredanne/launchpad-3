@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -328,6 +328,20 @@
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+
+  <securedutility
+    name="AllUserTeamsParticipationPlusSelfSimpleDisplay"
+    component="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
   <securedutility
     name="ActiveMailingList"
     component="lp.registry.vocabularies.ActiveMailingListVocabulary"
@@ -504,6 +518,21 @@
 
   <class class="lp.registry.vocabularies.SourcePackageNameIterator">
     <allow interface="lp.services.webapp.vocabulary.ICountableIterator"/>
+  </class>
+
+  <securedutility
+    name="DistributionSourcePackage"
+    component="lp.registry.vocabularies.DistributionSourcePackageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.DistributionSourcePackageVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+    <require
+        permission="zope.Public"
+        attributes="setDistribution"/>
   </class>
 
     <class

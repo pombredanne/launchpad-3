@@ -26,7 +26,7 @@ from BeautifulSoup import BeautifulSoup
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.datetime import rfc1123_date
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.feeds.interfaces.feed import (
@@ -50,16 +50,15 @@ from lp.services.webapp.vhosts import allvhosts
 
 
 SUPPORTED_FEEDS = ('.atom', '.html')
-MINUTES = 60 # Seconds in a minute.
+MINUTES = 60  # Seconds in a minute.
 
 
+@implementer(IFeed)
 class FeedBase(LaunchpadView):
     """See `IFeed`.
 
     Base class for feeds.
     """
-
-    implements(IFeed)
 
     # convert to seconds
     max_age = config.launchpad.max_feed_cache_minutes * MINUTES
@@ -180,7 +179,7 @@ class FeedBase(LaunchpadView):
             return utc_now()
         last_modified = sorted_items[0].last_modified
         if last_modified is None:
-            raise AssertionError, 'All feed entries require a date updated.'
+            raise AssertionError('All feed entries require a date updated.')
         return last_modified
 
     def render(self):
@@ -221,13 +220,12 @@ class FeedBase(LaunchpadView):
         return ViewPageTemplateFile(self.template_files['html'])(self)
 
 
+@implementer(IFeedEntry)
 class FeedEntry:
     """See `IFeedEntry`.
 
     An individual entry for a feed.
     """
-
-    implements(IFeedEntry)
 
     def __init__(self,
                  title,
@@ -249,7 +247,7 @@ class FeedEntry:
         self.date_updated = date_updated
         self.date_published = date_published
         if date_updated is None:
-            raise AssertionError, 'date_updated is required by RFC 4287'
+            raise AssertionError('date_updated is required by RFC 4287')
         if authors is None:
             authors = []
         self.authors = authors
@@ -272,10 +270,9 @@ class FeedEntry:
             url_path)
 
 
+@implementer(IFeedTypedData)
 class FeedTypedData:
     """Data for a feed that includes its type."""
-
-    implements(IFeedTypedData)
 
     content_types = ['text', 'html', 'xhtml']
 
@@ -312,14 +309,13 @@ class FeedTypedData:
         return altered_content
 
 
+@implementer(IFeedPerson)
 class FeedPerson:
     """See `IFeedPerson`.
 
     If this class is consistently used we will not accidentally leak email
     addresses.
     """
-
-    implements(IFeedPerson)
 
     def __init__(self, person, rootsite):
         self.name = person.displayname

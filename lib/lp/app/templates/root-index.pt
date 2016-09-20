@@ -159,6 +159,8 @@
               <strong
                 tal:content="view/branch_count/fmt:intcomma">123</strong>&nbsp;branches,
               <strong
+                tal:content="view/gitrepository_count/fmt:intcomma">123</strong>&nbsp;Git repositories,
+              <strong
                 tal:content="view/translation_count/fmt:intcomma">123</strong>&nbsp;translations,
               <strong
                 tal:content="view/answer_count/fmt:intcomma">123</strong>&nbsp;answers,

@@ -3,8 +3,7 @@
 
 """Test Archive features."""
 
-from urlparse import urljoin
-
+from fixtures import FakeLogger
 from storm.store import Store
 from testtools.matchers import Equals
 from zope.security.interfaces import Unauthorized
@@ -22,7 +21,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
@@ -130,7 +132,7 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
 class PrivateArtifactsViewTestCase(BrowserTestCase):
     """ Tests that private team archives can be viewed."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Create a test archive."""
@@ -163,11 +165,12 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
         self.assertIsNotNone(find_tag_by_id(content, 'ppa-install'))
 
     def test_unauthorized_subscriber_for_plus_packages(self):
+        self.useFixture(FakeLogger())
         with person_logged_in(self.owner):
             self.archive.newSubscription(
                 self.subscriber, registrant=self.archive.owner)
         with person_logged_in(self.subscriber):
-            url = urljoin(canonical_url(self.archive), '+packages')
+            url = canonical_url(self.archive) + '/+packages'
         browser = setupBrowserForUser(self.subscriber)
         self.assertRaises(Unauthorized, browser.open, url)
 
@@ -193,7 +196,7 @@ class PersonArchiveSubscriptions(TestCaseWithFactory):
                 view = create_initialized_view(
                     subscriber, '+archivesubscriptions', principal=subscriber)
                 view.render()
-        self.assertThat(recorder, HasQueryCount(Equals(9)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
 
     def test_getArchiveSubscriptions(self):
         # Anyone with 'View' permission on a given person is able to

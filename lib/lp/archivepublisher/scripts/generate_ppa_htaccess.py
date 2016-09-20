@@ -29,7 +29,6 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.utils import total_seconds
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
     ArchiveStatus,
@@ -69,12 +68,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
         pub_config = getPubConfig(ppa)
-        htaccess_filename = os.path.join(pub_config.htaccessroot, ".htaccess")
+        htaccess_filename = os.path.join(pub_config.archiveroot, ".htaccess")
         if not os.path.exists(htaccess_filename):
             # It's not there, so create it.
-            if not os.path.exists(pub_config.htaccessroot):
-                os.makedirs(pub_config.htaccessroot)
-            write_htaccess(htaccess_filename, pub_config.htaccessroot)
+            if not os.path.exists(pub_config.archiveroot):
+                os.makedirs(pub_config.archiveroot)
+            write_htaccess(htaccess_filename, pub_config.archiveroot)
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
     def generateHtpasswd(self, ppa):
@@ -85,13 +84,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """
         # Create a temporary file that will be a new .htpasswd.
         pub_config = getPubConfig(ppa)
-        if not os.path.exists(pub_config.htaccessroot):
-            os.makedirs(pub_config.htaccessroot)
-        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
+        if not os.path.exists(pub_config.temproot):
+            os.makedirs(pub_config.temproot)
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.temproot)
         os.close(fd)
 
-        write_htpasswd(
-            temp_filename, htpasswd_credentials_for_archive(ppa))
+        write_htpasswd(temp_filename, htpasswd_credentials_for_archive(ppa))
 
         return temp_filename
 
@@ -100,22 +98,29 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         :return: True if the file was replaced.
         """
-        if self.options.dryrun:
+        try:
+            if self.options.dryrun:
+                return False
+
+            # The publisher Config object does not have an
+            # interface, so we need to remove the security wrapper.
+            pub_config = getPubConfig(ppa)
+            if not os.path.exists(pub_config.archiveroot):
+                os.makedirs(pub_config.archiveroot)
+            htpasswd_filename = os.path.join(
+                pub_config.archiveroot, ".htpasswd")
+
+            if (not os.path.isfile(htpasswd_filename) or
+                not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):
+                # Atomically replace the old file or create a new file.
+                os.rename(temp_htpasswd_file, htpasswd_filename)
+                self.logger.debug("Replaced htpasswd for %s" % ppa.displayname)
+                return True
+
             return False
-
-        # The publisher Config object does not have an
-        # interface, so we need to remove the security wrapper.
-        pub_config = getPubConfig(ppa)
-        htpasswd_filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
-
-        if (not os.path.isfile(htpasswd_filename) or
-            not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):
-            # Atomically replace the old file or create a new file.
-            os.rename(temp_htpasswd_file, htpasswd_filename)
-            self.logger.debug("Replaced htpasswd for %s" % ppa.displayname)
-            return True
-
-        return False
+        finally:
+            if os.path.exists(temp_htpasswd_file):
+                os.unlink(temp_htpasswd_file)
 
     def sendCancellationEmail(self, token):
         """Send an email to the person whose subscription was cancelled."""
@@ -170,6 +175,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         store = IStore(ArchiveSubscriber)
         valid_tokens = store.find(
             ArchiveAuthToken,
+            ArchiveAuthToken.name == None,
             ArchiveAuthToken.date_deactivated == None,
             ArchiveAuthToken.archive_id == ArchiveSubscriber.archive_id,
             ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT,
@@ -180,6 +186,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # all active tokens and valid tokens.
         all_active_tokens = store.find(
             ArchiveAuthToken,
+            ArchiveAuthToken.name == None,
             ArchiveAuthToken.date_deactivated == None)
 
         return all_active_tokens.difference(valid_tokens)
@@ -268,6 +275,22 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             *extra_expr)
         return new_ppa_tokens
 
+    def getDeactivatedNamedTokens(self, since=None):
+        """Return result set of named tokens deactivated since given time."""
+        now = datetime.now(pytz.UTC)
+
+        store = IStore(ArchiveAuthToken)
+        extra_expr = []
+        if since:
+            extra_expr = [ArchiveAuthToken.date_deactivated >= since]
+        tokens = store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.name != None,
+            ArchiveAuthToken.date_deactivated != None,
+            ArchiveAuthToken.date_deactivated <= now,
+            *extra_expr)
+        return tokens
+
     def getNewPrivatePPAs(self, since=None):
         """Return the recently created private PPAs."""
         store = IStore(Archive)
@@ -287,6 +310,18 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             '%s PPAs with deactivated tokens' % current_ppa_count)
 
         last_success = self.getTimeToSyncFrom()
+
+        # Include ppas with named tokens deactivated since last time we ran.
+        num_tokens = 0
+        for token in self.getDeactivatedNamedTokens(since=last_success):
+            affected_ppas.add(token.archive)
+            num_tokens += 1
+
+        new_ppa_count = len(affected_ppas)
+        self.logger.debug(
+            "%s deactivated named tokens since last run, %s PPAs affected"
+            % (num_tokens, new_ppa_count - current_ppa_count))
+        current_ppa_count = new_ppa_count
 
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
@@ -310,7 +345,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         self.logger.debug('%s PPAs require updating' % new_ppa_count)
         for ppa in affected_ppas:
-            # If this PPA is blacklisted, do not touch it's htaccess/pwd
+            # If this PPA is blacklisted, do not touch its htaccess/pwd
             # files.
             blacklisted_ppa_names_for_owner = self.blacklist.get(
                 ppa.owner.name, [])
@@ -336,7 +371,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             htpasswd_write_duration = datetime.now() - htpasswd_write_start
             self.logger.debug(
                 "Wrote htpasswd for '%s': %ss"
-                % (ppa.name, total_seconds(htpasswd_write_duration)))
+                % (ppa.name, htpasswd_write_duration.total_seconds()))
 
         if self.options.no_deactivation or self.options.dryrun:
             self.logger.info('Dry run, so not committing transaction.')

@@ -17,7 +17,7 @@ __all__ = [
     'KdePOImporter'
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
@@ -28,9 +28,9 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 
 
+@implementer(ITranslationFormatImporter)
 class KdePOImporter(GettextPOImporter):
     """Support class for importing KDE .po files."""
-    implements(ITranslationFormatImporter)
 
     def getFormat(self, file_contents):
         """See `ITranslationFormatImporter`."""

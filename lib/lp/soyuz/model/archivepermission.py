@@ -26,12 +26,11 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.app.errors import NotFoundError
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
@@ -65,17 +64,11 @@ from lp.soyuz.interfaces.component import (
     IComponentSet,
     )
 from lp.soyuz.interfaces.packageset import IPackageset
-from lp.soyuz.model.packageset import Packageset
 
 
-def _extract_type_name(value):
-    """Extract the type name of the given value."""
-    return str(type(value)).split("'")[-2]
-
-
+@implementer(IArchivePermission)
 class ArchivePermission(SQLBase):
     """See `IArchivePermission`."""
-    implements(IArchivePermission)
     _table = 'ArchivePermission'
     _defaultOrder = 'id'
 
@@ -157,9 +150,9 @@ class ArchivePermission(SQLBase):
             return None
 
 
+@implementer(IArchivePermissionSet)
 class ArchivePermissionSet:
     """See `IArchivePermissionSet`."""
-    implements(IArchivePermissionSet)
 
     def checkAuthenticated(self, person, archive, permission, item,
                            distroseries=None):
@@ -470,26 +463,6 @@ class ArchivePermissionSet:
             permission=ArchivePermissionType.QUEUE_ADMIN, **kwargs)
         self._remove_permission(permission)
 
-    def _nameToPackageset(self, packageset):
-        """Helper to convert a possible string name to IPackageset."""
-        if isinstance(packageset, basestring):
-            # A package set name was passed, assume the current distro series.
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            name = packageset
-            store = IStore(Packageset)
-            packageset = store.find(
-                Packageset, name=name,
-                distroseries=ubuntu.currentseries).one()
-            if packageset is not None:
-                return packageset
-            else:
-                raise NotFoundError("No such package set '%s'" % name)
-        elif IPackageset.providedBy(packageset):
-            return packageset
-        else:
-            raise ValueError(
-                'Not a package set: %s' % _extract_type_name(packageset))
-
     def packagesetsForUploader(self, archive, person):
         """See `IArchivePermissionSet`."""
         store = IStore(ArchivePermission)
@@ -508,7 +481,6 @@ class ArchivePermissionSet:
     def uploadersForPackageset(
         self, archive, packageset, direct_permissions=True):
         """See `IArchivePermissionSet`."""
-        packageset = self._nameToPackageset(packageset)
         store = IStore(ArchivePermission)
         if direct_permissions == True:
             query = '''
@@ -528,7 +500,6 @@ class ArchivePermissionSet:
     def newPackagesetUploader(
         self, archive, person, packageset, explicit=False):
         """See `IArchivePermissionSet`."""
-        packageset = self._nameToPackageset(packageset)
         store = IMasterStore(ArchivePermission)
 
         # First see whether we have a matching permission in the database
@@ -583,7 +554,6 @@ class ArchivePermissionSet:
     def deletePackagesetUploader(
         self, archive, person, packageset, explicit=False):
         """See `IArchivePermissionSet`."""
-        packageset = self._nameToPackageset(packageset)
         store = IMasterStore(ArchivePermission)
 
         # Do we have the permission the user wants removed in the database?
@@ -642,13 +612,9 @@ class ArchivePermissionSet:
         return rset
 
     def isSourceUploadAllowed(
-        self, archive, sourcepackagename, person, distroseries=None):
+        self, archive, sourcepackagename, person, distroseries):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
-        store = IStore(ArchivePermission)
-        if distroseries is None:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            distroseries = ubuntu.currentseries
 
         # Put together the parameters for the query that follows.
         archive_params = (ArchivePermissionType.UPLOAD, archive.id)
@@ -696,4 +662,4 @@ class ArchivePermissionSet:
         END AS number_of_permitted_package_sets;
 
         ''' % sqlvalues(*query_params)
-        return store.execute(query).get_one()[0] > 0
+        return IStore(ArchivePermission).execute(query).get_one()[0] > 0

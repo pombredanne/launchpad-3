@@ -164,7 +164,6 @@ def parse_file(fd, start_position, logger, get_download_key, parsed_lines=0):
             logger.error('Error (%s) while parsing "%s"' % (e, line))
             break
 
-
     if parsed_lines > 0:
         logger.info('Parsed %d lines resulting in %d download stats.' % (
             parsed_lines, len(downloads)))

@@ -71,7 +71,7 @@ from a store other than the correct Master.
     >>> main_slave = ISlaveStore(Person)
     >>> t = transaction.begin()
     >>> person = main_slave.find(Person, name='mark').one()
-    >>> person.displayname = 'Cannot change'
+    >>> person.display_name = 'Cannot change'
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
@@ -80,7 +80,7 @@ from a store other than the correct Master.
     >>> transaction.abort()
     >>> t = transaction.begin()
     >>> person = main_slave.find(Person, name='mark').one()
-    >>> IMasterObject(person).displayname = 'Can change'
+    >>> IMasterObject(person).display_name = 'Can change'
     >>> transaction.commit()
 
 

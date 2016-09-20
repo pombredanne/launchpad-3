@@ -86,4 +86,11 @@ class IArchiveSigningKey(Interface):
             or there is no Release file in the given suite.
         """
 
+    def signFile(path):
+        """Sign the corresponding file.
 
+        :param path: path within dists to sign with the archive key.
+        :raises AssertionError: if the context archive has no `signing_key`.
+        :raises AssertionError: if the given 'path' is outside of the
+            archive root.
+        """

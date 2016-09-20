@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies pulling stuff from the database.
@@ -10,14 +10,17 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'BatchedCountableIterator',
+    'CountableIterator',
     'FilteredVocabularyBase',
     'ForgivingSimpleVocabulary',
     'IHugeVocabulary',
-    'SQLObjectVocabularyBase',
-    'NamedSQLObjectVocabulary',
     'NamedSQLObjectHugeVocabulary',
-    'CountableIterator',
-    'BatchedCountableIterator',
+    'NamedSQLObjectVocabulary',
+    'NamedStormHugeVocabulary',
+    'NamedStormVocabulary',
+    'SQLObjectVocabularyBase',
+    'StormVocabularyBase',
     'VocabularyFilter',
 ]
 
@@ -28,9 +31,11 @@ from sqlobject import (
     AND,
     CONTAINSSTRING,
     )
+from storm.base import Storm
+from storm.store import EmptyResultSet
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema.interfaces import (
@@ -43,6 +48,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import isinstance as zisinstance
 
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.helpers import ensure_unicode
 
@@ -146,6 +152,7 @@ class ICountableIterator(Interface):
         pass
 
 
+@implementer(ICountableIterator)
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
 
@@ -153,8 +160,6 @@ class CountableIterator:
     namely the portion required to have it work as part of a
     BatchNavigator.
     """
-
-    implements(ICountableIterator)
 
     def __init__(self, count, iterator, item_wrapper=None):
         """Construct a CountableIterator instance.
@@ -275,6 +280,7 @@ class FilteredVocabularyBase:
         return []
 
 
+@implementer(IVocabulary, IVocabularyTokenized)
 class SQLObjectVocabularyBase(FilteredVocabularyBase):
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
@@ -289,7 +295,6 @@ class SQLObjectVocabularyBase(FilteredVocabularyBase):
     Then the vocabulary for the widget that captures a value for bar
     should derive from SQLObjectVocabularyBase.
     """
-    implements(IVocabulary, IVocabularyTokenized)
     _orderBy = None
     _filter = None
     _clauseTables = None
@@ -431,10 +436,9 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
+@implementer(IHugeVocabulary)
 class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
     """A NamedSQLObjectVocabulary that implements IHugeVocabulary."""
-
-    implements(IHugeVocabulary)
     _orderBy = 'name'
     displayname = None
     step_title = 'Search'
@@ -464,3 +468,188 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
             clause = AND(clause, self._filter)
         results = self._table.select(clause, orderBy=self._orderBy)
         return self.iterator(results.count(), results, self.toTerm)
+
+
+@implementer(IVocabulary, IVocabularyTokenized)
+class StormVocabularyBase(FilteredVocabularyBase):
+    """A base class for widgets that are rendered to collect values
+    for attributes that are Storm references.
+
+    So if a content class behind some form looks like:
+
+    class Foo(StormBase):
+        id = Int(...)
+        bar_id = Int(...)
+        bar = Reference(bar_id, ...)
+        ...
+
+    Then the vocabulary for the widget that captures a value for bar
+    should derive from StormVocabularyBase.
+    """
+    _order_by = None
+    _clauses = []
+
+    def __init__(self, context=None):
+        self.context = context
+
+    # XXX kiko 2007-01-16: note that the method searchForTerms is part of
+    # IHugeVocabulary, and so should not necessarily need to be
+    # implemented here; however, many of our vocabularies depend on
+    # searchForTerms for popup functionality so I have chosen to just do
+    # that. It is possible that a better solution would be to have the
+    # search functionality produce a new vocabulary restricted to the
+    # desired subset.
+    def searchForTerms(self, query=None, vocab_filter=None):
+        results = self.search(query, vocab_filter)
+        return CountableIterator(results.count(), results, self.toTerm)
+
+    def search(self, query, vocab_filter=None):
+        # This default implementation of searchForTerms glues together
+        # the legacy API of search() with the toTerm method. If you
+        # don't reimplement searchForTerms you will need to at least
+        # provide your own search() method.
+        raise NotImplementedError
+
+    def toTerm(self, obj):
+        # This default implementation assumes that your object has a
+        # title attribute. If it does not you will need to reimplement
+        # toTerm, or reimplement the whole searchForTerms.
+        return SimpleTerm(obj, obj.id, obj.title)
+
+    @property
+    def _entries(self):
+        entries = IStore(self._table).find(self._table, *self._clauses)
+        if self._order_by is not None:
+            entries = entries.order_by(self._order_by)
+        return entries
+
+    def __iter__(self):
+        """Return an iterator which provides the terms from the vocabulary."""
+        for obj in self._entries:
+            yield self.toTerm(obj)
+
+    def __len__(self):
+        return self._entries.count()
+
+    def __contains__(self, obj):
+        # Sometimes this method is called with a Storm instance, but z3 form
+        # machinery sends through integer ids.  This might be due to a bug
+        # somewhere.
+        if zisinstance(obj, Storm):
+            clauses = [self._table.id == obj.id]
+            if self._clauses:
+                # XXX kiko 2007-01-16: this code is untested.
+                clauses.extend(self._clauses)
+            found_obj = IStore(self._table).find(self._table, *clauses).one()
+            return found_obj is not None and found_obj == obj
+        else:
+            clauses = [self._table.id == int(obj)]
+            if self._clauses:
+                # XXX kiko 2007-01-16: this code is untested.
+                clauses.extend(self._clauses)
+            found_obj = IStore(self._table).find(self._table, *clauses).one()
+            return found_obj is not None
+
+    def getTerm(self, value):
+        # Short circuit.  There is probably a design problem here since we
+        # sometimes get the id and sometimes a Storm instance.
+        if zisinstance(value, Storm):
+            return self.toTerm(value)
+
+        try:
+            value = int(value)
+        except ValueError:
+            raise LookupError(value)
+
+        clauses = [self._table.id == value]
+        if self._clauses:
+            clauses.extend(self._clauses)
+        try:
+            obj = IStore(self._table).find(self._table, *clauses).one()
+        except ValueError:
+            raise LookupError(value)
+
+        if obj is None:
+            raise LookupError(value)
+
+        return self.toTerm(obj)
+
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+
+    def emptySelectResults(self):
+        """Return a SelectResults object without any elements.
+
+        This is to be used when no search string is given to the search()
+        method of subclasses, in order to be consistent and always return
+        a SelectResults object.
+        """
+        return EmptyResultSet()
+
+
+class NamedStormVocabulary(StormVocabularyBase):
+    """A Storm vocabulary for tables with a unique Unicode name column.
+
+    Provides all methods required by IHugeVocabulary, although it
+    doesn't actually specify this interface since it may not actually
+    be huge and require the custom widgets.
+    """
+    _order_by = "name"
+    # The iterator class will be used to wrap the results; its iteration
+    # methods should return SimpleTerms, as the reference implementation
+    # CountableIterator does.
+    iterator = CountableIterator
+
+    def searchForTerms(self, query=None, vocab_filter=None):
+        if not query:
+            return self.emptySelectResults()
+
+        query = ensure_unicode(query).lower()
+        results = IStore(self._table).find(
+            self._table,
+            self._table.name.contains_string(query),
+            *self._clauses).order_by(self._order_by)
+        return self.iterator(results.count(), results, self.toTerm)
+
+    def toTerm(self, obj):
+        """See `StormVocabularyBase`.
+
+        This implementation uses name as a token instead of the object's
+        ID, and tries to be smart about deciding to present an object's
+        title if it has one.
+        """
+        if getattr(obj, "title", None) is None:
+            return SimpleTerm(obj, obj.name, obj.name)
+        else:
+            return SimpleTerm(obj, obj.name, obj.title)
+
+    def __contains__(self, obj):
+        if zisinstance(obj, Storm):
+            found_obj = IStore(self._table).find(
+                self._table,
+                self._table.name == obj.name, *self._clauses).one()
+            return found_obj is not None and found_obj == obj
+        else:
+            found_obj = IStore(self._table).find(
+                self._table, self._table.name == obj, *self._clauses).one()
+            return found_obj is not None
+
+    def getTermByToken(self, token):
+        obj = IStore(self._table).find(
+            self._table, self._table.name == token, *self._clauses).one()
+        if obj is None:
+            raise LookupError(token)
+        return self.toTerm(obj)
+
+
+@implementer(IHugeVocabulary)
+class NamedStormHugeVocabulary(NamedStormVocabulary):
+    """A NamedStormVocabulary that implements IHugeVocabulary."""
+
+    displayname = None
+    step_title = "Search"
+
+    def __init__(self, context=None):
+        super(NamedStormHugeVocabulary, self).__init__(context)
+        if self.displayname is None:
+            self.displayname = "Select %s" % self.__class__.__name__

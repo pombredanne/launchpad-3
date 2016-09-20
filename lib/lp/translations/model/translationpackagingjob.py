@@ -22,8 +22,8 @@ from lazr.lifecycle.interfaces import (
     )
 import transaction
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.services.config import config
@@ -37,7 +37,7 @@ from lp.translations.model.translationsharingjob import (
     TranslationSharingJobDerived,
     TranslationSharingJobType,
     )
-from lp.translations.translationmerger import (
+from lp.translations.utilities.translationmerger import (
     TransactionManager,
     TranslationMerger,
     )
@@ -47,10 +47,9 @@ from lp.translations.utilities.translationsplitter import (
     )
 
 
+@provider(ITranslationPackagingJobSource)
 class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
     """Iterate through all Translation job types."""
-
-    classProvides(ITranslationPackagingJobSource)
 
     _translation_packaging_job_types = []
 
@@ -80,10 +79,9 @@ class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
         return super(TranslationPackagingJob, cls).iterReady([clause])
 
 
+@implementer(IRunnableJob)
 class TranslationMergeJob(TranslationPackagingJob):
     """Job for merging translations between a product and sourcepackage."""
-
-    implements(IRunnableJob)
 
     class_job_type = TranslationSharingJobType.PACKAGING_MERGE
 
@@ -94,7 +92,7 @@ class TranslationMergeJob(TranslationPackagingJob):
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
-        if not self.distroseries.distribution.full_functionality:
+        if not self.distroseries.distribution.official_packages:
             logger.info(
                 'Skipping merge for unsupported distroseries "%s".' %
                 self.distroseries.displayname)
@@ -107,10 +105,9 @@ class TranslationMergeJob(TranslationPackagingJob):
             self.productseries, self.sourcepackagename, self.distroseries, tm)
 
 
+@implementer(IRunnableJob)
 class TranslationSplitJob(TranslationPackagingJob):
     """Job for splitting translations between a product and sourcepackage."""
-
-    implements(IRunnableJob)
 
     class_job_type = TranslationSharingJobType.PACKAGING_SPLIT
 
@@ -127,10 +124,9 @@ class TranslationSplitJob(TranslationPackagingJob):
         TranslationSplitter(self.productseries, self.sourcepackage).split()
 
 
+@implementer(IRunnableJob)
 class TranslationTemplateChangeJob(TranslationPackagingJob):
     """Job for merging/splitting translations when template is changed."""
-
-    implements(IRunnableJob)
 
     class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
 

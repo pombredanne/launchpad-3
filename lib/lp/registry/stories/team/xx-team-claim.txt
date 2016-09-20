@@ -70,7 +70,7 @@ claiming process.
     >>> user_browser.title
     'Claim Launchpad team'
 
-Here the user sees a form where he can enter a few more details about the
+Here the user sees a form where they can enter a few more details about the
 team and finish the claiming process, making the person who started the
 claim process the team's owner.
 

@@ -17,7 +17,7 @@ from storm.locals import (
     JSON,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.codereviewinlinecomment import (
     ICodeReviewInlineComment,
@@ -30,10 +30,9 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 
 
+@implementer(ICodeReviewInlineComment)
 class CodeReviewInlineComment(StormBase):
     __storm_table__ = 'CodeReviewInlineComment'
-
-    implements(ICodeReviewInlineComment)
 
     previewdiff_id = Int(name='previewdiff')
     previewdiff = Reference(previewdiff_id, 'PreviewDiff.id')
@@ -55,9 +54,9 @@ class CodeReviewInlineCommentDraft(StormBase):
     comments = JSON()
 
 
+@implementer(ICodeReviewInlineCommentSet)
 class CodeReviewInlineCommentSet:
     """Utility for `CodeReviewInlineComment{,Draft}` handling."""
-    implements(ICodeReviewInlineCommentSet)
 
     def _findDraftObject(self, previewdiff, person):
         """Return the base `CodeReviewInlineCommentDraft` lookup."""

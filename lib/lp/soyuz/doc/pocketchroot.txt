@@ -36,24 +36,22 @@ Check if getChroot returns the 'default' argument on not found chroots:
 Invoke addOrUpdateChroot for missing chroot, so it will insert a new
 record in PocketChroot:
 
-  >>> p_chroot = hoary_i386.addOrUpdateChroot(chroot=chroot1)
-  >>> print p_chroot.id
-  1
-  >>> print p_chroot.distroarchseries.architecturetag
+  >>> p_chroot1 = hoary_i386.addOrUpdateChroot(chroot=chroot1)
+  >>> print p_chroot1.distroarchseries.architecturetag
   i386
-  >>> print p_chroot.chroot.id,
+  >>> print p_chroot1.chroot.id,
   1
 
 Invoke addOrUpdateChroot on an existing PocketChroot, it will update
 the chroot:
 
-  >>> p_chroot = hoary_i386.addOrUpdateChroot(chroot=chroot2)
-  >>> print p_chroot.id
-  1
-  >>> print p_chroot.distroarchseries.architecturetag
+  >>> p_chroot2 = hoary_i386.addOrUpdateChroot(chroot=chroot2)
+  >>> print p_chroot2.distroarchseries.architecturetag
   i386
-  >>> print p_chroot.chroot.id,
+  >>> print p_chroot2.chroot.id,
   2
+  >>> p_chroot2 == p_chroot1
+  True
 
 Ensure chroot was updated by retriving it from DB again:
 

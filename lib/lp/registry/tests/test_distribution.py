@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
@@ -352,7 +352,7 @@ class TestDistributionCurrentSourceReleases(
 
         # Cache cleared.
         distribution.newSeries(
-            name='bar', displayname='Bar', title='Bar', summary='',
+            name='bar', display_name='Bar', title='Bar', summary='',
             description='', version='1', previous_series=None,
             registrant=self.factory.makePerson())
         self.assertNotIn("series", cache)
@@ -383,7 +383,7 @@ class SeriesByStatusTests(TestCaseWithFactory):
 
 
 class SeriesTests(TestCaseWithFactory):
-    """Test IDistribution.getSeries().
+    """Test IDistribution.getSeries() and friends.
     """
 
     layer = LaunchpadFunctionalLayer
@@ -415,6 +415,20 @@ class SeriesTests(TestCaseWithFactory):
         self.assertRaises(NoSuchDistroSeries, distro.getSeries, "devel")
         self.assertEqual(
             series, distro.getSeries("devel", follow_aliases=True))
+
+    def test_getNonObsoleteSeries(self):
+        distro = self.factory.makeDistribution()
+        self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.OBSOLETE)
+        current = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        development = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.DEVELOPMENT)
+        experimental = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.EXPERIMENTAL)
+        self.assertContentEqual(
+            [current, development, experimental],
+            list(distro.getNonObsoleteSeries()))
 
 
 class DerivativesTests(TestCaseWithFactory):

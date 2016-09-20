@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import cPickle as pickle
+import hashlib
 import time
 from UserDict import DictMixin
 
@@ -13,7 +14,7 @@ from lazr.restful.utils import get_current_browser_request
 from storm.zope.interfaces import IZStorm
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.session.interfaces import (
     IClientIdManager,
     ISessionData,
@@ -38,6 +39,7 @@ class PGSessionBase:
         return getUtility(IZStorm).get(self.store_name)
 
 
+@implementer(ISessionDataContainer)
 class PGSessionDataContainer(PGSessionBase):
     """An ISessionDataContainer that stores data in PostgreSQL
 
@@ -60,7 +62,6 @@ class PGSessionDataContainer(PGSessionBase):
 
     Removing expired data needs to be done out of band.
     """
-    implements(ISessionDataContainer)
 
     # If we have a low enough resolution, we can determine active users
     # using the session data.
@@ -80,8 +81,8 @@ class PGSessionDataContainer(PGSessionBase):
         pass
 
 
+@implementer(ISessionData)
 class PGSessionData(PGSessionBase):
-    implements(ISessionData)
 
     session_data_container = None
 
@@ -92,6 +93,8 @@ class PGSessionData(PGSessionBase):
     def __init__(self, session_data_container, client_id):
         self.session_data_container = session_data_container
         self.client_id = ensure_unicode(client_id)
+        self.hashed_client_id = hashlib.sha256(
+            self.client_id.encode('utf-8')).hexdigest().decode('ascii')
         self.lastAccessTime = time.time()
 
         # Update the last access time in the db if it is out of date
@@ -101,7 +104,8 @@ class PGSessionData(PGSessionBase):
             WHERE client_id = ?
                 AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (table_name, session_data_container.resolution)
-        self.store.execute(query, (self.client_id,), noresult=True)
+        self.store.execute(
+            query, (self.hashed_client_id,), noresult=True)
 
     def _ensureClientId(self):
         if self._have_ensured_client_id:
@@ -110,7 +114,7 @@ class PGSessionData(PGSessionBase):
         # about our client id. We're doing it lazily to try and keep anonymous
         # users from having a session.
         self.store.execute(
-            "SELECT ensure_session_client_id(?)", (self.client_id,),
+            "SELECT ensure_session_client_id(?)", (self.hashed_client_id,),
             noresult=True)
         request = get_current_browser_request()
         if request is not None:
@@ -157,8 +161,8 @@ class PGSessionData(PGSessionBase):
         pass
 
 
+@implementer(ISessionPkgData)
 class PGSessionPkgData(DictMixin, PGSessionBase):
-    implements(ISessionPkgData)
 
     @property
     def store(self):
@@ -179,8 +183,8 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
             SELECT key, pickle FROM %s WHERE client_id = ?
                 AND product_id = ?
             """ % self.table_name
-        result = self.store.execute(query, (self.session_data.client_id,
-                                   self.product_id))
+        result = self.store.execute(
+            query, (self.session_data.hashed_client_id, self.product_id))
         for key, pickled_value in result:
             value = pickle.loads(str(pickled_value))
             self._data_cache[key] = value
@@ -195,7 +199,7 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
         self.session_data._ensureClientId()
         self.store.execute(
             "SELECT set_session_pkg_data(?, ?, ?, ?)",
-            (self.session_data.client_id,
+            (self.session_data.hashed_client_id,
                 self.product_id, key, pickled_value),
             noresult=True)
 
@@ -216,12 +220,13 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
             # fingers out of it.
             return
         query = """
-            DELETE FROM %s WHERE client_id = ? AND product_id = ? AND key = ?
+            DELETE FROM %s
+            WHERE client_id = ? AND product_id = ? AND key = ?
             """ % self.table_name
         self.store.execute(
             query,
-            (self.session_data.client_id,
-                self.product_id, ensure_unicode(key)),
+            (self.session_data.hashed_client_id, self.product_id,
+             ensure_unicode(key)),
             noresult=True)
 
     def keys(self):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -11,7 +11,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.adapters.bugchange import (
     ATTACHMENT_ADDED,
@@ -24,6 +24,8 @@ from lp.bugs.adapters.bugchange import (
     CVE_LINKED,
     CVE_UNLINKED,
     MARKED_AS_DUPLICATE,
+    MERGE_PROPOSAL_LINKED,
+    MERGE_PROPOSAL_UNLINKED,
     REMOVED_DUPLICATE_MARKER,
     REMOVED_SUBSCRIBER,
     )
@@ -36,10 +38,9 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IBugActivity)
 class BugActivity(SQLBase):
     """Bug activity log entry."""
-
-    implements(IBugActivity)
 
     _table = 'BugActivity'
     bug = ForeignKey(foreignKey='Bug', dbName='bug', notNull=True)
@@ -102,6 +103,8 @@ class BugActivity(SQLBase):
                 result = 'watches'
             elif result in (CVE_LINKED, CVE_UNLINKED):
                 result = 'cves'
+            elif result in (MERGE_PROPOSAL_LINKED, MERGE_PROPOSAL_UNLINKED):
+                result = 'linked_merge_proposals'
             elif str(result).startswith(REMOVED_SUBSCRIBER):
                 result = 'removed_subscriber'
             elif result == 'summary':
@@ -111,10 +114,9 @@ class BugActivity(SQLBase):
             return match.groupdict()['attribute']
 
 
+@implementer(IBugActivitySet)
 class BugActivitySet:
     """See IBugActivitySet."""
-
-    implements(IBugActivitySet)
 
     def new(self, bug, datechanged, person, whatchanged,
             oldvalue=None, newvalue=None, message=None):

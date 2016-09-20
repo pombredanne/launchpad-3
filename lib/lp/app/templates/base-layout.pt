@@ -3,13 +3,14 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   define-macro="master"
   tal:define="
-    revno modules/lp.app.versioninfo/revno | string:unknown;
+    revision modules/lp.app.versioninfo/revision | string:unknown;
+    display_revision modules/lp.app.versioninfo/display_revision | string:unknown;
     devmode modules/lp.services.config/config/devmode;
     rooturl modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/lp.services.config/config/launchpad/is_demo;
     is_lpnet modules/lp.services.config/config/launchpad/is_lpnet;
     site_message modules/lp.services.config/config/launchpad/site_message;
-    icingroot string:${rooturl}+icing/rev${revno};
+    icingroot string:${rooturl}+icing/rev${revision};
     features request/features;
     feature_scopes request/features/scopes;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
@@ -74,17 +75,6 @@
                 <noscript><strong>The information on this page is private.</strong></noscript>
             </div>
           </tal:private-banner>
-        <script type="text/javascript"
-          tal:condition="python: is_lpnet">
-          var _gaq = _gaq || [];
-          _gaq.push(['_setAccount', 'UA-12833497-1']);
-          _gaq.push(['_setDomainName', '.launchpad.net']);
-          _gaq.push(['_setAllowHash', false]);
-          _gaq.push(['_trackPageview']);
-        </script>
-        <script type="text/javascript"
-            tal:condition="python: is_lpnet"
-            tal:attributes="src string:${icingroot}/google-analytics/ga.js"></script>
     <div class="yui-d0">
       <div id="locationbar" class="login-logout">
         <tal:login replace="structure context/@@login_status" />
@@ -93,15 +83,15 @@
       <div id="watermark" class="watermark-apps-portlet"
         tal:condition="view/macro:has-watermark">
         <div>
-          <span tal:replace="structure view/watermark:logo"></span>
+          <span tal:replace="structure view/@@+hierarchy/logo"></span>
         </div>
         <div class="wide">
-          <h2 tal:replace="structure view/watermark:heading">
+          <h2 tal:replace="structure view/@@+hierarchy/heading">
             Celso Providelo
           </h2>
-          <metal:heading_nav
-            use-macro="context/@@+base-layout-macros/application-buttons"/>
         </div>
+        <metal:heading_nav
+          use-macro="context/@@+base-layout-macros/application-buttons"/>
       </div>
 
       <div class="yui-t4"
@@ -119,7 +109,7 @@
                 metal:define-slot="heading"
                 >Page Label
               </h1>
-              <tal:breadcrumbs replace="structure context/@@+hierarchy">
+              <tal:breadcrumbs replace="structure view/@@+hierarchy">
                 ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
               <div id="registration" class="registering"
@@ -160,23 +150,6 @@
         use-macro="context/@@+base-layout-macros/footer"/>
     </div><!-- yui-d0-->
 
-    <div id="help-pane" class="invisible">
-      <div id="help-body">
-        <tal:XXX condition="nothing">
-          # XXX mars 2008-11-07 bug=295254:
-          # We use this ugly src="" hack to get rid of an IE6 security
-          # warning.  See bug #295234.
-        </tal:XXX>
-        <iframe
-          id="help-pane-content"
-          class="invisible"
-          src="javascript:void(0);"></iframe>
-      </div>
-      <div id="help-footer">
-        <span id="help-close"></span>
-      </div>
-    </div>
-
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
     <metal:debug-timeline
@@ -210,7 +183,7 @@
 
     Features: ${request/features/usedFlags}
 
-    r${revno}
+    r${display_revision}
 
     --&gt;" />
 </tal:template>

@@ -6,27 +6,12 @@
 __metaclass__ = type
 
 from lp.app.enums import InformationType
-from lp.services.webapp.interfaces import IPrimaryContext
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
-
-
-class TestBranchSubscriptionPrimaryContext(TestCaseWithFactory):
-    # Tests the adaptation of a branch subscription into a primary context.
-
-    layer = DatabaseFunctionalLayer
-
-    def testPrimaryContext(self):
-        # The primary context of a branch subscription is the same as the
-        # primary context of the branch that the subscription is for.
-        subscription = self.factory.makeBranchSubscription()
-        self.assertEqual(
-            IPrimaryContext(subscription).context,
-            IPrimaryContext(subscription.branch).context)
 
 
 class TestBranchSubscriptionAddOtherView(TestCaseWithFactory):

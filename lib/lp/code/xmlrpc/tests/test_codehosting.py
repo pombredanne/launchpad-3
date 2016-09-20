@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -52,6 +52,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
@@ -98,7 +99,22 @@ class TestRunWithLogin(TestCaseWithFactory):
 
     def test_loginAsRequesterName(self):
         # run_with_login can take a username as well as user id.
-        username = run_with_login(self.person.name, get_logged_in_username)
+        # Deliberately not Unicode, since XML-RPC gives us a byte string.
+        username = run_with_login(
+            self.person.name.encode("UTF-8"), get_logged_in_username)
+        login(ANONYMOUS)
+        self.assertEqual(self.person.name, username)
+        logout()
+
+    def test_loginAsRequesterOpenID(self):
+        # run_with_login can take an OpenID identifier.
+        with person_logged_in(self.person):
+            identifier = (
+                self.person.account.openid_identifiers.one().identifier)
+        username = run_with_login(
+            # Deliberately not Unicode, since XML-RPC gives us a byte string.
+            (u'http://testopenid.dev/+id/%s' % identifier).encode("UTF-8"),
+            get_logged_in_username)
         login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
         logout()
@@ -174,15 +190,6 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(num_failures, branch.mirror_failures)
         self.assertEqual(failure_message, branch.mirror_status_message)
 
-    def assertMirrorSucceeded(self, branch, revision_id):
-        """Assert that `branch` mirrored to `revision_id`."""
-        self.assertSqlAttributeEqualsDate(
-            branch, 'last_mirror_attempt', UTC_NOW)
-        self.assertSqlAttributeEqualsDate(
-            branch, 'last_mirrored', UTC_NOW)
-        self.assertEqual(0, branch.mirror_failures)
-        self.assertEqual(revision_id, branch.last_mirrored_id)
-
     def assertUnmirrored(self, branch):
         """Assert that `branch` has not yet been mirrored.
 
@@ -223,8 +230,8 @@ class CodehostingTest(TestCaseWithFactory):
 
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into ScriptActivity.
-        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
-        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started = datetime.datetime(2007, 7, 5, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 7, 5, 19, 34, 24, tzinfo=UTC)
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
         success = self.codehosting_api.recordSuccess(
@@ -302,7 +309,6 @@ class CodehostingTest(TestCaseWithFactory):
         # Creating a branch with an invalid product name fails.
         owner = self.factory.makePerson()
         name = self.factory.getUniqueString()
-        from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
         branch_name = "/%s/fiz:buzz/%s" % (BRANCH_ALIAS_PREFIX, name)
         fault = self.codehosting_api.createBranch(
             owner.id, branch_name)
@@ -496,7 +502,8 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         translation = self.codehosting_api.translatePath(owner.id, path)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch_id, 'writable': True}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch_id, 'writable': True, 'private': False}, ''),
             translation)
 
     def test_createBranch_using_branch_alias_product(self):
@@ -524,7 +531,8 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         translation = self.codehosting_api.translatePath(owner.id, path)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch_id, 'writable': True}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch_id, 'writable': True, 'private': False}, ''),
             translation)
 
     def test_createBranch_using_branch_alias_product_not_auth(self):
@@ -741,7 +749,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, ''),
             translation)
 
     def test_translatePath_branch_with_trailing_slash(self):
@@ -751,7 +760,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, ''),
             translation)
 
     def test_translatePath_path_in_branch(self):
@@ -761,7 +771,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'child'),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, 'child'),
             translation)
 
     def test_translatePath_nested_path_in_branch(self):
@@ -771,7 +782,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'a/b'),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, 'a/b'),
             translation)
 
     def test_translatePath_preserves_escaping(self):
@@ -786,7 +798,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT,
-             {'id': branch.id, 'writable': False},
+             {'id': branch.id, 'writable': False, 'private': False},
              escape(child_path)), translation)
 
     def test_translatePath_no_such_junk_branch(self):
@@ -798,6 +810,27 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
         path = '/~%s/%s/.bzr/branch-format' % (requester.name, product.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branches_in_private_parent_dirs_not_found(self):
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        path = '/~%s/%s/.bzr/branch-format' % (
+            requester.name, removeSecurityProxy(product).name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_private_project(self):
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        login(ANONYMOUS)
+        path = '/+branch/%s' % removeSecurityProxy(product).name
+        self.assertNotFound(requester, path)
+        login(ANONYMOUS)
+        path = '/+branch/%s/%s' % (
+            removeSecurityProxy(product).name,
+            removeSecurityProxy(product).development_focus.name)
         self.assertNotFound(requester, path)
 
     def test_translatePath_no_such_branch(self):
@@ -823,7 +856,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': True, 'private': True}, ''),
             translation)
 
     def test_translatePath_cant_see_private_branch(self):
@@ -847,7 +881,8 @@ class CodehostingTest(TestCaseWithFactory):
             LAUNCHPAD_SERVICES, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': True}, ''),
             translation)
 
     def test_translatePath_anonymous_cant_see_private_branch(self):
@@ -862,7 +897,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(
             LAUNCHPAD_ANONYMOUS, path)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, ''),
             translation)
 
     def test_translatePath_owned(self):
@@ -873,7 +909,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': True, 'private': False}, ''),
             translation)
 
     def test_translatePath_team_owned(self):
@@ -885,7 +922,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': True, 'private': False}, ''),
             translation)
 
     def test_translatePath_team_unowned(self):
@@ -897,7 +935,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, ''),
             translation)
 
     def test_translatePath_owned_mirrored(self):
@@ -908,7 +947,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, ''),
             translation)
 
     def test_translatePath_owned_imported(self):
@@ -919,7 +959,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, ''),
             translation)
 
     def test_translatePath_branch_alias_short_name(self):
@@ -935,7 +976,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False},
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False},
              path_in_branch), translation)
 
     def test_translatePath_branch_alias_unique_name(self):
@@ -949,7 +991,8 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False},
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False},
              path_in_branch), translation)
 
     def test_translatePath_branch_alias_no_such_branch(self):
@@ -1064,7 +1107,7 @@ class CodehostingTest(TestCaseWithFactory):
         translation = self.codehosting_api.translatePath(requester.id, path)
         expected = (
             BRANCH_TRANSPORT,
-            {'id': branch.id, 'writable': False},
+            {'id': branch.id, 'writable': False, 'private': False},
             'foo/bar',
             )
         self.assertEqual(expected, translation)
@@ -1078,7 +1121,8 @@ class CodehostingTest(TestCaseWithFactory):
         path = escape(branch_id_alias(branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': False}, ''),
             translation)
 
     def test_translatePath_branch_id_alias_private_branch(self):
@@ -1092,7 +1136,8 @@ class CodehostingTest(TestCaseWithFactory):
         path = escape(branch_id_alias(branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False, 'private': True}, ''),
             translation)
 
     def test_translatePath_branch_id_alias_private_branch_no_access(self):

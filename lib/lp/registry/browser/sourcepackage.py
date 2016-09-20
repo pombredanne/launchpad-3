@@ -10,7 +10,6 @@ __all__ = [
     'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
-    'SourcePackageFacets',
     'SourcePackageNavigation',
     'SourcePackageOverviewMenu',
     'SourcePackageRemoveUpstreamView',
@@ -22,7 +21,6 @@ import string
 import urllib
 
 from apt_pkg import (
-    parse_src_depends,
     upstream_version,
     version_compare,
     )
@@ -31,7 +29,6 @@ from lazr.enum import (
     Item,
     )
 from lazr.restful.interface import copy_field
-from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
     adapter,
@@ -41,10 +38,7 @@ from zope.component import (
 from zope.formlib.form import Fields
 from zope.formlib.interfaces import IInputWidget
 from zope.formlib.widgets import DropdownWidget
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Choice,
     TextLine,
@@ -87,9 +81,8 @@ from lp.registry.model.product import Product
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
-    GetitemNavigation,
     Link,
-    StandardLaunchpadFacets,
+    Navigation,
     stepto,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -103,7 +96,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 def get_register_upstream_url(source_package):
-    displayname = string.capwords(source_package.name.replace('-', ' '))
+    display_name = string.capwords(source_package.name.replace('-', ' '))
     distroseries_string = "%s/%s" % (
         source_package.distroseries.distribution.name,
         source_package.distroseries.name)
@@ -117,8 +110,8 @@ def get_register_upstream_url(source_package):
         'field.source_package_name': source_package.sourcepackagename.name,
         'field.distroseries': distroseries_string,
         'field.name': source_package.name,
-        'field.displayname': displayname,
-        'field.title': displayname,
+        'field.display_name': display_name,
+        'field.title': display_name,
         'field.homepageurl': homepage,
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',
@@ -149,7 +142,7 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
-class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
 
@@ -188,26 +181,29 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         redirection_url = canonical_url(dsp, view_name='+gethelp')
         return self.redirectSubTree(redirection_url, status=303)
 
+    def traverse(self, name):
+        """Deprecated redirect to an IDistributionSourcePackageRelease.
+
+        IDistroSeriesSourcePackageRelease lived here until it was
+        removed in Nov 2014.
+        """
+        dspr = self.context.distribution_sourcepackage.getVersion(name)
+        if dspr is None:
+            return None
+        return self.redirectSubTree(canonical_url(dspr), status=301)
+
 
 @adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
-    implements(IBreadcrumb)
 
     @property
     def text(self):
-        return smartquote('"%s" source package') % (self.context.name)
+        return IBreadcrumb(self.context.distroseries).text
 
-
-class SourcePackageFacets(StandardLaunchpadFacets):
-
-    usedfor = ISourcePackage
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'translations',
-        ]
+    @property
+    def inside(self):
+        return self.context.distribution_sourcepackage
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -491,7 +487,8 @@ class SourcePackageView(LaunchpadView):
         results = {}
         all_arch = sorted([arch.architecturetag for arch in
                            self.context.distroseries.architectures])
-        for bin in self.context.currentrelease.binaries:
+        for bin in self.context.currentrelease.getBinariesForSeries(
+                self.context.distroseries):
             distroarchseries = bin.build.distro_arch_series
             if bin.name not in results:
                 results[bin.name] = []
@@ -507,12 +504,10 @@ class SourcePackageView(LaunchpadView):
     def _relationship_parser(self, content):
         """Wrap the relationship_builder for SourcePackages.
 
-        Define apt_pkg.parse_src_depends as a relationship 'parser' and
-        IDistroSeries.getBinaryPackage as 'getter'.
+        Define IDistroSeries.getBinaryPackage as a relationship 'getter'.
         """
         getter = self.context.distroseries.getBinaryPackage
-        parser = parse_src_depends
-        return relationship_builder(content, parser=parser, getter=getter)
+        return relationship_builder(content, getter=getter)
 
     @property
     def builddepends(self):
@@ -525,6 +520,12 @@ class SourcePackageView(LaunchpadView):
             self.context.currentrelease.builddependsindep)
 
     @property
+    def builddependsarch(self):
+        return self._relationship_parser(
+            self.context.currentrelease.getUserDefinedField(
+                "Build-Depends-Arch"))
+
+    @property
     def build_conflicts(self):
         return self._relationship_parser(
             self.context.currentrelease.build_conflicts)
@@ -533,6 +534,12 @@ class SourcePackageView(LaunchpadView):
     def build_conflicts_indep(self):
         return self._relationship_parser(
             self.context.currentrelease.build_conflicts_indep)
+
+    @property
+    def build_conflicts_arch(self):
+        return self._relationship_parser(
+            self.context.currentrelease.getUserDefinedField(
+                "Build-Conflicts-Arch"))
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -659,8 +666,8 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
             return True
         bugtracker = product.bugtracker
         if bugtracker is None:
-            if product.project is not None:
-                bugtracker = product.project.bugtracker
+            if product.projectgroup is not None:
+                bugtracker = product.projectgroup.bugtracker
         if bugtracker is None:
             return False
         return True

@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BuildFarmJobBehaviourBase."""
@@ -6,10 +6,13 @@
 __metaclass__ = type
 
 from datetime import datetime
+import hashlib
 import os
 import shutil
 import tempfile
 
+from testtools import ExpectedException
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -17,17 +20,28 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
+from lp.buildmaster.interfaces.builder import BuildDaemonError
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
-from lp.buildmaster.tests.mock_slaves import WaitingSlave
+from lp.buildmaster.tests.mock_slaves import (
+    MockBuilder,
+    OkSlave,
+    WaitingSlave,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
-from lp.soyuz.interfaces.processor import IProcessorSet
-from lp.testing import TestCaseWithFactory
+from lp.services.log.logger import BufferLogger
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -39,7 +53,29 @@ from lp.testing.mail_helpers import pop_notifications
 
 class FakeBuildFarmJob:
     """Dummy BuildFarmJob."""
-    pass
+
+    build_cookie = 'PACKAGEBUILD-1'
+    title = 'some job for something'
+
+
+class FakeLibraryFileContent:
+
+    def __init__(self, filename):
+        self.sha1 = hashlib.sha1(filename).hexdigest()
+
+
+class FakeLibraryFileAlias:
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.content = FakeLibraryFileContent(filename)
+        self.http_url = 'http://librarian.dev/%s' % filename
+
+
+class FakeDistroArchSeries:
+
+    def getChroot(self):
+        return FakeLibraryFileAlias('chroot-fooix-bar-y86.tar.bz2')
 
 
 class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
@@ -66,16 +102,8 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         spr = self.factory.makeSourcePackageRelease(
             distroseries=distroseries, archive=archive)
-
-        return spr.createBuild(
-            distroarchseries=distroarchseries, pocket=pocket, archive=archive)
-
-    def test_getBuildCookie(self):
-        build = self.factory.makeTranslationTemplatesBuild()
-        behaviour = self._makeBehaviour(build)
-        self.assertEqual(
-            '%s-%s' % (build.job_type.name, build.id),
-            behaviour.getBuildCookie())
+        return getUtility(IBinaryPackageBuildSet).new(
+            spr, archive, distroarchseries, pocket)
 
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
@@ -87,6 +115,57 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
         self.assertEqual(
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
+
+
+class TestDispatchBuildToSlave(TestCase):
+
+    run_tests_with = AsynchronousDeferredRunTest
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave(self):
+        files = {
+            'foo.dsc': {'url': 'http://host/foo.dsc', 'sha1': '0'},
+            'bar.tar': {
+                'url': 'http://host/bar.tar', 'sha1': '0',
+                'username': 'admin', 'password': 'sekrit'}}
+
+        behaviour = BuildFarmJobBehaviourBase(FakeBuildFarmJob())
+        builder = MockBuilder()
+        slave = OkSlave()
+        logger = BufferLogger()
+        behaviour.composeBuildRequest = FakeMethod(
+            ('foobuild', FakeDistroArchSeries(), files,
+             {'some': 'arg', 'archives': ['http://admin:sekrit@blah/']}))
+        behaviour.setBuilder(builder, slave)
+        yield behaviour.dispatchBuildToSlave(logger)
+
+        # The slave's been asked to cache the chroot and both source
+        # files, and then to start the build.
+        expected_calls = [
+            ('ensurepresent',
+             'http://librarian.dev/chroot-fooix-bar-y86.tar.bz2', '', ''),
+            ('ensurepresent', 'http://host/bar.tar', 'admin', 'sekrit'),
+            ('ensurepresent', 'http://host/foo.dsc', '', ''),
+            ('build', 'PACKAGEBUILD-1', 'foobuild',
+             hashlib.sha1('chroot-fooix-bar-y86.tar.bz2').hexdigest(),
+             ['foo.dsc', 'bar.tar'],
+             {'archives': ['http://admin:sekrit@blah/'], 'some': 'arg'})]
+        self.assertEqual(expected_calls, slave.call_log)
+
+        # And details have been logged, including the build arguments
+        # with credentials redacted.
+        self.assertStartsWith(
+            logger.getLogBuffer(),
+            "INFO Preparing job PACKAGEBUILD-1 (some job for something) on "
+            "http://fake:0000.\n"
+            "INFO Dispatching job PACKAGEBUILD-1 (some job for something) to "
+            "http://fake:0000:\n{")
+        self.assertIn('http://<redacted>@blah/', logger.getLogBuffer())
+        self.assertNotIn('sekrit', logger.getLogBuffer())
+        self.assertEndsWith(
+            logger.getLogBuffer(),
+            "INFO Job PACKAGEBUILD-1 (some job for something) started on "
+            "http://fake:0000: BuildStatus.BUILDING PACKAGEBUILD-1\n")
 
 
 class TestGetUploadMethodsMixin:
@@ -107,11 +186,44 @@ class TestGetUploadMethodsMixin:
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name
         # that is parseable by the upload processor.
-        upload_leaf = self.behaviour.getUploadDirLeaf(
-            self.behaviour.getBuildCookie())
+        upload_leaf = self.behaviour.getUploadDirLeaf(self.build.build_cookie)
         (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
         self.assertEqual(
             (self.build.job_type.name, self.build.id), (job_type, job_id))
+
+
+class TestVerifySuccessfulBuildMixin:
+    """Tests for `IBuildFarmJobBehaviour`'s verifySuccessfulBuild method."""
+
+    layer = LaunchpadZopelessLayer
+
+    def makeBuild(self):
+        """Allow classes to override the build with which the test runs."""
+        raise NotImplementedError
+
+    def makeUnmodifiableBuild(self):
+        """Allow classes to override the build with which the test runs."""
+        raise NotImplementedError
+
+    def setUp(self):
+        super(TestVerifySuccessfulBuildMixin, self).setUp()
+        self.factory = LaunchpadObjectFactory()
+
+    def test_verifySuccessfulBuild_allows_modifiable_suite(self):
+        # verifySuccessfulBuild allows uploading to a suite that the archive
+        # says is modifiable.
+        build = self.makeBuild()
+        behaviour = IBuildFarmJobBehaviour(
+            build.buildqueue_record.specific_build)
+        behaviour.verifySuccessfulBuild()
+
+    def test_verifySuccessfulBuild_denies_unmodifiable_suite(self):
+        # verifySuccessfulBuild refuses to upload to a suite that the
+        # archive says is unmodifiable.
+        build = self.makeUnmodifiableBuild()
+        behaviour = IBuildFarmJobBehaviour(
+            build.buildqueue_record.specific_build)
+        self.assertRaises(AssertionError, behaviour.verifySuccessfulBuild)
 
 
 class TestHandleStatusMixin:
@@ -160,76 +272,69 @@ class TestHandleStatusMixin:
         self.assertEquals(
             1, len(os.listdir(os.path.join(self.upload_root, result))))
 
+    @defer.inlineCallbacks
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.UPLOADING, self.build.status)
-            self.assertResultCount(1, "incoming")
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'myfile.py': 'test_file_hash'}})
+        self.assertEqual(BuildStatus.UPLOADING, self.build.status)
+        self.assertResultCount(1, "incoming")
 
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'myfile.py': 'test_file_hash'}})
-        return d.addCallback(got_status)
-
+    @defer.inlineCallbacks
     def test_handleStatus_OK_absolute_filepath(self):
-        # A filemap that tries to write to files outside of
-        # the upload directory will result in a failed upload.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
-            self.assertIdentical(None, self.build.buildqueue_record)
+        # A filemap that tries to write to files outside of the upload
+        # directory will not be collected.
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned a file named '/tmp/myfile.py'."):
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, 'OK',
+                    {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
 
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
-        return d.addCallback(got_status)
-
+    @defer.inlineCallbacks
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
-        # the upload directory will result in a failed upload.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
+        # the upload directory will not be collected.
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned a file named '../myfile.py'."):
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, 'OK',
+                    {'filemap': {'../myfile.py': 'test_file_hash'}})
 
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'../myfile.py': 'test_file_hash'}})
-        return d.addCallback(got_status)
-
+    @defer.inlineCallbacks
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         self.assertEqual(None, self.build.log)
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'myfile.py': 'test_file_hash'}})
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'myfile.py': 'test_file_hash'}})
+        self.assertNotEqual(None, self.build.log)
 
-        def got_status(ignored):
-            self.assertNotEqual(None, self.build.log)
-
-        return d.addCallback(got_status)
-
+    @defer.inlineCallbacks
     def _test_handleStatus_notifies(self, status):
         # An email notification is sent for a given build status if
         # notifications are allowed for that status.
-
         expected_notification = (
             status in self.behaviour.ALLOWED_STATUS_NOTIFICATIONS)
 
-        def got_status(ignored):
-            if expected_notification:
-                self.failIf(
-                    len(pop_notifications()) == 0,
-                    "No notifications received")
-            else:
-                self.failIf(
-                    len(pop_notifications()) > 0,
-                    "Notifications received")
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, status, {})
 
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, status, {})
-        return d.addCallback(got_status)
+        if expected_notification:
+            self.assertNotEqual(
+                0, len(pop_notifications()), "Notifications received")
+        else:
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
 
     def test_handleStatus_DEPFAIL_notifies(self):
         return self._test_handleStatus_notifies("DEPFAIL")
@@ -240,53 +345,71 @@ class TestHandleStatusMixin:
     def test_handleStatus_PACKAGEFAIL_notifies(self):
         return self._test_handleStatus_notifies("PACKAGEFAIL")
 
+    @defer.inlineCallbacks
     def test_handleStatus_ABORTED_cancels_cancelling(self):
-        self.build.updateStatus(BuildStatus.CANCELLING)
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.CANCELLING)
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "ABORTED", {})
+        self.assertEqual(0, len(pop_notifications()), "Notifications received")
+        self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
-        def got_status(ignored):
-            self.assertEqual(
-                0, len(pop_notifications()), "Notifications received")
-            self.assertEqual(BuildStatus.CANCELLED, self.build.status)
-
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, "ABORTED", {})
-        return d.addCallback(got_status)
-
-    def test_handleStatus_ABORTED_recovers_building(self):
+    @defer.inlineCallbacks
+    def test_handleStatus_ABORTED_illegal_when_building(self):
         self.builder.vm_host = "fake_vm_host"
         self.behaviour = self.interactor.getBuildBehaviour(
             self.build.buildqueue_record, self.builder, self.slave)
-        self.build.updateStatus(BuildStatus.BUILDING)
-
-        def got_status(ignored):
-            self.assertEqual(
-                0, len(pop_notifications()), "Notifications received")
-            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            self.assertEqual(1, self.builder.failure_count)
-            self.assertEqual(1, self.build.failure_count)
-            self.assertIn("clean", self.slave.call_log)
-
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, "ABORTED", {})
-        return d.addCallback(got_status)
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.BUILDING)
+            with ExpectedException(
+                    BuildDaemonError,
+                    "Build returned unexpected status: 'ABORTED'"):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "ABORTED", {})
 
     @defer.inlineCallbacks
     def test_handleStatus_ABORTED_cancelling_sets_build_log(self):
         # If a build is intentionally cancelled, the build log is set.
         self.assertEqual(None, self.build.log)
-        self.build.updateStatus(BuildStatus.CANCELLING)
-        yield self.behaviour.handleStatus(
-            self.build.buildqueue_record, "ABORTED", {})
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.CANCELLING)
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "ABORTED", {})
         self.assertNotEqual(None, self.build.log)
 
+    @defer.inlineCallbacks
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         self.assertEqual(None, self.build.date_finished)
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'myfile.py': 'test_file_hash'}})
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'myfile.py': 'test_file_hash'}})
+        self.assertNotEqual(None, self.build.date_finished)
 
-        def got_status(ignored):
-            self.assertNotEqual(None, self.build.date_finished)
+    @defer.inlineCallbacks
+    def test_givenback_collection(self):
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned unexpected status: 'GIVENBACK'"):
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "GIVENBACK", {})
 
-        return d.addCallback(got_status)
+    @defer.inlineCallbacks
+    def test_builderfail_collection(self):
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned unexpected status: 'BUILDERFAIL'"):
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "BUILDERFAIL", {})
+
+    @defer.inlineCallbacks
+    def test_invalid_status_collection(self):
+        with ExpectedException(
+                BuildDaemonError,
+                "Build returned unexpected status: 'BORKED'"):
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "BORKED", {})

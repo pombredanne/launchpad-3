@@ -42,12 +42,12 @@ Each entry contains:
   True
 
 The link presented points to the SourcePackageRelease inside the
-DistroSeries in question (a IDRSPR), we can check for consistency
+Distribution in question (a IDSPR), we can check for consistency
 clicking on it:
 
   >>> anon_browser.getLink("mozilla-firefox 0.9").click()
   >>> anon_browser.url
-  'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/0.9'
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9'
 
 Empty results are also presented properly (even if they are quite rare
 in production environment):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mailing list interfaces."""
@@ -16,7 +16,6 @@ __all__ = [
     'IMailingListSubscription',
     'IMessageApproval',
     'IMessageApprovalSet',
-    'IMessageHeldEvent',
     'MailingListStatus',
     'PURGE_STATES',
     'PostedMessageStatus',
@@ -28,11 +27,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from lazr.lifecycle.interfaces import IObjectCreatedEvent
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Bool,
     Choice,
@@ -462,6 +457,17 @@ class IMailingListSet(Interface):
         :return: The `IMailingList` for the named team or None if no mailing
             list is registered for the named team, or the team doesn't exist.
         :raises AssertionError: When `team_name` is not a string.
+        """
+
+    def getSubscriptionsForTeams(person, teams):
+        """Return a person's subscriptions to usable lists for a set of teams.
+
+        :param person: An `IPerson`.
+        :param teams: A list of `ITeam`s.
+        :return: A dictionary mapping team IDs to tuples of `IMailingList`
+            IDs and `IMailingListSubscription` IDs; the second element will
+            be None if a team has a list to which the person is not
+            subscribed.
         """
 
     def getSubscribedAddresses(team_names):
@@ -904,10 +910,3 @@ class UnsafeToPurge(Exception):
     def __str__(self):
         return 'Cannot purge mailing list in %s state: %s' % (
             self._mailing_list.status.name, self._mailing_list.team.name)
-
-
-class IMessageHeldEvent(IObjectCreatedEvent):
-    """A mailing list message has been held for moderator approval."""
-
-    mailing_list = Attribute('The mailing list the message is held for.')
-    message_id = Attribute('The Message-ID of the held message.')

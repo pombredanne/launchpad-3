@@ -9,11 +9,11 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     >>> from lp.services.webapp.interfaces import (
     ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
     ...     IFacetMenu, ILink, ILinkData)
-    >>> from zope.interface import implements, directlyProvides, Interface
+    >>> from zope.interface import implementer, directlyProvides, Interface
     >>> from zope.component import queryAdapter
 
-    >>> class ObjectThatHasUrl:
-    ...     implements(ICanonicalUrlData)
+    >>> @implementer(ICanonicalUrlData)
+    ... class ObjectThatHasUrl:
     ...     def __init__(self, name, parent):
     ...         self.name = name  # Used in examples later.
     ...         self.path = name  # See ICanonicalUrlData.
@@ -325,8 +325,8 @@ Next, we return the link as HTML.
     # IParticipation so that the login machinery will work.
     >>> from zope.security.interfaces import IParticipation
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
-    >>> class InteractiveTestRequest(LaunchpadTestRequest):
-    ...     implements(IParticipation)
+    >>> @implementer(IParticipation)
+    ... class InteractiveTestRequest(LaunchpadTestRequest):
     ...     principal = None
     ...     interaction = None
     >>> request = InteractiveTestRequest()
@@ -614,8 +614,9 @@ We do the same for a context menu.
 Now, check that we have no IFacetMenu adapter for an IThingHavingFacets
 object.
 
-    >>> class SomeThing:
-    ...     implements(IThingHavingFacets)
+    >>> @implementer(IThingHavingFacets)
+    ... class SomeThing:
+    ...     pass
     >>> something_with_facets = SomeThing()
     >>> IFacetMenu(something_with_facets, None) is None
     True
@@ -623,8 +624,9 @@ object.
 We also need to check that we have no IApplicationMenu adapter named
 'foo' for an IThingHavingMenus object.
 
-    >>> class SomeOtherThing:
-    ...     implements(IThingHavingMenus)
+    >>> @implementer(IThingHavingMenus)
+    ... class SomeOtherThing:
+    ...     pass
     >>> something_with_menus = SomeOtherThing()
     >>> print queryAdapter(something_with_menus, IApplicationMenu, 'foo')
     None
@@ -682,8 +684,8 @@ link should appear linked. The request is also set as the menu's
     >>> from lp.testing import test_tales
     >>> from lp.services.webapp import LaunchpadView
     >>> from lp.services.webapp.vhosts import allvhosts
-    >>> class FakeRequest:
-    ...     implements(IHTTPApplicationRequest, IBrowserRequest)
+    >>> @implementer(IHTTPApplicationRequest, IBrowserRequest)
+    ... class FakeRequest:
     ...
     ...     interaction = None
     ...
@@ -693,6 +695,7 @@ link should appear linked. The request is also set as the menu's
     ...         self.url1 = url1  # returned from getURL(1)
     ...         self.method = 'GET'
     ...         self.annotations = {}
+    ...         self.traversed_objects = []
     ...
     ...     def getURL(self, level=0):
     ...         assert 0 <= level <=1, 'level must be 0 or 1'

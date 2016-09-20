@@ -6,10 +6,13 @@
 __metaclass__ = type
 
 from testtools.matchers import Equals
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.testing import BrowserTestCase
-from lp.testing._webservice import QueryCollector
+from lp.testing import (
+    BrowserTestCase,
+    RequestTimelineCollector,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
@@ -36,9 +39,9 @@ class TestSprintIndex(BrowserTestCase):
             blueprint = self.factory.makeSpecification()
             link = blueprint.linkSprint(sprint, blueprint.owner)
             link.acceptBy(sprint.owner)
-        with QueryCollector() as recorder:
+        with RequestTimelineCollector() as recorder:
             self.getViewBrowser(sprint)
-        self.assertThat(recorder, HasQueryCount(Equals(30)))
+        self.assertThat(recorder, HasQueryCount(Equals(28)))
 
     def test_proprietary_blueprint_listing_query_count(self):
         """Set a maximum number of queries for sprint blueprint lists."""
@@ -46,8 +49,9 @@ class TestSprintIndex(BrowserTestCase):
         for count in range(10):
             blueprint = self.factory.makeSpecification(
                 information_type=InformationType.PROPRIETARY)
-            link = blueprint.linkSprint(sprint, blueprint.owner)
+            owner = removeSecurityProxy(blueprint).owner
+            link = removeSecurityProxy(blueprint).linkSprint(sprint, owner)
             link.acceptBy(sprint.owner)
-        with QueryCollector() as recorder:
+        with RequestTimelineCollector() as recorder:
             self.getViewBrowser(sprint)
-        self.assertThat(recorder, HasQueryCount(Equals(22)))
+        self.assertThat(recorder, HasQueryCount(Equals(20)))

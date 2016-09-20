@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -46,7 +46,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -148,6 +148,9 @@ def make_bugtracker_name(uri):
         else:
             raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
+    elif base_uri.host == 'github.com' and base_uri.path.endswith('/issues'):
+        repository_id = base_uri.path[:-len('/issues')].lstrip('/')
+        base_name = 'github-' + repository_id.replace('/', '-').lower()
     else:
         base_name = base_uri.host
 
@@ -173,6 +176,7 @@ def make_bugtracker_title(uri):
         return base_uri.host + base_uri.path
 
 
+@implementer(IBugTrackerComponent)
 class BugTrackerComponent(StormBase):
     """The software component in the remote bug tracker.
 
@@ -180,7 +184,6 @@ class BugTrackerComponent(StormBase):
     they affect.  This class provides a mapping of this upstream component
     to the corresponding source package in the distro.
     """
-    implements(IBugTrackerComponent)
     __storm_table__ = 'BugTrackerComponent'
 
     id = Int(primary=True)
@@ -227,13 +230,13 @@ class BugTrackerComponent(StormBase):
         """The distribution's source package for this component""")
 
 
+@implementer(IBugTrackerComponentGroup)
 class BugTrackerComponentGroup(StormBase):
     """A collection of components in a remote bug tracker.
 
     Some bug trackers organize sets of components into higher level
     groups, such as Bugzilla's 'product'.
     """
-    implements(IBugTrackerComponentGroup)
     __storm_table__ = 'BugTrackerComponentGroup'
 
     id = Int(primary=True)
@@ -295,6 +298,7 @@ class BugTrackerComponentGroup(StormBase):
         return component
 
 
+@implementer(IBugTracker)
 class BugTracker(SQLBase):
     """A class to access the BugTracker table in the database.
 
@@ -303,7 +307,6 @@ class BugTracker(SQLBase):
     BugTracker. bugzilla.mozilla.org and bugzilla.gnome.org are each
     distinct BugTrackers.
     """
-    implements(IBugTracker)
 
     _table = 'BugTracker'
 
@@ -331,6 +334,8 @@ class BugTracker(SQLBase):
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
+        BugTrackerType.GITHUB: (
+            "%(base_url)s/new?title=%(summary)s&body=%(description)s"),
         BugTrackerType.GOOGLE_CODE: (
             "%(base_url)s/entry?summary=%(summary)s&"
             "comment=%(description)s"),
@@ -360,6 +365,9 @@ class BugTracker(SQLBase):
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/query.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s"),
+        BugTrackerType.GITHUB: (
+            "%(base_url)s?utf8=%%E2%%9C%%93"
+            "&q=is%%3Aissue%%20is%%3Aopen%%20%(summary)s"),
         BugTrackerType.GOOGLE_CODE: "%(base_url)s/list?q=%(summary)s",
         BugTrackerType.DEBBUGS: (
             "%(base_url)s/cgi-bin/search.cgi?phrase=%(summary)s"
@@ -726,12 +734,11 @@ class BugTracker(SQLBase):
         return groups, products
 
 
+@implementer(IBugTrackerSet)
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTrackers,
     either the full set in the db, or a subset.
     """
-
-    implements(IBugTrackerSet)
 
     table = BugTracker
 
@@ -855,18 +862,18 @@ class BugTrackerSet:
         return results
 
 
+@implementer(IBugTrackerAlias)
 class BugTrackerAlias(SQLBase):
     """See `IBugTrackerAlias`."""
-    implements(IBugTrackerAlias)
 
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=True)
     base_url = StringCol(notNull=True)
 
 
+@implementer(IBugTrackerAliasSet)
 class BugTrackerAliasSet:
     """See `IBugTrackerAliasSet`."""
-    implements(IBugTrackerAliasSet)
 
     table = BugTrackerAlias
 

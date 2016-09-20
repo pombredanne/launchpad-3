@@ -13,7 +13,7 @@ from unittest import (
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.services.features.flags import flag_info
@@ -363,8 +363,8 @@ class TestLaunchpadView(TestCaseWithFactory):
 
     def test_view_privacy(self):
         # View privacy is based on the context.
+        @implementer(IPrivacy)
         class PrivateObject(object):
-            implements(IPrivacy)
 
             def __init__(self, private):
                 self.private = private

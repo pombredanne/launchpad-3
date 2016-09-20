@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -8,7 +8,6 @@ __metaclass__ = type
 from datetime import timedelta
 
 from storm.locals import Store
-from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.code.mail.sourcepackagerecipebuild import (
@@ -17,13 +16,14 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 expected_body = u"""\
  * State: Successfully built
  * Recipe: person/recipe
- * Archive: archiveowner/ppa
+ * Archive: ~archiveowner/ubuntu/ppa
  * Distroseries: distroseries
  * Duration: 5 minutes
  * Build Log: %s
@@ -34,7 +34,7 @@ expected_body = u"""\
 superseded_body = u"""\
  * State: Build for superseded Source
  * Recipe: person/recipe
- * Archive: archiveowner/ppa
+ * Archive: ~archiveowner/ubuntu/ppa
  * Distroseries: distroseries
  * Duration: 
  * Build Log: 
@@ -45,11 +45,12 @@ superseded_body = u"""\
 
 class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def makeStatusEmail(self, build):
+        switch_dbuser(config.builddmaster.dbuser)
         mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        email = removeSecurityProxy(build.requester).preferredemail.email
+        email = build.requester.preferredemail.email
         return mailer.generateEmail(email, build.requester)
 
     def test_generateEmail(self):
@@ -60,7 +61,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         pantry_owner = self.factory.makePerson(name='archiveowner')
         pantry = self.factory.makeArchive(name='ppa', owner=pantry_owner)
         secret = self.factory.makeDistroSeries(name=u'distroseries')
-        removeSecurityProxy(secret).nominatedarchindep = (
+        secret.nominatedarchindep = (
             self.factory.makeDistroArchSeries(distroseries=secret))
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
@@ -83,8 +84,12 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         self.assertEqual(
             'Requester', ctrl.headers['X-Launchpad-Message-Rationale'])
         self.assertEqual(
+            build.requester.name, ctrl.headers['X-Launchpad-Message-For'])
+        self.assertEqual(
             'recipe-build-status',
             ctrl.headers['X-Launchpad-Notification-Type'])
+        self.assertEqual(
+            '~archiveowner/ubuntu/ppa', ctrl.headers['X-Launchpad-Archive'])
         self.assertEqual(
             'FULLYBUILT', ctrl.headers['X-Launchpad-Build-State'])
 
@@ -96,7 +101,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         pantry_owner = self.factory.makePerson(name='archiveowner')
         pantry = self.factory.makeArchive(name='ppa', owner=pantry_owner)
         secret = self.factory.makeDistroSeries(name=u'distroseries')
-        removeSecurityProxy(secret).nominatedarchindep = (
+        secret.nominatedarchindep = (
             self.factory.makeDistroArchSeries(distroseries=secret))
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
@@ -116,8 +121,12 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         self.assertEqual(
             'Requester', ctrl.headers['X-Launchpad-Message-Rationale'])
         self.assertEqual(
+            build.requester.name, ctrl.headers['X-Launchpad-Message-For'])
+        self.assertEqual(
             'recipe-build-status',
             ctrl.headers['X-Launchpad-Notification-Type'])
+        self.assertEqual(
+            '~archiveowner/ubuntu/ppa', ctrl.headers['X-Launchpad-Archive'])
         self.assertEqual(
             'SUPERSEDED', ctrl.headers['X-Launchpad-Build-State'])
 

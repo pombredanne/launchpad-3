@@ -72,9 +72,9 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
-from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -103,11 +103,13 @@ from lp.code.interfaces.hasbranches import (
     IHasCodeImports,
     IHasMergeProposals,
     )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -140,6 +142,10 @@ from lp.services.fields import (
     Summary,
     Title,
     URIField,
+    )
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_reference_property,
     )
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -387,6 +393,9 @@ class IProductPublic(Interface):
     def userCanView(user):
         """True if the given user has access to this product."""
 
+    def userCanLimitedView(user):
+        """True if the given user has limited access to this product."""
+
     private = exported(
         Bool(
             title=_("Product is confidential"), required=False,
@@ -400,12 +409,14 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     on bugs, branches or specifications for the product.
     """
 
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_('Display Name'),
             description=_("""The name of the project as it would appear in a
                 paragraph.""")),
         exported_as='display_name')
+
+    displayname = Attribute('Display name (deprecated)')
 
     icon = exported(
         IconImageUpload(
@@ -443,7 +454,7 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
             description=_("The restricted team, moderated team, or person "
                           "who maintains the project information in "
                           "Launchpad.")))
-    project = exported(
+    projectgroup = exported(
         ReferenceChoice(
             title=_('Part of'),
             required=False,
@@ -462,7 +473,8 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     title = exported(
         Title(
             title=_('Title'),
-            description=_("The project title. Should be just a few words.")))
+            description=_("The project title. Should be just a few words."),
+            readonly=True))
 
 
 class IProductView(
@@ -472,7 +484,7 @@ class IProductView(
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    IHasRecipes, IHasCodeImports, IServiceUsage):
+    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories):
     """Public IProduct properties."""
 
     registrant = exported(
@@ -574,7 +586,7 @@ class IProductView(
         TextLine(
             title=_('Freshmeat Project'),
             required=False, description=_("""The Freshmeat project name for
-                this project, if it is in freshmeat.""")),
+                this project, if it is in freshmeat. [DEPRECATED]""")),
         exported_as='freshmeat_project')
 
     homepage_content = Text(
@@ -747,6 +759,21 @@ class IProductView(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
+    vcs = exported(
+        Choice(
+            title=_("VCS"),
+            required=False,
+            vocabulary=VCSType,
+            description=_(
+                "Version control system for this project's code.")))
+
+    inferred_vcs = Choice(
+        title=_("Inferred VCS"),
+        readonly=True,
+        vocabulary=VCSType,
+        description=_(
+            "Inferred version control system for this project's code."))
+
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
 
@@ -884,7 +911,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 class IProduct(
     IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
-    IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
+    IProductLimitedView, IProductPublic, IFAQTarget, IQuestionTarget,
     ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
     IPillar):
     """A Product.
@@ -904,8 +931,8 @@ class IProduct(
 
 
 # Fix cyclic references.
-IProjectGroup['products'].value_type = Reference(IProduct)
-IProductRelease['product'].schema = IProduct
+patch_collection_property(IProjectGroup, 'products', IProduct)
+patch_reference_property(IProductRelease, 'product', IProduct)
 
 
 class IProductSet(Interface):
@@ -961,22 +988,22 @@ class IProductSet(Interface):
 
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
-        displayname='display_name', project='project_group',
+        projectgroup='project_group',
         homepageurl='home_page_url', screenshotsurl='screenshots_url',
         freshmeatproject='freshmeat_project', wikiurl='wiki_url',
         downloadurl='download_url',
         sourceforgeproject='sourceforge_project',
         programminglang='programming_lang')
     @export_factory_operation(
-        IProduct, ['name', 'displayname', 'title', 'summary', 'description',
-                   'project', 'homepageurl', 'screenshotsurl',
+        IProduct, ['name', 'display_name', 'title', 'summary', 'description',
+                   'projectgroup', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
                    'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
-    def createProduct(owner, name, displayname, title, summary,
-                      description=None, project=None, homepageurl=None,
+    def createProduct(owner, name, display_name, title, summary,
+                      description=None, projectgroup=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
@@ -1172,6 +1199,7 @@ class InvalidProductName(LaunchpadValidationError):
 # Fix circular imports.
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-IDistributionSourcePackage['upstream_product'].schema = IProduct
+patch_reference_property(
+    IDistributionSourcePackage, 'upstream_product', IProduct)
 
-ICommercialSubscription['product'].schema = IProduct
+patch_reference_property(ICommercialSubscription, 'product', IProduct)

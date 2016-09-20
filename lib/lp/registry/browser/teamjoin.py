@@ -77,6 +77,6 @@ class TeamJoinMixin:
     def user_can_request_to_leave(self):
         """Return true if the user can request to leave this team.
 
-        A given user can leave a team only if he's an active member.
+        A given user can leave a team only if they're an active member.
         """
         return self.user_is_active_member

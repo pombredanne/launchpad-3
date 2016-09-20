@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.bugs.model.Bug."""
@@ -24,11 +24,36 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     )
 from lp.testing import (
+    admin_logged_in,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+
+
+class TestBug(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_default_bugtask(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(target=product)
+        first_task = bug.default_bugtask
+        other_task = self.factory.makeBugTask(
+            bug=bug, target=self.factory.makeProduct())
+        self.assertEqual(first_task, bug.default_bugtask)
+        # default_bugtask avoids an inactive product if possible.
+        with admin_logged_in():
+            first_task.target.active = False
+        self.assertEqual(other_task, bug.default_bugtask)
+        # But it'll use the first inactive one if it has to.
+        with admin_logged_in():
+            other_task.target.active = False
+        self.assertEqual(first_task, bug.default_bugtask)
+        # An active distro task wins over an inactive product.
+        distro_task = self.factory.makeBugTask(
+            bug=bug, target=self.factory.makeDistribution())
+        self.assertEqual(distro_task, bug.default_bugtask)
 
 
 class TestBugSubscriptionMethods(TestCaseWithFactory):
@@ -294,7 +319,7 @@ class TestBugCreation(TestCaseWithFactory):
         target = self.factory.makeProduct()
         person = self.factory.makePerson()
         bug = self.createBug(owner=person, target=target, cve=cve)
-        self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
+        self.assertContentEqual([cve], bug.cves)
 
     def test_createBug_subscribers(self):
         # Bugs normally start with just the reporter subscribed.

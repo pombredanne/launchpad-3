@@ -45,6 +45,7 @@ And for every distribution we publish most of its attributes.
     mugshot_link: u'http://.../ubuntu/mugshot'
     name: u'ubuntu'
     official_bug_tags: []
+    official_packages: True
     owner_link: u'http://.../~ubuntu-team'
     redirect_release_uploads: False
     registrant_link: u'http://.../~registry'
@@ -52,7 +53,10 @@ And for every distribution we publish most of its attributes.
     self_link: u'http://.../ubuntu'
     series_collection_link: u'http://.../ubuntu/series'
     summary: u'Ubuntu is a new approach to Linux Distribution...'
-    title: u'Ubuntu Linux'
+    supports_mirrors: True
+    supports_ppas: True
+    title: u'Ubuntu'
+    vcs: None
     web_link: u'http://launchpad.../ubuntu'
 
 

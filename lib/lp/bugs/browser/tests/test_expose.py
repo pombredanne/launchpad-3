@@ -1,9 +1,7 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for helpers that expose data about a user to on-page JavaScript."""
-
-from operator import itemgetter
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -17,7 +15,7 @@ from testtools.matchers import (
     Equals,
     KeysEqual,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.traversing.browser import absoluteURL
 
 from lp.bugs.browser.structuralsubscription import (
@@ -47,10 +45,10 @@ from lp.testing.matchers import (
     )
 
 
+@implementer(IWebServiceClientRequest, IJSONRequestCache)
 class FakeRequest:
     """A request that implements some interfaces so adapting returns itself.
     """
-    implements(IWebServiceClientRequest, IJSONRequestCache)
 
     def __init__(self):
         self.objects = {}
@@ -74,7 +72,7 @@ class FakeUser:
 
 def fake_absoluteURL(ob, request):
     """An absoluteURL implementation that doesn't require ZTK for testing."""
-    return 'http://example.com/' + ob.title.replace(' ', '')
+    return 'http://example.com/' + ob.name.replace(' ', '')
 
 
 class DemoEnum(DBEnumeratedType):
@@ -121,9 +119,6 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             bug_super_subteam.join(
                 self.bug_super_team, self.bug_super_team.teamowner)
 
-    def _sort(self, team_info, key='title'):
-        return sorted(team_info, key=itemgetter(key))
-
     def test_teams_preferredemail(self):
         # The function includes information about whether the team has a
         # preferred email.  This gives us information in JavaScript that tells
@@ -139,13 +134,10 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
 
         expose_user_administered_teams_to_js(self.request, self.user, context,
             absoluteURL=fake_absoluteURL)
-        team_info = self._sort(self.request.objects['administratedTeams'])
-        self.assertThat(
-            team_info[0]['title'], Equals(u'\u201cTeam 1\u201d team'))
+        team_info = self.request.objects['administratedTeams']
+        self.assertThat(team_info[0]['title'], Equals(u'Team 1 (team-1)'))
         self.assertThat(team_info[0]['has_preferredemail'], Equals(False))
-        self.assertThat(
-            team_info[1]['title'],
-            Equals(u'\u201cTeam 2\u201d team'))
+        self.assertThat(team_info[1]['title'], Equals(u'Team 2 (team-2)'))
         self.assertThat(team_info[1]['has_preferredemail'], Equals(True))
 
     def test_teams_for_non_distro(self):
@@ -161,7 +153,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
 
         # The team information should have been added to the request.
         self.assertThat(self.request.objects, Contains('administratedTeams'))
-        team_info = self._sort(self.request.objects['administratedTeams'])
+        team_info = self.request.objects['administratedTeams']
         # Since there are three teams, there should be three items in the
         # list of team info.
         expected_number_teams = 3
@@ -171,18 +163,18 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             self.assertThat(
                 team_info[i],
                 KeysEqual('has_preferredemail', 'link', 'title', 'url'))
-        # The link is the title of the team.
+        # The link is the unique display name of the team.
         self.assertThat(
             team_info[0]['title'],
-            Equals(u'\u201cBug Supervisor Sub Team\u201d team'))
+            Equals(u'Bug Supervisor Sub Team (bug-supervisor-sub-team)'))
         self.assertThat(
             team_info[1]['title'],
-            Equals(u'\u201cBug Supervisor Team\u201d team'))
+            Equals(u'Bug Supervisor Team (bug-supervisor-team)'))
         self.assertThat(
-            team_info[2]['title'], Equals(u'\u201cUnrelated Team\u201d team'))
+            team_info[2]['title'], Equals(u'Unrelated Team (unrelated-team)'))
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
-            Equals(u'http://example.com/\u201cBugSupervisorSubTeam\u201dteam'))
+            Equals(u'http://example.com/bug-supervisor-sub-team'))
 
     def test_query_count(self):
         # The function issues a constant number of queries regardless of
@@ -191,6 +183,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         context = self.factory.makeProduct(owner=self.user)
         self._setup_teams(self.user)
 
+        IStore(Person).flush()
         IStore(Person).invalidate()
         clear_cache()
         with StormStatementRecorder() as recorder:
@@ -209,6 +202,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             pt.addMember(
                 self.user, pt.teamowner, status=TeamMembershipStatus.ADMIN)
 
+        IStore(Person).flush()
         IStore(Person).invalidate()
         clear_cache()
         del IJSONRequestCache(self.request).objects['administratedTeams']
@@ -232,7 +226,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 absoluteURL=fake_absoluteURL)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(1, len(statements_for_admininstrated_teams))
 
         # Calling the function a second time does not require an
@@ -243,7 +237,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 absoluteURL=fake_absoluteURL)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(0, len(statements_for_admininstrated_teams))
 
     def test_teams_owned_but_not_joined_are_not_included(self):
@@ -269,7 +263,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
 
         # The team information should have been added to the request.
         self.assertThat(self.request.objects, Contains('administratedTeams'))
-        team_info = self._sort(self.request.objects['administratedTeams'])
+        team_info = self.request.objects['administratedTeams']
 
         # Since the distro only returns teams that are members of the bug
         # supervisor team, we only expect two.
@@ -280,16 +274,16 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             self.assertThat(
                 team_info[i],
                 KeysEqual('has_preferredemail', 'link', 'title', 'url'))
-        # The link is the title of the team.
+        # The link is the unique display name of the team.
         self.assertThat(
             team_info[0]['title'],
-            Equals(u'\u201cBug Supervisor Sub Team\u201d team'))
+            Equals(u'Bug Supervisor Sub Team (bug-supervisor-sub-team)'))
         self.assertThat(
             team_info[1]['title'],
-            Equals(u'\u201cBug Supervisor Team\u201d team'))
+            Equals(u'Bug Supervisor Team (bug-supervisor-team)'))
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
-            Equals(u'http://example.com/\u201cBugSupervisorSubTeam\u201dteam'))
+            Equals(u'http://example.com/bug-supervisor-sub-team'))
 
     def test_teams_for_distro_with_no_bug_super(self):
         self._setup_teams(self.user)
@@ -301,7 +295,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
 
         # The team information should have been added to the request.
         self.assertThat(self.request.objects, Contains('administratedTeams'))
-        team_info = self._sort(self.request.objects['administratedTeams'])
+        team_info = self.request.objects['administratedTeams']
 
         # Since the distro has no bug supervisor set, all administered teams
         # are returned.
@@ -312,18 +306,18 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             self.assertThat(
                 team_info[i],
                 KeysEqual('has_preferredemail', 'link', 'title', 'url'))
-        # The link is the title of the team.
+        # The link is the unique display name of the team.
         self.assertThat(
             team_info[0]['title'],
-            Equals(u'\u201cBug Supervisor Sub Team\u201d team'))
+            Equals(u'Bug Supervisor Sub Team (bug-supervisor-sub-team)'))
         self.assertThat(
             team_info[1]['title'],
-            Equals(u'\u201cBug Supervisor Team\u201d team'))
+            Equals(u'Bug Supervisor Team (bug-supervisor-team)'))
         self.assertThat(
-            team_info[2]['title'], Equals(u'\u201cUnrelated Team\u201d team'))
+            team_info[2]['title'], Equals(u'Unrelated Team (unrelated-team)'))
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
-            Equals(u'http://example.com/\u201cBugSupervisorSubTeam\u201dteam'))
+            Equals(u'http://example.com/bug-supervisor-sub-team'))
 
 
 class TestStructuralSubscriptionHelpers(TestCase):
@@ -458,7 +452,7 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
             expose_user_subscriptions_to_js(user, [sub], request)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(1, len(statements_for_admininstrated_teams))
 
         # Calling the function a second time does not require an
@@ -468,5 +462,5 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
                 expose_user_subscriptions_to_js(user, [sub], request)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(0, len(statements_for_admininstrated_teams))

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`TranslationTemplatesBuild` class."""
@@ -22,8 +22,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -40,7 +40,6 @@ from lp.buildmaster.model.buildfarmjob import (
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
-from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -53,15 +52,14 @@ from lp.translations.interfaces.translationtemplatesbuild import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
+HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2515
 
 
+@implementer(ITranslationTemplatesBuild)
+@provider(ITranslationTemplatesBuildSource)
 class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
                                 BuildFarmJobMixin, Storm):
     """A `BuildFarmJob` extension for translation templates builds."""
-
-    implements(ITranslationTemplatesBuild)
-    classProvides(ITranslationTemplatesBuildSource)
 
     __storm_table__ = 'TranslationTemplatesBuild'
 
@@ -224,12 +222,10 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
     def preloadBuildsData(cls, builds):
         # Circular imports.
         from lp.services.librarian.model import LibraryFileAlias
-        # Load the related branches, products.
+        # Load the related branches.
         branches = load_related(
             Branch, builds, ['branch_id'])
-        load_related(
-            Product, branches, ['productID'])
-        # Preload branches cached associated product series and
+        # Preload branches' cached associated targets, product series, and
         # suite source packages for all the related branches.
         GenericBranchCollection.preloadDataForBranches(branches)
         load_related(LibraryFileAlias, builds, ['log_id'])
@@ -251,7 +247,7 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
 
     def calculateScore(self):
         """See `IBuildFarmJob`."""
-        # Hard-code score for now.  Most PPA jobs start out at 2505;
+        # Hard-code score for now.  Most PPA jobs start out at 2510;
         # TranslationTemplateBuild are fast so we want them at a higher
         # priority.
         return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE

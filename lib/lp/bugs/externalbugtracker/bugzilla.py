@@ -11,7 +11,7 @@ __all__ = [
     'needs_authentication',
     ]
 
-from email.Utils import parseaddr
+from email.utils import parseaddr
 from httplib import BadStatusLine
 import re
 import string
@@ -22,7 +22,7 @@ import xmlrpclib
 
 import pytz
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
@@ -546,11 +546,10 @@ def needs_authentication(func):
     return decorator
 
 
+@implementer(
+    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
-
-    implements(
-        ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -902,12 +901,10 @@ class BugzillaAPI(Bugzilla):
         self.xmlrpc_proxy.Bug.update_see_also(request_params)
 
 
+@implementer(
+    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 class BugzillaLPPlugin(BugzillaAPI):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
-
-    implements(
-        ISupportsBackLinking, ISupportsCommentImport,
-        ISupportsCommentPushing)
 
     def getExternalBugTrackerToUse(self):
         """The Bugzilla LP Plugin has been chosen, so return self."""

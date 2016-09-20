@@ -10,7 +10,12 @@ import unittest
 
 from contrib.oauth import OAuthRequest
 
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp.authentication import check_oauth_signature
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -22,9 +27,7 @@ from lp.testing.systemdocs import (
     )
 
 
-class TestOAuthParsing(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class TestOAuthParsing(TestCase):
 
     def test_split_oauth(self):
         # OAuth headers are parsed correctly: see bug 314507.
@@ -45,6 +48,50 @@ class TestOAuthParsing(TestCaseWithFactory):
             'OAuth oauth_consumer_key="justtesting", realm="realm"')
         self.assertEquals(headers,
             {'oauth_consumer_key': 'justtesting'})
+
+
+class TestCheckOAuthSignature(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeRequest(self, signature, method='PLAINTEXT'):
+        form = {
+            'oauth_signature_method': method, 'oauth_signature': signature}
+        return LaunchpadTestRequest(form=form)
+
+    def test_valid(self):
+        token, secret = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('&%s' % secret)
+        self.assertTrue(check_oauth_signature(request, token.consumer, token))
+
+    def test_bad_secret(self):
+        token, secret = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('&%slol' % secret)
+        self.assertFalse(check_oauth_signature(request, token.consumer, token))
+        self.assertEqual(401, request.response.getStatus())
+
+    def test_valid_no_token(self):
+        token, _ = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('&')
+        self.assertTrue(check_oauth_signature(request, token.consumer, None))
+
+    def test_bad_secret_no_token(self):
+        token, _ = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('&lol')
+        self.assertFalse(check_oauth_signature(request, token.consumer, None))
+        self.assertEqual(401, request.response.getStatus())
+
+    def test_not_plaintext(self):
+        token, _ = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('&lol', method='HMAC-SHA1')
+        self.assertFalse(check_oauth_signature(request, token.consumer, token))
+        self.assertEqual(400, request.response.getStatus())
+
+    def test_bad_signature_format(self):
+        token, _ = self.factory.makeOAuthAccessToken()
+        request = self.makeRequest('lol')
+        self.assertFalse(check_oauth_signature(request, token.consumer, token))
+        self.assertEqual(401, request.response.getStatus())
 
 
 def test_suite():

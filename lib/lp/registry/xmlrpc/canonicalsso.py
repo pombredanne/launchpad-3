@@ -11,7 +11,7 @@ __all__ = [
 
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import (
@@ -23,10 +23,9 @@ from lp.services.identity.interfaces.account import IAccountSet
 from lp.services.webapp import LaunchpadXMLRPCView
 
 
+@implementer(ICanonicalSSOAPI)
 class CanonicalSSOAPI(LaunchpadXMLRPCView):
     """See `ICanonicalSSOAPI`."""
-
-    implements(ICanonicalSSOAPI)
 
     def getPersonDetailsByOpenIDIdentifier(self, openid_identifier):
         try:
@@ -49,8 +48,8 @@ class CanonicalSSOAPI(LaunchpadXMLRPCView):
             }
 
 
+@implementer(ICanonicalSSOApplication)
 class CanonicalSSOApplication:
     """Canonical SSO end-point."""
-    implements(ICanonicalSSOApplication)
 
     title = "Canonical SSO API"

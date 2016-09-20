@@ -44,7 +44,7 @@ class IBugSubscription(Interface):
     person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
-        "e-mail address.")), as_of="beta")
+        "email address.")), as_of="beta")
     bug = exported(Reference(
         Interface, title=_("Bug"), required=True, readonly=True),
         as_of="beta")

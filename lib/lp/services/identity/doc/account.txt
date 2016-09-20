@@ -81,7 +81,7 @@ An account has a displayname.
 Account objects have a useful string representation.
 
     >>> account
-    <Account 'No Privileges Person' (Active account)>
+    <Account 'No Privileges Person' (Active)>
 
 The account has other metadata.
 
@@ -97,7 +97,8 @@ The account has other metadata.
     >>> account.date_status_set >= account.date_created
     True
 
-    >>> print account.status_comment
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> print removeSecurityProxy(account).status_history
     None
 
     >>> print account.displayname
@@ -110,16 +111,15 @@ database. Only an admin can change the status.
 
     >>> original_date_status_set = account.date_status_set
     >>> login('admin@canonical.com')
-    >>> account.status = AccountStatus.SUSPENDED
+    >>> account.setStatus(AccountStatus.SUSPENDED, None, 'spammer')
 
     # Shouldn't be necessary with Storm!
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(account).sync()
     >>> account.date_status_set > original_date_status_set
     True
 
-    >>> account.status = AccountStatus.DEACTIVATED
-    >>> account.status = AccountStatus.ACTIVE
+    >>> account.setStatus(AccountStatus.DEACTIVATED, None, 'welcome')
+    >>> account.setStatus(AccountStatus.ACTIVE, None, 'logged in!')
     >>> login('no-priv@canonical.com')
 
 An Account has at least one OpenID identifier used to generate the

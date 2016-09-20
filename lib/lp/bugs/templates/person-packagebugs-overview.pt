@@ -10,18 +10,11 @@
   i18n:domain="launchpad"
 >
   <body>
-  
     <metal:side fill-slot="side">
       <tal:menu replace="structure context/@@+global-actions" />
     </metal:side>
 
     <div metal:fill-slot="main">
-      <h1>Package bugs</h1>
-
-      <p>
-        <tal:person content="context/fmt:displayname">Sample Person</tal:person>
-        is subscribed to these packages.
-      </p>
     <table class="listing">
       <thead>
       <tr>

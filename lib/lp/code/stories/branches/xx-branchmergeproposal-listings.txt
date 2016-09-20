@@ -17,7 +17,7 @@ Log-in an administrator to avoid permission problems.
 
 Make a trunk branch and set as the development focus branch.
 
-    >>> trunk = factory.makeProductBranch(product=fooix)
+    >>> trunk = factory.makeProductBranch(product=fooix, name='trunk')
     >>> fooix.development_focus.branch = trunk
 
 Make a single proposal for albert that is needing review by robert.
@@ -69,7 +69,7 @@ The 'active reviews' text links to the active reviews page.
 
     >>> browser.getLink('active reviews').click()
     >>> print browser.title
-    Active code reviews for Fooix...
+    Active reviews : Code : Fooix
 
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote
@@ -93,11 +93,10 @@ and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/~albert')
     >>> print_tag_with_id(browser.contents, 'portlet-person-codesummary')
-    Owned branches
-    Registered branches
-    Subscribed branches
+    Branches
     Active reviews
     Source package recipes
+    Snap packages
 
 The person's active reviews also lists all of their currently requested
 reviews.
@@ -131,7 +130,7 @@ Since Albert is in the A-Team, he can do the pending review.
     >>> browser.open('http://code.launchpad.dev/~a-team')
     >>> browser.getLink('Active reviews').click()
     >>> print_tag_with_id(browser.contents, 'proposals')
-    Requested reviews I can do
+    Requested reviews you can do
     Branch Merge Proposal             Requested By    Lines Activity
     lp://dev/~albert/fooix/review ... Albert ...            None
 
@@ -149,7 +148,7 @@ shown a link and a count.
 
     >>> browser.getLink('3 branches').click()
     >>> print browser.title
-    Active code reviews for lp://dev/fooix ...
+    Active reviews : trunk : Code : Fooix
 
 
 Line counts
@@ -167,7 +166,7 @@ When a merge is initially proposed, it has no line count:
     >>> browser = setupBrowser(auth='Basic albert@example.com:test')
     >>> browser.open(url)
     >>> print_tag_with_id(browser.contents, 'proposals')
-    Other reviews I am not actively reviewing
+    Other reviews you are not actively reviewing
     Branch Merge Proposal             Requested By    Lines Activity
     lp://dev/...                      ...                   None
 
@@ -178,6 +177,6 @@ After a preview diff is added, it has a line count.
     >>> logout()
     >>> browser.open(url)
     >>> print_tag_with_id(browser.contents, 'proposals')
-    Other reviews I am not actively reviewing
+    Other reviews you are not actively reviewing
     Branch Merge Proposal             Requested By    Lines Activity
     lp://dev/...                      ...             14    None

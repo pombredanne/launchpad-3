@@ -55,7 +55,7 @@ In order to demonstrate a navigation class, we need to create an interface
 for the thing being navigated.  Rather than use a standard Launchpad interface,
 we'll define one here.
 
-    >>> from zope.interface import Interface, Attribute, implements
+    >>> from zope.interface import Interface, Attribute, implementer
 
     >>> class IThingSet(Interface):
     ...     """An interface we're using in this doctest."""
@@ -100,8 +100,8 @@ we'll define one here.
     ...         except IndexError:
     ...             return None
 
-    >>> class Request(object):
-    ...     implements(IBrowserRequest)
+    >>> @implementer(IBrowserRequest)
+    ... class Request(object):
     ...
     ...     def __init__(self):
     ...         self.response = Response()
@@ -136,8 +136,8 @@ we'll define one here.
     ...
     ...     value = Attribute('the value of the thing')
 
-    >>> class Thing(object):
-    ...     implements(IThing)
+    >>> @implementer(IThing)
+    ... class Thing(object):
     ...
     ...     def __init__(self, value):
     ...         self.value = value
@@ -145,8 +145,8 @@ we'll define one here.
     ...     def __repr__(self):
     ...         return "<Thing '%s'>" % self.value
 
-    >>> class ThingSet(object):
-    ...     implements(IThingSet)
+    >>> @implementer(IThingSet)
+    ... class ThingSet(object):
     ...
     ...     def getThing(self, name):
     ...         if name.startswith('t'):

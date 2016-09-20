@@ -16,7 +16,7 @@
     <tal:searchbox replace="structure view/widgets/searchtext" />
     <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
     <input type="submit" name="search" value="Search" />
-    <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
+    <a tal:attributes="href string:?">Simple search</a>
 
     <fieldset>
       <legend>Status and importance</legend>
@@ -307,8 +307,7 @@
               >An error message.</div>
           </div>
 
-          <div condition="view/shouldShowTagsCombinatorWidget"
-               class="value">
+          <div class="value">
             <label style="font-weight: normal">
               <input id="field.tags_combinator.0"
                      name="field.tags_combinator"

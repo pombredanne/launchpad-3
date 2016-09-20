@@ -53,12 +53,19 @@ Change the description of a bug:
 Add a CVE reference to a bug:
 
     >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
-    >>> from lp.bugs.model.cve import BugCve
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
-    >>> bugcve = BugCve(cve=cve, bug=bug)
-    >>> notify(ObjectCreatedEvent(bugcve))
+    >>> cve.linkBug(bug)
     Karma added: action=bugcverefadded, distribution=debian
+    True
+
+Link a merge proposal to a bug:
+
+    >>> dsp = factory.makeDistributionSourcePackage(distribution=debian)
+    >>> merge_proposal = factory.makeBranchMergeProposalForGit(target=dsp)
+    Karma added: action=branchmergeproposed, distribution=debian
+    >>> bug.linkMergeProposal(merge_proposal, getUtility(ILaunchBag).user)
+    Karma added: action=bugbranchcreated, distribution=debian
 
 Add watch for external bug to the bug:
 
@@ -246,7 +253,7 @@ links":
     >>> link_change = getUtility(
     ...     IKarmaActionSet).getByName('bugextrefadded')
     >>> karma_helper.added_karma_actions.add(link_change)
-    >>> karma_helper.added_karma_actions == set(bugs_karma_actions)
+    >>> karma_helper.added_karma_actions.issuperset(bugs_karma_actions)
     True
 
 Unregister the event listener to make sure we won't interfere in other tests.

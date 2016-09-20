@@ -12,7 +12,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.services.database.sqlbase import SQLBase
@@ -23,19 +23,18 @@ from lp.soyuz.interfaces.section import (
     )
 
 
+@implementer(ISection)
 class Section(SQLBase):
     """See ISection"""
-    implements(ISection)
 
     _defaultOrder = ['id']
 
     name = StringCol(notNull=True, alternateID=True)
 
 
+@implementer(ISectionSelection)
 class SectionSelection(SQLBase):
     """See ISectionSelection."""
-
-    implements(ISectionSelection)
 
     _defaultOrder = ['id']
 
@@ -45,9 +44,9 @@ class SectionSelection(SQLBase):
         foreignKey='Section', notNull=True)
 
 
+@implementer(ISectionSet)
 class SectionSet:
     """See ISectionSet."""
-    implements(ISectionSet)
 
     def __iter__(self):
         """See ISectionSet."""
@@ -74,4 +73,3 @@ class SectionSet:
     def new(self, name):
         """See ISectionSet."""
         return Section(name=name)
-

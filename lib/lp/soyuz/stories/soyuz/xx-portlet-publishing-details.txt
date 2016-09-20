@@ -18,6 +18,13 @@ into account any overrides applied since the package was uploaded.
     Hoary (1.0.9a-4ubuntu1): main/base
     Warty (1.0.8-1ubuntu1): main/base
 
+Series and versions are linkified.
+
+    >>> print browser.getLink('Hoary').url
+    http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
+    >>> print browser.getLink('1.0.9a-4').url
+    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4
+
 When a source package has never been published, the portlet will say so.
 
     >>> browser.open(

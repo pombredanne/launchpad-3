@@ -4,11 +4,11 @@
 __metaclass__ = type
 
 
-from lp.bugs.browser.bugtarget import BugsPatchesView
-from lp.bugs.browser.bugtask import (
+from lp.bugs.browser.buglisting import (
     BugListingPortletStatsView,
     DISPLAY_BUG_STATUS_FOR_PATCHES,
     )
+from lp.bugs.browser.bugtarget import BugsPatchesView
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,

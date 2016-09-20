@@ -55,10 +55,6 @@
               >Foo Bar</dd>
         </dl>
         <dl>
-          <dt>Component:</dt>
-            <dd tal:content="context/component/name">main</dd>
-        </dl>
-        <dl>
           <dt>Architectures:</dt>
             <dd tal:content="context/architecturehintlist">i386, ppc</dd>
         </dl>
@@ -140,36 +136,18 @@
 
   <div id="source-files" class="portlet">
    <h2>Downloads</h2>
-   <table class="narrow listing">
-    <thead>
-     <tr>
-      <th>File</th>
-      <th>Size</th>
-      <th>MD5 Checksum</th>
-     </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="file view/files">
-       <tal:file_available condition="not:file/deleted">
-         <td>
-           <a class="sprite download"
-              tal:attributes="href file/http_url"
-              tal:content="file/filename">foo_1.0.dsc</a>
-         </td>
-         <td tal:content="file/content/filesize/fmt:bytes">10 bytes</td>
-         <td tal:content="file/content/md5">DEADBEEF</td>
-       </tal:file_available>
-       <tal:file_unavailable condition="file/deleted">
-         <td span=3>
-           <span tal:replace="file/filename">foo.dsc</span> (deleted)
-         </td>
-       </tal:file_unavailable>
-      </tr>
-    </tbody>
-   </table>
+   <tal:files replace="structure context/@@+files">Files...</tal:files>
+
    <tal:diffs
      replace="structure context/sourcepackagerelease/@@+diffs"
      >Diffs...</tal:diffs>
+
+   <p tal:condition="context/upload_changesfile">
+     <a tal:attributes="href context/upload_changesfile/http_url">
+       View changes file
+     </a>
+   </p>
+   <p tal:condition="not: context/upload_changesfile">No changes file available.</p>
   </div> <!-- source-files -->
 
   <div id="source-binaries" class="portlet">

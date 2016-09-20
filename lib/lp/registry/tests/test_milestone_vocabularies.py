@@ -35,8 +35,8 @@ class TestMilestoneVocabulary(TestCaseWithFactory):
         # associated private product.
         owner = self.factory.makePerson()
         group = self.factory.makeProject(owner=owner)
-        public = self.factory.makeProduct(project=group, owner=owner)
-        private = self.factory.makeProduct(project=group, owner=owner,
+        public = self.factory.makeProduct(projectgroup=group, owner=owner)
+        private = self.factory.makeProduct(projectgroup=group, owner=owner,
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(owner):
             m1 = self.factory.makeMilestone(name='public', product=public)
@@ -67,8 +67,8 @@ class TestMilestoneVocabulary(TestCaseWithFactory):
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox 1.0'])
 
-    def testProjectMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a project."""
+    def testProjectGroupMilestoneVocabulary(self):
+        """Test of MilestoneVocabulary for a project group."""
         mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
         vocabulary = MilestoneVocabulary(mozilla)
         self.assertEqual(

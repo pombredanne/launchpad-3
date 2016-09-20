@@ -24,6 +24,7 @@ It is possible to get a batched list of all the project groups.
     >>> for project_group in project_group_entries:
     ...   print project_group['display_name']
     Apache
+    ...
     GNOME
     ...
     The Mozilla Project
@@ -46,6 +47,7 @@ the project groups.
     >>> for project_group in project_group_entries:
     ...   print project_group['display_name']
     Apache
+    ...
     GNOME
     ...
     The Mozilla Project
@@ -196,6 +198,7 @@ Projects are available at their canonical URL on the API virtual host.
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     translation_focus_link: None
+    vcs: None
     web_link: u'http://launchpad.../firefox'
     wiki_url: None
 
@@ -568,20 +571,20 @@ licensing.  We can find all projects with unreviewed licenses.
 The project collection has a method for creating a new project.
 
     >>> def create_project(name, display_name, title, summary,
-    ...                    description=None, project=None, homepage_url=None,
-    ...                    screenshots_url=None, wiki_url=None,
-    ...                    download_url=None, freshmeat_project=None,
-    ...                    sourceforge_project=None, programming_lang=None,
-    ...                    licenses=(), license_info=None,
-    ...                    project_reviewed=False,
+    ...                    description=None, project_group=None,
+    ...                    homepage_url=None, screenshots_url=None,
+    ...                    wiki_url=None, download_url=None,
+    ...                    freshmeat_project=None, sourceforge_project=None,
+    ...                    programming_lang=None, licenses=(),
+    ...                    license_info=None, project_reviewed=False,
     ...                    registrant=None):
     ...     return webservice.named_post(
     ...         "/projects", "new_project",
     ...         name=name, display_name=display_name,
     ...         title=title, summary=summary, description=description,
-    ...         homepage_url=homepage_url, screenshots_url=screenshots_url,
-    ...         wiki_url=wiki_url, download_url=download_url,
-    ...         freshmeat_project=freshmeat_project,
+    ...         project_group=project_group, homepage_url=homepage_url,
+    ...         screenshots_url=screenshots_url, wiki_url=wiki_url,
+    ...         download_url=download_url, freshmeat_project=freshmeat_project,
     ...         sourceforge_project=sourceforge_project,
     ...         programming_lang=programming_lang,
     ...         licenses=licenses, license_info=license_info,
@@ -1137,4 +1140,4 @@ through the API.
     Mega Money Maker
 
     >>> print mmm['commercial_subscription_link']
-    http://.../mega-money-maker/+commercialsubscription/3
+    http://.../mega-money-maker/+commercialsubscription/...

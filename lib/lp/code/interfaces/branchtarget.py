@@ -92,26 +92,24 @@ class IBranchTarget(Interface):
     supports_merge_proposals = Attribute(
         "Does this target support merge proposals at all?")
 
-    supports_short_identites = Attribute(
+    supports_short_identities = Attribute(
         "Does this target support shortened bazaar identities?")
 
     supports_code_imports = Attribute(
         "Does this target support code imports at all?")
 
+    allow_recipe_name_from_target = Attribute(
+        "Can recipe names reasonably be generated from the target name "
+        "rather than the branch name?")
+
     def areBranchesMergeable(other_target):
-        """Are branches from other_target mergeable into this target."""
+        """Are branches from other_target mergeable into this target?"""
 
     def __eq__(other):
-        """Is this target the same as another target?
-
-        Generally implemented in terms of `IPrimaryContext.context`.
-        """
+        """Is this target the same as another target?"""
 
     def __ne__(other):
-        """Is this target not the same as another target?
-
-        Generally implemented in terms of `IPrimaryContext.context`.
-        """
+        """Is this target not the same as another target?"""
 
     def getNamespace(owner):
         """Return a `IBranchNamespace` for 'owner' and this target."""

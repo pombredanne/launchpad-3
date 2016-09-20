@@ -127,7 +127,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        author.account.status = AccountStatus.SUSPENDED
+        author.setAccountStatus(AccountStatus.SUSPENDED, None, 'spammer!')
         branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.assertTrue(rev.karma_allocated)
@@ -351,7 +351,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
 
 
 class GetPublicRevisionsTestCase(TestCaseWithFactory):
-    """A base class for the tests for people, products and projects."""
+    """A base class for the tests for people, products and project groups."""
 
     layer = DatabaseFunctionalLayer
 
@@ -524,13 +524,13 @@ class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
 
     def setUp(self):
         GetPublicRevisionsTestCase.setUp(self)
-        self.project = self.factory.makeProject()
-        self.product = self.factory.makeProduct(project=self.project)
+        self.projectgroup = self.factory.makeProject()
+        self.product = self.factory.makeProduct(projectgroup=self.projectgroup)
 
     def _getRevisions(self, day_limit=30):
         # Returns the revisions for the person.
         return list(RevisionSet.getPublicRevisionsForProjectGroup(
-                self.project, day_limit))
+                self.projectgroup, day_limit))
 
     def testRevisionsMustBeInABranchOfProduct(self):
         # The revision must be in a branch for the product.
@@ -540,8 +540,10 @@ class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
         self.assertEqual([rev1], self._getRevisions())
 
     def testProjectRevisions(self):
-        # Revisions in all products that are part of the project are returned.
-        another_product = self.factory.makeProduct(project=self.project)
+        # Revisions in all products that are part of the project group are
+        # returned.
+        another_product = self.factory.makeProduct(
+            projectgroup=self.projectgroup)
         rev1 = self._makeRevisionInBranch(product=self.product)
         rev2 = self._makeRevisionInBranch(product=another_product)
         self._makeRevisionInBranch()

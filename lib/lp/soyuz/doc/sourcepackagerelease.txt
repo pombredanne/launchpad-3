@@ -15,13 +15,13 @@ enabling faster searches, faster readings and model constraints.
 Let's get one from the database:
 
    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-   >>> spr = SourcePackageRelease.get(14)
+   >>> spr = SourcePackageRelease.get(20)
    >>> spr.name
-   u'mozilla-firefox'
+   u'pmount'
    >>> spr.version
-   u'0.9'
+   u'0.1-1'
    >>> spr.dateuploaded
-   datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>)
+   datetime.datetime(2005, 3, 24, 20, 59, 31, 439579, tzinfo=<UTC>)
 
 published_archives returns a set of all the archives that this
 SourcePackageRelease is published in.
@@ -29,7 +29,7 @@ SourcePackageRelease is published in.
     >>> for archive in spr.published_archives:
     ...     print archive.displayname
     Primary Archive for Ubuntu Linux
-    Primary Archive for Ubuntu Test
+    PPA for Celso Providelo
 
 'age' is a special property that performs on-the-fly:
 {{{
@@ -57,7 +57,7 @@ if the 'age' result looks sane:
    >>> spr.age.days == 10
    True
 
-Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
+pmount 0.1-1 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
    >>> from lp.registry.interfaces.person import IPersonSet
@@ -89,7 +89,7 @@ Check that the uploaded changesfile works:
 Check ISourcePackageRelease.override() behaviour:
 
    >>> spr.component.name, spr.section.name
-   (u'main', u'base')
+   (u'main', u'web')
 
    >>> from lp.soyuz.interfaces.component import IComponentSet
    >>> from lp.soyuz.interfaces.section import ISectionSet
@@ -127,7 +127,7 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_name = getUtility(ISourcePackageNameSet)['pmount']
   >>> arg_comp = getUtility(IComponentSet)['universe']
   >>> arg_sect = getUtility(ISectionSet)['web']
-  >>> arg_key = getUtility(IGPGKeySet).get(1)
+  >>> arg_key = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
@@ -331,4 +331,3 @@ published_archives shows the superseded/deleted publications still:
     ...     print archive.displayname
     Primary Archive for Ubuntu Linux
     PPA named pppa for Celso Providelo
-

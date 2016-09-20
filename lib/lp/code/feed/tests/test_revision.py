@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the revision feeds."""
@@ -32,7 +32,7 @@ class TestRevisionFeedId(TestCaseWithFactory):
     def test_format(self):
         # The id contains the iso format of the date part of the revision
         # date, and the revision id.
-        revision_date = datetime(2009, 07, 21, 12, tzinfo=UTC)
+        revision_date = datetime(2009, 7, 21, 12, tzinfo=UTC)
         revision = self.factory.makeRevision(
             revision_date=revision_date, rev_id="test_revision_id")
         feed_id = revision_feed_id(revision)

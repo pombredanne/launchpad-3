@@ -36,5 +36,6 @@ class TestGetUserAgentDistroSeries(unittest.TestCase):
         self.failUnless(version is None,
                         "None should be returned when the match fails.")
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

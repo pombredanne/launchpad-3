@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mixin classes to implement methods for IHas<code related bits>."""
@@ -11,7 +11,10 @@ __all__ = [
     'HasRequestedReviewsMixin',
     ]
 
+from functools import partial
+
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
@@ -20,6 +23,12 @@ from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.gitcollection import (
+    IAllGitRepositories,
+    IGitCollection,
+    )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.decoratedresultset import DecoratedResultSet
 
 
 class HasBranchesMixin:
@@ -44,14 +53,33 @@ class HasMergeProposalsMixin:
     def getMergeProposals(self, status=None, visible_by_user=None,
                           eager_load=False):
         """See `IHasMergeProposals`."""
+        # Circular import.
+        from lp.code.model.branchmergeproposal import BranchMergeProposal
+
         if not status:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
                 BranchMergeProposalStatus.NEEDS_REVIEW,
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
-        collection = IBranchCollection(self).visibleByUser(visible_by_user)
-        return collection.getMergeProposals(status, eager_load=eager_load)
+        def _getProposals(interface):
+            collection = removeSecurityProxy(interface(self))
+            collection = collection.visibleByUser(visible_by_user)
+            return collection.getMergeProposals(status, eager_load=False)
+
+        # SourcePackage Bazaar branches are an aberration which was not
+        # replicated for Git, so SourcePackage does not support Git.
+        if ISourcePackage.providedBy(self):
+            proposals = _getProposals(IBranchCollection)
+        else:
+            proposals = _getProposals(IBranchCollection).union(
+                _getProposals(IGitCollection))
+        if not eager_load:
+            return proposals
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=visible_by_user)
+            return DecoratedResultSet(proposals, pre_iter_hook=loader)
 
 
 class HasRequestedReviewsMixin:
@@ -65,6 +93,34 @@ class HasRequestedReviewsMixin:
         visible_branches = getUtility(IAllBranches).visibleByUser(
             visible_by_user)
         return visible_branches.getMergeProposalsForReviewer(self, status)
+
+    def getOwnedAndRequestedReviews(self, status=None, visible_by_user=None,
+                                    project=None, eager_load=False):
+        """See `IHasRequestedReviews`."""
+        # Circular import.
+        from lp.code.model.branchmergeproposal import BranchMergeProposal
+
+        if not status:
+            status = (BranchMergeProposalStatus.NEEDS_REVIEW,)
+
+        def _getProposals(collection):
+            collection = collection.visibleByUser(visible_by_user)
+            return collection.getMergeProposalsForPerson(
+                self, status, eager_load=False)
+
+        bzr_collection = removeSecurityProxy(getUtility(IAllBranches))
+        git_collection = removeSecurityProxy(getUtility(IAllGitRepositories))
+        if project is not None:
+            bzr_collection = bzr_collection.inProduct(project)
+            git_collection = git_collection.inProject(project)
+        proposals = _getProposals(bzr_collection).union(
+            _getProposals(git_collection))
+        if not eager_load:
+            return proposals
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=visible_by_user)
+            return DecoratedResultSet(proposals, pre_iter_hook=loader)
 
 
 class HasCodeImportsMixin:

@@ -28,10 +28,10 @@ from lp.testing import (
     login_team,
     logout,
     person_logged_in,
+    RequestTimelineCollector,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
@@ -114,7 +114,8 @@ class TestMilestoneViews(BrowserTestCase):
             milestone=milestone)
         with person_logged_in(None):
             browser = self.getViewBrowser(milestone, '+index', user=owner)
-        self.assertIn(specification.name, browser.contents)
+        with person_logged_in(owner):
+            self.assertIn(specification.name, browser.contents)
         with person_logged_in(None):
             browser = self.getViewBrowser(milestone, '+index')
 
@@ -295,7 +296,8 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         self.factory.makeBug(milestone=milestone)
         self.factory.makeBug(
             milestone=milestone, information_type=InformationType.USERDATA)
-        # Remove the APG the product owner has so he can't see the private bug.
+        # Remove the APG the product owner has so they can't see the private
+        # bug.
         ap = getUtility(IAccessPolicySource).find(
             [(milestone.product, InformationType.USERDATA)]).one()
         getUtility(IAccessPolicyGrantSource).revoke(
@@ -320,25 +322,25 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         owner = milestone.product.owner
         with person_logged_in(owner):
             view = create_initialized_view(milestone, '+delete', form=form)
-        Store.of(workitem).flush()    
+        Store.of(workitem).flush()
         self.assertEqual([], view.errors)
         self.assertIs(None, workitem.milestone)
 
     def test_delete_milestone_with_private_specification(self):
         policy = SpecificationSharingPolicy.PROPRIETARY
-        product = self.factory.makeProduct(specification_sharing_policy=policy)
+        product = self.factory.makeProduct(
+            specification_sharing_policy=policy)
         milestone = self.factory.makeMilestone(product=product)
         specification = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY, milestone=milestone)
-        ap = getUtility(IAccessPolicySource).find(
-            [(product, InformationType.PROPRIETARY)])
-        getUtility(IAccessPolicyGrantSource).revokeByPolicy(ap)
+            product=product, milestone=milestone,
+            information_type=InformationType.PROPRIETARY)
         form = {'field.actions.delete': 'Delete Milestone'}
         with person_logged_in(product.owner):
             view = create_initialized_view(milestone, '+delete', form=form)
-        Store.of(specification).flush()    
         self.assertEqual([], view.errors)
-        self.assertIs(None, specification.milestone)
+        Store.of(specification).flush()
+        with person_logged_in(product.owner):
+            self.assertIs(None, specification.milestone)
 
 
 class TestQueryCountBase(TestCaseWithFactory):
@@ -442,7 +444,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # Seed the cookie cache and any other cross-request state we may gain
         # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(milestone_url)
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         browser.open(milestone_url)
@@ -489,7 +491,7 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         # A ProjectGroup milestone doesn't exist unless one of its
         # Projects has a milestone of that name.
         product = self.factory.makeProduct(
-            owner=self.owner, project=self.project_group)
+            owner=self.owner, projectgroup=self.project_group)
         self.product_milestone = self.factory.makeMilestone(
             productseries=product.development_focus,
             name=self.milestone_name)
@@ -604,7 +606,7 @@ class TestMilestoneTagView(TestQueryCountBase):
         self.product = self.factory.makeProduct(
             name="product1",
             owner=self.owner,
-            project=self.project_group)
+            projectgroup=self.project_group)
         self.milestone = self.factory.makeMilestone(product=self.product)
         with person_logged_in(self.owner):
             self.milestone.setTags(self.tags, self.owner)

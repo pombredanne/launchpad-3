@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -61,7 +61,7 @@ from storm.store import (
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -143,6 +143,7 @@ from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.xref.interfaces import IXRefSet
 
 
 def bugtask_sort_key(bugtask):
@@ -234,10 +235,9 @@ def bug_target_to_key(target):
     return values
 
 
+@implementer(IBugTaskDelta)
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
-
-    implements(IBugTaskDelta)
 
     def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, bugwatch=None, target=None):
@@ -300,6 +300,19 @@ def validate_status(self, attr, value):
         return validate_conjoined_attribute(self, attr, value)
     else:
         return value
+
+
+def map_status_for_storage(bug, status, when=None):
+    if status == BugTaskStatus.INCOMPLETE:
+        # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it
+        # can be queried on efficiently.
+        if (when is None or bug.date_last_message is None or
+            when > bug.date_last_message):
+            return BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+        else:
+            return BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
+    else:
+        return status
 
 
 def validate_assignee(self, attr, value):
@@ -397,9 +410,9 @@ def validate_new_target(bug, target, check_source_package=True):
         check_source_package=check_source_package)
 
 
+@implementer(IBugTask)
 class BugTask(SQLBase):
     """See `IBugTask`."""
-    implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distroseries', 'milestone', 'sourcepackagename']
@@ -868,17 +881,9 @@ class BugTask(SQLBase):
                 "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
-        if new_status == BugTaskStatus.INCOMPLETE:
-            # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it
-            # can be queried on efficiently.
-            if (when is None or self.bug.date_last_message is None or
-                when > self.bug.date_last_message):
-                new_status = BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
-            else:
-                new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
-
+        new_status = map_status_for_storage(self.bug, new_status, when=when)
         self._setStatusDateProperties(self.status, new_status, when=when)
-        
+
     def _setStatusDateProperties(self, old_status, new_status, when=None):
         if old_status == new_status:
             # No change in the status, so nothing to do.
@@ -1327,9 +1332,9 @@ class BugTask(SQLBase):
         return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
 
 
+@implementer(IBugTaskSet)
 class BugTaskSet:
     """See `IBugTaskSet`."""
-    implements(IBugTaskSet)
 
     title = "A set of bug tasks"
 
@@ -1384,14 +1389,14 @@ class BugTaskSet:
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
         # Import locally to avoid circular imports.
-        from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
 
         bug_ids = set(bugtask.bugID for bugtask in bugtasks)
-        bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-            SpecificationBug.bugID,
-            SpecificationBug.bugID.is_in(bug_ids)))
+        bug_ids_with_specifications = set(
+            int(id) for _, id in getUtility(IXRefSet).findFromMany(
+                [(u'bug', unicode(bug_id)) for bug_id in bug_ids],
+                types=[u'specification']).keys())
         bug_ids_with_branches = set(IStore(BugBranch).find(
                 BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
         # Badging looks up milestones too : eager load into the storm cache.
@@ -1573,6 +1578,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         if status is None:
             status = IBugTask['status'].default
+        status = map_status_for_storage(bug, status)
         if importance is None:
             importance = IBugTask['importance'].default
         target_keys = []

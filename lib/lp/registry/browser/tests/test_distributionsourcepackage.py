@@ -101,7 +101,7 @@ class TestDistributionSourcePackagePublishingHistoryView(TestCaseWithFactory):
 
     def test_show_sponsor(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        ppa = self.factory.makeArchive()
+        ppa = self.factory.makeArchive(distribution=archive.distribution)
         spph = self.factory.makeSourcePackagePublishingHistory(archive=ppa)
         creator = self.factory.makePerson()
         sponsor = self.factory.makePerson()

@@ -14,11 +14,12 @@ urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')
 
 from lp.archivepublisher.debversion import Version
 
+
 def parse_first_line(line):
     # SRCPKGNAME (VERSION).*((urgency|priority)=\S+)?
     match = first_re.match(line)
     if not match:
-        raise ValueError, line
+        raise ValueError(line)
     srcpkg = match.group(1)
     version = match.group(2)
 
@@ -32,8 +33,8 @@ def parse_first_line(line):
 
 
 def parse_last_line(line):
-    maint = line[:line.find(">")+1].strip()
-    date = line[line.find(">")+1:].strip()
+    maint = line[:line.find(">") + 1].strip()
+    date = line[line.find(">") + 1:].strip()
     return (maint, date)
 
 
@@ -72,7 +73,7 @@ def parse_changelog(changelines):
                 #print "state0 Exception skip"
                 continue
             firstline = line.strip()
-            stanza = [line, '\n', '\n']
+            stanza = [line, '\n']
             state = 1
             continue
 
@@ -100,4 +101,3 @@ def parse_changelog(changelines):
 if __name__ == '__main__':
     import pprint
     pprint.pprint(parse_changelog(file(sys.argv[1], "r")))
-

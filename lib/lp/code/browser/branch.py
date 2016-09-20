@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchBreadcrumb',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditStatusView',
@@ -13,30 +14,21 @@ __all__ = [
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
     'BranchReviewerEditView',
-    'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchMirrorMixin',
     'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
-    'BranchInProductView',
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
-    'BranchSubscriptionsView',
+    'CodeEditOwnerMixin',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.fields import Reference
@@ -44,7 +36,6 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
@@ -56,7 +47,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     providedBy,
     )
@@ -74,7 +65,6 @@ from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
-from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -125,15 +115,13 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
@@ -158,17 +146,22 @@ from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
+from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webhooks.browser import WebhookTargetNavigationMixin
+from lp.snappy.browser.hassnaps import (
+    HasSnapsMenuMixin,
+    HasSnapsViewMixin,
+    )
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
 
 
+@implementer(ICanonicalUrlData)
 class BranchURL:
     """Branch URL creation rules."""
-
-    implements(ICanonicalUrlData)
 
     rootsite = 'code'
     inside = None
@@ -181,35 +174,14 @@ class BranchURL:
         return self.branch.unique_name
 
 
-def branch_root_context(branch):
-    """Return the IRootContext for the branch."""
-    return branch.target.components[0]
-
-
-class BranchHierarchy(Hierarchy):
-    """The hierarchy for a branch should be the product if there is one."""
+class BranchBreadcrumb(NameBreadcrumb):
 
     @property
-    def objects(self):
-        """See `Hierarchy`."""
-        traversed = list(self.request.traversed_objects)
-        # Pass back the root object.
-        yield traversed.pop(0)
-        # Now pop until we find the branch.
-        branch = traversed.pop(0)
-        while not IBranch.providedBy(branch):
-            branch = traversed.pop(0)
-        # Now pass back the branch components.
-        for component in branch.target.components:
-            yield component
-        # Now the branch.
-        yield branch
-        # Now whatever is left.
-        for obj in traversed:
-            yield obj
+    def inside(self):
+        return self.context.target.components[-1]
 
 
-class BranchNavigation(Navigation):
+class BranchNavigation(WebhookTargetNavigationMixin, Navigation):
 
     usedfor = IBranch
 
@@ -218,7 +190,7 @@ class BranchNavigation(Navigation):
         """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
-        for bug_branch in bug.linked_branches:
+        for bug_branch in bug.linked_bugbranches:
             if bug_branch.branch == self.context:
                 return bug_branch
 
@@ -228,7 +200,7 @@ class BranchNavigation(Navigation):
 
     @stepthrough("+subscription")
     def traverse_subscription(self, name):
-        """Traverses to an `IBranchSubcription`."""
+        """Traverses to an `IBranchSubscription`."""
         person = getUtility(IPersonSet).getByName(name)
 
         if person is not None:
@@ -242,9 +214,7 @@ class BranchNavigation(Navigation):
         except ValueError:
             # Not a number.
             return None
-        for proposal in self.context.landing_targets:
-            if proposal.id == id:
-                return proposal
+        return self.context.getMergeProposalByID(id)
 
     @stepto("+code-import")
     def traverse_code_import(self):
@@ -268,7 +238,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'webhooks', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -295,17 +265,24 @@ class BranchEditMenu(NavigationMenu):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def webhooks(self):
+        text = 'Manage webhooks'
+        return Link(
+            '+webhooks', text, icon='edit',
+            enabled=bool(getFeatureFlag('webhooks.new.enabled')))
 
-class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
+
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
     """Context menu for branches."""
 
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
-        'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'create_queue', 'visibility']
+        'add_subscriber', 'browse_revisions', 'create_recipe', 'create_snap',
+        'link_bug', 'link_blueprint', 'register_merge', 'source',
+        'subscription', 'edit_status', 'edit_import', 'upgrade_branch',
+        'view_recipes', 'view_snaps', 'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -322,7 +299,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'All revisions'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('changes')
+        url = self.context.getCodebrowseUrl('changes')
         return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -371,7 +348,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse the code'
         enabled = self.context.code_is_browseable
-        url = self.context.codebrowse_url('files')
+        url = self.context.getCodebrowseUrl('files')
         return Link(url, text, icon='info', enabled=enabled)
 
     def edit_import(self):
@@ -392,10 +369,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def create_queue(self):
-        return Link('+create-queue', 'Create a new queue', icon='add')
 
 
 class BranchMirrorMixin:
@@ -430,7 +403,7 @@ class BranchMirrorMixin:
 
 
 class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
-                 LaunchpadView):
+                 LaunchpadView, HasSnapsViewMixin):
 
     feed_types = (
         BranchFeedLink,
@@ -464,15 +437,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
             return False
         return self.context.hasSubscription(self.user)
 
-    def recent_revision_count(self, days=30):
-        """Number of revisions committed during the last N days."""
-        timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.getRevisionsSince(timestamp).count()
-
-    def owner_is_registrant(self):
-        """Is the branch owner the registrant?"""
-        return self.context.owner == self.context.registrant
-
     def owner_is_reviewer(self):
         """Is the branch owner the default reviewer?"""
         if self.context.reviewer == None:
@@ -502,11 +466,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     def is_empty_directory(self):
         """True if the branch is an empty directory without even a '.bzr'."""
         return self.context.control_format is None
-
-    @property
-    def codebrowse_url(self):
-        """Return the link to codebrowse for this branch."""
-        return self.context.codebrowse_url()
 
     @property
     def pending_writes(self):
@@ -554,23 +513,27 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        candidates = list(self.context.landing_candidates)
-        branches = load_related(
-            Branch, candidates, ['source_branchID', 'prerequisite_branchID'])
-        GenericBranchCollection.preloadVisibleStackedOnBranches(
-            branches, self.user)
+        candidates = self.context.getPrecachedLandingCandidates(self.user)
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
     @property
-    def recipe_count_text(self):
+    def recipes_link(self):
+        """A link to recipes for this branch."""
         count = self.context.recipes.count()
         if count == 0:
-            return 'No recipes'
+            # Nothing to link to.
+            return 'No recipes using this branch.'
         elif count == 1:
-            return '1 recipe'
+            # Link to the single recipe.
+            return structured(
+                '<a href="%s">1 recipe</a> using this branch.',
+                canonical_url(self.context.recipes.one())).escapedtext
         else:
-            return '%s recipes' % count
+            # Link to a recipe listing.
+            return structured(
+                '<a href="+recipes">%s recipes</a> using this branch.',
+                count).escapedtext
 
     @property
     def is_import_branch_with_no_landing_candidates(self):
@@ -688,12 +651,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def spec_links(self):
         return self.context.getSpecificationLinks(self.user)
-
-
-class BranchInProductView(BranchView):
-
-    show_person_link = True
-    show_product_link = False
 
 
 class BranchNameValidationMixin:
@@ -996,7 +953,7 @@ class BranchDeletionView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote('Delete branch "%s"' % self.context.displayname)
+        return 'Delete branch %s' % self.context.displayname
 
     label = page_title
 
@@ -1088,7 +1045,7 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+        return 'Upgrade branch %s' % self.context.displayname
 
     @property
     def next_url(self):
@@ -1104,34 +1061,19 @@ class BranchUpgradeView(LaunchpadFormView):
             self.request.response.addErrorNotification(e)
 
 
-class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
-    """The main branch for editing the branch attributes."""
-
-    @property
-    def field_names(self):
-        field_names = ['owner', 'name']
-        if not self.context.sourcepackagename:
-            field_names.append('target')
-        field_names.extend([
-            'information_type', 'url', 'description',
-            'lifecycle_status'])
-        return field_names
-
-    custom_widget('target', BranchTargetWidget)
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+class CodeEditOwnerMixin:
+    """A mixin to adjust owner vocabularies for admins."""
 
     def setUpFields(self):
-        super(BranchEditView, self).setUpFields()
-        branch = self.context
-        # If the user can administer branches, then they should be able to
-        # assign the ownership of the branch to any valid person or team.
-        if check_permission('launchpad.Admin', branch):
+        super(CodeEditOwnerMixin, self).setUpFields()
+        # If the user can administer the relevant object type, then they
+        # should be able to assign the ownership of the object to any valid
+        # person or team.
+        if check_permission('launchpad.Admin', self.context):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description=_("As an administrator you are able to assign"
-                                " this branch to any person or team."),
+                description=self.any_owner_description,
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
                 any_owner_choice, render_context=self.render_context)
@@ -1160,6 +1102,32 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 self.form_fields = self.form_fields.omit('owner')
                 self.form_fields = new_owner_field + self.form_fields
 
+
+class BranchEditView(CodeEditOwnerMixin, BranchEditFormView,
+                     BranchNameValidationMixin):
+    """The main branch for editing the branch attributes."""
+
+    @property
+    def field_names(self):
+        field_names = ['owner', 'name']
+        if not self.context.sourcepackagename:
+            field_names.append('target')
+        field_names.extend([
+            'information_type', 'url', 'description',
+            'lifecycle_status'])
+        return field_names
+
+    custom_widget('target', BranchTargetWidget)
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    any_owner_description = _(
+        "As an administrator you are able to assign this branch to any "
+        "person or team.")
+
+    def setUpFields(self):
+        super(BranchEditView, self).setUpFields()
+        branch = self.context
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
@@ -1210,57 +1178,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class BranchSubscriptionsView(LaunchpadView):
-    """The view for the branch subscriptions portlet.
-
-    The view is used to provide a decorated list of branch subscriptions
-    in order to provide links to be able to edit the subscriptions
-    based on whether or not the user is able to edit the subscription.
-    """
-
-    def owner_is_registrant(self):
-        """Return whether or not owner is the same as the registrant"""
-        return self.context.owner == self.context.registrant
-
-
-class BranchMergeQueueView(LaunchpadView):
-    """The view used to render the merge queue for a branch."""
-
-    @cachedproperty
-    def merge_queue(self):
-        """Get the merge queue and check visibility."""
-        result = []
-        for proposal in self.context.getMergeQueue():
-            # If the logged in user cannot view the proposal then we
-            # show a "place holder" in the queue position.
-            if check_permission('launchpad.View', proposal):
-                result.append(proposal)
-            else:
-                result.append(None)
-        return result
-
-
-class RegisterProposalStatus(EnumeratedType):
-    """A restricted status enum for the register proposal form."""
-
-    # The text in this enum is different from the general proposal status
-    # enum as we want the help text that is shown in the form to be more
-    # relevant to the registration of the proposal.
-
-    NEEDS_REVIEW = Item("""
-        Needs review
-
-        The changes are ready for review.
-        """)
-
-    WORK_IN_PROGRESS = Item("""
-        Work in progress
-
-        The changes are still being actively worked on, and are not
-        yet ready for review.
-        """)
 
 
 class RegisterProposalSchema(Interface):
@@ -1355,8 +1272,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         try:
             proposal = source_branch.addLandingTarget(
-                registrant=registrant, target_branch=target_branch,
-                prerequisite_branch=prerequisite_branch,
+                registrant=registrant, merge_target=target_branch,
+                merge_prerequisite=prerequisite_branch,
                 needs_review=data['needs_review'],
                 description=data.get('comment'),
                 review_requests=review_requests,

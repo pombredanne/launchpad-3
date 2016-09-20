@@ -110,31 +110,15 @@ The search does a case-insensitive, substring match.
      ('linux-source-2.6.15', u'linux-source-2.6.15')]
 
 
-BinaryPackageNameVocabulary
-...........................
-
-All the binary packages in Launchpad.
-
-    >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
-    >>> len(bpn_vocabulary)
-    8
-
-    >>> bpn_terms = bpn_vocabulary.searchForTerms("mozilla")
-    >>> len(bpn_terms)
-    2
-    >>> [(term.token, term.title) for term in bpn_terms]
-    [('mozilla-firefox', u'iceweasel huh ?'),
-     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
-
-
 SourcePackageNameVocabulary
 ...........................
 
-All the source packages in Launchpad.
+All the source packages in Launchpad that are published in public archives
+of any distribution.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    17
+    10
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)
@@ -189,13 +173,13 @@ PPA vocabulary terms contain:
  * value: the IArchive object;
  * title: the first line of the PPA description text.
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+    >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
 
     >>> print cprov_term.token
-    cprov/ppa
+    ~cprov/ubuntu/ppa
 
     >>> print cprov_term.value
-    <Archive ...>
+    <... lp.soyuz.model.archive.Archive instance ...>
 
     >>> print cprov_term.title
     packages to help my friends.
@@ -216,15 +200,15 @@ PPA vocabulary searches consider the owner FTI and the PPA FTI.
 
     >>> cprov_search = vocabulary.search(u'cprov')
     >>> print_search_results(cprov_search)
-    cprov/ppa: packages to help my friends.
+    ~cprov/ubuntu/ppa: packages to help my friends.
 
     >>> celso_search = vocabulary.search(u'celso')
     >>> print_search_results(celso_search)
-    cprov/ppa: packages to help my friends.
+    ~cprov/ubuntu/ppa: packages to help my friends.
 
     >>> friends_search = vocabulary.search(u'friends')
     >>> print_search_results(friends_search)
-    cprov/ppa: packages to help my friends.
+    ~cprov/ubuntu/ppa: packages to help my friends.
 
 We will create an additional PPA for Celso named 'testing'
 
@@ -242,15 +226,15 @@ by PPA name.
 
     >>> cprov_search = vocabulary.search(u'cprov')
     >>> print_search_results(cprov_search)
-    cprov/ppa: packages to help my friends.
-    cprov/testing: testing packages.
+    ~cprov/ubuntu/ppa: packages to help my friends.
+    ~cprov/ubuntu/testing: testing packages.
 
 The vocabulary search also supports specific named PPA lookups
 follwing the same combined syntax used to build unique tokens.
 
-    >>> named_search = vocabulary.search(u'cprov/testing')
+    >>> named_search = vocabulary.search(u'~cprov/ubuntu/testing')
     >>> print_search_results(named_search)
-    cprov/testing: testing packages.
+    ~cprov/ubuntu/testing: testing packages.
 
 As mentioned the PPA vocabulary term title only contains the first
 line of the PPA description.
@@ -258,14 +242,14 @@ line of the PPA description.
     >>> cprov.archive.description = "Single line."
     >>> flush_database_updates()
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+    >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
     >>> print cprov_term.title
     Single line.
 
     >>> cprov.archive.description = "First line\nSecond line."
     >>> flush_database_updates()
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+    >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
     >>> print cprov_term.title
     First line
 
@@ -274,7 +258,7 @@ PPAs with empty description are identified and have a title saying so.
     >>> cprov.archive.description = None
     >>> flush_database_updates()
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
+    >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
     >>> print cprov_term.title
     No description available
 

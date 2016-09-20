@@ -23,7 +23,7 @@ archive tree without removing the files.
 """
 import _pythonpath
 
-from lp.soyuz.scripts.processdeathrow import DeathRowProcessor
+from lp.archivepublisher.scripts.processdeathrow import DeathRowProcessor
 
 
 if __name__ == "__main__":

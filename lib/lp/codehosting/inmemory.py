@@ -240,6 +240,10 @@ class FakeBranch(FakeDatabaseObject):
         self.sourcepackagename = sourcepackagename
 
     @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    @property
     def unique_name(self):
         if self.product is None:
             if self.distroseries is None:
@@ -276,7 +280,11 @@ class FakePerson(FakeDatabaseObject):
     is_team = False
 
     def __init__(self, name):
-        self.name = self.displayname = name
+        self.name = self.display_name = name
+
+    @property
+    def displayname(self):
+        return self.display_name
 
     def inTeam(self, person_or_team):
         if self is person_or_team:
@@ -301,9 +309,10 @@ class FakeTeam(FakePerson):
 class FakeProduct(FakeDatabaseObject):
     """Fake product."""
 
-    def __init__(self, name, owner):
+    def __init__(self, name, owner, information_type=InformationType.PUBLIC):
         self.name = name
         self.owner = owner
+        self.information_type = information_type
         self.bzr_path = name
         self.development_focus = FakeProductSeries(self, 'trunk')
         self.series = {
@@ -488,12 +497,13 @@ class FakeObjectFactory(ObjectFactory):
         self._person_set._add(person)
         return person
 
-    def makeProduct(self, name=None, owner=None):
+    def makeProduct(self, name=None, owner=None,
+                    information_type=InformationType.PUBLIC):
         if name is None:
             name = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
-        product = FakeProduct(name, owner)
+        product = FakeProduct(name, owner, information_type=information_type)
         self._product_set._add(product)
         return product
 
@@ -834,7 +844,7 @@ class FakeCodehosting:
             writable = self._canWrite(requester_id, branch)
         return (
             BRANCH_TRANSPORT,
-            {'id': branch.id, 'writable': writable},
+            {'id': branch.id, 'writable': writable, 'private': branch.private},
             trailing_path)
 
     def performLookup(self, requester_id, lookup, branch_name_only=False):

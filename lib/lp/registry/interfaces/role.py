@@ -97,6 +97,9 @@ class IPersonRoles(Interface):
     in_launchpad_developers = Bool(
         title=_("True if this person is a Launchpad developer."),
         required=True, readonly=True)
+    in_ppa_admin = Bool(
+        title=_("True if this person is a PPA admin."),
+        required=True, readonly=True)
     in_ppa_key_guard = Bool(
         title=_("True if this person is the ppa key guard."),
         required=True, readonly=True)
@@ -108,6 +111,9 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_rosetta_experts = Bool(
         title=_("True if this person is a rosetta expert."),
+        required=True, readonly=True)
+    in_ubuntu_sso = Bool(
+        title=_("True if this person is Ubuntu Single Sign On."),
         required=True, readonly=True)
     in_ubuntu_techboard = Bool(
         title=_("True if this person is on the Ubuntu tech board."),

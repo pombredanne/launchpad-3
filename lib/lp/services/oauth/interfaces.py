@@ -11,13 +11,9 @@ __all__ = [
     'IOAuthAccessToken',
     'IOAuthConsumer',
     'IOAuthConsumerSet',
-    'IOAuthNonce',
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
     'IOAuthSignedRequest',
-    'NonceAlreadyUsed',
-    'TimestampOrderingError',
-    'ClockSkew',
     'TokenException',
     ]
 
@@ -61,10 +57,6 @@ class IOAuthConsumer(Interface):
         title=_('Key'), required=True, readonly=True,
         description=_('The unique key which identifies a consumer. It is '
                       'included by the consumer in each request made.'))
-    secret = TextLine(
-        title=_('Secret'), required=False, readonly=False,
-        description=_('The secret which, if not empty, should be used by the '
-                      'consumer to sign its requests.'))
 
     is_integrated_desktop = Attribute(
         """This attribute is true if the consumer corresponds to a
@@ -83,11 +75,15 @@ class IOAuthConsumer(Interface):
         "desktop"). If the consumer is a specific web or desktop
         application, this is None.""")
 
-    def newRequestToken():
-        """Return a new `IOAuthRequestToken` with a random key and secret.
+    def isSecretValid(secret):
+        """Check if a secret is valid for this consumer."""
 
-        The other attributes of the token are supposed to be set whenever the
-        user logs into Launchpad and grants (or not) access to this consumer.
+    def newRequestToken():
+        """Return a new `IOAuthRequestToken` and its random secret.
+
+        The key and secret are random, while the other attributes of the
+        token are supposed to be set whenever the user logs into
+        Launchpad and grants (or not) access to this consumer.
         """
 
     def getAccessToken(key):
@@ -151,13 +147,9 @@ class IOAuthToken(Interface):
         title=_('Key'), required=True, readonly=True,
         description=_('The key used to identify this token.  It is included '
                       'by the consumer in each request.'))
-    secret = TextLine(
-        title=_('Secret'), required=True, readonly=True,
-        description=_('The secret associated with this token.  It is used '
-                      'by the consumer to sign its requests.'))
     product = Choice(title=_('Project'), required=False, vocabulary='Product')
-    project = Choice(
-        title=_('Project'), required=False, vocabulary='ProjectGroup')
+    projectgroup = Choice(
+        title=_('Project Group'), required=False, vocabulary='ProjectGroup')
     sourcepackagename = Choice(
         title=_("Package"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(
@@ -169,6 +161,9 @@ class IOAuthToken(Interface):
         required=False, readonly=True,
         description=_("A token may only be usable for a limited time, "
                       "after which it will expire."))
+
+    def isSecretValid(secret):
+        """Check if a secret is valid for this token."""
 
 
 class IOAuthAccessToken(IOAuthToken):
@@ -193,27 +188,6 @@ class IOAuthAccessToken(IOAuthToken):
         title=_('Date expires'), required=False, readonly=False,
         description=_('From this date onwards this token can not be used '
                       'by the consumer to access protected resources.'))
-
-    def checkNonceAndTimestamp(nonce, timestamp):
-        """Verify the nonce and timestamp.
-
-        - Ensure the nonce hasn't been used with the same timestamp.
-        - Ensure this is a first access, or this timestamp is no older than
-          last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
-        - Ensure this timestamp is within +/- `TIMESTAMP_SKEW_WINDOW` of the
-          server's concept of now.
-
-        :raises NonceAlreadyUsed: If the nonce has been used before with the
-            same timestamp.
-        :raises TimestampOrderingError: If the timestamp is older than the
-            last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
-        :raises ClockSkew: If the timestamp is not within
-            +/- `TIMESTAMP_SKEW_WINDOW` of now.
-
-        If the nonce has never been used together with this token and
-        timestamp before, we store it in the database with the given timestamp
-        and associated with this token.
-        """
 
 
 class IOAuthRequestToken(IOAuthToken):
@@ -241,7 +215,7 @@ class IOAuthRequestToken(IOAuthToken):
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '
-                      'consumer to access his protected resources on '
+                      'consumer to access their protected resources on '
                       'Launchpad.'))
 
     is_reviewed = Bool(
@@ -266,6 +240,8 @@ class IOAuthRequestToken(IOAuthToken):
     def createAccessToken():
         """Create an `IOAuthAccessToken` identical to this request token.
 
+        The new token and its secret are returned.
+
         After the access token is created, this one is deleted as it can't be
         used anymore.
 
@@ -284,20 +260,6 @@ class IOAuthRequestTokenSet(Interface):
         """
 
 
-class IOAuthNonce(Interface):
-    """The unique (nonce,timestamp) for requests using a given access token.
-
-    The nonce value (which is unique for all requests with that timestamp)
-    is generated by the consumer and included, together with the timestamp,
-    in each request made.  It's used to prevent replay attacks.
-    """
-
-    request_timestamp = Datetime(
-        title=_('Date issued'), required=True, readonly=True)
-    access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
-    nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
-
-
 class IOAuthSignedRequest(Interface):
     """Marker interface for a request signed with OAuth credentials."""
 
@@ -308,19 +270,7 @@ class IOAuthSignedRequest(Interface):
 
 @error_status(httplib.UNAUTHORIZED)
 class _TokenException(Exception):
-    """Base class for token, nonce, and timestamp exceptions."""
-
-
-class NonceAlreadyUsed(_TokenException):
-    """Nonce has been used together with same token but another timestamp."""
-
-
-class TimestampOrderingError(_TokenException):
-    """Timestamp is too old, compared to the last request."""
-
-
-class ClockSkew(_TokenException):
-    """Timestamp is too far off from server's clock."""
+    """Base class for token exceptions."""
 
 
 class TokenException(_TokenException):

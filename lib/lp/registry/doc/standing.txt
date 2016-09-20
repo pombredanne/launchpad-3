@@ -30,7 +30,7 @@ are not a member of, their message gets held for moderator approval.
 
     # A helper for posting messages to a list.
     >>> from lp.services.messages.interfaces.message import IMessageSet
-    >>> from email.Utils import formatdate
+    >>> from email.utils import formatdate
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> def post_message(from_address, to_team_name):
     ...     message = getUtility(IMessageSet).fromEmail("""\

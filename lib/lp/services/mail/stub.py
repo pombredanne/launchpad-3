@@ -9,16 +9,16 @@ import email
 from logging import getLogger
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.sendmail.interfaces import IMailer
 
 
+@implementer(IMailer)
 class StubMailer:
     """
     Overrides the from_addr and to_addrs arguments and passes the
     email on to the IMailer
     """
-    implements(IMailer)
 
     def __init__(self, from_addr, to_addrs, mailer, rewrite=False):
         self.from_addr = from_addr
@@ -54,6 +54,9 @@ class StubMailer:
 
 
 test_emails = []
+
+
+@implementer(IMailer)
 class TestMailer:
     """
     Stores (from_addr, to_addrs, message) in the test_emails module global list
@@ -61,7 +64,6 @@ class TestMailer:
 
     Tests or their harnesses will need to clear out the test_emails list.
     """
-    implements(IMailer)
 
     def send(self, from_addr, to_addrs, message):
         test_emails.append((from_addr, to_addrs, message))

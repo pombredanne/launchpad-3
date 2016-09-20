@@ -28,7 +28,7 @@ Distribution Source Package
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> print anon_browser.title
-    Questions : ...mozilla-firefox... package : Ubuntu
+    Questions : mozilla-firefox package : Ubuntu
 
 
 ProjectGroup

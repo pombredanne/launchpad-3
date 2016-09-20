@@ -421,7 +421,7 @@ No Privileges Person can't see the bug either...
     >>> print sorted(bug.title for bug in visible_bugs)
     [u'recent']
 
-... unless he's subscribed to the bug.
+... unless they're subscribed to the bug.
 
     >>> private_bug.subscribe(no_priv, sample_person)
     <lp.bugs.model.bugsubscription.BugSubscription ...>

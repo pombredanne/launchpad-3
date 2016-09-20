@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -53,6 +53,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
@@ -163,7 +164,7 @@ class SpecificationTests(TestCaseWithFactory):
                 'id', 'information_type', 'private', 'userCanView')),
             'launchpad.LimitedView': set((
                 'all_blocked', 'all_deps', 'approver', 'approverID',
-                'assignee', 'assigneeID', 'bug_links', 'bugs', 'completer',
+                'assignee', 'assigneeID', 'bugs', 'completer',
                 'createDependency', 'date_completed', 'date_goal_decided',
                 'date_goal_proposed', 'date_started', 'datecreated',
                 'definition_status', 'dependencies', 'direction_approved',
@@ -414,6 +415,27 @@ class SpecificationTests(TestCaseWithFactory):
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
 
+    def test_registry_write_access(self):
+        # Users with special privileges can change the attributes
+        # of public and private specifcations.
+        specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
+        all_types = specification.getAllowedInformationTypes(
+            specification.owner)
+        expert = self.factory.makePerson(
+            member_of=[getUtility(IPersonSet).getByName('registry')])
+        for information_type in all_types:
+            with person_logged_in(specification.target.owner):
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
+            self.write_access_to_ISpecificationView(
+                expert, specification, error_expected=False,
+                attribute='whiteboard', value='foo')
+            self.write_access_to_ISpecificationView(
+                expert, specification, error_expected=False,
+                attribute='name', value='foo')
+
     def _fetch_specs_visible_for_user(self, user):
         return Store.of(self.product).find(
             Specification,
@@ -468,7 +490,7 @@ class SpecificationTests(TestCaseWithFactory):
                 product=product, information_type=InformationType.PROPRIETARY)
             spec.subscribe(user, subscribed_by=owner)
             service = getUtility(IService, 'sharing')
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([spec], shared_specs)
             # The spec is also returned by getSharedSpecifications(),
@@ -485,7 +507,7 @@ class SpecificationTests(TestCaseWithFactory):
             service.sharePillarInformation(
                 product, user_2, owner, permissions)
             spec.subscribe(user_2, subscribed_by=owner)
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user_2, specifications=[spec])
             self.assertEqual([spec], shared_specs)
             self.assertEqual(
@@ -505,7 +527,7 @@ class SpecificationTests(TestCaseWithFactory):
             spec.subscribe(user, subscribed_by=owner)
             spec.unsubscribe(user, unsubscribed_by=owner)
             service = getUtility(IService, 'sharing')
-            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+            _, _, _, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([], shared_specs)
 
@@ -522,13 +544,15 @@ class SpecificationTests(TestCaseWithFactory):
             spec.drafter = drafter
             address = owner.preferredemail.email
             drafter_address = drafter.preferredemail.email
-        self.assertContentEqual(
-            [address, drafter_address], spec.notificationRecipientAddresses())
+            self.assertContentEqual(
+                [address, drafter_address],
+                spec.notificationRecipientAddresses())
         # Remove the drafters access to the spec.
         artifact = self.factory.makeAccessArtifact(concrete=spec)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             [artifact], [drafter])
-        self.assertEqual([address], spec.notificationRecipientAddresses())
+        with person_logged_in(owner):
+            self.assertEqual([address], spec.notificationRecipientAddresses())
 
 
 class TestSpecificationSet(TestCaseWithFactory):
@@ -548,7 +572,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         product = self.factory.makeProduct()
         spec = self.specification_set.new(
             name='plane', title='Place', specurl='http://eg.org/plane',
-            summary='summary', owner=product.owner, product=product,
+            summary='summary', owner=product.owner, target=product,
             definition_status=SpecificationDefinitionStatus.NEW)
         self.assertEqual(
             SpecificationDefinitionStatus.NEW, spec.definition_status)
@@ -561,7 +585,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         product = self.factory.makeProduct()
         args = dict(
             name='plane', title='Place', specurl='http://eg.org/plane',
-            summary='summary', owner=product.owner, product=product,
+            summary='summary', owner=product.owner, target=product,
             definition_status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertRaises(
             AssertionError, self.specification_set.new, **args)
@@ -585,9 +609,11 @@ class TestSpecifications(TestCaseWithFactory):
                  status=NewSpecificationDefinitionStatus.NEW,
                  name=None, priority=None, information_type=None):
         blueprint = self.factory.makeSpecification(
-            title=title, status=status, name=name, priority=priority,
+            title=title, status=status, name=name,
             information_type=information_type, product=product,
             )
+        if priority is not None:
+            removeSecurityProxy(blueprint).priority = priority
         removeSecurityProxy(blueprint).datecreated = (
             self.date_created + timedelta(date_created))
         return blueprint
@@ -759,7 +785,7 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are listed for users with a policy grant.
         spec = self.makeSpec(information_type=InformationType.PROPRIETARY)
         (policy,) = getUtility(IAccessPolicySource).find(
-            [(spec.product, InformationType.PROPRIETARY)])
+            [(removeSecurityProxy(spec).product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
         self._assertInSpecifications(spec, grant)
 
@@ -771,20 +797,22 @@ class TestSpecifications(TestCaseWithFactory):
             SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
         product = self.factory.makeProduct(
             specification_sharing_policy=specification_sharing_policy)
-        blueprint = self.makeSpec(
-            product=product, information_type=InformationType.PROPRIETARY)
         person_with_new_role = self.factory.makePerson()
         with person_logged_in(product.owner):
+            blueprint = self.makeSpec(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
             setattr(blueprint, role_name, person_with_new_role)
             self.assertIsNot(
                 None, blueprint.subscription(person_with_new_role))
 
         # Assignees/drafters/approvers are not subscribed if they already
         # have a policy grant for the specification's target.
-        blueprint_2 = self.makeSpec(
-            product=product, information_type=InformationType.PROPRIETARY)
         person_with_new_role_2 = self.factory.makePerson()
         with person_logged_in(product.owner):
+            blueprint_2 = self.makeSpec(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
             permissions = {
                 InformationType.PROPRIETARY: SharingPermission.ALL,
                 }
@@ -811,3 +839,40 @@ class TestSpecifications(TestCaseWithFactory):
         # they are automatically subscribed, if they do not have yet
         # been granted access to the specification.
         self.run_test_setting_special_role_subscribes('approver')
+
+
+class TestBugLinks(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_link_and_unlink(self):
+        login_person(self.factory.makePerson())
+
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        spec1 = self.factory.makeSpecification()
+        spec2 = self.factory.makeSpecification()
+        self.assertContentEqual([], bug1.specifications)
+        self.assertContentEqual([], bug2.specifications)
+        self.assertContentEqual([], spec1.bugs)
+        self.assertContentEqual([], spec2.bugs)
+
+        spec1.linkBug(bug1)
+        spec2.linkBug(bug1)
+        spec1.linkBug(bug2)
+        self.assertContentEqual([bug1, bug2], spec1.bugs)
+        self.assertContentEqual([bug1], spec2.bugs)
+        self.assertContentEqual([spec1, spec2], bug1.specifications)
+        self.assertContentEqual([spec1], bug2.specifications)
+
+        spec1.unlinkBug(bug1)
+        self.assertContentEqual([bug2], spec1.bugs)
+        self.assertContentEqual([bug1], spec2.bugs)
+        self.assertContentEqual([spec2], bug1.specifications)
+        self.assertContentEqual([spec1], bug2.specifications)
+
+        spec1.unlinkBug(bug2)
+        self.assertContentEqual([], spec1.bugs)
+        self.assertContentEqual([bug1], spec2.bugs)
+        self.assertContentEqual([spec2], bug1.specifications)
+        self.assertContentEqual([], bug2.specifications)

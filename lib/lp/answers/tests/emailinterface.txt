@@ -4,7 +4,7 @@ Answer Tracker Email Interface
 The Answer Tracker has an email interface, although it's quite limited
 at the moment. The only thing you can do is post new messages on the
 question. This is an important feature, though, since it ensures that if
-a user decides to reply to a question notification, his email won't be
+a user decides to reply to a question notification, their email won't be
 lost, it will be added to the question.
 
 Incoming emails for the Answer Tracker are processed by the
@@ -30,7 +30,7 @@ AnswerTrackerHandler.
 
     # Define a helper function to send email to the Answer Tracker handler.
     >>> from lp.answers.mail.handler import AnswerTrackerHandler
-    >>> from email.Utils import formatdate, make_msgid, mktime_tz
+    >>> from email.utils import formatdate, make_msgid, mktime_tz
     >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> handler = AnswerTrackerHandler()
     >>> def send_question_email(question_id, from_addr, subject, body):
@@ -175,10 +175,10 @@ And from the Needs information state:
     Give more information
 
 In these states, the other possibility would be that the message is
-really stating the owner solved his own problem. This is a less likely
-scenario, since it would mean that the owner is replying to one of his
-own message. And if that was the case, it is easy for the owner to
-correct our bad decision, since the question will stay on his
+really stating the owner solved their own problem. This is a less likely
+scenario, since it would mean that the owner is replying to one of their
+own messages. And if that was the case, it is easy for the owner to
+correct our bad decision, since the question will stay on their
 list of open questions.
 
 Answered and Expired
@@ -204,7 +204,7 @@ From the Open state, the other possibilities for the owner email would
 be that it was confirming that the provided answer work. We minimize the
 chance of this happening by adding an explanation message in the footer
 of the notification containing the answer. The other possibility is that
-the user sent a message to explain that he solved his problem. We do
+the user sent a message to explain that they solved their problem. We do
 support this use case yet.
 
 From the Expired state:
@@ -221,7 +221,7 @@ From the Expired state:
     Reopen
 
 From the Expired state, the other possibility is the less probable
-explaining that the owner solved his problem. Again, to minimize
+explaining that the owner solved their problem. Again, to minimize
 confusion, the outoing notification contain a footer explaining what
 will happen if one reply to the message.
 
@@ -243,7 +243,7 @@ message as a comment.
     Comment
 
 The other alternative is that the owner wanted to reopen the question.
-But it is more likely that an email after he marked the problem as
+But it is more likely that an email after they marked the problem as
 solved would come as a reply to another comment, so it is safer to
 assume it was a comment.
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for `ITranslationImportQueue`."""
@@ -15,9 +15,10 @@ __all__ = [
 
 import os
 
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.formlib.interfaces import ConversionError
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -26,6 +27,7 @@ from zope.schema.vocabulary import (
 
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
@@ -34,9 +36,13 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.validators.name import valid_name
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     GetitemNavigation,
@@ -44,6 +50,9 @@ from lp.services.webapp import (
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView,
+    )
+from lp.translations.browser.widgets.translationimportqueue import (
+    TranslationImportQueueEntrySourcePackageNameWidget,
     )
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -85,10 +94,28 @@ class TranslationImportQueueEntryNavigation(GetitemNavigation):
     usedfor = ITranslationImportQueueEntry
 
 
+class IEditTranslationImportQueueEntryDSP(IEditTranslationImportQueueEntry):
+
+    sourcepackagename = copy_field(
+        IEditTranslationImportQueueEntry['sourcepackagename'],
+        vocabularyName='DistributionSourcePackage')
+
+
 class TranslationImportQueueEntryView(LaunchpadFormView):
     """The view part of admin interface for the translation import queue."""
     label = "Review import queue entry"
-    schema = IEditTranslationImportQueueEntry
+
+    @property
+    def schema(self):
+        """See `LaunchpadFormView`."""
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            return IEditTranslationImportQueueEntryDSP
+        else:
+            return IEditTranslationImportQueueEntry
+
+    custom_widget(
+        'sourcepackagename',
+        TranslationImportQueueEntrySourcePackageNameWidget)
 
     max_series_to_display = 3
 
@@ -101,7 +128,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if self.request.method == 'POST':
             # We got a form post, we don't need to do any initialization.
             return field_values
-        # Fill the know values.
+        # Fill in the known values.
         field_values['path'] = self.context.path
 
         importer = getUtility(ITranslationImporter)
@@ -115,10 +142,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
-        if self.context.is_targeted_to_ubuntu:
             if self.context.potemplate is None:
-                # Default for Ubuntu templates is to
-                # include them in languagepacks.
+                # Default for distro templates is to include them in
+                # languagepacks.
                 field_values['languagepack'] = True
             else:
                 field_values['languagepack'] = (
@@ -273,14 +299,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                             'name', 'translation_domain', 'languagepack',
                             'language']
 
-        if self.context.productseries is not None:
-            # We are handling an entry for a productseries, this field is not
-            # useful here.
-            self.field_names.remove('sourcepackagename')
-
-        if not self.context.is_targeted_to_ubuntu:
-            # Only show languagepack for Ubuntu packages.
+        if self.context.sourcepackagename is None:
+            # We are handling an entry for a productseries, so these
+            # fields are not useful here.
             self.field_names.remove('languagepack')
+            self.field_names.remove('sourcepackagename')
 
         # Execute default initialization.
         LaunchpadFormView.initialize(self)
@@ -422,6 +445,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             self.setFieldError('file_type', 'Please specify the file type')
             return
 
+        sourcepackagename = data.get('sourcepackagename')
+        if IDistributionSourcePackage.providedBy(sourcepackagename):
+            data['sourcepackagename'] = sourcepackagename.sourcepackagename
+
         self.path_changed = self._validatePath(file_type, data.get('path'))
 
         self.man_potemplate = None
@@ -461,17 +488,17 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 self.context.path,
                 self.context.importer)
 
-        if (self.context.sourcepackagename is not None and
-            potemplate.sourcepackagename is not None and
-            self.context.sourcepackagename != potemplate.sourcepackagename):
-            # We got the template from a different package than the one
-            # selected by the user where the import should done, so we
-            # note it here.
-            potemplate.from_sourcepackagename = (
-                self.context.sourcepackagename)
-
-        if self.context.is_targeted_to_ubuntu:
+        if self.context.sourcepackagename is not None:
             potemplate.languagepack = languagepack
+
+            if (potemplate.sourcepackagename is not None and
+                self.context.sourcepackagename !=
+                    potemplate.sourcepackagename):
+                # We got the template from a different package than the one
+                # selected by the user where the import should done, so we
+                # note it here.
+                potemplate.from_sourcepackagename = (
+                    self.context.sourcepackagename)
 
         return potemplate
 
@@ -602,10 +629,9 @@ class TranslationImportQueueView(HasTranslationImportsView):
             title='Choose which target to show')
 
 
+@implementer(IContextSourceBinder)
 class TranslationImportTargetVocabularyFactory:
     """Factory for a vocabulary containing a list of targets."""
-
-    implements(IContextSourceBinder)
 
     def __init__(self, view):
         """Create a `TranslationImportTargetVocabularyFactory`.

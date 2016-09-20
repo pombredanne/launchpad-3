@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,11 +12,10 @@ __all__ = [
     ]
 
 from datetime import datetime
-from hashlib import md5
-import random
+import hashlib
 from urlparse import urlparse
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import pytz
 from sqlobject import (
     BoolCol,
@@ -25,7 +24,6 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.exceptions import IntegrityError
 from storm.locals import (
     Date,
     Desc,
@@ -34,11 +32,11 @@ from storm.locals import (
     Store,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -68,12 +66,12 @@ from lp.services.librarian.interfaces.client import (
     IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.tokens import create_token
 
 
+@implementer(ILibraryFileContent)
 class LibraryFileContent(SQLBase):
     """A pointer to file content in the librarian."""
-
-    implements(ILibraryFileContent)
 
     _table = 'LibraryFileContent'
 
@@ -84,10 +82,9 @@ class LibraryFileContent(SQLBase):
     md5 = StringCol(notNull=True)
 
 
+@implementer(ILibraryFileAlias)
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
-
-    implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'
     date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
@@ -227,12 +224,11 @@ class LibraryFileAlias(SQLBase):
         self.close()
 
 
+@adapter(ILibraryFileAlias, Interface)
+@implementer(ILibraryFileAliasWithParent)
+@delegate_to(ILibraryFileAlias)
 class LibraryFileAliasWithParent:
     """A LibraryFileAlias variant that has a parent."""
-
-    adapts(ILibraryFileAlias, Interface)
-    implements(ILibraryFileAliasWithParent)
-    delegates(ILibraryFileAlias)
 
     def __init__(self, libraryfile, parent):
         self.context = libraryfile
@@ -243,23 +239,22 @@ class LibraryFileAliasWithParent:
         return TimeLimitedToken.allocate(self.private_url)
 
 
+@implementer(ILibraryFileAliasSet)
 class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
 
-    implements(ILibraryFileAliasSet)
-
     def create(self, name, size, file, contentType, expires=None,
-               debugID=None, restricted=False):
+               debugID=None, restricted=False, allow_zero_length=False):
         """See `ILibraryFileAliasSet`"""
         if restricted:
             client = getUtility(IRestrictedLibrarianClient)
         else:
             client = getUtility(ILibrarianClient)
-        try:
-            fid = client.addFile(
-                name, size, file, contentType, expires, debugID)
-        except IntegrityError:
+        if '/' in name:
             raise InvalidFilename("Filename cannot contain slashes.")
+        fid = client.addFile(
+            name, size, file, contentType, expires=expires, debugID=debugID,
+            allow_zero_length=allow_zero_length)
         lfa = IMasterStore(LibraryFileAlias).find(
             LibraryFileAlias, LibraryFileAlias.id == fid).one()
         assert lfa is not None, "client.addFile didn't!"
@@ -269,18 +264,17 @@ class LibraryFileAliasSet(object):
         """See ILibraryFileAliasSet.__getitem__"""
         return LibraryFileAlias.get(key)
 
-    def findBySHA1(self, sha1):
+    def findBySHA256(self, sha256):
         """See ILibraryFileAliasSet."""
         return LibraryFileAlias.select("""
             content = LibraryFileContent.id
-            AND LibraryFileContent.sha1 = '%s'
-            """ % sha1, clauseTables=['LibraryFileContent'])
+            AND LibraryFileContent.sha256 = '%s'
+            """ % sha256, clauseTables=['LibraryFileContent'])
 
 
+@implementer(ILibraryFileDownloadCount)
 class LibraryFileDownloadCount(SQLBase):
     """See `ILibraryFileDownloadCount`"""
-
-    implements(ILibraryFileDownloadCount)
     __storm_table__ = 'LibraryFileDownloadCount'
 
     id = Int(primary=True)
@@ -299,7 +293,9 @@ class TimeLimitedToken(StormBase):
 
     created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     path = StringCol(notNull=True)
+    # The hex SHA-256 hash of the token.
     token = StringCol(notNull=True)
+
     __storm_primary__ = ("path", "token")
 
     def __init__(self, path, token, created=None):
@@ -307,7 +303,7 @@ class TimeLimitedToken(StormBase):
         if created is not None:
             self.created = created
         self.path = path
-        self.token = token
+        self.token = hashlib.sha256(token).hexdigest()
 
     @staticmethod
     def allocate(url):
@@ -319,18 +315,9 @@ class TimeLimitedToken(StormBase):
         :return: A url fragment token ready to be attached to the url.
             e.g. 'a%20token'
         """
-        # We use random.random to get a string which varies reasonably, and we
-        # hash it to distribute it widely and get a easily copy and pastable
-        # single string (nice for debugging). The randomness is not a key
-        # factor here: as long as tokens are not guessable, they are hidden by
-        # https, not exposed directly in the API (tokens will be allocated by
-        # the appropriate objects), not by direct access to the
-        # TimeLimitedToken class.
-        baseline = str(random.random())
-        hashed = md5(baseline).hexdigest()
-        token = hashed
         store = session_store()
         path = TimeLimitedToken.url_to_token_path(url)
+        token = create_token(32).encode('ascii')
         store.add(TimeLimitedToken(path, token))
         # The session isn't part of the main transaction model, and in fact it
         # has autocommit on. The commit here is belts and bracers: after

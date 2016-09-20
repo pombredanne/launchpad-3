@@ -191,13 +191,12 @@ as the default value.
     >>> ubuntu_view.initial_values['languagepack'] == False
     True
 
-For non-Ubuntu distroseries, languagepack is not displayed.
+For a product template, languagepack is not displayed.
 
-    >>> other_series = factory.makeDistroSeries()
+    >>> other_series = factory.makeProductSeries()
     >>> other_entry = queue.addOrUpdateEntry(
     ...     'demo.pot', '# foo', True,
-    ...     importer, distroseries=other_series,
-    ...     sourcepackagename=packagename)
+    ...     importer, productseries=other_series)
     >>> other_view = create_initialized_view(other_entry, '+index')
     >>> 'languagepack' in other_view.field_names
     False

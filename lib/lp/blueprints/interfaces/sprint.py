@@ -21,6 +21,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Int,
@@ -29,8 +30,8 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.app.interfaces.headings import IRootContext
 from lp.app.validators.name import name_validator
+from lp.app.interfaces.launchpad import IHeadingContext
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.registry.interfaces.role import (
     IHasDrivers,
@@ -57,7 +58,7 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IRootContext):
+class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
     """A sprint, or conference, or meeting."""
 
     id = Int(title=_('The Sprint ID'))
@@ -127,6 +128,9 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IRootContext):
         title=_('Finishing Date and Time'), required=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    is_physical = Bool(
+        title=_("Is the sprint being held in a physical location?"),
+        required=True, readonly=False, default=True)
 
     # joins
     attendees = Attribute('The set of attendees at this sprint.')

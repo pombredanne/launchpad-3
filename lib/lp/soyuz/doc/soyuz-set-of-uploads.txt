@@ -56,7 +56,7 @@ Processing Uploads
 
 Before asking the system to process the upload, we must prepare the
 database and services to receive it. Since we're using
-'sample.person@canonical.com' as our Changed-By address and his
+'sample.person@canonical.com' as our Changed-By address and their
 key has signed all the relevant uploads in the suite of uploads we're
 using, this essentially boils down to ensuring that test keyserver and the
 librarian are running and making sure that the key is attached to the
@@ -123,10 +123,9 @@ We need a way to count the items in a queue directory
 And then we need a way to process the uploads from the queue
 
     >>> import logging
+    >>> from lp.archiveuploader.scripts.processupload import ProcessUpload
     >>> from lp.services.config import config
     >>> from lp.services.log.logger import FakeLogger
-    >>> from lp.soyuz.scripts.soyuz_process_upload import (
-    ...     ProcessUpload)
     >>> from lp.testing.dbuser import switch_dbuser
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> def process_uploads(upload_policy, series, loglevel):
@@ -305,10 +304,11 @@ to a different 'bar_1.0.orig.tar.gz'.
     Rejected uploads: ['bar_1.0-3']
 
     >>> read_email()
-    To:
-	Daniel Silverstone <daniel.silverstone@canonical.com>,
-	Foo Bar <foo.bar@canonical.com>
-    Subject: bar_1.0-3_source.changes rejected
+    To: Daniel Silverstone <daniel.silverstone@canonical.com>
+    Subject: [ubuntutest] bar_1.0-3_source.changes (Rejected)
+    ...
+    To: Foo Bar <foo.bar@canonical.com>
+    Subject: [ubuntutest] bar_1.0-3_source.changes (Rejected)
     ...
 
 Force weird behaviour with rfc2047 sentences containing '.' on
@@ -316,16 +316,14 @@ bar_1.0-4, which caused bug # 41102.
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).getByName('name16')
-    >>> name16.displayname = "Foo B. Bar"
+    >>> name16.display_name = "Foo B. Bar"
 
 Check the email recipient for displayname containing special chars,
 '.', must be rfc2047 compliant:
 
     >>> simulate_upload('bar_1.0-4')
-    >>> uninteresting_email = stub.test_emails.pop()
     >>> read_email()
-    To: "Foo B. Bar" <foo.bar@canonical.com>,
-	  Celso Providelo <celso.providelo@canonical.com>
+    To: "Foo B. Bar" <foo.bar@canonical.com>
     Subject: [ubuntutest/breezy] bar 1.0-4 (Accepted)
     Content-Type: text/plain; charset="utf-8"
     MIME-Version: 1.0
@@ -336,10 +334,10 @@ Check the email recipient for displayname containing special chars,
       * Changer using non-preferred email
     <BLANKLINE>
     Date: Tue, 25 Apr 2006 10:36:14 -0300
-    Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+    Changed-By: cprov@ubuntu.com (Celso R. Providelo)
     Maintainer: Launchpad team <launchpad@lists.canonical.com>
-    Signed-By: "Foo B. Bar" <foo.bar@canonical.com>
-    http://launchpad.dev/ubuntutest/breezy/+source/bar/1.0-4
+    Signed-By: foo.bar@canonical.com (Foo B. Bar)
+    http://launchpad.dev/ubuntutest/+source/bar/1.0-4
     <BLANKLINE>
     =3D=3D
     <BLANKLINE>
@@ -350,18 +348,21 @@ Check the email recipient for displayname containing special chars,
     <BLANKLINE>
     Announcing to breezy-changes@ubuntu.com
     <BLANKLINE>
-    Thank you for your contribution to Ubuntu Test.
+    Thank you for your contribution to ubuntutest.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you made this upload.
     <BLANKLINE>
     <BLANKLINE>
+    To: Celso Providelo <celso.providelo@canonical.com>
+    ...
+    To: breezy-changes@ubuntu.com
+    ...
 
 Revert changes:
 
-    >>> name16.displayname = "Foo Bar"
+    >>> name16.display_name = "Foo Bar"
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
@@ -469,9 +470,8 @@ ubututest/breezy-RELEASE:
     DEBUG above if files already exist in other distroseries.
     DEBUG
     DEBUG --
-    DEBUG You are receiving this email because you are the uploader,
-    maintainer or
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
     INFO  Committing the transaction and any mails associated with this
     upload.
     ...
@@ -514,7 +514,7 @@ In order to verify if the binary ancestry lookup algorithm works we
 will need to build a new DistroArchSeries for powerpc in
 ubuntutest/breezy.
 
-    >>> from lp.soyuz.model.processor import Processor
+    >>> from lp.buildmaster.model.processor import Processor
     >>> powerpc = Processor(
     ...     name='powerpc', title='PowerPC G3/G4', description='G3/G4')
     >>> powerpc_dar = breezy.newArch(
@@ -529,7 +529,8 @@ found in i386/RELEASE, because it's the only one available.
     ...     loglevel=logging.DEBUG)
     DEBUG ...
     DEBUG Checking for foo/2.9-1/powerpc binary ancestry
-    DEBUG foo-1.0-1 (binary) exists in i386/RELEASE
+    ...
+    DEBUG Setting it to ACCEPTED
     ...
     Upload complete.
 

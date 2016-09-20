@@ -1,13 +1,11 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test CodeReviewComment emailing functionality."""
 
-
 import testtools
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
@@ -18,23 +16,27 @@ from lp.code.mail.codereviewcomment import (
     build_inline_comments_section,
     CodeReviewCommentMailer,
     )
+from lp.services.config import config
 from lp.services.mail.sendmail import format_address
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    feature_flags,
     login,
     login_person,
-    set_feature_flag,
+    person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.dbuser import (
+    lp_dbuser,
+    switch_dbuser,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
     """Test that comments are generated as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Prepare test fixtures."""
@@ -70,6 +72,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Return a CodeReviewCommentMailer and the sole subscriber."""
         comment, subscriber = self.makeCommentAndSubscriber(
             body=body, as_reply=as_reply, vote=vote, vote_tag=vote_tag)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         return CodeReviewCommentMailer.forCreation(comment), subscriber
 
     def assertRecipientsMatches(self, recipients, mailer):
@@ -80,6 +83,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_forCreation(self):
         """Ensure that forCreation produces a mailer with expected values."""
         comment, subscriber = self.makeCommentAndSubscriber()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(comment.message.subject,
                          mailer._subject_template)
@@ -93,7 +97,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             comment.branch_merge_proposal, mailer.merge_proposal)
         sender = comment.message.owner
         sender_address = format_address(sender.displayname,
-            sender.preferredemail.email)
+                                        sender.preferredemail.email)
         self.assertEqual(sender_address, mailer.from_address)
         self.assertEqual(comment, mailer.code_review_comment)
 
@@ -101,6 +105,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Ensure that subscriptions with STATUS aren't used."""
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.STATUS)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         bmp = comment.branch_merge_proposal
         # The branch owners are implicitly subscribed to their branches
@@ -112,6 +117,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Ensure that subscriptions with NOEMAIL aren't used."""
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.NOEMAIL)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         bmp = comment.branch_merge_proposal
         # The branch owners are implicitly subscribed to their branches
@@ -123,6 +129,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         # The mailer should not attempt to expand templates in the subject.
         comment, subscriber = self.makeCommentAndSubscriber(
             subject='A %(carefully)s constructed subject')
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(
             'A %(carefully)s constructed subject',
@@ -133,7 +140,10 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer, subscriber = self.makeMailer()
         merge_proposal = mailer.code_review_comment.branch_merge_proposal
         expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
-        self.assertEqual(expected, mailer._getReplyToAddress())
+        self.assertEqual(
+            expected,
+            mailer._getReplyToAddress(
+                subscriber.preferredemail.email, subscriber))
 
     def test_generateEmail(self):
         """Ensure mailer's generateEmail method produces expected values."""
@@ -147,16 +157,19 @@ class TestCodeReviewComment(TestCaseWithFactory):
         source_branch = mailer.merge_proposal.source_branch
         branch_name = source_branch.bzr_identity
         self.assertEqual(
-            ctrl.body.splitlines()[-3:], ['-- ',
-            canonical_url(mailer.merge_proposal),
-            'You are subscribed to branch %s.' % branch_name])
+            ctrl.body.splitlines()[-3:], [
+                '-- ', canonical_url(mailer.merge_proposal),
+                'You are subscribed to branch %s.' % branch_name
+                ])
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
+                    'X-Launchpad-Message-For': subscriber.name,
                     'X-Launchpad-Notification-Type': 'code-review',
                     'X-Launchpad-Project': source_branch.product.name,
                     'Message-Id': message.rfc822msgid,
-                    'Reply-To': mailer._getReplyToAddress(),
+                    'Reply-To': mailer._getReplyToAddress(
+                        subscriber.preferredemail.email, subscriber),
                     'In-Reply-To': message.parent.rfc822msgid}
         for header, value in expected.items():
             self.assertEqual(value, ctrl.headers[header], header)
@@ -175,6 +188,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment, subscriber = self.makeCommentAndSubscriber()
         second_comment = self.factory.makeCodeReviewComment(
             merge_proposal=comment.branch_merge_proposal)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(second_comment)
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
@@ -193,6 +207,28 @@ class TestCodeReviewComment(TestCaseWithFactory):
             ['-- ', 'I am a wacky guy.', '',
              canonical_url(mailer.merge_proposal),
              'You are subscribed to branch %s.' % branch_name])
+
+    def test_appendExpandedFooter(self):
+        """Check that expanded notification footers are sensible."""
+        mailer, subscriber = self.makeMailer(as_reply=True)
+        with lp_dbuser(), person_logged_in(subscriber):
+            subscriber.expanded_notification_footers = True
+        ctrl = mailer.generateEmail(
+            subscriber.preferredemail.email, subscriber)
+        source_branch = mailer.merge_proposal.source_branch
+        rationale = mailer._recipients.getReason('subscriber@example.com')[1]
+        expected_footer = [
+            '-- ', canonical_url(mailer.merge_proposal),
+            'You are subscribed to branch %s.' % source_branch.bzr_identity,
+            '',
+            'Launchpad-Message-Rationale: %s' % rationale,
+            'Launchpad-Message-For: %s' % subscriber.name,
+            'Launchpad-Notification-Type: code-review',
+            'Launchpad-Branch: %s' % source_branch.unique_name,
+            'Launchpad-Project: %s' % source_branch.product.name,
+            ]
+        self.assertEqual(
+            expected_footer, ctrl.body.splitlines()[-len(expected_footer):])
 
     def test_generateEmailWithVote(self):
         """Ensure that votes are displayed."""
@@ -218,7 +254,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
                                       inline_comments=None):
         """Create a `CodeReviewComment` with inline (diff) comments."""
         bmp = self.factory.makeBranchMergeProposal()
-        bmp.source_branch.subscribe(bmp.registrant,
+        bmp.source_branch.subscribe(
+            bmp.registrant,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, bmp.registrant)
         previewdiff = self.factory.makePreviewDiff(merge_proposal=bmp)
@@ -240,12 +277,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
         See `build_inline_comments_section` tests for formatting details.
         """
-        # Enabled corresponding feature flag.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         comment = self.makeCommentWithInlineComments(
-            inline_comments={'2': u'Is this from Planet Earth\xa9 ?'})
+            inline_comments={'3': 'Is this from Pl\u0060net Earth ?'})
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         commenter = comment.branch_merge_proposal.registrant
         ctrl = mailer.generateEmail(
@@ -255,31 +289,16 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '',
             'Diff comments:',
             '',
-            "> === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'",
-            '> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
-            '2009-10-01 13:25:12 +0000',
+            ("> === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'"),
+            ('> --- yvo/yc/pbqr/vagresnprf/qvss.cl      '
+             '2009-10-01 13:25:12 +0000'),
+            ('> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
+             '2010-02-02 15:48:56 +0000'),
             '',
-            u'Is this from Planet Earth\xa9 ?',
+            'Is this from Pl\u0060net Earth ?',
             '',
-            '> +++ yvo/yc/pbqr/vagresnprf/qvss.cl      '
-            '2010-02-02 15:48:56 +0000'
         ]
         self.assertEqual(expected_lines, ctrl.body.splitlines()[1:10])
-
-    def test_generateEmailWithInlineComments_feature_disabled(self):
-        """Inline comments are not considered if the flag is not enabled."""
-        # Do not enable (set, actually) the corresponding feature flag
-        # ('code.inline_diff_comments.enabled').
-        content = 'CoNtEnT'
-        comment = self.makeCommentWithInlineComments(content=content)
-        mailer = CodeReviewCommentMailer.forCreation(comment)
-        commenter = comment.branch_merge_proposal.registrant
-        ctrl = mailer.generateEmail(
-            commenter.preferredemail.email, commenter)
-        # Only the comment content (footer is ignored) is included in
-        # email body.
-        self.assertEqual(
-            [content], ctrl.body.splitlines()[:-3])
 
     def makeComment(self, email_message):
         message = getUtility(IMessageSet).fromEmail(email_message.as_string())
@@ -300,6 +319,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
                 ('inc.diff', 'text/x-diff', 'This is a diff.'),
                 ('pic.jpg', 'image/jpeg', 'Binary data')])
         comment = self.makeComment(msg)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         # The attachments of the mailer should have only the diff.
         [outgoing_attachment] = mailer.attachments
@@ -320,6 +340,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             attachments=[('inc.diff', 'text/x-diff', 'This is a diff.')],
             encode_attachments=True)
         comment = self.makeComment(msg)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         person = comment.branch_merge_proposal.target_branch.owner
         message = mailer.generateEmail(
@@ -338,7 +359,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal(registrant=proposer)
         commenter = self.factory.makePerson(
             email='commenter@email.com', displayname='Commenter')
-        bmp.source_branch.subscribe(commenter,
+        bmp.source_branch.subscribe(
+            commenter,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, commenter)
         comment = bmp.createComment(commenter, 'hello')
@@ -347,12 +369,12 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_getToAddresses_no_parent(self):
         """To address for a comment with no parent should be the proposer."""
         comment = self.makeCommentAndParticipants()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        to = mailer._getToAddresses(
-            comment.message.owner, 'comment@gmail.com')
+        to = mailer._getToAddresses('comment@gmail.com', comment.message.owner)
         self.assertEqual(['Proposer <proposer@email.com>'], to)
         to = mailer._getToAddresses(
-            comment.branch_merge_proposal.registrant, 'propose@gmail.com')
+            'propose@gmail.com', comment.branch_merge_proposal.registrant)
         self.assertEqual(['Proposer <propose@gmail.com>'], to)
 
     def test_generateEmail_addresses(self):
@@ -362,6 +384,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         should not affect the actual recipient list.
         """
         comment = self.makeCommentAndParticipants()
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         ctrl = mailer.generateEmail('commenter@email.com',
                                     comment.message.owner)
@@ -375,23 +398,24 @@ class TestCodeReviewComment(TestCaseWithFactory):
             email='commenter2@email.com', displayname='Commenter2')
         reply = comment.branch_merge_proposal.createComment(
             second_commenter, 'hello2', parent=comment)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(reply)
-        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        to = mailer._getToAddresses('comment2@gmail.com', second_commenter)
         self.assertEqual(['Commenter <commenter@email.com>'], to)
-        to = mailer._getToAddresses(
-            comment.message.owner, 'comment@gmail.com')
+        to = mailer._getToAddresses('comment@gmail.com', comment.message.owner)
         self.assertEqual(['Commenter <comment@gmail.com>'], to)
 
     def test_getToAddresses_with_hidden_address(self):
         """Don't show address if Person.hide_email_addresses."""
         comment = self.makeCommentAndParticipants()
-        removeSecurityProxy(comment.message.owner).hide_email_addresses = True
+        comment.message.owner.hide_email_addresses = True
         second_commenter = self.factory.makePerson(
             email='commenter2@email.com', displayname='Commenter2')
         reply = comment.branch_merge_proposal.createComment(
             second_commenter, 'hello2', parent=comment)
+        switch_dbuser(config.IBranchMergeProposalJobSource.dbuser)
         mailer = CodeReviewCommentMailer.forCreation(reply)
-        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        to = mailer._getToAddresses('comment2@gmail.com', second_commenter)
         self.assertEqual([mailer.merge_proposal.address], to)
 
 
@@ -399,8 +423,10 @@ class TestInlineCommentsSection(testtools.TestCase):
     """Tests for `build_inline_comments_section`."""
 
     diff_text = (
-        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
+        "=== added directory 'foo/bar'\n"
+        "=== modified file 'foo/bar/bar.py'\n"
+        "--- bar.py\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar.py\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-\xc3\xa5\n"
         "-b\n"
@@ -410,6 +436,9 @@ class TestInlineCommentsSection(testtools.TestCase):
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
+        "@@ -1,2 +0,0 @@\n"
+        "-x\n"
+        "-y\n"
         "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
         "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,4 @@\n"
@@ -417,7 +446,53 @@ class TestInlineCommentsSection(testtools.TestCase):
         "-b\n"
         " c\n"
         "+d\n"
-        "+e\n")
+        "+e\n"
+        "\\ No newline at end of file\n"
+        "\n"
+        "=== modified file 'fulango.py'\n"
+        "--- fulano.py\t2014-08-26 15:53:34.000000000 -0400\n"
+        "+++ fulano.py\t2015-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +1,4 @@\n"
+        " a\n"
+        "-fulano\n"
+        " c\n"
+        "+mengano\n"
+        "+zutano\n")
+
+    git_diff_text = (
+        "diff --git a/foo b/foo\n"
+        "index 5716ca5..7601807 100644\n"
+        "--- a/foo\n"
+        "+++ b/foo\n"
+        "@@ -1 +1 @@\n"
+        "-bar\n"
+        "+baz\n"
+        "diff --git a/fulano b/fulano\n"
+        "old mode 100644\n"
+        "new mode 100755\n"
+        "index 5716ca5..7601807\n"
+        "--- a/fulano\n"
+        "+++ b/fulano\n"
+        "@@ -1,3 +1,3 @@\n"
+        " fulano\n"
+        " \n"
+        "-mengano\n"
+        "+zutano\n")
+
+    binary_diff_text = (
+        "=== added file 'lib/canonical/launchpad/images/foo.png'\n"
+        "Binary files lib/canonical/launchpad/images/foo.png\t"
+        "1970-01-01 00:00:00 +0000 and "
+        "lib/canonical/launchpad/images/foo.png\t"
+        "2015-06-21 22:07:50 +0000 differ\n"
+        "\n"
+        "=== modified file 'foo/bar/bar.py'\n"
+        "--- bar.py\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar.py\t1969-12-31 19:00:00.000000000 -0500\n"
+        "@@ -1,3 +0,0 @@\n"
+        "-a\n"
+        "-b\n"
+        "-c\n")
 
     def getSection(self, comments, diff_text=None):
         """Call `build_inline_comments_section` with the test-diff."""
@@ -429,50 +504,204 @@ class TestInlineCommentsSection(testtools.TestCase):
         # The inline comments section starts with a 4-lines header
         # (empty lines and title) and ends with an empty line.
         section = self.getSection({}).splitlines()
-        header = section[:5]
+        header = section[:4]
         self.assertEqual(
             ['',
              '',
              'Diff comments:',
-             '',
-             '> --- bar\t2009-08-26 15:53:34.000000000 -0400'],
-            header)
-        footer = section[-2:]
+             ''], header)
+        footer = section[-1:]
         self.assertEqual(
-            ['> +e',
-             ''],
+            [''],
             footer)
+
+    def test_binary_patch_in_diff(self):
+        # Binary patches with comments are handled appropriately.
+        comments = {'1': 'Updated the png', '2': 'foo', '9': 'bar'}
+        section = self.getSection(comments, diff_text=self.binary_diff_text)
+        self.assertEqual(
+            map(unicode, [
+                "> === added file 'lib/canonical/launchpad/images/foo.png'",
+                "",
+                "Updated the png",
+                "",
+                ("> Binary files lib/canonical/launchpad/images/foo.png\t"
+                 "1970-01-01 00:00:00 +0000 and "
+                 "lib/canonical/launchpad/images/foo.png\t"
+                 "2015-06-21 22:07:50 +0000 differ"),
+                "",
+                "foo",
+                "",
+                "> ",
+                "> === modified file 'foo/bar/bar.py'",
+                "> --- bar.py\t2009-08-26 15:53:34.000000000 -0400",
+                "> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500",
+                "> @@ -1,3 +0,0 @@",
+                "> -a",
+                "> -b",
+                "",
+                "bar",
+                "",
+                "> -c"]),
+            section.splitlines()[4:23])
 
     def test_single_line_comment(self):
         # The inline comments are correctly contextualized in the diff.
         # and prefixed with '>>> '
-        comments = {'2': u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
+        comments = {'4': '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae'}
         self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '',
-             u'\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
-             '',
-             '> @@ -1,3 +0,0 @@',
-             u'> -\xe5'],
-            self.getSection(comments).splitlines()[5:11])
+            map(unicode, [
+                '> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500',
+                '',
+                '\u03b4\u03bf\u03ba\u03b9\u03bc\u03ae',
+                '']),
+            self.getSection(comments).splitlines()[7:11])
+
+    def test_comments_in_git_diff(self):
+        comments = {'1': 'foo', '5': 'bar', '17': 'baz'}
+        section = self.getSection(comments, diff_text=self.git_diff_text)
+        self.assertEqual(
+            map(unicode, [
+                "> diff --git a/foo b/foo",
+                "",
+                "foo",
+                "",
+                "> index 5716ca5..7601807 100644",
+                "> --- a/foo",
+                "> +++ b/foo",
+                "> @@ -1 +1 @@",
+                "",
+                "bar",
+                "",
+                "> -bar",
+                "> +baz",
+                "> diff --git a/fulano b/fulano",
+                "> old mode 100644",
+                "> new mode 100755",
+                "> index 5716ca5..7601807",
+                "> --- a/fulano",
+                "> +++ b/fulano",
+                "> @@ -1,3 +1,3 @@",
+                ">  fulano",
+                ">  ",
+                "> -mengano",
+                "",
+                "baz",
+                "",
+                "> +zutano"]),
+            section.splitlines()[4:31])
+
+    def test_commentless_hunks_ignored(self):
+        # Hunks without inline comments are not returned in the diff text.
+        comments = {'16': 'A comment', '21': 'Another comment'}
+        self.assertEqual(
+            map(unicode, [
+                '> --- baz\t1969-12-31 19:00:00.000000000 -0500',
+                '> +++ baz\t2009-08-26 15:53:57.000000000 -0400',
+                '> @@ -1,2 +0,0 @@',
+                '> -x',
+                '> -y',
+                '',
+                'A comment',
+                '',
+                '> --- foo\t2009-08-26 15:53:23.000000000 -0400',
+                '> +++ foo\t2009-08-26 15:56:43.000000000 -0400',
+                '> @@ -1,3 +1,4 @@',
+                '>  a',
+                '> -b',
+                '',
+                'Another comment',
+                '',
+                '>  c',
+                '> +d',
+                '> +e']),
+            self.getSection(comments).splitlines()[4:23])
+
+    def test_patch_header_comment(self):
+        # Inline comments in patch headers are rendered correctly and
+        # include the patch's hunk(s).
+        comments = {'17': 'A comment in the patch header', '18': 'aardvark'}
+        self.assertEqual(
+            map(unicode, [
+                '> --- foo\t2009-08-26 15:53:23.000000000 -0400',
+                '',
+                'A comment in the patch header',
+                '',
+                '> +++ foo\t2009-08-26 15:56:43.000000000 -0400',
+                '',
+                'aardvark',
+                '',
+                '> @@ -1,3 +1,4 @@',
+                '>  a',
+                '> -b',
+                '>  c',
+                '> +d',
+                '> +e']),
+            self.getSection(comments).splitlines()[4:18])
+
+    def test_dirty_header_comment(self):
+        # Inline comments in dirty headers e.g. 'added file/modified file'
+        # are rendered correctly
+        comments = {'1': 'A comment for a dirty header'}
+        self.assertEqual(
+            map(unicode, [
+                "> === added directory 'foo/bar'",
+                '',
+                'A comment for a dirty header',
+                '']),
+            self.getSection(comments).splitlines()[4:8])
+
+    def test_non_last_hunk_comment(self):
+        comments = {'12': 'A comment in the non-last hunk'}
+        self.assertEqual(
+            map(unicode, [
+                '> --- baz\t1969-12-31 19:00:00.000000000 -0500',
+                '> +++ baz\t2009-08-26 15:53:57.000000000 -0400',
+                '> @@ -0,0 +1,2 @@',
+                '> +a',
+                '',
+                'A comment in the non-last hunk',
+                '',
+                '> +b']),
+            self.getSection(comments).splitlines()[4:12])
+
+    def test_comment_in_patch_after_linebreak(self):
+        comments = {'32': 'que?'}
+        self.assertEqual(
+            map(unicode, [
+                "> ",
+                "> === modified file 'fulango.py'",
+                "> --- fulano.py\t2014-08-26 15:53:34.000000000 -0400",
+                "> +++ fulano.py\t2015-12-31 19:00:00.000000000 -0500",
+                "> @@ -1,3 +1,4 @@",
+                ">  a",
+                "> -fulano",
+                "",
+                "que?",
+                "",
+                ">  c",
+                "> +mengano",
+                "> +zutano"]),
+            self.getSection(comments).splitlines()[4:17])
 
     def test_multi_line_comment(self):
         # Inline comments with multiple lines are rendered appropriately.
-        comments = {'2': 'Foo\nBar'}
+        comments = {'4': 'Foo\nBar'}
         self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
-             '',
-             'Foo',
-             'Bar',
-             '',
-             '> @@ -1,3 +0,0 @@'],
-            self.getSection(comments).splitlines()[5:11])
+            map(unicode, [
+                '> --- bar.py\t2009-08-26 15:53:34.000000000 -0400',
+                '> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500',
+                '',
+                'Foo',
+                'Bar',
+                '']),
+            self.getSection(comments).splitlines()[6:12])
 
     def test_multiple_comments(self):
-        # Multiple inline comments are redered appropriately.
-        comments = {'2': 'Foo', '3': 'Bar'}
+        # Multiple inline comments are rendered appropriately.
+        comments = {'4': 'Foo', '5': 'Bar'}
         self.assertEqual(
-            ['> +++ bar\t1969-12-31 19:00:00.000000000 -0500',
+            ['> +++ bar.py\t1969-12-31 19:00:00.000000000 -0500',
              '',
              'Foo',
              '',
@@ -480,4 +709,4 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              'Bar',
              ''],
-            self.getSection(comments).splitlines()[5:13])
+            self.getSection(comments).splitlines()[7:15])

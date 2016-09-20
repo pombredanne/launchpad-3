@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp.publisher import (
     canonical_url,
@@ -45,11 +46,11 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create everything we need to create builds, such as a
         # DistroArchSeries and a builder.
-        self.processor = self.factory.makeProcessor()
-        self.distroseries = self.factory.makeDistroSeries()
+        self.processor = self.factory.makeProcessor(supports_virtualized=True)
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'])
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution)
         with person_logged_in(self.admin):
@@ -134,8 +135,12 @@ class TestSourcePackagePublishingHistoryNavigation(TestCaseWithFactory):
             filename='changelog',
             restricted=(archive is not None and archive.private))
         spr = self.factory.makeSourcePackageRelease(changelog=lfa)
+        if archive is not None:
+            distroseries = archive.distribution.currentseries
+        else:
+            distroseries = None
         return self.factory.makeSourcePackagePublishingHistory(
-            archive=archive,
+            archive=archive, distroseries=distroseries,
             sourcepackagerelease=spr)
 
     def test_changelog(self):

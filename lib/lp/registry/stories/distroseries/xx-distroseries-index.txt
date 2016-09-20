@@ -7,7 +7,7 @@ this distribution series.
     >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('Help translate').click()
     >>> print user_browser.title
-    Translations : Hoary (5.04) : Ubuntu
+    Hoary (5.04) : Translations : Ubuntu
 
 
 Registering information
@@ -120,7 +120,7 @@ series, we can create structural bug subscriptions.
     http://launchpad.dev/ubuntu/warty/+subscribe
 
     >>> print admin_browser.title
-    Subscribe : Bugs : Warty (4.10) : Ubuntu
+    Subscribe : Warty (4.10) : Bugs : Ubuntu
 
 
 Upstream packaging portlet

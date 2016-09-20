@@ -11,11 +11,11 @@ summary and description:
     >>> main_content = find_main_content(browser.contents)
     >>> print extract_text(main_content)
     Binary package “mozilla-firefox” in ubuntu warty
-    Ubuntu Warty (4.10) mozilla-firefox
+    Warty (4.10) mozilla-firefox
     Mozilla Firefox Web Browser
     Mozilla Firefox Web Browser is .....
     Source package
-    "iceweasel" 1.0 source package in The Warty Warthog Release
+    iceweasel 1.0 source package in Ubuntu
     Published versions
     mozilla-firefox 0.9 in hppa (Release)
     mozilla-firefox 0.9 in i386 (Release)
@@ -36,7 +36,7 @@ release:
 
     >>> browser.getLink(id="source_package").click()
     >>> browser.title
-    '...iceweasel... source package : Warty (4.10) : Ubuntu'
+    '1.0 : iceweasel package : Ubuntu'
 
 Some DistroSeriesBinaryPackages are unpublished, in this case there is
 no link to any source package:
@@ -49,9 +49,8 @@ no link to any source package:
     >>> main_content = find_main_content(browser.contents)
     >>> print extract_text(main_content)
     Binary package “mozilla-firefox” in ubuntu hoary
-    Ubuntu Hoary (5.04) mozilla-firefox
+    Hoary (5.04) mozilla-firefox
     No summary available for mozilla-firefox in ubuntu hoary.
     No description available for mozilla-firefox in ubuntu hoary.
     Published versions
     Not published at present.
-

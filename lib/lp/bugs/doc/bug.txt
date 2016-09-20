@@ -604,7 +604,7 @@ You can also add bugs for a specific distro.
     >>> notify(ObjectCreatedEvent(ubuntu_task))
 
     >>> print ubuntu_task.distribution.title
-    Ubuntu Linux
+    Ubuntu
 
 And for a specific distribution series.
 
@@ -771,19 +771,14 @@ Linking to a CVE.
 
     >>> from lp.bugs.interfaces.cve import ICveSet
 
-    >>> firefox_bug.cve_links.count()
+    >>> len(firefox_bug.cves)
     0
-
-    >>> cveref = getUtility(ICveSet)["1999-8979"]
-    >>> bug_cveref = firefox_bug.linkCVE(cveref, sample_person)
-
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(ObjectCreatedEvent(bug_cveref))
-
-    >>> firefox_bug.cve_links.count()
+    >>> cveref = getUtility(ICveSet)["1999-8979"]
+    >>> firefox_bug.linkCVE(cveref, firefox_bug.owner)
+    >>> len(firefox_bug.cves)
     1
-
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
@@ -1209,7 +1204,7 @@ And the list of users the master bug affects includes that user.
 
 However, if the user was also marked as being affected by the master
 bug, then the master bug's user_affected_count does *not* increment
-just because she is also affected by the duplicate.
+just because they are also affected by the duplicate.
 
     >>> test_bug.markUserAffected(dupe_affected_user, affected=True)
     >>> test_bug.users_affected_count_with_dupes
@@ -1234,7 +1229,7 @@ master bug's affected count with dups increases.
     >>> test_bug.users_affected_count_with_dupes
     4
 
-If the user claims that two bugs both affect her, then if they are
+If the user claims that two bugs both affect them, then if they are
 both marked as duplicates of the master bugs, the master bug's
 user_affected_count still only increments by 1 for that user.
 
@@ -1262,9 +1257,9 @@ exactly once, of course.
     paul-dianno
     sheila-shakespeare
 
-If the user marks the master bug as not affecting her, but the master
-bug still has a duplicate that she claims affects her, then that
-duplicate is also marked as not affecting her either.
+If the user marks the master bug as not affecting them, but the master
+bug still has a duplicate that they claim affects them, then that
+duplicate is also marked as not affecting them either.
 
     >>> dupe_one.users_affected_count
     1
@@ -1295,7 +1290,7 @@ either of the dups:
     <BLANKLINE>
 
 Since the user who filed the first two dups had an entry explicitly
-saying she was affected, they now claim that she is unaffected.
+saying they were affected, they now claim that they are unaffected.
 
     >>> print '\n'.join(
     ...     sorted(user.name for user in dupe_one.users_unaffected))
@@ -1304,10 +1299,10 @@ saying she was affected, they now claim that she is unaffected.
     ...     sorted(user.name for user in dupe_two.users_unaffected))
     sheila-shakespeare
 
-But she didn't file the third dup, so there was never any explicit
-record saying she was affected by it.  Thus she also does not appear
+But they didn't file the third dup, so there was never any explicit
+record saying they were affected by it.  Thus they also do not appear
 as explicitly unaffected, even after marking the master bug as not
-affecting her.
+affecting them.
 
     >>> print '\n'.join(
     ...     sorted(user.name for user in dupe_three.users_unaffected))

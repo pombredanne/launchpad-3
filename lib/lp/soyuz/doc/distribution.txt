@@ -111,14 +111,14 @@ The searchPPAs() method only returns the PPAs of active users.
 
     >>> from lp.services.identity.interfaces.account import AccountStatus
     >>> login('admin@canonical.com')
-    >>> no_priv.account.status = AccountStatus.SUSPENDED
+    >>> no_priv.setAccountStatus(AccountStatus.SUSPENDED, None, 'spammer!')
 
     >>> result = ubuntu.searchPPAs(text=u'priv', show_inactive=True)
     >>> [archive for archive in result]
     []
 
-    >>> no_priv.account.status = AccountStatus.DEACTIVATED
-    >>> no_priv.account.status = AccountStatus.ACTIVE
+    >>> no_priv.setAccountStatus(AccountStatus.DEACTIVATED, None, 'oops')
+    >>> no_priv.setAccountStatus(AccountStatus.ACTIVE, None, 'login')
 
 
 Retrieving only pending-acceptance PPAs

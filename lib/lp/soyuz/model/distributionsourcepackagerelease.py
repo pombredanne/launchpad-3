@@ -9,7 +9,9 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
-from lazr.delegates import delegates
+from operator import itemgetter
+
+from lazr.delegates import delegate_to
 from storm.expr import (
     And,
     Desc,
@@ -18,19 +20,17 @@ from storm.expr import (
     SQL,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.sqlbase import sqlvalues
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -38,15 +38,14 @@ from lp.soyuz.model.publishing import (
     )
 
 
+@implementer(IDistributionSourcePackageRelease)
+@delegate_to(ISourcePackageRelease, context='sourcepackagerelease')
 class DistributionSourcePackageRelease:
     """This is a "Magic Distribution Source Package Release". It is not an
     SQLObject, but it represents the concept of a specific source package
     release in the distribution. You can then query it for useful
     information.
     """
-
-    implements(IDistributionSourcePackageRelease)
-    delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distribution, sourcepackagerelease):
         self.distribution = distribution
@@ -77,12 +76,12 @@ class DistributionSourcePackageRelease:
     @property
     def displayname(self):
         """See IDistributionSourcePackageRelease."""
-        return '%s in %s' % (self.name, self.distribution.name)
+        return '%s %s' % (self.name, self.version)
 
     @property
     def title(self):
         """See IDistributionSourcePackageRelease."""
-        return '"%s" %s source package in %s' % (
+        return '%s %s source package in %s' % (
             self.name, self.version, self.distribution.displayname)
 
     @property
@@ -91,25 +90,16 @@ class DistributionSourcePackageRelease:
         return self.getPublishingHistories(
             self.distribution, [self.sourcepackagerelease])
 
-    @property
-    def builds(self):
-        """See IDistributionSourcePackageRelease."""
-        # We want to return all the builds for this distribution that
-        # were built for a main archive together with the builds for this
-        # distribution that were built for a PPA but have been published
-        # in a main archive.
-        builds_for_distro_exprs = (
-            (BinaryPackageBuild.source_package_release ==
-                self.sourcepackagerelease),
-            BinaryPackageBuild.distribution == self.distribution,
-            )
-
+    def _getBuilds(self, clauses=[]):
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
-            builds_for_distro_exprs, BinaryPackageBuild.archive == Archive.id,
-            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
+            BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease,
+            BinaryPackageBuild.archive_id.is_in(
+                self.distribution.all_distro_archive_ids),
+            *clauses)
 
         # Next get all the builds that have a binary published in the
         # main archive... this will include many of those in the above
@@ -117,30 +107,31 @@ class DistributionSourcePackageRelease:
         # ppa builds that have been published in main archives.
         builds_published_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
-            builds_for_distro_exprs,
+            BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archive == Archive.id,
-            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).config(
-                distinct=True)
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            *clauses).config(distinct=True)
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
                 Desc(BinaryPackageBuild.id))
 
     @property
-    def binary_package_names(self):
+    def builds(self):
         """See IDistributionSourcePackageRelease."""
-        return BinaryPackageName.select("""
-            BinaryPackageName.id =
-                BinaryPackageRelease.binarypackagename AND
-            BinaryPackageRelease.build = BinaryPackageBuild.id AND
-            BinaryPackageBuild.source_package_release = %s
-            """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTables=['BinaryPackageRelease', 'BinaryPackageBuild'],
-            orderBy='name',
-            distinct=True)
+        return self._getBuilds()
+
+    def getBuildsByArchTag(self, arch_tag):
+        """See IDistributionSourcePackageRelease."""
+        clauses = [
+            BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
+            DistroArchSeries.architecturetag == arch_tag,
+            ]
+        return self._getBuilds(clauses)
 
     @property
     def sample_binary_packages(self):
@@ -200,3 +191,39 @@ class DistributionSourcePackageRelease:
                 publishing.binarypackagerelease.binarypackagename,
                 package_cache)
         return DecoratedResultSet(all_published, make_dsb_package)
+
+    def getBinariesForSeries(self, distroseries):
+        """See `IDistributionSourcePackageRelease`."""
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        store = Store.of(distroseries)
+        result_row = (
+            BinaryPackageRelease, BinaryPackageBuild, BinaryPackageName)
+
+        tables = (
+            BinaryPackageRelease,
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            Join(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID))
+        archive_ids = list(self.distribution.all_distro_archive_ids)
+        binaries = store.using(*tables).find(
+            result_row,
+            And(
+                DistroArchSeries.distroseriesID == distroseries.id,
+                BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+                BinaryPackageBuild.source_package_release ==
+                    self.sourcepackagerelease))
+        binaries.order_by(Desc(BinaryPackageRelease.id)).config(distinct=True)
+        return DecoratedResultSet(binaries, itemgetter(0))

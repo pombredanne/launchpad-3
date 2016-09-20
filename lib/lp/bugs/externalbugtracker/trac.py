@@ -10,14 +10,14 @@ from Cookie import SimpleCookie
 from cookielib import CookieJar
 import csv
 from datetime import datetime
-from email.Utils import parseaddr
+from email.utils import parseaddr
 import time
 import urllib2
 import xmlrpclib
 
 import pytz
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
@@ -310,11 +310,10 @@ def needs_authentication(func):
     return decorator
 
 
+@implementer(
+    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
-
-    implements(
-        ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None, cookie_jar=None):

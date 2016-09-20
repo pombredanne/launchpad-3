@@ -26,7 +26,7 @@ def is_series_branch(branch):
     # XXX: JonathanLange 2009-05-07 spec=package-branches: This assumes that
     # we only care about whether a branch is a product series. What about poor
     # old distroseries?
-    return not branch.associatedProductSeries().is_empty()
+    return bool(branch.associatedProductSeries())
 
 
 def is_development_focus(branch):

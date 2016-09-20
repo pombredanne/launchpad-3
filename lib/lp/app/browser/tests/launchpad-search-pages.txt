@@ -111,8 +111,8 @@ more bugs than questions.
     None
 
 Private bugs are not matched if the user does not have permission to
-see them. For example, Sample Person can see a private bug that he
-created because he is the owner.
+see them. For example, Sample Person can see a private bug that they
+created because they are the owner.
 
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.app.enums import InformationType
@@ -317,6 +317,29 @@ pillar, nor will nsv match Nicolas Velin's unclaimed account.
     >>> search_view._getNameToken(search_view.text)
     u'nsv'
     >>> print search_view.person_or_team
+    None
+
+Private pillars are not matched if the user does not have permission to see
+them. For example, Sample Person can see a private project that they created
+because they are the owner.
+
+    >>> from lp.registry.interfaces.product import License
+
+    >>> login('test@canonical.com')
+    >>> private_product = factory.makeProduct(
+    ...     owner=sample_person, information_type=InformationType.PROPRIETARY,
+    ...     licenses=[License.OTHER_PROPRIETARY])
+    >>> private_product_name = private_product.name
+
+    >>> search_view = getSearchView(form={'field.text': private_product_name})
+    >>> search_view.pillar.private
+    True
+
+But anonymous and unprivileged users cannot see the private project.
+
+    >>> login(ANONYMOUS)
+    >>> search_view = getSearchView(form={'field.text': private_product_name})
+    >>> print search_view.pillar
     None
 
 

@@ -1,4 +1,4 @@
-# Copyright 2012-2013 Canonical Ltd. This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd. This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test views that manage sharing."""
@@ -28,13 +28,14 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.database.interfaces import IStore
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
     logout,
+    normalize_whitespace,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -75,11 +76,13 @@ class SharingBaseTestCase(TestCaseWithFactory):
         return grantee
 
     def makeArtifactGrantee(self, grantee=None, with_bug=True,
-                            with_branch=False, security=False):
+                            with_branch=False, with_gitrepository=True,
+                            security=False):
         if grantee is None:
             grantee = self.factory.makePerson()
 
         branch = None
+        gitrepository = None
         bug = None
         artifacts = []
 
@@ -89,6 +92,13 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 information_type=InformationType.PRIVATESECURITY)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
+
+        if with_gitrepository and self.pillar_type == 'product':
+            gitrepository = self.factory.makeGitRepository(
+                target=self.pillar, owner=self.pillar.owner,
+                information_type=InformationType.PRIVATESECURITY)
+            artifacts.append(
+                self.factory.makeAccessArtifact(concrete=gitrepository))
 
         if with_bug:
             if security:
@@ -120,7 +130,7 @@ class PillarSharingDetailsMixin:
     """Test the pillar sharing details view."""
 
     def getPillarPerson(self, person=None, security=False):
-        person = self.makeArtifactGrantee(person, True, True, security)
+        person = self.makeArtifactGrantee(person, True, True, True, security)
         return PillarPerson(self.pillar, person)
 
     def test_view_filters_security_wisely(self):
@@ -160,8 +170,8 @@ class PillarSharingDetailsMixin:
             pillarperson.pillar.name, pillarperson.person.name)
         browser = self.getUserBrowser(user=self.owner, url=url)
         self.assertIn(
-            'There are no shared bugs, branches, or blueprints.',
-            browser.contents)
+            'There are no shared bugs, Bazaar branches, Git repositories, or '
+            'blueprints.', normalize_whitespace(browser.contents))
 
     def test_init_works(self):
         # The view works with a feature flag.
@@ -203,19 +213,25 @@ class PillarSharingDetailsMixin:
                 'web_link': canonical_url(branch, path_only_if_possible=True),
                 'self_link': absoluteURL(branch, request),
             }, cache.objects.get('branches')[0])
+            gitrepository = list(view.gitrepositories)[0]
+            self.assertEqual({
+                'repository_id': gitrepository.id,
+                'repository_name': gitrepository.unique_name,
+                'information_type': gitrepository.information_type.title,
+                'web_link': canonical_url(
+                    gitrepository, path_only_if_possible=True),
+                'self_link': absoluteURL(gitrepository, request),
+            }, cache.objects.get('gitrepositories')[0])
 
     def test_view_query_count(self):
         # Test that the view bulk loads artifacts.
         person = self.factory.makePerson()
-        for x in range(0, 15):
-            self.makeArtifactGrantee(person, True, True, False)
         pillarperson = PillarPerson(self.pillar, person)
-
-        # Invalidate the Storm cache and check the query count.
-        IStore(self.pillar).invalidate()
-        with StormStatementRecorder() as recorder:
-            create_initialized_view(pillarperson, '+index')
-        self.assertThat(recorder, HasQueryCount(LessThan(13)))
+        recorder1, recorder2 = record_two_runs(
+            lambda: create_initialized_view(pillarperson, '+index'),
+            lambda: self.makeArtifactGrantee(person, True, True, True, False),
+            5, login_method=lambda: login_person(self.owner))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestProductSharingDetailsView(

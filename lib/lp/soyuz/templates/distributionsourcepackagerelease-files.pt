@@ -1,0 +1,34 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+  <table tal:condition="view/files" class="wide listing">
+  <thead>
+    <tr>
+    <th>File</th>
+    <th>Size</th>
+    <th>SHA-256 Checksum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr tal:repeat="file view/files">
+      <tal:file_available condition="not:file/deleted">
+        <td>
+          <a class="sprite download"
+            tal:attributes="href file/http_url"
+            tal:content="file/filename">foo_1.0.dsc</a>
+        </td>
+        <td tal:content="file/content/filesize/fmt:bytes">10 bytes</td>
+        <td tal:content="file/content/sha256">DEADBEEF</td>
+      </tal:file_available>
+      <tal:file_unavailable condition="file/deleted">
+        <td span="3">
+          <span tal:replace="file/filename">foo.dsc</span> (deleted)
+        </td>
+      </tal:file_unavailable>
+    </tr>
+  </tbody>
+  </table>
+  <p tal:condition="not:view/files">No files available for download.</p>
+</tal:root>

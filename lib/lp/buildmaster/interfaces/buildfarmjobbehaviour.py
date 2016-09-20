@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for build farm job behaviours."""
@@ -17,18 +17,19 @@ class IBuildFarmJobBehaviour(Interface):
     def setBuilder(builder, slave):
         """Sets the associated builder and slave for this instance."""
 
-    def logStartBuild(logger):
-        """Log the start of a specific build queue item.
+    def composeBuildRequest(logger):
+        """Compose parameters for a slave build request.
 
-        The form of the log message will vary depending on the type of build.
-        :param build_queue_item: A BuildQueueItem to build.
         :param logger: A logger to be used to log diagnostic information.
+        :return: A tuple of (
+            "builder type", `DistroArchSeries` to build against,
+            {filename: `sendFileToSlave` arguments}, {extra build arguments}),
+            or a Deferred resulting in the same.
         """
 
-    def dispatchBuildToSlave(build_queue_item_id, logger):
+    def dispatchBuildToSlave(logger):
         """Dispatch a specific build to the slave.
 
-        :param build_queue_item_id: An identifier for the build queue item.
         :param logger: A logger to be used to log diagnostic information.
         """
 
@@ -38,8 +39,8 @@ class IBuildFarmJobBehaviour(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def getBuildCookie():
-        """Return a string which uniquely identifies the job."""
+    def verifySuccessfulBuild():
+        """Check that we are allowed to collect this successful build."""
 
     def handleStatus(bq, status, slave_status):
         """Update the build from a WAITING slave result.

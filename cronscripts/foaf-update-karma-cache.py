@@ -21,10 +21,10 @@ class KarmaCacheUpdater(LaunchpadCronScript):
     def main(self):
         """Update the KarmaCache table for all valid Launchpad users.
 
-        For each Launchpad user with a preferred email address, calculate his
-        karmavalue for each category of actions we have and update his entry
-        in the KarmaCache table. If a user doesn't have an entry for that
-        category in KarmaCache a new one will be created.
+        For each Launchpad user with a preferred email address, calculate
+        their karmavalue for each category of actions we have and update
+        their entry in the KarmaCache table. If a user doesn't have an entry
+        for that category in KarmaCache a new one will be created.
 
         Entries in the KarmaTotalCache table will also be created/updated for
         each user which has entries in the KarmaCache table. Any user which
@@ -145,9 +145,9 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         # We must issue some SUM queries to insert the karma totals for:
         # - All actions of a person on a given product.
         # - All actions of a person on a given distribution.
-        # - All actions of a person on a given project.
+        # - All actions of a person on a given project group.
         # - All actions with a specific category of a person on a given
-        #   project.
+        #   project group.
         # - All actions with a specific category of a person.
 
         # - All actions with a specific category of a person.
@@ -184,7 +184,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
             GROUP BY person, distribution
             """)
 
-        # - All actions of a person on a given project.
+        # - All actions of a person on a given project group.
         self.cur.execute("""
             INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
@@ -199,10 +199,10 @@ class KarmaCacheUpdater(LaunchpadCronScript):
             """)
 
         # - All actions with a specific category of a person on a given
-        # project.
+        # project group.
         # IMPORTANT: This has to be the latest step; otherwise the rows
         # inserted here will be included in the calculation of the overall
-        # karma of a person on a given project.
+        # karma of a person on a given project group.
         self.cur.execute("""
             INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,

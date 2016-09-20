@@ -11,6 +11,7 @@ __metaclass__ = type
 
 __all__ = ('IPOTranslation', )
 
+
 class IPOTranslation(Interface):
     """A translation in a PO file."""
 

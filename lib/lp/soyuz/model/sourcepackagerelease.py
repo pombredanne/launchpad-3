@@ -8,6 +8,7 @@ __all__ = [
 
 
 import datetime
+import json
 import operator
 import re
 from StringIO import StringIO
@@ -19,26 +20,27 @@ from debian.changelog import (
     ChangelogParseError,
     )
 import pytz
-import simplejson
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
     StringCol,
     )
 from storm.expr import Join
-from storm.info import ClassAlias
 from storm.locals import (
     Desc,
     Int,
     Reference,
+    Unicode,
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
@@ -61,9 +63,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -77,8 +77,8 @@ from lp.soyuz.model.queue import (
     )
 
 
+@implementer(ISourcePackageRelease)
 class SourcePackageRelease(SQLBase):
-    implements(ISourcePackageRelease)
     _table = 'SourcePackageRelease'
 
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -91,7 +91,9 @@ class SourcePackageRelease(SQLBase):
     maintainer = ForeignKey(
         dbName='maintainer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+    signing_key_owner_id = Int(name="signing_key_owner")
+    signing_key_owner = Reference(signing_key_owner_id, 'Person.id')
+    signing_key_fingerprint = Unicode()
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
@@ -135,7 +137,7 @@ class SourcePackageRelease(SQLBase):
 
     def __init__(self, *args, **kwargs):
         if 'user_defined_fields' in kwargs:
-            kwargs['_user_defined_fields'] = simplejson.dumps(
+            kwargs['_user_defined_fields'] = json.dumps(
                 kwargs['user_defined_fields'])
             del kwargs['user_defined_fields']
         # copyright isn't on the Storm class, since we don't want it
@@ -144,6 +146,12 @@ class SourcePackageRelease(SQLBase):
             copyright = kwargs.pop('copyright')
         super(SourcePackageRelease, self).__init__(*args, **kwargs)
         self.copyright = copyright
+
+    def __repr__(self):
+        """Returns an informative representation of a SourcePackageRelease."""
+        return '<{cls} {pkg_name} (id: {id}, version: {version})>'.format(
+            cls=self.__class__.__name__, pkg_name=self.name,
+            id=self.id, version=self.version)
 
     @property
     def copyright(self):
@@ -170,7 +178,15 @@ class SourcePackageRelease(SQLBase):
         """See `IBinaryPackageRelease`."""
         if self._user_defined_fields is None:
             return []
-        return simplejson.loads(self._user_defined_fields)
+        user_defined_fields = json.loads(self._user_defined_fields)
+        if user_defined_fields is None:
+            return []
+        return user_defined_fields
+
+    def getUserDefinedField(self, name):
+        for k, v in self.user_defined_fields:
+            if k.lower() == name.lower():
+                return v
 
     @cachedproperty
     def package_diffs(self):
@@ -226,14 +242,6 @@ class SourcePackageRelease(SQLBase):
     @property
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
-
-    @property
-    def current_publishings(self):
-        """See ISourcePackageRelease."""
-        from lp.soyuz.model.distroseriessourcepackagerelease import (
-            DistroSeriesSourcePackageRelease)
-        return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
-                for pub in self.publishings]
 
     @cachedproperty
     def published_archives(self):
@@ -297,112 +305,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return 0.0
 
-    def createBuild(self, distro_arch_series, pocket, archive, processor=None,
-                    status=None):
-        """See ISourcePackageRelease."""
-        # If a processor is not provided, use the DAS' processor.
-        if processor is None:
-            processor = distro_arch_series.processor
-
-        if status is None:
-            status = BuildStatus.NEEDSBUILD
-
-        # Force the current timestamp instead of the default
-        # UTC_NOW for the transaction, avoid several row with
-        # same datecreated.
-        date_created = datetime.datetime.now(pytz.timezone('UTC'))
-
-        return getUtility(IBinaryPackageBuildSet).new(
-            distro_arch_series=distro_arch_series,
-            source_package_release=self,
-            processor=processor,
-            status=status,
-            date_created=date_created,
-            pocket=pocket,
-            archive=archive)
-
-    def findBuildsByArchitecture(self, distroseries, archive):
-        """Find associated builds, by architecture.
-
-        Looks for `BinaryPackageBuild` records for this source package
-        release, with publication records in the distroseries associated with
-        `distroarchseries`.  There should be at most one of these per
-        architecture.
-
-        :param distroarchseries: `DistroArchSeries` to look for.
-        :return: A dict mapping architecture tags (in string form,
-            e.g. 'i386') to `BinaryPackageBuild`s for that build.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
-        BuildDAS = ClassAlias(DistroArchSeries, 'BuildDAS')
-        PublishDAS = ClassAlias(DistroArchSeries, 'PublishDAS')
-
-        query = Store.of(self).find(
-            (BuildDAS.architecturetag, BinaryPackageBuild),
-            BinaryPackageBuild.source_package_release == self,
-            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
-            BuildDAS.id == BinaryPackageBuild.distro_arch_series_id,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archiveID == archive.id,
-            PublishDAS.id ==
-                BinaryPackagePublishingHistory.distroarchseriesID,
-            PublishDAS.distroseriesID == distroseries.id,
-            # Architecture-independent binary package releases are built
-            # in the nominated arch-indep architecture but published in
-            # all architectures.  This condition makes sure we consider
-            # only builds that have been published in their own
-            # architecture.
-            PublishDAS.architecturetag == BuildDAS.architecturetag)
-        results = list(query.config(distinct=True))
-        mapped_results = dict(results)
-        assert len(mapped_results) == len(results), (
-            "Found multiple build candidates per architecture: %s.  "
-            "This may mean that we have a serious problem in our DB model.  "
-            "Further investigation is required."
-            % [(tag, build.id) for tag, build in results])
-        return mapped_results
-
-    def getBuildByArch(self, distroarchseries, archive):
-        """See ISourcePackageRelease."""
-        # First we try to follow any binaries built from the given source
-        # in a distroarchseries with the given architecturetag and published
-        # in the given (distroarchseries, archive) location.
-        # (Querying all architectures and then picking the right one out
-        # of the result turns out to be much faster than querying for
-        # just the architecture we want).
-        builds_by_arch = self.findBuildsByArchitecture(
-            distroarchseries.distroseries, archive)
-        build = builds_by_arch.get(distroarchseries.architecturetag)
-        if build is not None:
-            # If there was any published binary we can use its original build.
-            # This case covers the situations when both source and binaries
-            # got copied from another location.
-            return build
-
-        # If there was no published binary we have to try to find a
-        # suitable build in all possible location across the distroseries
-        # inheritance tree. See below.
-        clause_tables = ['DistroArchSeries']
-        queries = [
-            "DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND "
-            "BinaryPackageBuild.archive = %s AND "
-            "DistroArchSeries.architecturetag = %s AND "
-            "BinaryPackageBuild.source_package_release = %s" % (
-            sqlvalues(archive.id, distroarchseries.architecturetag, self))]
-
-        # Query only the last build record for this sourcerelease
-        # across all possible locations.
-        query = " AND ".join(queries)
-
-        return BinaryPackageBuild.selectFirst(
-            query, clauseTables=clause_tables,
-            orderBy=['-date_created'])
-
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""
         if component is not None:
@@ -463,8 +365,8 @@ class SourcePackageRelease(SQLBase):
         """See `ISourcePackageRelease`"""
         if self.source_package_recipe_build is not None:
             return self.source_package_recipe_build.requester
-        if self.dscsigningkey is not None:
-            return self.dscsigningkey.owner
+        if self.signing_key_owner is not None:
+            return self.signing_key_owner
         return None
 
     @property
@@ -499,21 +401,12 @@ class SourcePackageRelease(SQLBase):
             raise PackageDiffAlreadyRequested(
                 "%s has already been requested" % candidate.title)
 
-        if self.sourcepackagename.name == 'udev':
-            # XXX 2009-11-23 Julian bug=314436
-            # Currently diff output for udev will fill disks.  It's
-            # disabled until diffutils is fixed in that bug.
-            status = PackageDiffStatus.FAILED
-        else:
-            status = PackageDiffStatus.PENDING
-
         Store.of(to_sourcepackagerelease).flush()
         del get_property_cache(to_sourcepackagerelease).package_diffs
         packagediff = PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
-            requester=requester, status=status)
-        if status == PackageDiffStatus.PENDING:
-            getUtility(IPackageDiffJobSource).create(packagediff)
+            requester=requester)
+        getUtility(IPackageDiffJobSource).create(packagediff)
         return packagediff
 
     def aggregate_changelog(self, since_version):
@@ -553,47 +446,3 @@ class SourcePackageRelease(SQLBase):
 
         output = "\n\n".join(chunks)
         return output.decode("utf-8", "replace")
-
-    def getActiveArchSpecificPublications(self, archive, distroseries,
-                                          pocket):
-        """Find architecture-specific binary publications for this release.
-
-        For example, say source package release contains binary packages of:
-         * "foo" for i386 (pending in i386)
-         * "foo" for amd64 (published in amd64)
-         * "foo-common" for the "all" architecture (pending or published in
-           various real processor architectures)
-
-        In that case, this search will return foo(i386) and foo(amd64).  The
-        dominator uses this when figuring out whether foo-common can be
-        superseded: we don't track dependency graphs, but we know that the
-        architecture-specific "foo" releases are likely to depend on the
-        architecture-independent foo-common release.
-
-        :param archive: The `Archive` to search.
-        :param distroseries: The `DistroSeries` to search.
-        :param pocket: The `PackagePublishingPocket` to search.
-        :return: A Storm result set of active, architecture-specific
-            `BinaryPackagePublishingHistory` objects for this source package
-            release and the given `archive`, `distroseries`, and `pocket`.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.publishing import active_publishing_status
-        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
-        return Store.of(self).find(
-            BinaryPackagePublishingHistory,
-            BinaryPackageBuild.source_package_release_id == self.id,
-            BinaryPackageRelease.build == BinaryPackageBuild.id,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archiveID == archive.id,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            DistroArchSeries.distroseriesID == distroseries.id,
-            BinaryPackagePublishingHistory.pocket == pocket,
-            BinaryPackagePublishingHistory.status.is_in(
-                active_publishing_status),
-            BinaryPackageRelease.architecturespecific == True)

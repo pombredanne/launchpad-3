@@ -8,26 +8,26 @@ Only the owner of the PPA and Launchpad administrators may access this page.
 Anonymous and unprivileged users cannot access Celso's PPA interface to
 edit dependencies, even if they try the URL directly.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> anon_browser.getLink('Edit PPA dependencies').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies')
+    ...     'http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+edit-dependencies')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> user_browser.getLink('Edit PPA dependencies').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies')
+    ...    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+edit-dependencies')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
@@ -37,11 +37,11 @@ any sources.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
 
     >>> no_priv_browser.getLink('Edit PPA dependencies').click()
     >>> print no_priv_browser.url
-    http://launchpad.dev/~no-priv/+archive/ppa/+edit-dependencies
+    http://launchpad.dev/~no-priv/+archive/ubuntu/ppa/+edit-dependencies
 
     >>> print no_priv_browser.title
     Edit PPA dependencies : PPA for No Privileges Person :
@@ -52,17 +52,17 @@ page for Celso's PPA.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:test")
-    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> cprov_browser.getLink('Edit PPA dependencies').click()
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+edit-dependencies
     >>> print cprov_browser.title
     Edit PPA dependencies : PPA for Celso Providelo : Celso Providelo
 
-    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> admin_browser.getLink('Edit PPA dependencies').click()
     >>> print admin_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+edit-dependencies
     >>> print admin_browser.title
     Edit PPA dependencies : PPA for Celso Providelo : Celso Providelo
 
@@ -112,7 +112,7 @@ When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for Mark Shuttleworth
@@ -123,7 +123,7 @@ for removal is updated.
 
 Trying to add a dependency that is already recorded results in a error.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
@@ -132,7 +132,7 @@ Trying to add a dependency that is already recorded results in a error.
 Trying to add a dependency for the context PPA itself also results in
 a error.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'cprov/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~cprov/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
@@ -140,7 +140,7 @@ a error.
 
 If it's a new dependency everything is fine.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~no-priv/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for No Privileges Person
@@ -152,10 +152,10 @@ Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
 
-The dependencies are presented in a separated section (bellow the
+The dependencies are presented in a separated section (below the
 sources.list widget).
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> print_tag_with_id(user_browser.contents, 'archive-dependencies')
     Dependencies:
     PPA for Mark Shuttleworth (included ... ago)
@@ -164,10 +164,10 @@ sources.list widget).
 The dependency entries are links to their target archives.
 
     >>> print user_browser.getLink('PPA for Mark Shuttleworth').url
-    http://launchpad.dev/~mark/+archive/ppa
+    http://launchpad.dev/~mark/+archive/ubuntu/ppa
 
     >>> print user_browser.getLink('PPA for No Privileges Person').url
-    http://launchpad.dev/~no-priv/+archive/ppa
+    http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 If, by any chance, a dependency gets disabled, the link is turned off
 and the text '[disabled]' is appended to it. So PPA users will be
@@ -181,7 +181,7 @@ aware of this condition.
     >>> mark.archive.disable()
     >>> logout()
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> print_tag_with_id(anon_browser.contents, 'archive-dependencies')
     Dependencies:
     PPA for Mark Shuttleworth [disabled] (included ... ago)
@@ -193,13 +193,13 @@ aware of this condition.
     LinkNotFoundError
 
     >>> print anon_browser.getLink('PPA for No Privileges Person').url
-    http://launchpad.dev/~no-priv/+archive/ppa
+    http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 When accessed by their owners, a PPA depending on disabled archives
-will additionally show an warning for uploaders . This way PPA
+will additionally show an warning for uploaders. This way a PPA
 maintainer can react to this problem.
 
-    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> upload_hint = find_tag_by_id(
     ...     cprov_browser.contents, 'upload-hint')
     >>> print extract_text(
@@ -234,7 +234,7 @@ dependencies is refreshed.
 
     >>> admin_browser.getControl(
     ...     name="field.selected_dependencies").value = [
-    ...     'mark/ppa', 'no-priv/ppa']
+    ...     '~mark/ubuntu/ppa', '~no-priv/ubuntu/ppa']
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependencies removed:
@@ -248,15 +248,52 @@ Once the dependencies are removed, the 'archive-dependencies' section
 is omitted from the PPA overview page for user without permission to
 add new dependencies.
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'archive-dependencies')
     None
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'archive-dependencies')
     None
+
+We should also make sure that a user is unable to add a disabled PPA as a
+dependency.
+
+    # Disable Mark's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> mark.archive.disable()
+    >>> logout()
+
+    # Attempt to add Mark's PPA
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
+    >>> admin_browser.getControl("Save").click()
+    >>> print_feedback_messages(admin_browser.contents)
+    There is 1 error.
+    Invalid value
+
+    # When the page is reloaded, there shouldn't be any dependencies.
+    >>> admin_browser.reload()
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
+
+Re-enable Mark's PPA for subsequent tests.
+
+    >>> login('foo.bar@canonical.com')
+    >>> mark.archive.enable()
+    >>> logout()
+
+Clear the page.
+
+    >>> admin_browser.getControl("Add PPA dependency").value = ''
+    >>> admin_browser.getControl("Save").click()
+    >>> admin_browser.reload()
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
 
 == Primary dependencies ==
 
@@ -288,7 +325,7 @@ Same for the 'Ubuntu components' field:
 The user can modify this aspect by selecting a different option and
 clicking on 'Save'.
 
-He will see a notification containing a summary of what was changed.
+They will see a notification containing a summary of what was changed.
 
     >>> admin_browser.getControl(
     ...     "Proposed (default dependencies and proposed updates"
@@ -336,7 +373,7 @@ Now we see a PPA configured to depend only on RELEASE pocket.
 
 In order to make the PPA use the default dependencies again the user
 can simply select this pre-defined option and the form will restore
-the default dependencies for him.
+the default dependencies for them.
 
     >>> admin_browser.getControl(
     ...     "Default (security dependencies and recommended updates"
@@ -410,7 +447,7 @@ change it.
     ( ) Use the same components used for each source in the Ubuntu
         primary archive.
     (*) Unsupported component (main)
-    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> admin_browser.getLink('Edit PPA dependencies').click()
 
 
@@ -418,9 +455,9 @@ change it.
 
 The form can perform multiple actions in a single submit.
 
-First we will create a PPA dependency for No privileged' PPA.
+First we will create a PPA dependency for 'No privileged' PPA.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~no-priv/ubuntu/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for No Privileges Person
@@ -450,12 +487,12 @@ from 'Mark Shuttleworth' PPA and modify the primary dependency to
 RELEASE.
 
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['no-priv/ppa']
+    ...     name="field.selected_dependencies").value = ['~no-priv/ubuntu/ppa']
 
     >>> admin_browser.getControl(
     ...     "Use all Ubuntu components available.").selected = True
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~mark/ubuntu/ppa'
 
     >>> admin_browser.getControl(
     ...     "Basic (only released packages).").selected = True
@@ -496,7 +533,7 @@ processed.
 Primary dependencies are presented with pocket information in the PPA
 index page (see `IArchivedependency.title`).
 
-    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> print admin_browser.title
     PPA for Celso Providelo : Celso Providelo
 
@@ -513,9 +550,9 @@ PPA context page and the action won't be executed.
 
     >>> admin_browser.getLink('Edit PPA dependencies').click()
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
+    >>> admin_browser.getControl("Add PPA dependency").value = '~no-priv/ubuntu/ppa'
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['mark/ppa']
+    ...     name="field.selected_dependencies").value = ['~mark/ubuntu/ppa']
     >>> admin_browser.getControl(
     ...     "Default (security dependencies and recommended updates)."
     ...     ).selected = True

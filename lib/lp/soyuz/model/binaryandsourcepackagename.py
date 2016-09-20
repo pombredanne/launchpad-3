@@ -8,7 +8,7 @@ __all__ = [
 ]
 
 from sqlobject import StringCol
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.services.database.sqlbase import SQLBase
@@ -19,10 +19,9 @@ from lp.services.webapp.vocabulary import (
 from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 
 
+@implementer(IBinaryAndSourcePackageName)
 class BinaryAndSourcePackageName(SQLBase):
     """See IBinaryAndSourcePackageName"""
-
-    implements(IBinaryAndSourcePackageName)
 
     _table = 'BinaryAndSourcePackageNameView'
     _idName = 'name'

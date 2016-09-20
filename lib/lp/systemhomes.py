@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
@@ -23,7 +23,7 @@ from lazr.restful import ServiceRootResource
 from lazr.restful.interfaces import ITopLevelEntryLink
 from storm.expr import Max
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.bugs.adapters.bug import convert_to_information_type
@@ -47,6 +47,7 @@ from lp.code.interfaces.codehosting import (
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
+from lp.code.interfaces.gitapi import IGitApplication
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication,
     IHWDeviceSet,
@@ -78,37 +79,45 @@ from lp.translations.interfaces.translationsoverview import (
     )
 
 
+@implementer(ICodehostingApplication)
 class CodehostingApplication:
     """Codehosting End-Point."""
-    implements(ICodehostingApplication)
 
     title = "Codehosting API"
 
 
+@implementer(ICodeImportSchedulerApplication)
 class CodeImportSchedulerApplication:
     """CodeImportScheduler End-Point."""
-    implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
 
 
+@implementer(IGitApplication)
+class GitApplication:
+
+    title = "Git API"
+
+
+@implementer(IPrivateMaloneApplication)
 class PrivateMaloneApplication:
     """ExternalBugTracker authentication token end-point."""
-    implements(IPrivateMaloneApplication)
 
     title = "Launchpad Bugs."
 
 
+@implementer(IMailingListApplication)
 class MailingListApplication:
-    implements(IMailingListApplication)
+    pass
 
 
+@implementer(IFeedsApplication)
 class FeedsApplication:
-    implements(IFeedsApplication)
+    pass
 
 
+@implementer(IMaloneApplication)
 class MaloneApplication:
-    implements(IMaloneApplication)
 
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
@@ -194,15 +203,15 @@ class MaloneApplication:
         return []
 
 
+@implementer(IBazaarApplication)
 class BazaarApplication:
-    implements(IBazaarApplication)
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
 
 
+@implementer(IRosettaApplication)
 class RosettaApplication:
-    implements(IRosettaApplication)
 
     def __init__(self):
         self.title = 'Rosetta: Translations in the Launchpad'
@@ -269,9 +278,9 @@ class RosettaApplication:
         return stats.value('translator_count')
 
 
+@implementer(IHWDBApplication, ITopLevelEntryLink)
 class HWDBApplication:
     """See `IHWDBApplication`."""
-    implements(IHWDBApplication, ITopLevelEntryLink)
 
     link_name = 'hwdb'
     entry_type = IHWDBApplication
@@ -382,13 +391,13 @@ class HWDBApplication:
             bug_ids, bug_tags, affected_by_bug, subscribed_to_bug, user)
 
 
+@implementer(IWebServiceApplication, ICanonicalUrlData)
 class WebServiceApplication(ServiceRootResource):
     """See `IWebServiceApplication`.
 
     This implementation adds a 'cached_wadl' attribute, which starts
     out as an empty dict and is populated as needed.
     """
-    implements(IWebServiceApplication, ICanonicalUrlData)
 
     inside = None
     path = ''
@@ -439,5 +448,6 @@ class WebServiceApplication(ServiceRootResource):
         return self.__class__.cached_wadl[version]
 
 
+@implementer(ITestOpenIDApplication)
 class TestOpenIDApplication:
-    implements(ITestOpenIDApplication)
+    pass

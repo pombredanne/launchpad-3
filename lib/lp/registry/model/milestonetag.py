@@ -22,7 +22,7 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.validators.name import valid_name
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
@@ -54,9 +54,8 @@ class MilestoneTag(object):
             self.date_created = date_created
 
 
+@implementer(IProjectGroupMilestoneTag)
 class ProjectGroupMilestoneTag(MilestoneData):
-
-    implements(IProjectGroupMilestoneTag)
 
     def __init__(self, target, tags):
         self.target = target
@@ -93,7 +92,7 @@ class ProjectGroupMilestoneTag(MilestoneData):
             tables=[Milestone, Product],
             where=And(
                 Milestone.productID == Product.id,
-                Product.project == self.target,
+                Product.projectgroup == self.target,
                 tag_constraints))
 
 

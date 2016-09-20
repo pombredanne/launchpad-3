@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -35,8 +35,8 @@ from storm.locals import (
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
@@ -97,9 +97,6 @@ from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
-    )
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.packagesetsources import PackagesetSources
@@ -312,16 +309,17 @@ def eager_load_dsds(dsds):
         if spn_id in source_pubs_for_release:
             spph = source_pubs_for_release[spn_id]
             cache.source_package_release = (
-                DistroSeriesSourcePackageRelease(
-                    dsd.derived_series,
+                DistributionSourcePackageRelease(
+                    dsd.derived_series.distribution,
                     spph.sourcepackagerelease))
         else:
             cache.source_package_release = None
         if spn_id in parent_source_pubs_for_release:
             spph = parent_source_pubs_for_release[spn_id]
             cache.parent_source_package_release = (
-                DistroSeriesSourcePackageRelease(
-                    dsd.parent_series, spph.sourcepackagerelease))
+                DistributionSourcePackageRelease(
+                    dsd.parent_series.distribution,
+                    spph.sourcepackagerelease))
         else:
             cache.parent_source_package_release = None
         cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
@@ -332,17 +330,13 @@ def eager_load_dsds(dsds):
         SourcePackageRecipeBuild, sprs,
         ("source_package_recipe_build_id",))
 
-    # SourcePackageRelease.uploader can end up getting the owner of
-    # the DSC signing key.
-    gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
-
     # Load DistroSeriesDifferenceComment owners, SourcePackageRecipeBuild
     # requesters, GPGKey owners, and SourcePackageRelease creators.
     person_ids = set().union(
         (dsdc.message.ownerID for dsdc in latest_comments),
         (sprb.requester_id for sprb in sprbs),
-        (gpgkey.ownerID for gpgkey in gpgkeys),
-        (spr.creatorID for spr in sprs))
+        (spr.creatorID for spr in sprs),
+        (spr.signing_key_owner_id for spr in sprs))
     uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
         person_ids, need_validity=True)
     list(uploaders)
@@ -362,10 +356,10 @@ def get_comment_with_status_change(status, new_status, comment):
     return new_comment
 
 
+@implementer(IDistroSeriesDifference)
+@provider(IDistroSeriesDifferenceSource)
 class DistroSeriesDifference(StormBase):
     """See `DistroSeriesDifference`."""
-    implements(IDistroSeriesDifference)
-    classProvides(IDistroSeriesDifferenceSource)
     __storm_table__ = 'DistroSeriesDifference'
 
     id = Int(primary=True)
@@ -465,7 +459,7 @@ class DistroSeriesDifference(StormBase):
             name_matches = [SPN.name == name_filter]
             try:
                 packageset = getUtility(IPackagesetSet).getByName(
-                    name_filter, distroseries=distro_series)
+                    distro_series, name_filter)
             except NoSuchPackageSet:
                 packageset = None
             if packageset is not None:
@@ -702,8 +696,8 @@ class DistroSeriesDifference(StormBase):
         if pub is None:
             return None
         else:
-            return DistroSeriesSourcePackageRelease(
-                distro_series, pub.sourcepackagerelease)
+            return DistributionSourcePackageRelease(
+                distro_series.distribution, pub.sourcepackagerelease)
 
     @cachedproperty
     def base_distro_source_package_release(self):

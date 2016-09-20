@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification interfaces."""
@@ -18,8 +18,11 @@ import httplib
 
 from lazr.restful.declarations import (
     call_with,
+    collection_default_content,
     error_status,
+    export_as_webservice_collection,
     export_as_webservice_entry,
+    export_factory_operation,
     export_operation_as,
     export_write_operation,
     exported,
@@ -273,13 +276,12 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
     # using setTarget() as the mutator.
     target = exported(
         ReferenceChoice(
-            title=_('For'), required=True, vocabulary='DistributionOrProduct',
+            title=_('For'), required=True, readonly=True,
+            vocabulary='DistributionOrProduct',
             description=_(
                 "The project for which this proposal is being made."),
             schema=ISpecificationTarget),
-        as_of="devel",
-        readonly=True,
-        )
+        as_of="devel")
 
     productseries = Choice(
         title=_('Series Goal'), required=False,
@@ -632,12 +634,23 @@ class ISpecificationEditRestricted(Interface):
         :param target: an IProduct or IDistribution.
         """
 
+    @mutator_for(ISpecificationView['target'])
+    @operation_parameters(
+        target=copy_field(ISpecificationView['target']))
+    @export_write_operation()
+    @operation_for_version('devel')
     def retarget(target):
         """Move the spec to the given target.
 
         The new target must be an IProduct or IDistribution.
         """
 
+    @mutator_for(ISpecificationPublic['information_type'])
+    @call_with(who=REQUEST_USER)
+    @operation_parameters(
+        information_type=copy_field(ISpecificationPublic['information_type']))
+    @export_write_operation()
+    @operation_for_version('devel')
     def transitionToInformationType(information_type, who):
         """Change the information type of the Specification."""
 
@@ -689,21 +702,23 @@ class ISpecification(ISpecificationPublic, ISpecificationView,
         :param new_work_items: Work items to set.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('devel')
-    def linkBug(bug):
+    def linkBug(bug, user=None, check_permissions=True):
         """Link a bug to this specification.
 
         :param bug: IBug to link.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('devel')
-    def unlinkBug(bug):
+    def unlinkBug(bug, user=None, check_permissions=True):
         """Unlink a bug to this specification.
 
         :param bug: IBug to unlink.
@@ -712,6 +727,11 @@ class ISpecification(ISpecificationPublic, ISpecificationView,
 
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
+    export_as_webservice_collection(ISpecification)
+
+    @collection_default_content()
+    def empty_list():
+        """Return an empty set - only exists to keep lazr.restful happy."""
 
     displayname = Attribute('Displayname')
 
@@ -729,7 +749,7 @@ class ISpecificationSet(IHasSpecifications):
         in the count.
 
         :param product_series: ProductSeries object.
-        :return: A list of tuples containing (status_id, count).
+        :return: A list of tuples containing (status, count).
         """
 
     def getByURL(url):
@@ -739,10 +759,21 @@ class ISpecificationSet(IHasSpecifications):
         """Return the specification with the given name for the given pillar.
         """
 
-    def new(name, title, specurl, summary, definition_status,
-        owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None,
-        priority=SpecificationPriority.UNDEFINED):
+    @call_with(owner=REQUEST_USER)
+    @export_operation_as('createSpecification')
+    @operation_parameters(
+        target=Reference(
+            schema=ISpecificationTarget, required=True,
+            title=(u"The product or distribution context of this "
+                   u"specification.")))
+    @export_factory_operation(
+        ISpecification, ['name', 'title', 'specurl', 'summary',
+                         'definition_status', 'assignee', 'drafter',
+                         'whiteboard'])
+    @operation_for_version('devel')
+    def new(name, title, specurl, summary, definition_status, owner,
+            target, approver=None, assignee=None, drafter=None,
+            whiteboard=None, information_type=None):
         """Create a new specification."""
 
     def getDependencyDict(specifications):

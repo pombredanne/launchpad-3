@@ -16,7 +16,7 @@ from zope.formlib.widget import (
     CustomWidgetFactory,
     SimpleInputWidget,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import (
     Choice,
     Datetime,
@@ -38,10 +38,9 @@ class IAnnouncementDateWidget(ISimpleInputWidget):
     """A widget for selecting the date of a news item."""
 
 
+@implementer(IAlwaysSubmittedWidget)
 class AnnouncementDateWidget(SimpleInputWidget):
     """See IAnnouncementDateWidget."""
-
-    implements(IAlwaysSubmittedWidget)
 
     def __init__(self, context, request):
         SimpleInputWidget.__init__(self, context, request)
@@ -121,6 +120,4 @@ class AnnouncementDateWidget(SimpleInputWidget):
         elif action == "specific":
             return announcement_date
         else:
-            raise AssertionError, 'Unknown action in AnnouncementDateWidget'
-
-
+            raise AssertionError('Unknown action in AnnouncementDateWidget')

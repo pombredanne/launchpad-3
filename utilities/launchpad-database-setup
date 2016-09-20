@@ -20,7 +20,7 @@ fi
 
 for pgversion in 9.1 9.3
 do
-  sudo grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
+  sudo grep -qs "^auto" /etc/postgresql/$pgversion/main/start.conf
   if [ $? -eq 0 ]; then
     break
   fi

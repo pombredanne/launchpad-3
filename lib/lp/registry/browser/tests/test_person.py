@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,6 +7,7 @@ import doctest
 import email
 from textwrap import dedent
 
+from lazr.restful.utils import get_current_browser_request
 import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
@@ -15,9 +16,11 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.app.enums import InformationType
@@ -39,16 +42,24 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
+from lp.services.gpg.interfaces import (
+    GPG_HIDE_PERSON_KEY_LISTING,
+    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
+    )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
 from lp.services.mail import stub
+from lp.services.propertycache import clear_property_cache
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -63,6 +74,7 @@ from lp.testing import (
     login_person,
     monkey_patch,
     person_logged_in,
+    record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -81,10 +93,87 @@ from lp.testing.pages import (
     find_tag_by_id,
     setupBrowserForUser,
     )
+from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
+
+class TestPersonNavigation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertRedirect(self, path, redirect):
+        view = test_traverse(path)[1]
+        self.assertIsInstance(view, RedirectionView)
+        self.assertEqual(':/' + redirect, removeSecurityProxy(view).target)
+
+    def test_traverse_archive_distroful(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        in_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertEqual(archive, test_traverse(in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/devel' + in_suf)[0])
+        self.assertEqual(archive, test_traverse('/api/1.0' + in_suf)[0])
+
+    def test_traverse_archive_distroless(self):
+        # Pre-mid-2014 distroless PPA URLs redirect to the new ones.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        in_suf = '/~%s/+archive/%s' % (archive.owner.name, archive.name)
+        out_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertRedirect(in_suf, out_suf)
+        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+        # 1.0 API requests don't redirect, since some manually construct
+        # URLs and don't cope with redirects (most notably the Python 2
+        # implementation of apt-add-repository).
+        self.assertEqual(archive, test_traverse('/api/1.0' + out_suf)[0])
+
+    def test_traverse_archive_distroless_implies_ubuntu(self):
+        # The distroless PPA redirect only finds Ubuntu PPAs, since
+        # distroful URLs were implemented as a requirement for
+        # non-Ubuntu PPAs.
+        other_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution())
+        with ExpectedException(NotFound):
+            test_traverse(
+                '/~%s/+archive/%s' % (
+                    other_archive.owner.name, other_archive.name))
+
+    def test_traverse_archive_redirects_nameless(self):
+        # Pre-2009 nameless PPA URLs redirect to the new ones.
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, name="ppa")
+        in_suf = '/~%s/+archive' % archive.owner.name
+        out_suf = '/~%s/+archive/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertRedirect(in_suf, out_suf)
+        self.assertRedirect('/api/devel' + in_suf, '/api/devel' + out_suf)
+        self.assertRedirect('/api/1.0' + in_suf, '/api/1.0' + out_suf)
+
+    def test_traverse_git_repository_project(self):
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        url = "/~%s/%s/+git/%s" % (
+            repository.owner.name, project.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
+
+    def test_traverse_git_repository_package(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(target=dsp)
+        url = "/~%s/%s/+source/%s/+git/%s" % (
+            repository.owner.name, dsp.distribution.name,
+            dsp.sourcepackagename.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
+
+    def test_traverse_git_repository_personal(self):
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, target=person)
+        url = "/~%s/+git/%s" % (person.name, repository.name)
+        self.assertEqual(repository, test_traverse(url)[0])
 
 
 class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
@@ -209,20 +298,33 @@ class TestPersonIndexView(BrowserTestCase):
         view = create_initialized_view(person, '+index')
         self.assertThat(view.page_description, Equals(person_description))
 
+    def test_person_view_change_password(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=person)
+        with person_logged_in(person):
+            markup = self.get_markup(view, person)
+        password_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Change password', 'a',
+                attrs={'href': 'http://testopenid.dev/'},
+                text='Change password'))
+        self.assertThat(markup, password_match)
+
     def test_assigned_blueprints(self):
         person = self.factory.makePerson()
-
-        def make_started_spec(information_type):
-            enum = SpecificationImplementationStatus
-            return self.factory.makeSpecification(
-                implementation_status=enum.STARTED, assignee=person,
-                information_type=information_type)
-        public_spec = make_started_spec(InformationType.PUBLIC)
-        private_spec = make_started_spec(InformationType.PROPRIETARY)
+        public_spec = self.factory.makeSpecification(
+            assignee=person,
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            information_type=InformationType.PUBLIC)
+        private_name = 'super-private'
+        self.factory.makeSpecification(
+            name=private_name, assignee=person,
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            information_type=InformationType.PROPRIETARY)
         with person_logged_in(None):
             browser = self.getViewBrowser(person)
         self.assertIn(public_spec.name, browser.contents)
-        self.assertNotIn(private_spec.name, browser.contents)
+        self.assertNotIn(private_name, browser.contents)
 
     def test_only_assigned_blueprints(self):
         # Only assigned blueprints are listed, not arbitrary related
@@ -235,6 +337,85 @@ class TestPersonIndexView(BrowserTestCase):
         with person_logged_in(None):
             browser = self.getViewBrowser(person)
         self.assertNotIn(spec.name, browser.contents)
+
+    def test_show_gpg_keys_for_view_owner(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            view = create_initialized_view(person, '+index')
+            self.assertTrue(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_not_shown_for_user_with_no_gpg_keys(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertFalse(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_shown_for_user_with_gpg_keys(self):
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        view = create_initialized_view(person, '+index')
+        self.assertTrue(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_now_shown_for_owner_with_hide_keys_ff(self):
+        self.useFixture(FeatureFixture({
+            GPG_HIDE_PERSON_KEY_LISTING: True,
+        }))
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            view = create_initialized_view(person, '+index')
+            self.assertFalse(view.should_show_gpgkeys_section)
+
+    def test_gpg_keys_not_shown_for_user_with_gpg_keys_with_hide_keys_ff(self):
+        self.useFixture(FeatureFixture({
+            GPG_HIDE_PERSON_KEY_LISTING: True,
+        }))
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        view = create_initialized_view(person, '+index')
+        self.assertFalse(view.should_show_gpgkeys_section)
+
+
+class PersonIndexViewGPGTimelineTests(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def get_markup(self, view, person):
+        def fake_method():
+            return canonical_url(person)
+        with monkey_patch(view, _getURL=fake_method):
+            markup = view.render()
+        return markup
+
+    def get_timeline_for_person_index_view_render(self):
+        person = self.factory.makePerson()
+        self.factory.makeGPGKey(person)
+        view = create_initialized_view(person, '+index')
+        self.get_markup(view, person)
+        return get_request_timeline(
+            get_current_browser_request())
+
+    def assert_num_gpgservice_timeline_actions(self, expected_count, timeline):
+        self.assertEqual(
+            expected_count,
+            len([a for a in timeline.actions if 'gpgservice' in a.category]))
+
+    def test_hide_keys_ff_no_timeline_action(self):
+        self.useFixture(FeatureFixture({
+            GPG_HIDE_PERSON_KEY_LISTING: True,
+            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
+        }))
+        timeline = self.get_timeline_for_person_index_view_render()
+
+        self.assert_num_gpgservice_timeline_actions(0, timeline)
+
+    def test_one_gpg_timeline_action_when_rendering_view(self):
+        self.useFixture(FeatureFixture({
+            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
+        }))
+        timeline = self.get_timeline_for_person_index_view_render()
+
+        self.assert_num_gpgservice_timeline_actions(1, timeline)
+
+
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -525,7 +706,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         expected_msg = html_escape(
-            u"An e-mail message was sent to '%s' "
+            u"An email message was sent to '%s' "
             "with instructions on how to confirm that it belongs to you."
             % added_email)
         self.assertEqual(expected_msg, notifications[0].message)
@@ -555,7 +736,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         token_url = get_token_url_from_email(raw_msg)
         browser = setupBrowserForUser(user=self.person)
         browser.open(token_url)
-        expected_msg = u'Confirm e-mail address <code>%s</code>' % added_email
+        expected_msg = u'Confirm email address <code>%s</code>' % added_email
         self.assertIn(expected_msg, browser.contents)
         browser.getControl('Continue').click()
         # Login again to access displayname, since browser logged us out.
@@ -624,6 +805,13 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         browser = setupBrowserForUser(user=self.person)
         self.assertRaises(NotFound, browser.open, url)
 
+    def test_team_editmailinglists_not_found(self):
+        """Teams should not have a +editmailinglists page."""
+        team = self.factory.makeTeam(owner=self.person, members=[self.person])
+        url = '%s/+editmailinglists' % canonical_url(team)
+        browser = setupBrowserForUser(user=self.person)
+        self.assertRaises(NotFound, browser.open, url)
+
     def test_email_string_validation_no_email_prodvided(self):
         """+editemails should warn if no email is provided."""
         no_email = ''
@@ -665,13 +853,13 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.view = create_view(self.user, name='+participation')
 
-    def test__asParticpation_owner(self):
+    def test__asParticipation_owner(self):
         # Team owners have the role of 'Owner'.
         self.factory.makeTeam(owner=self.user)
         [participation] = self.view.active_participations
         self.assertEqual('Owner', participation['role'])
 
-    def test__asParticpation_admin(self):
+    def test__asParticipation_admin(self):
         # Team admins have the role of 'Admin'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -682,7 +870,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Admin', participation['role'])
 
-    def test__asParticpation_member(self):
+    def test__asParticipation_member(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -690,7 +878,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Member', participation['role'])
 
-    def test__asParticpation_without_mailing_list(self):
+    def test__asParticipation_without_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         login_person(team.teamowner)
@@ -698,7 +886,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('&mdash;', participation['subscribed'])
 
-    def test__asParticpation_unsubscribed_to_mailing_list(self):
+    def test__asParticipation_unsubscribed_to_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         self.factory.makeMailingList(team, team.teamowner)
@@ -707,7 +895,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Not subscribed', participation['subscribed'])
 
-    def test__asParticpation_subscribed_to_mailing_list(self):
+    def test__asParticipation_subscribed_to_mailing_list(self):
         # The default team role is 'Member'.
         team = self.factory.makeTeam()
         mailing_list = self.factory.makeMailingList(team, team.teamowner)
@@ -774,6 +962,33 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual('A', participations[1]['via'])
         self.assertEqual('B, A', participations[2]['via'])
 
+    def test_active_participations_public_via_private_team(self):
+        # Private teams that grant a user access to public teams are listed,
+        # but redacted if the requesting user does not have access to them.
+        owner = self.factory.makePerson()
+        direct_team = self.factory.makeTeam(
+            owner=owner, name='a', visibility=PersonVisibility.PRIVATE)
+        indirect_team = self.factory.makeTeam(owner=owner, name='b')
+        login_person(owner)
+        direct_team.addMember(self.user, owner)
+        indirect_team.addMember(direct_team, owner)
+        # The private team is included in active_participations and via.
+        login_person(self.user)
+        view = create_view(
+            self.user, name='+participation', principal=self.user)
+        participations = view.active_participations
+        self.assertEqual(2, len(participations))
+        self.assertIsNone(participations[0]['via'])
+        self.assertEqual('A', participations[1]['via'])
+        # The private team is not included in active_participations and via.
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_view(
+            self.user, name='+participation', principal=observer)
+        participations = view.active_participations
+        self.assertEqual(1, len(participations))
+        self.assertEqual('[private team]', participations[0]['via'])
+
     def test_has_participations_false(self):
         participations = self.view.active_participations
         self.assertEqual(0, len(participations))
@@ -784,6 +999,26 @@ class TestPersonParticipationView(TestCaseWithFactory):
         participations = self.view.active_participations
         self.assertEqual(1, len(participations))
         self.assertEqual(True, self.view.has_participations)
+
+    def test_mailing_list_subscriptions_query_count(self):
+        # Additional mailing list subscriptions do not add additional queries.
+        def create_subscriptions():
+            direct_team = self.factory.makeTeam(members=[self.user])
+            direct_list = self.factory.makeMailingList(
+                direct_team, direct_team.teamowner)
+            direct_list.subscribe(self.user)
+            indirect_team = self.factory.makeTeam(members=[direct_team])
+            indirect_list = self.factory.makeMailingList(
+                indirect_team, indirect_team.teamowner)
+            indirect_list.subscribe(self.user)
+
+        def get_participations():
+            clear_property_cache(self.view)
+            return list(self.view.active_participations)
+
+        recorder1, recorder2 = record_two_runs(
+            get_participations, create_subscriptions, 5)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestPersonRelatedPackagesView(TestCaseWithFactory):
@@ -1352,21 +1587,12 @@ class BugTaskViewsTestBase:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
         self.assertThat(recorder, HasQueryCount(LessThan(6)))
 
-    def test_context_description(self):
-        # view.context_description returns a string that can be used
-        # in texts like "Bugs in $context_descirption"
-        view = create_initialized_view(self.person, self.view_name)
-        self.assertEqual(
-            self.expected_context_description % self.person.displayname,
-            view.context_description)
-
 
 class TestPersonRelatedBugTaskSearchListingView(
     BugTaskViewsTestBase, TestCaseWithFactory):
     """Tests for PersonRelatedBugTaskSearchListingView."""
 
     view_name = '+bugs'
-    expected_context_description = 'related to %s'
 
     def setUp(self):
         super(TestPersonRelatedBugTaskSearchListingView, self).setUp()
@@ -1383,7 +1609,6 @@ class TestPersonAssignedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+assignedbugs'
-    expected_context_description = 'assigned to %s'
 
     def setUp(self):
         super(TestPersonAssignedBugTaskSearchListingView, self).setUp()
@@ -1397,7 +1622,6 @@ class TestPersonCommentedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+commentedbugs'
-    expected_context_description = 'commented on by %s'
 
     def setUp(self):
         super(TestPersonCommentedBugTaskSearchListingView, self).setUp()
@@ -1411,7 +1635,6 @@ class TestPersonReportedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+reportedbugs'
-    expected_context_description = 'reported by %s'
 
     def setUp(self):
         super(TestPersonReportedBugTaskSearchListingView, self).setUp()
@@ -1425,7 +1648,6 @@ class TestPersonSubscribedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+subscribedbugs'
-    expected_context_description = '%s is subscribed to'
 
     def setUp(self):
         super(TestPersonSubscribedBugTaskSearchListingView, self).setUp()
@@ -1440,7 +1662,6 @@ class TestPersonAffectingBugTaskSearchListingView(
     """Tests for PersonAffectingBugTaskSearchListingView."""
 
     view_name = '+affectingbugs'
-    expected_context_description = 'affecting %s'
 
     def setUp(self):
         super(TestPersonAffectingBugTaskSearchListingView, self).setUp()

@@ -25,7 +25,7 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -63,6 +63,7 @@ class ArchiveUploadType(EnumeratedType):
     MIXED_ONLY = Item("Mixed only")
 
 
+@implementer(IArchiveUploadPolicy)
 class AbstractUploadPolicy:
     """Encapsulate the policy of an upload to a launchpad archive.
 
@@ -72,7 +73,6 @@ class AbstractUploadPolicy:
     tests themselves and they operate on NascentUpload instances in order
     to verify them.
     """
-    implements(IArchiveUploadPolicy)
 
     name = 'abstract'
     options = None
@@ -88,10 +88,10 @@ class AbstractUploadPolicy:
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
-        # future_time_grace is in seconds. 28800 is 8 hours
-        self.future_time_grace = 8 * HOURS
+        # future_time_grace is in seconds
+        self.future_time_grace = 24 * HOURS
         # The earliest year we accept in a deb's file's mtime
-        self.earliest_year = 1984
+        self.earliest_year = 1975
 
     def validateUploadType(self, upload):
         """Check that the type of the given upload is accepted by this policy.
@@ -144,7 +144,6 @@ class AbstractUploadPolicy:
             # We never override the policy
             return
 
-        self.distroseriesname = dr_name
         self.distroseries, self.pocket = self.distro.getDistroSeriesAndPocket(
             dr_name, follow_aliases=True)
 
@@ -162,21 +161,8 @@ class AbstractUploadPolicy:
                 # to copy archives may go into *any* pocket.
                 return
 
-        # reject PPA uploads by default
-        self.rejectPPAUploads(upload)
-
         # execute policy specific checks
         self.policySpecificChecks(upload)
-
-    def rejectPPAUploads(self, upload):
-        """Reject uploads targeted to PPA.
-
-        We will only allow it on 'insecure' and 'buildd' policy because we
-        ensure the uploads are signed.
-        """
-        if upload.is_ppa:
-            upload.reject(
-                "PPA upload are not allowed in '%s' policy" % self.name)
 
     def policySpecificChecks(self, upload):
         """Implement any policy-specific checks in child."""
@@ -194,7 +180,7 @@ class AbstractUploadPolicy:
 
     def autoApproveNew(self, upload):
         """Return whether the NEW upload should be automatically approved."""
-        return False
+        return not self.archive.is_main
 
 
 class InsecureUploadPolicy(AbstractUploadPolicy):
@@ -216,10 +202,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             self.pocket = PackagePublishingPocket.PROPOSED
             self.redirect_warning = "Redirecting %s to %s-proposed." % (
                 self.distroseries, self.distroseries)
-
-    def rejectPPAUploads(self, upload):
-        """Insecure policy allows PPA upload."""
-        return False
 
     def checkArchiveSizeQuota(self, upload):
         """Reject the upload if target archive size quota will be exceeded.
@@ -257,7 +239,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 "if you need more space." % (
                 new_size / MEGA, self.archive.authorized_size))
         else:
-            # No need to warn user about his PPA's size.
+            # No need to warn user about their PPA's size.
             pass
 
     def policySpecificChecks(self, upload):
@@ -319,10 +301,6 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         # XXX: dsilvers 2005-10-14 bug=3135:
         # Implement this to check the buildid etc.
         pass
-
-    def rejectPPAUploads(self, upload):
-        """Buildd policy allows PPA upload."""
-        return False
 
     def validateUploadType(self, upload):
         if upload.sourceful and upload.binaryful:

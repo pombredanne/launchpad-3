@@ -454,7 +454,7 @@
             rootsite="translations"/>
         <browser:menus
             module="lp.translations.browser.translationmessage"
-            classes="CurrentTranslationMessageAppMenus"/>
+            classes="CurrentTranslationMessageMenu"/>
         <browser:defaultView
             for="lp.translations.interfaces.translationmessage.ITranslationMessage"
             name="+index"/>
@@ -475,7 +475,20 @@
             permission="launchpad.AnyPerson"
             template="../templates/translationmessage-suggestions.pt"/>
 
-<!-- SourcePackage translation pages -->
+    <!-- DistributionSourcePackage translation pages -->
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        name="+translations"
+        layer="lp.translations.publisher.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        name="+translations"
+        class="lp.translations.browser.distributionsourcepackage.DistributionSourcePackageView"
+        permission="zope.Public"
+        template="../templates/distributionsourcepackage-translations.pt"/>
+
+    <!-- SourcePackage translation pages -->
 
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

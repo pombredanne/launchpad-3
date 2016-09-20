@@ -118,6 +118,9 @@ the new sprint.
     ...     'Starting Date and Time').value = '10 Oct 2006 09:15 '
     >>> user_browser.getControl(
     ...     'Finishing Date and Time').value = '13 Oct 2006 16:00'
+    >>> user_browser.getControl(
+    ...     'Is the sprint being held in a physical '
+    ...     'location?').selected = False
     >>> user_browser.getControl('Add Sprint').click()
 
     >>> user_browser.url
@@ -166,7 +169,7 @@ available to those who have permissions to edit that sprint.
 
     >>> anon_browser.open('http://launchpad.dev/sprints/ubz')
     >>> print anon_browser.title
-    Ubuntu Below Zero (sprint or meeting)
+    Ubuntu Below Zero : Meetings
 
     >>> anon_browser.getLink('Change details')
     Traceback (most recent call last):
@@ -179,7 +182,7 @@ We will log in as Sample Person and edit the ubz sprint.
 
     >>> browser.open('http://launchpad.dev/sprints/ubz')
     >>> print browser.title
-    Ubuntu Below Zero (sprint or meeting)
+    Ubuntu Below Zero : Meetings
 
     >>> address = 'Holiday Inn Select, Downtown Montreal, Canada'
     >>> address in browser.contents
@@ -215,7 +218,7 @@ should receive a nice error message.
 We fix the dates and change the address, we expect to be redirected to the
 sprint home page.
 
-    >>> browser.getControl('Timezone').value = ['America/Montreal']
+    >>> browser.getControl('Timezone').value = ['America/Toronto']
     >>> browser.getControl(
     ...     'Starting Date and Time').value = '2006-01-10 08:30'
     >>> browser.getControl(
@@ -247,36 +250,37 @@ dates will be changed too, since they follow local time:
     http://launchpad.dev/sprints/ubz
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'start-end'))
-    Starts: 08:30 CST on Tuesday, 2006-01-10
-    Ends: 17:00 CST on Sunday, 2006-02-12
+    Starts: 08:30 ACST on Tuesday, 2006-01-10
+    Ends: 17:00 ACST on Sunday, 2006-02-12
 
 
 We should be able to see the workload of a sprint:
 
-  >>> anon_browser.open('http://launchpad.dev/sprints/ubz/+assignments')
-  >>> print anon_browser.title
-  Assignments : Blueprints : Ubuntu Below Zero : Meetings
+    >>> anon_browser.open('http://launchpad.dev/sprints/ubz/+assignments')
+    >>> print anon_browser.title
+    Assignments : Blueprints : Ubuntu Below Zero : Meetings
 
 We should be able to see the spec assignment table of a sprint:
 
-  >>> mainarea = find_main_content(anon_browser.contents)
-  >>> for header in mainarea.findAll('th'):
-  ...     print header.renderContents()
-  Priority
-  Name
-  Definition
-  Delivery
-  Assignee
-  Drafter
-  Approver
+    >>> mainarea = find_main_content(anon_browser.contents)
+    >>> for header in mainarea.findAll('th'):
+    ...     print header.renderContents()
+    Priority
+    Name
+    Definition
+    Delivery
+    Assignee
+    Drafter
+    Approver
 
 And we should be able to see the workload page of a sprint even when there's
 no spec assigned to people.
 
-  >>> anon_browser.open('http://launchpad.dev/sprints/ltsponsteroids/+assignments')
-  >>> notice = find_tag_by_id(anon_browser.contents, 'no-blueprints')
-  >>> print extract_text(notice)
-  There are no open blueprints.
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/sprints/ltsponsteroids/+assignments')
+    >>> notice = find_tag_by_id(anon_browser.contents, 'no-blueprints')
+    >>> print extract_text(notice)
+    There are no open blueprints.
 
 
 Sprint Registration
@@ -308,6 +312,9 @@ user will be available to participate in any session.
 
     >>> browser.getControl('To').value
     '2006-02-12 17:00'
+
+    >>> browser.getControl(name='field.is_physical').value
+    ['yes']
 
 We accept a starting date up to one day before the sprint starts (which
 we will map to starting at the start of the sprint), and a departure
@@ -403,8 +410,11 @@ start and end of the conference.
     >>> browser.getControl('To').value
     '2006-02-12 17:00'
 
+    >>> browser.getControl(name='field.is_physical').value
+    ['yes']
+
 Sample Person can set a specific start and end time for participation,
-and specify that he is registering Carlos.
+and specify that they are registering Carlos.
 
     >>> browser.getControl('Attendee').value = 'carlos@canonical.com'
     >>> browser.getControl('From').value = '2006-01-10 18:30:00'
@@ -422,6 +432,7 @@ Sample Person registers Salgado as well.
 
     >>> browser.getControl('Attendee').value = (
     ...     'guilherme.salgado@canonical.com')
+    >>> browser.getControl(name='field.is_physical').value = ['no']
     >>> browser.getControl('Register').click()
 
 And verifies that Carlos and Salgado are now listed:
@@ -461,13 +472,22 @@ First, we add a couple of IRC nicknames for Carlos.
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/sprints/ubz')
     >>> carlos_browser.getLink('Export attendees to CSV').click()
-    >>> print browser.headers['content-type']
+    >>> print carlos_browser.headers['content-type']
     text/csv
 
     >>> admin_browser.open('http://launchpad.dev/sprints/ubz')
     >>> admin_browser.getLink('Export attendees to CSV').click()
-    >>> print browser.headers['content-type']
+    >>> print admin_browser.headers['content-type']
     text/csv
+
+The resulting CSV file lists physical attendance correctly.
+
+    >>> import csv
+    >>> from StringIO import StringIO
+    >>> ubz_csv = list(csv.DictReader(StringIO(browser.contents)))
+    >>> [(row["Launchpad username"], row["Physically present"])
+    ...     for row in ubz_csv]
+    [('carlos', 'True'), ('salgado', 'False'), ('name12', 'True')]
 
 Unregistered and anonymous users cannot access the CSV report.
 
@@ -482,4 +502,20 @@ Unregistered and anonymous users cannot access the CSV report.
     ...
     Unauthorized:...
 
+Registering somebody for a remote-only sprint doesn't offer the choice of
+physical or remote attendance, and the CSV report always reports such people
+as attending remotely.
 
+    >>> browser.open('http://launchpad.dev/sprints/ltsponsteroids')
+    >>> browser.getLink('Register yourself').click()
+    >>> browser.getControl(name='field.is_physical')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+    >>> browser.getControl('Register').click()
+
+    >>> browser.getLink('Export attendees to CSV').click()
+    >>> ltsp_csv = list(csv.DictReader(StringIO(browser.contents)))
+    >>> [(row["Launchpad username"], row["Physically present"])
+    ...     for row in ltsp_csv]
+    [('name12', 'False')]

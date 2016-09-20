@@ -125,8 +125,6 @@ time goes on.
     last_scanned_id: None
     lifecycle_status: u'Development'
     linked_bugs_collection_link: u'http://.../~eric/fooix/trunk/linked_bugs'
-    merge_queue_config: None
-    merge_queue_link: None
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
@@ -146,6 +144,7 @@ time goes on.
     unique_name: u'~eric/fooix/trunk'
     url: None
     web_link: u'http://code.../~eric/fooix/trunk'
+    webhooks_collection_link: u'http://.../~eric/fooix/trunk/webhooks'
     whiteboard: None
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
@@ -232,9 +231,9 @@ Project group branches
 Branches are also accessible for a project group.
 
     >>> login('admin@canonical.com')
-    >>> project = factory.makeProject(name='widgets')
-    >>> fooix.project = project
-    >>> blob = factory.makeProduct(name='blob', project=project)
+    >>> projectgroup = factory.makeProject(name='widgets')
+    >>> fooix.projectgroup = projectgroup
+    >>> blob = factory.makeProduct(name='blob', projectgroup=projectgroup)
     >>> branch = factory.makeProductBranch(product=blob, name='bar')
     >>> branch.owner.name = 'mary'
     >>> logout()

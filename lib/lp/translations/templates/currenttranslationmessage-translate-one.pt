@@ -17,7 +17,7 @@
   </td>
   <td style="text-align: right;">
     <div tal:attributes="id string:${view/html_id}">
-      <span tal:replace="view/sequence">1</span>.
+      <span tal:replace="context/sequence">1</span>.
       <input
         type="hidden"
         tal:condition="view/form_is_writeable"

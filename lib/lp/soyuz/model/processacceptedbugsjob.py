@@ -1,15 +1,17 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
-    "close_bug_ids_for_sourcepackagerelease",
+    'close_bugs_for_queue_item',
+    'close_bugs_for_sourcepublication',
     "ProcessAcceptedBugsJob",
     ]
 
 import logging
 
+from debian.deb822 import Deb822Dict
 from storm.locals import (
     And,
     Int,
@@ -18,13 +20,16 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
+from zope.security.management import getSecurityPolicy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.config import config
 from lp.services.database.interfaces import (
@@ -34,6 +39,13 @@ from lp.services.database.interfaces import (
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    re_bug_numbers,
+    re_closes,
+    re_lp_closes,
+    )
 from lp.soyuz.interfaces.processacceptedbugsjob import (
     IProcessAcceptedBugsJob,
     IProcessAcceptedBugsJobSource,
@@ -61,20 +73,154 @@ def close_bug_ids_for_sourcepackagerelease(distroseries, spr, bug_ids):
                 content=content)
 
 
+def get_bug_ids_from_changes_file(changes_file):
+    """Parse the changes file and return a list of bug IDs referenced by it.
+
+    The bugs is specified in the Launchpad-bugs-fixed header, and are
+    separated by a space character. Nonexistent bug ids are ignored.
+    """
+    tags = Deb822Dict(parse_tagfile_content(changes_file.read()))
+    bugs_fixed = tags.get('Launchpad-bugs-fixed', '').split()
+    return [int(bug_id) for bug_id in bugs_fixed if bug_id.isdigit()]
+
+
+def get_bug_ids_from_changelog_entry(sourcepackagerelease, since_version):
+    """Parse the changelog_entry in the sourcepackagerelease and return a
+    list of bug IDs referenced by it.
+    """
+    changelog = sourcepackagerelease.aggregate_changelog(since_version)
+    closes = []
+    # There are 2 main regexes to match.  Each match from those can then
+    # have further multiple matches from the 3rd regex:
+    # closes: NNN, NNN
+    # lp: #NNN, #NNN
+    regexes = (
+        re_closes.finditer(changelog), re_lp_closes.finditer(changelog))
+    for regex in regexes:
+        for match in regex:
+            bug_match = re_bug_numbers.findall(match.group(0))
+            closes += map(int, bug_match)
+    return closes
+
+
+def can_close_bugs(target):
+    """Whether or not bugs should be closed in the given target.
+
+    ISourcePackagePublishingHistory and IPackageUpload are the
+    currently supported targets.
+
+    Source publications or package uploads targeted to pockets
+    PROPOSED/BACKPORTS or any other archive purpose than PRIMARY will
+    not automatically close bugs.
+    """
+    banned_pockets = (
+        PackagePublishingPocket.PROPOSED,
+        PackagePublishingPocket.BACKPORTS)
+
+    if (target.pocket in banned_pockets or
+       target.archive.purpose != ArchivePurpose.PRIMARY):
+        return False
+
+    return True
+
+
+def close_bugs_for_queue_item(queue_item, changesfile_object=None):
+    """Close bugs for a given queue item.
+
+    'queue_item' is an IPackageUpload instance and is given by the user.
+
+    'changesfile_object' is optional if not given this function will try
+    to use the IPackageUpload.changesfile, which is only available after
+    the upload is processed and committed.
+
+    In practice, 'changesfile_object' is only set when we are closing bugs
+    in upload-time (see nascentupload-closing-bugs.txt).
+
+    Skip bug-closing if the upload is target to pocket PROPOSED or if
+    the upload is for a PPA.
+
+    Set the package bugtask status to Fix Released and the changelog is added
+    as a comment.
+    """
+    if not can_close_bugs(queue_item):
+        return
+
+    if changesfile_object is None:
+        changesfile_object = queue_item.changesfile
+
+    for source_queue_item in queue_item.sources:
+        close_bugs_for_sourcepackagerelease(
+            queue_item.distroseries, source_queue_item.sourcepackagerelease,
+            changesfile_object)
+
+
+def close_bugs_for_sourcepublication(source_publication, since_version=None):
+    """Close bugs for a given sourcepublication.
+
+    Given a `ISourcePackagePublishingHistory` close bugs mentioned in
+    upload changesfile.
+    """
+    if not can_close_bugs(source_publication):
+        return
+
+    sourcepackagerelease = source_publication.sourcepackagerelease
+    changesfile_object = sourcepackagerelease.upload_changesfile
+
+    close_bugs_for_sourcepackagerelease(
+        source_publication.distroseries, sourcepackagerelease,
+        changesfile_object, since_version)
+
+
+def close_bugs_for_sourcepackagerelease(distroseries, source_release,
+                                        changesfile_object,
+                                        since_version=None):
+    """Close bugs for a given source.
+
+    Given an `IDistroSeries`, an `ISourcePackageRelease`, and a
+    corresponding changesfile object, close bugs mentioned in the
+    changesfile in the context of the source.
+
+    If changesfile_object is None and since_version is supplied,
+    close all the bugs in changelog entries made after that version and up
+    to and including the source_release's version.  It does this by parsing
+    the changelog on the sourcepackagerelease.  This could be extended in
+    the future to deal with the changes file as well but there is no
+    requirement to do so right now.
+    """
+    if since_version and source_release.changelog:
+        bug_ids_to_close = get_bug_ids_from_changelog_entry(
+            source_release, since_version=since_version)
+    elif changesfile_object:
+        bug_ids_to_close = get_bug_ids_from_changes_file(changesfile_object)
+    else:
+        return
+
+    # No bugs to be closed by this upload, move on.
+    if not bug_ids_to_close:
+        return
+
+    if getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy:
+        # We're already running in a script, so we can just close the bugs
+        # directly.
+        close_bug_ids_for_sourcepackagerelease(
+            distroseries, source_release, bug_ids_to_close)
+    else:
+        job_source = getUtility(IProcessAcceptedBugsJobSource)
+        job_source.create(distroseries, source_release, bug_ids_to_close)
+
+
+@implementer(IProcessAcceptedBugsJob)
+# Oddly, BaseRunnableJob inherits from BaseRunnableJobSource so this class
+# is both the factory for jobs (the "implementer", above) and the source for
+# runnable jobs (not the constructor of the job source, the class provides
+# the IJobSource interface itself).
+@provider(IProcessAcceptedBugsJobSource)
 class ProcessAcceptedBugsJob(StormBase, BaseRunnableJob):
     """Base class for jobs to close bugs for accepted package uploads."""
 
     __storm_table__ = "ProcessAcceptedBugsJob"
 
     config = config.IProcessAcceptedBugsJobSource
-
-    implements(IProcessAcceptedBugsJob)
-
-    # Oddly, BaseRunnableJob inherits from BaseRunnableJobSource so this class
-    # is both the factory for jobs (the "implements", above) and the source
-    # for runnable jobs (not the constructor of the job source, the class
-    # provides the IJobSource interface itself).
-    classProvides(IProcessAcceptedBugsJobSource)
 
     # The Job table contains core job details.
     job_id = Int("job", primary=True)

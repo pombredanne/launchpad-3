@@ -371,6 +371,28 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         self.assertEqual(
             'bug-notification-level-field', widget_class)
 
+    def test_unsubscribe_from_dupes(self):
+        master = self.factory.makeBug()
+        dupe = self.factory.makeBug()
+        person = self.factory.makePerson()
+
+        with person_logged_in(person):
+            dupe.markAsDuplicate(master)
+            master.subscribe(person, person)
+            dupe.subscribe(person, person)
+            import transaction
+            transaction.commit()
+
+            v = create_initialized_view(
+                master.default_bugtask, name="+subscribe",
+                form={
+                    "field.subscription": "0",
+                    "field.actions.continue": "Continue"})
+            self.assertStartsWith(
+                v._getUnsubscribeNotification(person, [dupe]),
+                "You have been unsubscribed from bug %d and 1 duplicate"
+                % master.id)
+
 
 class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
     """Tests for the BugSubscriptionsListView."""
@@ -818,7 +840,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 dumps([expected_result]), harness.view.subscriber_data_js)
 
     def test_data_person_subscription_user_excluded(self):
-        # With the subscriber logged in, he is not included in the results.
+        # With the subscriber logged in, they are not included in the results.
         bug = self._makeBugWithNoSubscribers()
         subscriber = self.factory.makePerson(
             name='a-person', displayname='Subscriber Name')

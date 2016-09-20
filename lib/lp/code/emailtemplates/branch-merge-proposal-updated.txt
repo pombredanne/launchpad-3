@@ -5,5 +5,4 @@ The proposal to merge %(source_branch)s into %(target_branch)s has been updated.
 For more details, see:
 %(proposal_url)s
 -- 
-%(proposal_url)s
 %(reason)s%(edit_subscription)s

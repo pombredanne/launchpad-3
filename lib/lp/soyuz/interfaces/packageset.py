@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Packageset interfaces."""
@@ -377,7 +377,7 @@ class IPackagesetSetEdit(Interface):
             IPerson, title=_("Person"), required=True, readonly=True,
             description=_("The person who owns this package set.")),
         distroseries=Reference(
-            IDistroSeries, title=_("Distroseries"), required=False,
+            IDistroSeries, title=_("Distroseries"), required=True,
             readonly=True, description=_(
                 "The distribution series to which the packageset "
                 "is related.")),
@@ -387,14 +387,14 @@ class IPackagesetSetEdit(Interface):
                 "The new package set will share the package set group "
                 "with this one.")))
     @export_factory_operation(IPackageset, [])
-    def new(name, description, owner, distroseries=None, related_set=None):
+    def new(name, description, owner, distroseries, related_set=None):
         """Create a new package set.
 
         :param name: the name of the package set to be created.
         :param description: the description for the package set to be created.
         :param owner: the owner of the package set to be created.
         :param distroseries: the distroseries to which the new packageset
-            is related. Defaults to the current Ubuntu series.
+            is related.
         :param related_set: the newly created package set is to be related to
             `related_set` (by being placed in the same package group).
 
@@ -409,20 +409,16 @@ class IPackagesetSet(IPackagesetSetEdit):
     export_as_webservice_collection(IPackageset)
 
     @operation_parameters(
-        name=TextLine(title=_('Package set name'), required=True),
-        distroseries=Reference(
-            IDistroSeries, title=_("Distroseries"), required=False,
-            readonly=True, description=_(
-                "The distribution series to which the packageset "
-                "is related.")))
+        name=copy_field(IPackageset['name']),
+        distroseries=copy_field(IPackageset['distroseries']))
     @operation_returns_entry(IPackageset)
     @export_read_operation()
-    def getByName(name, distroseries=None):
+    def getByName(distroseries, name):
         """Return the single package set with the given name (if any).
 
-        :param name: the name of the package set sought.
         :param distroseries: the distroseries to which the new packageset
-            is related. Defaults to the current Ubuntu series.
+            is related.
+        :param name: the name of the package set sought.
 
         :return: An `IPackageset` instance.
         :raise NoSuchPackageSet: if no package set is found.
@@ -497,6 +493,3 @@ class IPackagesetSet(IPackagesetSetEdit):
             name cannot be found.
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
-
-    def __getitem__(name):
-        """Retrieve a package set by name."""

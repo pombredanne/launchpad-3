@@ -29,6 +29,7 @@ from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import BuildContextMenu
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.testing import (
@@ -68,8 +69,9 @@ class TestBuildViews(TestCaseWithFactory):
         # current_component used by the view returns None in that case.
         spph = self.factory.makeSourcePackagePublishingHistory()
         other_das = self.factory.makeDistroArchSeries()
-        build = spph.sourcepackagerelease.createBuild(
-            other_das, PackagePublishingPocket.RELEASE, spph.archive)
+        build = getUtility(IBinaryPackageBuildSet).new(
+            spph.sourcepackagerelease, spph.archive, other_das,
+            PackagePublishingPocket.RELEASE)
         view = create_initialized_view(build, name="+index")
         self.assertEqual('unknown', view.component_name)
 
@@ -148,9 +150,9 @@ class TestBuildViews(TestCaseWithFactory):
         with person_logged_in(self.admin):
             self.assertTrue(build.can_be_retried)
         nopriv = getUtility(IPersonSet).getByName("no-priv")
-        # Mr no privileges can't retry
+        # A person with no privileges can't retry
         self.assertBuildViewRetryIsExpected(build, nopriv, False)
-        # But he can as a member of launchpad-buildd-admins
+        # But they can as a member of launchpad-buildd-admins
         buildd_admins = getUtility(IPersonSet).getByName(
             "launchpad-buildd-admins")
         with person_logged_in(self.admin):
@@ -397,7 +399,8 @@ class TestBuildViews(TestCaseWithFactory):
             # BPBs in certain states need a bit tweaking to appear in
             # the result of getBuildRecords().
             if status == BuildStatus.FULLYBUILT:
-                build.updateStatus(BuildStatus.BUILDING)
+                build.updateStatus(
+                    BuildStatus.BUILDING, force_invalid_transition=True)
                 build.updateStatus(BuildStatus.FULLYBUILT)
             elif status in (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING):
                 build.queueBuild()

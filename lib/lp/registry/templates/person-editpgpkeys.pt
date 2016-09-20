@@ -61,7 +61,7 @@
       <p tal:condition="view/key/expired" class="error message">
         The key <span tal:replace="view/key/keyid" /> cannot be validated
         because it has expired. Change the expiry date (in a terminal, enter
-        <kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> then enter
+        <kbd>gpg --edit-key <var>your@email.address</var></kbd> then enter
         <kbd>expire</kbd>), and try again.
       </p>
 
@@ -91,7 +91,7 @@
     <p>In both cases, you need to use your OpenPGP key. Here you can tell Launchpad which keys you want to use.
        (<a href="/+help-registry/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
 
-    <form tal:condition="context/gpg_keys/count"
+    <form tal:condition="context/gpg_keys"
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
@@ -100,7 +100,7 @@
       <div tal:repeat="key context/gpg_keys">
         <label>
           <input type="checkbox" name="DEACTIVATE_GPGKEY"
-                 tal:attributes="value key/id"/>
+                 tal:attributes="value key/fingerprint"/>
           <span tal:replace="key/displayname">KEY</span>
           <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
@@ -144,7 +144,7 @@
       <div tal:repeat="key context/inactive_gpg_keys">
         <label>
         <input type="checkbox" name="REACTIVATE_GPGKEY"
-               tal:attributes="value key/id"/>
+               tal:attributes="value key/fingerprint"/>
           <span tal:replace="key/displayname">KEY</span>
           <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
@@ -180,7 +180,7 @@
             </tbody>
           </table>
           <p>
-            Next, Launchpad will send e-mail to you at
+            Next, Launchpad will send email to you at
             <code tal:content="context/preferredemail/email"/> with instructions
             on finishing the process.
           </p>

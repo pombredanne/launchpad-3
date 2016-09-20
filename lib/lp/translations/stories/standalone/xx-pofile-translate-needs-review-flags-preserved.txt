@@ -54,8 +54,10 @@ The needs review flag is unset when we go back to the previous message.
 
 But a new suggestion is provided for this message.
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...                                   'msgset_130_es_suggestion_701_0'))
+    >>> import re
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents,
+    ...     re.compile(r'^msgset_130_es_suggestion_\d+_0$')))
     New suggestion
 
 

@@ -11,15 +11,14 @@ Subscription
 When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from difflib import unified_diff
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IBranchMergeProposalJobSource)
-    >>> from lp.code.model.diff import PreviewDiff
     >>> from lp.code.tests.helpers import make_merge_proposal_without_reviewers
+    >>> from lp.services.config import config
+    >>> from lp.testing.dbuser import dbuser
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
@@ -30,13 +29,15 @@ notification they would like to receive.
     >>> previewdiff = factory.makePreviewDiff(merge_proposal=bmp)
     >>> transaction.commit()
     >>> source_subscriber = factory.makePerson(
-    ...     email='source@example.com', displayname='Source Subscriber')
+    ...     email='source@example.com', name='source-subscriber',
+    ...     displayname='Source Subscriber')
     >>> _unused = bmp.source_branch.subscribe(source_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.STATUS, source_subscriber)
     >>> target_subscriber = factory.makePerson(
-    ...     email='target@example.com', displayname='Target Subscriber')
+    ...     email='target@example.com', name='target-subscriber',
+    ...     displayname='Target Subscriber')
     >>> target_subscription = bmp.target_branch.subscribe(target_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
@@ -88,8 +89,8 @@ values for the email headers and footers.
     You are subscribed to branch ...
 
 
-E-mail
-------
+Email
+-----
 
 Jobs for notifications are automagically generated when the merge proposal
 is created.  When those jobs are run, the email is sent from the registrant.
@@ -113,7 +114,8 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> bmp.next_preview_diff_job.start()
     >>> bmp.next_preview_diff_job.complete()
     >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
-    >>> job.run()
+    >>> with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+    ...     job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
@@ -136,11 +138,12 @@ An email is sent to subscribers of either branch and the default reviewer.
     ~person-name...
     >>> print notification['X-Launchpad-Message-Rationale']
     Subscriber
+    >>> print notification['X-Launchpad-Message-For']
+    source-subscriber
     >>> print notification.get_payload(decode=True)
     Eric has proposed merging
     lp://dev/~person-name...into lp://dev/~person-name...
     --
-    http://code.launchpad.dev/~person-name...
     You are subscribed to branch ...
 
 
@@ -170,17 +173,19 @@ in the email.
     >>> bmp.next_preview_diff_job.start()
     >>> bmp.next_preview_diff_job.complete()
     >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
-    >>> job.run()
+    >>> with dbuser(config.IBranchMergeProposalJobSource.dbuser):
+    ...     job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:
-    ...     print "%s, %s" % (
+    ...     print "%s, %s, %s" % (
     ...         notification['X-Envelope-To'],
-    ...         notification['X-Launchpad-Message-Rationale'])
-    bob@example.com, Reviewer
-    mary@example.com, Reviewer
-    source@example.com, Subscriber
-    target@example.com, Subscriber
+    ...         notification['X-Launchpad-Message-Rationale'],
+    ...         notification['X-Launchpad-Message-For'])
+    bob@example.com, Reviewer, bob
+    mary@example.com, Reviewer, mary
+    source@example.com, Subscriber, source-subscriber
+    target@example.com, Subscriber, target-subscriber
     >>> notification = notifications[0]
     >>> print notification.get_payload()[0].get_payload(decode=True)
     Eric has proposed merging
@@ -198,4 +203,4 @@ in the email.
     It is included in the initial email sent out.
     <BLANKLINE>
     --
-    http://code.launchpad.dev/~...
+    ...

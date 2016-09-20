@@ -47,8 +47,8 @@ should be rendered for this dependency.
 
   >>> for dep in pmount_deps:
   ...    dep.name, dep.operator, dep.version, dep.url
-  ('at', '>=', '3.14156', u'http://launchpad.dev/ubuntu/hoary/i386/at')
-  ('linux-2.6.12', None, '', u'http://launchpad.dev/ubuntu/hoary/i386/linux-2.6.12')
-  ('tramp-package', None, '', None)
+  (u'at', u'>=', u'3.14156', u'http://launchpad.dev/ubuntu/hoary/i386/at')
+  (u'linux-2.6.12', None, u'', u'http://launchpad.dev/ubuntu/hoary/i386/linux-2.6.12')
+  (u'tramp-package', None, u'', None)
 
 Other relationship groups use the same mechanism.

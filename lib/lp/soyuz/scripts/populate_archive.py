@@ -14,18 +14,17 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
+from lp.buildmaster.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
-from lp.soyuz.interfaces.processor import (
-    IProcessorSet,
-    ProcessorNotFound,
-    )
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -104,12 +103,6 @@ class ArchivePopulator(SoyuzScript):
                         "Invalid architecture tag: '%s'" % name)
             return processors
 
-        def set_archive_architectures(archive, processors):
-            """Associate the archive with the processors."""
-            aa_set = getUtility(IArchiveArchSet)
-            for processor in processors:
-                aa_set.new(archive, processor)
-
         def build_location(distro, suite, component, packageset_names=None):
             """Build and return package location."""
             location = build_package_location(
@@ -149,12 +142,9 @@ class ArchivePopulator(SoyuzScript):
                     "No PPA for user: '%s'" % from_user)
 
         if the_origin.archive.private:
-            if from_user is not None:
-                the_name = '%s/%s' % (from_user, the_origin.archive.name)
-            else:
-                the_name = the_origin.archive.name
             raise SoyuzScriptError(
-                "Cannot copy from private archive ('%s')" % the_name)
+                "Cannot copy from private archive (%s)"
+                % the_origin.archive.reference)
 
         # Build the destination package location.
         the_destination = build_location(to_distribution, to_suite, component)
@@ -216,11 +206,8 @@ class ArchivePopulator(SoyuzScript):
                 ArchivePurpose.COPY, registrant, name=to_archive,
                 distribution=the_destination.distribution,
                 description=reason, enabled=False,
-                require_virtualized=virtual)
+                require_virtualized=virtual, processors=processors)
             the_destination.archive = copy_archive
-            # Associate the newly created copy archive with the processors
-            # specified by the user.
-            set_archive_architectures(copy_archive, processors)
         else:
             # Archive name clash! Creation requested for existing archive with
             # the same name and distribution.
@@ -315,7 +302,8 @@ class ArchivePopulator(SoyuzScript):
     def add_my_options(self):
         """Parse command line arguments for copy archive creation/population.
         """
-        SoyuzScript.add_my_options(self)
+        self.add_transaction_options()
+        self.add_package_location_options()
 
         self.parser.add_option(
             "-a", "--architecture", dest="arch_tags", action="append",
@@ -381,3 +369,8 @@ class ArchivePopulator(SoyuzScript):
             "--nonvirtualized", dest="nonvirtualized", default=False,
             action="store_true",
             help='Create the archive as nonvirtual if specified.')
+
+    def setupLocation(self):
+        # SoyuzScript's default model of a single context location doesn't
+        # make sense here.
+        pass

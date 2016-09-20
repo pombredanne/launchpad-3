@@ -13,7 +13,7 @@ __all__ = [
     'ProxiedLibraryFileAlias',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_browser_request
 from zope.publisher.interfaces import NotFound
@@ -100,6 +100,7 @@ class FileNavigationMixin:
             self.request)
 
 
+@delegate_to(ILibraryFileAlias)
 class ProxiedLibraryFileAlias:
     """A `LibraryFileAlias` decorator for use in URL generation.
 
@@ -118,7 +119,6 @@ class ProxiedLibraryFileAlias:
     Overrides `ILibraryFileAlias.http_url` to always point to the webapp URL,
     even when called from the webservice domain.
     """
-    delegates(ILibraryFileAlias)
 
     def __init__(self, context, parent):
         self.context = context

@@ -196,7 +196,7 @@ class TestPlatformData(TestCaseWithFactory):
 
         # Make sure the 'virtualized' properties are the same.
         self.assertEqual(
-            bq.virtualized, build.is_virtualized,
+            bq.virtualized, build.virtualized,
             "The 'virtualized' property deviates.")
 
 

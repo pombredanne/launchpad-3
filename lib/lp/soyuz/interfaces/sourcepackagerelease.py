@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackageRelease',
-    'PackageDiffAlreadyRequestedError',
     ]
 
 
@@ -36,8 +35,8 @@ class ISourcePackageRelease(Interface):
     version = Attribute("A version string")
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
-    dscsigningkeyID = Attribute("DB ID of the DSC Signing Key")
-    dscsigningkey = Attribute("DSC Signing Key")
+    signing_key_owner = Attribute("Signing key owner")
+    signing_key_fingerprint = Attribute("Signing key fingerprint")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
     changelog = Attribute("LibraryFileAlias containing debian/changelog.")
@@ -51,7 +50,7 @@ class ISourcePackageRelease(Interface):
                       "package depends to build"),
         required=False)
     builddependsindep = TextLine(
-        title=_("DSC build depends"),
+        title=_("DSC arch-independent build depends"),
         description=_("Same as builddepends, but the list is of "
                       "arch-independent packages"),
         required=False)
@@ -125,9 +124,6 @@ class ISourcePackageRelease(Interface):
         "A boolean that indicates whether this package still needs to be "
         "built (on any architecture)")
 
-    current_publishings = Attribute("A list of the current places where "
-        "this source package is published, in the form of a list of "
-        "DistroSeriesSourcePackageReleases.")
     published_archives = Attribute("A set of all the archives that this "
         "source package is published in.")
     upload_archive = Attribute(
@@ -154,6 +150,9 @@ class ISourcePackageRelease(Interface):
         title=_("Source package recipe build"),
         required=False, readonly=True)
 
+    def getUserDefinedField(name):
+        """Case-insensitively get a user-defined field."""
+
     def addFile(file, filetype=None):
         """Add the provided library file alias (file) to the list of files
         in this package.
@@ -172,25 +171,6 @@ class ISourcePackageRelease(Interface):
         :raises NotFoundError if no file could be found.
 
         :return the corresponding `ILibraryFileAlias` if the file was found.
-        """
-
-    def createBuild(distroarchseries, pocket, archive, processor=None,
-                    status=None):
-        """Create a build for a given distroarchseries/pocket/archive
-
-        If the processor isn't given, guess it from the distroarchseries.
-        If the status isn't given, use NEEDSBUILD.
-
-        Return the just created IBuild.
-        """
-
-    def getBuildByArch(distroarchseries, archive):
-        """Return build for the given distroarchseries/archive.
-
-        It looks for a build in any state registered *directly* for the
-        given distroarchseries and archive.
-
-        Returns None if a suitable build could not be found.
         """
 
     def override(component=None, section=None, urgency=None):
@@ -239,7 +219,3 @@ class ISourcePackageRelease(Interface):
             versions, with a blank line between each.  If there is no
             changelog, or there is an error parsing it, None is returned.
         """
-
-
-class PackageDiffAlreadyRequestedError(Exception):
-    """Raised when an `IPackageDiff` request already exists."""

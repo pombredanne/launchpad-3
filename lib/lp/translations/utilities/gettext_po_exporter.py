@@ -17,7 +17,7 @@ __all__ = [
 import logging
 import os
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationexporter import (
     ITranslationFormatExporter,
@@ -177,7 +177,7 @@ def wrap_text(text, prefix, wrap_width):
                         escaped_line_len = escaped_new_block_len
                         while escaped_line_len > wrap_width:
                             escaped_line_len -= (
-                                escaped_length.get(line[line_len-1], 1))
+                                escaped_length.get(line[line_len - 1], 1))
                             line_len -= 1
                         line = line[:line_len]
                         new_block = new_block[line_len:]
@@ -260,6 +260,7 @@ def export_translation_message(translation_message, wrap_width=77):
         ]).strip()
 
 
+@implementer(ITranslationFormatExporter)
 class GettextPOExporterBase:
     """Base support class to export Gettext .po files.
 
@@ -267,7 +268,6 @@ class GettextPOExporterBase:
     format and supported_source_formats and must implement
     _makeExportedHeader.
     """
-    implements(ITranslationFormatExporter)
 
     format = None
     supported_source_formats = []
@@ -379,23 +379,6 @@ class GettextPOExporterBase:
         storage.addFile(
             file_path, file_extension, encoded_file_content, mime_type)
 
-    def acceptSingularClash(self, previous_message, current_message):
-        """Handle clash of (singular) msgid and context with other message.
-
-        Define in derived class how it should behave when this happens.
-
-        Obsolete messages are guaranteed to be processed after
-        non-obsolete ones.
-
-        :param previous_message: already processed message in this
-            export.
-        :param current_message: another message with the same (singular)
-            msgid and context as `previous_message`.
-        :return: boolean: True to accept `current_message`, or False to
-            leave it out of the export.
-        """
-        raise NotImplementedError()
-
 
 class GettextPOExporter(GettextPOExporterBase):
     """Support class to export Gettext .po files."""
@@ -450,7 +433,3 @@ class GettextPOChangedExporter(GettextPOExporterBase):
         :return: The header as a unicode string.
         """
         return self.exported_header
-
-    def acceptSingularClash(self, previous_message, current_message):
-        """See `GettextPOExporterBase`."""
-        return True

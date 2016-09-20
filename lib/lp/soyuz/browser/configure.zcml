@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -20,9 +20,6 @@
             permission="zope.Public"
             class="lp.soyuz.browser.publishing.BinaryPublishingRecordView">
             <browser:page
-                name="+listing-detailed"
-                template="../templates/binarypackagepublishinghistory-listing-detailed.pt"/>
-            <browser:page
                 name="+listing-summary"
                 template="../templates/binarypackagepublishinghistory-listing-summary.pt"/>
             <browser:page
@@ -37,13 +34,6 @@
             path_expression="string:+binarypub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
-        <browser:url for="lp.soyuz.interfaces.processor.IProcessorSet"
-            path_expression="string:+processors"
-            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
-        <browser:url
-	    for="lp.soyuz.interfaces.processor.IProcessor"
-            path_expression="string:${name}"
-            parent_utility="lp.soyuz.interfaces.processor.IProcessorSet" />
     <browser:navigation
         module="lp.soyuz.browser.binarypackagerelease"
         classes="
@@ -87,18 +77,6 @@
         for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
         permission="zope.Public">
         <browser:page
-            name="+portlet-builds"
-            template="../templates/sourcepackagerelease-portlet-builds.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/sourcepackagerelease-portlet-details.pt"/>
-        <browser:page
-            name="+portlet-distroseries"
-            template="../templates/sourcepackagerelease-portlet-distroseries.pt"/>
-        <browser:page
-            name="+portlet-details-content"
-            template="../templates/sourcepackagerelease-portlet-details-content.pt"/>
-        <browser:page
             name="+diffs"
             template="../templates/sourcepackagerelease-diffs.pt"/>
     </browser:pages>
@@ -112,9 +90,6 @@
         <browser:page
             name="+copyright"
             template="../templates/sourcepackagerelease-copyright.pt"/>
-        <browser:page
-            name="+files"
-            template="../templates/sourcepackagerelease-files.pt"/>
     </browser:pages>
         <browser:pages
             for="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"
@@ -123,9 +98,6 @@
             <browser:page
                 name="+listing-compact"
                 template="../templates/sourcepackagepublishinghistory-listing-compact.pt"/>
-            <browser:page
-                name="+listing-detailed"
-                template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"/>
             <browser:page
                 name="+listing-summary"
                 template="../templates/sourcepackagepublishinghistory-listing-summary.pt"/>
@@ -159,37 +131,12 @@
             module="lp.soyuz.browser.publishing"
             classes="SourcePackagePublishingHistoryNavigation" />
     <browser:defaultView
-        for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
-        name="+index"/>
-    <browser:url
-        for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
-        path_expression="string:${version}"
-        attribute_to_parent="sourcepackage"/>
-    <browser:navigation
-        module="lp.soyuz.browser.distroseriessourcepackagerelease"
-        classes="
-            DistroSeriesSourcePackageReleaseNavigation"/>
-    <browser:pages
-        for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
-        class="lp.soyuz.browser.distroseriessourcepackagerelease.DistroSeriesSourcePackageReleaseView"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/distroseriessourcepackagerelease-index.pt"/>
-
-        <!-- DistroSeriesSourcePackageRelease Portlets -->
-
-        <browser:page
-            name="+portlet-details"
-            template="../templates/distroseriessourcepackagerelease-portlet-details.pt"/>
-    </browser:pages>
-    <browser:defaultView
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
         name="+index"/>
     <browser:url
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
-        path_expression="string:${name}/${version}"
-        attribute_to_parent="distroarchseries"/>
+        path_expression="version"
+        attribute_to_parent="distroarchseriesbinarypackage"/>
     <browser:navigation
         module="lp.soyuz.browser.distroarchseriesbinarypackagerelease"
         classes="
@@ -208,15 +155,17 @@
             name="+portlet-details"
             template="../templates/distroarchseriesbinarypackagerelease-portlet-details.pt"/>
     </browser:pages>
+    <browser:url
+        for="lp.soyuz.interfaces.archive.IArchiveSet"
+        path_expression="string:archives"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+        />
     <browser:defaultView
         for="lp.soyuz.interfaces.archive.IArchive"
         name="+index"/>
     <browser:navigation
         module="lp.soyuz.browser.archive"
         classes="ArchiveNavigation" />
-    <browser:navigation
-        module="lp.soyuz.browser.processor"
-        classes="ProcessorSetNavigation" />
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
         path_expression="string:+archive"
@@ -456,6 +405,9 @@
         <browser:page
             name="+changes"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
+        <browser:page
+            name="+files"
+            template="../templates/distributionsourcepackagerelease-files.pt"/>
     </browser:pages>
     <browser:page
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
@@ -697,7 +649,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackageset"
-        path_expression="string:${distroseries/name}/${name}"
+        path_expression="string:${distroseries/distribution/name}/${distroseries/name}/${name}"
         parent_utility="lp.soyuz.interfaces.packageset.IPackagesetSet"
         />
     <browser:url
@@ -716,7 +668,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
-        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distro_arch_series/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distro_arch_series/architecturetag}/${day}/${country_code}"
         attribute_to_parent="archive"
         />
 
@@ -728,5 +680,109 @@
             template="../templates/packagerelationship-list.pt"
          />
     </browser:pages>
+    <browser:url
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        path_expression="string:+livefs/${distro_series/distribution/name}/${distro_series/name}/${name}"
+        attribute_to_parent="owner"
+        />
+    <browser:defaultView
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        name="+index"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSView"
+        permission="launchpad.View"
+        name="+index"
+        template="../templates/livefs-index.pt"
+        />
+    <browser:menus
+        module="lp.soyuz.browser.livefs"
+        classes="LiveFSNavigationMenu"
+        />
+    <browser:navigation
+        module="lp.soyuz.browser.livefs"
+        classes="LiveFSNavigation"
+        />
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.soyuz.browser.livefs.LiveFSAddView"
+        permission="launchpad.Edit"
+        name="+new-livefs"
+        template="../templates/livefs-new.pt"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSAdminView"
+        permission="launchpad.Admin"
+        name="+admin"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSEditView"
+        permission="launchpad.Edit"
+        name="+edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSDeleteView"
+        permission="launchpad.Edit"
+        name="+delete"
+        template="../templates/livefs-delete.pt"/>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        factory="lp.soyuz.browser.livefs.LiveFSBreadcrumb"
+        permission="zope.Public"
+        />
+    <browser:url
+        for="lp.soyuz.interfaces.livefs.ILiveFSSet"
+        path_expression="string:livefses"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+        />
+    <browser:url
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        path_expression="string:+build/${id}"
+        attribute_to_parent="livefs"
+        />
+    <browser:menus
+        module="lp.soyuz.browser.livefsbuild"
+        classes="LiveFSBuildContextMenu"
+        />
+    <browser:navigation
+        module="lp.soyuz.browser.livefsbuild"
+        classes="LiveFSBuildNavigation"
+        />
+    <browser:defaultView
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        name="+index"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        class="lp.soyuz.browser.livefsbuild.LiveFSBuildView"
+        permission="launchpad.View"
+        name="+index"
+        template="../templates/livefsbuild-index.pt"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        class="lp.soyuz.browser.livefsbuild.LiveFSBuildCancelView"
+        permission="launchpad.Edit"
+        name="+cancel"
+        template="../../app/templates/generic-edit.pt"
+        />
+    <browser:page
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        class="lp.soyuz.browser.livefsbuild.LiveFSBuildRescoreView"
+        permission="launchpad.Admin"
+        name="+rescore"
+        template="../../app/templates/generic-edit.pt"
+        />
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.livefsbuild.ILiveFSBuild"
+        factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
+        permission="zope.Public"
+        />
     </facet>
 </configure>

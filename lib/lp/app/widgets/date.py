@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """These widgets use the a YUI2 calendar widget to allow for
@@ -178,9 +178,8 @@ class DateTimeWidget(TextWidget):
 
         The widget "system time zone" is generally UTC. It is the logged in
         users time zone, with a fallback to UTC if there is no logged in
-        user, or if the logged in user has not given us a time zone.
-        Although this isn't used directly, it influences the outcome of
-        widget.time_zone.
+        user. Although this isn't used directly, it influences the outcome
+        of widget.time_zone.
 
           >>> print widget.system_time_zone
           UTC

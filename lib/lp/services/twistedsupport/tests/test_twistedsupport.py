@@ -58,7 +58,9 @@ class TestCancelOnTimeout(TestCase):
         clock = Clock()
         d = cancel_on_timeout(defer.succeed("frobnicle"), 1, clock)
         clock.advance(2)
+
         def result(value):
             self.assertEqual(value, "frobnicle")
             self.assertEqual([], clock.getDelayedCalls())
+
         return d.addCallback(result)

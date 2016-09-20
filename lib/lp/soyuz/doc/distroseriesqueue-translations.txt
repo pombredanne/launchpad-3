@@ -6,7 +6,7 @@ uploaded into the system.
 
     >>> from lp.registry.model.gpgkey import GPGKey
     >>> from lp.soyuz.model.component import Component
-    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> from lp.buildmaster.interfaces.processor import IProcessorSet
     >>> from lp.soyuz.model.section import Section
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
@@ -32,9 +32,6 @@ uploaded into the system.
 
     >>> from lp.soyuz.model.packagetranslationsuploadjob import (
     ...     PackageTranslationsUploadJob)
-
-# Login as an admin.
-    >>> login('foo.bar@canonical.com')
 
     # We need to setup our test environment and create the needed objects.
     >>> distro_series_set = getUtility(IDistroSeriesSet)
@@ -77,9 +74,11 @@ queue:
 
 # Do the upload into the system.
 
-    >>> build = source_package_release.createBuild(
-    ...      dapper_amd64, PackagePublishingPocket.RELEASE,
-    ...      dapper.main_archive)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).new(
+    ...     source_package_release, dapper.main_archive,
+    ...     dapper_amd64, PackagePublishingPocket.RELEASE)
 
     >>> buildd_policy = getPolicy(
     ...     name='buildd', distro='ubuntu', distroseries='dapper')
@@ -345,7 +344,7 @@ Distribution archives (i.e. PPAs).
     DEBUG Publishing custom pmount,
     pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
     DEBUG Skipping translations since its purpose is not in
-    MAIN_ARCHIVE_PURPOSES.
+    MAIN_ARCHIVE_PURPOSES and the archive is not whitelisted.
 
 # And this time, we see that there are no entries imported in the queue.
     >>> translation_import_queue.getAllEntries(target=ubuntu).count()
@@ -374,7 +373,7 @@ Translations coming from rebuilt packages are also ignored.
     DEBUG Publishing custom pmount,
     pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
     DEBUG Skipping translations since its purpose is not in
-    MAIN_ARCHIVE_PURPOSES.
+    MAIN_ARCHIVE_PURPOSES and the archive is not whitelisted.
 
 # And this time, we see that there are no entries imported in the queue.
     >>> translation_import_queue.getAllEntries(target=ubuntu).count()

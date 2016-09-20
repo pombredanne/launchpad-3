@@ -103,20 +103,7 @@ COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is
 COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
 COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
 COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
-COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
-COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
 COMMENT ON COLUMN Branch.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
-
--- BranchMergeQueue
-COMMENT ON TABLE BranchMergeQueue IS 'Queue for managing the merge workflow for branches.';
-COMMENT ON COLUMN BranchMergeQueue.id IS 'The id of the merge queue.';
-COMMENT ON COLUMN BranchMergeQueue.registrant IS 'A reference to the person who created the merge queue.';
-COMMENT ON COLUMN BranchMergeQueue.owner IS 'A reference to the person who owns the merge queue.';
-COMMENT ON COLUMN BranchMergeQueue.name IS 'The name of the queue.';
-COMMENT ON COLUMN BranchMergeQueue.description IS 'A description of the queue.';
-COMMENT ON COLUMN BranchMergeQueue.configuration IS 'A JSON string of configuration data to be read by the merging script.';
-COMMENT ON COLUMN BranchMergeQueue.date_created IS 'The date the queue was created.';
-
 
 -- BranchJob
 
@@ -174,14 +161,6 @@ COMMENT ON COLUMN SeriesSourcePackageBranch.sourcepackagename IS 'The sourcepack
 COMMENT ON COLUMN SeriesSourcePackageBranch.branch IS 'The branch being linked to a distribution suite.';
 COMMENT ON COLUMN SeriesSourcePackageBranch.registrant IS 'The person who registered this link.';
 COMMENT ON COLUMN SeriesSourcePackageBranch.date_created IS 'The date this link was created.';
-
--- SubunitStream
-
-COMMENT ON TABLE SubunitStream IS 'Raw gz compressed subunit streams.';
-COMMENT ON COLUMN SubunitStream.uploader IS 'The account used to upload the stream.';
-COMMENT ON COLUMN SubunitStream.date_created IS 'The date of the upload.';
-COMMENT ON COLUMN SubunitStream.branch IS 'The branch which the stream was created on/for/with.';
-COMMENT ON COLUMN SubunitStream.stream IS 'The library file alias which contains the stream content.';
 
 -- BranchSubscription
 
@@ -366,7 +345,7 @@ COMMENT ON COLUMN BugTrackerAlias.base_url IS 'Another base URL for this bug tra
 
 -- BugTrackerPerson
 
-COMMENT ON TABLE BugTrackerPerson IS 'A mapping from a user in an external bug tracker to a Person record in Launchpad. This is used when we can''t get an e-mail address from the bug tracker.';
+COMMENT ON TABLE BugTrackerPerson IS 'A mapping from a user in an external bug tracker to a Person record in Launchpad. This is used when we can''t get an email address from the bug tracker.';
 COMMENT ON COLUMN BugTrackerPerson.date_created IS 'When was this mapping added.';
 COMMENT ON COLUMN BugTrackerPerson.bugtracker IS 'The external bug tracker in which this user has an account.';
 COMMENT ON COLUMN BugTrackerPerson.name IS 'The (within the bug tracker) unique username in the external bug tracker.';
@@ -676,13 +655,6 @@ COMMENT ON COLUMN MailingListSubscription.mailing_list IS 'The mailing list this
 COMMENT ON COLUMN MailingListSubscription.date_joined IS 'The date this person subscribed to the mailing list.';
 COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person''s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it''s the person''s preferred address.';
 
--- MergeDirectiveJob
-COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
-COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
-COMMENT ON COLUMN MergeDirectiveJob.merge_directive IS 'Full MIME content of the message containing the merge directive.';
-COMMENt ON COLUMN MergeDirectiveJob.action IS 'Enumeration of the action to perform with the merge directive; push or create merge proposal.';
-
-
 -- MessageApproval
 
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
@@ -921,25 +893,6 @@ COMMENT ON COLUMN specificationworkitem.date_created IS 'The date on which the w
 COMMENT ON COLUMN specificationworkitem.sequence IS 'The sequence number specifies the order of work items in the UI.';
 COMMENT ON COLUMN specificationworkitem.deleted IS 'Marks if the work item has been deleted. To be able to keep history we do not want to actually delete them from the database.';
 
--- specificationworkitemchange
-COMMENT ON TABLE specificationworkitemchange IS 'A property change on a work item.';
-COMMENT ON COLUMN specificationworkitemchange.id IS 'Id of the change.';
-COMMENT ON COLUMN specificationworkitemchange.work_item IS 'The work item for which a propery has changed.';
-COMMENT ON COLUMN specificationworkitemchange.new_status IS 'The new status for the work item.';
-COMMENT ON COLUMN specificationworkitemchange.new_milestone IS 'The new milestone the work item has been targetted to.';
-COMMENT ON COLUMN specificationworkitemchange.new_assignee IS 'The person which the work item has be assigned to.';
-COMMENT ON COLUMN specificationworkitemchange.date_created IS 'The time of the change.';
-
--- specificationworkitemstats
-COMMENT ON TABLE specificationworkitemstats IS 'Stats for work items that are collected by a scheduled script.';
-COMMENT ON COLUMN specificationworkitemstats.id IS 'The id for this stats collection.';
-COMMENT ON COLUMN specificationworkitemstats.specification IS 'The related blueprint.';
-COMMENT ON COLUMN specificationworkitemstats.day IS 'Day when the stats where collected.';
-COMMENT ON COLUMN specificationworkitemstats.status IS 'The work item status that work items are counted for.';
-COMMENT ON COLUMN specificationworkitemstats.assignee IS 'The assignee that work items are counted for.';
-COMMENT ON COLUMN specificationworkitemstats.milestone IS 'The milestone that work items are counted for.';
-COMMENT ON COLUMN specificationworkitemstats.count IS 'The number of work items for the blueprint with the particular status, assignee and milestone.';
-
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
@@ -948,6 +901,7 @@ COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the
 COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a sprint.';
 COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the branding of a sprint, on its home page.';
 COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint''s mugshot.';
+COMMENT ON COLUMN Sprint.is_physical IS 'Is the sprint being held in a physical location?';
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
@@ -980,7 +934,7 @@ COMMENT ON COLUMN TeamMembership.date_last_changed IS 'The date this membership 
 COMMENT ON COLUMN TeamMembership.proposed_by IS 'The user who proposed the person as member of the team.';
 COMMENT ON COLUMN TeamMembership.proponent_comment IS 'The comment left by the proponent.';
 COMMENT ON COLUMN TeamMembership.date_proposed IS 'The date of the proposal.';
-COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The member (or someone acting on his behalf) who accepts an invitation to join a team';
+COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The member (or someone acting on their behalf) who accepts an invitation to join a team';
 COMMENT ON COLUMN TeamMembership.date_acknowledged IS 'The date of acknowledgement.';
 COMMENT ON COLUMN TeamMembership.acknowledger_comment IS 'The comment left by the person who acknowledged the membership.';
 COMMENT ON COLUMN TeamMembership.reviewed_by IS 'The team admin who reviewed (approved/declined) the membership.';
@@ -1247,8 +1201,6 @@ COMMENT ON COLUMN DistroArchSeries.processor IS 'A link to the Processor table, 
 COMMENT ON COLUMN DistroArchSeries.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
 COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture or "port" is an official release. If it is not official then you may not be able to install it or get all the packages for it.';
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
-COMMENT ON COLUMN DistroArchSeries.supports_virtualized IS 'Whether or not
-virtualized build support should be provided by this specific distroarchseries';
 COMMENT ON COLUMN DistroArchSeries.enabled IS 'Whether to allow build creation and publishing for this DistroArchSeries.';
 
 -- LauncpadDatabaseRevision
@@ -1337,7 +1289,7 @@ COMMENT ON COLUMN PersonLocation.latitude IS 'The latitude this person has given
 COMMENT ON COLUMN PersonLocation.longitude IS 'The longitude this person has given for their default location.';
 COMMENT ON COLUMN PersonLocation.last_modified_by IS 'The person who last updated this record. We allow people to provide location and time zone information for other users, when those users have not specified their own location. This allows people to garden the location information for their teams, for example, like a wiki.';
 COMMENT ON COLUMN PersonLocation.date_last_modified IS 'The date this record was last modified.';
-COMMENT ON COLUMN PersonLocation.locked IS 'Whether or not this record can be modified by someone other than the person himself?';
+COMMENT ON COLUMN PersonLocation.locked IS 'Whether or not this record can be modified by someone other than the person themselves?';
 COMMENT ON COLUMN PersonLocation.visible IS 'Should this person''s location and time zone be visible to others?';
 
 
@@ -1590,12 +1542,6 @@ COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binar
 COMMENT ON COLUMN BinaryPackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
 COMMENT ON COLUMN BinaryPackageRelease.homepage IS 'Upstream project homepage URL, not checked for validity.';
 
--- BinaryPackageReleaseContents
-
-COMMENT ON TABLE BinaryPackageReleaseContents IS 'BinaryPackageReleaseContents: Mapping table that maps from BinaryPackageReleases to path names.';
-COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagerelease IS 'The BinaryPackageRelease that contains the path name.';
-COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagepath IS 'The path name, via the BinaryPackagePath table.';
-
 -- BinaryPackageFile
 
 COMMENT ON TABLE BinaryPackageFile IS 'BinaryPackageFile: A soyuz <-> librarian link table. This table represents the ownership in the librarian of a file which represents a binary package';
@@ -1607,11 +1553,6 @@ COMMENT ON COLUMN BinaryPackageFile.filetype IS 'The "type" of the file. E.g. DE
 
 COMMENT ON TABLE BinaryPackageName IS 'BinaryPackageName: A soyuz binary package name.';
 
--- BinaryPackagePath
-
-COMMENT ON TABLE BinaryPackagePath IS 'BinaryPackagePath: A table of filenames shipped in binary packages.';
-COMMENT ON COLUMN BinaryPackagePath.path IS 'The full path of the file.';
-
 -- Distribution
 
 COMMENT ON TABLE Distribution IS 'Distribution: A soyuz distribution. A distribution is a collection of DistroSeries. Distributions often group together policy and may be referred to by a name such as "Ubuntu" or "Debian"';
@@ -1621,7 +1562,6 @@ COMMENT ON COLUMN Distribution.description IS 'A description of the distribution
 COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distribution. This may be used both for linking to the distribution and for context-related stuff.';
 COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultimate-charge of this distribution within launchpad.';
 COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
-COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
 COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distribution in the Launchpad.';
 COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a distribution.';
 COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the branding of a distribution, on its home page.';
@@ -1745,25 +1685,6 @@ COMMENT ON COLUMN BuildQueue.manual IS 'Indicates if the current record was or n
 COMMENT ON COLUMN BuildQueue.estimated_duration IS 'Estimated job duration, based on previous running times of comparable jobs.';
 COMMENT ON COLUMN BuildQueue.processor IS 'The processor required by the associated build farm job.';
 COMMENT ON COLUMN BuildQueue.virtualized IS 'The virtualization setting required by the associated build farm job.';
-
--- Mirrors
-
-COMMENT ON TABLE Mirror IS 'Stores general information about mirror sites. Both regular pull mirrors and top tier mirrors are included.';
-COMMENT ON COLUMN Mirror.baseurl IS 'The base URL to the mirror, including protocol and optional trailing slash.';
-COMMENT ON COLUMN Mirror.country IS 'The country where the mirror is located.';
-COMMENT ON COLUMN Mirror.name IS 'Unique name for the mirror, suitable for use in URLs.';
-COMMENT ON COLUMN Mirror.description IS 'Description of the mirror.';
-COMMENT ON COLUMN Mirror.freshness IS 'dbschema.MirrorFreshness enumeration indicating freshness.';
-COMMENT ON COLUMN Mirror.lastcheckeddate IS 'UTC timestamp of when the last check for freshness and consistency was made. NULL indicates no check has ever been made.';
-COMMENT ON COLUMN Mirror.approved IS 'True if this mirror has been approved by the Ubuntu/Canonical mirror manager, otherwise False.';
-
-COMMENT ON TABLE MirrorContent IS 'Stores which distroarchseries and compoenents a given mirror has.';
-COMMENT ON COLUMN MirrorContent.distroarchseries IS 'A distroarchseries that this mirror contains.';
-COMMENT ON COLUMN MirrorContent.component IS 'What component of the distroarchseries that this mirror contains.';
-
-COMMENT ON TABLE MirrorSourceContent IS 'Stores which distroseries and components a given mirror that includes source packages has.';
-COMMENT ON COLUMN MirrorSourceContent.distroseries IS 'A distroseries that this mirror contains.';
-COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distroseries that this sourcepackage mirror contains.';
 
 -- SourcePackagePublishingHistory
 
@@ -1897,7 +1818,7 @@ COMMENT ON COLUMN Vote.person IS 'The person who voted. It''s NULL for secret po
 COMMENT ON COLUMN Vote.poll IS 'The poll for which this vote applies.';
 COMMENT ON COLUMN Vote.preference IS 'Used to identify in what order the options were chosen by a given user (in case of preferential voting).';
 COMMENT ON COLUMN Vote.option IS 'The choosen option.';
-COMMENT ON COLUMN Vote.token IS 'A unique token that''s give to the user so he can change his vote later.';
+COMMENT ON COLUMN Vote.token IS 'A unique token that''s given to the user so they can change their vote later.';
 
 -- VoteCast
 COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to ensure they do not vote again, and potentially to notify people that they may still vote.';
@@ -2336,11 +2257,6 @@ COMMENT ON COLUMN OAuthAccessToken.product IS 'The product associated with this 
 COMMENT ON COLUMN OAuthAccessToken.project IS 'The project associated with this token.';
 COMMENT ON COLUMN OAuthAccessToken.distribution IS 'The distribution associated with this token.';
 COMMENT ON COLUMN OAuthAccessToken.sourcepackagename IS 'The sourcepackagename associated with this token.';
-
-COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a given timestamp and access token. This is generated by the consumer.';
-COMMENT ON COLUMN OAuthNonce.access_token IS 'The access token.';
-COMMENT ON COLUMN OAuthNonce.nonce IS 'The nonce itself.';
-COMMENT ON COLUMN OAuthNonce.request_timestamp IS 'The date and time (as a timestamp) in which the request was made.';
 
 COMMENT ON TABLE UserToUserEmail IS 'A log of all direct user-to-user email contacts that have gone through Launchpad.';
 COMMENT ON COLUMN UserToUserEmail.sender IS 'The person sending this email.';

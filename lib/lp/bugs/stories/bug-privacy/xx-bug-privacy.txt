@@ -6,7 +6,7 @@ Foo Bar, an LP admin, is about to make bug #2 private.
     ...     "+bug/2/+secrecy")
 
 Foo Bar is not Cc'd on this bug, but is able to set the bug private
-anyway, because he is an admin.
+anyway, because they are an admin.
 
     >>> browser.getControl("Private", index=1).selected = True
     >>> browser.getControl("Change").click()
@@ -21,8 +21,8 @@ When we go back to the secrecy form, the previously set value is pre-selected.
     >>> browser.getControl("Private", index=1).selected
     True
 
-Foo Bar files a security (private) bug on Ubuntu Linux. He gets
-redirected to the bug page.
+Foo Bar files a security (private) bug on Ubuntu. They get redirected to the
+bug page.
 
     >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
@@ -47,13 +47,13 @@ The Ubuntu maintainer, Ubuntu Team, will be subscribed.
     <!DOCTYPE...
     ...Security-related bugs are by default private...
 
-Foo Bar sees the private bug he filed.
+Foo Bar sees the private bug they filed.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
     >>> print browser.contents.replace(bug_id, "BUG-ID")
     <!DOCTYPE...
     ...
-    ...Ubuntu Linux...
+    ...Ubuntu...
     ...<a...>...BUG-ID...</a>...
 
 Foo Bar is subscribed to the bug.

@@ -20,11 +20,11 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeForm(self, file_name):
+    def makeForm(self, file_name, file_release_type='CODETARBALL'):
         upload = self.factory.makeFakeFileUpload(filename=file_name)
         form = {
             'field.description': 'App 0.1 tarball',
-            'field.contenttype': 'CODETARBALL',
+            'field.contenttype': file_release_type,
             'field.filecontent': upload,
             'field.actions.add': 'Upload',
             }
@@ -68,3 +68,33 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
                 release, '+adddownloadfile', form=form)
         self.assertEqual(
             ['Only public projects can have download files.'], view.errors)
+
+    def assertFileHasMimeType(self, file_release_type, expected_mimetype):
+        """Assert that a release file is stored with a specific mimetype.
+
+        :param file_release_type: A string specifying the type of the release
+            file. Must be one of: CODETARBALL, README, RELEASENOTES,
+            CHANGELOG, INSTALLER.
+        :param expected_mimetype: The mimetype string you expect the file to
+            have.
+
+        """
+        release = self.factory.makeProductRelease()
+        maintainer = release.milestone.product.owner
+        form = self.makeForm('foo', file_release_type)
+        with person_logged_in(maintainer):
+            create_initialized_view(release, '+adddownloadfile', form=form)
+        self.assertEqual(1, release.files.count())
+        self.assertEqual(
+            expected_mimetype,
+            release.files[0].libraryfile.mimetype
+        )
+
+    def test_tarballs_and_installers_are_octet_stream(self):
+        self.assertFileHasMimeType('CODETARBALL', "application/octet-stream")
+        self.assertFileHasMimeType('INSTALLER', "application/octet-stream")
+
+    def test_readme_files_are_text_plain(self):
+        self.assertFileHasMimeType('README', "text/plain")
+        self.assertFileHasMimeType('CHANGELOG', "text/plain")
+        self.assertFileHasMimeType('RELEASENOTES', "text/plain")

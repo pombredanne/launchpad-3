@@ -828,7 +828,8 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         # If a source package is uploaded to a PPA, a job is not created.
         dsp = self.makeDerivedDistroSeries()
         source_package_name = self.factory.makeSourcePackageName()
-        ppa = self.factory.makeArchive()
+        ppa = self.factory.makeArchive(
+            distribution=dsp.derived_series.distribution)
         self.createPublication(
             source_package_name, ['1.0-1'], dsp.derived_series, ppa)
         self.assertContentEqual(
@@ -841,7 +842,8 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         dsp = self.makeDerivedDistroSeries()
         derived_series = dsp.derived_series
         source_package_name = self.factory.makeSourcePackageName()
-        ppa = self.factory.makeArchive()
+        ppa = self.factory.makeArchive(
+            distribution=dsp.derived_series.distribution)
         spph = self.createPublication(
             source_package_name, ['1.0-1'], derived_series, ppa)
         spph.requestDeletion(ppa.owner)

@@ -26,13 +26,14 @@ class TestQuestionMessageVisibility(
 
     layer = DatabaseFunctionalLayer
 
-    def makeHiddenMessage(self):
+    def makeHiddenMessage(self, comment_owner=None):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
-        self.commenter = self.factory.makePerson()
+        if comment_owner is None:
+            comment_owner = self.factory.makePerson()
         with person_logged_in(administrator):
             question = self.factory.makeQuestion()
-            comment = question.addComment(self.commenter, self.comment_text)
+            comment = question.addComment(comment_owner, self.comment_text)
             removeSecurityProxy(comment).message.visible = False
         return question
 
@@ -43,12 +44,6 @@ class TestQuestionMessageVisibility(
             user=user,
             no_login=no_login)
         return view
-
-    def test_commenter_can_see_comments(self):
-        # The author of the comment can see the hidden comment.
-        context = self.makeHiddenMessage()
-        view = self.getView(context=context, user=self.commenter)
-        self.assertIn(self.html_comment_text, view.contents)
 
 
 class TestHideQuestionMessageControls(

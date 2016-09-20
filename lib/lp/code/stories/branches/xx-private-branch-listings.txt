@@ -103,7 +103,9 @@ One of the most obvious places to hide private branches are the code
 listing tab.
 
     >>> def print_landscape_code_listing(browser):
-    ...     browser.open('http://code.launchpad.dev/landscape/+all-branches')
+    ...     browser.open(
+    ...         'http://code.launchpad.dev/landscape/+branches'
+    ...         '?field.sort_by=by+status')
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
     ...     # If there are no branches, the table is not shown.
     ...     # So print the text shown in the application summary.
@@ -122,10 +124,12 @@ listing tab.
     lp://dev/~no-priv/landscape/testing-branch      Development   ...
 
     >>> print_landscape_code_listing(landscape_dev_browser)
+    A development focus ...
     lp://dev/~landscape-developers/landscape/trunk  Development   ...
     lp://dev/~name12/landscape/feature-x            Development   ...
 
     >>> print_landscape_code_listing(admin_browser)
+    A development focus ...
     lp://dev/~landscape-developers/landscape/trunk  Development   ...
     lp://dev/~name12/landscape/feature-x            Development   ...
     lp://dev/~no-priv/landscape/testing-branch      Development   ...
@@ -137,10 +141,15 @@ Person code listing pages
 The person code listings is the other obvious place to filter out the
 viewable branches.
 
-    >>> def print_person_code_listing(browser, url=''):
+    >>> import urllib
+    >>> def print_person_code_listing(browser, category=None):
+    ...     params = {'batch': '15'}
+    ...     if category is not None:
+    ...         params['field.category'] = category
     ...     # The batch argument is given to override the default batch
     ...     # size of five.
-    ...     full_url = 'http://code.launchpad.dev/~name12%s?batch=15' % url
+    ...     full_url = 'http://code.launchpad.dev/~name12?%s' % (
+    ...         urllib.urlencode(params),)
     ...     browser.open(full_url)
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
     ...     branches = []
@@ -158,31 +167,30 @@ viewable branches.
     >>> print_person_code_listing(anon_browser)
     Total of 9 branches listed
     No landscape branches
-    >>> print_person_code_listing(anon_browser, '/+ownedbranches')
+    >>> print_person_code_listing(anon_browser, 'owned')
     Total of 9 branches listed
     No landscape branches
-    >>> print_person_code_listing(anon_browser, '/+registeredbranches')
+    >>> print_person_code_listing(anon_browser, 'registered')
     Total of 9 branches listed
     No landscape branches
 
     >>> print_person_code_listing(no_priv_browser)
     Total of 9 branches listed
     No landscape branches
-    >>> print_person_code_listing(no_priv_browser, '/+ownedbranches')
+    >>> print_person_code_listing(no_priv_browser, 'owned')
     Total of 9 branches listed
     No landscape branches
-    >>> print_person_code_listing(no_priv_browser, '/+registeredbranches')
+    >>> print_person_code_listing(no_priv_browser, 'registered')
     Total of 9 branches listed
     No landscape branches
 
     >>> print_person_code_listing(landscape_dev_browser)
     Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
-    >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
+    >>> print_person_code_listing(landscape_dev_browser, 'owned')
     Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
-    >>> print_person_code_listing(landscape_dev_browser,
-    ...                           '/+registeredbranches')
+    >>> print_person_code_listing(landscape_dev_browser, 'registered')
     Total of 11 branches listed
     lp://dev/~landscape-developers/landscape/trunk  Development   ...
     lp://dev/~name12/landscape/feature-x            Development   ...
@@ -190,10 +198,10 @@ viewable branches.
     >>> print_person_code_listing(admin_browser)
     Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
-    >>> print_person_code_listing(admin_browser, '/+ownedbranches')
+    >>> print_person_code_listing(admin_browser, 'owned')
     Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
-    >>> print_person_code_listing(admin_browser, '/+registeredbranches')
+    >>> print_person_code_listing(admin_browser, 'registered')
     Total of 11 branches listed
     lp://dev/~landscape-developers/landscape/trunk  Development   ...
     lp://dev/~name12/landscape/feature-x            Development   ...

@@ -188,7 +188,8 @@ isn't subscribed to any bugs. In this case, no bugs are found:
     >>> anon_browser.getControl('Subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Bugs : Mozilla Firefox ...
+    Advanced search
+    ...
     No results for search
 
 We'll continue by subscribing the same user to a couple of bugs.

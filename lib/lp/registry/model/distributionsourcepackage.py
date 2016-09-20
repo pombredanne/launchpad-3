@@ -18,7 +18,6 @@ from operator import (
 from threading import local
 
 from bzrlib.lru_cache import LRUCache
-from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
@@ -33,7 +32,7 @@ from storm.locals import (
     Unicode,
     )
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.model.bugtarget import BugTargetBase
@@ -114,6 +113,8 @@ class DistributionSourcePackageProperty:
         setattr(obj._self_in_database, self.attrname, value)
 
 
+@implementer(
+    IBugSummaryDimension, IDistributionSourcePackage, IHasCustomLanguageCodes)
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
@@ -127,10 +128,6 @@ class DistributionSourcePackage(BugTargetBase,
     things about the releases that are published under its name, the latest
     or current release, etc.
     """
-
-    implements(
-        IBugSummaryDimension, IDistributionSourcePackage,
-        IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
         'bug_reporting_guidelines')
@@ -153,10 +150,12 @@ class DistributionSourcePackage(BugTargetBase,
         return self.sourcepackagename.name
 
     @property
-    def displayname(self):
+    def display_name(self):
         """See `IDistributionSourcePackage`."""
         return '%s in %s' % (
             self.sourcepackagename.name, self.distribution.displayname)
+
+    displayname = display_name
 
     @property
     def bugtargetdisplayname(self):
@@ -171,7 +170,7 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return smartquote('"%s" package in %s') % (
+        return '%s package in %s' % (
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property
@@ -546,10 +545,9 @@ class DistributionSourcePackage(BugTargetBase,
             cls._new(distribution, sourcepackagename, upstream_link_allowed)
 
 
+@implementer(transaction.interfaces.ISynchronizer)
 class ThreadLocalLRUCache(LRUCache, local):
     """A per-thread LRU cache that can synchronize with a transaction."""
-
-    implements(transaction.interfaces.ISynchronizer)
 
     def newTransaction(self, txn):
         pass

@@ -40,7 +40,7 @@ default view for the IFooLayer layer.
 
     >>> from zope.component import queryMultiAdapter
     >>> import lp.testing
-    >>> from zope.interface import Interface, implements
+    >>> from zope.interface import Interface, implementer
     >>> class IFoo(Interface):
     ...     pass
     >>> class IFooLayer(Interface):
@@ -48,11 +48,13 @@ default view for the IFooLayer layer.
     >>> lp.testing.IFoo = IFoo
     >>> lp.testing.IFooLayer = IFooLayer
 
-    >>> class FooObject:
-    ...     implements(IFoo)
+    >>> @implementer(IFoo)
+    ... class FooObject:
+    ...     pass
     >>> fooobject = FooObject()
-    >>> class Request:
-    ...     implements(IFooLayer)
+    >>> @implementer(IFooLayer)
+    ... class Request:
+    ...     pass
     >>> request = Request()
 
     >>> import types

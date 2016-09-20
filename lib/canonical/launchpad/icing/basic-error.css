@@ -1,0 +1,85 @@
+/* Basic styling for fatal error pages (not timeouts or OOPSes).
+ *
+ * Used by lib/canonical/launchpad/offline*.html and
+ * lib/lp/app/templates/launchpad-databaseunavailable.pt.
+ */
+html {
+    background: #fff;
+    margin: 0;
+    padding: 0;
+    }
+
+body {
+    font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+    font-size: 0.75em;
+    line-height: 1.3em;
+    color: #000;
+    margin: 0 0 40px 0;
+    }
+
+a {
+    color: #03a;
+    text-decoration: none;
+    }
+
+h1 {
+    font-size: 3.7em;
+    }
+
+h2 {
+    font-size: 1.4em;
+    font-weight: normal;
+    margin: 0;
+    color: #333;
+    }
+
+p.sub {
+    color: #333;
+    }
+
+a img {
+    vertical-align: middle;
+    }
+
+.page-center-wrap {
+    text-align: left;
+    }
+
+.page-center {
+    text-align: center;
+    margin: 0px;
+    margin: auto;
+    width: 780px;
+    }
+
+.page-center-content {
+    text-align: left;
+    }
+
+#header,
+#footer {
+    padding-left: 50px;
+    padding-right: 50px;
+    }
+
+#header {
+    border: 1px solid #d7d3cf;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-top: 50px;
+    }
+
+#header .graphic {
+    font-size: 110px;
+    color: #646464;
+    float: right;
+    padding: 100px 80px 0 0;
+    }
+
+#header .content {
+    margin-right: 300px;
+    }
+
+#footer {
+    margin-top: 30px;
+    }

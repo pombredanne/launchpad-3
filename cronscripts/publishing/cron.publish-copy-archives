@@ -57,10 +57,10 @@ cleanup () {
 trap cleanup EXIT
 
 # Process the accepted queue into the publishing records.
-process-accepted.py --copy-archive -v -v -v $DISTRONAME
+process-accepted.py --copy-archive -vvv -d $DISTRONAME
 
 # Publish the packages to disk.
-publish-distro.py -v -v --copy-archive -d $DISTRONAME
+publish-distro.py -vv --copy-archive -d $DISTRONAME
 
 echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;

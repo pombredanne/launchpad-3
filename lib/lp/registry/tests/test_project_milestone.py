@@ -182,7 +182,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         """
         # firefox does not belong to the Gnome project.
         firefox = getUtility(IProductSet)['firefox']
-        self.assertNotEqual(firefox.project.name, 'gnome')
+        self.assertNotEqual(firefox.projectgroup.name, 'gnome')
 
         self.createProductMilestone('1.1', 'firefox', None)
         gnome = getUtility(IProjectGroupSet)['gnome']
@@ -203,9 +203,9 @@ class ProjectMilestoneTest(unittest.TestCase):
             specurl='http://www.example.com/spec/%s' % product_name,
             summary='summary',
             definition_status=SpecificationDefinitionStatus.APPROVED,
-            priority=SpecificationPriority.HIGH,
             owner=sample_person,
-            product=product)
+            target=product)
+        spec.priority = SpecificationPriority.HIGH
         spec.milestone = product.getMilestone(milestone_name)
         return spec
 

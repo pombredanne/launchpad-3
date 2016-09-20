@@ -6,17 +6,19 @@
 __metaclass__ = type
 __all__ = [
     'AnswersBrowserRequest',
+    'AnswersFacet',
     'AnswersLayer',
     'answers_request_publication_factory',
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
     IDefaultBrowserLayer,
     )
 
+from lp.services.webapp.interfaces import IFacet
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
@@ -24,13 +26,22 @@ from lp.services.webapp.servers import (
     )
 
 
+@implementer(IFacet)
+class AnswersFacet:
+
+    name = "answers"
+    rootsite = "answers"
+    text = "Questions"
+    default_view = "+questions"
+
+
 class AnswersLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Answers layer."""
 
 
+@implementer(AnswersLayer)
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     """Instances of AnswersBrowserRequest provide `AnswersLayer`."""
-    implements(AnswersLayer)
 
     def __init__(self, body_instream, environ, response=None):
         super(AnswersBrowserRequest, self).__init__(

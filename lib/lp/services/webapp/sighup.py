@@ -23,4 +23,3 @@ def sighup_handler(signum, frame):
 def setup_sighup(event):
     """Configure the SIGHUP handler.  Called at startup."""
     signal.signal(signal.SIGHUP, sighup_handler)
-

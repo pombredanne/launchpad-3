@@ -197,7 +197,7 @@ class INewSpecificationTarget(Interface):
 
     Requires the user to specify a distribution or a product as a target.
     """
-    use_template(ISpecification, include=['target'])
+    target = copy_field(ISpecification['target'], readonly=False)
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -243,11 +243,10 @@ class NewSpecificationView(LaunchpadFormView):
             title=data.get('title'),
             specurl=data.get('specurl'),
             summary=data.get('summary'),
-            product=data.get('product'),
+            target=data.get('product') or data.get('distribution'),
             drafter=data.get('drafter'),
             assignee=data.get('assignee'),
             approver=data.get('approver'),
-            distribution=data.get('distribution'),
             definition_status=data.get('definition_status'),
             information_type=information_type)
         # Propose the specification as a series goal, if specified.
@@ -979,9 +978,14 @@ class SpecificationGoalDecideView(LaunchpadFormView):
     cancel_url = next_url
 
 
+class ISpecificationRetargetingSchema(Interface):
+
+    target = copy_field(ISpecification['target'], readonly=False)
+
+
 class SpecificationRetargetingView(LaunchpadFormView):
 
-    schema = ISpecification
+    schema = ISpecificationRetargetingSchema
     field_names = ['target']
     label = _('Move this blueprint to a different project')
 

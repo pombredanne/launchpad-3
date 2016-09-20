@@ -9,7 +9,7 @@ __all__ = [
 from storm.expr import SQL
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.proxy import sameProxiedObjects
 
 from lp.bugs.interfaces.personsubscriptioninfo import (
@@ -33,10 +33,9 @@ from lp.registry.model.product import Product
 from lp.services.database.bulk import load_related
 
 
+@implementer(IRealSubscriptionInfo)
 class RealSubscriptionInfo:
     """See `IRealSubscriptionInfo`"""
-
-    implements(IRealSubscriptionInfo)
 
     def __init__(self, principal, bug, subscription):
         self.principal = principal
@@ -46,10 +45,9 @@ class RealSubscriptionInfo:
         self.bug_supervisor_tasks = []
 
 
+@implementer(IVirtualSubscriptionInfo)
 class VirtualSubscriptionInfo:
     """See `IVirtualSubscriptionInfo`"""
-
-    implements(IVirtualSubscriptionInfo)
 
     def __init__(self, principal, bug, pillar):
         self.principal = principal
@@ -58,10 +56,9 @@ class VirtualSubscriptionInfo:
         self.tasks = []
 
 
+@implementer(IAbstractSubscriptionInfoCollection)
 class AbstractSubscriptionInfoCollection:
     """See `IAbstractSubscriptionInfoCollection`"""
-
-    implements(IAbstractSubscriptionInfoCollection)
 
     def __init__(self, person, administrated_team_ids):
         self.person = person
@@ -87,10 +84,9 @@ class AbstractSubscriptionInfoCollection:
         raise NotImplementedError('Programmer error: use a subclass')
 
 
+@implementer(IVirtualSubscriptionInfoCollection)
 class VirtualSubscriptionInfoCollection(AbstractSubscriptionInfoCollection):
     """See `IVirtualSubscriptionInfoCollection`"""
-
-    implements(IVirtualSubscriptionInfoCollection)
 
     def __init__(self, person, administrated_team_ids):
         super(VirtualSubscriptionInfoCollection, self).__init__(
@@ -108,11 +104,10 @@ class VirtualSubscriptionInfoCollection(AbstractSubscriptionInfoCollection):
         info.tasks.append(task)
 
 
+@implementer(IRealSubscriptionInfoCollection)
 class RealSubscriptionInfoCollection(
     AbstractSubscriptionInfoCollection):
     """Core functionality for Duplicate and Direct"""
-
-    implements(IRealSubscriptionInfoCollection)
 
     def __init__(self, person, administrated_team_ids):
         super(RealSubscriptionInfoCollection, self).__init__(
@@ -147,10 +142,9 @@ class RealSubscriptionInfoCollection(
                     info.bug_supervisor_tasks.append(value)
 
 
+@implementer(IPersonSubscriptions)
 class PersonSubscriptions(object):
     """See `IPersonSubscriptions`."""
-
-    implements(IPersonSubscriptions)
 
     def __init__(self, person, bug):
         self.loadSubscriptionsFor(person, bug)
@@ -189,7 +183,7 @@ class PersonSubscriptions(object):
         # Preload bug owners, then all pillars.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             [bug.ownerID for bug in bugs]))
-        all_tasks = [task for task in bug.bugtasks for bug in bugs] 
+        all_tasks = [task for task in bug.bugtasks for bug in bugs]
         load_related(Product, all_tasks, ['productID'])
         load_related(Distribution, all_tasks, ['distributionID'])
         for bug in bugs:

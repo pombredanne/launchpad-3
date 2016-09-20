@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for Soyuz build farm jobs."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmJobDB',
     'IBuildFarmJobSet',
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
@@ -14,7 +15,10 @@ __all__ = [
     ]
 
 from lazr.enum import DBEnumeratedType
-from lazr.restful.declarations import exported
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
@@ -32,8 +36,8 @@ from zope.schema import (
 from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.services.librarian.interfaces import ILibraryFileAlias
-from lp.soyuz.interfaces.processor import IProcessor
 
 
 class InconsistentBuildFarmJobError(Exception):
@@ -61,6 +65,8 @@ class IBuildFarmJobDB(Interface):
 
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
+
+    export_as_webservice_entry(as_of='beta')
 
     id = Attribute('The build farm job ID.')
 
@@ -163,6 +169,9 @@ class IBuildFarmJob(Interface):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    build_cookie = Attribute(
+        "A string which uniquely identifies the job in the build farm.")
+
     failure_count = Int(
         title=_("Failure Count"), required=False, readonly=True,
         default=0,
@@ -172,13 +181,19 @@ class IBuildFarmJob(Interface):
         """Set the `LibraryFileAlias` that contains the job log."""
 
     def updateStatus(status, builder=None, slave_status=None,
-                     date_started=None, date_finished=None):
+                     date_started=None, date_finished=None,
+                     force_invalid_transition=False):
         """Update job metadata when the build status changes.
 
         This automatically handles setting status, date_finished, builder,
         dependencies. Later it will manage the denormalised search schema.
 
         date_started and date_finished override the default (now).
+
+        Only sensible transitions are permitted unless
+        force_invalid_transition is set. The override only exists for
+        tests and as an escape hatch for buildd-manager's failure
+        counting. You do not want to use it.
         """
 
     def gotFailure():
@@ -211,6 +226,13 @@ class IBuildFarmJob(Interface):
                 'Debian-like dependency line that must be satisfied before '
                 'attempting to build this request.')),
         as_of="beta")
+
+    # Only really used by IBinaryPackageBuild, but
+    # get_sources_list_for_building looks up this attribute for all build
+    # types.
+    external_dependencies = Attribute(
+        "Newline-separated list of repositories to be used to retrieve any "
+        "external build-dependencies when performing this build.")
 
 
 class ISpecificBuildFarmJobSource(Interface):

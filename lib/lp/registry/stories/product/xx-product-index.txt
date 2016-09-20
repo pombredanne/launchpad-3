@@ -27,13 +27,14 @@ Now update Tomcat to actually have this data:
 
     >>> import transaction
     >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.registry.enums import VCSType
     >>> from lp.registry.model.product import Product
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
 
     >>> tomcat = Product.selectOneBy(name="tomcat")
+    >>> tomcat.vcs = VCSType.GIT
     >>> tomcat.homepageurl = "http://home.page/"
-    >>> tomcat.freshmeatproject = "fm-tomcat"
     >>> tomcat.sourceforgeproject = "sf-tomcat"
     >>> tomcat.wikiurl = "http://wiki.url/"
     >>> tomcat.screenshotsurl = "http://screenshots.url/"
@@ -53,16 +54,14 @@ Let's check it out:
     ...     print extract_text(link), link['href']
     Home page http://home.page/
     Sourceforge project http://sourceforge.net/projects/sf-tomcat
-    Freshmeat record http://freshmeat.net/projects/fm-tomcat
     Wiki http://wiki.url/
     Screenshots http://screenshots.url/
     External downloads http://download.url/
 
     >>> print extract_text(find_tag_by_id(content, 'product-languages'))
-    Programming Languages: C++,Xenon and Purple
+    Programming languages: C++,Xenon and Purple
 
-When the freshmeat or sourceforge URLs are identical to the homepage, we
-omit the homepage:
+When the sourceforge URL is identical to the homepage, we omit the homepage:
 
     >>> login(ANONYMOUS)
 
@@ -79,27 +78,6 @@ omit the homepage:
     >>> for link in external_links.findAll('a'):
     ...     print extract_text(link), link['href']
     Sourceforge project http://sourceforge.net/projects/sf-tomcat
-    Freshmeat record http://freshmeat.net/projects/fm-tomcat
-    Wiki http://wiki.url/
-    Screenshots http://screenshots.url/
-    External downloads http://download.url/
-
-    >>> login(ANONYMOUS)
-
-    >>> tomcat = Product.selectOneBy(name="tomcat")
-    >>> tomcat.homepageurl = "http://freshmeat.net/projects/fm-tomcat"
-
-    >>> logout()
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-    >>> browser.open('http://launchpad.dev/tomcat')
-    >>> content = find_main_content(browser.contents)
-    >>> external_links = find_tag_by_id(content, 'external-links')
-    >>> for link in external_links.findAll('a'):
-    ...     print extract_text(link), link['href']
-    Sourceforge project http://sourceforge.net/projects/sf-tomcat
-    Freshmeat record http://freshmeat.net/projects/fm-tomcat
     Wiki http://wiki.url/
     Screenshots http://screenshots.url/
     External downloads http://download.url/
@@ -146,6 +124,7 @@ direct the owner to purchase a subscription.
     >>> firefox = Product.selectOneBy(name="firefox")
     >>> ignored = login_person(firefox.owner)
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
+    >>> firefox.license_info = u"Internal project."
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> logout()
@@ -169,6 +148,12 @@ Any user can see that the project's licence is proprietary.
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.contents
     '<...This project&rsquo;s licence is proprietary...
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'licences'))
+    Licence:
+    Other/Proprietary (Internal project.)
+    Commercial subscription expires ...
+
 
 A non-owner does not see that a commercial subscription is due.
 
@@ -193,6 +178,11 @@ category.
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
     None
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'licences'))
+    Licence:
+    GNU GPL v2
+    Commercial subscription expires ...
 
 
 Commercial Subscription Expiration
@@ -247,7 +237,7 @@ The project page shows the series that is the focus of development.
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'development-focus'))
-    Mozilla Firefox trunk series  is the current focus of development
+    trunk series is the current focus of development.
 
 The page has a link to view the project's milestones.
 
@@ -284,4 +274,4 @@ If a product is packaged in Ubuntu the links are shown.
     ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
     All packages
     Packages in Distributions
-    “mozilla-firefox” source package in Warty Version 0.9 uploaded on...
+    mozilla-firefox source package in Warty Version 0.9 uploaded on...

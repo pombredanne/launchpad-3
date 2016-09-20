@@ -13,7 +13,9 @@ __all__ = [
     'GoalProposeError',
     'ISpecification',
     'ISpecificationBranch',
+    'ISpecificationSet',
     'ISpecificationSubscription',
+    'ISpecificationTarget',
     ]
 
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
@@ -22,6 +24,7 @@ from lp import _schema_circular_imports
 from lp.blueprints.interfaces.specification import (
     GoalProposeError,
     ISpecification,
+    ISpecificationSet,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (

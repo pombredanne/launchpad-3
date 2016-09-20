@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Module docstring goes here."""
@@ -32,7 +32,7 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.diskpool import poolify
@@ -82,7 +82,10 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import (
     canonical_url,
     urlappend,
@@ -103,10 +106,9 @@ from lp.soyuz.model.publishing import (
     )
 
 
+@implementer(IDistributionMirror)
 class DistributionMirror(SQLBase):
     """See IDistributionMirror"""
-
-    implements(IDistributionMirror)
     _table = 'DistributionMirror'
     _defaultOrder = ('-speed', 'name', 'id')
 
@@ -120,8 +122,8 @@ class DistributionMirror(SQLBase):
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(
         alternateID=True, notNull=True)
-    displayname = StringCol(
-        notNull=False, default=None)
+    display_name = StringCol(
+        dbName='displayname', notNull=False, default=None)
     description = StringCol(
         notNull=False, default=None)
     http_base_url = StringCol(
@@ -171,18 +173,16 @@ class DistributionMirror(SQLBase):
             distribution_mirror=self, orderBy='-date_created')
 
     @property
-    def title(self):
-        """See IDistributionMirror"""
-        if self.displayname:
-            return self.displayname
-        else:
-            return self.name.capitalize()
+    def displayname(self):
+        return self.display_name
 
     @property
-    def has_ftp_or_rsync_base_url(self):
+    def title(self):
         """See IDistributionMirror"""
-        return (self.ftp_base_url is not None
-                or self.rsync_base_url is not None)
+        if self.display_name:
+            return self.display_name
+        else:
+            return self.name.capitalize()
 
     @cachedproperty
     def arch_mirror_freshness(self):
@@ -339,7 +339,7 @@ class DistributionMirror(SQLBase):
                     'For series mirrors we need to know the '
                     'expected_file_count in order to tell if it should '
                     'be disabled or not.')
-            if expected_file_count > self.cdimage_series.count():
+            if expected_file_count > len(self.cdimage_series):
                 return True
         else:
             if not (self.source_series or self.arch_series):
@@ -458,6 +458,7 @@ class DistributionMirror(SQLBase):
             mirror = MirrorCDImageDistroSeries(
                 distribution_mirror=self, distroseries=distroseries,
                 flavour=flavour)
+        del get_property_cache(self).cdimage_series
         return mirror
 
     def deleteMirrorCDImageSeries(self, distroseries, flavour):
@@ -467,21 +468,24 @@ class DistributionMirror(SQLBase):
             flavour=flavour)
         if mirror is not None:
             mirror.destroySelf()
+        del get_property_cache(self).cdimage_series
 
     def deleteAllMirrorCDImageSeries(self):
         """See IDistributionMirror"""
         for mirror in self.cdimage_series:
             mirror.destroySelf()
+        del get_property_cache(self).cdimage_series
 
     @property
     def arch_series(self):
         """See IDistributionMirror"""
         return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
 
-    @property
+    @cachedproperty
     def cdimage_series(self):
         """See IDistributionMirror"""
-        return MirrorCDImageDistroSeries.selectBy(distribution_mirror=self)
+        return list(
+            MirrorCDImageDistroSeries.selectBy(distribution_mirror=self))
 
     @property
     def source_series(self):
@@ -567,10 +571,9 @@ class DistributionMirror(SQLBase):
         return paths
 
 
+@implementer(IDistributionMirrorSet)
 class DistributionMirrorSet:
     """See IDistributionMirrorSet"""
-
-    implements(IDistributionMirrorSet)
 
     def __getitem__(self, mirror_id):
         """See IDistributionMirrorSet"""
@@ -774,10 +777,9 @@ class _MirrorSeriesMixIn:
         return urls
 
 
+@implementer(IMirrorCDImageDistroSeries)
 class MirrorCDImageDistroSeries(SQLBase):
     """See IMirrorCDImageDistroSeries"""
-
-    implements(IMirrorCDImageDistroSeries)
     _table = 'MirrorCDImageDistroSeries'
     _defaultOrder = 'id'
 
@@ -789,10 +791,9 @@ class MirrorCDImageDistroSeries(SQLBase):
     flavour = StringCol(notNull=True)
 
 
+@implementer(IMirrorDistroArchSeries)
 class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroArchSeries"""
-
-    implements(IMirrorDistroArchSeries)
     _table = 'MirrorDistroArchSeries'
     _defaultOrder = [
         'distroarchseries', 'component', 'pocket', 'freshness', 'id']
@@ -861,10 +862,9 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
         return urlappend(base_url, full_path)
 
 
+@implementer(IMirrorDistroSeriesSource)
 class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroSeriesSource"""
-
-    implements(IMirrorDistroSeriesSource)
     _table = 'MirrorDistroSeriesSource'
     _defaultOrder = ['distroseries', 'component', 'pocket', 'freshness', 'id']
 
@@ -918,10 +918,9 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
         return urlappend(base_url, full_path)
 
 
+@implementer(IMirrorProbeRecord)
 class MirrorProbeRecord(SQLBase):
     """See IMirrorProbeRecord"""
-
-    implements(IMirrorProbeRecord)
     _table = 'MirrorProbeRecord'
     _defaultOrder = 'id'
 

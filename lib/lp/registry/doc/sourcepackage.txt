@@ -162,22 +162,17 @@ SourcePackage context will be reachable.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
-    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
-
-    >>> print pmount_hoary['0.1-1'].title
-    "pmount" 0.1-1 source package in The Hoary Hedgehog Release
-
-    >>> print pmount_hoary['0.1-2'].title
-    "pmount" 0.1-2 source package in The Hoary Hedgehog Release
+    pmount 0.1-1 source package in Ubuntu SUPERSEDED
+    pmount 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
 
 'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
 
-    >>> pub = SourcePackagePublishingHistory.get(
-    ...     pmount_hoary['0.1-1'].publishing_history[0].id)
+    >>> pub = removeSecurityProxy(ubuntu.main_archive.getPublishedSources(
+    ...     distroseries=ubuntu['hoary'], name=u'pmount',
+    ...     version=u'0.1-1').one())
     >>> pub.datesuperseded is not None
     True
     >>> pub.dateremoved is None
@@ -191,11 +186,8 @@ See bug #179028 for further information.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
-    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
-
-    >>> print pmount_hoary['0.1-1'].title
-    "pmount" 0.1-1 source package in The Hoary Hedgehog Release
+    pmount 0.1-1 source package in Ubuntu SUPERSEDED
+    pmount 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
@@ -226,7 +218,7 @@ method on a distribution:
     mozilla-firefox
 
     >>> print ubuntu_firefox.title.encode('ascii', 'backslashreplace')
-    \u201cmozilla-firefox\u201d package in Ubuntu
+    mozilla-firefox package in Ubuntu
 
     >>> print ubuntu_firefox.displayname
     mozilla-firefox in Ubuntu
@@ -297,15 +289,15 @@ be more like the bug number linkification just below.
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> mock_form = {}
     >>> request = LaunchpadTestRequest(form=mock_form)
-    >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
-    >>> spr = sp['0.1-2']
-    >>> spr_view = queryMultiAdapter((spr, request), name="+changelog")
-    >>> print spr_view.changelog_entry
+    >>> dsp = ubuntu.getSourcePackage(pmount)
+    >>> dspr = dsp.getVersion('0.1-2')
+    >>> dspr_view = queryMultiAdapter((dspr, request), name="+changelog")
+    >>> print dspr_view.changelog_entry
     This is a placeholder changelog for pmount 0.1-2
 
-    >>> spr = sp['0.1-1']
-    >>> spr_view = queryMultiAdapter((spr, request), name="+changelog")
-    >>> print spr_view.changelog_entry
+    >>> dspr = dsp.getVersion('0.1-1')
+    >>> dspr_view = queryMultiAdapter((dspr, request), name="+changelog")
+    >>> print dspr_view.changelog_entry
     pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
@@ -366,6 +358,7 @@ Direct Packagings
 The direct packaging returns the IPackaging related to the source
 package.
 
+    >>> sp = hoary.getSourcePackage(pmount)
     >>> print sp.direct_packaging
     None
 

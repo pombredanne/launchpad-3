@@ -19,7 +19,7 @@ from xmlrpclib import (
     Transport,
     )
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
 from lp.services.salesforce.proxy import SalesforceVoucherProxy
@@ -73,9 +73,9 @@ class Voucher:
                     project_id=self.project_id)
 
 
+@implementer(ISalesforceVoucherProxy)
 class TestSalesforceVoucherProxy(SalesforceVoucherProxy):
     """Test version of the SalesforceVoucherProxy using the test transport."""
-    implements(ISalesforceVoucherProxy)
 
     def __init__(self):
         self.xmlrpc_transport = SalesforceXMLRPCTestTransport()
@@ -133,7 +133,6 @@ class SalesforceXMLRPCTestTransport(Transport):
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-com000000005',
                     'rPwGRk4'),
             ]
-
 
     def _createVoucher(self, owner_oid, term_months):
         """Create a new voucher with the given term and owner."""

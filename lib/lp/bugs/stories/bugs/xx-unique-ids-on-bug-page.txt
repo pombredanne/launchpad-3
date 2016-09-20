@@ -3,7 +3,7 @@
 On the bug page, the bugtasks are editable inline. This means that
 basically the same form is included on the page for each bugtask. Even
 so, if a bug has more than one bugtasks, all the ids used in the forms
-are unique (except.for the "E-mail me about changes to this bug report"
+are unique (except.for the "Email me about changes to this bug report"
 option).
 
 For example, bug one has more than one Package field.
@@ -25,7 +25,7 @@ Still, the ids of the fields are unique.
     ...        non_unique_ids.append(tag['id'])
     ...    found_ids.add(tag['id'])
 
-(The "E-mail me..." option has the same id everywhere since the
+(The "Email me..." option has the same id everywhere since the
 user is not subscribing to the bugtask, but to the bug.)
 
     >>> non_unique_ids

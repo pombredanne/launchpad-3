@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for searching bug tasks. Mostly used with IBugTaskSet."""
@@ -151,7 +151,7 @@ class BugTaskSearchParams:
     """
 
     product = None
-    project = None
+    projectgroup = None
     distribution = None
     distroseries = None
     productseries = None
@@ -173,7 +173,8 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None, linked_blueprints=None,
+                 linked_branches=None, linked_merge_proposals=None,
+                 linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
                  upstream_target=None, milestone_dateexpected_before=None,
@@ -222,6 +223,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
+        self.linked_merge_proposals = linked_merge_proposals
         self.linked_blueprints = linked_blueprints
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
@@ -244,9 +246,9 @@ class BugTaskSearchParams:
         """Set the upstream context on which to filter the search."""
         self.product = product
 
-    def setProject(self, project):
+    def setProjectGroup(self, projectgroup):
         """Set the upstream context on which to filter the search."""
-        self.project = project
+        self.projectgroup = projectgroup
 
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
@@ -340,7 +342,7 @@ class BugTaskSearchParams:
         elif IDistributionSourcePackage.providedBy(instance):
             self.setSourcePackage(target)
         elif IProjectGroup.providedBy(instance):
-            self.setProject(target)
+            self.setProjectGroup(target)
         else:
             raise AssertionError("unknown target type %r" % target)
 
@@ -382,7 +384,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
-                       linked_blueprints=None, structural_subscriber=None,
+                       linked_merge_proposals=None, linked_blueprints=None,
+                       structural_subscriber=None,
                        modified_since=None, created_since=None,
                        created_before=None, information_type=None):
         """Create and return a new instance using the parameter list."""
@@ -451,6 +454,7 @@ class BugTaskSearchParams:
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
         search_params.linked_branches = linked_branches
+        search_params.linked_merge_proposals = linked_merge_proposals
         search_params.linked_blueprints = linked_blueprints
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
@@ -554,7 +558,7 @@ class IBugTaskSearchBase(Interface):
         description=_('Show only bug tasks targeted to this milestone.'),
         value_type=ReferenceChoice(
         title=_('Milestone'), vocabulary='Milestone',
-            schema=Interface), #IMilestone
+            schema=Interface),  # IMilestone
         required=False)
     component = List(
         title=_('Component'),

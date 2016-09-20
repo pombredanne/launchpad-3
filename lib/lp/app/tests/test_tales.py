@@ -506,4 +506,5 @@ class TestPackageBuildFormatterAPI(TestCaseWithFactory):
         build, p3a, team_owner = self._make_public_build_for_private_team()
         login_person(team_owner)
         self.assertIn(
-            "[%s/%s]" % (p3a.owner.name, p3a.name), format_link(build))
+            "[~%s/%s/%s]" % (p3a.owner.name, p3a.distribution.name, p3a.name),
+            format_link(build))

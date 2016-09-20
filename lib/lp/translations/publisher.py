@@ -11,12 +11,13 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
     IDefaultBrowserLayer,
     )
 
+from lp.services.webapp.interfaces import IFacet
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
     LaunchpadBrowserRequest,
@@ -24,13 +25,22 @@ from lp.services.webapp.servers import (
     )
 
 
+@implementer(IFacet)
+class TranslationsFacet:
+
+    name = "translations"
+    rootsite = "translations"
+    text = "Translations"
+    default_view = "+translations"
+
+
 class TranslationsLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The Translations layer."""
 
 
+@implementer(TranslationsLayer)
 class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     """Instances of TranslationsBrowserRequest provide `TranslationsLayer`."""
-    implements(TranslationsLayer)
 
     def __init__(self, body_instream, environ, response=None):
         super(TranslationsBrowserRequest, self).__init__(

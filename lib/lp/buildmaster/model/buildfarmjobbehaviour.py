@@ -13,6 +13,7 @@ import datetime
 import gzip
 import logging
 import os
+import re
 import tempfile
 
 import transaction
@@ -23,6 +24,10 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError,
+    CannotBuild,
+    )
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -30,6 +35,18 @@ from lp.services.librarian.utils import copy_and_close
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
+
+
+def sanitise_arguments(s):
+    """Sanitise a string of arguments for logging.
+
+    Some jobs are started with arguments that probably shouldn't be
+    logged in their entirety (usernames and passwords for P3As, for
+    example. This function removes them.
+    """
+    # Remove credentials from URLs.
+    password_re = re.compile('://([^:]+:[^@]+@)(\S+)')
+    return password_re.sub(r'://<redacted>@\2', s)
 
 
 class BuildFarmJobBehaviourBase:
@@ -52,9 +69,45 @@ class BuildFarmJobBehaviourBase:
         """The default behaviour is a no-op."""
         pass
 
-    def getBuildCookie(self):
-        """See `IPackageBuild`."""
-        return '%s-%s' % (self.build.job_type.name, self.build.id)
+    @defer.inlineCallbacks
+    def dispatchBuildToSlave(self, logger):
+        """See `IBuildFarmJobBehaviour`."""
+        cookie = self.build.build_cookie
+        logger.info(
+            "Preparing job %s (%s) on %s."
+            % (cookie, self.build.title, self._builder.url))
+
+        builder_type, das, files, args = yield self.composeBuildRequest(logger)
+
+        # First cache the chroot and any other files that the job needs.
+        chroot = das.getChroot()
+        if chroot is None:
+            raise CannotBuild(
+                "Unable to find a chroot for %s" % das.displayname)
+
+        filename_to_sha1 = {}
+        dl = []
+        dl.append(self._slave.sendFileToSlave(
+            logger=logger, url=chroot.http_url, sha1=chroot.content.sha1))
+        for filename, params in files.items():
+            filename_to_sha1[filename] = params['sha1']
+            dl.append(self._slave.sendFileToSlave(logger=logger, **params))
+        yield defer.gatherResults(dl)
+
+        combined_args = {
+            'builder_type': builder_type, 'chroot_sha1': chroot.content.sha1,
+            'filemap': filename_to_sha1, 'args': args}
+        logger.info(
+            "Dispatching job %s (%s) to %s:\n%s"
+            % (cookie, self.build.title, self._builder.url,
+               sanitise_arguments(repr(combined_args))))
+
+        (status, info) = yield self._slave.build(
+            cookie, builder_type, chroot.content.sha1, filename_to_sha1, args)
+
+        logger.info(
+            "Job %s (%s) started on %s: %s %s"
+            % (cookie, self.build.title, self._builder.url, status, info))
 
     def getUploadDirLeaf(self, build_cookie, now=None):
         """See `IPackageBuild`."""
@@ -129,12 +182,24 @@ class BuildFarmJobBehaviourBase:
         self.build.setLog(lfa_id)
         transaction.commit()
 
+    def verifySuccessfulBuild(self):
+        """See `IBuildFarmJobBehaviour`."""
+        build = self.build
+
+        # Explode before collecting a binary that is denied in this
+        # distroseries/pocket/archive
+        assert build.archive.canModifySuite(
+            build.distro_series, build.pocket), (
+                "%s (%s) can not be built for pocket %s in %s: illegal status"
+                % (build.title, build.id, build.pocket.name, build.archive))
+
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will
     # consider sending a notification but it won't do so if the status is not
     # in this list.
-    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
+    ALLOWED_STATUS_NOTIFICATIONS = ['PACKAGEFAIL', 'CHROOTFAIL']
 
+    @defer.inlineCallbacks
     def handleStatus(self, bq, status, slave_status):
         """See `IBuildFarmJobBehaviour`."""
         if bq != self.build.buildqueue_record:
@@ -143,22 +208,53 @@ class BuildFarmJobBehaviourBase:
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         notify = status in self.ALLOWED_STATUS_NOTIFICATIONS
-        method = getattr(self, '_handleStatus_' + status, None)
-        if method is None:
-            logger.critical(
-                "Unknown BuildStatus '%s' for builder '%s'"
-                % (status, self.build.buildqueue_record.builder.url))
-            return
+        fail_status_map = {
+            'PACKAGEFAIL': BuildStatus.FAILEDTOBUILD,
+            'DEPFAIL': BuildStatus.MANUALDEPWAIT,
+            'CHROOTFAIL': BuildStatus.CHROOTWAIT,
+            }
+        if self.build.status == BuildStatus.CANCELLING:
+            fail_status_map['ABORTED'] = BuildStatus.CANCELLED
+
         logger.info(
-            'Processing finished %s build %s (%s) from builder %s'
-            % (status, self.getBuildCookie(),
-               self.build.buildqueue_record.specific_build.title,
-               self.build.buildqueue_record.builder.name))
-        d = method(slave_status, logger, notify)
-        return d
+            'Processing finished job %s (%s) from builder %s: %s'
+            % (self.build.build_cookie, self.build.title,
+               self.build.buildqueue_record.builder.name, status))
+        build_status = None
+        if status == 'OK':
+            yield self.storeLogFromSlave()
+            # handleSuccess will sometimes perform write operations
+            # outside the database transaction, so a failure between
+            # here and the commit can cause duplicated results. For
+            # example, a BinaryPackageBuild will end up in the upload
+            # queue twice if notify() crashes.
+            build_status = yield self.handleSuccess(slave_status, logger)
+        elif status in fail_status_map:
+            # XXX wgrant: The builder should be set long before here, but
+            # currently isn't.
+            yield self.storeLogFromSlave()
+            build_status = fail_status_map[status]
+        else:
+            raise BuildDaemonError(
+                "Build returned unexpected status: %r" % status)
+
+        # Set the status and dequeue the build atomically. Setting the
+        # status to UPLOADING constitutes handoff to process-upload, so
+        # doing that before we've removed the BuildQueue causes races.
+
+        # XXX wgrant: The builder should be set long before here, but
+        # currently isn't.
+        self.build.updateStatus(
+            build_status,
+            builder=self.build.buildqueue_record.builder,
+            slave_status=slave_status)
+        if notify:
+            self.build.notify()
+        self.build.buildqueue_record.destroySelf()
+        transaction.commit()
 
     @defer.inlineCallbacks
-    def _handleStatus_OK(self, slave_status, logger, notify):
+    def handleSuccess(self, slave_status, logger):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -173,24 +269,16 @@ class BuildFarmJobBehaviourBase:
         if build.job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_build
             if not build.current_source_publication:
-                yield self._slave.clean()
-                build.updateStatus(BuildStatus.SUPERSEDED)
-                self.build.buildqueue_record.destroySelf()
-                return
+                defer.returnValue(BuildStatus.SUPERSEDED)
 
-        # Explode before collect a binary that is denied in this
-        # distroseries/pocket/archive
-        assert build.archive.canModifySuite(
-            build.distro_series, build.pocket), (
-                "%s (%s) can not be built for pocket %s in %s: illegal status"
-                % (build.title, build.id, build.pocket.name, build.archive))
+        self.verifySuccessfulBuild()
 
         # Ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
         root = os.path.abspath(config.builddmaster.root)
 
         # Create a single directory to store build result files.
-        upload_leaf = self.getUploadDirLeaf(self.getBuildCookie())
+        upload_leaf = self.getUploadDirLeaf(self.build.build_cookie)
         grab_dir = os.path.join(root, "grabbing", upload_leaf)
         logger.debug("Storing build result at '%s'" % grab_dir)
 
@@ -202,132 +290,31 @@ class BuildFarmJobBehaviourBase:
             grab_dir, str(build.archive.id), build.distribution.name)
         os.makedirs(upload_path)
 
-        successful_copy_from_slave = True
         filenames_to_download = []
-        for filename in filemap:
-            logger.info("Grabbing file: %s" % filename)
+        for filename, sha1 in filemap.items():
+            logger.info("Grabbing file: %s (%s)" % (
+                filename, self._slave.getURL(sha1)))
             out_file_name = os.path.join(upload_path, filename)
             # If the evaluated output file name is not within our
             # upload path, then we don't try to copy this or any
             # subsequent files.
             if not os.path.realpath(out_file_name).startswith(upload_path):
-                successful_copy_from_slave = False
-                logger.warning(
-                    "A slave tried to upload the file '%s' "
-                    "for the build %d." % (filename, build.id))
-                break
-            filenames_to_download.append((filemap[filename], out_file_name))
+                raise BuildDaemonError(
+                    "Build returned a file named %r." % filename)
+            filenames_to_download.append((sha1, out_file_name))
         yield self._slave.getFiles(filenames_to_download)
 
-        status = (
-            BuildStatus.UPLOADING if successful_copy_from_slave
-            else BuildStatus.FAILEDTOUPLOAD)
-        # XXX wgrant: The builder should be set long before here, but
-        # currently isn't.
-        build.updateStatus(
-            status, builder=build.buildqueue_record.builder,
-            slave_status=slave_status)
         transaction.commit()
 
-        yield self.storeLogFromSlave()
-
-        # We only attempt the upload if we successfully copied all the
-        # files from the slave.
-        if successful_copy_from_slave:
-            logger.info(
-                "Gathered %s %d completely. Moving %s to uploader queue."
-                % (build.__class__.__name__, build.id, upload_leaf))
-            target_dir = os.path.join(root, "incoming")
-        else:
-            logger.warning(
-                "Copy from slave for build %s was unsuccessful.", build.id)
-            if notify:
-                build.notify(
-                    extra_info='Copy from slave was unsuccessful.')
-            target_dir = os.path.join(root, "failed")
-
+        # Move the directory used to grab the binaries into incoming
+        # atomically, so other bits don't have to deal with incomplete
+        # uploads.
+        logger.info(
+            "Gathered %s completely. Moving %s to uploader queue."
+            % (build.build_cookie, upload_leaf))
+        target_dir = os.path.join(root, "incoming")
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
-
-        yield self._slave.clean()
-        self.build.buildqueue_record.destroySelf()
-        transaction.commit()
-
-        # Move the directory used to grab the binaries into
-        # the incoming directory so the upload processor never
-        # sees half-finished uploads.
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-    @defer.inlineCallbacks
-    def _handleStatus_generic_fail(self, status, slave_status, logger, notify):
-        """Handle a generic build failure.
-
-        The build, not the builder, has failed. Set its status, store
-        available information, and remove the queue entry.
-        """
-        # XXX wgrant: The builder should be set long before here, but
-        # currently isn't.
-        self.build.updateStatus(
-            status, builder=self.build.buildqueue_record.builder,
-            slave_status=slave_status)
-        transaction.commit()
-        yield self.storeLogFromSlave()
-        if notify:
-            self.build.notify()
-        yield self._slave.clean()
-        self.build.buildqueue_record.destroySelf()
-        transaction.commit()
-
-    def _handleStatus_PACKAGEFAIL(self, slave_status, logger, notify):
-        """Handle a package that had failed to build."""
-        return self._handleStatus_generic_fail(
-            BuildStatus.FAILEDTOBUILD, slave_status, logger, notify)
-
-    def _handleStatus_DEPFAIL(self, slave_status, logger, notify):
-        """Handle a package that had missing dependencies."""
-        return self._handleStatus_generic_fail(
-            BuildStatus.MANUALDEPWAIT, slave_status, logger, notify)
-
-    def _handleStatus_CHROOTFAIL(self, slave_status, logger, notify):
-        """Handle a package that had failed when unpacking the CHROOT."""
-        return self._handleStatus_generic_fail(
-            BuildStatus.CHROOTWAIT, slave_status, logger, notify)
-
-    def _handleStatus_BUILDERFAIL(self, slave_status, logger, notify):
-        """Handle builder failures.
-
-        Fail the builder, and reset the job.
-        """
-        self.build.buildqueue_record.builder.failBuilder(
-            "Builder returned BUILDERFAIL when asked for its status")
-        self.build.buildqueue_record.reset()
-        transaction.commit()
-
-    @defer.inlineCallbacks
-    def _handleStatus_ABORTED(self, slave_status, logger, notify):
-        """Handle aborted builds.
-
-        If the build was explicitly cancelled, then mark it as such.
-        Otherwise, the build has failed in some unexpected way; we'll
-        reset it it and clean up the slave.
-        """
-        if self.build.status == BuildStatus.CANCELLING:
-            yield self.storeLogFromSlave()
-            self.build.buildqueue_record.markAsCancelled()
-        else:
-            self._builder.handleFailure(logger)
-            self.build.buildqueue_record.reset()
-        transaction.commit()
-        yield self._slave.clean()
-
-    @defer.inlineCallbacks
-    def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
-        """Handle automatic retry requested by builder.
-
-        GIVENBACK pseudo-state represents a request for automatic retry
-        later, the build records is delayed by reducing the lastscore to
-        ZERO.
-        """
-        yield self._slave.clean()
-        self.build.buildqueue_record.reset()
-        transaction.commit()
+        defer.returnValue(BuildStatus.UPLOADING)

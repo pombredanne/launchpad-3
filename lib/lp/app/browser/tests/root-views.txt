@@ -49,11 +49,13 @@ If there are no featured projects, the top featured project is None.
     >>> view.featured_projects = featured_projects
     >>> view.featured_projects_top = featured_projects_top
 
-The view provides the counts of branches, bugs, translations, blueprints,
-and answers registered in Launchpad.
+The view provides the counts of branches, Git repositories, bugs,
+projects, translations, blueprints, and answers registered in Launchpad.
 
     >>> view.branch_count
     30
+    >>> view.gitrepository_count
+    0
     >>> view.bug_count
     12
     >>> view.project_count

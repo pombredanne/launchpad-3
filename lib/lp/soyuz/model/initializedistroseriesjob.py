@@ -8,8 +8,8 @@ __all__ = [
 ]
 
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.registry.model.distroseries import DistroSeries
@@ -38,12 +38,11 @@ from lp.soyuz.scripts.initialize_distroseries import (
     )
 
 
+@implementer(IInitializeDistroSeriesJob)
+@provider(IInitializeDistroSeriesJobSource)
 class InitializeDistroSeriesJob(DistributionJobDerived):
 
-    implements(IInitializeDistroSeriesJob)
-
     class_job_type = DistributionJobType.INITIALIZE_SERIES
-    classProvides(IInitializeDistroSeriesJobSource)
 
     user_error_types = (InitializationError,)
 
@@ -51,7 +50,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
 
     @classmethod
     def create(cls, child, parents, arches=(), archindep_archtag=None,
-               packagesets=(), rebuild=False, overlays=(),
+               packagesets=None, rebuild=False, overlays=(),
                overlay_pockets=(), overlay_components=()):
         """Create a new `InitializeDistroSeriesJob`.
 
@@ -139,9 +138,12 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
                 self.overlay_pockets[i],
                 self.overlay_components[i]))
         parts += ",".join(parents)
-        pkgsets = [
-            IStore(Packageset).get(Packageset, int(pkgsetid)).name
-            for pkgsetid in self.packagesets]
+        if self.packagesets is None:
+            pkgsets = None
+        else:
+            pkgsets = [
+                IStore(Packageset).get(Packageset, int(pkgsetid)).name
+                for pkgsetid in self.packagesets]
         parts += ", architectures: %s" % (self.arches,)
         parts += ", archindep_archtag: %s" % self.archindep_archtag
         parts += ", packagesets: %s" % pkgsets
@@ -187,7 +189,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     @property
     def packagesets(self):
         if self.metadata['packagesets'] is None:
-            return ()
+            return None
         else:
             return tuple(self.metadata['packagesets'])
 

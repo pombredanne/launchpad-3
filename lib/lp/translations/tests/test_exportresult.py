@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `ExportResult`."""
@@ -56,9 +56,9 @@ class TestExportResult(TestCaseWithFactory):
         export_result.upload()
 
         self.assertIsNot(None, export_result.url)
-        sha1 = hashlib.sha1(export.content).hexdigest()
-        self.assertEqual(sha1, librarian.aliases.values()[0].content.sha1)
-        alias = librarian.findBySHA1(sha1)
+        sha256 = hashlib.sha256(export.content).hexdigest()
+        self.assertEqual(sha256, librarian.aliases.values()[0].content.sha256)
+        alias = librarian.findBySHA256(sha256)
         self.assertEqual(export.path, alias.filename)
 
     def test_upload_without_exported_file_does_nothing(self):

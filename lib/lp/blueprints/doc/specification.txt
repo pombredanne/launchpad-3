@@ -27,7 +27,7 @@ To create a new Specification, use ISpecificationSet.new:
     >>> newspec = specset.new('mng', 'Support MNG Format',
     ...     'http://www.silly.me/SpecName', 'we really need this',
     ...     SpecificationDefinitionStatus.APPROVED, mark,
-    ...     product=upstream_firefox)
+    ...     target=upstream_firefox)
     >>> print newspec.name
     mng
 
@@ -74,7 +74,7 @@ We attach now a spec to a distribution.
     ...                       'we really need this',
     ...                       SpecificationDefinitionStatus.APPROVED,
     ...                       mark,
-    ...                       distribution=ubuntu)
+    ...                       target=ubuntu)
     >>> print ubuspec.name
     fix-spec-permissions
 
@@ -132,7 +132,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> ubuspec.assignee = jdub
     >>> ubuspec.drafter = jdub
     >>> ubuspec.linkBug(getUtility(IBugSet).get(2))
-    <...>
+    True
 
     >>> delta = ubuspec.getDelta(unmodified_spec, jdub)
     >>> delta.specification == ubuspec
@@ -293,22 +293,22 @@ from a sequence of specifications to their dependencies.
     ...     'spec-a', 'Spec A',
     ...     'http://www.example.com/SpecA', 'Specification A',
     ...     SpecificationDefinitionStatus.APPROVED, mark,
-    ...     distribution=ubuntu)
+    ...     target=ubuntu)
     >>> spec_b = specset.new(
     ...     'spec-b', 'Spec B',
     ...     'http://www.example.com/SpecB', 'Specification B',
     ...     SpecificationDefinitionStatus.APPROVED, mark,
-    ...     distribution=ubuntu)
+    ...     target=ubuntu)
     >>> spec_c = specset.new(
     ...     'spec-c', 'Spec C',
     ...     'http://www.example.com/SpecC', 'Specification C',
     ...     SpecificationDefinitionStatus.APPROVED, mark,
-    ...     distribution=ubuntu)
+    ...     target=ubuntu)
     >>> spec_d = specset.new(
     ...     'spec-d', 'Spec D',
     ...     'http://www.example.com/SpecD', 'Specification D',
     ...     SpecificationDefinitionStatus.APPROVED, mark,
-    ...     distribution=ubuntu)
+    ...     target=ubuntu)
 
 When the specs provided have no dependencies, an empty dict is returned.
 
@@ -622,5 +622,3 @@ And finally show the rollback to "started".
 
     >>> canvas.date_completed is not None
     False
-
-

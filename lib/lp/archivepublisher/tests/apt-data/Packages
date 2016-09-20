@@ -10,6 +10,7 @@ Size: 932
 MD5sum: 390074949d9533c4cf6774b9891306d0
 SHA1: 1beb6c7f6be8d5b9d86335a0a939b1b49aec9aa9
 SHA256: d652be5856066b3f5bb8df43e43199ee480aa65a1ccf8e78be4178a824c493ce
+SHA512: 51a3a466a70bb447b1dd2cecd35ff9184ce89f8785d6783dae286d7e03ce8cd4bb72af0a61c294469e683e003ecb4c833ab45ed98102ad8020d9f9dc7ac82909
 Description: A tiny test package.
  Doesn't really do anything at all.
 Bugs: https://bugs.launchpad.net/ubuntu/+filebug

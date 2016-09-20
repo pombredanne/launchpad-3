@@ -61,56 +61,6 @@ Now run a search for mozilla-firefox and check that it is found:
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
 
-The search page will also present commercial packages:
-
-    >>> browser.goBack()
-    >>> field = browser.getControl(name="text")
-    >>> field.value = 'commercialpackage'
-    >>> browser.getControl('Search', index=0).click()
-    >>> extract_text(find_main_content(browser.contents))
-    u"...commercialpackage... package..."
-
-Now try searching for text that we know to be in a change log entry, to
-prove that FTI works on change logs.  The text we're looking for is
-"placeholder" which is mentioned in the change log entry for pmount and
-libstdc++, so we are looking for two results here as the "placeholder"
-text is not mentioned in anything else that is indexed.
-
-    >>> browser.open("http://localhost/ubuntu/+search")
-    >>> field = browser.getControl(name="text")
-    >>> field.value = 'placeholder'
-    >>> browser.getControl('Search', index=0).click()
-
-Note, by default we only search on binary package names (as the fti is
-not currently so useful), so the initial result is empty, but contains
-a link to the fti/source package search:
-
-    >>> print extract_text(find_tag_by_id(browser.contents, 'no-results'))
-    Your search for &ldquo;placeholder&rdquo; did not return any results.
-    ...
-
-Clicking on the provided link to retry the search against source packages
-finds the fti results:
-
-    >>> browser.getLink(id='source-search').click()
-    >>> for tag in find_tags_by_class(
-    ...     browser.contents, 'batch-navigation-index'):
-    ...     print extract_text(tag)
-    All packages with sources matching your query &ldquo;placeholder&rdquo;
-    1...2 of 2 results
-
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'pagematch'})
-    >>> len(results)
-    2
-
-    >>> texts = [extract_text(html) for html in results]
-    >>> texts.sort()
-    >>> for text in texts:
-    ...    print text.encode('ascii', 'backslashreplace')
-    libstdc++
-    pmount
-
 
 Distribution package change summary
 -----------------------------------
@@ -200,18 +150,18 @@ The page has an appropriate title and main heading.
 
     >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(user_browser.title)
-    \u201ciceweasel\u201d package : Ubuntu
+    iceweasel package : Ubuntu
 
     >>> print_location(user_browser.contents)
-    Hierarchy: Ubuntu > ?iceweasel? package
+    Hierarchy: Ubuntu > iceweasel package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/iceweasel
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/iceweasel
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/ubuntu/+source/iceweasel
     * Answers - http://answers.launchpad.dev/ubuntu/+source/iceweasel
-    Main heading: ?iceweasel? package in Ubuntu
+    Main heading: iceweasel package in Ubuntu
 
 Under the title there's a short paragraph that says how many 'new' bugs
 and open questions the package has.
@@ -273,7 +223,6 @@ There's also a section on the page that gives some package information:
     Package information
     Maintainer: Foo Bar
     Urgency:* Low Urgency
-    Component:* main
     Architectures:* any
     Latest upload: 1.0
     *actual publishing details may vary in this distribution, these are just
@@ -397,18 +346,18 @@ from the index page.
     >>> browser.getLink("View full change log").click()
 
     >>> print backslashreplace(browser.title)
-    Change log : \u201cfoobar\u201d package : Ubuntu
+    Change log : foobar package : Ubuntu
 
     >>> print_location(browser.contents)
-    Hierarchy: Ubuntu > ?foobar? package > Change log
+    Hierarchy: Ubuntu > foobar package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
     * Code - http://code.launchpad.dev/ubuntu/+source/foobar
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/foobar
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/ubuntu/+source/foobar
     * Answers - http://answers.launchpad.dev/ubuntu/+source/foobar
-    Main heading: Change log for ?foobar? package in Ubuntu
+    Main heading: Change log for foobar package in Ubuntu
 
 Each version history entry has a header with the version as the title
 and details of the publishing status in each distroseries it's published
@@ -572,7 +521,7 @@ Returning to the distribution source package index page using the
 
     >>> anon_browser.getLink('Overview').click()
     >>> print backslashreplace(anon_browser.title)
-    \u201calsa-utils\u201d package : Ubuntu
+    alsa-utils package : Ubuntu
 
 
 Publishing History
@@ -588,22 +537,22 @@ appropriate title and main heading, but preserving the distribution
 source package hierarchy.
 
     >>> print backslashreplace(anon_browser.title)
-    Publishing history : \u201calsa-utils\u201d package : Ubuntu
+    Publishing history : alsa-utils package : Ubuntu
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package > Publishing history
+    Hierarchy: Ubuntu > alsa-utils package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/alsa-utils
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/ubuntu/+source/alsa-utils
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: Publishing history of ?alsa-utils? package in Ubuntu
+    Main heading: Publishing history of alsa-utils package in Ubuntu
 
 Returning to the distribution source package index is also possible via
 the 'back' link at the bottom of the page.
 
     >>> anon_browser.getLink('back').click()
     >>> print backslashreplace(anon_browser.title)
-    \u201calsa-utils\u201d package : Ubuntu
+    alsa-utils package : Ubuntu

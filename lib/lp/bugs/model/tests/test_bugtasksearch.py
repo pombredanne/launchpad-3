@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -393,16 +393,18 @@ class OnceTests:
 
     def test_branches_linked(self):
         # Search results can be limited to bugs with or without linked
-        # branches.
+        # branches and merge proposals.
         with person_logged_in(self.owner):
             branch = self.factory.makeBranch()
             self.bugtasks[0].bug.linkBranch(branch, self.owner)
+            bmp = self.factory.makeBranchMergeProposalForGit()
+            self.bugtasks[1].bug.linkMergeProposal(bmp, self.owner)
         params = self.getBugTaskSearchParams(
             user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
-        self.assertSearchFinds(params, self.bugtasks[:1])
+        self.assertSearchFinds(params, self.bugtasks[:2])
         params = self.getBugTaskSearchParams(
             user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
-        self.assertSearchFinds(params, self.bugtasks[1:])
+        self.assertSearchFinds(params, self.bugtasks[2:])
 
     def test_blueprints_linked(self):
         # Search results can be limited to bugs with or without linked
@@ -540,26 +542,6 @@ class OnceTests:
         self.assertSearchFinds(params, expected)
         expected.reverse()
         params = self.getBugTaskSearchParams(user=None, orderby='-tag')
-        self.assertSearchFinds(params, expected)
-
-    def test_sort_by_linked_specification(self):
-        with person_logged_in(self.owner):
-            spec_1 = self.factory.makeSpecification(
-                name='spec-1', owner=self.owner)
-            spec_1.linkBug(self.bugtasks[2].bug)
-            spec_1_1 = self.factory.makeSpecification(
-                name='spec-1-1', owner=self.owner)
-            spec_1_1.linkBug(self.bugtasks[2].bug)
-            spec_2 = self.factory.makeSpecification(
-                name='spec-2', owner=self.owner)
-            spec_2.linkBug(self.bugtasks[1].bug)
-        params = self.getBugTaskSearchParams(
-            user=None, orderby='specification')
-        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
-        self.assertSearchFinds(params, expected)
-        expected.reverse()
-        params = self.getBugTaskSearchParams(
-            user=None, orderby='-specification')
         self.assertSearchFinds(params, expected)
 
     def test_sort_by_information_type(self):
@@ -1057,7 +1039,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
             bugtasks=self.bugtasks2, owner=self.searchtarget2.owner)
 
     def setBugParamsTarget(self, params, target):
-        params.setProject(target)
+        params.setProjectGroup(target)
 
     def makeBugTasks(self, bugtarget=None, bugtasks=None, owner=None):
         """Create bug tasks for the search target."""
@@ -1072,7 +1054,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
         with person_logged_in(owner):
             product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
-            product.project = self.searchtarget
+            product.projectgroup = self.searchtarget
             bugtasks.append(
                 self.factory.makeBugTask(target=product))
             bugtasks[-1].importance = BugTaskImportance.HIGH
@@ -1081,7 +1063,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
 
             product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
-            product.project = self.searchtarget
+            product.projectgroup = self.searchtarget
             bugtasks.append(
                 self.factory.makeBugTask(target=product))
             bugtasks[-1].importance = BugTaskImportance.LOW
@@ -1090,7 +1072,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
 
             product = self.factory.makeProduct(owner=owner)
             self.products.append(product)
-            product.project = self.searchtarget
+            product.projectgroup = self.searchtarget
             bugtasks.append(
                 self.factory.makeBugTask(target=product))
             bugtasks[-1].importance = BugTaskImportance.CRITICAL
@@ -1853,7 +1835,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                  (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('fred'))""")
+                     AND BugTag.tag IN (E'fred'))""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(any(u'fred')))
@@ -1865,7 +1847,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                  (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred')""")
+                     AND BugTag.tag = E'fred')""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(all(u'fred')))
@@ -1877,7 +1859,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """NOT EXISTS
                  (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred')""")
+                     AND BugTag.tag = E'fred')""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(any(u'-fred')))
@@ -1889,7 +1871,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """NOT EXISTS
                  (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('fred'))""")
+                     AND BugTag.tag IN (E'fred'))""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(all(u'-fred')))
@@ -1929,7 +1911,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                  (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('bob', 'fred'))""",
+                     AND BugTag.tag IN (E'bob', E'fred'))""",
             self.searchClause(any(u'fred', u'bob')))
         # In an `any` query, a positive wildcard is dominant over
         # other positive tags because "bugs with one or more tags" is
@@ -1948,11 +1930,11 @@ class TestBugTaskTagSearchClauses(TestCase):
                  (EXISTS
                   (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'bob')
+                     AND BugTag.tag = E'bob')
                   AND EXISTS
                   (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred'))""",
+                     AND BugTag.tag = E'fred'))""",
             self.searchClause(any(u'-fred', u'-bob')))
         # In an `any` query, a negative wildcard is superfluous in the
         # presence of other negative tags because "bugs without a
@@ -1961,7 +1943,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """NOT EXISTS
                  (SELECT 1 FROM BugTag
                   WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'fred')""",
+                    AND BugTag.tag = E'fred')""",
             self.searchClause(any(u'-fred', u'-*')))
 
     def test_multiple_tag_presence_all(self):
@@ -1971,11 +1953,11 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                (SELECT 1 FROM BugTag
                 WHERE BugTag.bug = BugTaskFlat.bug
-                  AND BugTag.tag = 'bob')
+                  AND BugTag.tag = E'bob')
                AND EXISTS
                (SELECT 1 FROM BugTag
                 WHERE BugTag.bug = BugTaskFlat.bug
-                  AND BugTag.tag = 'fred')""",
+                  AND BugTag.tag = E'fred')""",
             self.searchClause(all(u'fred', u'bob')))
         # In an `all` query, a positive wildcard is superfluous in the
         # presence of other positive tags because "bugs with a
@@ -1985,7 +1967,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                  (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred')""",
+                     AND BugTag.tag = E'fred')""",
             self.searchClause(all(u'fred', u'*')))
 
     def test_multiple_tag_absence_all(self):
@@ -1995,7 +1977,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """NOT EXISTS
                  (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('bob', 'fred'))""",
+                     AND BugTag.tag IN (E'bob', E'fred'))""",
             self.searchClause(all(u'-fred', u'-bob')))
         # In an `all` query, a negative wildcard is dominant over
         # other negative tags because "bugs without any tags" is a
@@ -2015,26 +1997,26 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('fred'))
+                      AND BugTag.tag IN (E'fred'))
                 OR NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')""",
+                      AND BugTag.tag = E'bob')""",
             self.searchClause(any(u'fred', u'-bob')))
         self.assertEqualIgnoringWhitespace(
             """EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('eric', 'fred'))
+                      AND BugTag.tag IN (E'eric', E'fred'))
                 OR NOT
                   (EXISTS
                     (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')
+                      AND BugTag.tag = E'bob')
                    AND EXISTS
                    (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'harry'))""",
+                      AND BugTag.tag = E'harry'))""",
             self.searchClause(any(u'fred', u'-bob', u'eric', u'-harry')))
         # The positive wildcard is dominant over other positive tags.
         self.assertEqualIgnoringWhitespace(
@@ -2045,11 +2027,11 @@ class TestBugTaskTagSearchClauses(TestCase):
                   (EXISTS
                    (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')
+                      AND BugTag.tag = E'bob')
                    AND EXISTS
                    (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'harry'))""",
+                      AND BugTag.tag = E'harry'))""",
             self.searchClause(any(u'fred', u'-bob', u'*', u'-harry')))
         # The negative wildcard is superfluous in the presence of
         # other negative tags.
@@ -2057,11 +2039,11 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('eric', 'fred'))
+                      AND BugTag.tag IN (E'eric', E'fred'))
                 OR NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')""",
+                      AND BugTag.tag = E'bob')""",
             self.searchClause(any(u'fred', u'-bob', u'eric', u'-*')))
         # The negative wildcard is not superfluous in the absence of
         # other negative tags.
@@ -2069,7 +2051,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('eric', 'fred'))
+                      AND BugTag.tag IN (E'eric', E'fred'))
                 OR NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug)""",
@@ -2084,7 +2066,7 @@ class TestBugTaskTagSearchClauses(TestCase):
                 OR NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'harry')""",
+                      AND BugTag.tag = E'harry')""",
             self.searchClause(any(u'fred', u'-*', u'*', u'-harry')))
 
     def test_mixed_tags_all(self):
@@ -2095,25 +2077,25 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'fred')
+                      AND BugTag.tag = E'fred')
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob'))""",
+                      AND BugTag.tag IN (E'bob'))""",
             self.searchClause(all(u'fred', u'-bob')))
         self.assertEqualIgnoringWhitespace(
             """EXISTS
                  (SELECT 1 FROM BugTag
                   WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'eric')
+                    AND BugTag.tag = E'eric')
                 AND EXISTS
                  (SELECT 1 FROM BugTag
                   WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'fred')
+                    AND BugTag.tag = E'fred')
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob', 'harry'))""",
+                      AND BugTag.tag IN (E'bob', E'harry'))""",
             self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')))
         # The positive wildcard is superfluous in the presence of
         # other positive tags.
@@ -2121,11 +2103,11 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'fred')
+                      AND BugTag.tag = E'fred')
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob', 'harry'))""",
+                      AND BugTag.tag IN (E'bob', E'harry'))""",
             self.searchClause(all(u'fred', u'-bob', u'*', u'-harry')))
         # The positive wildcard is not superfluous in the absence of
         # other positive tags.
@@ -2136,18 +2118,18 @@ class TestBugTaskTagSearchClauses(TestCase):
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob', 'harry'))""",
+                      AND BugTag.tag IN (E'bob', E'harry'))""",
             self.searchClause(all(u'-bob', u'*', u'-harry')))
         # The negative wildcard is dominant over other negative tags.
         self.assertEqualIgnoringWhitespace(
             """EXISTS
                  (SELECT 1 FROM BugTag
                   WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'eric')
+                    AND BugTag.tag = E'eric')
                AND EXISTS
                  (SELECT 1 FROM BugTag
                   WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'fred')
+                    AND BugTag.tag = E'fred')
                AND NOT EXISTS
                  (SELECT 1 FROM BugTag
                   WHERE BugTag.bug = BugTaskFlat.bug)""",
@@ -2159,7 +2141,7 @@ class TestBugTaskTagSearchClauses(TestCase):
             """EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'fred')
+                      AND BugTag.tag = E'fred')
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = BugTaskFlat.bug)""",
@@ -2390,7 +2372,7 @@ class TargetLessTestCase(TestCaseWithFactory):
         self.factory.makeBug(target=product)
         with person_logged_in(product.owner):
             project_group = self.factory.makeProject(owner=product.owner)
-            product.project = project_group
+            product.projectgroup = project_group
         with person_logged_in(subscriber):
             project_group.addBugSubscription(subscriber, subscriber)
         params = BugTaskSearchParams(

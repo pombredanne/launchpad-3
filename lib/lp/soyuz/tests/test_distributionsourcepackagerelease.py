@@ -3,7 +3,11 @@
 
 """Tests of DistributionSourcePackageRelease."""
 
-from testtools.matchers import LessThan
+from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    )
 
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distributionsourcepackagerelease import (
@@ -93,12 +97,11 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             [release.name
              for release in self.dsp_release.sample_binary_packages])
 
-    def updateDistroSeriesPackageCache(self):
-        # Create DistroSeriesPackageCache records for new binary
-        # packages.
+    def updatePackageCache(self):
+        # Create package cache records for new binary packages.
         #
-        # SoyuzTestPublisher.updateDistroSeriesPackageCache() creates
-        # a DistroSeriesPackageCache record for the new binary package.
+        # SoyuzTestPublisher.updatePackageCache() creates a
+        # DistroSeriesPackageCache record for the new binary package.
         # The method closes the current DB connection, making references
         # to DB objects in other DB objects unusable. Starting with
         # the distroarchseries, we can create new, valid, instances of
@@ -106,8 +109,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         # of the objects we need later.
         sourcepackagename = self.sourcepackagerelease.sourcepackagename
         publisher = SoyuzTestPublisher()
-        publisher.updateDistroSeriesPackageCache(
-            self.distroarchseries.distroseries)
+        publisher.updatePackageCache(self.distroarchseries.distroseries)
         self.distroarchseries = DistroArchSeries.get(self.distroarchseries.id)
         distribution = self.distroarchseries.distroseries.distribution
         releases = distribution.getCurrentSourceReleases([sourcepackagename])
@@ -122,7 +124,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         # constant number of SQL queries, regardless of the number
         # of existing binary package releases.
         self.makeBinaryPackageRelease()
-        self.updateDistroSeriesPackageCache()
+        self.updatePackageCache()
         with StormStatementRecorder() as recorder:
             for ds_package in self.dsp_release.sample_binary_packages:
                 ds_package.summary
@@ -131,7 +133,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
 
         for iteration in range(5):
             self.makeBinaryPackageRelease()
-        self.updateDistroSeriesPackageCache()
+        self.updatePackageCache()
         with StormStatementRecorder() as recorder:
             for ds_package in self.dsp_release.sample_binary_packages:
                 ds_package.summary
@@ -149,3 +151,86 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
                 ds_package.summary
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
         self.assertEqual(11, self.dsp_release.sample_binary_packages.count())
+
+
+class TestGetBinariesForSeries(TestCaseWithFactory):
+    """Tests for DistributionSourcePackageRelease.getBinariesForSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetBinariesForSeries, self).setUp()
+        self.sourcepackagerelease = self.factory.makeSourcePackageRelease()
+        self.distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=self.sourcepackagerelease.upload_distroseries)
+        self.dspr = DistributionSourcePackageRelease(
+            self.distroarchseries.distroseries.distribution,
+            self.sourcepackagerelease)
+
+    def makeBinaryPackageRelease(self, name=None):
+        if name is None:
+            name = self.factory.makeBinaryPackageName()
+        bp_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=self.sourcepackagerelease,
+            distroarchseries=self.distroarchseries)
+        bp_release = self.factory.makeBinaryPackageRelease(
+            build=bp_build, binarypackagename=name,
+            version=self.factory.getUniqueString())
+        sourcepackagename = self.sourcepackagerelease.sourcepackagename
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename,
+            sourcepackagerelease=self.sourcepackagerelease,
+            distroseries=self.distroarchseries.distroseries,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bp_release,
+            distroarchseries=self.distroarchseries)
+        return bp_release
+
+    def test_binaries__no_releases(self):
+        # If no binary releases exist, getBinariesForSeries returns an
+        # empty sequence.
+        self.assertEqual(
+            0,
+            self.dspr.getBinariesForSeries(
+                self.distroarchseries.distroseries).count())
+
+    def test_binaries__one_release_for_source_package(self):
+        # If a binary release exists, it is returned by
+        # getBinariesForSeries.
+        bp_release = self.makeBinaryPackageRelease()
+        self.assertEqual(
+            [bp_release],
+            list(self.dspr.getBinariesForSeries(
+                self.distroarchseries.distroseries)))
+
+    def test_binaries__two_releases_for_source_package(self):
+        # If two binary releases with the sam name exist, both
+        # are returned. The more recent one is returned first.
+        name = self.factory.makeBinaryPackageName()
+        bp_release_one = self.makeBinaryPackageRelease(name)
+        bp_release_two = self.makeBinaryPackageRelease(name)
+        self.assertEqual(
+            [bp_release_two, bp_release_one],
+            list(self.dspr.getBinariesForSeries(
+                self.distroarchseries.distroseries)))
+
+    def test_prejoins(self):
+        # The properties BinaryPackageRelease.build and
+        # and BinaryPackageRelease.binarypackagename of the
+        # the result objects are preloaded in the query
+        # issued in getBinariesForSeries.
+        self.makeBinaryPackageRelease()
+        # Both properties we want to check have been created
+        # in makeBinaryPackageRelease() and are thus already
+        # in Storm's cache. We must empty the cache, otherwise
+        # accessing bp_release.build and
+        # bp_release.binarypackagename will never cause an
+        # SQL query to be issued.
+        Store.of(self.distroarchseries).invalidate()
+        [bp_release] = list(self.dspr.getBinariesForSeries(
+            self.distroarchseries.distroseries))
+        with StormStatementRecorder() as recorder:
+            bp_release.build
+            bp_release.binarypackagename
+        self.assertThat(recorder, HasQueryCount(Equals(0)))

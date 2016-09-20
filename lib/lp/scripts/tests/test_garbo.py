@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -10,11 +10,13 @@ from datetime import (
     datetime,
     timedelta,
     )
+import hashlib
 import logging
 from StringIO import StringIO
 import time
 
 from pytz import UTC
+from storm.exceptions import LostObjectError
 from storm.expr import (
     In,
     Like,
@@ -41,12 +43,14 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
@@ -54,9 +58,14 @@ from lp.code.model.branchjob import (
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.diff import Diff
+from lp.code.model.gitjob import (
+    GitJob,
+    GitRefScanJob,
+    )
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    VCSType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
@@ -87,16 +96,12 @@ from lp.services.database.constants import (
     )
 from lp.services.database.interfaces import IMasterStore
 from lp.services.features.model import FeatureFlag
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
-from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
-from lp.services.oauth.model import (
-    OAuthAccessToken,
-    OAuthNonce,
-    )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
 from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
@@ -108,13 +113,22 @@ from lp.services.session.model import (
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
+from lp.snappy.model.snapbuildjob import (
+    SnapBuildJob,
+    SnapStoreUploadJob,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
+from lp.soyuz.model.livefsbuild import LiveFSFile
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
-    feature_flags,
-    person_logged_in,
-    set_feature_flag,
+    admin_logged_in,
     FakeAdapterMixin,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -388,7 +402,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Silence the root Logger by instructing the garbo logger to not
         # propagate messages.
         self.log = logging.getLogger('garbo')
-        self.log.addHandler(NullHandler())
+        self.log.addHandler(logging.NullHandler())
         self.log.propagate = 0
 
         # Run the garbage collectors to remove any existing garbage,
@@ -435,47 +449,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         save_garbo_job_state('job', {'data': 2})
         data = load_garbo_job_state('job')
         self.assertEqual({'data': 2}, data)
-
-    def test_OAuthNoncePruner(self):
-        now = datetime.now(UTC)
-        timestamps = [
-            now - timedelta(days=2),  # Garbage
-            now - timedelta(days=1) - timedelta(seconds=60),  # Garbage
-            now - timedelta(days=1) + timedelta(seconds=60),  # Not garbage
-            now,  # Not garbage
-            ]
-        switch_dbuser('testadmin')
-        store = IMasterStore(OAuthNonce)
-
-        # Make sure we start with 0 nonces.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
-
-        for timestamp in timestamps:
-            store.add(OAuthNonce(
-                access_token=OAuthAccessToken.get(1),
-                request_timestamp=timestamp,
-                nonce=str(timestamp)))
-        transaction.commit()
-
-        # Make sure we have 4 nonces now.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
-
-        self.runFrequently(
-            maximum_chunk_size=60)  # 1 minute maximum chunk size
-
-        store = IMasterStore(OAuthNonce)
-
-        # Now back to two, having removed the two garbage entries.
-        self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
-
-        # And none of them are older than a day.
-        # Hmm... why is it I'm putting tz aware datetimes in and getting
-        # naive datetimes back? Bug in the SQLObject compatibility layer?
-        # Test is still fine as we know the timezone.
-        self.failUnless(
-            store.find(
-                Min(OAuthNonce.request_timestamp)).one().replace(tzinfo=UTC)
-            >= now - timedelta(days=1))
 
     def test_OpenIDConsumerNoncePruner(self):
         now = int(time.mktime(time.gmtime()))
@@ -668,15 +641,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         switch_dbuser('testadmin')
         mp1 = self.factory.makeBranchMergeProposal()
         now = datetime.now(UTC)
-        mp1_diff_comment =  self.factory.makePreviewDiff(
+        mp1_diff_comment = self.factory.makePreviewDiff(
             merge_proposal=mp1, date_created=now - timedelta(hours=2))
-        mp1_diff_draft =  self.factory.makePreviewDiff(
+        mp1_diff_draft = self.factory.makePreviewDiff(
             merge_proposal=mp1, date_created=now - timedelta(hours=1))
         mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
-        # Enabled 'inline_diff_comments' feature flag and attach comments
-        # on the old diffs, so they are kept in DB.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
+        # Attach comments on the old diffs, so they are kept in DB.
         mp1.createComment(
             owner=mp1.registrant, previewdiff_id=mp1_diff_comment.id,
             subject='Hold this diff!', inline_comments={'1': '!!!'})
@@ -769,7 +739,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.factory.makePerson(name='test-unlinked-person-new')
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
-            2008, 01, 01, tzinfo=UTC)
+            2008, 1, 1, tzinfo=UTC)
 
         # Normally, the garbage collector will do nothing because the
         # PersonPruner is experimental
@@ -889,12 +859,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
                 1)
 
         account = person.account
-        account.status = status
+        account.setStatus(status, None, 'Go away')
         # We flush because a trigger sets the date_status_set and we need to
         # modify it ourselves.
         Store.of(account).flush()
         if interval is not None:
-            account.date_status_set = interval
+            removeSecurityProxy(account).date_status_set = interval
 
         self.runDaily()
 
@@ -976,6 +946,121 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         switch_dbuser('testadmin')
         self.assertEqual(store.find(BranchJob).count(), 1)
 
+    def test_GitJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        db_repository = self.factory.makeGitRepository()
+        Store.of(db_repository).flush()
+        git_job = GitRefScanJob.create(db_repository)
+        git_job.job.date_finished = THIRTY_DAYS_AGO
+
+        self.assertEqual(
+            1,
+            store.find(GitJob, GitJob.repository == db_repository.id).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(
+            0,
+            store.find(GitJob, GitJob.repository == db_repository.id).count())
+
+    def test_GitJobPruner_doesnt_prune_recent_jobs(self):
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        db_repository = self.factory.makeGitRepository()
+
+        git_job = GitRefScanJob.create(db_repository)
+        git_job.job.date_finished = THIRTY_DAYS_AGO
+
+        db_repository2 = self.factory.makeGitRepository()
+        GitRefScanJob.create(db_repository2)
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(1, store.find(GitJob).count())
+
+    def test_SnapBuildJobPruner(self):
+        # Garbo removes jobs completed over 30 days ago.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        snapbuild_job.job.date_finished = THIRTY_DAYS_AGO
+        SnapStoreUploadJob.create(snapbuild)
+
+        self.assertEqual(2, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(1, store.find(SnapBuildJob).count())
+
+    def test_SnapBuildJobPruner_doesnt_prune_recent_jobs(self):
+        # Garbo doesn't remove jobs under thirty days old.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        SnapStoreUploadJob.create(snapbuild)
+
+        snapbuild2 = self.factory.makeSnapBuild()
+        snapbuild_job2 = SnapStoreUploadJob.create(snapbuild2)
+        snapbuild_job2.job.date_finished = THIRTY_DAYS_AGO
+        SnapStoreUploadJob.create(snapbuild2)
+
+        self.assertEqual(4, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        snapbuild_jobs = set(store.find(SnapBuildJob))
+        self.assertEqual(3, len(snapbuild_jobs))
+        self.assertIn(snapbuild_job.context, snapbuild_jobs)
+
+    def test_SnapBuildJobPruner_doesnt_prune_most_recent_job_for_build(self):
+        # Garbo doesn't remove the most recent job for a build.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        switch_dbuser('testadmin')
+        store = IMasterStore(Job)
+
+        snapbuild = self.factory.makeSnapBuild()
+        snapbuild_job = SnapStoreUploadJob.create(snapbuild)
+        snapbuild_job.job.date_finished = THIRTY_DAYS_AGO
+
+        self.assertEqual(1, store.find(SnapBuildJob).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(1, store.find(SnapBuildJob).count())
+
+    def test_WebhookJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        switch_dbuser('testadmin')
+
+        webhook = self.factory.makeWebhook()
+        job1 = webhook.ping()
+        removeSecurityProxy(job1).job.date_finished = THIRTY_DAYS_AGO
+        job2 = webhook.ping()
+        removeSecurityProxy(job2).job.date_finished = SEVEN_DAYS_AGO
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(webhook, job2.webhook)
+        self.assertRaises(LostObjectError, getattr, job1, 'webhook')
+
     def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.
 
@@ -1008,16 +1093,16 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             path="sample path"))))
         # One to clean and one to keep
         store.add(TimeLimitedToken(path="sample path", token="foo",
-            created=datetime(2008, 01, 01, tzinfo=UTC)))
+            created=datetime(2008, 1, 1, tzinfo=UTC)))
         store.add(TimeLimitedToken(path="sample path", token="bar")),
         store.commit()
         self.assertEqual(2, len(list(store.find(TimeLimitedToken,
             path="sample path"))))
         self.runDaily()
         self.assertEqual(0, len(list(store.find(TimeLimitedToken,
-            path="sample path", token="foo"))))
+            path="sample path", token=hashlib.sha256("foo").hexdigest()))))
         self.assertEqual(1, len(list(store.find(TimeLimitedToken,
-            path="sample path", token="bar"))))
+            path="sample path", token=hashlib.sha256("bar").hexdigest()))))
 
     def test_CacheSuggestivePOTemplates(self):
         switch_dbuser('testadmin')
@@ -1211,6 +1296,85 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
 
+    def test_ProductVCSPopulator(self):
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        self.assertIs(None, product.vcs)
+
+        with admin_logged_in():
+            repo = self.factory.makeGitRepository(target=product)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=product, repository=repo)
+
+        self.runDaily()
+
+        self.assertEqual(VCSType.GIT, product.vcs)
+
+    def test_PopulateDistributionSourcePackageCache(self):
+        switch_dbuser('testadmin')
+        # Make some test data.  We create source publications for different
+        # distributions and archives.
+        distributions = []
+        for _ in range(2):
+            distribution = self.factory.makeDistribution()
+            self.factory.makeDistroSeries(distribution=distribution)
+            distributions.append(distribution)
+        archives = []
+        for distribution in distributions:
+            archives.append(distribution.main_archive)
+            archives.append(
+                self.factory.makeArchive(distribution=distribution))
+        spns = [self.factory.makeSourcePackageName() for _ in range(2)]
+        spphs = []
+        for spn in spns:
+            for archive in archives:
+                spphs.append(self.factory.makeSourcePackagePublishingHistory(
+                    distroseries=archive.distribution.currentseries,
+                    archive=archive, status=PackagePublishingStatus.PUBLISHED,
+                    sourcepackagename=spn))
+        transaction.commit()
+
+        self.runFrequently()
+
+        def _assert_cached_names(spns, archive):
+            dspcs = DistributionSourcePackageCache._find(
+                archive.distribution, archive)
+            self.assertContentEqual(
+                spns, [dspc.sourcepackagename for dspc in dspcs])
+            if archive.is_main:
+                for spn in spns:
+                    self.assertEqual(
+                        1,
+                        archive.distribution.searchSourcePackages(
+                            spn.name).count())
+
+        def _assert_last_spph_id(spph_id):
+            job_data = load_garbo_job_state(
+                'PopulateDistributionSourcePackageCache')
+            self.assertEqual(spph_id, job_data['last_spph_id'])
+
+        for archive in archives:
+            _assert_cached_names(spns, archive)
+        _assert_last_spph_id(spphs[-1].id)
+
+        # Create some more publications.  Those with PENDING or PUBLISHED
+        # status are inserted into the cache, while others are ignored.
+        switch_dbuser('testadmin')
+        spphs.append(self.factory.makeSourcePackagePublishingHistory(
+            distroseries=archives[0].distribution.currentseries,
+            archive=archives[0], status=PackagePublishingStatus.PENDING))
+        spphs.append(self.factory.makeSourcePackagePublishingHistory(
+            distroseries=archives[0].distribution.currentseries,
+            archive=archives[0], status=PackagePublishingStatus.SUPERSEDED))
+        transaction.commit()
+
+        self.runFrequently()
+
+        _assert_cached_names(spns + [spphs[-2].sourcepackagename], archives[0])
+        for archive in archives[1:]:
+            _assert_cached_names(spns, archive)
+        _assert_last_spph_id(spphs[-2].id)
+
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
         # Make some same test data - we create published source package
@@ -1316,6 +1480,78 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
+
+    def _test_LiveFSFilePruner(self, content_type, interval, expected_count=0):
+        # Garbo should (or should not, if `expected_count=1`) remove LiveFS
+        # files of MIME type `content_type` that finished more than
+        # `interval` days ago.
+        now = datetime.now(UTC)
+        switch_dbuser('testadmin')
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u'on'}))
+        store = IMasterStore(LiveFSFile)
+
+        db_build = self.factory.makeLiveFSBuild(
+            date_created=now - timedelta(days=interval, minutes=15),
+            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=10))
+        db_lfa = self.factory.makeLibraryFileAlias(content_type=content_type)
+        db_file = self.factory.makeLiveFSFile(
+            livefsbuild=db_build, libraryfile=db_lfa)
+        Store.of(db_file).flush()
+        self.assertEqual(1, store.find(LiveFSFile).count())
+
+        self.runDaily()
+
+        switch_dbuser('testadmin')
+        self.assertEqual(expected_count, store.find(LiveFSFile).count())
+
+    def test_LiveFSFilePruner_old_binary_files(self):
+        # LiveFS binary files attached to builds over a day old are pruned.
+        self._test_LiveFSFilePruner('application/octet-stream', 1)
+
+    def test_LiveFSFilePruner_old_text_files(self):
+        # LiveFS text files attached to builds over a day old are retained.
+        self._test_LiveFSFilePruner('text/plain', 1, expected_count=1)
+
+    def test_LiveFSFilePruner_recent_binary_files(self):
+        # LiveFS binary files attached to builds less than a day old are
+        # retained.
+        self._test_LiveFSFilePruner(
+            'application/octet-stream', 0, expected_count=1)
+
+    def test_SnapStoreSeriesPopulator(self):
+        switch_dbuser('testadmin')
+        # Make some series.
+        dses = [self.factory.makeDistroSeries() for _ in range(4)]
+        sses = [
+            self.factory.makeSnappySeries(usable_distro_series=[dses[1]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[2]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
+            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
+            ]
+        # Make some snap packages.
+        snaps = [
+            self.factory.makeSnap(distroseries=dses[0]),
+            self.factory.makeSnap(distroseries=dses[1], store_series=sses[1]),
+            self.factory.makeSnap(distroseries=dses[1]),
+            self.factory.makeSnap(distroseries=dses[2], store_series=sses[0]),
+            self.factory.makeSnap(distroseries=dses[2]),
+            self.factory.makeSnap(distroseries=dses[3]),
+            ]
+        transaction.commit()
+
+        self.runDaily()
+
+        # Snaps with no possible store series are untouched.
+        self.assertIsNone(snaps[0].store_series)
+        # Snaps that already have a store series are untouched.
+        self.assertEqual(sses[1], snaps[1].store_series)
+        self.assertEqual(sses[0], snaps[3].store_series)
+        # Snaps with no current store series and exactly one possible store
+        # series have it filled in.
+        self.assertEqual(sses[0], snaps[2].store_series)
+        self.assertEqual(sses[1], snaps[4].store_series)
+        # Snaps with more than one possible store series are untouched.
+        self.assertIsNone(snaps[5].store_series)
 
 
 class TestGarboTasks(TestCaseWithFactory):

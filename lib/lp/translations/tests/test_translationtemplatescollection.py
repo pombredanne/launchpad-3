@@ -187,8 +187,7 @@ class TestSomething(TestCaseWithFactory):
     def test_joinPOFile(self):
         trunk = self.factory.makeProduct().getSeries('trunk')
         translated_template = self.factory.makePOTemplate(productseries=trunk)
-        untranslated_template = self.factory.makePOTemplate(
-            productseries=trunk)
+        self.factory.makePOTemplate(productseries=trunk)
         nl = translated_template.newPOFile('nl')
         de = translated_template.newPOFile('de')
 
@@ -226,7 +225,7 @@ class TestSomething(TestCaseWithFactory):
         untranslated_template = self.factory.makePOTemplate(
             productseries=trunk)
         nl = translated_template.newPOFile('nl')
-        de = translated_template.newPOFile('de')
+        translated_template.newPOFile('de')
 
         collection = TranslationTemplatesCollection()
         by_series = collection.restrictProductSeries(trunk)

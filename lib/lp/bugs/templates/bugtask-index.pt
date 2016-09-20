@@ -70,7 +70,7 @@
     </metal:side>
 
     <tal:registering metal:fill-slot="registering">
-      Reported by
+      Bug #<tal:id replace="context/bug/id">1</tal:id> reported by
       <tal:reporter replace="structure context/bug/owner/fmt:link" />
       <span
         tal:attributes="title context/bug/datecreated/fmt:datetime"
@@ -206,8 +206,9 @@
         <div id="bug-branches-container"
             style="float: left">
           <tal:branches
-              define="linked_branches view/linked_branches"
-              condition="linked_branches">
+              define="linked_branches view/linked_branches;
+                      linked_merge_proposals view/linked_merge_proposals"
+              condition="python: linked_branches or linked_merge_proposals">
 
             <div id="bug-branches">
               <h2>Related branches</h2>
@@ -215,6 +216,16 @@
               <tal:bug-branches repeat="linked_branch linked_branches">
                 <tal:bug-branch replace="structure linked_branch/@@+bug-branch" />
               </tal:bug-branches>
+              <tal:bug-mps repeat="linked_merge_proposal linked_merge_proposals">
+                <tal:comment replace="nothing">
+                  This is for Git-based MPs only at present; Bazaar-based
+                  MPs show up under linked_branches instead.
+                </tal:comment>
+                <tal:bug-mp define="proposal linked_merge_proposal;
+                                    bug context/bug">
+                  <metal:bug-mp use-macro="linked_merge_proposal/@@+bmp-macros/bug-summary" />
+                </tal:bug-mp>
+              </tal:bug-mps>
             </div>
           </tal:branches>
         </div><!-- bug-branch-container -->

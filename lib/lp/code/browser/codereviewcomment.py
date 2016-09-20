@@ -6,12 +6,11 @@ __metaclass__ = type
 __all__ = [
     'CodeReviewCommentAddView',
     'CodeReviewCommentContextMenu',
-    'CodeReviewCommentPrimaryContext',
     'CodeReviewCommentView',
     'CodeReviewDisplayComment',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.formlib.widgets import (
@@ -20,7 +19,7 @@ from zope.formlib.widgets import (
     TextWidget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Text
@@ -40,7 +39,6 @@ from lp.services.comments.browser.comment import download_body
 from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.comments.interfaces.conversation import IComment
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.propertycache import (
     cachedproperty,
@@ -52,13 +50,14 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     )
-from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
     """Marker interface for displaying code review comments."""
 
 
+@implementer(ICodeReviewDisplayComment)
+@delegate_to(ICodeReviewComment, context='comment')
 class CodeReviewDisplayComment(MessageComment):
     """A code review comment or activity or both.
 
@@ -66,10 +65,6 @@ class CodeReviewDisplayComment(MessageComment):
     this is purely a display interface, and doesn't make sense to have display
     only code in the model itself.
     """
-
-    implements(ICodeReviewDisplayComment)
-
-    delegates(ICodeReviewComment, 'comment')
 
     def __init__(self, comment, from_superseded=False, limit_length=True):
         if limit_length:
@@ -132,16 +127,6 @@ def get_message(display_comment):
     return display_comment.comment.message
 
 
-class CodeReviewCommentPrimaryContext:
-    """The primary context is the comment is that of the source branch."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, comment):
-        self.context = IPrimaryContext(
-            comment.branch_merge_proposal).context
-
-
 class CodeReviewCommentContextMenu(ContextMenu):
     """Context menu for branches."""
 
@@ -153,12 +138,10 @@ class CodeReviewCommentContextMenu(ContextMenu):
         return Link('+reply', 'Reply', icon='add', enabled=enabled)
 
 
+@implementer(ILibraryFileAlias)
+@delegate_to(ILibraryFileAlias, context='alias')
 class DiffAttachment:
     """An attachment that we are going to display."""
-
-    implements(ILibraryFileAlias)
-
-    delegates(ILibraryFileAlias, 'alias')
 
     def __init__(self, alias):
         self.alias = alias
@@ -256,11 +239,6 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             comment = ''
         return {'comment': comment}
-
-    def setUpFields(self):
-        super(CodeReviewCommentAddView, self).setUpFields()
-        if not getFeatureFlag('code.inline_diff_comments.enabled'):
-            self.form_fields.omit('publish_inline_comments')
 
     @property
     def is_reply(self):

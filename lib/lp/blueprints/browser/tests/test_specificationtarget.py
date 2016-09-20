@@ -91,10 +91,10 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
         self.verify_involvment(context)
 
     def test_adaptable_to_specificationtarget(self):
-        # A project should adapt to the products within to determine
+        # A project group should adapt to the products within to determine
         # involvment.
         context = self.factory.makeProject(name='hazelnut')
-        product = self.factory.makeProduct(project=context)
+        product = self.factory.makeProduct(projectgroup=context)
         naked_product = removeSecurityProxy(product)
         naked_product.blueprints_usage = ServiceUsage.LAUNCHPAD
         self.verify_involvment(context)
@@ -204,12 +204,12 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
             context=distro_series)
 
     def test_projectgroup(self):
-        project = self.factory.makeProject()
-        product1 = self.factory.makeProduct(project=project)
-        self.factory.makeProduct(project=project)
+        projectgroup = self.factory.makeProject()
+        product1 = self.factory.makeProduct(projectgroup=projectgroup)
+        self.factory.makeProduct(projectgroup=projectgroup)
         self._test_templates_for_configuration(
             target=product1,
-            context=project)
+            context=projectgroup)
 
 
 class TestHasSpecificationsConfiguration(TestCaseWithFactory):
@@ -324,15 +324,16 @@ class TestPrivacy(BrowserTestCase):
         # Other users see the page, but not the private specs.
         proprietary = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
-        product = proprietary.product
+        product = removeSecurityProxy(proprietary).product
         public = self.factory.makeSpecification(product=product)
         with person_logged_in(product.owner):
             product.blueprints_usage = ServiceUsage.LAUNCHPAD
             browser = self.getViewBrowser(product, '+specs')
         self.assertIn(public.name, browser.contents)
-        self.assertNotIn(proprietary.name, browser.contents)
+        self.assertNotIn(
+            removeSecurityProxy(proprietary).name, browser.contents)
         with person_logged_in(None):
             browser = self.getViewBrowser(product, '+specs',
                                           user=product.owner)
         self.assertIn(public.name, browser.contents)
-        self.assertIn(proprietary.name, browser.contents)
+        self.assertIn(removeSecurityProxy(proprietary).name, browser.contents)

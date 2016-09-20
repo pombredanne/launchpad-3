@@ -79,29 +79,26 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create the machinery we need to create builds, such as
         # DistroArchSeries and builders.
-        self.processor_one = self.factory.makeProcessor()
-        self.processor_two = self.factory.makeProcessor()
+        self.processor_one = self.factory.makeProcessor(
+            supports_virtualized=True)
+        self.processor_two = self.factory.makeProcessor(
+            supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         self.distribution = self.distroseries.distribution
         self.das_one = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_one,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_one)
         self.das_two = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor_two,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor_two)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
             purpose=ArchivePurpose.PRIMARY)
-        self.arch_ids = [arch.id for arch in self.distroseries.architectures]
         with person_logged_in(self.admin):
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das_one
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder_one = self.factory.makeBuilder(
-                processors=[self.processor_one])
-            self.builder_two = self.factory.makeBuilder(
-                processors=[self.processor_two])
+            self.factory.makeBuilder(processors=[self.processor_one])
+            self.factory.makeBuilder(processors=[self.processor_two])
         self.builds = []
         self.createBuilds()
 
@@ -112,7 +109,7 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
                 sourcename=self.factory.getUniqueString(),
                 version="%s.%s" % (self.factory.getUniqueInteger(), i),
                 distroseries=self.distroseries, architecturehintlist='any')
-            builds = spph.createMissingBuilds()
+            builds = removeSecurityProxy(spph.createMissingBuilds())
             for b in builds:
                 b.updateStatus(BuildStatus.BUILDING)
                 if i == 4:
@@ -120,7 +117,7 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
                 else:
                     b.updateStatus(BuildStatus.FULLYBUILT)
                 b.buildqueue_record.destroySelf()
-            self.builds += builds
+            self.builds = builds
 
     def test_get_build_records(self):
         # A Distribution also implements IHasBuildRecords.
@@ -305,11 +302,10 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         # Set up a distroseries and related bits, so we can create builds.
         source_name = self.factory.getUniqueString()
         spn = self.factory.makeSourcePackageName(name=source_name)
-        processor = self.factory.makeProcessor()
+        processor = self.factory.makeProcessor(supports_virtualized=True)
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processor=processor,
-            supports_virtualized=True)
+            distroseries=distroseries, processor=processor)
         with person_logged_in(admin):
             publisher = SoyuzTestPublisher()
             publisher.prepareBreezyAutotest()

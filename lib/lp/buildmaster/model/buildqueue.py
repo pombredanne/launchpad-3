@@ -31,7 +31,7 @@ from zope.component import (
     getSiteManager,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
@@ -39,14 +39,15 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import (
-    ISpecificBuildFarmJobSource,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -80,8 +81,8 @@ def specific_build_farm_job_sources():
     return job_sources
 
 
+@implementer(IBuildQueue)
 class BuildQueue(SQLBase):
-    implements(IBuildQueue)
     _table = "BuildQueue"
     _defaultOrder = "id"
 
@@ -114,6 +115,11 @@ class BuildQueue(SQLBase):
         specific_source = specific_build_farm_job_sources()[bfj.job_type]
         return specific_source.getByBuildFarmJob(bfj)
 
+    @property
+    def build_cookie(self):
+        """See `IBuildQueue`."""
+        return self.specific_build.build_cookie
+
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build
 
@@ -124,10 +130,10 @@ class BuildQueue(SQLBase):
         load_related(BuildFarmJob, queues, ['_build_farm_job_id'])
         bfj_to_bq = dict((bq._build_farm_job, bq) for bq in queues)
         key = attrgetter('_build_farm_job.job_type')
-        for job_type, grouped_queues in groupby(queues, key=key):
+        for job_type, group in groupby(sorted(queues, key=key), key=key):
             source = getUtility(ISpecificBuildFarmJobSource, job_type.name)
             builds = source.getByBuildFarmJobs(
-                [bq._build_farm_job for bq in grouped_queues])
+                [bq._build_farm_job for bq in group])
             for build in builds:
                 bq = bfj_to_bq[removeSecurityProxy(build).build_farm_job]
                 get_property_cache(bq).specific_build = build
@@ -229,9 +235,9 @@ class BuildQueue(SQLBase):
         return datetime.now(pytz.utc)
 
 
+@implementer(IBuildQueueSet)
 class BuildQueueSet(object):
     """Utility to deal with BuildQueue content class."""
-    implements(IBuildQueueSet)
 
     def get(self, buildqueue_id):
         """See `IBuildQueueSet`."""
@@ -241,10 +247,19 @@ class BuildQueueSet(object):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
 
+    def preloadForBuilders(self, builders):
+        # Populate builders' currentjob cachedproperty.
+        queues = load_referencing(BuildQueue, builders, ['builderID'])
+        queue_builders = dict(
+            (queue.builderID, queue) for queue in queues)
+        for builder in builders:
+            cache = get_property_cache(builder)
+            cache.currentjob = queue_builders.get(builder.id, None)
+        return queues
+
     def preloadForBuildFarmJobs(self, builds):
         """See `IBuildQueueSet`."""
         from lp.buildmaster.model.builder import Builder
-        prefetched_data = dict()
         bqs = list(IStore(BuildQueue).find(
             BuildQueue,
             BuildQueue._build_farm_job_id.is_in(

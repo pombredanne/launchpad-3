@@ -25,7 +25,7 @@ Regular users can create teams.
     >>> browser.title
     'your own team in Launchpad'
 
-The owner of a team is always added as an administrator of his team.
+The owner of a team is always added as an administrator of their team.
 
     >>> from lp.registry.model.person import Person
     >>> [a.name for a in Person.byName('myemail').adminmembers]
@@ -106,14 +106,14 @@ approved, though.
     approve your membership before you actually become a member.
     ...
 
-If the user changes his mind because this is a moderated team, he can hit
-the 'Cancel' button, going back to the team's page...
+If the user changes their mind because this is a moderated team, they can
+hit the 'Cancel' button, going back to the team's page...
 
     >>> browser.getLink('Cancel').click()
     >>> browser.url
     'http://launchpad.dev/~myemail'
 
-...and then do everything again, if he really wants to join.
+...and then do everything again, if they really want to join.
 
     >>> browser.getLink('Join the team').click()
     >>> browser.getControl(name='field.actions.join').click()
@@ -144,7 +144,7 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     ...
     LinkNotFoundError
 
-If the user manually craft the URL to the +join page, he'll only see a
+If the user manually crafts the URL to the +join page, they'll only see a
 message explaining that this is a restricted team.
 
     >>> browser.open('http://launchpad.dev/~myemail/+join')
@@ -157,7 +157,7 @@ message explaining that this is a restricted team.
     Only a team administrator can add new members.
 
 But we provide a 'Back' button to take the user back to the team's
-home page, since he can't join it.
+home page, since they can't join it.
 
     >>> browser.getLink('Back').click()
     >>> browser.url

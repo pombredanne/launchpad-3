@@ -17,10 +17,13 @@
   <publisher
       name="translations"
       factory="lp.translations.publisher.translations_request_publication_factory"/>
-
   <utility
       component="lp.translations.publisher.TranslationsLayer"
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="translations" />
+  <utility
+      component="lp.translations.publisher.TranslationsFacet"
+      provides="lp.services.webapp.interfaces.IFacet"
       name="translations" />
 
     <lp:help-folder folder="help" name="+help-translations" />
@@ -219,45 +222,6 @@
             interface="lp.translations.interfaces.pofiletranslator.IPOFileTranslatorSet"/>
     </securedutility>
 
-    <!-- Breadcrumbs for DistroSeries, Distribution, ProductSeries, Product,
-         ProjectGroup, TranslationsPerson -->
-    <adapter
-        name="translations"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        name="translations"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        name="translations"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.product.IProduct"
-        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        name="translations"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        name="translations"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        name="translations"
-        provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.person.IPerson"
-        factory="lp.translations.browser.translations.TranslationsFacetBreadcrumb"
-        permission="zope.Public"/>
-
     <!-- Subscribers to registry objects -->
 
     <subscriber
@@ -430,7 +394,7 @@
                 permission="launchpad.Admin"
                 set_attributes="
                     productseries distroseries
-                    sourcepackageversion binarypackagename
+                    sourcepackageversion
                     source_file_format source_file date_last_updated
                     from_sourcepackagename header"/>
         </class>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<!--
+Copyright 2015 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<html>
+  <head>
+      <title>code.gitrepository.edit Tests</title>
+
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test-console/assets/skins/sam/test-console.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
+
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
+
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+
+      <!-- Dependencies -->
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/lp.js"></script>
+
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../gitrepository.edit.js"></script>
+
+      <!-- The test suite -->
+      <script type="text/javascript" src="test_gitrepository.edit.js"></script>
+
+      <script type="text/javascript">
+        YUI().use('lp.code.gitrepository.edit', function(Y) {
+          Y.on('domready', Y.lp.code.gitrepository.edit.setup);
+        });
+      </script>
+
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <li>lp.code.gitrepository.edit.test</li>
+        </ul>
+        <div id="gitrepository.edit">
+        <form action="." name="launchpadform" method="post"
+              enctype="multipart/form-data"
+              accept-charset="UTF-8">
+
+          <table class="form">
+            <tr>
+              <td colspan="2" style="text-align: left">
+                <div>
+                  <label for="field.target">Target:</label>
+                  <div>
+                    <table>
+                      <tr>
+                        <td colspan="2">
+                          <label>
+                            <input class="radioType"
+                                   id="field.target.option.personal"
+                                   name="field.target"
+                                   type="radio"
+                                   value="personal" />
+                            Personal
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <label>
+                            <input class="radioType"
+                                   id="field.target.option.package"
+                                   name="field.target"
+                                   type="radio" value="package" />
+                            Distribution
+                          </label>
+                        </td>
+                        <td>
+                          <select id="field.target.distribution"
+                                  name="field.target.distribution" size="1">
+                            <option value="debian">Debian GNU/Linux</option>
+                            <option value="ubuntu">Ubuntu</option>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="right">
+                          <label for="field.target.option.package">
+                            Package
+                          </label>
+                        </td>
+                        <td>
+                          <input type="text" value="" id="field.target.package"
+                                 name="field.target.package" size="20" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <label>
+                            <input class="radioType"
+                                   id="field.target.option.project"
+                                   name="field.target"
+                                   type="radio"
+                                   value="project" />
+                            Project
+                          </label>
+                        </td>
+                        <td>
+                          <input type="text" value="" id="field.target.project"
+                                 name="field.target.project" size="20" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <p class="formHelp">The target of the repository.</p>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td colspan="2">
+                <div>
+                  <input class="hiddenType" id="field.owner_default.used"
+                         name="field.owner_default.used" type="hidden"
+                         value="" />
+                  <input class="checkboxType" checked="checked"
+                         id="field.owner_default" name="field.owner_default"
+                         type="checkbox" value="on" />
+                  <label for="field.owner_default">Owner default</label>
+                  <p class="formHelp">
+                    Whether this repository is the default for its owner.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <input type="submit" id="field.actions.change"
+                 name="field.actions.change" value="Change Git Repository"
+                 class="button" />
+          or&nbsp;
+          <a href="https://code.launchpad.dev/~me/p/+git/r">Cancel</a>
+        </form>
+        </div>
+    </body>
+</html>

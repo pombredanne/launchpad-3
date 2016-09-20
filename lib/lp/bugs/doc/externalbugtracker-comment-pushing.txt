@@ -6,7 +6,7 @@ to the remote bug tracker.
 In order to demonstrate this we need to create example Bug, BugTracker,
 BugWatch, Message and BugMessage instances with which to work.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from lp.services.messages.interfaces.message import IMessageSet
@@ -48,8 +48,8 @@ ISupportsCommentPushing interface.
     >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
 
-    >>> class CommentPushingExternalBugTracker(ExternalBugTracker):
-    ...     implements(ISupportsCommentPushing)
+    >>> @implementer(ISupportsCommentPushing)
+    ... class CommentPushingExternalBugTracker(ExternalBugTracker):
     ...
     ...     next_comment_id = 1
     ...     remote_comments = {}
@@ -180,9 +180,9 @@ from the remote bugtracker. To demonstrate this, we need to create an
 example ExternalBugTracker that does comment importing.
 
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
-    >>> class CommentImportingExternalBugTracker(
+    >>> @implementer(ISupportsCommentImport)
+    ... class CommentImportingExternalBugTracker(
     ...     CommentPushingExternalBugTracker):
-    ...     implements(ISupportsCommentImport)
     ...
     ...     external_comment_dict = {
     ...         '4': "External comment 1.",

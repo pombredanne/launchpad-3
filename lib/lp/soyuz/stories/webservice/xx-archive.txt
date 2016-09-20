@@ -4,9 +4,9 @@ Archives
 Representations for IArchive can be fetched via the API for PPAs and
 distribution archives.
 
-    >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+archive/ubuntu/ppa").jsonBody()
     >>> print cprov_archive['self_link']
-    http://.../~cprov/+archive/ppa
+    http://.../~cprov/+archive/ubuntu/ppa
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
     >>> print main['self_link']
@@ -18,7 +18,7 @@ We publish a subset of their attributes.
     >>> pprint_entry(cprov_archive)
     authorized_size: 1024
     dependencies_collection_link:
-        u'http://.../~cprov/+archive/ppa/dependencies'
+        u'http://.../~cprov/+archive/ubuntu/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -26,37 +26,43 @@ We publish a subset of their attributes.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    reference: u'~cprov/ubuntu/ppa'
     relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+archive/ppa'
+    self_link: u'http://.../~cprov/+archive/ubuntu/ppa'
     signing_key_fingerprint: None
     suppress_subscription_notifications: False
-    web_link: u'http://launchpad.../~cprov/+archive/ppa'
+    web_link: u'http://launchpad.../~cprov/+archive/ubuntu/ppa'
 
 For "devel" additional attributes are available.
 
     >>> cprov_archive_devel = webservice.get(
-    ...     "/~cprov/+archive/ppa", api_version='devel').jsonBody()
+    ...     "/~cprov/+archive/ubuntu/ppa", api_version='devel').jsonBody()
     >>> pprint_entry(cprov_archive_devel)
     authorized_size: 1024
-    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
+    build_debug_symbols: False
+    dependencies_collection_link: u'http://.../~cprov/+archive/ubuntu/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
-    enabled_restricted_processors_collection_link: u'http://.../~cprov/+archive/ppa/enabled_restricted_processors'
+    enabled_restricted_processors_collection_link: u'http://.../~cprov/+archive/ubuntu/ppa/enabled_restricted_processors'
     external_dependencies: None
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    permit_obsolete_series_uploads: False
     private: False
+    processors_collection_link: u'http://.../~cprov/+archive/ubuntu/ppa/processors'
+    publish_debug_symbols: False
+    reference: u'~cprov/ubuntu/ppa'
     relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+archive/ppa'
+    self_link: u'http://.../~cprov/+archive/ubuntu/ppa'
     signing_key_fingerprint: None
     status: u'Active'
     suppress_subscription_notifications: False
-    web_link: u'http://launchpad.../~cprov/+archive/ppa'
+    web_link: u'http://launchpad.../~cprov/+archive/ubuntu/ppa'
 
 While the Archive signing key is being generated its
 'signing_key_fingerprint' attribute is None.
@@ -74,7 +80,10 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
     ABCDEF0123456789ABCDDCBA0000111112345678
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> removeSecurityProxy(cprov.archive).signing_key = a_key
+    >>> removeSecurityProxy(cprov.archive).signing_key_fingerprint = (
+    ...     a_key.fingerprint)
+    >>> removeSecurityProxy(cprov.archive).signing_key_owner = (
+    ...     a_key.owner)
     >>> print cprov.archive.signing_key_fingerprint
     ABCDEF0123456789ABCDDCBA0000111112345678
 
@@ -82,7 +91,7 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
 
 And then the new attribute value is exported as a string.
 
-    >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+archive/ubuntu/ppa").jsonBody()
     >>> print cprov_archive['signing_key_fingerprint']
     ABCDEF0123456789ABCDDCBA0000111112345678
 
@@ -121,6 +130,7 @@ The archive has the following attributes:
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
     private: False
+    reference: u'ubuntutest'
     relative_build_score: 0
     require_virtualized: False
     resource_type_link: u'http://.../#archive'
@@ -336,13 +346,14 @@ Let's also make a new Person to own the Ubuntu distro.
 And here's a packageset to play with later:
 
     >>> print webservice.named_post(
-    ...     '/package-sets', 'new', {},
+    ...     '/package-sets', 'new', {}, distroseries='/ubuntu/hoary',
     ...     name=u'umbrella', description=u'Contains all source packages',
     ...     owner=name12['self_link'])
     HTTP/1.1 201 Created
     ...
 
-    >>> packageset = webservice.get("/package-sets/hoary/umbrella").jsonBody()
+    >>> packageset = webservice.get(
+    ...     "/package-sets/ubuntu/hoary/umbrella").jsonBody()
 
 
 To be able to amend any permissions on a distribution archive,
@@ -1095,7 +1106,7 @@ Non-virtualized archives
 
 
 Modifying the require_virtualized flag through the API is not allowed except
-for admins and commercial admins.
+for admins, commercial admins, and PPA admins.
 
     >>> import simplejson
     >>> def modify_archive(service, archive):
@@ -1110,11 +1121,11 @@ for admins and commercial admins.
     ...     admin_person, permission=OAuthPermission.WRITE_PUBLIC)
     >>> logout()
 
-    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
     >>> mark_archive['require_virtualized'] = False
     >>> response = modify_archive(admin_webservice, mark_archive)
     >>> webservice.get(
-    ...     "/~mark/+archive/ppa").jsonBody()['require_virtualized']
+    ...     "/~mark/+archive/ubuntu/ppa").jsonBody()['require_virtualized']
     False
 
 Attempting to modify this flag without the necessary permissions will fail.
@@ -1131,22 +1142,22 @@ Archives can have a quota to help moderate consumption of disk space
 resources. This quota is set via the authorized_size attribute which
 describes the maximum size, in MiB, allowed for the archive.
 
-    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
     >>> print mark_archive['authorized_size']
     1024
 
 Modifying the authorized_size attribute through the API is not allowed except
-for admins and commercial admins.
+for admins, commercial admins, and PPA admins.
 
     >>> mark_archive['authorized_size'] = 4096
     >>> response = modify_archive(admin_webservice, mark_archive)
-    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
     >>> print mark_archive['authorized_size']
     4096
 
 Attempting to modify this flag without the necessary permissions will fail.
 
-    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
     >>> mark_archive['authorized_size'] = 1024
     >>> print modify_archive(user_webservice, mark_archive)
     HTTP/1.1 401 Unauthorized
@@ -1179,10 +1190,10 @@ Note that the 'description' and the 'signing_key_fingerprint'
 attributes are only exposed when the requestor has View permission in
 the IArchive context, in this case only Celso has it.
 
-    >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    >>> pprint_entry(user_webservice.get("/~cprov/+archive/ubuntu/p3a").jsonBody())
     authorized_size: u'tag:launchpad.net:2008:redacted'
     dependencies_collection_link:
-        u'http://.../~cprov/+archive/p3a/dependencies'
+        u'http://.../~cprov/+archive/ubuntu/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -1190,18 +1201,19 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    reference: u'~cprov/ubuntu/p3a'
     relative_build_score: 0
     require_virtualized: u'tag:launchpad.net:2008:redacted'
     resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+archive/p3a'
+    self_link: u'http://.../~cprov/+archive/ubuntu/p3a'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
     suppress_subscription_notifications: False
-    web_link: u'http://launchpad.../~cprov/+archive/p3a'
+    web_link: u'http://launchpad.../~cprov/+archive/ubuntu/p3a'
 
-    >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/ubuntu/p3a").jsonBody())
     authorized_size: 2048
     dependencies_collection_link:
-        u'http://.../~cprov/+archive/p3a/dependencies'
+        u'http://.../~cprov/+archive/ubuntu/p3a/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
@@ -1209,13 +1221,14 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    reference: u'~cprov/ubuntu/p3a'
     relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+archive/p3a'
+    self_link: u'http://.../~cprov/+archive/ubuntu/p3a'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
     suppress_subscription_notifications: False
-    web_link: u'http://launchpad.../~cprov/+archive/p3a'
+    web_link: u'http://launchpad.../~cprov/+archive/ubuntu/p3a'
 
 Creating subscriptions to a (private) archive
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1234,7 +1247,7 @@ bad request will result:
     >>> logout()
     >>> mark = mark_webservice.get("/~mark").jsonBody()
     >>> mark_archive = mark_webservice.get(
-    ...     "/~mark/+archive/ppa").jsonBody()
+    ...     "/~mark/+archive/ubuntu/ppa").jsonBody()
     >>> response = mark_webservice.named_post(
     ...     mark_archive['self_link'], 'newSubscription',
     ...     subscriber=cprov_archive['owner_link'])
@@ -1247,7 +1260,7 @@ First we'll subscribe mark to cprov's archive:
 
     >>> mark = webservice.get("/~mark").jsonBody()
     >>> cprov_private_ppa = cprov_webservice.get(
-    ...     "/~cprov/+archive/p3a").jsonBody()
+    ...     "/~cprov/+archive/ubuntu/p3a").jsonBody()
     >>> response = cprov_webservice.named_post(
     ...     cprov_private_ppa['self_link'], 'newSubscription',
     ...     subscriber=mark['self_link'])
@@ -1257,23 +1270,23 @@ First we'll subscribe mark to cprov's archive:
     ...
 
     >>> print response.getHeader('Location')
-    http://.../~cprov/+archive/p3a/+subscriptions/mark
+    http://.../~cprov/+archive/ubuntu/p3a/+subscriptions/mark
 
 We publish a subset of the IArchiveSubscriber attributes.
 
     >>> new_subscription = cprov_webservice.get(
     ...     response.getHeader('Location')).jsonBody()
     >>> pprint_entry(new_subscription)
-    archive_link: u'http://api.launchpad.dev/beta/~cprov/+archive/p3a'
+    archive_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ubuntu/p3a'
     date_created: ...
     date_expires: None
     description: None
     registrant_link: u'http://api.launchpad.dev/beta/~cprov'
     resource_type_link: u'http://api.launchpad.dev/beta/#archive_subscriber'
-    self_link: u'http://api.../~cprov/+archive/p3a/+subscriptions/mark'
+    self_link: u'http://api.../~cprov/+archive/ubuntu/p3a/+subscriptions/mark'
     status: u'Active'
     subscriber_link: u'http://api.launchpad.dev/beta/~mark'
-    web_link: u'http://launchpad.../~cprov/+archive/p3a/+subscriptions/mark'
+    web_link: u'http://launchpad.../~cprov/+archive/ubuntu/p3a/+subscriptions/mark'
 
 Other webservice users cannot view the subscription.
 
@@ -1320,14 +1333,32 @@ Modifying privacy
 ~~~~~~~~~~~~~~~~~
 
 Modifying the privacy flag through the API is not allowed except for
-admins and commercial admins.
+admins, commercial admins, and PPA admins.
 
-    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
-    >>> mark_archive['private'] = True
-    >>> print modify_archive(user_webservice, mark_archive)
+    >>> login('foo.bar@canonical.com')
+    >>> pubpriv_archive_db = factory.makeArchive(
+    ...     owner=cprov, distribution=ubuntu_db, name="pubpriv")
+    >>> logout()
+    >>> pubpriv_archive = webservice.get(
+    ...     "/~cprov/+archive/ubuntu/pubpriv").jsonBody()
+    >>> pubpriv_archive['private'] = True
+    >>> print modify_archive(user_webservice, pubpriv_archive)
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'private', 'launchpad.Admin')
+
+    >>> login('foo.bar@canonical.com')
+    >>> ppa_admin = factory.makePerson(member_of=[
+    ...     getUtility(IPersonSet).getByName('launchpad-ppa-admins')])
+    >>> logout()
+    >>> ppa_admin_webservice = webservice_for_person(
+    ...     ppa_admin, permission=OAuthPermission.WRITE_PRIVATE)
+    >>> print modify_archive(ppa_admin_webservice, pubpriv_archive)
+    HTTP/1.1 209 Content Returned
+    ...
+    >>> webservice.get(
+    ...     "/~cprov/+archive/ubuntu/pubpriv").jsonBody()['private']
+    True
 
 
 Copying private file to public archives
@@ -1414,48 +1445,48 @@ We can then request that dependency, and see that we get all of its
 attributes.
 
     >>> cprov_main_dependency = webservice.named_get(
-    ...     '/~cprov/+archive/ppa', 'getArchiveDependency',
+    ...     '/~cprov/+archive/ubuntu/ppa', 'getArchiveDependency',
     ...     dependency=ubuntu['main_archive_link']).jsonBody()
     >>> pprint_entry(cprov_main_dependency)
-    archive_link: u'http://.../~cprov/+archive/ppa'
+    archive_link: u'http://.../~cprov/+archive/ubuntu/ppa'
     component_name: u'universe'
     date_created: ...
     dependency_link: u'http://.../ubuntu/+archive/primary'
     pocket: u'Release'
     resource_type_link: u'http://.../#archive_dependency'
-    self_link: u'http://.../~cprov/+archive/ppa/+dependency/1'
+    self_link: u'http://.../~cprov/+archive/ubuntu/ppa/+dependency/1'
     title: u'Primary Archive for Ubuntu Linux - RELEASE (main, universe)'
 
 Asking for an archive on which there is no dependency returns None.
 
     >>> debian = webservice.get('/debian').jsonBody()
     >>> webservice.named_get(
-    ...     '/~cprov/+archive/ppa', 'getArchiveDependency',
+    ...     '/~cprov/+archive/ubuntu/ppa', 'getArchiveDependency',
     ...     dependency=debian['main_archive_link']).jsonBody()
 
 Archives will also give us a list of their custom dependencies.
 
     >>> print_self_link_of_entries(
-    ...     webservice.get('/~cprov/+archive/ppa/dependencies').jsonBody())
-    http://.../~cprov/+archive/ppa/+dependency/1
+    ...     webservice.get('/~cprov/+archive/ubuntu/ppa/dependencies').jsonBody())
+    http://.../~cprov/+archive/ubuntu/ppa/+dependency/1
 
 Crafting a URL to a non-dependency 404s:
 
     >>> print webservice.get(
-    ...     '/~cprov/+archive/ppa/+dependency/2')
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/2')
     HTTP/1.1 404 Not Found
     ...
 
 A 404 also occurs if we ask for an archive that doesn't exist.
 
     >>> print webservice.get(
-    ...     '/~cprov/+archive/ppa/+dependency/123456')
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/123456')
     HTTP/1.1 404 Not Found
     ...
 
 And even if we ask for a non-integral archive ID.
 
     >>> print webservice.get(
-    ...     '/~cprov/+archive/ppa/+dependency/foo')
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/foo')
     HTTP/1.1 404 Not Found
     ...

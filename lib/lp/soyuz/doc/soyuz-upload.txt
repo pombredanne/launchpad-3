@@ -54,11 +54,11 @@ been uploaded over FTP.
     >>> for changes_filepath in changes:
     ...     tf = parse_tagfile(changes_filepath)
     ...
-    ...     if tf.has_key("Source"):
+    ...     if "Source" in tf:
     ...         package_names.append(tf["Source"])
     ...
     ...     send_filepaths = [changes_filepath]
-    ...     if tf.has_key("Files"):
+    ...     if "Files" in tf:
     ...         send_filepaths.extend(
     ...             [os.path.join(test_files_dir, line.split()[-1])
     ...              for line in tf["Files"].splitlines() if line])
@@ -418,7 +418,7 @@ Now we process the accepted queue items, one more time.
     >>> transaction.commit()
     >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
     >>> process = subprocess.Popen(
-    ...     [sys.executable, script, "ubuntutest", "-q"])
+    ...     [sys.executable, script, "-d", "ubuntutest", "-q"])
     >>> process.wait()
     0
 
@@ -464,11 +464,11 @@ Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
 required entry for 'etherwake':
 
-    >>> sources = open(
+    >>> import gzip
+
+    >>> sources = gzip.open(
     ...    "/var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source"
-    ...    "/Sources").read()
-    >>> import re
-    >>> sources = re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', sources)[0]
+    ...    "/Sources.gz").read()
     >>> print sources + '\nEND'
     Package: etherwake
     Binary: etherwake
@@ -484,13 +484,21 @@ required entry for 'etherwake':
      f13711c5b8261fbb77b43ae0e8ba9360 566 etherwake_1.08-1.dsc
      c2dc10f98bac012b900fd0b46721fc80 4455 etherwake_1.08.orig.tar.gz
      95c1e89e3ad7bc8740793bdf7aeb7334 4145 etherwake_1.08-1.diff.gz
+    Checksums-Sha1:
+     2ddcdc87ab3dc35d5ce8232b0cc76bad8242725f 566 etherwake_1.08-1.dsc
+     4d8aa805cf262a613a48597e3638054dae421048 4455 etherwake_1.08.orig.tar.gz
+     f0ec9827c3ce66c0e1ea2c2f100ec144cb26b264 4145 etherwake_1.08-1.diff.gz
+    Checksums-Sha256:
+     0077eb18c0c02e931021e523ae3ae307731726f7b00736f66139fffa7181a915 566 etherwake_1.08-1.dsc
+     e309f8a45cab2d9a955efee5423b052bc040df1e9a9b85893682ab8647264495 4455 etherwake_1.08.orig.tar.gz
+     330e7f515d2da923d83131a1fbb5868adc4633e98a35d7b0e1787da46b63ffac 4145 etherwake_1.08-1.diff.gz
+    Checksums-Sha512:
+     51216a36b2ab6fde6ae04d5bcb0b7cefa9a18eb4b2b11552ca8f3abde928159e93729f30c6079e913078e966817368a6095de2cb4239676a3d6ed5d49d9de699 566 etherwake_1.08-1.dsc
+     6ab88a579ae3fdbbe0f1904712a3a42fab98fa586c3718243d2380f3cb021158c228312001b0685a77dc7171b0307d591ad971a82cd1ccd3511135b23d95ee21 4455 etherwake_1.08.orig.tar.gz
+     814074aa8349936fbec84b3ee703788159a085f0ce4a5e35d2dbef617e1c3c6e60818d155772d47b58e0823ed4bc9af29136f64eac8d643a833660e537145cb1 4145 etherwake_1.08-1.diff.gz
     <BLANKLINE>
     <BLANKLINE>
     END
-
-# XXX: maxb 2010-04-15 bug=563503
-# The regex munging above can be removed once the tests no longer need to pass
-# on Karmic and earlier.
 
 Now we invoke changeOverride on just published etherwake, moving it to
 component 'multiverse'.
@@ -542,16 +550,16 @@ Check the publishing history again
 
 Check if the package was moved properly to the component 'multiverse':
 
-    >>> main_sources = open(
+    >>> main_sources = gzip.open(
     ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-    ...     "/main/source/Sources").read()
+    ...     "/main/source/Sources.gz").read()
     >>> print main_sources + '\nEND'
     <BLANKLINE>
     END
 
-    >>> multiverse_sources = open(
+    >>> multiverse_sources = gzip.open(
     ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-    ...     "/multiverse/source/Sources").read()
+    ...     "/multiverse/source/Sources.gz").read()
     >>> print multiverse_sources + '\nEND'
     Package: drdsl
     ...

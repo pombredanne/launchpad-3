@@ -116,7 +116,7 @@ changes to that test.
     ...     "-----END PGP SIGNATURE-----\n")
     >>> user_browser.getControl('Post Comment', index=-1).click()
 
-No Privileges Person is authenticated in user_browser, so he can see
+No Privileges Person is authenticated in user_browser, so they can see
 email addresses in messages.
 
     >>> user_browser.title.decode('utf-8')
@@ -131,7 +131,7 @@ email addresses in messages.
 
 Unauthenticated users, such as a bot will see the obfuscated email
 address, '<email address hidden>'. The anonymous user is
-unauthenticated, so he will see the obfuscated email address.
+unauthenticated, so they will see the obfuscated email address.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> anon_browser.title.decode('utf-8')

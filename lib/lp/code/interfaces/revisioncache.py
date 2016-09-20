@@ -56,8 +56,8 @@ class IRevisionCollection(Interface):
     def inProduct(product):
         """Restrict to revisions in branches in 'product'."""
 
-    def inProject(project):
-        """Restrict to revisions in branches in 'project'."""
+    def inProjectGroup(projectgroup):
+        """Restrict to revisions in branches in 'projectgroup'."""
 
     def inSourcePackage(package):
         """Restrict to revisions in branches in 'package'.

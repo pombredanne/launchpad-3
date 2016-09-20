@@ -946,7 +946,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         dsd = getUtility(IDistroSeriesDifferenceSource).new(
             dsp.derived_series, spn, dsp.parent_series)
         spr = dsd.source_package_release
-        self.assertEqual(dsp.derived_series, spr.distroseries)
+        self.assertEqual(dsp.derived_series.distribution, spr.distribution)
         self.assertEqual(spph.sourcepackagerelease, spr.sourcepackagerelease)
 
     def test_package_diff_urls(self):

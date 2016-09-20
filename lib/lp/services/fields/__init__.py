@@ -17,19 +17,16 @@ __all__ = [
     'IBaseImageUpload',
     'IBugField',
     'IDescription',
-    'ILocationField',
     'INoneableTextLine',
     'IPersonChoice',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
-    'ITimeInterval',
     'ITitle',
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
     'KEEP_SAME_IMAGE',
-    'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
     'NoneableDescription',
@@ -37,7 +34,6 @@ __all__ = [
     'PersonChoice',
     'PillarAliases',
     'PillarNameField',
-    'PrivateMembershipTeamNotAllowed',
     'PrivateTeamNotAllowed',
     'ProductBugTracker',
     'ProductNameField',
@@ -46,7 +42,6 @@ __all__ = [
     'StrippedTextLine',
     'Summary',
     'Tag',
-    'TimeInterval',
     'Title',
     'URIField',
     'UniqueField',
@@ -68,15 +63,13 @@ from lazr.uri import (
     URI,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import (
     Bool,
     Bytes,
     Choice,
     Date,
     Datetime,
-    Field,
-    Float,
     Int,
     Text,
     TextLine,
@@ -87,7 +80,6 @@ from zope.schema.interfaces import (
     IBytes,
     IDate,
     IDatetime,
-    IField,
     Interface,
     IObject,
     IText,
@@ -149,10 +141,6 @@ class IWhiteboard(IText):
     """A Field that implements a Whiteboard"""
 
 
-class ITimeInterval(ITextLine):
-    """A field that captures a time interval in days, hours, minutes."""
-
-
 class IBugField(IObject):
     """A field that allows entry of a Bug number or nickname"""
 
@@ -165,14 +153,6 @@ class IAnnouncementDate(IDatetime):
     publication in advance. Essentially this amounts to a Datetime that can
     be None.
     """
-
-
-class ILocationField(IField):
-    """A location, consisting of geographic coordinates and a time zone."""
-
-    latitude = Float(title=_('Latitude'))
-    longitude = Float(title=_('Longitude'))
-    time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
 
 
 class ITag(ITextLine):
@@ -231,8 +211,8 @@ class IBaseImageUpload(IBytes):
         """
 
 
+@implementer(IStrippedTextLine)
 class StrippedTextLine(TextLine):
-    implements(IStrippedTextLine)
 
     def set(self, object, value):
         """Strip the value and pass up."""
@@ -241,15 +221,17 @@ class StrippedTextLine(TextLine):
         super(StrippedTextLine, self).set(object, value)
 
 
+@implementer(INoneableTextLine)
 class NoneableTextLine(StrippedTextLine):
-    implements(INoneableTextLine)
+    pass
 
 
 # Title
 # A field to capture a launchpad object title
 
+@implementer(ITitle)
 class Title(StrippedTextLine):
-    implements(ITitle)
+    pass
 
 
 class StrippableText(Text):
@@ -283,35 +265,39 @@ class StrippableText(Text):
 # Summary
 # A field capture a Launchpad object summary
 
+@implementer(ISummary)
 class Summary(StrippableText):
-    implements(ISummary)
+    pass
 
 
 # Description
 # A field capture a Launchpad object description
 
+@implementer(IDescription)
 class Description(StrippableText):
-    implements(IDescription)
+    pass
 
 
+@implementer(INoneableDescription)
 class NoneableDescription(Description):
-    implements(INoneableDescription)
+    pass
 
 
 # Whiteboard
 # A field capture a Launchpad object whiteboard
 
+@implementer(IWhiteboard)
 class Whiteboard(StrippableText):
-    implements(IWhiteboard)
+    pass
 
 
+@implementer(IDate)
 class FormattableDate(Date):
     """A datetime field that checks for compatibility with Python's strformat.
 
     From the user's perspective this is a date entry field; it converts to and
     from datetime because that's what the db is expecting.
     """
-    implements(IDate)
 
     def _validate(self, value):
         error_msg = ("Date could not be formatted. Provide a date formatted "
@@ -327,25 +313,13 @@ class FormattableDate(Date):
             raise LaunchpadValidationError(error_msg)
 
 
+@implementer(IDatetime)
 class AnnouncementDate(Datetime):
-    implements(IDatetime)
+    pass
 
 
-# TimeInterval
-# A field to capture an interval in time, such as X days, Y hours, Z
-# minutes.
-
-class TimeInterval(TextLine):
-    implements(ITimeInterval)
-
-    def _validate(self, value):
-        if 'mon' in value:
-            return 0
-        return 1
-
-
+@implementer(IBugField)
 class BugField(Reference):
-    implements(IBugField)
 
     def __init__(self, *args, **kwargs):
         """The schema will always be `IBug`."""
@@ -391,9 +365,8 @@ class DuplicateBug(BugField):
             return True
 
 
+@implementer(ITag)
 class Tag(TextLine):
-
-    implements(ITag)
 
     def constraint(self, value):
         """Make sure that the value is a valid name."""
@@ -566,6 +539,7 @@ class PillarAliases(TextLine):
         return " ".join(object.aliases)
 
 
+@implementer(IReferenceChoice)
 class ProductBugTracker(Choice):
     """A bug tracker used by a Product.
 
@@ -574,7 +548,6 @@ class ProductBugTracker(Choice):
     This field uses two attributes on the Product to model its state:
     'official_malone' and 'bugtracker'
     """
-    implements(IReferenceChoice)
     malone_marker = object()
 
     @property
@@ -600,8 +573,8 @@ class ProductBugTracker(Choice):
             setattr(ob, self.__name__, value)
 
 
+@implementer(IURIField)
 class URIField(TextLine):
-    implements(IURIField)
 
     def __init__(self, allowed_schemes=(), allow_userinfo=True,
                  allow_port=True, allow_query=True, allow_fragment=True,
@@ -673,6 +646,7 @@ class FieldNotBoundError(Exception):
     """The field is not bound to any object."""
 
 
+@implementer(IBaseImageUpload)
 class BaseImageUpload(Bytes):
     """Base class for ImageUpload fields.
 
@@ -682,8 +656,6 @@ class BaseImageUpload(Bytes):
       form (width, height).
     - max_size: the maximum size of the image, in bytes.
     """
-
-    implements(IBaseImageUpload)
 
     exact_dimensions = True
     dimensions = ()
@@ -776,26 +748,8 @@ class MugshotImageUpload(BaseImageUpload):
     max_size = 100 * 1024
 
 
-class LocationField(Field):
-    """A Location field."""
-
-    implements(ILocationField)
-
-    @property
-    def latitude(self):
-        return self.value.latitude
-
-    @property
-    def longitude(self):
-        return self.value.longitude
-
-    @property
-    def time_zone(self):
-        return self.value.time_zone
-
-
 class PillarNameField(BlacklistableContentNameField):
-    """Base field used for names of distros/projects/products."""
+    """Base field used for names of distros/project groups/products."""
 
     errormessage = _("%s is already used by another project")
 
@@ -835,21 +789,17 @@ class PrivateTeamNotAllowed(ConstraintNotSatisfied):
     __doc__ = _("A private team is not allowed.")
 
 
-class PrivateMembershipTeamNotAllowed(ConstraintNotSatisfied):
-    __doc__ = _("A private-membership team is not allowed.")
-
-
 class IPersonChoice(IReferenceChoice):
     """A marker for a choice among people."""
 
 
+@implementer(IPersonChoice)
 class PersonChoice(Choice):
     """A person or team.
 
     This is useful as a superclass and provides a clearer error message than
     "Constraint not satisfied".
     """
-    implements(IPersonChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
 

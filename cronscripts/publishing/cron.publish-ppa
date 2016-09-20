@@ -10,12 +10,12 @@ source `dirname $0`/cron.base-ppa
 
 LPCURRENT=`dirname $0`/../..
 
-# Accept PPA binary uploads
-$LPCURRENT/scripts/process-accepted.py -v --ppa ubuntu
-
-# Publish source and binary PPAs into disk.
+# Publish Ubuntu PPAs.
+$LPCURRENT/scripts/process-accepted.py -v --ppa -d ubuntu
 $LPCURRENT/scripts/publish-distro.py -v --ppa -d ubuntu
-
-# Publish private PPAs.
 $LPCURRENT/scripts/publish-distro.py -v --private-ppa -d ubuntu
 
+# Publish PPAs for other distros.
+$LPCURRENT/scripts/process-accepted.py -v --ppa --all-derived
+$LPCURRENT/scripts/publish-distro.py -v --ppa --all-derived
+$LPCURRENT/scripts/publish-distro.py -v --private-ppa --all-derived

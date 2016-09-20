@@ -53,7 +53,7 @@
             interface="lp.services.identity.interfaces.account.IAccountViewRestricted"/>
         <require
             permission="launchpad.Moderate"
-            set_attributes="status date_status_set status_comment"/>
+            interface="lp.services.identity.interfaces.account.IAccountModerateRestricted"/>
         <require
             permission="launchpad.Edit"
             set_attributes="displayname"/>

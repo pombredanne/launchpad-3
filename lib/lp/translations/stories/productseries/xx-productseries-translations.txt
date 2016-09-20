@@ -47,7 +47,7 @@ being set up for translation.
 
     >>> anon_browser.open(frobnicator_trunk_url)
     >>> print anon_browser.title
-    Translations : Series trunk : Frobnicator
+    Series trunk : Translations : Frobnicator
 
     >>> main_content = find_main_content(anon_browser.contents)
     >>> print extract_text(main_content.findAll('h1')[0])
@@ -181,11 +181,11 @@ When the owner now visits the upload page for trunk, there's a notice.
     Launchpad allows communities to translate projects using
     imports or a branch.
     Getting started with translating your project in Launchpad
-    Configure translations
+    Configure Translations
 
 The notice links to the page for configuring translations on the project.
 
-    >>> owner_browser.getLink('Configure translations').click()
+    >>> owner_browser.getLink('Translations', index=1).click()
     >>> print owner_browser.url
     http://.../bazaar/+configure-translations
 
@@ -204,7 +204,7 @@ An administrator also sees the notice.
     Launchpad allows communities to translate projects using
     imports or a branch.
     Getting started with translating your project in Launchpad
-    Configure translations
+    Configure Translations
 
 A Translations admin who is neither a Launchpad admin nor the project
 owner (and so won't be able to change the project's settings) sees the

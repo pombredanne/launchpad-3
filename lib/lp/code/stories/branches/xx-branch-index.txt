@@ -426,7 +426,7 @@ used for the breadcrumbs and tabs.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print_location(browser.contents)
-    Hierarchy: GNOME Terminal > Code > scanned
+    Hierarchy: GNOME Terminal
     Tabs:
     * Overview - http://launchpad.dev/gnome-terminal
     * Code (selected) - http://code.launchpad.dev/gnome-terminal
@@ -438,7 +438,7 @@ used for the breadcrumbs and tabs.
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print_location(browser.contents)
-    Hierarchy: Sample Person > Code > junk.dev
+    Hierarchy: Sample Person
     Tabs:
     * Overview - http://launchpad.dev/~name12
     * Code (selected) - http://code.launchpad.dev/~name12

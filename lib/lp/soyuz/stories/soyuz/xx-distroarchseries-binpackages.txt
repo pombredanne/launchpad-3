@@ -89,12 +89,12 @@ Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
     0.9 : mozilla-firefox : i386 : Warty (4.10) : Ubuntu
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
-able to point the user to the IDistroSeriesSourcePackageRelease which
+able to point the user to the IDistributionSourcePackageRelease which
 originated itself:
 
     >>> source_element = find_tag_by_id(browser.contents, 'source')
     >>> print extract_text(source_element)
-    "mozilla-firefox" 0.9 source package in Ubuntu
+    mozilla-firefox 0.9 source package in Ubuntu
 
     >>> print source_element.find(name='a')['href']
     /ubuntu/+source/mozilla-firefox/0.9
@@ -224,11 +224,11 @@ Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
     1.0-1 : commercialpackage : i386 : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
-able to point the user to the IDistroSeriesSourcePackageRelease which
+able to point the user to the IDistributionSourcePackageRelease which
 originated itself:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'source'))
-    "commercialpackage" 1.0-1 source package in Ubuntu
+    commercialpackage 1.0-1 source package in Ubuntu
 
 Also provide a section with the contained files, including respective
 librarian URL and size:

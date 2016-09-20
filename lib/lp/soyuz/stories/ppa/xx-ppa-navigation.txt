@@ -23,7 +23,7 @@ And the users can click on the item and will be taken to the PPA page.
     >>> anon_browser.getLink('PPA for Celso Providelo').click()
 
     >>> anon_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa'
 
     >>> print anon_browser.title
     PPA for Celso Providelo : Celso Providelo
@@ -48,7 +48,7 @@ There is a link that allows users with permission to create a PPA.
 While navigating around the PPA the "structural location" includes a PPA:
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Celso Providelo > PPA for Celso Providelo
+    Hierarchy: Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -62,14 +62,14 @@ The PPA breadcrumb follows the PPA displayname.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:test")
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ubuntu/ppa")
     >>> cprov_browser.getLink("Change details").click()
     >>> cprov_browser.getControl(
     ...    name="field.displayname").value = 'Default PPA'
     >>> cprov_browser.getControl("Save").click()
 
     >>> print_location(cprov_browser.contents)
-    Hierarchy: Celso Providelo > Default PPA
+    Hierarchy: Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -98,12 +98,12 @@ the 'View all builds' link.
     Builds : Default PPA : Celso Providelo
 
     >>> anon_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa/+builds'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds'
 
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
     >>> print anon_browser.getLink('Default PPA').url
-    http://launchpad.dev/~cprov/+archive/ppa
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa
 
 The user can navigate to an individual build details:
 
@@ -128,14 +128,14 @@ The user can navigate to an individual build details:
 From that page the user can return to the PPA overview.
 
     >>> anon_browser.getLink('Default PPA').url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa'
 
 When the number of packages in the PPA is large the user will see them
 displayed in batches.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa?batch=1')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa?batch=1')
 
-Since he is on the first page, the 'First' and 'Previous' links are
+Since they are on the first page, the 'First' and 'Previous' links are
 inactive:
 
     >>> 'Previous' in anon_browser.contents
@@ -151,12 +151,12 @@ inactive:
       ..
     LinkNotFoundError...
 
-The user does not see the package he is looking for and proceeds to the
+The user does not see the package they are looking for and proceeds to the
 next page.
 
     >>> anon_browser.getLink('Next').click()
 
-The package of interest is not on this page either so he goes to the
+The package of interest is not on this page either so they go to the
 next page.
 
     >>> anon_browser.getLink('Next').click()
@@ -179,8 +179,8 @@ This is the last page, so the next and last links are inactive.
 The 'First' and 'Previous' links, however, are now active.
 
     >>> anon_browser.getLink('First').url
-    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?batch=1'
+    'http://launchpad.dev/%7Ecprov/+archive/ubuntu/ppa/+index?batch=1'
 
     >>> anon_browser.getLink('Previous').url
-    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?batch=1&direction=backwards&memo=2&start=1'
+    'http://launchpad.dev/%7Ecprov/+archive/ubuntu/ppa/+index?batch=1&direction=backwards&memo=2&start=1'
 

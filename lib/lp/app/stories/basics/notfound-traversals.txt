@@ -56,12 +56,14 @@ Bug attachments in the context of a bugtask are all redirected to be at
 
     >>> login('test@canonical.com')
     >>> attachment = factory.makeBugAttachment(1)
+    >>> atid = attachment.id
     >>> logout()
 
-    >>> check_redirect("/firefox/+bug/1/attachments/1", status=301)
-    >>> check_redirect("/firefox/+bug/1/attachments/1/+edit", status=301)
-    >>> check_redirect("/bugs/1/attachments/1", status=301)
-    >>> check_redirect("/bugs/1/attachments/1/+edit", status=301)
+    >>> check_redirect("/firefox/+bug/1/attachments/%d" % atid, status=301)
+    >>> check_redirect(
+    ...     "/firefox/+bug/1/attachments/%d/+edit" % atid, status=301)
+    >>> check_redirect("/bugs/1/attachments/%d" % atid, status=301)
+    >>> check_redirect("/bugs/1/attachments/%d/+edit" % atid, status=301)
 
 Check a bug is traversable by nickname:
 
@@ -89,6 +91,10 @@ The old +filebug-advanced form now redirects to the +filebug form.
 
 And this is for a person:
 
+    >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
+    >>> check_redirect(
+    ...     "/~name12/+branch/gnome-terminal/pushed/+edit",
+    ...     auth=True, status=301)
     >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
     >>> check_redirect(
     ...     "/~name12/+branch/gnome-terminal/pushed/+edit",

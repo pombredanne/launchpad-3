@@ -1,0 +1,25 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:define="context_menu view/context/menu:context">
+
+  <p tal:condition="not: context/has_commits">
+    <metal:no-commit-message use-macro="context/@@+macros/no-commit-message" />
+  </p>
+
+  <tal:history-available condition="context/has_commits"
+                         define="ref view/context;
+                                 commit_infos view/commit_infos">
+    <metal:landing-target use-macro="ref/@@+macros/ref-commits"/>
+
+    <div tal:define="link context_menu/browse_commits">
+      &raquo;
+      <span class="actions" tal:content="structure link/render">
+        All commits
+      </span>
+    </div>
+
+  </tal:history-available>
+
+</div>

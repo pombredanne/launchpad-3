@@ -446,20 +446,20 @@ languages...
     ...     if not attr.startswith('_'):
     ...         print "%s: %s" % (attr, getattr(submission, attr))
     date_created: ...
-    id: 703
+    id: ...
     is_empty: False
     is_local_to_pofile: False
     is_traversable: ...
     language: ...
     legal_warning: False
-    origin_html_id: msgset_15_ja_suggestion_703_0_origin
+    origin_html_id: msgset_15_ja_suggestion_..._0_origin
     person: ...
     plural_index: 0
     pofile: ...
     potmsgset: ...
     row_html_id: 
     suggestion_dismissable_class: msgset_15_dismissable_button
-    suggestion_html_id: msgset_15_ja_suggestion_703_0
+    suggestion_html_id: msgset_15_ja_suggestion_..._0
     suggestion_text: Foo <code>%d</code>
     translation_html_id: msgset_15_es_translation_0
     translationmessage: ...
@@ -517,33 +517,6 @@ translation provides no text and so is ignored.
     ...     plural_form=1)
     >>> len(suggestions.submissions)
     0
-
-
-Sequence number of new shared POTMsgSets
-----------------------------------------
-
-Newly added shared POTMsgSets don't have their sequence field set, but
-they do have sequence number when being displayed with translation
-message.
-
-    >>> pofile = factory.makePOFile('sr')
-    >>> potemplate = pofile.potemplate
-    >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
-    >>> potmsgset.getSequence(potemplate)
-    1
-    >>> translationmessage = factory.makeCurrentTranslationMessage(
-    ...     pofile=pofile, potmsgset=potmsgset,
-    ...     translations=[u"some translation"])
-    >>> translationmessage.setPOFile(pofile)
-    >>> server_url = '/'.join(
-    ...     [canonical_url(translationmessage), '+translate'])
-    >>> translationmessage_page_view = create_view(
-    ...     translationmessage, "+translate", server_url=server_url)
-    >>> translationmessage_page_view.initialize()
-    >>> subview = translationmessage_page_view.translationmessage_view
-    >>> subview.initialize()
-    >>> subview.sequence
-    1
 
 
 Sharing and diverging messages

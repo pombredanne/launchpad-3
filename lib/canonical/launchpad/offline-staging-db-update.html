@@ -1,36 +1,46 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>Please try again</title>
-    <style type="text/css" media="screen, print">
-      html, body {
-        font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
-        }
-      .offline {
-        max-width: 60em;
-        text-align: center;
-        margin-left: auto;
-        margin-right: auto;
-        }
-    </style>
-  </head>
-  <body>
-    <div id="topline"></div>
-    <div id="locationbar"></div>
-    <div class="offline">
-
-        <h1>Database and Code Update</h1>
-        <p>
-          Sorry, there was a problem connecting to the Launchpad server.
-        </p>
-        <p>
-          The staging server is currently getting a code and db update.
-          If the situation persists, let us know in
-          <a href="irc://chat.freenode.net/#launchpad"
-          >the #launchpad IRC channel on freenode</a>.
-        </p>
-        <p>Thanks for your patience.</p>
-
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+>
+<head>
+  <title>Launchpad staging is updating</title>
+  <link
+    type="text/css" rel="stylesheet" media="screen, print"
+    href="https://launchpad.net/+icing/basic-error.css" />
+</head>
+<body>
+  <div class="page-center-wrap">
+    <div class="page-center">
+      <div class="page-center-content">
+        <div id="header">
+          <div class="graphic">
+            :(
+          </div>
+          <div class="content">
+            <h1>Uh oh!</h1>
+            <h2>Staging is offline for a database update.</h2>
+            <p>
+              Launchpad staging will be back in the next couple of days.
+            </p>
+            <p>
+              If the problem persists, let us know in
+              <a href="irc://chat.freenode.net/#launchpad"
+              >the #launchpad IRC channel on freenode</a>.
+            </p>
+            <p><a href="javascript:window.location.reload()">Reload</a>
+              this page or try again in a few minutes</p>
+          </div>
+        </div>
+        <div id="footer">
+          <a href="https://launchpad.net/">
+            <img src="https://launchpad.net/@@/launchpad-logo-and-name-hierarchy.png"
+            alt="Launchpad" />
+          </a>
+        </div>
+      </div>
     </div>
-  </body>
+  </div>
+</body>
 </html>

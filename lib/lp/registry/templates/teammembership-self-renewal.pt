@@ -13,16 +13,16 @@
   <div tal:condition="context/canBeRenewedByMember">
     <div metal:use-macro="context/@@launchpad_form/form">
       <p metal:fill-slot="extra_info">
-        This membership is going to expire in
+        This membership is going to expire
         <span tal:replace="view/time_before_expiration/fmt:approximateduration"
-          /> from now;
+          /> from now.
         <tal:is-team condition="context/person/is_team">
-          if you want this team to remain a member of
+          If you want this team to remain a member of
           <span tal:replace="structure context/team/fmt:link" />,
           you must renew it.
         </tal:is-team>
         <tal:not-team condition="not: context/person/is_team">
-          if you want to remain a member of
+          If you want to remain a member of
           <span tal:replace="structure context/team/fmt:link" />,
           you must renew it.
         </tal:not-team>

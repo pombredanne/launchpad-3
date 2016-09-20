@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
     'IHasExpirableBugs',
@@ -28,7 +27,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
-    LAZR_WEBSERVICE_EXPORTED,
     operation_for_version,
     operation_parameters,
     operation_removed_in_version,
@@ -67,6 +65,10 @@ from lp.bugs.interfaces.bugtasksearch import (
     )
 from lp.registry.enums import BugSharingPolicy
 from lp.services.fields import Tag
+from lp.services.webservice.apihelpers import (
+    patch_plain_parameter_type,
+    patch_reference_property,
+    )
 
 
 search_tasks_params_common = {
@@ -352,31 +354,9 @@ class IBugTarget(IHasBugs):
 
 # We assign the schema for an `IBugTask` attribute here
 # in order to avoid circular dependencies.
-IBugTask['target'].schema = IBugTarget
-IBugTask['transitionToTarget'].getTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
-
-
-class BugDistroSeriesTargetDetails:
-    """The details of a bug targeted to a specific IDistroSeries.
-
-    The following attributes are provided:
-
-    :series: The IDistroSeries.
-    :istargeted: Is there a fix targeted to this series?
-    :sourcepackage: The sourcepackage to which the fix would be targeted.
-    :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if series is not
-        targeted.
-    """
-
-    def __init__(self, series, istargeted=False, sourcepackage=None,
-                 assignee=None, status=None):
-        self.series = series
-        self.istargeted = istargeted
-        self.sourcepackage = sourcepackage
-        self.assignee = assignee
-        self.status = status
+patch_reference_property(IBugTask, 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBugTask, 'transitionToTarget', 'target', IBugTarget)
 
 
 class IHasOfficialBugTags(Interface):

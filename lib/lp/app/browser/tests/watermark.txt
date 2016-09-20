@@ -1,73 +1,81 @@
-===============================
-The "watermark" TALES formatter
-===============================
+=======================
+The "watermark" heading
+=======================
 
-The watermark formatter is used to get the image and heading used on all the
-main Launchpad pages.  The image and heading are determined by the
+The watermark is the image and heading used on all the main Launchpad
+pages. The image and heading are determined by Hierarchy from the
 IRootContext for the context object.
 
 
 Watermark headings
 ==================
 
-The `watermark:heading` is used when you want a heading for the nearest object
-that implements IRootContext.
+Hierarchy.heading() is used when you want a heading for the nearest
+object that implements IRootContext.
 
-    >>> from lp.testing import test_tales
-    >>> class view:
+    >>> from lp.app.browser.launchpad import Hierarchy
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> class TrivialView:
+    ...     __name__ = '+trivial'
     ...     def __init__(self, context):
     ...         self.context = context
+    >>> def get_hierarchy(obj, viewcls=TrivialView):
+    ...     req = LaunchpadTestRequest()
+    ...     view = viewcls(obj)
+    ...     req.traversed_objects.append(view.context)
+    ...     req.traversed_objects.append(view)
+    ...     return Hierarchy(view, req)
 
 Products directly implement IRootContext.
 
-    >>> widget = factory.makeProduct(title='Widget')
-    >>> print test_tales('view/watermark:heading', view=view(widget))
-    <h...>Widget</h...>
+    >>> widget = factory.makeProduct(displayname='Widget')
+    >>> print get_hierarchy(widget).heading()
+    <h...><a...>Widget</a></h...>
 
 A series of the product still show the product watermark.
 
     >>> dev_focus = widget.development_focus
-    >>> print test_tales('view/watermark:heading', view=view(dev_focus))
-    <h...>Widget</h...>
+    >>> print get_hierarchy(dev_focus).heading()
+    <h...><a...>Widget</a></h...>
 
 ProjectGroups also directly implement IRootContext ...
 
-    >>> kde = factory.makeProject(title='KDE')
-    >>> print test_tales('view/watermark:heading', view=view(kde))
-    <h...>KDE</h...>
+    >>> kde = factory.makeProject(displayname='KDE')
+    >>> print get_hierarchy(kde).heading()
+    <h...><a...>KDE</a></h...>
 
 ... as do distributions ...
 
-    >>> mint = factory.makeDistribution(title='Mint Linux')
-    >>> print test_tales('view/watermark:heading', view=view(mint))
-    <h...>Mint Linux</h...>
+    >>> mint = factory.makeDistribution(displayname='Mint Linux')
+    >>> print get_hierarchy(mint).heading()
+    <h...><a...>Mint Linux</a></h...>
 
 ... and people ...
 
     >>> eric = factory.makePerson(displayname="Eric the Viking")
-    >>> print test_tales('view/watermark:heading', view=view(eric))
-    <h...>Eric the Viking</h...>
+    >>> print get_hierarchy(eric).heading()
+    <h...><a...>Eric the Viking</a></h...>
 
 ... and sprints.
 
     >>> sprint = factory.makeSprint(title="Launchpad Epic")
-    >>> print test_tales('view/watermark:heading', view=view(sprint))
-    <h...>Launchpad Epic</h...>
+    >>> print get_hierarchy(sprint).heading()
+    <h...><a...>Launchpad Epic</a></h...>
 
 If there is no root context defined for the object, then the heading is
 'Launchpad.net' (differentiating from the Launchpad project within
 Launchpad.net).
 
     >>> machine = factory.makeCodeImportMachine()
-    >>> print test_tales('view/watermark:heading', view=view(machine))
-    <h...>Launchpad.net</h...>
+    >>> print get_hierarchy(machine).heading()
+    <h...><span...>Launchpad.net</span></h...>
 
 Any HTML in the context title will be escaped to avoid XSS vulnerabilities.
 
     >>> person = factory.makePerson(
     ...     displayname="Fubar<br/><script>alert('XSS')</script>")
-    >>> print test_tales('view/watermark:heading', view=view(person))
-    <h...>Fubar&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</h...>
+    >>> print get_hierarchy(person).heading()
+    <h...><a...>Fubar&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a></h...>
 
 
 Watermark images
@@ -75,15 +83,15 @@ Watermark images
 
 The image for the watermark is determined effectively by context/image:logo.
 
-    >>> print test_tales('view/watermark:logo', view=view(dev_focus))
+    >>> print get_hierarchy(dev_focus).logo()
     <a href="..."><img ... src="/@@/product-logo" /></a>
 
-    >>> print test_tales('view/watermark:logo', view=view(eric))
-    <img ... src="/@@/person-logo" />
+    >>> print get_hierarchy(eric).logo()
+    <a...><img ... src="/@@/person-logo" /></a>
 
 If there is no root context, the Launchpad logo is shown.
 
-    >>> print test_tales('view/watermark:logo', view=view(machine))
+    >>> print get_hierarchy(machine).logo()
     <img ... src="/@@/launchpad-logo" />
 
 
@@ -100,39 +108,16 @@ Normally, the view class does not implement the marker interface, meaning it
 is not the index page of the context.  In this case the heading is rendered in
 H2.
 
-    >>> print test_tales('view/watermark:heading', view=view(widget))
-    <h2>Widget</h2>
+    >>> print get_hierarchy(widget).heading()
+    <h2...><a...>Widget</a></h2>
 
 If the view class implements IMajorHeadingView, then this is the index page
 for the context and the heading is rendered in H1.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.app.interfaces.headings import IMajorHeadingView
-
-    >>> class view:
-    ...     implements(IMajorHeadingView)
-    ...     def __init__(self, context):
-    ...         self.context = context
-
-    >>> print test_tales('view/watermark:heading', view=view(widget))
-    <h1>Widget</h1>
-
-
-Editable headings
-=================
-
-Some index pages also allow for editing the context's title.  To specify
-this, the view must implement IEditableContextTitle and provide an method
-that returns all the HTML necessary to edit the context, including the
-appropriate H tag.
-
-    >>> from lp.app.interfaces.headings import IEditableContextTitle
-    >>> class view:
-    ...     implements(IEditableContextTitle)
-    ...     def __init__(self, context):
-    ...         self.context = context
-    ...     def title_edit_widget(self):
-    ...         return '<h0>EDIT ME</h0>'
-
-    >>> print test_tales('view/watermark:heading', view=view(widget))
-    <h0>EDIT ME</h0>
+    >>> @implementer(IMajorHeadingView)
+    ... class HeadingView(TrivialView):
+    ...     pass
+    >>> print get_hierarchy(widget, viewcls=HeadingView).heading()
+    <h1...><a...>Widget</a></h1>

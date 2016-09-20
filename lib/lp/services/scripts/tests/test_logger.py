@@ -35,7 +35,7 @@ class TestLaunchpadFormatter(TestCase):
         traceback_info("Captain Kirk")
 
         try:
-            0/0
+            0 / 0
         except ZeroDivisionError:
             info = exc_info()
 

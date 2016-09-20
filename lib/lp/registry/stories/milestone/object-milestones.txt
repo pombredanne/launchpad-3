@@ -162,7 +162,7 @@ A project milestone page has the same navigation as the project:
     1.0 : Mozilla Firefox
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Mozilla Firefox > 1.0
+    Hierarchy: Mozilla Firefox
     Tabs:
     * Overview (selected) - http://launchpad.dev/firefox
     * Code - http://code.launchpad.dev/firefox
@@ -180,7 +180,7 @@ distribution:
     3.1 : Debian
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Debian > 3.1
+    Hierarchy: Debian
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
     * Code - http://code.launchpad.dev/debian
@@ -356,8 +356,8 @@ listing:
     >>> bug_table = find_tag_by_id(browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bug_table )
     Bug report       Importance  Assignee  Status
-    #19 Test Bug 1   Critical              New
-    #19 Test Bug 1   High                  New
+    #... Test Bug 1  Critical              New
+    #... Test Bug 1  High                  New
 
 Each bugtask has one or more badges.
 

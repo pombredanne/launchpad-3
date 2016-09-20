@@ -12,28 +12,9 @@ __metaclass__ = type
 from textwrap import dedent
 
 import transaction
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    PackagePublishingStatus,
-    SourcePackageFormat,
-    )
-from lp.soyuz.interfaces.publishing import active_publishing_status
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet,
-    )
-from lp.soyuz.scripts.packagecopier import do_copy
-from lp.testing import (
-    TestCaseWithFactory,
-    )
-from lp.testing.layers import (
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestSourcePackageRelease(TestCaseWithFactory):
@@ -43,6 +24,14 @@ class TestSourcePackageRelease(TestCaseWithFactory):
     def test_uploader_no_uploader(self):
         spr = self.factory.makeSourcePackageRelease()
         self.assertIs(None, spr.uploader)
+
+    def test___repr__(self):
+        spr = self.factory.makeSourcePackageRelease()
+        expected_repr = ('<{cls} {pkg_name} (id: {id}, '
+                         'version: {version})>').format(
+                             cls=spr.__class__.__name__, pkg_name=spr.name,
+                             id=spr.id, version=spr.version)
+        self.assertEqual(expected_repr, repr(spr))
 
     def test_uploader_dsc_package(self):
         owner = self.factory.makePerson()
@@ -124,173 +113,3 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         observed = spph.sourcepackagerelease.aggregate_changelog(
             since_version=None)
         self.assertEqual(changelog_main.decode("UTF-8", "replace"), observed)
-
-
-class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
-
-    layer = ZopelessDatabaseLayer
-
-    def makeSPR(self):
-        """Create a `SourcePackageRelease`."""
-        # Return an un-proxied SPR.  This test is for script code; it
-        # won't get proxied objects in real life.
-        return removeSecurityProxy(self.factory.makeSourcePackageRelease())
-
-    def makeBPPHs(self, spr, number=1):
-        """Create `BinaryPackagePublishingHistory` object(s).
-
-        Each of the publications will be active and architecture-specific.
-        Each will be for the same archive, distroseries, and pocket.
-
-        Since the tests need to create a pocket mismatch, it is guaranteed
-        that the BPPHs are for the UPDATES pocket.
-        """
-        das = self.factory.makeDistroArchSeries()
-        distroseries = das.distroseries
-        archive = distroseries.main_archive
-        pocket = PackagePublishingPocket.UPDATES
-
-        bpbs = [
-            self.factory.makeBinaryPackageBuild(
-                source_package_release=spr, distroarchseries=das)
-            for counter in range(number)]
-        bprs = [
-            self.factory.makeBinaryPackageRelease(
-                build=bpb, architecturespecific=True)
-            for bpb in bpbs]
-
-        return [
-            removeSecurityProxy(
-                self.factory.makeBinaryPackagePublishingHistory(
-                    archive=archive, distroarchseries=das, pocket=pocket,
-                    binarypackagerelease=bpr,
-                    status=PackagePublishingStatus.PUBLISHED))
-            for bpr in bprs]
-
-    def test_getActiveArchSpecificPublications_finds_only_matches(self):
-        spr = self.makeSPR()
-        bpphs = self.makeBPPHs(spr, 5)
-
-        # This BPPH will match our search.
-        match = bpphs[0]
-
-        distroseries = match.distroseries
-        distro = distroseries.distribution
-
-        # These BPPHs will not match our search, each because they fail
-        # one search parameter.
-        bpphs[1].archive = self.factory.makeArchive(
-            distribution=distro, purpose=ArchivePurpose.PARTNER)
-        bpphs[2].distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=self.factory.makeDistroSeries(distribution=distro))
-        bpphs[3].pocket = PackagePublishingPocket.SECURITY
-        bpphs[4].binarypackagerelease.architecturespecific = False
-
-        self.assertContentEqual(
-            [match], spr.getActiveArchSpecificPublications(
-                match.archive, match.distroseries, match.pocket))
-
-    def test_getActiveArchSpecificPublications_detects_absence(self):
-        spr = self.makeSPR()
-        distroseries = spr.upload_distroseries
-        result_set = spr.getActiveArchSpecificPublications(
-            distroseries.main_archive, distroseries,
-            self.factory.getAnyPocket())
-        self.assertFalse(result_set.any())
-
-    def test_getActiveArchSpecificPublications_filters_status(self):
-        spr = self.makeSPR()
-        bpphs = self.makeBPPHs(spr, len(PackagePublishingStatus.items))
-        for bpph, status in zip(bpphs, PackagePublishingStatus.items):
-            bpph.status = status
-        by_status = dict((bpph.status, bpph) for bpph in bpphs)
-        self.assertContentEqual(
-            [by_status[status] for status in active_publishing_status],
-            spr.getActiveArchSpecificPublications(
-                bpphs[0].archive, bpphs[0].distroseries, bpphs[0].pocket))
-
-
-class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
-    """Tests for SourcePackageRelease.getBuildByArch()."""
-
-    layer = ZopelessDatabaseLayer
-
-    def test_can_find_build_in_derived_distro_parent(self):
-        # If a derived distribution inherited its binaries from its
-        # parent then getBuildByArch() should look in the parent to find
-        # the build.
-        dsp = self.factory.makeDistroSeriesParent()
-        parent_archive = dsp.parent_series.main_archive
-
-        # Create a built, published package in the parent archive.
-        spr = self.factory.makeSourcePackageRelease(
-            architecturehintlist='any')
-        parent_source_pub = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=parent_archive,
-            distroseries=dsp.parent_series)
-        das = self.factory.makeDistroArchSeries(
-            distroseries=dsp.parent_series, supports_virtualized=True)
-        orig_build = spr.createBuild(
-            das, PackagePublishingPocket.RELEASE, parent_archive,
-            status=BuildStatus.FULLYBUILT)
-        bpr = self.factory.makeBinaryPackageRelease(build=orig_build)
-        self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, distroarchseries=das,
-            archive=parent_archive)
-
-        # Make an architecture in the derived series with the same
-        # archtag as the parent.
-        das_derived = self.factory.makeDistroArchSeries(
-            dsp.derived_series, architecturetag=das.architecturetag,
-            processor=das.processor, supports_virtualized=True)
-        # Now copy the package to the derived series, with binary.
-        derived_archive = dsp.derived_series.main_archive
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
-
-        do_copy(
-            [parent_source_pub], derived_archive, dsp.derived_series,
-            PackagePublishingPocket.RELEASE, include_binaries=True,
-            check_permissions=False)
-
-        # Searching for the build in the derived series architecture
-        # should automatically pick it up from the parent.
-        found_build = spr.getBuildByArch(das_derived, derived_archive)
-        self.assertEqual(orig_build, found_build)
-
-
-class TestFindBuildsByArchitecture(TestCaseWithFactory):
-    """Tests for SourcePackageRelease.findBuildsByArchitecture."""
-
-    layer = ZopelessDatabaseLayer
-
-    def test_finds_build_with_matching_pub(self):
-        # findBuildsByArchitecture finds builds for a source package
-        # release.  In particular, an arch-independent BPR is published in
-        # multiple architectures.  But findBuildsByArchitecture only counts
-        # the publication for the same architecture it was built in.
-        distroseries = self.factory.makeDistroSeries()
-        archive = distroseries.main_archive
-        # The series has a nominated arch-indep architecture.
-        distroseries.nominatedarchindep = self.factory.makeDistroArchSeries(
-            distroseries=distroseries)
-
-        bpb = self.factory.makeBinaryPackageBuild(
-            distroarchseries=distroseries.nominatedarchindep)
-        bpr = self.factory.makeBinaryPackageRelease(
-            build=bpb, architecturespecific=False)
-        spr = bpr.build.source_package_release
-
-        # The series also has other architectures.
-        self.factory.makeDistroArchSeries(distroseries=distroseries)
-
-        # makeBinaryPackagePublishingHistory will actually publish an
-        # arch-indep BPR everywhere.
-        self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, archive=archive,
-            distroarchseries=distroseries.nominatedarchindep)
-
-        naked_spr = removeSecurityProxy(spr)
-        self.assertEqual(
-            {distroseries.nominatedarchindep.architecturetag: bpr.build},
-            naked_spr.findBuildsByArchitecture(distroseries, archive))

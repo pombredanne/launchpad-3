@@ -1,8 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for job-running facilities."""
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
 import re
 import sys
@@ -13,10 +17,16 @@ from lazr.jobrunner.jobrunner import (
     LeaseHeld,
     SuspendJobException,
     )
-from testtools.matchers import MatchesRegex
+from pytz import UTC
+from testtools.matchers import (
+    GreaterThan,
+    LessThan,
+    MatchesAll,
+    MatchesRegex,
+    )
 from testtools.testcase import ExpectedException
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -32,6 +42,10 @@ from lp.services.job.runner import (
     TwistedJobRunner,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from lp.services.webapp import errorlog
 from lp.testing import (
     TestCaseWithFactory,
@@ -42,10 +56,9 @@ from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
+@implementer(IRunnableJob)
 class NullJob(BaseRunnableJob):
     """A job that does nothing but append a string to a list."""
-
-    implements(IRunnableJob)
 
     JOB_COMPLETIONS = []
 
@@ -292,8 +305,9 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([object()])
         self.assertRaises(TypeError, runner.runAll)
 
+        @implementer(IRunnableJob)
         class Runnable:
-            implements(IRunnableJob)
+            pass
         runner = JobRunner([Runnable()])
         self.assertRaises(AttributeError, runner.runAll)
 
@@ -325,9 +339,16 @@ class TestJobRunner(TestCaseWithFactory):
         """If a job raises a retry_error, it should be re-queued."""
         job = RaisingRetryJob('completion')
         runner = JobRunner([job])
+        self.assertIs(None, job.scheduled_start)
         with self.expectedLog('Scheduling retry due to RetryError'):
             runner.runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
+        expected_delay = datetime.now(UTC) + timedelta(minutes=10)
+        self.assertThat(
+            job.scheduled_start,
+            MatchesAll(
+                GreaterThan(expected_delay - timedelta(minutes=1)),
+                LessThan(expected_delay + timedelta(minutes=1))))
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
 
@@ -342,6 +363,26 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.FAILED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
+
+    def test_runJob_sets_default_timeout_function(self):
+        """runJob sets a default timeout function for urlfetch."""
+        class RecordDefaultTimeoutJob(NullJob):
+            def __init__(self):
+                super(RecordDefaultTimeoutJob, self).__init__("")
+
+            def run(self):
+                self.default_timeout = get_default_timeout_function()()
+
+        original_timeout_function = get_default_timeout_function()
+        set_default_timeout_function(None)
+        try:
+            job = RecordDefaultTimeoutJob()
+            job.job.acquireLease()
+            JobRunner([job]).runJob(job, None)
+            self.assertEqual(JobStatus.COMPLETED, job.job.status)
+            self.assertThat(job.default_timeout, GreaterThan(0))
+        finally:
+            set_default_timeout_function(original_timeout_function)
 
     def test_runJobHandleErrors_oops_generated_notify_fails(self):
         """A second oops is logged if the notification of the oops fails."""
@@ -398,9 +439,9 @@ class StaticJobSource(BaseRunnableJob):
         return cls(index, *args)
 
 
+@implementer(IRunnableJob)
 class StuckJob(StaticJobSource):
     """Simulation of a job that stalls."""
-    implements(IRunnableJob)
 
     done = False
 
@@ -440,9 +481,8 @@ class ShorterStuckJob(StuckJob):
         ]
 
 
+@implementer(IRunnableJob)
 class InitialFailureJob(StaticJobSource):
-
-    implements(IRunnableJob)
 
     jobs = [(True,), (False,)]
 
@@ -464,9 +504,8 @@ class InitialFailureJob(StaticJobSource):
                 raise ValueError('Previous failure.')
 
 
+@implementer(IRunnableJob)
 class ProcessSharingJob(StaticJobSource):
-
-    implements(IRunnableJob)
 
     jobs = [(True,), (False,)]
 
@@ -487,9 +526,8 @@ class ProcessSharingJob(StaticJobSource):
                 raise ValueError('Different process.')
 
 
+@implementer(IRunnableJob)
 class MemoryHogJob(StaticJobSource):
-
-    implements(IRunnableJob)
 
     jobs = [()]
 
@@ -512,9 +550,8 @@ class NoJobs(StaticJobSource):
     jobs = []
 
 
+@implementer(IRunnableJob)
 class LeaseHeldJob(StaticJobSource):
-
-    implements(IRunnableJob)
 
     jobs = [()]
 

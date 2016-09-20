@@ -1,4 +1,4 @@
-<!-- Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -10,16 +10,36 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include package=".browser"/>
+    <include file="vocabularies.zcml"/>
     <authorizations module=".security" />
+
+    <!-- Processor -->
+    <class
+        class="lp.buildmaster.model.processor.Processor">
+        <allow
+            interface="lp.buildmaster.interfaces.processor.IProcessor"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.buildmaster.interfaces.processor.IProcessor"/>
+    </class>
+
+    <!-- ProcessorSet -->
+    <securedutility
+        class="lp.buildmaster.model.processor.ProcessorSet"
+        provides="lp.buildmaster.interfaces.processor.IProcessorSet">
+        <allow
+            interface="lp.buildmaster.interfaces.processor.IProcessorSet"/>
+    </securedutility>
 
     <!-- Builder -->
     <class
         class="lp.buildmaster.model.builder.Builder">
         <allow
-            interface="lp.buildmaster.interfaces.builder.IBuilder"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilderView"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.buildmaster.interfaces.builder.IBuilder"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilderEdit"
+            set_schema="lp.buildmaster.interfaces.builder.IBuilderView"/>
     </class>
 
 

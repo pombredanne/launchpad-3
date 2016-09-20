@@ -27,7 +27,7 @@ external contact address.
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.find(id='email-warning')
-    <p ... E-mail sent to a mailing list or external contact address may ...
+    <p ... Email sent to a mailing list or external contact address may ...
 
 As we can see, the landscape-developers team has no contact address.
 
@@ -43,7 +43,7 @@ As we can see, the landscape-developers team has no contact address.
 Changing the contact address to an external address will require the
 user to go through the email address confirmation process.
 
-    >>> browser.getControl('Another e-mail address').selected = True
+    >>> browser.getControl('Another email address').selected = True
     >>> browser.getControl(
     ...     name='field.contact_address').value = 'foo@example.com'
     >>> browser.getControl('Change').click()
@@ -71,7 +71,7 @@ Follow the token link, to confirm the new email address.
 
     >>> browser.open(token_url)
     >>> browser.title
-    'Confirm e-mail address'
+    'Confirm email address'
     >>> browser.getControl('Continue').click()
 
     >>> browser.title
@@ -84,6 +84,6 @@ Follow the token link, to confirm the new email address.
     'Landscape Developers contact address...
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
-    ['Another e-mail address']
+    ['Another email address']
     >>> browser.getControl(name='field.contact_address').value
     'foo@example.com'

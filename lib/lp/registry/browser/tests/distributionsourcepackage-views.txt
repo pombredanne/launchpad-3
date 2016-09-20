@@ -22,19 +22,6 @@ package within a distribution.
     ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-The DistributionSourcePackageView includes a helper property
-'all_published_in_active_distroseries' that returns a list of
-all the published versions of the source package within the distribution's
-series.
-
-    >>> ubuntu_gedit = ubuntutest.getSourcePackage('gedit')
-    >>> ubuntu_gedit_view = create_initialized_view(
-    ...     ubuntu_gedit, name='+index')
-    >>> for result in ubuntu_gedit_view.all_published_in_active_distroseries:
-    ...     print "%s - %s" % (
-    ...         result['suite'], result['description'])
-    Breezy-autotest - (666): main/base
-
 The view has an active_series property that provides a sorted list of active
 series.
 

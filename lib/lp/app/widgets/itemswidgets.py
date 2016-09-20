@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets dealing with a choice of options."""
@@ -38,7 +38,7 @@ class LaunchpadDropdownWidget(DropdownWidget):
 
 
 class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
-    """MultiCheckBoxWidget that copes with CustomWidgetFacotry."""
+    """MultiCheckBoxWidget that copes with CustomWidgetFactory."""
 
     _joinButtonToMessageTemplate = u'%s&nbsp;%s '
 
@@ -48,12 +48,26 @@ class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
+        self._disabled_items = []
+
+    @property
+    def disabled_items(self):
+        return self._disabled_items
+
+    @disabled_items.setter
+    def disabled_items(self, items):
+        if items is None:
+            items = []
+        self._disabled_items = [
+            self.vocabulary.getTerm(item).token for item in items]
 
     def _renderItem(self, index, text, value, name, cssClass, checked=False):
-        """Render a checkbox and text without without label."""
+        """Render a checkbox and text without a label."""
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        if value in self.disabled_items:
+            kw['disabled'] = 'disabled'
         value = html_escape(value)
         text = html_escape(text)
         id = '%s.%s' % (name, index)
@@ -76,6 +90,8 @@ class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
+        if value in self.disabled_items:
+            kw['disabled'] = 'disabled'
         value = html_escape(value)
         text = html_escape(text)
         id = '%s.%s' % (name, index)

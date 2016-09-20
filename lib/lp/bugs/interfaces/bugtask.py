@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug task interfaces."""
@@ -79,7 +79,6 @@ from zope.schema import (
 from zope.security.interfaces import Unauthorized
 
 from lp import _
-from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugwatch import (
@@ -96,6 +95,7 @@ from lp.services.fields import (
     StrippedTextLine,
     Summary,
     )
+from lp.services.webservice.apihelpers import patch_collection_property
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -389,7 +389,7 @@ class IBugTaskDelete(Interface):
         """
 
 
-class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
+class IBugTask(IHasBug, IBugTaskDelete):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -602,8 +602,8 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         :param person: The person to check to see if they are a contributor.
 
         Return a dict with the following values:
-        is_contributor: True if the user has any bugs assigned to him in the
-        context of this bug task's pillar, either directly or by team
+        is_contributor: True if the user has any bugs assigned to them in
+        the context of this bug task's pillar, either directly or by team
         participation.
         person_name: the displayname of the person
         pillar_name: the displayname of the bug task's pillar
@@ -793,10 +793,10 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
 
 # Set schemas that were impossible to specify during the definition of
 # IBugTask itself.
-IBugTask['related_tasks'].value_type.schema = IBugTask
+patch_collection_property(IBugTask, 'related_tasks', IBugTask)
 
 # We are forced to define this now to avoid circular import problems.
-IBugWatch['bugtasks'].value_type.schema = IBugTask
+patch_collection_property(IBugWatch, 'bugtasks', IBugTask)
 
 
 class IBugTaskDelta(Interface):
@@ -1059,7 +1059,7 @@ class IAddBugTaskWithProductCreationForm(ILinkPackaging):
     bug_url = StrippedTextLine(
         title=_('Bug URL'), required=True, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
-    displayname = TextLine(title=_('Project name'))
+    display_name = TextLine(title=_('Project name'))
     name = ProductNameField(
         title=_('Project ID'), constraint=name_validator, required=True,
         description=_(

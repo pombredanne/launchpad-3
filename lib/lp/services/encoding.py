@@ -1,20 +1,17 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Character encoding utilities"""
 
 __metaclass__ = type
 __all__ = [
-    'ascii_smash',
     'escape_nonascii_uniquely',
     'guess',
     'is_ascii_only',
     ]
 
 import codecs
-from cStringIO import StringIO
 import re
-import unicodedata
 
 
 _boms = [
@@ -156,202 +153,6 @@ def guess(s):
     return unicode(s, 'ISO-8859-1', 'replace')
 
 
-def ascii_smash(unicode_string):
-    """Attempt to convert the Unicode string, possibly containing accents,
-    to an ASCII string.
-
-    This is used for generating shipping labels because our shipping company
-    can only deal with ASCII despite being European :-/
-
-    ASCII goes through just fine
-
-    >>> ascii_smash(u"Hello")
-    'Hello'
-
-    Latin-1 accented characters have their accents stripped.
-
-    >>> ascii_smash(u"Ol\N{LATIN SMALL LETTER E WITH ACUTE}")
-    'Ole'
-    >>> ascii_smash(u"\N{LATIN CAPITAL LETTER A WITH RING ABOVE}iste")
-    'Aiste'
-    >>> ascii_smash(
-    ...     u"\N{LATIN SMALL LETTER AE}"
-    ...     u"\N{LATIN SMALL LETTER I WITH GRAVE}"
-    ...     u"\N{LATIN SMALL LETTER O WITH STROKE}"
-    ...     u"\N{LATIN SMALL LETTER U WITH CIRCUMFLEX}"
-    ...     )
-    'aeiou'
-    >>> ascii_smash(
-    ...     u"\N{LATIN CAPITAL LETTER AE}"
-    ...     u"\N{LATIN CAPITAL LETTER I WITH GRAVE}"
-    ...     u"\N{LATIN CAPITAL LETTER O WITH STROKE}"
-    ...     u"\N{LATIN CAPITAL LETTER U WITH TILDE}"
-    ...     )
-    'AEIOU'
-    >>> ascii_smash(u"Stra\N{LATIN SMALL LETTER SHARP S}e")
-    'Strasse'
-
-    Moving further into Eastern Europe we get more odd letters
-
-    >>> ascii_smash(
-    ...     u"\N{LATIN CAPITAL LETTER Z WITH CARON}"
-    ...     u"ivkovi\N{LATIN SMALL LETTER C WITH CARON}"
-    ...     )
-    'Zivkovic'
-
-    >>> ascii_smash(u"\N{LATIN CAPITAL LIGATURE OE}\N{LATIN SMALL LIGATURE OE}")
-    'OEoe'
-
-    """
-    out = StringIO()
-    for char in unicode_string:
-        out.write(ascii_char_smash(char))
-    return out.getvalue()
-
-
-def ascii_char_smash(char):
-    """Smash a single Unicode character into an ASCII representation.
-
-    >>> ascii_char_smash(u"\N{KATAKANA LETTER SMALL A}")
-    'a'
-    >>> ascii_char_smash(u"\N{KATAKANA LETTER A}")
-    'A'
-    >>> ascii_char_smash(u"\N{KATAKANA LETTER KA}")
-    'KA'
-    >>> ascii_char_smash(u"\N{HIRAGANA LETTER SMALL A}")
-    'a'
-    >>> ascii_char_smash(u"\N{HIRAGANA LETTER A}")
-    'A'
-    >>> ascii_char_smash(u"\N{BOPOMOFO LETTER ANG}")
-    'ANG'
-    >>> ascii_char_smash(u"\N{LATIN CAPITAL LETTER H WITH STROKE}")
-    'H'
-    >>> ascii_char_smash(u"\N{LATIN SMALL LETTER LONG S}")
-    's'
-    >>> ascii_char_smash(u"\N{LATIN CAPITAL LETTER THORN}")
-    'TH'
-    >>> ascii_char_smash(u"\N{LATIN SMALL LETTER THORN}")
-    'th'
-    >>> ascii_char_smash(u"\N{LATIN CAPITAL LETTER I WITH OGONEK}")
-    'I'
-    >>> ascii_char_smash(u"\N{LATIN CAPITAL LETTER AE}")
-    'AE'
-    >>> ascii_char_smash(u"\N{LATIN CAPITAL LETTER A WITH DIAERESIS}")
-    'Ae'
-    >>> ascii_char_smash(u"\N{LATIN SMALL LETTER A WITH DIAERESIS}")
-    'ae'
-    >>> ascii_char_smash(u"\N{LATIN CAPITAL LETTER O WITH DIAERESIS}")
-    'Oe'
-    >>> ascii_char_smash(u"\N{LATIN SMALL LETTER O WITH DIAERESIS}")
-    'oe'
-    >>> ascii_char_smash(u"\N{LATIN CAPITAL LETTER U WITH DIAERESIS}")
-    'Ue'
-    >>> ascii_char_smash(u"\N{LATIN SMALL LETTER U WITH DIAERESIS}")
-    'ue'
-    >>> ascii_char_smash(u"\N{LATIN SMALL LETTER SHARP S}")
-    'ss'
-
-    Latin-1 and other symbols are lost
-
-    >>> ascii_char_smash(u"\N{POUND SIGN}")
-    ''
-
-    Unless they also happen to be letters of some kind, such as greek
-
-    >>> ascii_char_smash(u"\N{MICRO SIGN}")
-    'mu'
-
-    Fractions
-
-    >>> ascii_char_smash(u"\N{VULGAR FRACTION ONE HALF}")
-    '1/2'
-
-    """
-    mapping = {
-        u"\N{LATIN CAPITAL LETTER AE}": "AE",
-        u"\N{LATIN SMALL LETTER AE}": "ae",
-
-        u"\N{LATIN CAPITAL LETTER A WITH DIAERESIS}": "Ae",
-        u"\N{LATIN SMALL LETTER A WITH DIAERESIS}": "ae",
-
-        u"\N{LATIN CAPITAL LETTER O WITH DIAERESIS}": "Oe",
-        u"\N{LATIN SMALL LETTER O WITH DIAERESIS}": "oe",
-
-        u"\N{LATIN CAPITAL LETTER U WITH DIAERESIS}": "Ue",
-        u"\N{LATIN SMALL LETTER U WITH DIAERESIS}": "ue",
-
-        u"\N{LATIN SMALL LETTER SHARP S}": "ss",
-
-        u"\N{LATIN CAPITAL LETTER THORN}": "TH",
-        u"\N{LATIN SMALL LETTER THORN}": "th",
-
-        u"\N{FRACTION SLASH}": "/",
-        u"\N{MULTIPLICATION SIGN}": "x",
-
-        u"\N{KATAKANA-HIRAGANA DOUBLE HYPHEN}": "=",
-        }
-
-    # Pass through ASCII
-    if ord(char) < 127:
-        return char
-
-    # Handle manual mappings
-    if mapping.has_key(char):
-        return mapping[char]
-
-    # Regress to decomposed form and recurse if necessary.
-    decomposed = unicodedata.normalize("NFKD", char)
-    if decomposed != char:
-        out = StringIO()
-        for char in decomposed:
-            out.write(ascii_char_smash(char))
-        return out.getvalue()
-
-    # Handle whitespace
-    if char.isspace():
-        return " "
-
-    # Handle digits
-    if char.isdigit():
-        return unicodedata.digit(char)
-
-    # Handle decimal (probably pointless given isdigit above)
-    if char.isdecimal():
-        return unicodedata.decimal(char)
-
-    # Handle numerics, such as 1/2
-    if char.isnumeric():
-        formatted = "%f" % unicodedata.numeric(char)
-        # Strip leading and trailing 0
-        return formatted.strip("0")
-
-    # Ignore unprintables, such as the accents we denormalized
-    if not char.isalnum():
-        return ""
-
-    # Return modified latin characters as just the latin part.
-    name = unicodedata.name(char)
-
-    match = re.search("LATIN CAPITAL LIGATURE (\w+)", name)
-    if match is not None:
-        return match.group(1)
-
-    match = re.search("LATIN SMALL LIGATURE (\w+)", name)
-    if match is not None:
-        return match.group(1).lower()
-
-    match = re.search("(?:LETTER SMALL|SMALL LETTER) (\w+)", name)
-    if match is not None:
-        return match.group(1).lower()
-
-    match = re.search("LETTER (\w+)", name)
-    if match is not None:
-        return match.group(1)
-
-    # Something we can't represent. Return empty string.
-    return ""
-
-
 def escape_nonascii_uniquely(bogus_string):
     """Replace non-ascii characters with a hex representation.
 
@@ -382,12 +183,14 @@ def escape_nonascii_uniquely(bogus_string):
     hello \\xa9
     """
     nonascii_regex = re.compile(r'[\200-\377]')
+
     # By encoding the invalid ascii with a backslash, x, and then the
     # hex value, it makes it easy to decode it by pasting into a python
     # interpreter. quopri() is not used, since that could caused the
     # decoding of an email to fail.
     def quote(match):
         return '\\x%x' % ord(match.group(0))
+
     return nonascii_regex.sub(quote, bogus_string)
 
 

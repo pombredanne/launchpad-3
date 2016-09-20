@@ -18,7 +18,7 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -32,11 +32,11 @@ from lp.services.database.interfaces import (
     )
 
 
+@implementer(ISeriesSourcePackageBranch)
 class SeriesSourcePackageBranch(Storm):
     """See `ISeriesSourcePackageBranch`."""
 
     __storm_table__ = 'SeriesSourcePackageBranch'
-    implements(ISeriesSourcePackageBranch)
 
     id = Int(primary=True)
     distroseriesID = Int('distroseries')
@@ -75,21 +75,27 @@ class SeriesSourcePackageBranch(Storm):
         return self.sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
+@implementer(IFindOfficialBranchLinks)
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""
-
-    implements(IFindOfficialBranchLinks)
 
     @staticmethod
     def new(distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):
         """Link a source package in a distribution suite to a branch."""
+        # Circular import.
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
+
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
         sspb = SeriesSourcePackageBranch(
             distroseries, pocket, sourcepackagename, branch, registrant,
             date_created)
         IMasterStore(SeriesSourcePackageBranch).add(sspb)
+        DistributionSourcePackageCache.updateOfficialBranches(
+            distroseries.distribution, [sourcepackagename])
         return sspb
 
     def findForBranch(self, branch):

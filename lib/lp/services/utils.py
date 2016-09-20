@@ -24,9 +24,7 @@ __all__ = [
     're_email_address',
     'run_capturing_output',
     'save_bz2_pickle',
-    'synchronize',
     'text_delta',
-    'total_seconds',
     'traceback_info',
     'utc_now',
     'value_string',
@@ -147,21 +145,6 @@ def iter_list_chunks(a_list, size):
     """
     for i in range(0, len(a_list), size):
         yield a_list[i:i + size]
-
-
-def synchronize(source, target, add, remove):
-    """Update 'source' to match 'target' using 'add' and 'remove'.
-
-    Changes the container 'source' so that it equals 'target', calling 'add'
-    with any object in 'target' not in 'source' and 'remove' with any object
-    not in 'target' but in 'source'.
-    """
-    need_to_add = [obj for obj in target if obj not in source]
-    need_to_remove = [obj for obj in source if obj not in target]
-    for obj in need_to_add:
-        add(obj)
-    for obj in need_to_remove:
-        remove(obj)
 
 
 def value_string(item):
@@ -389,14 +372,3 @@ def obfuscate_structure(o):
             for key, value in o.iteritems())
     else:
         return o
-
-
-def total_seconds(duration):
-    """The number of total seconds in a timedelta.
-    """
-    # XXX: JonathanLange 2012-05-12: In Python 2.7, spell this as
-    # duration.total_seconds().  Only needed for Python 2.6 or earlier.
-    return (
-        (duration.microseconds +
-         (duration.seconds + duration.days * 24 * 3600) * 1e6)
-        / 1e6)

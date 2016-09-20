@@ -13,7 +13,7 @@ from storm.locals import (
     DateTime,
     Int,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.registry.interfaces.person import validate_public_person
@@ -22,10 +22,9 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IQuestionSubscription)
 class QuestionSubscription(SQLBase):
     """A subscription for person to a question."""
-
-    implements(IQuestionSubscription)
 
     _table = 'QuestionSubscription'
 

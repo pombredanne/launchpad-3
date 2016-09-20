@@ -38,9 +38,10 @@
                   The description of the pocket.
                 </p>
                 <ul>
-                  <li tal:repeat="spr pocket/packages">
-                    <a tal:content="spr/displayname"
-                       tal:attributes="href spr/fmt:url">apache2</a>
+                  <li tal:repeat="package pocket/packages">
+                    <a tal:content="package/spr/displayname"
+                       tal:attributes="href package/spr/fmt:url">apache2</a>
+                    (<span tal:content="package/component_name">main</span>)
                   </li>
                 </ul>
               </dd>
@@ -123,6 +124,12 @@
                   <tal:block tal:condition="relationships/has_items"
                              replace="structure relationships/@@+render-list"/>
               </td>
+              <td id="dependsarch"
+                  tal:define="relationships view/builddependsarch">
+                  <h3>Platform-dependent build dependencies</h3>
+                  <tal:block tal:condition="relationships/has_items"
+                             replace="structure relationships/@@+render-list"/>
+              </td>
           </tr>
           <tr>
               <td id="conflicts" tal:define="relationships view/build_conflicts">
@@ -133,6 +140,12 @@
               <td id="conflictsindep"
                   tal:define="relationships view/build_conflicts_indep">
                   <h3>Platform-independent build dependencies</h3>
+                  <tal:block tal:condition="relationships/has_items"
+                             replace="structure relationships/@@+render-list"/>
+              </td>
+              <td id="conflictsarch"
+                  tal:define="relationships view/build_conflicts_arch">
+                  <h3>Platform-dependent build dependencies</h3>
                   <tal:block tal:condition="relationships/has_items"
                              replace="structure relationships/@@+render-list"/>
               </td>

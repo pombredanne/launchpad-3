@@ -29,7 +29,7 @@
 
       <div id="dependent-branches" tal:condition="context/dependent_branches">
         <img src="/@@/merge-proposal-icon" />
-        <a href="+merges" tal:content="structure view/dependent_branch_count_text">
+        <a href="+dependent-merges" tal:content="structure view/dependent_branch_count_text">
           1 branch
         </a>
         dependent on this one.
@@ -48,18 +48,6 @@
       tal:condition="link/enabled"
       tal:replace="structure link/render"
       />
-
-    <div tal:condition="features/code.branchmergequeue">
-      <div tal:condition="not: context/merge_queue">
-        <h4>Merge Queue</h4>
-        This branch is not managed by a queue.
-        <div
-          tal:define="link context_menu/create_queue"
-          tal:condition="link/enabled"
-          tal:content="structure link/render"
-          />
-      </div>
-    </div>
   </div>
 
 </div>

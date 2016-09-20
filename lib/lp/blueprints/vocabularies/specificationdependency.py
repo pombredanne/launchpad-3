@@ -15,7 +15,7 @@ from storm.locals import (
     Store,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.blueprints.model.specification import (
@@ -42,6 +42,7 @@ from lp.services.webapp.vocabulary import (
     )
 
 
+@implementer(IHugeVocabulary)
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
 
@@ -61,8 +62,6 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     associated series as well, then those are shown before other matches not
     linked to the same series.
     """
-
-    implements(IHugeVocabulary)
 
     _table = Specification
     _orderBy = 'name'

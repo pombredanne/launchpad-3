@@ -52,8 +52,8 @@ There's a link to the +deactivate-account page in a person's +edit page.
     >>> job.run()
     >>> logout()
 
-And now the Launchpad page for Sample Person person will clearly say he
-does not use Launchpad.
+And now the Launchpad page for Sample Person person will clearly say they
+do not use Launchpad.
 
     >>> browser.open('http://launchpad.dev/~name12-deactivatedaccount')
     >>> print extract_text(
@@ -67,10 +67,6 @@ assignee.
     ...     'mozilla-firefox/+bug/3')
     >>> print extract_text(find_main_content(browser.contents))
     Bug Title Test
-    Debian
-    “mozilla-firefox” package
-    Bugs
-    Bug #3
     ...
     Assigned to
     Milestone
@@ -84,7 +80,7 @@ it makes no sense to say they don't use Launchpad.
     None
 
 The action of deactivating an account is something that can only be done by
-the user himself --not even Launchpad admins can do that on behalf of other
+the user themselves --not even Launchpad admins can do that on behalf of other
 people.
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+deactivate-account')

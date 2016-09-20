@@ -34,6 +34,8 @@ from bzrlib import (
     )
 from bzrlib.errors import (
     AppendRevisionsOnlyViolation,
+    ConnectionTimeout,
+    GhostRevisionsHaveNoRevno,
     NotStacked,
     UnstackableBranchFormat,
     UnstackableRepositoryFormat,
@@ -58,7 +60,10 @@ from lp.services.webapp.errorlog import (
     )
 
 # Exception classes which are not converted into OOPSes
-NOT_OOPS_EXCEPTIONS = (AppendRevisionsOnlyViolation,)
+NOT_OOPS_EXCEPTIONS = (
+    AppendRevisionsOnlyViolation, ConnectionTimeout,
+    GhostRevisionsHaveNoRevno)
+
 
 def should_log_oops(exc):
     """Return true if exc should trigger an OOPS.

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Builder behaviour for binary package builds."""
@@ -9,8 +9,7 @@ __all__ = [
     'BinaryPackageBuildBehaviour',
     ]
 
-from twisted.internet import defer
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -26,18 +25,12 @@ from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.publishing import makePoolPath
 
 
+@implementer(IBuildFarmJobBehaviour)
 class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
     """Define the behaviour of binary package builds."""
-
-    implements(IBuildFarmJobBehaviour)
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehaviour`."""
-        spr = self.build.source_package_release
-        logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
-                    spr.name, spr.version, self.build.pocket.title)
 
     def getLogFileName(self):
         """See `IBuildPackageJob`."""
@@ -62,69 +55,36 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             distroname, distroseriesname, archname, sourcename, version,
             state))
 
-    def _buildFilemapStructure(self, ignored, logger):
+    def determineFilesToSend(self):
         # Build filemap structure with the files required in this build
         # and send them to the slave.
-        # If the build is private we tell the slave to get the files from the
-        # archive instead of the librarian because the slaves cannot
-        # access the restricted librarian.
-        dl = []
-        private = self.build.archive.private
-        if private:
-            dl.extend(self._cachePrivateSourceOnSlave(logger))
+        if self.build.archive.private:
+            # Builds in private archive may have restricted files that
+            # we can't obtain from the public librarian. Prepare a pool
+            # URL from which to fetch them.
+            pool_url = urlappend(
+                self.build.archive.archive_url,
+                makePoolPath(
+                    self.build.source_package_release.sourcepackagename.name,
+                    self.build.current_component.name))
         filemap = {}
         for source_file in self.build.source_package_release.files:
             lfa = source_file.libraryfile
-            filemap[lfa.filename] = lfa.content.sha1
-            if not private:
-                dl.append(
-                    self._slave.cacheFile(
-                        logger, source_file.libraryfile))
-        d = defer.gatherResults(dl)
-        return d.addCallback(lambda ignored: filemap)
+            if not self.build.archive.private:
+                filemap[lfa.filename] = {
+                    'sha1': lfa.content.sha1, 'url': lfa.http_url}
+            else:
+                filemap[lfa.filename] = {
+                    'sha1': lfa.content.sha1,
+                    'url': urlappend(pool_url, lfa.filename),
+                    'username': 'buildd',
+                    'password': self.build.archive.buildd_secret}
+        return filemap
 
-    def dispatchBuildToSlave(self, build_queue_id, logger):
-        """See `IBuildFarmJobBehaviour`."""
-
-        # Start the binary package build on the slave builder. First
-        # we send the chroot.
-        chroot = self.build.distro_arch_series.getChroot()
-        d = self._slave.cacheFile(logger, chroot)
-        d.addCallback(self._buildFilemapStructure, logger)
-
-        def got_filemap(filemap):
-            # Generate a string which can be used to cross-check when
-            # obtaining results so we know we are referring to the right
-            # database object in subsequent runs.
-            buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.getBuildCookie()
-            chroot_sha1 = chroot.content.sha1
-            logger.debug(
-                "Initiating build %s on %s" % (buildid, self._builder.url))
-
-            args = self._extraBuildArgs(self.build)
-            d = self._slave.build(
-                cookie, "binarypackage", chroot_sha1, filemap, args)
-
-            def got_build((status, info)):
-                message = """%s (%s):
-                ***** RESULT *****
-                %s
-                %s
-                %s: %s
-                ******************
-                """ % (
-                    self._builder.name,
-                    self._builder.url,
-                    filemap,
-                    args,
-                    status,
-                    info,
-                    )
-                logger.info(message)
-            return d.addCallback(got_build)
-
-        return d.addCallback(got_filemap)
+    def composeBuildRequest(self, logger):
+        return (
+            "binarypackage", self.build.distro_arch_series,
+            self.determineFilesToSend(), self._extraBuildArgs(self.build))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
@@ -136,9 +96,9 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
            distroseries state.
         """
         build = self.build
-        if build.is_virtualized and not self._builder.virtualized:
+        if build.archive.require_virtualized and not self._builder.virtualized:
             raise AssertionError(
-                "Attempt to build virtual item on a non-virtual builder.")
+                "Attempt to build virtual archive on a non-virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
@@ -170,53 +130,18 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                     (build.title, build.id, build.pocket.name,
                      build.distro_series.name))
 
-    def _cachePrivateSourceOnSlave(self, logger):
-        """Ask the slave to download source files for a private build.
-
-        :param logger: A logger used for providing debug information.
-        :return: A list of Deferreds, each of which represents a request
-            to cache a file.
-        """
-        # The URL to the file in the archive consists of these parts:
-        # archive_url / makePoolPath() / filename
-        # Once this is constructed we add the http basic auth info.
-
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import makePoolPath
-
-        archive = self.build.archive
-        archive_url = archive.archive_url
-        component_name = self.build.current_component.name
-        dl = []
-        for source_file in self.build.source_package_release.files:
-            file_name = source_file.libraryfile.filename
-            sha1 = source_file.libraryfile.content.sha1
-            spn = self.build.source_package_release.sourcepackagename
-            poolpath = makePoolPath(spn.name, component_name)
-            url = urlappend(archive_url, poolpath)
-            url = urlappend(url, file_name)
-            logger.debug("Asking builder on %s to ensure it has file %s "
-                         "(%s, %s)" % (
-                            self._builder.url, file_name, url, sha1))
-            dl.append(
-                self._slave.sendFileToSlave(
-                    sha1, url, "buildd", archive.buildd_secret))
-        return dl
-
     def _extraBuildArgs(self, build):
         """
         Return the extra arguments required by the slave for the given build.
         """
+        das = build.distro_arch_series
+
         # Build extra arguments.
         args = {}
-        # turn 'arch_indep' ON only if build is archindep or if
-        # the specific architecture is the nominatedarchindep for
-        # this distroseries (in case it requires any archindep source)
-        args['arch_indep'] = build.distro_arch_series.isNominatedArchIndep
-
-        args['suite'] = build.distro_arch_series.distroseries.getSuite(
-            build.pocket)
-        args['arch_tag'] = build.distro_arch_series.architecturetag
+        args['arch_indep'] = build.arch_indep
+        args['distribution'] = das.distroseries.distribution.name
+        args['suite'] = das.distroseries.getSuite(build.pocket)
+        args['arch_tag'] = das.architecturetag
 
         archive_purpose = build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
@@ -228,14 +153,15 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
                 get_primary_current_component(build.archive,
-                    build.distro_series, build.source_package_release.name))
+                    build.distro_series,
+                    build.source_package_release.name)).name
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
                 build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(build,
-            build.distro_arch_series, build.source_package_release.name)
+        args['archives'] = get_sources_list_for_building(
+            build, das, build.source_package_release.name)
         args['archive_private'] = build.archive.private
         args['build_debug_symbols'] = build.archive.build_debug_symbols
 

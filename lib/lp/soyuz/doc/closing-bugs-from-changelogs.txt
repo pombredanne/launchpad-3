@@ -102,7 +102,8 @@ header will close the specified bug.
     >>> print_single_task_status(pmount_bug_id)
     'NEW'
 
-    >>> from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+    >>> from lp.soyuz.model.processacceptedbugsjob import (
+    ...     close_bugs_for_queue_item)
     >>> close_bugs_for_queue_item(queue_item)
 
     >>> print_single_task_status(pmount_bug_id)
@@ -142,7 +143,7 @@ added as a comment from the janitor.
 
 A bug notification is created for both the status change, and for the
 comment addition. The both notifications will be batched together into a
-single e-mail later.
+single email later.
 
     >>> from lp.bugs.model.bugnotification import BugNotification
     >>> notifications = BugNotification.select(orderBy='id')

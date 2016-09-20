@@ -11,7 +11,7 @@ __all__ = [
 
 from cStringIO import StringIO
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.expr import And
@@ -22,8 +22,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.bugs.interfaces.apportjob import (
@@ -50,10 +50,9 @@ from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 
 
+@implementer(IApportJob)
 class ApportJob(StormBase):
     """Base class for jobs related to Apport BLOBs."""
-
-    implements(IApportJob)
 
     __storm_table__ = 'ApportJob'
 
@@ -71,7 +70,7 @@ class ApportJob(StormBase):
 
     # The metadata property because it needs to be modifiable by
     # subclasses of ApportJobDerived. However, since ApportJobDerived
-    # only delegates() to ApportJob we can't simply directly access the
+    # only delegates to ApportJob we can't simply directly access the
     # _json_data property, so we use a getter and setter here instead.
     def _set_metadata(self, metadata):
         self._json_data = unicode(
@@ -112,11 +111,11 @@ class ApportJob(StormBase):
         return ApportJobDerived.makeSubclass(self)
 
 
+@delegate_to(IApportJob)
+@provider(IApportJobSource)
 class ApportJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ApportJob."""
     __metaclass__ = EnumeratedSubclass
-    delegates(IApportJob)
-    classProvides(IApportJobSource)
 
     def __init__(self, job):
         self.context = job
@@ -169,12 +168,12 @@ class ApportJobDerived(BaseRunnableJob):
         return vars
 
 
+@implementer(IProcessApportBlobJob)
+@provider(IProcessApportBlobJobSource)
 class ProcessApportBlobJob(ApportJobDerived):
     """A Job to process an Apport BLOB."""
-    implements(IProcessApportBlobJob)
 
     class_job_type = ApportJobType.PROCESS_BLOB
-    classProvides(IProcessApportBlobJobSource)
 
     config = config.IProcessApportBlobJobSource
 

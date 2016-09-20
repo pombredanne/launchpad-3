@@ -76,14 +76,10 @@
             <dd tal:content="current/urgency/title"/>
           </dl>
           <dl style="clear:both">
-            <dt>Component:<sup>*</sup></dt>
-            <dd tal:content="current/component/name"/>
-          </dl>
-          <dl>
             <dt>Architectures:<sup>*</sup></dt>
             <dd tal:content="current/architecturehintlist"/>
           </dl>
-          <dl style="clear:both">
+          <dl>
             <dt>Latest upload:</dt>
             <dd><a tal:content="current/version"
                    tal:attributes="href current/fmt:url">3.2.1-3</a>

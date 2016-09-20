@@ -21,6 +21,7 @@ from lp.registry.browser.distributionsourcepackage import (
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
+    canonical_url,
     LaunchpadView,
     Navigation,
     stepthrough,
@@ -55,6 +56,13 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
                 self.context.sourcepackagerelease):
             return None
         return build
+
+    @stepthrough('+latestbuild')
+    def redirect_latestbuild(self, name):
+        build = self.context.getBuildsByArchTag(name).first()
+        if build is not None:
+            return self.redirectSubTree(canonical_url(build), status=303)
+        return self.redirectSubTree(canonical_url(self.context), status=303)
 
 
 class DistributionSourcePackageReleaseView(LaunchpadView):

@@ -52,7 +52,7 @@ from storm.locals import (
 from storm.zope.interfaces import IZStorm
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import dbconfig
@@ -156,10 +156,10 @@ class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
         return table.__str__()
 
 
+@implementer(ISQLBase)
 class SQLBase(storm.sqlobject.SQLObjectBase):
     """Base class emulating SQLObject for legacy database classes.
     """
-    implements(ISQLBase)
     _style = LaunchpadStyle()
 
     # Silence warnings in linter script, which complains about all
@@ -283,18 +283,18 @@ def quote(x):
     >>> quote(1.0)
     '1.0'
     >>> quote("hello")
-    "'hello'"
+    "E'hello'"
     >>> quote("'hello'")
-    "'''hello'''"
+    "E'''hello'''"
     >>> quote(r"\'hello")
-    "'\\\\''hello'"
+    "E'\\\\''hello'"
 
     Note that we need to receive a Unicode string back, because our
     query will be a Unicode string (the entire query will be encoded
     before sending across the wire to the database).
 
     >>> quote(u"\N{TRADE MARK SIGN}")
-    u"'\u2122'"
+    u"E'\u2122'"
 
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.
@@ -348,18 +348,18 @@ def quote_like(x):
 
     >>> "SELECT * FROM mytable WHERE mycol LIKE '%%' || %s || '%%'" \
     ...     % quote_like('%')
-    "SELECT * FROM mytable WHERE mycol LIKE '%' || '\\\\%' || '%'"
+    "SELECT * FROM mytable WHERE mycol LIKE '%' || E'\\\\%' || '%'"
 
     Note that we need 2 backslashes to quote, as per the docs on
     the LIKE operator. This is because, unless overridden, the LIKE
     operator uses the same escape character as the SQL parser.
 
     >>> quote_like('100%')
-    "'100\\\\%'"
+    "E'100\\\\%'"
     >>> quote_like('foobar_alpha1')
-    "'foobar\\\\_alpha1'"
+    "E'foobar\\\\_alpha1'"
     >>> quote_like('hello')
-    "'hello'"
+    "E'hello'"
 
     Only strings are supported by this method.
 
@@ -371,7 +371,7 @@ def quote_like(x):
     """
     if not isinstance(x, basestring):
         raise TypeError('Not a string (%s)' % type(x))
-    return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+    return quote(x.replace('%', r'\%').replace('_', r'\_'))
 
 
 def sqlvalues(*values, **kwvalues):
@@ -393,7 +393,7 @@ def sqlvalues(*values, **kwvalues):
     >>> sqlvalues(1)
     ('1',)
     >>> sqlvalues(1, "bad ' string")
-    ('1', "'bad '' string'")
+    ('1', "E'bad '' string'")
 
     You can also use it when using dict-style substitution.
 
@@ -464,7 +464,7 @@ def convert_storm_clause_to_string(storm_clause):
     BugTask.importance = 999
 
     >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
-    Bug.title = 'foo''bar'''
+    Bug.title = E'foo''bar'''
 
     >>> print convert_storm_clause_to_string(
     ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
@@ -475,7 +475,7 @@ def convert_storm_clause_to_string(storm_clause):
     ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
     ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
     ...           BugTask.importance == BugTaskImportance.HIGH)))
-    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    Bug.title = E'foo' AND BugTask.bug = Bug.id AND
     (BugTask.importance = 999 OR BugTask.importance = 40)
     """
     state = State()

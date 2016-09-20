@@ -2,9 +2,11 @@
 
   >>> from zope.component import getUtility
   >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.testing import celebrity_logged_in
   >>> from lp.testing.sampledata import ADMIN_EMAIL
   >>> login(ADMIN_EMAIL)
+  >>> getUtility(IDistributionSet)['ubuntutest'].supports_ppas = True
   >>> owner = factory.makePerson()
   >>> url = "/~%s" % owner.name
   >>> logout()
@@ -16,13 +18,12 @@
   ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
 
   >>> print ppa_owner_webservice.named_post(
-  ...     ppa_owner['self_link'], 'createPPA', {}, name=None,
-  ...     displayname='My shiny new PPA', description='Shinyness!',
-  ...     )
+  ...     ppa_owner['self_link'], 'createPPA', {}, distribution='/ubuntu',
+  ...     name='yay', displayname='My shiny new PPA', description='Shinyness!')
   HTTP/1.1 201 Created
   Status: 201
   ...
-  Location: http://api.launchpad.dev/.../+archive/ppa
+  Location: http://api.launchpad.dev/.../+archive/ubuntu/yay
   ...
 
   >>> print ppa_owner_webservice.named_post(
@@ -40,7 +41,7 @@ Our PPA owner now has a single PPA.
 
   >>> print_self_link_of_entries(webservice.get(
   ...     ppa_owner['ppas_collection_link']).jsonBody())
-  http://api.launchpad.dev/beta/~.../+archive/ppa
+  http://api.launchpad.dev/beta/~.../+archive/ubuntu/yay
 
 They aren't a commercial admin, so they cannot create private PPAs.
 
@@ -59,7 +60,7 @@ single PPA they had at the beginning:
 
   >>> print_self_link_of_entries(webservice.get(
   ...     ppa_owner['ppas_collection_link']).jsonBody())
-  http://api.launchpad.dev/beta/~.../+archive/ppa
+  http://api.launchpad.dev/beta/~.../+archive/ubuntu/yay
 
 However, we can grant them commercial admin access:
 
@@ -78,15 +79,15 @@ Once they have commercial access, they can create private PPAs:
   HTTP/1.1 201 Created
   Status: 201
   ...
-  Location: http://api.launchpad.dev/.../+archive/secret
+  Location: http://api.launchpad.dev/.../+archive/ubuntu/secret
   ...
 
 And the PPA appears in their list of PPAs:
 
   >>> print_self_link_of_entries(webservice.get(
   ...     ppa_owner['ppas_collection_link']).jsonBody())
-  http://api.launchpad.dev/.../+archive/ppa
-  http://api.launchpad.dev/.../+archive/secret
+  http://api.launchpad.dev/.../+archive/ubuntu/secret
+  http://api.launchpad.dev/.../+archive/ubuntu/yay
 
 And the PPA is, of course, private:
 
@@ -94,3 +95,39 @@ And the PPA is, of course, private:
   ...     ppa_owner['self_link'], 'getPPAByName', name='secret').jsonBody()
   >>> ppa['private']
   True
+
+It's possible to create PPAs for all sorts of distributions.
+
+  >>> print ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createPPA', {}, distribution='/ubuntutest',
+  ...     name='ppa')
+  HTTP/1.1 201 Created
+  Status: 201
+  ...
+  Location: http://api.launchpad.dev/.../+archive/ubuntutest/ppa
+  ...
+
+But not for distributions that don't have PPAs enabled.
+
+  >>> print ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createPPA', {}, distribution='/redhat',
+  ...     name='ppa')
+  HTTP/1.1 400 Bad Request
+  Status: 400
+  ...
+  Red Hat does not support PPAs.
+
+
+== Defaults ==
+
+createPPA's distribution and name arguments were added years after the
+method, so they remain optional and default to Ubuntu and "ppa"
+respectively.
+
+  >>> print ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createPPA', {})
+  HTTP/1.1 201 Created
+  Status: 201
+  ...
+  Location: http://api.launchpad.dev/.../+archive/ubuntu/ppa
+  ...

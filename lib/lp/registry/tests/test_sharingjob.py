@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SharingJobs."""
@@ -117,6 +117,16 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
             '<REMOVE_ARTIFACT_SUBSCRIPTIONS job reconciling subscriptions '
             'for branch_ids=[%d], requestor=%s>'
             % (branch.id, requestor.name), repr(job))
+
+    def test_repr_gitrepositories(self):
+        requestor = self.factory.makePerson()
+        gitrepository = self.factory.makeGitRepository()
+        job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            requestor, artifacts=[gitrepository])
+        self.assertEqual(
+            '<REMOVE_ARTIFACT_SUBSCRIPTIONS job reconciling subscriptions '
+            'for gitrepository_ids=[%d], requestor=%s>'
+            % (gitrepository.id, requestor.name), repr(job))
 
     def test_repr_specifications(self):
         requestor = self.factory.makePerson()
@@ -303,6 +313,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             owner=owner, product=product,
             information_type=InformationType.USERDATA)
+        gitrepository = self.factory.makeGitRepository(
+            owner=owner, target=product,
+            information_type=InformationType.USERDATA)
         specification = self.factory.makeSpecification(
             owner=owner, product=product,
             information_type=InformationType.PROPRIETARY)
@@ -317,17 +330,21 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         branch.subscribe(artifact_indirect_grantee,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, owner)
+        gitrepository.subscribe(artifact_indirect_grantee,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, owner)
         # Subscribing somebody to a specification does not automatically
         # create an artifact grant.
         spec_artifact = self.factory.makeAccessArtifact(specification)
         self.factory.makeAccessArtifactGrant(
             spec_artifact, artifact_indirect_grantee)
-        specification.subscribe(artifact_indirect_grantee, owner)
+        with person_logged_in(product.owner):
+            specification.subscribe(artifact_indirect_grantee, owner)
 
-        # pick one of the concrete artifacts (bug, branch or spec)
-        # and subscribe the teams and persons.
+        # pick one of the concrete artifacts (bug, branch, Git repository,
+        # or spec) and subscribe the teams and persons.
         concrete_artifact, get_pillars, get_subscribers = configure_test(
-            bug, branch, specification, policy_team_grantee,
+            bug, branch, gitrepository, specification, policy_team_grantee,
             policy_indirect_grantee, artifact_team_grantee, owner)
 
         # Subscribing policy_team_grantee has created an artifact grant so we
@@ -360,7 +377,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertIn(artifact_team_grantee, subscribers)
         self.assertIn(artifact_indirect_grantee, bug.getDirectSubscribers())
         self.assertIn(artifact_indirect_grantee, branch.subscribers)
-        self.assertIn(artifact_indirect_grantee, specification.subscribers)
+        self.assertIn(artifact_indirect_grantee, gitrepository.subscribers)
+        self.assertIn(artifact_indirect_grantee,
+                      removeSecurityProxy(specification).subscribers)
 
     def _assert_bug_change_unsubscribes(self, change_callback):
 
@@ -371,9 +390,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
             return removeSecurityProxy(
                 concrete_artifact).getDirectSubscribers()
 
-        def configure_test(bug, branch, specification, policy_team_grantee,
-                           policy_indirect_grantee, artifact_team_grantee,
-                           owner):
+        def configure_test(bug, branch, gitrepository, specification,
+                           policy_team_grantee, policy_indirect_grantee,
+                           artifact_team_grantee, owner):
             concrete_artifact = bug
             bug.subscribe(policy_team_grantee, owner)
             bug.subscribe(policy_indirect_grantee, owner)
@@ -391,9 +410,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         def get_subscribers(concrete_artifact):
             return concrete_artifact.subscribers
 
-        def configure_test(bug, branch, specification, policy_team_grantee,
-                           policy_indirect_grantee, artifact_team_grantee,
-                           owner):
+        def configure_test(bug, branch, gitrepository, specification,
+                           policy_team_grantee, policy_indirect_grantee,
+                           artifact_team_grantee, owner):
             concrete_artifact = branch
             branch.subscribe(
                 policy_team_grantee,
@@ -412,6 +431,35 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self._assert_artifact_change_unsubscribes(
             change_callback, configure_test)
 
+    def _assert_gitrepository_change_unsubscribes(self, change_callback):
+
+        def get_pillars(concrete_artifact):
+            return [concrete_artifact.target]
+
+        def get_subscribers(concrete_artifact):
+            return concrete_artifact.subscribers
+
+        def configure_test(bug, branch, gitrepository, specification,
+                           policy_team_grantee, policy_indirect_grantee,
+                           artifact_team_grantee, owner):
+            concrete_artifact = gitrepository
+            gitrepository.subscribe(
+                policy_team_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            gitrepository.subscribe(
+                policy_indirect_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                CodeReviewNotificationLevel.NOEMAIL, owner)
+            gitrepository.subscribe(
+                artifact_team_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                CodeReviewNotificationLevel.NOEMAIL, owner)
+            return concrete_artifact, get_pillars, get_subscribers
+
+        self._assert_artifact_change_unsubscribes(
+            change_callback, configure_test)
+
     def _assert_specification_change_unsubscribes(self, change_callback):
 
         def get_pillars(concrete_artifact):
@@ -420,17 +468,17 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         def get_subscribers(concrete_artifact):
             return concrete_artifact.subscribers
 
-        def configure_test(bug, branch, specification, policy_team_grantee,
-                           policy_indirect_grantee, artifact_team_grantee,
-                           owner):
-            concrete_artifact = specification
-            specification.subscribe(policy_team_grantee, owner)
-            specification.subscribe(policy_indirect_grantee, owner)
+        def configure_test(bug, branch, gitrepository, specification,
+                           policy_team_grantee, policy_indirect_grantee,
+                           artifact_team_grantee, owner):
+            naked_spec = removeSecurityProxy(specification)
+            naked_spec.subscribe(policy_team_grantee, owner)
+            naked_spec.subscribe(policy_indirect_grantee, owner)
             spec_artifact = self.factory.makeAccessArtifact(specification)
             self.factory.makeAccessArtifactGrant(
                 spec_artifact, artifact_team_grantee)
-            specification.subscribe(artifact_team_grantee, owner)
-            return concrete_artifact, get_pillars, get_subscribers
+            naked_spec.subscribe(artifact_team_grantee, owner)
+            return naked_spec, get_pillars, get_subscribers
 
         self._assert_artifact_change_unsubscribes(
             change_callback, configure_test)
@@ -441,6 +489,13 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
                 InformationType.PRIVATESECURITY)
 
         self._assert_branch_change_unsubscribes(change_information_type)
+
+    def test_change_information_type_gitrepository(self):
+        def change_information_type(gitrepository):
+            removeSecurityProxy(gitrepository).information_type = (
+                InformationType.PRIVATESECURITY)
+
+        self._assert_gitrepository_change_unsubscribes(change_information_type)
 
     def test_change_information_type_specification(self):
         def change_information_type(specification):

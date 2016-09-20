@@ -54,10 +54,10 @@ The last published binary can also be accessed directly:
     >>> "%s %s" % (last_published.name, last_published.version)
     u'mozilla-firefox 1.0'
 
-It also provides access to the last DistroSeriesSourcePackageRelease:
+It also provides access to the last DistributionSourcePackageRelease:
 
     >>> print firefox_dsbp.last_sourcepackagerelease.title
-    "iceweasel" 1.0 source package in The Warty Warthog Release
+    iceweasel 1.0 source package in Ubuntu
 
 If a DistroSeriesBinaryPackage doesn't have a DistroSeriesPackageCache,
 then the summary and description fields reflect the situation:
@@ -78,7 +78,7 @@ whatever reason), then last_published returns None.
     >>> print firefox_hoary_dsbp.last_published
     None
 
-In this case, the last DistroSeriesSourcePackageRelease will also be None:
+In this case, the last DistributionSourcePackageRelease will also be None:
 
     >>> print firefox_hoary_dsbp.last_sourcepackagerelease
     None

@@ -12,19 +12,18 @@ from storm.locals import (
     Unicode,
     )
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.session.interfaces import IUseSessionStore
 
 
+@implementer(IUseSessionStore)
+@provider(IUseSessionStore)
 class SessionData(Storm):
     """A user's Session."""
-
-    classProvides(IUseSessionStore)
-    implements(IUseSessionStore)
 
     __storm_table__ = 'SessionData'
     client_id = Unicode(primary=True)
@@ -32,11 +31,10 @@ class SessionData(Storm):
     last_accessed = UtcDateTimeCol()
 
 
+@implementer(IUseSessionStore)
+@provider(IUseSessionStore)
 class SessionPkgData(Storm):
     """Data storage for a Session."""
-
-    classProvides(IUseSessionStore)
-    implements(IUseSessionStore)
 
     __storm_table__ = 'SessionPkgData'
     __storm_primary__ = 'client_id', 'product_id', 'key'

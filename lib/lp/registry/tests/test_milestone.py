@@ -530,12 +530,11 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         self.assertContentEqual([spec],
                                 target_milestone.getSpecifications(None))
 
-    def test_milestones_on_project(self):
-        # A Project (Project Group) milestone contains all specifications
-        # targetted to contained Products (Projects) for milestones of
-        # a certain name.
+    def test_milestones_on_project_group(self):
+        # A Project Group milestone contains all specifications targetted to
+        # contained Projects for milestones of a certain name.
         projectgroup = self.factory.makeProject()
-        product = self.factory.makeProduct(project=projectgroup)
+        product = self.factory.makeProduct(projectgroup=projectgroup)
         spec, target_milestone = self._create_milestones_on_target(
             product=product)
         milestone = projectgroup.getMilestone(name=target_milestone.name)
@@ -544,11 +543,11 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
     def makeMixedMilestone(self):
         projectgroup = self.factory.makeProject()
         owner = self.factory.makePerson()
-        public_product = self.factory.makeProduct(project=projectgroup)
+        public_product = self.factory.makeProduct(projectgroup=projectgroup)
         public_milestone = self.factory.makeMilestone(product=public_product)
         product = self.factory.makeProduct(
             owner=owner, information_type=InformationType.PROPRIETARY,
-            project=projectgroup)
+            projectgroup=projectgroup)
         target_milestone = self.factory.makeMilestone(
             product=product, name=public_milestone.name)
         milestone = projectgroup.getMilestone(name=public_milestone.name)
@@ -623,12 +622,12 @@ class ProjectMilestoneSecurityAdaperTestCase(TestCaseWithFactory):
     def setUp(self):
         super(ProjectMilestoneSecurityAdaperTestCase, self).setUp()
         project_group = self.factory.makeProject()
-        public_product = self.factory.makeProduct(project=project_group)
+        public_product = self.factory.makeProduct(projectgroup=project_group)
         self.factory.makeMilestone(
             product=public_product, name='public-milestone')
         self.proprietary_product_owner = self.factory.makePerson()
         self.proprietary_product = self.factory.makeProduct(
-            project=project_group,
+            projectgroup=project_group,
             owner=self.proprietary_product_owner,
             information_type=InformationType.PROPRIETARY)
         self.factory.makeMilestone(

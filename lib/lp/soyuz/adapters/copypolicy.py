@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -57,13 +57,6 @@ class BasicCopyPolicy:
 
         return False
 
-
-class InsecureCopyPolicy(BasicCopyPolicy):
-    """A policy for copying from insecure sources."""
-    implements(ICopyPolicy)
-
-    enum_value = PackageCopyPolicy.INSECURE
-
     def send_email(self, archive):
         if archive.is_ppa:
             return False
@@ -71,14 +64,21 @@ class InsecureCopyPolicy(BasicCopyPolicy):
         return True
 
 
+@implementer(ICopyPolicy)
+class InsecureCopyPolicy(BasicCopyPolicy):
+    """A policy for copying from insecure sources."""
+
+    enum_value = PackageCopyPolicy.INSECURE
+
+
+@implementer(ICopyPolicy)
 class MassSyncCopyPolicy(BasicCopyPolicy):
-    """A policy for mass 'sync' copies."""
-    implements(ICopyPolicy)
+    """A policy for mass 'sync' copies.
+
+    Exists soley so the classic job runner processes autosyncs last.
+    """
 
     enum_value = PackageCopyPolicy.MASS_SYNC
-
-    def send_email(self, archive=None):
-        return False
 
 
 policies = [

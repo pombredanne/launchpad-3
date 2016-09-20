@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to QuestionJob."""
@@ -8,7 +8,7 @@ __all__ = [
     'QuestionJob',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 import simplejson
 from storm.expr import And
 from storm.locals import (
@@ -18,8 +18,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.answers.enums import (
@@ -50,10 +50,9 @@ from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 
 
+@implementer(IQuestionJob)
 class QuestionJob(StormBase):
     """A Job for queued question emails."""
-
-    implements(IQuestionJob)
 
     __storm_table__ = 'QuestionJob'
 
@@ -100,12 +99,12 @@ class QuestionJob(StormBase):
         return QuestionEmailJob(self)
 
 
+@delegate_to(IQuestionJob)
+@implementer(IQuestionEmailJob)
+@provider(IQuestionEmailJobSource)
 class QuestionEmailJob(BaseRunnableJob):
     """Intermediate class for deriving from QuestionJob."""
 
-    delegates(IQuestionJob)
-    implements(IQuestionEmailJob)
-    classProvides(IQuestionEmailJobSource)
     config = config.IQuestionEmailJobSource
 
     def __init__(self, job):
@@ -194,14 +193,18 @@ class QuestionEmailJob(BaseRunnableJob):
             recipients = NotificationRecipientSet()
             owner = self.question.owner
             original_recipients = self.question.direct_recipients
-            if owner in original_recipients:
-                rationale, header = original_recipients.getReason(owner)
-                recipients.add(owner, rationale, header)
+            for recipient in original_recipients:
+                reason, header = original_recipients.getReason(recipient)
+                if reason.subscriber == owner:
+                    recipients.add(recipient, reason, header)
             return recipients
         elif question_recipient_set == QuestionRecipientSet.SUBSCRIBER:
             recipients = self.question.getRecipients()
-            if self.question.owner in recipients:
-                recipients.remove(self.question.owner)
+            owner = self.question.owner
+            asker_recipients = [
+                recipient for recipient in recipients
+                if recipients.getReason(recipient)[0].subscriber == owner]
+            recipients.remove(asker_recipients)
             return recipients
         elif question_recipient_set == QuestionRecipientSet.ASKER_SUBSCRIBER:
             return self.question.getRecipients()
@@ -231,9 +234,10 @@ class QuestionEmailJob(BaseRunnableJob):
         headers = self.headers
         recipients = self.recipients
         for email in recipients.getEmails():
-            rationale, header = recipients.getReason(email)
+            reason, header = recipients.getReason(email)
             headers['X-Launchpad-Message-Rationale'] = header
-            formatted_body = self.buildBody(rationale)
+            headers['X-Launchpad-Message-For'] = reason.subscriber.name
+            formatted_body = self.buildBody(reason.getReason())
             simple_sendmail(
                 self.from_address, email, self.subject, formatted_body,
                 headers)

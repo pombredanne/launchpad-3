@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -39,8 +39,6 @@ from zope.security.proxy import (
 
 from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -61,7 +59,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
-from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
@@ -104,6 +101,7 @@ from lp.services.searchbuilder import (
     not_equals,
     NULL,
     )
+from lp.services.xref.model import XRef
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -163,27 +161,6 @@ orderby_expression = {
                         BugTag.id, tables=[BugTag],
                         where=(BugTag.bugID == BugTaskFlat.bug_id),
                         order_by=BugTag.tag, limit=1))),
-            ]
-        ),
-    "specification": (
-        Specification.name,
-        [
-            (Specification,
-                LeftJoin(
-                    Specification,
-                    # We want at most one specification per bug.
-                    # Select the specification that comes first
-                    # in alphabetic order.
-                    Specification.id == Select(
-                        Specification.id,
-                        tables=[
-                            SpecificationBug,
-                            Join(
-                                Specification,
-                                Specification.id ==
-                                    SpecificationBug.specificationID)],
-                        where=(SpecificationBug.bugID == BugTaskFlat.bug_id),
-                        order_by=Specification.name, limit=1))),
             ]
         ),
     }
@@ -388,7 +365,7 @@ def _build_query(params):
                         Milestone.id,
                         tables=[Milestone, Product],
                         where=And(
-                            Product.project == params.milestone.target,
+                            Product.projectgroup == params.milestone.target,
                             Milestone.productID == Product.id,
                             Milestone.name == params.milestone.name,
                             ProductSet.getProductPrivacyFilter(params.user)))))
@@ -410,7 +387,7 @@ def _build_query(params):
                     Milestone.id,
                     tables=[Milestone, Product, MilestoneTag],
                     where=And(
-                        Product.project == params.milestone_tag.target,
+                        Product.projectgroup == params.milestone_tag.target,
                         Milestone.productID == Product.id,
                         Milestone.id == MilestoneTag.milestone_id,
                         MilestoneTag.tag.is_in(params.milestone_tag.tags)),
@@ -427,12 +404,12 @@ def _build_query(params):
         #     join_tables += tables
         #     extra_clauses += clauses
 
-    if params.project:
+    if params.projectgroup:
         clauseTables.append(Product)
         extra_clauses.append(And(
             BugTaskFlat.product_id == Product.id,
             search_value_to_storm_where_condition(
-                Product.project, params.project)))
+                Product.projectgroup, params.projectgroup)))
 
     if params.omit_dupes:
         extra_clauses.append(BugTaskFlat.duplicateof == None)
@@ -443,9 +420,13 @@ def _build_query(params):
             BugTaskFlat.productseries == None))
 
     if params.has_cve:
-        extra_clauses.append(
-            BugTaskFlat.bug_id.is_in(
-                Select(BugCve.bugID, tables=[BugCve])))
+        where = [
+            XRef.from_type == u'bug',
+            XRef.from_id_int == BugTaskFlat.bug_id,
+            XRef.to_type == u'cve',
+            ]
+        extra_clauses.append(Exists(Select(
+            1, tables=[XRef], where=And(*where))))
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
@@ -483,7 +464,7 @@ def _build_query(params):
         # Milestones apply to all structural subscription searches.
         ss_clauses = [
             In(BugTaskFlat.milestone_id, Select(SS.milestoneID, tables=[SS]))]
-        if (params.project is None
+        if (params.projectgroup is None
             and params.product is None and params.productseries is None):
             # This search is *not* contrained to project related bugs, so
             # include distro, distroseries, DSP and SP subscriptions.
@@ -518,9 +499,10 @@ def _build_query(params):
         if params.distribution is None and params.distroseries is None:
             # This search is *not* contrained to distro related bugs so
             # include products, productseries, and project group subscriptions.
-            project_match = True
-            if params.project is not None:
-                project_match = Product.project == params.project
+            projectgroup_match = True
+            if params.projectgroup is not None:
+                projectgroup_match = (
+                    Product.projectgroup == params.projectgroup)
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(SS.productID, tables=[SS])))
@@ -531,8 +513,8 @@ def _build_query(params):
                 BugTaskFlat.product_id,
                 Select(Product.id, tables=[SS, Product],
                        where=And(
-                           SS.projectID == Product.projectID,
-                           project_match,
+                           SS.projectgroupID == Product.projectgroupID,
+                           projectgroup_match,
                            Product.active))))
         extra_clauses.append(Or(*ss_clauses))
 
@@ -689,15 +671,39 @@ def _build_query(params):
                     BugBranch.branchID, branches))
         return Exists(Select(1, tables=[BugBranch], where=And(*where)))
 
+    def make_merge_proposal_clause(merge_proposals=None):
+        where = [
+            XRef.from_type == u'bug',
+            XRef.from_id_int == BugTaskFlat.bug_id,
+            XRef.to_type == u'merge_proposal',
+            ]
+        if merge_proposals is not None:
+            where.append(
+                search_value_to_storm_where_condition(
+                    XRef.to_id_int, merge_proposals))
+        return Exists(Select(1, tables=[XRef], where=And(*where)))
+
     if zope_isinstance(params.linked_branches, BaseItem):
+        # BUGS_WITH_BRANCHES/BUGS_WITHOUT_BRANCHES will find bugs with
+        # linked merge proposals too.
         if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
-            extra_clauses.append(make_branch_clause())
+            extra_clauses.append(
+                Or(make_branch_clause(), make_merge_proposal_clause()))
         elif (params.linked_branches ==
                 BugBranchSearch.BUGS_WITHOUT_BRANCHES):
             extra_clauses.append(Not(make_branch_clause()))
+            extra_clauses.append(Not(make_merge_proposal_clause()))
     elif zope_isinstance(params.linked_branches, (any, all, int)):
-        # A specific search term has been supplied.
+        # A specific search term has been supplied.  Note that this only
+        # works with branches, not merge proposals, as it takes integer
+        # branch IDs.
         extra_clauses.append(make_branch_clause(params.linked_branches))
+
+    if params.linked_merge_proposals is not None:
+        # This is normally only used internally by
+        # BranchMergeProposal.getRelatedBugTasks.
+        extra_clauses.append(
+            make_merge_proposal_clause(params.linked_merge_proposals))
 
     linked_blueprints_clause = _build_blueprint_related_clause(params)
     if linked_blueprints_clause is not None:
@@ -1034,12 +1040,17 @@ def _build_blueprint_related_clause(params):
     linked_blueprints = params.linked_blueprints
 
     def make_clause(blueprints=None):
-        where = [SpecificationBug.bugID == BugTaskFlat.bug_id]
+        where = [
+            XRef.from_type == u'bug',
+            XRef.from_id_int == BugTaskFlat.bug_id,
+            XRef.to_type == u'specification',
+            ]
         if blueprints is not None:
             where.append(
                 search_value_to_storm_where_condition(
-                    SpecificationBug.specificationID, blueprints))
-        return Exists(Select(1, tables=[SpecificationBug], where=And(*where)))
+                    XRef.to_id_int, blueprints))
+        return Exists(Select(
+            1, tables=[XRef], where=And(*where)))
 
     if linked_blueprints is None:
         return None

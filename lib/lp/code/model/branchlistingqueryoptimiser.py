@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
@@ -21,10 +21,9 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.interfaces import IStore
 
 
+@implementer(IBranchListingQueryOptimiser)
 class BranchListingQueryOptimiser:
     """Utility object for efficient DB queries for branch listings."""
-
-    implements(IBranchListingQueryOptimiser)
 
     @staticmethod
     def getProductSeriesForBranches(branch_ids):

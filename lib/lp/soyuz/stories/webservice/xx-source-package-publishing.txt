@@ -23,12 +23,14 @@ We need to insert some dependent fake data before continuing.
     >>> cprov_ppa = cprov_db.archive
     >>> for pub in cprov_ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
-    ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
+    ...     pub.sourcepackagerelease.signing_key_owner = fake_signer.owner
+    ...     pub.sourcepackagerelease.signing_key_fingerprint = (
+    ...         fake_signer.fingerprint)
     >>> logout()
     >>> cprov_webservice = webservice_for_person(
     ...     cprov_db, permission=OAuthPermission.WRITE_PUBLIC)
 
-    >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
+    >>> cprov_archive = webservice.get("/~cprov/+archive/ubuntu/ppa").jsonBody()
     >>> cprov_srcs_response = pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources')
     >>> pubs = cprov_srcs_response.jsonBody()
@@ -117,7 +119,7 @@ publication to play with first.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
-    archive_link: u'http://.../~cprov/+archive/ppa'
+    archive_link: u'http://.../~cprov/+archive/ubuntu/ppa'
     component_name: u'main'
     creator_link: u'http://api.launchpad.dev/beta/~name16'
     date_created: ...
@@ -137,7 +139,7 @@ publication to play with first.
     resource_type_link: u'http://.../#source_package_publishing_history'
     scheduled_deletion_date: None
     section_name: u'base'
-    self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/...'
+    self_link: u'http://.../~cprov/+archive/ubuntu/ppa/+sourcepub/...'
     source_package_name: u'testwebservice'
     source_package_version: u'666'
     sponsor_link: None
@@ -145,7 +147,7 @@ publication to play with first.
 
     >>> webservice.named_get(
     ...     pubs['entries'][0]['self_link'], 'changesFileUrl').jsonBody()
-    u'http://.../~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
+    u'http://.../~cprov/+archive/ubuntu/ppa/+files/testwebservice_666_source.changes'
 
 
 Unsigned sources
@@ -159,7 +161,8 @@ Make cprov's PPA packages unsigned:
     >>> login("foo.bar@canonical.com")
     >>> for pub in cprov_ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
-    ...     pub.sourcepackagerelease.dscsigningkey = None
+    ...     pub.sourcepackagerelease.signing_key_owner = None
+    ...     pub.sourcepackagerelease.signing_key_fingerprint = None
     >>> logout()
 
 Query the source again:
@@ -216,7 +219,7 @@ The package's binaries are also marked for deletion:
 
     >>> login("admin@canonical.com")
     >>> for bin in cprov_ppa.getAllPublishedBinaries(
-    ...     name="testwebservice-bin"):
+    ...     name=u"testwebservice-bin"):
     ...     if bin.status != PackagePublishingStatus.DELETED:
     ...         print "%s is not deleted when it should be" % bin.displayname
     ...     else:
@@ -247,7 +250,7 @@ Only Celso (or anyone who participates on the PPA owner team) has
 access to the PPA publications.
 
     >>> cprov_private_ppa = webservice.get(
-    ...     "/~cprov/+archive/p3a").jsonBody()
+    ...     "/~cprov/+archive/ubuntu/p3a").jsonBody()
     >>> cprov_srcs_response_private = webservice.named_get(
     ...     cprov_private_ppa['self_link'], 'getPublishedSources')
     >>> print cprov_srcs_response_private
@@ -327,7 +330,7 @@ cprov's ppa:
     >>> src_link = cprov_srcs['entries'][0]['self_link']
 
 The src_link will be of the form:
-u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+sourcepub/27'
+u'http://api.launchpad.dev/beta/~cprov/+archive/ubuntu/ppa/+sourcepub/27'
 so:
 
     >>> source_id = int(src_link.split('/')[-1])
@@ -372,11 +375,11 @@ for this package:
     ...     source_urls = webservice.named_get(
     ...         pub_link, 'sourceFileUrls').jsonBody()
     ...     print source_urls
-    [u'http://.../~cprov/+archive/ppa/+files/foobar-1.0.dsc']
-    [u'http://.../~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz',
-     u'http://.../~cprov/+archive/ppa/+files/iceweasel-1.0.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/foobar-1.0.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/firefox_0.9.2.orig.tar.gz',
+     u'http://.../~cprov/+archive/ubuntu/ppa/+files/iceweasel-1.0.dsc']
     []
-    [u'http://.../~cprov/+archive/ppa/+files/testwebservice_666.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/testwebservice_666.dsc']
 
 binaryFileUrls() is similar:
 
@@ -386,9 +389,9 @@ binaryFileUrls() is similar:
     ...         pub_link, 'binaryFileUrls').jsonBody()
     ...     print binary_urls
     []
-    [u'http://.../~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/mozilla-firefox_0.9_i386.deb']
     []
-    [u'http://.../~cprov/+archive/ppa/+files/testwebservice-bin_666_all.deb']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/testwebservice-bin_666_all.deb']
 
 changelogUrl() returns the URL of debian/changelog, if it's available in
 the librarian.
@@ -442,7 +445,7 @@ And then obtain the URL to the diff:
 The URL is a standard proxied URL in case the file is private:
 
     >>> print diff_url
-    http://launchpad.dev/~cprov/+archive/ppa/+files/...
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+files/...
 
 It will match the fake content we added earlier:
 
@@ -460,11 +463,12 @@ Overrides
 
     >>> login("foo.bar@canonical.com")
     >>> override_source = stp.getPubSource(
-    ...     archive=cprov_ppa, sourcename="testoverrides")
+    ...     archive=cprov_ppa, sourcename="testoverrides",
+    ...     distroseries=cprov_ppa.distribution.currentseries)
     >>> logout()
 
     >>> cprov_archive_devel = webservice.get(
-    ...     "/~cprov/+archive/ppa", api_version="devel").jsonBody()
+    ...     "/~cprov/+archive/ubuntu/ppa", api_version="devel").jsonBody()
     >>> pubs = webservice.named_get(
     ...     cprov_archive_devel["self_link"], "getPublishedSources",
     ...     api_version="devel", source_name="testoverrides").jsonBody()

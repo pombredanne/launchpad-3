@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """External bugtrackers."""
@@ -14,6 +14,7 @@ __all__ = [
     'ExternalBugTracker',
     'InvalidBugId',
     'LookupTree',
+    'LP_USER_AGENT',
     'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteImportanceError',
@@ -29,7 +30,7 @@ import urllib
 import urllib2
 from urlparse import urlparse
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.adapters import treelookup
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -134,10 +135,9 @@ class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
 
+@implementer(IExternalBugTracker)
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
-
-    implements(IExternalBugTracker)
 
     batch_size = None
     batch_query_threshold = config.checkwatches.batch_query_threshold
@@ -237,7 +237,7 @@ class ExternalBugTracker:
     def _getHeaders(self):
         # For some reason, bugs.kde.org doesn't allow the regular urllib
         # user-agent string (Python-urllib/2.x) to access their bugzilla.
-        return {'User-agent': LP_USER_AGENT, 'Host': self.basehost}
+        return {'User-Agent': LP_USER_AGENT, 'Host': self.basehost}
 
     def _fetchPage(self, page, data=None):
         """Fetch a page from the remote server.

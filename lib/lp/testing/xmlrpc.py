@@ -79,32 +79,11 @@ class HTTPCallerHTTPConnection(httplib.HTTPConnection):
         response.begin()
         return response
 
-    # py2.6 compatibility
-    # in Python 2.6, XMLRPC uses their 'compatibility' HTTP class, which
-    # expects getreply() and getfile() methods. Python 2.7 now uses the
-    # getresponse(buffering=True) api. Once we switch to python 2.7, the
-    # following two methods can be removed.
-    def getreply(self):
-        """Return a tuple of status code, reason string, and headers."""
-        response = self._zope_response()
-        return (
-            response.getStatus(),
-            response.getStatusString(),
-            response.getHeaders())
-
-    def getfile(self):
-        """Get the response body as a file like object."""
-        response = self._zope_response()
-        return StringIO(response.consumeBody())
-
 
 class XMLRPCTestTransport(xmlrpclib.Transport):
     """An XMLRPC Transport which sends the requests to HTTPCaller."""
 
     def make_connection(self, host):
         """Return our custom HTTPCaller HTTPConnection."""
-        # In Python2.7, make_connection caches the extra_headers, which is
-        # where authorization is stored. In 2.6 it is safe to cache them,
-        # because it just ignores the extra attribute.
         host, self._extra_headers, x509 = self.get_host_info(host)
         return HTTPCallerHTTPConnection(host)

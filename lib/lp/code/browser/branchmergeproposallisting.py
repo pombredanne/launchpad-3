@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ActiveReviewsView',
     'BranchActiveReviewsView',
+    'BranchDependentMergesView',
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
@@ -16,7 +17,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     EnumeratedType,
     Item,
@@ -24,7 +25,7 @@ from lazr.enum import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -34,14 +35,11 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.interfaces.launchpad import IHeadingContext
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
-    )
-from lp.code.interfaces.branchcollection import (
-    IAllBranches,
-    IBranchCollection,
     )
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -59,10 +57,9 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import TableBatchNavigator
 
 
+@delegate_to(IBranchMergeProposal, context='context')
 class BranchMergeProposalListingItem:
     """A branch merge proposal that knows summary values for comments."""
-
-    delegates(IBranchMergeProposal, 'context')
 
     def __init__(self, branch_merge_proposal, summary, proposal_reviewer,
                  vote_references=None):
@@ -137,9 +134,9 @@ class BranchMergeProposalListingItem:
             return self.context.date_created
 
 
+@implementer(IBranchMergeProposalListingBatchNavigator)
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
-    implements(IBranchMergeProposalListingBatchNavigator)
 
     def __init__(self, view):
         super(BranchMergeProposalListingBatchNavigator, self).__init__(
@@ -167,7 +164,7 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
 
     @cachedproperty
     def proposals(self):
-        """Return a list of BranchListingItems."""
+        """Return a list of BranchMergeProposalListingItems."""
         proposals = self._proposals_for_current_batch
         return [self._createItem(proposal) for proposal in proposals]
 
@@ -209,10 +206,14 @@ class BranchMergeProposalListingView(LaunchpadFormView):
     extra_columns = []
     _queue_status = None
 
+    page_title = 'Merge proposals'
+
     @property
-    def page_title(self):
-        return "Merge Proposals for %s" % self.context.displayname
-    label = page_title
+    def label(self):
+        if IHeadingContext.providedBy(self.context):
+            return self.page_title
+        else:
+            return "%s for %s" % (self.page_title, self.context.displayname)
 
     @property
     def initial_values(self):
@@ -264,8 +265,25 @@ class BranchMergeProposalListingView(LaunchpadFormView):
                 self.context.displayname, self.status_value.title)
 
 
+class BranchDependentMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals that list this branch as a prerequisite."""
+
+    page_title = 'Dependent merge proposals'
+
+    @property
+    def label(self):
+        return "Merge proposals dependent on %s" % self.context.displayname
+
+    def getVisibleProposalsForUser(self):
+        """See `BranchMergeProposalListingView`."""
+        return self.context.getDependentMergeProposals(
+            self.status_filter, self.user, eager_load=True)
+
+
 class ActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for a context that are needing review."""
+
+    page_title = "Active reviews"
 
     show_diffs = False
 
@@ -280,12 +298,11 @@ class ActiveReviewsView(BranchMergeProposalListingView):
 
     def getProposals(self):
         """Get the proposals for the view."""
-        collection = IBranchCollection(self.context)
-        collection = collection.visibleByUser(self.user)
-        proposals = collection.getMergeProposals(
-            [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
-        return proposals
+        return self.context.getMergeProposals(
+            status=(
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW),
+            visible_by_user=self.user, eager_load=True)
 
     def _getReviewGroup(self, proposal, votes, reviewer):
         """One of APPROVED, MINE, TO_DO, CAN_DO, ARE_DOING, OTHER or WIP.
@@ -317,8 +334,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             return self.WIP
 
         if (reviewer is not None and
-            (proposal.source_branch.owner == reviewer or
-             (reviewer.inTeam(proposal.source_branch.owner) and
+            (proposal.merge_source.owner == reviewer or
+             (reviewer.inTeam(proposal.merge_source.owner) and
               proposal.registrant == reviewer))):
             return self.MINE
 
@@ -372,11 +389,11 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         reviewer = self._getReviewer()
         headings = {
             self.APPROVED: 'Approved reviews ready to land',
-            self.TO_DO: 'Reviews I have to do',
-            self.ARE_DOING: 'Reviews I am doing',
-            self.CAN_DO: 'Requested reviews I can do',
-            self.MINE: 'Reviews I am waiting on',
-            self.OTHER: 'Other reviews I am not actively reviewing',
+            self.TO_DO: 'Reviews you have to do',
+            self.ARE_DOING: 'Reviews you are doing',
+            self.CAN_DO: 'Requested reviews you can do',
+            self.MINE: 'Reviews you are waiting on',
+            self.OTHER: 'Other reviews you are not actively reviewing',
             self.WIP: 'Work in progress'}
         if reviewer is None:
             # If there is no reviewer, then there will be no TO_DO, ARE_DOING,
@@ -405,12 +422,6 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         return headings
 
     @property
-    def heading(self):
-        return "Active code reviews for %s" % self.context.displayname
-
-    page_title = heading
-
-    @property
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no active code reviews." % self.context.displayname
@@ -436,32 +447,29 @@ class PersonActiveReviewsView(ActiveReviewsView):
     def _getReviewer(self):
         return self.context
 
-    def _getCollection(self):
-        return getUtility(IAllBranches)
-
-    def getProposals(self):
+    def getProposals(self, project=None):
         """See `ActiveReviewsView`."""
-        collection = self._getCollection().visibleByUser(self.user)
-        return collection.getMergeProposalsForPerson(
-            self._getReviewer(), [BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
+        return self._getReviewer().getOwnedAndRequestedReviews(
+            status=(
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW),
+            visible_by_user=self.user, project=project, eager_load=True)
 
 
 class PersonProductActiveReviewsView(PersonActiveReviewsView):
     """Active reviews for a person in a product."""
 
+    @property
+    def label(self):
+        return '%s for %s' % (
+            self.page_title, self.context.product.displayname)
+
     def _getReviewer(self):
         return self.context.person
 
-    def _getCollection(self):
-        return getUtility(IAllBranches).inProduct(self.context.product)
-
-    @property
-    def heading(self):
-        return "Active code reviews of %s for %s" % (
-            self.context.product.displayname, self.context.person.displayname)
-
-    page_title = heading
+    def getProposals(self):
+        return super(PersonProductActiveReviewsView, self).getProposals(
+            project=self.context.product)
 
     @property
     def no_proposal_message(self):

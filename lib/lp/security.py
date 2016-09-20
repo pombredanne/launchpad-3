@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -29,7 +29,6 @@ from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.interfaces.security import IAuthorization
-from lp.app.interfaces.services import IService
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
@@ -70,7 +69,6 @@ from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,
@@ -83,6 +81,12 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitcollection import IGitCollection
+from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrepository import (
+    IGitRepository,
+    user_has_special_git_repository_access,
+    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -161,6 +165,7 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
     ITeamMembership,
     TeamMembershipStatus,
@@ -178,10 +183,20 @@ from lp.services.oauth.interfaces import (
     )
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webhooks.interfaces import (
+    IWebhook,
+    IWebhookDeliveryJob,
+    )
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
+    )
+from lp.snappy.interfaces.snap import ISnap
+from lp.snappy.interfaces.snapbuild import ISnapBuild
+from lp.snappy.interfaces.snappyseries import (
+    ISnappySeries,
+    ISnappySeriesSet,
     )
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
@@ -196,6 +211,8 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.livefs import ILiveFS
+from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
@@ -455,8 +472,7 @@ class LimitedViewProduct(ViewProduct):
     def checkAuthenticated(self, user):
         return (
             super(LimitedViewProduct, self).checkAuthenticated(user) or
-            getUtility(IService, 'sharing').checkPillarArtifactAccess(
-                self.obj, user))
+            self.obj.userCanLimitedView(user))
 
 
 class EditProduct(EditByOwnersOrAdmins):
@@ -591,6 +607,7 @@ class EditSpecificationByRelatedPeople(AuthorizationBase):
             if user.isOwner(goal) or user.isDriver(goal):
                 return True
         return (user.in_admin or
+                user.in_registry_experts or
                 user.isOwner(self.obj.target) or
                 user.isDriver(self.obj.target) or
                 user.isOneOf(
@@ -603,9 +620,11 @@ class AdminSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
-        return (user.isOwner(self.obj.target) or
-                user.isDriver(self.obj.target) or
-                user.in_admin)
+        return (
+                user.in_admin or
+                user.in_registry_experts or
+                user.isOwner(self.obj.target) or
+                user.isDriver(self.obj.target))
 
 
 class DriverSpecification(AuthorizationBase):
@@ -871,7 +890,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself.
+        """A user can edit the Person who is themselves.
 
         The admin team can also edit any Person.
         """
@@ -906,7 +925,7 @@ class EditPersonBySelf(AuthorizationBase):
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself."""
+        """A user can edit the Person who is themselves."""
         return self.obj.id == user.person.id
 
 
@@ -985,7 +1004,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             subscriptions = getUtility(
                 IArchiveSubscriberSet).getBySubscriber(user.person)
             subscriber_archive_ids = set(
-                sub.archive.id for sub in subscriptions)
+                sub.archive_id for sub in subscriptions)
             team_ppa_ids = set(
                 ppa.id for ppa in self.obj.ppas if ppa.private)
             if len(subscriber_archive_ids.intersection(team_ppa_ids)) > 0:
@@ -1011,6 +1030,12 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             if not mp.is_empty():
                 return True
 
+            # Grant visibility to people who can see Git repositories owned
+            # by the private team.
+            team_repositories = IGitCollection(self.obj)
+            if not team_repositories.visibleByUser(user.person).is_empty():
+                return True
+
             # Grant visibility to users in a team that has the private team as
             # a member, so that they can see the team properly in member
             # listings.
@@ -1029,10 +1054,9 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                 return True
 
             # If it's not, the private team may still be a pending membership,
+            # deactivated membership, or an expired membership,
             # which still needs to be visible to team members.
             BAD_STATES = (
-                TeamMembershipStatus.DEACTIVATED.value,
-                TeamMembershipStatus.EXPIRED.value,
                 TeamMembershipStatus.DECLINED.value,
                 TeamMembershipStatus.INVITATION_DECLINED.value,
                 )
@@ -1117,16 +1141,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
 class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
     """Distribution drivers, owners, and admins may plan releases.
 
-    Drivers of `IDerivativeDistribution`s can create series. Owners and
-    admins can create series for all `IDistribution`s.
+    Drivers of distributions that don't manage their packages in
+    Launchpad can create series. Owners and admins can create series for
+    all `IDistribution`s.
     """
     permission = 'launchpad.Moderate'
     usedfor = IDistribution
 
     def checkAuthenticated(self, user):
-        if user.isDriver(self.obj) and not self.obj.full_functionality:
-            # Drivers of derivative distributions can create a series that
-            # they will be the release manager for.
+        if user.isDriver(self.obj) and not self.obj.official_packages:
+            # Damage to series with packages managed in Launchpad can
+            # cause serious strife. Restrict changes to the distro
+            # owner.
             return True
         return user.isOwner(self.obj) or user.in_admin
 
@@ -1144,13 +1170,36 @@ class BugSuperviseDistributionSourcePackage(AuthorizationBase):
 
 
 class EditDistributionSourcePackage(AuthorizationBase):
-    """DistributionSourcePackage is not editable.
-
-    But EditStructuralSubscription needs launchpad.Edit defined on all
-    targets.
-    """
     permission = 'launchpad.Edit'
     usedfor = IDistributionSourcePackage
+
+    def _checkUpload(self, user, archive, distroseries):
+        # We use verifyUpload() instead of checkUpload() because we don't
+        # have a pocket.  It returns the reason the user can't upload or
+        # None if they are allowed.
+        if distroseries is None:
+            return False
+        reason = archive.verifyUpload(
+            user.person, sourcepackagename=self.obj.sourcepackagename,
+            component=None, distroseries=distroseries, strict_component=False)
+        return reason is None
+
+    def checkAuthenticated(self, user):
+        """Anyone who can upload a package can edit it.
+
+        Checking upload permission requires a distroseries; a reasonable
+        approximation is to check whether the user can upload the package to
+        the current series.
+        """
+        if user.in_admin:
+            return True
+
+        distribution = self.obj.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        return self._checkUpload(
+            user, distribution.main_archive, distribution.currentseries)
 
 
 class BugTargetOwnerOrBugSupervisorOrAdmins(AuthorizationBase):
@@ -1217,9 +1266,10 @@ class EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
 
     def checkAuthenticated(self, user):
         if (user.inTeam(self.obj.driver)
-            and not self.obj.distribution.full_functionality):
-            # The series driver (release manager) may edit a series if the
-            # distribution is an `IDerivativeDistribution`
+            and not self.obj.distribution.official_packages):
+            # Damage to series with packages managed in Launchpad can
+            # cause serious strife. Restrict changes to the distro
+            # owner.
             return True
         return (user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
@@ -1478,18 +1528,6 @@ class AdminSourcePackageRecipeBuilds(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_buildd_admin
-
-
-class EditBranchMergeQueue(AuthorizationBase):
-    """Control who can edit a BranchMergeQueue.
-
-    Access is granted only to the owner of the queue.
-    """
-    permission = 'launchpad.Edit'
-    usedfor = IBranchMergeQueue
-
-    def checkAuthenticated(self, user):
-        return user.isOwner(self.obj)
 
 
 class AdminDistributionTranslations(AuthorizationBase):
@@ -1923,6 +1961,24 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         return auth_spr.checkUnauthenticated()
 
 
+class ModerateBinaryPackageBuild(ViewBinaryPackageBuild):
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        # Only people who can see the build and administer its archive can
+        # edit restricted attributes of builds.  (Currently this allows
+        # setting BinaryPackageBuild.external_dependencies; people who can
+        # administer the archive can already achieve the same effect by
+        # setting Archive.external_dependencies.)
+        return (
+            super(ModerateBinaryPackageBuild, self).checkAuthenticated(
+                user) and
+            AdminArchive(self.obj.archive).checkAuthenticated(user))
+
+    def checkUnauthenticated(self, user):
+        return False
+
+
 class ViewTranslationTemplatesBuild(DelegatedAuthorization):
     """Permission to view an `ITranslationTemplatesBuild`.
 
@@ -1935,15 +1991,16 @@ class ViewTranslationTemplatesBuild(DelegatedAuthorization):
         super(ViewTranslationTemplatesBuild, self).__init__(obj, obj.branch)
 
 
-class AdminQuestion(AdminByAdminsTeam):
+class AdminQuestion(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
 
     def checkAuthenticated(self, user):
         """Allow only admins and owners of the question pillar target."""
         context = self.obj.product or self.obj.distribution
-        return (AdminByAdminsTeam.checkAuthenticated(self, user) or
-                user.inTeam(context.owner))
+        return (
+            user.in_admin or user.in_registry_experts
+            or user.inTeam(context.owner))
 
 
 class AppendQuestion(AdminQuestion):
@@ -1978,6 +2035,16 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
+class EditQuestion(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IQuestion
+
+    def checkAuthenticated(self, user):
+        return (
+            AdminQuestion(self.obj).checkAuthenticated(user)
+            or QuestionOwner(self.obj).checkAuthenticated(user))
+
+
 class ViewQuestion(AnonymousAuthorization):
     usedfor = IQuestion
 
@@ -2003,7 +2070,8 @@ class AppendFAQTarget(EditByOwnersOrAdmins):
 
     def checkAuthenticated(self, user):
         """Allow people with launchpad.Edit or an answer contact."""
-        if EditByOwnersOrAdmins.checkAuthenticated(self, user):
+        if (EditByOwnersOrAdmins.checkAuthenticated(self, user)
+                or user.in_registry_experts):
             return True
         if IQuestionTarget.providedBy(self.obj):
             # Adapt QuestionTargets to FAQTargets to ensure the correct
@@ -2024,9 +2092,18 @@ class EditFAQ(AuthorizationBase):
     usedfor = IFAQ
 
     def checkAuthenticated(self, user):
-        """Everybody who has launchpad.Append on the FAQ target is allowed.
-        """
-        return AppendFAQTarget(self.obj.target).checkAuthenticated(user)
+        """Allow only admins and owners of the FAQ target."""
+        return (
+            user.in_admin or user.in_registry_experts or
+            user.inTeam(self.obj.target.owner))
+
+
+class DeleteFAQ(AuthorizationBase):
+    permission = 'launchpad.Delete'
+    usedfor = IFAQ
+
+    def checkAuthenticated(self, user):
+        return user.in_registry_experts or user.in_admin
 
 
 def can_edit_team(team, user):
@@ -2167,6 +2244,75 @@ class AdminBranch(AuthorizationBase):
         return user.in_admin
 
 
+class ViewGitRepository(AuthorizationBase):
+    """Controls visibility of Git repositories.
+
+    A person can see the repository if the repository is public, they are
+    the owner of the repository, they are in the team that owns the
+    repository, they have an access grant to the repository, or they are a
+    Launchpad administrator.
+    """
+    permission = 'launchpad.View'
+    usedfor = IGitRepository
+
+    def checkAuthenticated(self, user):
+        return self.obj.visibleByUser(user.person)
+
+    def checkUnauthenticated(self):
+        return self.obj.visibleByUser(None)
+
+
+class EditGitRepository(AuthorizationBase):
+    """The owner or admins can edit Git repositories."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRepository
+
+    def checkAuthenticated(self, user):
+        # XXX cjwatson 2015-01-23: People who can upload source packages to
+        # a distribution should be able to push to the corresponding
+        # "official" repositories, once those are defined.
+        return (
+            user.inTeam(self.obj.owner) or
+            user_has_special_git_repository_access(user.person))
+
+
+class ModerateGitRepository(EditGitRepository):
+    """The owners, project owners, and admins can moderate Git repositories."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateGitRepository, self).checkAuthenticated(user):
+            return True
+        target = self.obj.target
+        if (target is not None and IProduct.providedBy(target) and
+            user.inTeam(target.owner)):
+            return True
+        return user.in_commercial_admin
+
+
+class AdminGitRepository(AdminByAdminsTeam):
+    """The admins can administer Git repositories."""
+    usedfor = IGitRepository
+
+
+class ViewGitRef(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see references within it."""
+    permission = 'launchpad.View'
+    usedfor = IGitRef
+
+    def __init__(self, obj):
+        super(ViewGitRef, self).__init__(obj, obj.repository)
+
+
+class EditGitRef(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit references within it."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRef
+
+    def __init__(self, obj):
+        super(EditGitRef, self).__init__(obj, obj.repository)
+
+
 class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
@@ -2214,24 +2360,42 @@ class BranchMergeProposalView(AuthorizationBase):
             required.append(self.obj.prerequisite_branch)
         return required
 
+    @property
+    def git_repositories(self):
+        required = [
+            self.obj.source_git_repository, self.obj.target_git_repository]
+        if self.obj.prerequisite_git_repository:
+            required.append(self.obj.prerequisite_git_repository)
+        return required
+
     def checkAuthenticated(self, user):
         """Is the user able to view the branch merge proposal?
 
         The user can see a merge proposal if they can see the source, target
         and prerequisite branches.
         """
-        return all(map(
-            lambda b: AccessBranch(b).checkAuthenticated(user),
-            self.branches))
+        if self.obj.source_git_repository is not None:
+            return all(map(
+                lambda r: ViewGitRepository(r).checkAuthenticated(user),
+                self.git_repositories))
+        else:
+            return all(map(
+                lambda b: AccessBranch(b).checkAuthenticated(user),
+                self.branches))
 
     def checkUnauthenticated(self):
         """Is anyone able to view the branch merge proposal?
 
         Anyone can see a merge proposal between two public branches.
         """
-        return all(map(
-            lambda b: AccessBranch(b).checkUnauthenticated(),
-            self.branches))
+        if self.obj.source_git_repository is not None:
+            return all(map(
+                lambda r: ViewGitRepository(r).checkUnauthenticated(),
+                self.git_repositories))
+        else:
+            return all(map(
+                lambda b: AccessBranch(b).checkUnauthenticated(),
+                self.branches))
 
 
 class PreviewDiffView(DelegatedAuthorization):
@@ -2293,16 +2457,15 @@ class BranchMergeProposalEdit(AuthorizationBase):
 
         The user is able to edit if they are:
           * the registrant of the merge proposal
-          * the owner of the source_branch
-          * the owner of the target_branch
-          * the reviewer for the target_branch
+          * the owner of the merge_source
+          * the owner of the merge_target
+          * the reviewer for the merge_target
           * an administrator
         """
         return (user.inTeam(self.obj.registrant) or
-                user.inTeam(self.obj.source_branch.owner) or
-                self.forwardCheckAuthenticated(
-                    user, self.obj.target_branch) or
-                user.inTeam(self.obj.target_branch.reviewer))
+                user.inTeam(self.obj.merge_source.owner) or
+                self.forwardCheckAuthenticated(user, self.obj.merge_target) or
+                user.inTeam(self.obj.merge_target.reviewer))
 
 
 class AdminDistroSeriesLanguagePacks(
@@ -2501,29 +2664,29 @@ class ModerateArchive(AuthorizationBase):
 
     Buildd admins can change this, as a site-wide resource that requires
     arbitration, especially between distribution builds and builds in
-    non-virtualized PPAs.  Commercial admins can also change this since it
-    affects the relative priority of (private) PPAs.
+    non-virtualized PPAs.  PPA/commercial admins can also change this since
+    it affects the relative priority of (private) PPAs.
     """
     permission = 'launchpad.Moderate'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        return (user.in_buildd_admin or user.in_commercial_admin or
-                user.in_admin)
+        return (user.in_buildd_admin or user.in_ppa_admin or
+                user.in_commercial_admin or user.in_admin)
 
 
 class AdminArchive(AuthorizationBase):
     """Restrict changing privacy and build settings on archives.
 
     The security of the non-virtualised build farm depends on these
-    settings, so they can only be changed by commercial admins, or by
+    settings, so they can only be changed by PPA/commercial admins, or by
     PPA self admins on PPAs that they can already edit.
     """
     permission = 'launchpad.Admin'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        if user.in_commercial_admin or user.in_admin:
+        if user.in_ppa_admin or user.in_commercial_admin or user.in_admin:
             return True
         return (
             user.in_ppa_self_admins
@@ -2727,8 +2890,8 @@ class ViewEmailAddress(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
-        If the email address' owner doesn't want his email addresses to be
-        hidden, anyone can see them.  Otherwise only the owner himself or
+        If the email address' owner doesn't want their email addresses to be
+        hidden, anyone can see them.  Otherwise only the owner themselves or
         admins can see them.
         """
         # Always allow users to see their own email addresses.
@@ -2758,6 +2921,10 @@ class EditEmailAddress(EditByOwnersOrAdmins):
 
 class ViewGPGKey(AnonymousAuthorization):
     usedfor = IGPGKey
+
+
+class ViewSSHKey(AnonymousAuthorization):
+    usedfor = ISSHKey
 
 
 class ViewIrcID(AnonymousAuthorization):
@@ -2849,8 +3016,7 @@ class ViewPublisherConfig(AdminByAdminsTeam):
     usedfor = IPublisherConfig
 
 
-class EditSourcePackage(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class EditSourcePackage(EditDistributionSourcePackage):
     usedfor = ISourcePackage
 
     def checkAuthenticated(self, user):
@@ -2862,12 +3028,183 @@ class EditSourcePackage(AuthorizationBase):
         if user.inTeam(distribution.owner):
             return True
 
-        # We use verifyUpload() instead of checkUpload() because
-        # we don't have a pocket.
-        # It returns the reason the user can't upload
-        # or None if they are allowed.
-        reason = distribution.main_archive.verifyUpload(
-            user.person, distroseries=self.obj.distroseries,
-            sourcepackagename=self.obj.sourcepackagename,
-            component=None, strict_component=False)
-        return reason is None
+        return self._checkUpload(
+            user, distribution.main_archive, self.obj.distroseries)
+
+
+class ViewLiveFS(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ILiveFS
+
+    def __init__(self, obj):
+        super(ViewLiveFS, self).__init__(obj, obj.owner, 'launchpad.View')
+
+
+class EditLiveFS(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILiveFS
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj) or
+            user.in_commercial_admin or user.in_admin)
+
+
+class AdminLiveFS(AuthorizationBase):
+    """Restrict changing build settings on live filesystems.
+
+    The security of the non-virtualised build farm depends on these
+    settings, so they can only be changed by "PPA"/commercial admins, or by
+    "PPA" self admins on live filesystems that they can already edit.
+    """
+    permission = 'launchpad.Admin'
+    usedfor = ILiveFS
+
+    def checkAuthenticated(self, user):
+        if user.in_ppa_admin or user.in_commercial_admin or user.in_admin:
+            return True
+        return (
+            user.in_ppa_self_admins
+            and EditLiveFS(self.obj).checkAuthenticated(user))
+
+
+class ViewLiveFSBuild(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ILiveFSBuild
+
+    def iter_objects(self):
+        yield self.obj.livefs
+        yield self.obj.archive
+
+
+class EditLiveFSBuild(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = ILiveFSBuild
+
+    def checkAuthenticated(self, user):
+        """Check edit access for live filesystem builds.
+
+        Allow admins, buildd admins, and the owner of the live filesystem.
+        (Note that the requester of the build is required to be in the team
+        that owns the live filesystem.)
+        """
+        auth_livefs = EditLiveFS(self.obj.livefs)
+        if auth_livefs.checkAuthenticated(user):
+            return True
+        return super(EditLiveFSBuild, self).checkAuthenticated(user)
+
+
+class AdminLiveFSBuild(AdminByBuilddAdmin):
+    usedfor = ILiveFSBuild
+
+
+class ViewWebhook(AuthorizationBase):
+    """Webhooks can be viewed and edited by someone who can edit the target."""
+    permission = 'launchpad.View'
+    usedfor = IWebhook
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(
+            user, self.obj.target, 'launchpad.Edit')
+
+
+class ViewWebhookDeliveryJob(DelegatedAuthorization):
+    """Webhooks can be viewed and edited by someone who can edit the target."""
+    permission = 'launchpad.View'
+    usedfor = IWebhookDeliveryJob
+
+    def __init__(self, obj):
+        super(ViewWebhookDeliveryJob, self).__init__(
+            obj, obj.webhook, 'launchpad.View')
+
+
+class ViewSnap(AuthorizationBase):
+    """Private snaps are only visible to their owners and admins."""
+    permission = 'launchpad.View'
+    usedfor = ISnap
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
+
+    def checkAuthenticated(self, user):
+        if not self.obj.private:
+            return True
+
+        return (
+            user.isOwner(self.obj) or
+            user.in_commercial_admin or
+            user.in_admin)
+
+
+class EditSnap(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ISnap
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj) or
+            user.in_commercial_admin or user.in_admin)
+
+
+class AdminSnap(AuthorizationBase):
+    """Restrict changing build settings on snap packages.
+
+    The security of the non-virtualised build farm depends on these
+    settings, so they can only be changed by "PPA"/commercial admins, or by
+    "PPA" self admins on snap packages that they can already edit.
+    """
+    permission = 'launchpad.Admin'
+    usedfor = ISnap
+
+    def checkAuthenticated(self, user):
+        if user.in_ppa_admin or user.in_commercial_admin or user.in_admin:
+            return True
+        return (
+            user.in_ppa_self_admins
+            and EditSnap(self.obj).checkAuthenticated(user))
+
+
+class ViewSnapBuild(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ISnapBuild
+
+    def iter_objects(self):
+        yield self.obj.snap
+        yield self.obj.archive
+
+
+class EditSnapBuild(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = ISnapBuild
+
+    def checkAuthenticated(self, user):
+        """Check edit access for snap package builds.
+
+        Allow admins, buildd admins, and the owner of the snap package.
+        (Note that the requester of the build is required to be in the team
+        that owns the snap package.)
+        """
+        auth_snap = EditSnap(self.obj.snap)
+        if auth_snap.checkAuthenticated(user):
+            return True
+        return super(EditSnapBuild, self).checkAuthenticated(user)
+
+
+class AdminSnapBuild(AdminByBuilddAdmin):
+    usedfor = ISnapBuild
+
+
+class ViewSnappySeries(AnonymousAuthorization):
+    """Anyone can view an `ISnappySeries`."""
+    usedfor = ISnappySeries
+
+
+class EditSnappySeries(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnappySeries
+
+
+class EditSnappySeriesSet(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnappySeriesSet

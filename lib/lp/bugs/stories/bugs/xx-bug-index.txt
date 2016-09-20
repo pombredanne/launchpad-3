@@ -14,14 +14,14 @@ to be fixed, and so forth.
 The breadcrumbs and other navigation include a link to the bug itself.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Debian > ?mozilla-firefox? package > Bugs > Bug #2 (blackhole)
+    Hierarchy: Debian > mozilla-firefox package
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
     * Bugs (selected) -
       http://bugs.launchpad.dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/debian/+source/mozilla-firefox
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
     Main heading: Blackhole Trash folder
 

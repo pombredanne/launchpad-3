@@ -19,7 +19,7 @@ from storm.expr import (
     Func,
     SQL,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.code.interfaces.revisioncache import IRevisionCollection
 from lp.code.model.revision import (
@@ -33,10 +33,9 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.interfaces import IStore
 
 
+@implementer(IRevisionCollection)
 class GenericRevisionCollection:
     """See `IRevisionCollection`."""
-
-    implements(IRevisionCollection)
 
     def __init__(self, store=None, filter_expressions=None):
         self._store = store
@@ -105,11 +104,11 @@ class GenericRevisionCollection:
         return self._filterBy(
             [RevisionCache.product == product])
 
-    def inProject(self, project):
+    def inProjectGroup(self, projectgroup):
         """See `IRevisionCollection`."""
         return self._filterBy(
             [RevisionCache.product == Product.id,
-             Product.project == project])
+             Product.projectgroup == projectgroup])
 
     def inSourcePackage(self, package):
         """See `IRevisionCollection`."""

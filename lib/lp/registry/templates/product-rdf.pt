@@ -25,10 +25,6 @@
             1970-01-01 00:00:00
         </lp:creationDate>
         <lp:homepage tal:attributes="rdf:resource context/homepageurl" />
-        <lp:freshmeatProject tal:condition="context/freshmeatproject"
-                             tal:content="context/freshmeatproject">
-            freshmeatproject
-        </lp:freshmeatProject>
         <lp:sourceforgeProject tal:condition="context/sourceforgeproject"
                              tal:content="context/sourceforgeproject">
             sourceforgeproject
@@ -41,10 +37,10 @@
                        tal:content="context/screenshotsurl">
             http://www.foo.org/screenshots/
         </lp:screenshot>
-        <lp:inProject tal:condition="context/project">
+        <lp:inProject tal:condition="context/projectgroup">
             <lp:Project>
                 <lp:specifiedAt tal:attributes="rdf:resource
-                    string:${context/project/fmt:url}/+rdf" />
+                    string:${context/projectgroup/fmt:url}/+rdf" />
             </lp:Project>
         </lp:inProject>
         <lp:series tal:repeat="series context/series">

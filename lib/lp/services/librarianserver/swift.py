@@ -13,7 +13,6 @@ from contextlib import contextmanager
 import hashlib
 import os.path
 import re
-import sys
 import time
 import urllib
 
@@ -30,13 +29,13 @@ MAX_SWIFT_OBJECT_SIZE = 5 * 1024 ** 3  # 5GB Swift limit.
 ONE_DAY = 24 * 60 * 60
 
 
-def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
+def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
     '''Copy a range of Librarian files from disk into Swift.
 
     start and end identify the range of LibraryFileContent.id to
     migrate (inclusive).
 
-    If remove is True, files are removed from disk after being copied into
+    If remove_func is set, it is called for every file after being copied into
     Swift.
     '''
     swift_connection = connection_pool.get()
@@ -45,13 +44,11 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     if start_lfc_id is None:
         start_lfc_id = 1
     if end_lfc_id is None:
-        end_lfc_id = sys.maxint
-        end_str = 'MAXINT'
-    else:
-        end_str = str(end_lfc_id)
+        # Maximum id capable of being stored on the filesystem - ffffffff
+        end_lfc_id = 0xffffffff
 
     log.info("Walking disk store {0} from {1} to {2}, inclusive".format(
-        fs_root, start_lfc_id, end_str))
+        fs_root, start_lfc_id, end_lfc_id))
 
     start_fs_path = filesystem_path(start_lfc_id)
     end_fs_path = filesystem_path(end_lfc_id)
@@ -67,6 +64,10 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             or end_fs_path[:len(dirpath)] < dirpath):
             dirnames[:] = []
             continue
+        else:
+            # We need to descend in order, making it possible to resume
+            # an aborted job.
+            dirnames.sort()
 
         log.debug('Scanning {0} for matching files'.format(dirpath))
 
@@ -108,6 +109,12 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
             log.debug('Found {0} ({1})'.format(lfc, filename))
 
+            if ISlaveStore(LibraryFileContent).get(
+                    LibraryFileContent, lfc) is None:
+                log.info("{0} exists on disk but not in the db".format(
+                    lfc))
+                continue
+
             container, obj_name = swift_location(lfc)
 
             try:
@@ -135,15 +142,28 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 log.info('Putting {0} into Swift ({1}, {2})'.format(
                     lfc, container, obj_name))
                 _put(log, swift_connection, lfc, container, obj_name, fs_path)
-            if remove:
-                os.unlink(fs_path)
+
+            if remove_func:
+                remove_func(fs_path)
+
+
+def rename(path):
+    # It would be nice to move the file out of the tree entirely, but we
+    # need to keep the backup on the same filesystem as the original
+    # file.
+    os.rename(path, path + '.migrated')
 
 
 def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
     fs_size = os.path.getsize(fs_path)
     fs_file = HashStream(open(fs_path, 'rb'))
+
     db_md5_hash = ISlaveStore(LibraryFileContent).get(
         LibraryFileContent, lfc_id).md5
+
+    assert hasattr(fs_file, 'tell') and hasattr(fs_file, 'seek'), '''
+        File not rewindable
+        '''
 
     if fs_size <= MAX_SWIFT_OBJECT_SIZE:
         swift_md5_hash = swift_connection.put_object(
@@ -286,6 +306,7 @@ class HashStream:
     """Read a file while calculating a checksum as we go."""
     def __init__(self, stream, hash_factory=hashlib.md5):
         self._stream = stream
+        self.hash_factory = hash_factory
         self.hash = hash_factory()
 
     def read(self, size=-1):
@@ -295,6 +316,11 @@ class HashStream:
 
     def tell(self):
         return self._stream.tell()
+
+    def seek(self, offset):
+        """Seek to offset, and reset the hash."""
+        self.hash = self.hash_factory()
+        return self._stream.seek(offset)
 
 
 class ConnectionPool:
@@ -320,6 +346,9 @@ class ConnectionPool:
         exception has been raised (apart from a 404), don't trust the
         swift_connection and throw it away.
         '''
+        if not isinstance(swift_connection, swiftclient.Connection):
+            raise AssertionError(
+                "%r is not a swiftclient Connection." % swift_connection)
         if swift_connection not in self._pool:
             self._pool.append(swift_connection)
             while len(self._pool) > self.MAX_POOL_SIZE:

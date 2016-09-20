@@ -7,7 +7,7 @@ to check the form's behaviour with different inputs.
 
 To demonstrate its use we'll create a sample schema and view class:
 
-  >>> from zope.interface import Interface, implements
+  >>> from zope.interface import Interface, implementer
   >>> from zope.schema import Int, TextLine
   >>> from lp.app.browser.launchpadform import LaunchpadFormView, action
 
@@ -15,8 +15,8 @@ To demonstrate its use we'll create a sample schema and view class:
   ...     string = TextLine(title=u"String")
   ...     number = Int(title=u"Number")
 
-  >>> class HarnessTest:
-  ...     implements(IHarnessTest)
+  >>> @implementer(IHarnessTest)
+  ... class HarnessTest:
   ...     string = None
   ...     number = 0
 

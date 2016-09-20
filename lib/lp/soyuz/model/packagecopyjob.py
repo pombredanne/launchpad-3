@@ -10,7 +10,7 @@ __all__ = [
 
 import logging
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.jobrunner.jobrunner import SuspendJobException
 from psycopg2.extensions import TransactionRollbackError
 from storm.locals import (
@@ -23,8 +23,8 @@ from storm.locals import (
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -57,11 +57,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
-from lp.soyuz.adapters.overrides import (
-    FromExistingOverridePolicy,
-    SourceOverride,
-    UnknownOverridePolicy,
-    )
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageCopyPolicy,
@@ -84,11 +80,10 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
+@implementer(IPackageCopyJob)
+@provider(IPackageCopyJobSource)
 class PackageCopyJob(StormBase):
     """Base class for package copying jobs."""
-
-    implements(IPackageCopyJob)
-    classProvides(IPackageCopyJobSource)
 
     __storm_table__ = 'PackageCopyJob'
 
@@ -179,12 +174,11 @@ class PackageCopyJob(StormBase):
         return PackageCopyJobDerived.makeSubclass(self)
 
 
+@delegate_to(IPackageCopyJob)
 class PackageCopyJobDerived(BaseRunnableJob):
     """Abstract class for deriving from PackageCopyJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IPackageCopyJob)
 
     def __init__(self, job):
         self.context = job
@@ -257,6 +251,8 @@ class PackageCopyJobDerived(BaseRunnableJob):
         return self.context.copy_policy
 
 
+@implementer(IPlainPackageCopyJob)
+@provider(IPlainPackageCopyJobSource)
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies a package from one archive to another."""
     # This job type serves in different places: it supports copying
@@ -265,10 +261,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     # separate types at some point, but for now we (allenap, bigjools,
     # jtv) chose to keep it as one.
 
-    implements(IPlainPackageCopyJob)
-
     class_job_type = PackageCopyJobType.PLAIN
-    classProvides(IPlainPackageCopyJobSource)
     config = config.IPlainPackageCopyJobSource
     user_error_types = (CannotCopy,)
     # Raised when closing bugs ends up hitting another process and
@@ -279,8 +272,9 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
                       include_binaries, sponsored=None, unembargo=False,
-                      auto_approve=False, source_distroseries=None,
-                      source_pocket=None, phased_update_percentage=None):
+                      auto_approve=False, silent=False,
+                      source_distroseries=None, source_pocket=None,
+                      phased_update_percentage=None):
         """Produce a metadata dict for this job."""
         return {
             'target_pocket': target_pocket.value,
@@ -289,6 +283,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             'sponsored': sponsored.name if sponsored else None,
             'unembargo': unembargo,
             'auto_approve': auto_approve,
+            'silent': silent,
             'source_distroseries':
                 source_distroseries.name if source_distroseries else None,
             'source_pocket': source_pocket.value if source_pocket else None,
@@ -301,15 +296,15 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
                sponsored=None, unembargo=False, auto_approve=False,
-               source_distroseries=None, source_pocket=None,
+               silent=False, source_distroseries=None, source_pocket=None,
                phased_update_percentage=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo, auto_approve, source_distroseries, source_pocket,
-            phased_update_percentage)
+            unembargo, auto_approve, silent, source_distroseries,
+            source_pocket, phased_update_percentage)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -327,7 +322,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def _composeJobInsertionTuple(cls, copy_policy, include_binaries, job_id,
                                   copy_task, sponsored, unembargo,
-                                  auto_approve):
+                                  auto_approve, silent):
         """Create an SQL fragment for inserting a job into the database.
 
         :return: A string representing an SQL tuple containing initializers
@@ -344,7 +339,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         ) = copy_task
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo, auto_approve)
+            unembargo, auto_approve, silent)
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
@@ -355,14 +350,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def createMultiple(cls, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False, sponsored=None,
-                       unembargo=False, auto_approve=False):
+                       unembargo=False, auto_approve=False, silent=False):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 copy_policy, include_binaries, job_id, task, sponsored,
-                unembargo, auto_approve)
+                unembargo, auto_approve, silent)
             for job_id, task in zip(job_ids, copy_tasks)]
         return bulk.create(
                 (PackageCopyJob.job_type, PackageCopyJob.target_distroseries,
@@ -449,6 +444,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return self.metadata.get('auto_approve', False)
 
     @property
+    def silent(self):
+        return self.metadata.get('silent', False)
+
+    @property
     def source_distroseries(self):
         name = self.metadata.get('source_distroseries')
         if name is None:
@@ -465,6 +464,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def phased_update_percentage(self):
         return self.metadata.get('phased_update_percentage')
+
+    @property
+    def requester_can_admin_target(self):
+        return self.target_archive.canAdministerQueue(
+            self.requester, self.getSourceOverride().component,
+            self.target_pocket, self.target_distroseries)
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
@@ -488,10 +493,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
-        name = self.package_name
         component_name = self.component_name
         section_name = self.section_name
-        source_package_name = getUtility(ISourcePackageNameSet)[name]
         try:
             component = getUtility(IComponentSet)[component_name]
         except NotFoundError:
@@ -501,7 +504,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         except NotFoundError:
             section = None
 
-        return SourceOverride(source_package_name, component, section)
+        return SourceOverride(component=component, section=section)
 
     def findSourcePublication(self):
         """Find the appropriate origin `ISourcePackagePublishingHistory`."""
@@ -520,49 +523,36 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # This helper will only return if it's safe to carry on with the
         # copy, otherwise it raises SuspendJobException to tell the job
         # runner to suspend the job.
-        override_policy = FromExistingOverridePolicy()
-        ancestry = override_policy.calculateSourceOverrides(
-            self.target_archive, self.target_distroseries,
-            self.target_pocket, [source_name])
+        override_policy = self.target_archive.getOverridePolicy(
+            self.target_distroseries, self.target_pocket)
+        overrides = override_policy.calculateSourceOverrides(
+            {source_name: SourceOverride(component=source_component)})
+        override = overrides[source_name]
 
         copy_policy = self.getPolicyImplementation()
 
-        if len(ancestry) == 0:
-            # We need to get the default overrides and put them in the
-            # metadata.
-            defaults = UnknownOverridePolicy().calculateSourceOverrides(
-                self.target_archive, self.target_distroseries,
-                self.target_pocket, [source_name], source_component)
-            self.addSourceOverride(defaults[0])
-            if auto_approve:
-                auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component,
-                    self.target_pocket, self.target_distroseries)
+        # Put the (existing or default) override in the metadata.
+        self.addSourceOverride(override)
+        auto_approve = auto_approve and self.requester_can_admin_target
 
+        if override.new:
             approve_new = auto_approve or copy_policy.autoApproveNew(
                 self.target_archive, self.target_distroseries,
                 self.target_pocket)
-
             if not approve_new:
                 # There's no existing package with the same name and the
                 # policy says unapproved, so we poke it in the NEW queue.
                 self._createPackageUpload()
                 raise SuspendJobException
         else:
-            # Put the existing override in the metadata.
-            self.addSourceOverride(ancestry[0])
-            if auto_approve:
-                auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component,
-                    self.target_pocket, self.target_distroseries)
-
-        # The package is not new (it has ancestry) so check the copy
-        # policy for existing packages.
-        approve_existing = auto_approve or copy_policy.autoApprove(
-            self.target_archive, self.target_distroseries, self.target_pocket)
-        if not approve_existing:
-            self._createPackageUpload(unapproved=True)
-            raise SuspendJobException
+            # The package is not new (it has ancestry) so check the copy
+            # policy for existing packages.
+            approve_existing = auto_approve or copy_policy.autoApprove(
+                self.target_archive, self.target_distroseries,
+                self.target_pocket)
+            if not approve_existing:
+                self._createPackageUpload(unapproved=True)
+                raise SuspendJobException
 
     def _rejectPackageUpload(self):
         # Helper to find and reject any associated PackageUpload.
@@ -633,6 +623,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # Wrap any forbidden-pocket error in CannotCopy.
             raise CannotCopy(unicode(reason))
 
+        if self.silent and not self.requester_can_admin_target:
+            raise CannotCopy(
+                "Silent copies need queue admin privileges on the target.")
+
         source_package = self.findSourcePublication()
 
         # If there's a PackageUpload associated with this job then this
@@ -653,7 +647,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             pocket=self.target_pocket, exact_match=True)
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
-        send_email = copy_policy.send_email(self.target_archive)
+        send_email = (
+            copy_policy.send_email(self.target_archive) and not self.silent)
         copied_publications = do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
@@ -662,7 +657,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             send_email=send_email, announce_from_person=self.requester,
             sponsored=self.sponsored, packageupload=pu,
             unembargo=self.unembargo,
-            phased_update_percentage=self.phased_update_percentage)
+            phased_update_percentage=self.phased_update_percentage,
+            logger=self.logger)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if copied_publications and not ancestry.is_empty():
@@ -740,18 +736,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             parts.append(" no package (!)")
         else:
             parts.append(" package %s" % self.package_name)
-        parts.append(
-            " from %s/%s" % (
-                self.source_archive.distribution.name,
-                self.source_archive.name))
+        parts.append(" from %s" % self.source_archive.reference)
         if self.source_pocket is not None:
             parts.append(", %s pocket," % self.source_pocket.name)
         if self.source_distroseries is not None:
             parts.append(" in %s" % self.source_distroseries)
-        parts.append(
-            " to %s/%s" % (
-                self.target_archive.distribution.name,
-                self.target_archive.name))
+        parts.append(" to %s" % self.target_archive.reference)
         parts.append(", %s pocket," % self.target_pocket.name)
         if self.target_distroseries is not None:
             parts.append(" in %s" % self.target_distroseries)

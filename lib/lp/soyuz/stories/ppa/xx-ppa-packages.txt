@@ -4,10 +4,10 @@ The PPA packages page
 
 The PPA packages page is accessible from the PPA page.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> anon_browser.getLink('View package details').click()
     >>> print anon_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa/+packages
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages
 
     >>> print anon_browser.title
     Packages in...
@@ -38,7 +38,7 @@ the 'View all builds' link.
     Builds : PPA for Celso Providelo : Celso Providelo
 
     >>> print anon_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa/+builds
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds
 
 The rest of the builds page functionality is tested generically at
 in xx-builds-pages.txt.
@@ -51,7 +51,7 @@ A summary of the package totals is presented in a portlet (although the
 actual values are loaded in asynchronously.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
+    ...     'http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages')
     >>> package_totals = find_portlet(
     ...     anon_browser.contents, "Package totals")
     >>> print extract_text(package_totals)
@@ -79,7 +79,7 @@ Successful builds link directly to the builds filter.
 
     >>> successful_builds_link = anon_browser.getLink('3 successful')
     >>> print successful_builds_link.url
-    http://launchpad.dev/~cprov/+archive/ppa/+builds?build_state=built
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds?build_state=built
 
 
 The detailed Packages list
@@ -137,7 +137,7 @@ published, this will be indicated to the viewer:
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_ppa = cprov.archive
     >>> pmount_i386_pub = cprov_ppa.getAllPublishedBinaries(
-    ...     name='pmount', version='0.1-1')[1]
+    ...     name=u'pmount', version='0.1-1')[1]
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
     >>> from lp.soyuz.enums import PackagePublishingStatus
@@ -173,11 +173,11 @@ When the package is copied from a PPA, the archive title will link
 back to the source PPA.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages")
     >>> expander_url = anon_browser.getLink(id='pub28-expander').url
     >>> anon_browser.open(expander_url)
     >>> anon_browser.getLink("PPA for Mark Shuttleworth").url
-    'http://launchpad.dev/~mark/+archive/ppa'
+    'http://launchpad.dev/~mark/+archive/ubuntu/ppa'
 
 This link is not present if the user does not have permission to view
 the PPA.  We create a private PPA with a published source and then copy
@@ -211,11 +211,11 @@ in as Celso.
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~joe/+archive/ppa/+packages")
+    ...     "http://launchpad.dev/~joe/+archive/ubuntu/ppa/+packages")
     >>> expander_url = cprov_browser.getLink(id=expander_link_id).url
     >>> cprov_browser.open(expander_url)
     >>> print cprov_browser.getLink("PPA named p3a for Celso Providelo").url
-    http://launchpad.dev/~cprov/+archive/p3a
+    http://launchpad.dev/~cprov/+archive/ubuntu/p3a
 
 But Joe himself will not see the link.
 
@@ -239,7 +239,7 @@ While we are there, we can also see that the private PPA's 'repository-size'
 pagelet isn't publicly available.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/p3a/+repository-size")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+repository-size")
     Traceback (most recent call last):
     ...
     Unauthorized: (..., 'launchpad.View')
@@ -252,7 +252,7 @@ We can search a PPA for a particular package.  A non-existent package shows
 no results.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages")
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'nonexistentpackage'
     >>> anon_browser.getControl('Filter', index=0).click()
@@ -411,7 +411,7 @@ for each published source:
 Anyone can see the build status for package in Celso's PPA.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages")
 
     >>> def print_build_status(contents):
     ...     rows = find_tags_by_class(contents, 'archive_package_row')
@@ -448,7 +448,7 @@ quickly 'retry' the failure.
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages")
 
     >>> cprov_browser.getLink('i386').click()
     >>> cprov_browser.getLink("Retry this build").click()
@@ -458,7 +458,7 @@ At this point anyone can also visualise that 'cdrkit' source is being
 built in Celso's PPA.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
+    ...     "http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages")
     >>> print_build_status(anon_browser.contents)
     Source                    Build Status
     cdrkit - 1.0              /@@/build-needed i386

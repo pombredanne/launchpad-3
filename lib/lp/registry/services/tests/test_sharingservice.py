@@ -1,4 +1,4 @@
-# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,6 +23,7 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -247,7 +248,7 @@ class TestSharingService(TestCaseWithFactory):
         # proprietary.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED,
+            information_type=InformationType.PROPRIETARY,
             owner=owner,
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         with person_logged_in(owner):
@@ -928,12 +929,14 @@ class TestSharingService(TestCaseWithFactory):
             [InformationType.USERDATA])
 
     def _assert_revokeAccessGrants(self, pillar, bugs, branches,
-                                   specifications):
+                                   gitrepositories, specifications):
         artifacts = []
         if bugs:
             artifacts.extend(bugs)
         if branches:
             artifacts.extend(branches)
+        if gitrepositories:
+            artifacts.extend(gitrepositories)
         if specifications:
             artifacts.extend(specifications)
         policy = self.factory.makeAccessPolicy(pillar=pillar,
@@ -961,6 +964,8 @@ class TestSharingService(TestCaseWithFactory):
                 branch.subscribe(person,
                     BranchSubscriptionNotificationLevel.NOEMAIL, None,
                     CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+            # XXX cjwatson 2015-02-05: subscribe to Git repositories when
+            # implemented
             for spec in specifications or []:
                 spec.subscribe(person)
 
@@ -973,7 +978,7 @@ class TestSharingService(TestCaseWithFactory):
 
         self.service.revokeAccessGrants(
             pillar, grantee, pillar.owner, bugs=bugs, branches=branches,
-            specifications=specifications)
+            gitrepositories=gitrepositories, specifications=specifications)
         with block_on_job(self):
             transaction.commit()
 
@@ -987,18 +992,22 @@ class TestSharingService(TestCaseWithFactory):
             self.assertNotIn(grantee, bug.getDirectSubscribers())
         for branch in branches or []:
             self.assertNotIn(grantee, branch.subscribers)
+        # XXX cjwatson 2015-02-05: check revocation of subscription to Git
+        # repositories when implemented
         for spec in specifications or []:
             self.assertNotIn(grantee, spec.subscribers)
 
-        # Someone else still has access to the bugs and branches.
+        # Someone else still has access to the artifacts.
         grants = accessartifact_grant_source.findByArtifact(
             access_artifacts, [someone])
         self.assertEqual(1, grants.count())
-        # Someone else still has subscriptions to the bugs and branches.
+        # Someone else still has subscriptions to the artifacts.
         for bug in bugs or []:
             self.assertIn(someone, bug.getDirectSubscribers())
         for branch in branches or []:
             self.assertIn(someone, branch.subscribers)
+        # XXX cjwatson 2015-02-05: check subscription to Git repositories
+        # when implemented
         for spec in specifications or []:
             self.assertIn(someone, spec.subscribers)
 
@@ -1010,7 +1019,7 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeAccessGrants(distro, [bug], None, None)
+        self._assert_revokeAccessGrants(distro, [bug], None, None, None)
 
     def test_revokeAccessGrantsBranches(self):
         owner = self.factory.makePerson()
@@ -1019,7 +1028,17 @@ class TestSharingService(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             product=product, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeAccessGrants(product, None, [branch], None)
+        self._assert_revokeAccessGrants(product, None, [branch], None, None)
+
+    def test_revokeAccessGrantsGitRepositories(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        gitrepository = self.factory.makeGitRepository(
+            target=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        self._assert_revokeAccessGrants(
+            product, None, None, [gitrepository], None)
 
     def test_revokeAccessGrantsSpecifications(self):
         owner = self.factory.makePerson()
@@ -1030,15 +1049,18 @@ class TestSharingService(TestCaseWithFactory):
         specification = self.factory.makeSpecification(
             product=product, owner=owner,
             information_type=InformationType.EMBARGOED)
-        self._assert_revokeAccessGrants(product, None, None, [specification])
+        self._assert_revokeAccessGrants(
+            product, None, None, None, [specification])
 
     def _assert_revokeTeamAccessGrants(self, pillar, bugs, branches,
-                                       specifications):
+                                       gitrepositories, specifications):
         artifacts = []
         if bugs:
             artifacts.extend(bugs)
         if branches:
             artifacts.extend(branches)
+        if gitrepositories:
+            artifacts.extend(gitrepositories)
         if specifications:
             artifacts.extend(specifications)
         policy = self.factory.makeAccessPolicy(pillar=pillar,
@@ -1065,6 +1087,8 @@ class TestSharingService(TestCaseWithFactory):
                 branch.subscribe(
                     person, BranchSubscriptionNotificationLevel.NOEMAIL,
                     None, CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+            # XXX cjwatson 2015-02-05: subscribe to Git repositories when
+            # implemented
             # Subscribing somebody to a specification does not yet imply
             # granting access to this person.
             if specifications:
@@ -1075,11 +1099,16 @@ class TestSharingService(TestCaseWithFactory):
 
         # Check that grantees have expected access grants and subscriptions.
         for person in [team_grantee, person_grantee]:
-            visible_bugs, visible_branches, visible_specs = (
+            (visible_bugs, visible_branches, visible_gitrepositories,
+             visible_specs) = (
                 self.service.getVisibleArtifacts(
-                    person, branches, bugs, specifications))
+                    person, bugs=bugs, branches=branches,
+                    gitrepositories=gitrepositories,
+                    specifications=specifications))
             self.assertContentEqual(bugs or [], visible_bugs)
             self.assertContentEqual(branches or [], visible_branches)
+            # XXX cjwatson 2015-02-05: check Git repositories when
+            # subscription is implemented
             self.assertContentEqual(specifications or [], visible_specs)
         for person in [team_grantee, person_grantee]:
             for bug in bugs or []:
@@ -1087,7 +1116,7 @@ class TestSharingService(TestCaseWithFactory):
 
         self.service.revokeAccessGrants(
             pillar, team_grantee, pillar.owner, bugs=bugs, branches=branches,
-            specifications=specifications)
+            gitrepositories=gitrepositories, specifications=specifications)
         with block_on_job(self):
             transaction.commit()
 
@@ -1102,10 +1131,14 @@ class TestSharingService(TestCaseWithFactory):
         for person in [team_grantee, person_grantee]:
             for bug in bugs or []:
                 self.assertNotIn(person, bug.getDirectSubscribers())
-            visible_bugs, visible_branches, visible_specs = (
-                self.service.getVisibleArtifacts(person, branches, bugs))
+            (visible_bugs, visible_branches, visible_gitrepositories,
+             visible_specs) = (
+                self.service.getVisibleArtifacts(
+                    person, bugs=bugs, branches=branches,
+                    gitrepositories=gitrepositories))
             self.assertContentEqual([], visible_bugs)
             self.assertContentEqual([], visible_branches)
+            self.assertContentEqual([], visible_gitrepositories)
             self.assertContentEqual([], visible_specs)
 
     def test_revokeTeamAccessGrantsBugs(self):
@@ -1116,7 +1149,7 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeTeamAccessGrants(distro, [bug], None, None)
+        self._assert_revokeTeamAccessGrants(distro, [bug], None, None, None)
 
     def test_revokeTeamAccessGrantsBranches(self):
         # Users with launchpad.Edit can delete all access for a grantee.
@@ -1125,7 +1158,18 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        self._assert_revokeTeamAccessGrants(product, None, [branch], None)
+        self._assert_revokeTeamAccessGrants(
+            product, None, [branch], None, None)
+
+    def test_revokeTeamAccessGrantsGitRepositories(self):
+        # Users with launchpad.Edit can delete all access for a grantee.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        gitrepository = self.factory.makeGitRepository(
+            owner=owner, information_type=InformationType.USERDATA)
+        self._assert_revokeTeamAccessGrants(
+            product, None, None, [gitrepository], None)
 
     def test_revokeTeamAccessGrantsSpecifications(self):
         # Users with launchpad.Edit can delete all access for a grantee.
@@ -1138,7 +1182,7 @@ class TestSharingService(TestCaseWithFactory):
             product=product, owner=owner,
             information_type=InformationType.EMBARGOED)
         self._assert_revokeTeamAccessGrants(
-            product, None, None, [specification])
+            product, None, None, None, [specification])
 
     def _assert_revokeAccessGrantsUnauthorized(self):
         # revokeAccessGrants raises an Unauthorized exception if the user
@@ -1161,9 +1205,9 @@ class TestSharingService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._assert_revokeAccessGrantsUnauthorized()
 
-    def test_revokeAccessGrants_without_bugs_or_branches(self):
+    def test_revokeAccessGrants_without_artifacts(self):
         # The revokeAccessGrants method raises a ValueError if called without
-        # specifying either bugs or branches.
+        # specifying any artifacts.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         grantee = self.factory.makePerson()
@@ -1172,24 +1216,27 @@ class TestSharingService(TestCaseWithFactory):
             ValueError, self.service.revokeAccessGrants,
             product, grantee, product.owner)
 
-    def _assert_ensureAccessGrants(self, user, bugs, branches, specifications,
-                                   grantee=None):
+    def _assert_ensureAccessGrants(self, user, bugs, branches, gitrepositories,
+                                   specifications, grantee=None):
         # Creating access grants works as expected.
         if not grantee:
             grantee = self.factory.makePerson()
         self.service.ensureAccessGrants(
             [grantee], user, bugs=bugs, branches=branches,
-            specifications=specifications)
+            gitrepositories=gitrepositories, specifications=specifications)
 
         # Check that grantee has expected access grants.
         shared_bugs = []
         shared_branches = []
+        shared_gitrepositories = []
         shared_specifications = []
         all_pillars = []
         for bug in bugs or []:
             all_pillars.extend(bug.affected_pillars)
         for branch in branches or []:
             all_pillars.append(branch.target.context)
+        for gitrepository in gitrepositories or []:
+            all_pillars.append(gitrepository.target)
         for specification in specifications or []:
             all_pillars.append(specification.target)
         policies = getUtility(IAccessPolicySource).findByPillar(all_pillars)
@@ -1201,10 +1248,13 @@ class TestSharingService(TestCaseWithFactory):
                 shared_bugs.append(a.concrete_artifact)
             elif IBranch.providedBy(a.concrete_artifact):
                 shared_branches.append(a.concrete_artifact)
+            elif IGitRepository.providedBy(a.concrete_artifact):
+                shared_gitrepositories.append(a.concrete_artifact)
             elif ISpecification.providedBy(a.concrete_artifact):
                 shared_specifications.append(a.concrete_artifact)
         self.assertContentEqual(bugs or [], shared_bugs)
         self.assertContentEqual(branches or [], shared_branches)
+        self.assertContentEqual(gitrepositories or [], shared_gitrepositories)
         self.assertContentEqual(specifications or [], shared_specifications)
 
     def test_ensureAccessGrantsBugs(self):
@@ -1215,7 +1265,7 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_ensureAccessGrants(owner, [bug], None, None)
+        self._assert_ensureAccessGrants(owner, [bug], None, None, None)
 
     def test_ensureAccessGrantsBranches(self):
         # Access grants can be created for branches.
@@ -1225,7 +1275,18 @@ class TestSharingService(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             product=product, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_ensureAccessGrants(owner, None, [branch], None)
+        self._assert_ensureAccessGrants(owner, None, [branch], None, None)
+
+    def test_ensureAccessGrantsGitRepositories(self):
+        # Access grants can be created for Git repositories.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        gitrepository = self.factory.makeGitRepository(
+            target=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        self._assert_ensureAccessGrants(
+            owner, None, None, [gitrepository], None)
 
     def test_ensureAccessGrantsSpecifications(self):
         # Access grants can be created for branches.
@@ -1242,7 +1303,8 @@ class TestSharingService(TestCaseWithFactory):
         with person_logged_in(owner):
             specification.transitionToInformationType(
                 InformationType.PROPRIETARY, owner)
-        self._assert_ensureAccessGrants(owner, None, None, [specification])
+        self._assert_ensureAccessGrants(
+            owner, None, None, None, [specification])
 
     def test_ensureAccessGrantsExisting(self):
         # Any existing access grants are retained and new ones created.
@@ -1261,7 +1323,7 @@ class TestSharingService(TestCaseWithFactory):
         # Test with a new bug as well as the one for which access is already
         # granted.
         self._assert_ensureAccessGrants(
-            owner, [bug, bug2], None, None, grantee)
+            owner, [bug, bug2], None, None, None, grantee)
 
     def _assert_ensureAccessGrantsUnauthorized(self, user):
         # ensureAccessGrants raises an Unauthorized exception if the user
@@ -1329,7 +1391,8 @@ class TestSharingService(TestCaseWithFactory):
         self._assert_updatePillarSharingPoliciesUnauthorized(anyone)
 
     def create_shared_artifacts(self, product, grantee, user):
-        # Create some shared bugs and branches.
+        # Create some shared bugs, branches, Git repositories, and
+        # specifications.
         bugs = []
         bug_tasks = []
         for x in range(0, 10):
@@ -1344,6 +1407,12 @@ class TestSharingService(TestCaseWithFactory):
                 product=product, owner=product.owner,
                 information_type=InformationType.USERDATA)
             branches.append(branch)
+        gitrepositories = []
+        for x in range(0, 10):
+            gitrepository = self.factory.makeGitRepository(
+                target=product, owner=product.owner,
+                information_type=InformationType.USERDATA)
+            gitrepositories.append(gitrepository)
         specs = []
         for x in range(0, 10):
             spec = self.factory.makeSpecification(
@@ -1369,9 +1438,11 @@ class TestSharingService(TestCaseWithFactory):
             grant_access(bug, i == 9)
         for i, branch in enumerate(branches):
             grant_access(branch, i == 9)
+        for i, gitrepository in enumerate(gitrepositories):
+            grant_access(gitrepository, i == 9)
         getUtility(IService, 'sharing').ensureAccessGrants(
             [grantee], product.owner, specifications=specs[:9])
-        return bug_tasks, branches, specs
+        return bug_tasks, branches, gitrepositories, specs
 
     def test_getSharedArtifacts(self):
         # Test the getSharedArtifacts method.
@@ -1382,14 +1453,16 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         grantee = self.factory.makePerson()
         user = self.factory.makePerson()
-        bug_tasks, branches, specs = self.create_shared_artifacts(
-            product, grantee, user)
+        bug_tasks, branches, gitrepositories, specs = (
+            self.create_shared_artifacts(product, grantee, user))
 
         # Check the results.
-        shared_bugtasks, shared_branches, shared_specs = (
+        (shared_bugtasks, shared_branches, shared_gitrepositories,
+         shared_specs) = (
             self.service.getSharedArtifacts(product, grantee, user))
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
+        self.assertContentEqual(gitrepositories[:9], shared_gitrepositories)
         self.assertContentEqual(specs[:9], shared_specs)
 
     def _assert_getSharedProjects(self, product, who=None):
@@ -1529,7 +1602,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         grantee = self.factory.makePerson()
         user = self.factory.makePerson()
-        bug_tasks, ignored, ignored = self.create_shared_artifacts(
+        bug_tasks, _, _, _ = self.create_shared_artifacts(
             product, grantee, user)
 
         # Check the results.
@@ -1545,13 +1618,30 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         grantee = self.factory.makePerson()
         user = self.factory.makePerson()
-        ignored, branches, ignored = self.create_shared_artifacts(
+        _, branches, _, _ = self.create_shared_artifacts(
             product, grantee, user)
 
         # Check the results.
         shared_branches = self.service.getSharedBranches(
             product, grantee, user)
         self.assertContentEqual(branches[:9], shared_branches)
+
+    def test_getSharedGitRepositories(self):
+        # Test the getSharedGitRepositories method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=(
+            SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
+        login_person(owner)
+        grantee = self.factory.makePerson()
+        user = self.factory.makePerson()
+        _, _, gitrepositories, _ = self.create_shared_artifacts(
+            product, grantee, user)
+
+        # Check the results.
+        shared_gitrepositories = self.service.getSharedGitRepositories(
+            product, grantee, user)
+        self.assertContentEqual(gitrepositories[:9], shared_gitrepositories)
 
     def test_getSharedSpecifications(self):
         # Test the getSharedSpecifications method.
@@ -1562,7 +1652,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         grantee = self.factory.makePerson()
         user = self.factory.makePerson()
-        ignored, ignored, specifications = self.create_shared_artifacts(
+        _, _, _, specifications = self.create_shared_artifacts(
             product, grantee, user)
 
         # Check the results.
@@ -1589,6 +1679,16 @@ class TestSharingService(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         login_person(owner)
         self._assert_getPeopleWithoutAccess(product, branch)
+
+    def test_getPeopleWithAccessGitRepositories(self):
+        # Test the getPeopleWithoutAccess method with Git repositories.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        gitrepository = self.factory.makeGitRepository(
+            target=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        login_person(owner)
+        self._assert_getPeopleWithoutAccess(product, gitrepository)
 
     def _assert_getPeopleWithoutAccess(self, product, artifact):
         access_artifact = self.factory.makeAccessArtifact(concrete=artifact)
@@ -1645,6 +1745,12 @@ class TestSharingService(TestCaseWithFactory):
                 product=product, owner=owner,
                 information_type=InformationType.USERDATA)
             branches.append(branch)
+        gitrepositories = []
+        for x in range(0, 10):
+            gitrepository = self.factory.makeGitRepository(
+                target=product, owner=owner,
+                information_type=InformationType.USERDATA)
+            gitrepositories.append(gitrepository)
 
         specifications = []
         for x in range(0, 10):
@@ -1660,43 +1766,58 @@ class TestSharingService(TestCaseWithFactory):
                 artifact=access_artifact, grantee=grantee, grantor=owner)
             return access_artifact
 
-        # Grant access to some of the bugs and branches.
+        # Grant access to some of the artifacts.
         for bug in bugs[:5]:
             grant_access(bug)
         for branch in branches[:5]:
             grant_access(branch)
+        for gitrepository in gitrepositories[:5]:
+            grant_access(gitrepository)
         for spec in specifications[:5]:
             grant_access(spec)
-        return grantee, owner, branches, bugs, specifications
+        return grantee, owner, bugs, branches, gitrepositories, specifications
 
     def test_getVisibleArtifacts(self):
         # Test the getVisibleArtifacts method.
-        grantee, ignore, branches, bugs, specs = self._make_Artifacts()
+        grantee, ignore, bugs, branches, gitrepositories, specs = (
+            self._make_Artifacts())
         # Check the results.
-        shared_bugs, shared_branches, shared_specs = (
-            self.service.getVisibleArtifacts(grantee, branches, bugs, specs))
+        shared_bugs, shared_branches, shared_gitrepositories, shared_specs = (
+            self.service.getVisibleArtifacts(
+                grantee, bugs=bugs, branches=branches,
+                gitrepositories=gitrepositories, specifications=specs))
         self.assertContentEqual(bugs[:5], shared_bugs)
         self.assertContentEqual(branches[:5], shared_branches)
+        self.assertContentEqual(gitrepositories[:5], shared_gitrepositories)
         self.assertContentEqual(specs[:5], shared_specs)
 
     def test_getVisibleArtifacts_grant_on_pillar(self):
         # getVisibleArtifacts() returns private specifications if
         # user has a policy grant for the pillar of the specification.
-        ignore, owner, branches, bugs, specs = self._make_Artifacts()
-        shared_bugs, shared_branches, shared_specs = (
-            self.service.getVisibleArtifacts(owner, branches, bugs, specs))
+        _, owner, bugs, branches, gitrepositories, specs = (
+            self._make_Artifacts())
+        shared_bugs, shared_branches, shared_gitrepositories, shared_specs = (
+            self.service.getVisibleArtifacts(
+                owner, bugs=bugs, branches=branches,
+                gitrepositories=gitrepositories, specifications=specs))
         self.assertContentEqual(bugs, shared_bugs)
         self.assertContentEqual(branches, shared_branches)
+        self.assertContentEqual(gitrepositories, shared_gitrepositories)
         self.assertContentEqual(specs, shared_specs)
 
     def test_getInvisibleArtifacts(self):
         # Test the getInvisibleArtifacts method.
-        grantee, ignore, branches, bugs, specs = self._make_Artifacts()
+        grantee, ignore, bugs, branches, gitrepositories, specs = (
+            self._make_Artifacts())
         # Check the results.
-        not_shared_bugs, not_shared_branches = (
-            self.service.getInvisibleArtifacts(grantee, branches, bugs))
+        not_shared_bugs, not_shared_branches, not_shared_gitrepositories = (
+            self.service.getInvisibleArtifacts(
+                grantee, bugs=bugs, branches=branches,
+                gitrepositories=gitrepositories))
         self.assertContentEqual(bugs[5:], not_shared_bugs)
         self.assertContentEqual(branches[5:], not_shared_branches)
+        self.assertContentEqual(
+            gitrepositories[5:], not_shared_gitrepositories)
 
     def _assert_getVisibleArtifacts_bug_change(self, change_callback):
         # Test the getVisibleArtifacts method excludes bugs after a change of
@@ -1718,7 +1839,7 @@ class TestSharingService(TestCaseWithFactory):
                 information_type=InformationType.USERDATA)
             bugs.append(bug)
 
-        shared_bugs, shared_branches, shared_specs = (
+        shared_bugs, shared_branches, shared_gitrepositories, shared_specs = (
             self.service.getVisibleArtifacts(grantee, bugs=bugs))
         self.assertContentEqual(bugs, shared_bugs)
 
@@ -1726,7 +1847,7 @@ class TestSharingService(TestCaseWithFactory):
         for x in range(0, 5):
             change_callback(bugs[x], owner)
         # Check the results.
-        shared_bugs, shared_branches, shared_specs = (
+        shared_bugs, shared_branches, shared_gitrepositories, shared_specs = (
             self.service.getVisibleArtifacts(grantee, bugs=bugs))
         self.assertContentEqual(bugs[5:], shared_bugs)
 
@@ -1768,18 +1889,6 @@ class TestSharingService(TestCaseWithFactory):
         self.assertTrue(
             self.service.checkPillarAccess(
                 [product], InformationType.USERDATA, right_person))
-
-    def test_checkPillarArtifactAccess_respects_teams(self):
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            information_type=InformationType.PROPRIETARY, owner=owner)
-        user = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            membership_policy=TeamMembershipPolicy.MODERATED, members=[user])
-        with person_logged_in(owner):
-            bug = self.factory.makeBug(target=product)
-            bug.subscribe(team, owner)
-        self.assertTrue(self.service.checkPillarArtifactAccess(product, user))
 
     def test_checkPillarAccess_no_policy(self):
         # checkPillarAccess returns False if there's no policy.
@@ -1836,6 +1945,9 @@ class ApiTestMixin:
         self.branch = self.factory.makeBranch(
             owner=self.owner, product=self.pillar,
             information_type=InformationType.PRIVATESECURITY)
+        self.gitrepository = self.factory.makeGitRepository(
+            owner=self.owner, target=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
         self.spec = self.factory.makeSpecification(
             product=self.pillar, owner=self.owner,
             information_type=InformationType.PROPRIETARY)
@@ -1844,6 +1956,9 @@ class ApiTestMixin:
         self.branch.subscribe(
             self.grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
             None, CodeReviewNotificationLevel.NOEMAIL, self.owner)
+        # XXX cjwatson 2015-02-05: subscribe to Git repository when implemented
+        getUtility(IService, 'sharing').ensureAccessGrants(
+            [self.grantee], self.grantor, gitrepositories=[self.gitrepository])
         getUtility(IService, 'sharing').ensureAccessGrants(
             [self.grantee], self.grantor, specifications=[self.spec])
         transaction.commit()
@@ -1967,6 +2082,16 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         self.assertEqual(1, len(branches))
         self.assertEqual(branches[0].unique_name, self.branch.unique_name)
 
+    def test_getSharedGitRepositories(self):
+        # Test the exported getSharedGitRepositories() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        gitrepositories = self.service.getSharedGitRepositories(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(gitrepositories))
+        self.assertEqual(
+            gitrepositories[0].unique_name, self.gitrepository.unique_name)
+
     def test_getSharedSpecifications(self):
         # Test the exported getSharedSpecifications() method.
         ws_pillar = ws_object(self.launchpad, self.pillar)
@@ -1975,15 +2100,3 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             pillar=ws_pillar, person=ws_grantee)
         self.assertEqual(1, len(specifications))
         self.assertEqual(specifications[0].name, self.spec.name)
-
-    def test_getSharedArtifacts(self):
-        # Test the exported getSharedArtifacts() method.
-        ws_pillar = ws_object(self.launchpad, self.pillar)
-        ws_grantee = ws_object(self.launchpad, self.grantee)
-        (bugtasks, branches, specs) = self.service.getSharedArtifacts(
-            pillar=ws_pillar, person=ws_grantee)
-        self.assertEqual(1, len(bugtasks))
-        self.assertEqual(1, len(branches))
-        self.assertEqual(1, len(specs))
-        self.assertEqual(bugtasks[0]['title'], self.bug.default_bugtask.title)
-        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)

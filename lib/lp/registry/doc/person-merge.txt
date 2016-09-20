@@ -214,7 +214,7 @@ merged persons from lists etc.
     >>> results.get_one()[0] is None
     True
 
-An email is sent to the user informing him that he should review his
+An email is sent to the user informing them that they should review their
 email and mailing list subscription settings.
 
     >>> from lp.registry.interfaces.personnotification import (
@@ -283,10 +283,12 @@ create, and then delete, the needed two people.
     ...     lead += 1
     ...     name = str(lead)
     ...     lp = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
-    ...     winner = Person(name=name+'.winner', displayname='Merge Winner',
-    ...                     creation_rationale=lp)
-    ...     loser = Person(name=name+'.loser', displayname='Merge Loser',
-    ...                     creation_rationale=lp)
+    ...     winner = Person(
+    ...         name=name+'.winner', display_name='Merge Winner',
+    ...         creation_rationale=lp)
+    ...     loser = Person(
+    ...         name=name+'.loser', display_name='Merge Loser',
+    ...         creation_rationale=lp)
     ...     yield winner, loser
     >>> endless_supply_of_players = new_players()
 

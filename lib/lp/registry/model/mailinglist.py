@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -40,7 +40,7 @@ from zope.component import (
     )
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.proxy import removeSecurityProxy
@@ -100,10 +100,16 @@ MESSAGE_APPROVAL_STATUSES = (
     PostedMessageStatus.APPROVAL_PENDING)
 
 
+USABLE_STATUSES = (
+    MailingListStatus.ACTIVE,
+    MailingListStatus.MODIFIED,
+    MailingListStatus.UPDATING,
+    MailingListStatus.MOD_FAILED)
+
+
+@implementer(IMessageApproval)
 class MessageApproval(SQLBase):
     """A held message."""
-
-    implements(IMessageApproval)
 
     message = ForeignKey(
         dbName='message', foreignKey='Message',
@@ -171,6 +177,7 @@ class MessageApproval(SQLBase):
                                  self.status)
 
 
+@implementer(IMailingList)
 class MailingList(SQLBase):
     """The mailing list for a team.
 
@@ -180,8 +187,6 @@ class MailingList(SQLBase):
     to instruct Mailman how to create, delete, and modify mailing lists (via
     XMLRPC).
     """
-
-    implements(IMailingList)
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
@@ -344,10 +349,7 @@ class MailingList(SQLBase):
     @property
     def is_usable(self):
         """See `IMailingList`."""
-        return self.status in [MailingListStatus.ACTIVE,
-                               MailingListStatus.MODIFIED,
-                               MailingListStatus.UPDATING,
-                               MailingListStatus.MOD_FAILED]
+        return self.status in USABLE_STATUSES
 
     def _get_welcome_message(self):
         return self.welcome_message_
@@ -384,7 +386,7 @@ class MailingList(SQLBase):
                              TeamParticipation.team == self.team,
                              MailingListSubscription.person == Person.id,
                              MailingListSubscription.mailing_list == self)
-        return results.order_by(Person.displayname, Person.name)
+        return results.order_by(Person.display_name, Person.name)
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
@@ -476,8 +478,8 @@ class MailingList(SQLBase):
             raise UnsafeToPurge(self)
 
 
+@implementer(IMailingListSet)
 class MailingListSet:
-    implements(IMailingListSet)
 
     title = _('Team mailing lists')
 
@@ -494,7 +496,7 @@ class MailingListSet:
             # administrator of the team we're creating the mailing list for.
             # So you can't just do "registrant in
             # team.getDirectAdministrators()".  It's okay to use .inTeam() for
-            # all cases because a person is always a member of himself.
+            # all cases because a person is always a member of themselves.
             for admin in team.getDirectAdministrators():
                 if registrant.inTeam(admin):
                     break
@@ -547,6 +549,24 @@ class MailingListSet:
             """ % sqlvalues(team_name),
             clauseTables=['Person'])
 
+    def getSubscriptionsForTeams(self, person, teams):
+        """See `IMailingListSet`."""
+        store = IStore(MailingList)
+        team_ids = set(map(operator.attrgetter("id"), teams))
+        lists = dict(store.find(
+            (MailingList.teamID, MailingList.id),
+            MailingList.teamID.is_in(team_ids),
+            MailingList.status.is_in(USABLE_STATUSES)))
+        subscriptions = dict(store.find(
+            (MailingListSubscription.mailing_listID,
+             MailingListSubscription.id),
+            MailingListSubscription.person == person,
+            MailingListSubscription.mailing_listID.is_in(lists.values())))
+        by_team = {}
+        for team, mailing_list in lists.items():
+            by_team[team] = (mailing_list, subscriptions.get(mailing_list))
+        return by_team
+
     def _getTeamIdsAndMailingListIds(self, team_names):
         """Return a tuple of team and mailing list Ids for the team names."""
         store = IStore(MailingList)
@@ -580,7 +600,7 @@ class MailingListSet:
             )
         team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         preferred = store.using(*tables).find(
-            (EmailAddress.email, Person.displayname, Team.name),
+            (EmailAddress.email, Person.display_name, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
@@ -623,7 +643,7 @@ class MailingListSet:
             )
         team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         team_members = store.using(*tables).find(
-            (Team.name, Person.displayname, EmailAddress.email),
+            (Team.name, Person.display_name, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
@@ -645,7 +665,7 @@ class MailingListSet:
             Join(Team, Team.id == MailingList.teamID),
             )
         approved_posters = store.using(*tables).find(
-            (Team.name, Person.displayname, EmailAddress.email),
+            (Team.name, Person.display_name, EmailAddress.email),
             And(MessageApproval.mailing_listID.is_in(list_ids),
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
@@ -692,10 +712,9 @@ class MailingListSet:
             (MailingListStatus.CONSTRUCTING, MailingListStatus.UPDATING)))
 
 
+@implementer(IMailingListSubscription)
 class MailingListSubscription(SQLBase):
     """A mailing list subscription."""
-
-    implements(IMailingListSubscription)
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
@@ -722,10 +741,9 @@ class MailingListSubscription(SQLBase):
             return self.email_address
 
 
+@implementer(IMessageApprovalSet)
 class MessageApprovalSet:
     """Sets of held messages."""
-
-    implements(IMessageApprovalSet)
 
     def getMessageByMessageID(self, message_id):
         """See `IMessageApprovalSet`."""
@@ -767,10 +785,9 @@ class MessageApprovalSet:
         approvals.set(status=next_state)
 
 
+@implementer(IHeldMessageDetails)
 class HeldMessageDetails:
     """Details about a held message."""
-
-    implements(IHeldMessageDetails)
 
     def __init__(self, message_approval):
         self.message_approval = message_approval

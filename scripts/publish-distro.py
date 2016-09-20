@@ -5,7 +5,7 @@
 
 import _pythonpath
 
-from lp.soyuz.scripts.publishdistro import PublishDistro
+from lp.archivepublisher.scripts.publishdistro import PublishDistro
 
 
 if __name__ == "__main__":

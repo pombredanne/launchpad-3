@@ -58,7 +58,7 @@ for teams (as they're defined in the ITeam interface).
     sub_teams_collection_link: u'http://.../~salgado/sub_teams'
     super_teams_collection_link: u'http://.../~salgado/super_teams'
     team_owner_link: None
-    time_zone: None
+    time_zone: u'UTC'
     visibility: u'Public'
     web_link: u'http://launchpad.../~salgado'
     wiki_names_collection_link: u'http://.../~salgado/wiki_names'
@@ -124,7 +124,7 @@ for teams (as they're defined in the ITeam interface).
     super_teams_collection_link: u'http://.../~ubuntu-team/super_teams'
     team_description: u'This Team is responsible for the Ubuntu Distribution'
     team_owner_link: u'http://.../~mark'
-    time_zone: None
+    time_zone: u'UTC'
     visibility: u'Public'
     web_link: u'http://launchpad.../~ubuntu-team'
     wiki_names_collection_link: u'http://.../~ubuntu-team/wiki_names'
@@ -193,7 +193,7 @@ The sample person "ssh-user" doesn't have any keys to begin with:
     >>> sshkeys = sample_person['sshkeys_collection_link']
     >>> print sshkeys
     http://.../~ssh-user/sshkeys
-    >>> print_self_link_of_entries(webservice.get(sshkeys).jsonBody())
+    >>> print_self_link_of_entries(anon_webservice.get(sshkeys).jsonBody())
 
 Let's give "ssh-user" a key via the back door of our internal Python APIs.
 This setting of the ssh key should trigger a notice that the key has been
@@ -215,7 +215,7 @@ added.
 Now when we get the sshkey collection for 'sssh-user' again, the key should
 show up:
 
-    >>> keys = webservice.get(sshkeys).jsonBody()
+    >>> keys = anon_webservice.get(sshkeys).jsonBody()
     >>> print_self_link_of_entries(keys)
     http://.../~ssh-user/+ssh-keys/...
 
@@ -601,7 +601,7 @@ We can get to the person's default PPA via the 'archive' property:
 
     >>> mark_archive_link = mark['archive_link']
     >>> print mark_archive_link
-    http://.../~mark/+archive/ppa
+    http://.../~mark/+archive/ubuntu/ppa
 
     >>> mark_archive = webservice.get(mark_archive_link).jsonBody()
     >>> print mark_archive['description']
@@ -612,31 +612,40 @@ person.
 
     >>> print_self_link_of_entries(webservice.get(
     ...     mark['ppas_collection_link']).jsonBody())
-    http://.../~mark/+archive/ppa
+    http://.../~mark/+archive/ubuntu/ppa
 
 A specific PPA can be looked up by name via 'getPPAByName'
 named-operation on IPerson.
 
     >>> print webservice.named_get(
     ...     mark['self_link'], 'getPPAByName',
+    ...     distribution='/ubuntu', name='ppa').jsonBody()['self_link']
+    http://.../~mark/+archive/ubuntu/ppa
+
+If no distribution is specified, it defaults to Ubuntu.
+
+    >>> print webservice.named_get(
+    ...     mark['self_link'], 'getPPAByName',
     ...     name='ppa').jsonBody()['self_link']
-    http://.../~mark/+archive/ppa
+    http://.../~mark/+archive/ubuntu/ppa
 
 In cases where a PPA with a given name cannot be found, a Not Found error is
 returned.
 
     >>> print webservice.named_get(
-    ...     mark['self_link'], 'getPPAByName', name='boing')
+    ...     mark['self_link'], 'getPPAByName', distribution='/debian',
+    ...     name='ppa')
     HTTP/1.1 404 Not Found
     ...
-    No such ppa: 'boing'.
+    No such ppa: 'ppa'.
 
 The method doesn't even bother to execute the lookup if the given
 'name' doesn't match the constraints for PPA names. An error message
 indicating what was wrong is returned.
 
     >>> print webservice.named_get(
-    ...     mark['self_link'], 'getPPAByName', name='XpTo@#$%')
+    ...     mark['self_link'], 'getPPAByName', distribution='/ubuntu',
+    ...     name='XpTo@#$%')
     HTTP/1.1 400 Bad Request
     ...
     name:
@@ -777,8 +786,8 @@ Accepting or declining a membership invitation:
     >>> webservice.get("/~ubuntu-team/+member/name20").jsonBody()['status']
     u'Invitation declined'
 
-The retractTeamMembership method allows a team admin to remove his team from
-another team.
+The retractTeamMembership method allows a team admin to remove their team
+from another team.
 
     >>> print webservice.named_post(
     ...     landscape_developers['self_link'], 'retractTeamMembership',

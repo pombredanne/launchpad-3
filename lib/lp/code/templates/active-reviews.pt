@@ -8,8 +8,6 @@
 
 <body>
 
-<h1 metal:fill-slot="heading" tal:content="view/heading" />
-
 <div metal:fill-slot="main">
 
   <tal:has-proposals condition="view/proposal_count"

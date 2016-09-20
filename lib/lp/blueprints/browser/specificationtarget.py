@@ -56,7 +56,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
@@ -461,8 +460,3 @@ class RegisterABlueprintButtonPortlet:
               </ul>
             </div>
             """ % self.target_url
-
-
-class BlueprintsFacetBreadcrumb(Breadcrumb):
-    rootsite = 'blueprints'
-    text = 'Blueprints'

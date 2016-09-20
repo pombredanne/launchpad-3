@@ -19,6 +19,7 @@ from subprocess import (
 import sys
 import tempfile
 
+from contextlib import contextmanager
 from sqlobject import SQLObjectNotFound
 from swiftclient import client as swiftclient
 import transaction
@@ -437,6 +438,25 @@ class TestLibrarianGarbageCollectionBase:
                 len(results), 0, 'Too many results %r' % (results,)
                 )
 
+    @contextmanager
+    def librariangc_thinking_it_is_tomorrow(self):
+        org_time = librariangc.time
+        org_utcnow = librariangc._utcnow
+
+        def tomorrow_time():
+            return org_time() + 24 * 60 * 60 + 1
+
+        def tomorrow_utcnow():
+            return datetime.utcnow() + timedelta(days=1, seconds=1)
+
+        try:
+            librariangc.time = tomorrow_time
+            librariangc._utcnow = tomorrow_utcnow
+            yield
+        finally:
+            librariangc.time = org_time
+            librariangc._utcnow = org_utcnow
+
     def test_deleteUnwantedFiles(self):
         self.ztm.begin()
         cur = cursor()
@@ -473,22 +493,8 @@ class TestLibrarianGarbageCollectionBase:
 
         # To test removal does occur when we want it to, we need to trick
         # the garbage collector into thinking it is tomorrow.
-        org_time = librariangc.time
-        org_utcnow = librariangc._utcnow
-
-        def tomorrow_time():
-            return org_time() + 24 * 60 * 60 + 1
-
-        def tomorrow_utcnow():
-            return datetime.utcnow() + timedelta(days=1, seconds=1)
-
-        try:
-            librariangc.time = tomorrow_time
-            librariangc._utcnow = tomorrow_utcnow
+        with self.librariangc_thinking_it_is_tomorrow():
             librariangc.delete_unwanted_files(self.con)
-        finally:
-            librariangc.time = org_time
-            librariangc._utcnow = org_utcnow
 
         self.failIf(self.file_exists(content_id))
 
@@ -577,19 +583,11 @@ class TestLibrarianGarbageCollectionBase:
         librariangc.confirm_no_clock_skew(self.con)
 
         # To test this function raises an excption when it should,
-        # the garbage collector into thinking it is tomorrow.
-        org_time = librariangc.time
-
-        def tomorrow_time():
-            return org_time() + 24 * 60 * 60 + 1
-
-        try:
-            librariangc.time = tomorrow_time
+        # fool the garbage collector into thinking it is tomorrow.
+        with self.librariangc_thinking_it_is_tomorrow():
             self.assertRaises(
                 Exception, librariangc.confirm_no_clock_skew, (self.con,)
                 )
-        finally:
-            librariangc.time = org_time
 
 
 class TestDiskLibrarianGarbageCollection(
@@ -602,6 +600,39 @@ class TestDiskLibrarianGarbageCollection(
     def remove_file(self, content_id):
         path = librariangc.get_file_path(content_id)
         os.unlink(path)
+
+    def test_delete_unwanted_files_handles_migrated(self):
+        # Files that have been uploaded to Swift have ".migrated"
+        # appended to their names. These are treated just like the
+        # original file, ignoring the extension.
+        switch_dbuser('testadmin')
+        content = 'foo'
+        lfa = LibraryFileAlias.get(self.client.addFile(
+            'foo.txt', len(content), StringIO(content), 'text/plain'))
+        id_aborted = lfa.contentID
+        # Roll back the database changes, leaving the file on disk.
+        transaction.abort()
+
+        lfa = LibraryFileAlias.get(self.client.addFile(
+            'bar.txt', len(content), StringIO(content), 'text/plain'))
+        transaction.commit()
+        id_committed = lfa.contentID
+
+        switch_dbuser(config.librarian_gc.dbuser)
+
+        # Now rename the file to pretend that librarian-feed-swift has
+        # dealt with it.
+        path_aborted = librariangc.get_file_path(id_aborted)
+        os.rename(path_aborted, path_aborted + '.migrated')
+
+        path_committed = librariangc.get_file_path(id_committed)
+        os.rename(path_committed, path_committed + '.migrated')
+
+        with self.librariangc_thinking_it_is_tomorrow():
+            librariangc.delete_unwanted_files(self.con)
+
+        self.assertFalse(os.path.exists(path_aborted + '.migrated'))
+        self.assertTrue(os.path.exists(path_committed + '.migrated'))
 
     def test_deleteUnwantedFilesIgnoresNoise(self):
         # Directories with invalid names in the storage area are
@@ -616,10 +647,16 @@ class TestDiskLibrarianGarbageCollection(
         # Long non-hexadecimal number
         noisedir3_path = os.path.join(config.librarian_server.root, '11.bak')
 
+        # A file with the ".migrated" suffix has migrated to Swift but
+        # may still be removed from disk as unwanted by the GC. Other
+        # suffixes are unknown and stay around.
+        migrated_path = librariangc.get_file_path(8769786) + '.noise'
+
         try:
             os.mkdir(noisedir1_path)
             os.mkdir(noisedir2_path)
             os.mkdir(noisedir3_path)
+            os.makedirs(os.path.dirname(migrated_path))
 
             # Files in the noise directories.
             noisefile1_path = os.path.join(noisedir1_path, 'abc')
@@ -628,19 +665,12 @@ class TestDiskLibrarianGarbageCollection(
             open(noisefile1_path, 'w').write('hello')
             open(noisefile2_path, 'w').write('there')
             open(noisefile3_path, 'w').write('testsuite')
+            open(migrated_path, 'w').write('migrant')
 
             # Pretend it is tomorrow to ensure the files don't count as
             # recently created, and run the delete_unwanted_files process.
-            org_time = librariangc.time
-
-            def tomorrow_time():
-                return org_time() + 24 * 60 * 60 + 1
-
-            try:
-                librariangc.time = tomorrow_time
+            with self.librariangc_thinking_it_is_tomorrow():
                 librariangc.delete_unwanted_files(self.con)
-            finally:
-                librariangc.time = org_time
 
             # None of the rubbish we created has been touched.
             self.assert_(os.path.isdir(noisedir1_path))
@@ -649,6 +679,7 @@ class TestDiskLibrarianGarbageCollection(
             self.assert_(os.path.exists(noisefile1_path))
             self.assert_(os.path.exists(noisefile2_path))
             self.assert_(os.path.exists(noisefile3_path))
+            self.assert_(os.path.exists(migrated_path))
         finally:
             # We need to clean this up ourselves, as the standard librarian
             # cleanup only removes files it knows where valid to avoid
@@ -656,12 +687,15 @@ class TestDiskLibrarianGarbageCollection(
             shutil.rmtree(noisedir1_path)
             shutil.rmtree(noisedir2_path)
             shutil.rmtree(noisedir3_path)
+            shutil.rmtree(os.path.dirname(migrated_path))
 
         # Can't check the ordering, so we'll just check that one of the
         # warnings are there.
         self.assertIn(
             "WARNING Ignoring invalid directory zz",
             librariangc.log.getLogBuffer())
+        # No warning about the .migrated file.
+        self.assertNotIn(".migrated", librariangc.log.getLogBuffer())
 
 
 class TestSwiftLibrarianGarbageCollection(
@@ -686,7 +720,7 @@ class TestSwiftLibrarianGarbageCollection(
         # Move files into Swift.
         path = librariangc.get_file_path(self.f1_id)
         assert os.path.exists(path), "Librarian uploads failed"
-        swift.to_swift(BufferLogger(), remove=True)
+        swift.to_swift(BufferLogger(), remove_func=os.unlink)
         assert not os.path.exists(path), "to_swift failed to move files"
 
     def file_exists(self, content_id):
@@ -817,16 +851,27 @@ class TestBlobCollection(TestCase):
         self.unexpired_blob_id = cur.fetchone()[0]
         self.layer.txn.commit()
 
-        # Make sure all the librarian files actually exist on disk
+        # Make sure all the librarian files actually exist on disk with
+        # hashes matching the DB. We use the hash as the new file
+        # content, to preserve existing duplicate relationships.
+        switch_dbuser('testadmin')
         cur = cursor()
-        cur.execute("SELECT id FROM LibraryFileContent")
-        for content_id in (row[0] for row in cur.fetchall()):
+        cur.execute("SELECT id, sha1 FROM LibraryFileContent")
+        for content_id, sha1 in cur.fetchall():
             path = librariangc.get_file_path(content_id)
             if not os.path.exists(path):
                 if not os.path.exists(os.path.dirname(path)):
                     os.makedirs(os.path.dirname(path))
-                open(path, 'w').write('whatever')
-        self.layer.txn.abort()
+                data = sha1
+                open(path, 'w').write(data)
+                cur.execute(
+                    "UPDATE LibraryFileContent "
+                    "SET md5 = %s, sha1 = %s, sha256 = %s, filesize = %s "
+                    "WHERE id = %s",
+                    (hashlib.md5(data).hexdigest(),
+                     hashlib.sha1(data).hexdigest(),
+                     hashlib.sha256(data).hexdigest(), len(data), content_id))
+        self.layer.txn.commit()
 
         switch_dbuser(config.librarian_gc.dbuser)
 

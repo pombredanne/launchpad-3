@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for webservice features across Launchpad."""
@@ -115,6 +115,12 @@ class TestMissingLanguages(BaseMissingObjectWebService, TestCaseWithFactory):
     object_type = 'languages'
 
 
+class TestMissingLiveFSes(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice livefses requests."""
+
+    object_type = 'livefses'
+
+
 class TestMissingPackagesets(
     BaseMissingObjectWebService, TestCaseWithFactory):
     """Test NotFound for webservice packagesets requests."""
@@ -145,6 +151,12 @@ class TestMissingQuestions(BaseMissingObjectWebService, TestCaseWithFactory):
     """Test NotFound for webservice questions requests."""
 
     object_type = 'questions'
+
+
+class TestMissingSnaps(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice snaps requests."""
+
+    object_type = '+snaps'
 
 
 class TestMissingTemporaryBlobs(

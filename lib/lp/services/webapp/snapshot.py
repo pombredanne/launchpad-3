@@ -13,8 +13,9 @@ from lp.services.helpers import shortlist
 
 HARD_LIMIT_FOR_SNAPSHOT = 1000
 
+
 @implementer(ISnapshotValueFactory)
-@adapter(IResultSet) # And ISQLObjectResultSet.
+@adapter(IResultSet)  # And ISQLObjectResultSet.
 def snapshot_sql_result(value):
     # SQLMultipleJoin and SQLRelatedJoin return
     # SelectResults, which doesn't really help the Snapshot

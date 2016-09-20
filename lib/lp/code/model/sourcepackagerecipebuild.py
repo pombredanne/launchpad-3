@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation code for source package builds."""
@@ -8,10 +8,7 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 import logging
 
 from psycopg2 import ProgrammingError
@@ -30,8 +27,8 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.app.errors import NotFoundError
@@ -49,6 +46,10 @@ from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
     )
+from lp.code.interfaces.sourcepackagerecipe import (
+    IRecipeBranchSource,
+    ISourcePackageRecipeDataSource,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource,
@@ -56,7 +57,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
-from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Person
 from lp.services.database.bulk import load_related
@@ -74,13 +74,12 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
+@implementer(ISourcePackageRecipeBuild)
+@provider(ISourcePackageRecipeBuildSource)
 class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
                                PackageBuildMixin, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
-
-    implements(ISourcePackageRecipeBuild)
-    classProvides(ISourcePackageRecipeBuildSource)
 
     job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
@@ -120,8 +119,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     def distribution(self):
         """See `IPackageBuild`."""
         return self.distroseries.distribution
-
-    is_virtualized = True
 
     recipe_id = Int(name='recipe')
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
@@ -164,10 +161,11 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
             if self.manifest is not None:
                 IStore(self.manifest).remove(self.manifest)
         elif self.manifest is None:
-            SourcePackageRecipeData.createManifestFromText(text, self)
+            getUtility(ISourcePackageRecipeDataSource).createManifestFromText(
+                text, self)
         else:
-            from bzrlib.plugins.builder.recipe import RecipeParser
-            self.manifest.setRecipe(RecipeParser(text).parse())
+            self.manifest.setRecipe(
+                getUtility(IRecipeBranchSource).getParsedRecipe(text))
 
     def getManifestText(self):
         if self.manifest is None:
@@ -183,10 +181,11 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     @property
     def title(self):
         if self.recipe is None:
-            return 'build for deleted recipe'
+            branch_name = 'deleted'
         else:
-            branch_name = self.recipe.base_branch.unique_name
-            return '%s recipe build' % branch_name
+            branch_name = self.recipe.base.unique_name
+        return '%s recipe build in %s %s' % (
+            branch_name, self.distribution.name, self.distroseries.name)
 
     def __init__(self, build_farm_job, distroseries, recipe, requester,
                  archive, pocket, date_created):
@@ -264,11 +263,31 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
                     builds.append(build)
         return builds
 
-    def cancelBuild(self):
-        """See `ISourcePackageRecipeBuild.`"""
-        self.updateStatus(BuildStatus.SUPERSEDED)
-        if self.buildqueue_record is not None:
-            self.buildqueue_record.destroySelf()
+    @property
+    def can_be_rescored(self):
+        """See `IBuild`."""
+        return self.status is BuildStatus.NEEDSBUILD
+
+    @property
+    def can_be_cancelled(self):
+        """See `ISourcePackageRecipeBuild`."""
+        if not self.buildqueue_record:
+            return False
+
+        cancellable_statuses = [
+            BuildStatus.BUILDING,
+            BuildStatus.NEEDSBUILD,
+            ]
+        return self.status in cancellable_statuses
+
+    def cancel(self):
+        """See `ISourcePackageRecipeBuild`."""
+        if not self.can_be_cancelled:
+            return
+        # BuildQueue.cancel() will decide whether to go straight to
+        # CANCELLED, or go through CANCELLING to let buildd-manager
+        # clean up the slave.
+        self.buildqueue_record.cancel()
 
     def destroySelf(self):
         if self.buildqueue_record is not None:
@@ -283,7 +302,7 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         store.remove(self.build_farm_job)
 
     def calculateScore(self):
-        return 2505 + self.archive.relative_build_score
+        return 2510 + self.archive.relative_build_score
 
     @classmethod
     def getByID(cls, build_id):
@@ -301,10 +320,14 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     def preloadBuildsData(cls, builds):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
         from lp.services.librarian.model import LibraryFileAlias
         load_related(LibraryFileAlias, builds, ['log_id'])
         archives = load_related(Archive, builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
+        distroseries = load_related(DistroSeries, builds, ['distroseries_id'])
+        load_related(Distribution, distroseries, ['distributionID'])
         sprs = load_related(SourcePackageRecipe, builds, ['recipe_id'])
         SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
 
@@ -317,16 +340,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
             cls, cls.build_farm_job_id.is_in(
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=cls.preloadBuildsData)
-
-    @classmethod
-    def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
-        if _now is None:
-            _now = datetime.now(pytz.UTC)
-        store = IMasterStore(SourcePackageRecipeBuild)
-        old_threshold = _now - timedelta(days=1)
-        return store.find(cls, cls.distroseries_id == distroseries.id,
-            cls.requester_id == requester.id, cls.recipe_id == recipe.id,
-            cls.date_created > old_threshold)
 
     def estimateDuration(self):
         """See `IPackageBuild`."""

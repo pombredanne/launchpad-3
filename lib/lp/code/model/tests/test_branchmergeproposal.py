@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -10,19 +10,31 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
+import hashlib
 from unittest import TestCase
 
-from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
 from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    Is,
+    MatchesDict,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import IPrivacy
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -38,12 +50,12 @@ from lp.code.errors import (
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
-    NewBranchMergeProposalEvent,
-    NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
     )
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    BRANCH_MERGE_PROPOSAL_OBSOLETE_STATES as OBSOLETE_STATES,
+    BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     notify_modified,
@@ -59,26 +71,30 @@ from lp.code.model.branchmergeproposaljob import (
     )
 from lp.code.tests.helpers import (
     add_revision_to_branch,
+    GitHostingFixture,
     make_merge_proposal_without_reviewers,
     )
 from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
+from lp.services.memcache.testing import MemcacheFixture
 from lp.services.webapp import canonical_url
+from lp.services.xref.interfaces import IXRefSet
 from lp.testing import (
     ExpectedException,
-    feature_flags,
     launchpadlib_for,
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     verifyObject,
     WebServiceTestCase,
     ws_object,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -97,26 +113,41 @@ class TestBranchMergeProposalInterface(TestCaseWithFactory):
         verifyObject(IBranchMergeProposal, bmp)
 
 
-class TestBranchMergeProposalCanonicalUrl(TestCaseWithFactory):
+class TestBranchMergeProposalCanonicalUrlMixin:
     """Tests canonical_url for merge proposals."""
 
     layer = DatabaseFunctionalLayer
 
     def test_BranchMergeProposal_canonical_url_base(self):
-        # The URL for a merge proposal starts with the source branch.
-        bmp = self.factory.makeBranchMergeProposal()
+        # The URL for a merge proposal starts with the parent (source branch
+        # or source Git repository).
+        bmp = self._makeBranchMergeProposal()
         url = canonical_url(bmp)
-        source_branch_url = canonical_url(bmp.source_branch)
-        self.assertTrue(url.startswith(source_branch_url))
+        parent_url = canonical_url(bmp.parent)
+        self.assertTrue(url.startswith(parent_url))
 
     def test_BranchMergeProposal_canonical_url_rest(self):
         # The rest of the URL for a merge proposal is +merge followed by the
         # db id.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self._makeBranchMergeProposal()
         url = canonical_url(bmp)
-        source_branch_url = canonical_url(bmp.source_branch)
-        rest = url[len(source_branch_url):]
+        parent_url = canonical_url(bmp.parent)
+        rest = url[len(parent_url):]
         self.assertEqual('/+merge/%s' % bmp.id, rest)
+
+
+class TestBranchMergeProposalCanonicalUrlBzr(
+    TestBranchMergeProposalCanonicalUrlMixin, TestCaseWithFactory):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+
+class TestBranchMergeProposalCanonicalUrlGit(
+    TestBranchMergeProposalCanonicalUrlMixin, TestCaseWithFactory):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
 
 
 class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
@@ -198,8 +229,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         BranchMergeProposalStatus.CODE_APPROVED: 'approveBranch',
         BranchMergeProposalStatus.REJECTED: 'rejectBranch',
         BranchMergeProposalStatus.MERGED: 'markAsMerged',
-        BranchMergeProposalStatus.MERGE_FAILED: 'setStatus',
-        BranchMergeProposalStatus.QUEUED: 'enqueue',
         BranchMergeProposalStatus.SUPERSEDED: 'resubmit',
         }
 
@@ -219,15 +248,10 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         kwargs = {}
         method = getattr(proposal, self.transition_functions[to_state])
         if to_state in (BranchMergeProposalStatus.CODE_APPROVED,
-                        BranchMergeProposalStatus.REJECTED,
-                        BranchMergeProposalStatus.QUEUED):
+                        BranchMergeProposalStatus.REJECTED):
             args = [proposal.target_branch.owner, 'some_revision_id']
         elif to_state in (BranchMergeProposalStatus.SUPERSEDED, ):
             args = [proposal.registrant]
-        elif to_state in (BranchMergeProposalStatus.MERGE_FAILED, ):
-            # transition via setStatus.
-            args = [to_state]
-            kwargs = dict(user=proposal.target_branch.owner)
         else:
             args = []
         method(*args, **kwargs)
@@ -240,16 +264,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertProposalState(proposal, from_state)
         self._attemptTransition(proposal, to_state)
         self.assertProposalState(proposal, to_state)
-
-    def assertBadTransition(self, from_state, to_state):
-        """Assert that trying to go from `from_state` to `to_state` fails."""
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=from_state)
-        self.assertProposalState(proposal, from_state)
-        self.assertRaises(BadStateTransition,
-                          self._attemptTransition,
-                          proposal, to_state)
 
     def prepareDupeTransition(self, from_state):
         proposal = self.factory.makeBranchMergeProposal(
@@ -282,6 +296,9 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     def assertAllTransitionsGood(self, from_state):
         """Assert that we can go from `from_state` to any state."""
         for status in BranchMergeProposalStatus.items:
+            if status in OBSOLETE_STATES:
+                # We don't need to permit transitions to obsolete states.
+                continue
             self.assertGoodTransition(from_state, status)
 
     def test_transitions_from_wip(self):
@@ -313,6 +330,9 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         """
         for from_status in FINAL_STATES:
             for to_status in BranchMergeProposalStatus.items:
+                if to_status in OBSOLETE_STATES:
+                    # We don't need to permit transitions to obsolete states.
+                    continue
                 if to_status == BranchMergeProposalStatus.SUPERSEDED:
                     continue
                 if to_status in FINAL_STATES:
@@ -345,74 +365,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertValidTransitions(
             set([BranchMergeProposalStatus.REJECTED]),
             proposal, BranchMergeProposalStatus.REJECTED,
-            proposal.source_branch.owner)
-
-    def test_transitions_from_merge_failed(self):
-        """We can go from merge failed to any other state."""
-        self.assertAllTransitionsGood(BranchMergeProposalStatus.MERGE_FAILED)
-
-    def test_transition_from_merge_failed_to_queued_non_reviewer(self):
-        # Contributors can requeue to retry after environmental issues fail a
-        # merge.
-        proposal = self.factory.makeBranchMergeProposal()
-        self.assertFalse(proposal.target_branch.isPersonTrustedReviewer(
-            proposal.source_branch.owner))
-        self.assertValidTransitions(set([
-                BranchMergeProposalStatus.MERGE_FAILED,
-                BranchMergeProposalStatus.CODE_APPROVED,
-                # It is always valid to go to the same state.
-                BranchMergeProposalStatus.QUEUED]),
-            proposal, BranchMergeProposalStatus.QUEUED,
-            proposal.source_branch.owner)
-
-    def test_transitions_from_queued_dequeue(self):
-        # When a proposal is dequeued it is set to code approved, and the
-        # queue position is reset.
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=BranchMergeProposalStatus.QUEUED)
-        proposal.dequeue()
-        self.assertProposalState(
-            proposal, BranchMergeProposalStatus.CODE_APPROVED)
-        self.assertIs(None, proposal.queue_position)
-        self.assertIs(None, proposal.queuer)
-        self.assertIs(None, proposal.queued_revision_id)
-        self.assertIs(None, proposal.date_queued)
-
-    def test_transitions_from_queued_to_merged(self):
-        # When a proposal is marked as merged from queued, the queue_position
-        # is reset.
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=BranchMergeProposalStatus.QUEUED)
-        proposal.markAsMerged()
-        self.assertProposalState(
-            proposal, BranchMergeProposalStatus.MERGED)
-        self.assertIs(None, proposal.queue_position)
-
-    def test_transitions_from_queued_to_merge_failed(self):
-        # When a proposal is marked as merged from queued, the queue_position
-        # is reset.
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=BranchMergeProposalStatus.QUEUED)
-        proposal.setStatus(BranchMergeProposalStatus.MERGE_FAILED)
-        self.assertProposalState(
-            proposal, BranchMergeProposalStatus.MERGE_FAILED)
-        self.assertIs(None, proposal.queue_position)
-
-    def test_transition_to_merge_failed_non_reviewer(self):
-        # non reviewers cannot set merge-failed (target branch owners are
-        # implicitly reviewers).
-        proposal = self.factory.makeBranchMergeProposal()
-        self.assertFalse(proposal.target_branch.isPersonTrustedReviewer(
-            proposal.source_branch.owner))
-        self.assertValidTransitions(set([
-                # It is always valid to go to the same state.
-                BranchMergeProposalStatus.MERGE_FAILED,
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.QUEUED]),
-            proposal, BranchMergeProposalStatus.MERGE_FAILED,
             proposal.source_branch.owner)
 
     def test_transitions_to_wip_resets_reviewer(self):
@@ -454,19 +406,6 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         self.target_branch = self.factory.makeProductBranch()
         login_person(self.target_branch.owner)
 
-    def test_set_status_approved_to_queued(self):
-        # setState can change an approved merge proposal to Work In Progress,
-        # which will set the revision id to the reviewed revision id if not
-        # supplied.
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=BranchMergeProposalStatus.CODE_APPROVED)
-        proposal.approveBranch(proposal.target_branch.owner, '250')
-        proposal.setStatus(BranchMergeProposalStatus.QUEUED)
-        self.assertEqual(proposal.queue_status,
-            BranchMergeProposalStatus.QUEUED)
-        self.assertEqual(proposal.queued_revision_id, '250')
-
     def test_set_status_approved_to_work_in_progress(self):
         # setState can change an approved merge proposal to Work In Progress.
         proposal = self.factory.makeBranchMergeProposal(
@@ -475,18 +414,6 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal.setStatus(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.WORK_IN_PROGRESS)
-
-    def test_set_status_queued_to_merge_failed(self):
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=BranchMergeProposalStatus.QUEUED)
-        proposal.setStatus(BranchMergeProposalStatus.MERGE_FAILED)
-        self.assertEqual(proposal.queue_status,
-            BranchMergeProposalStatus.MERGE_FAILED)
-        self.assertEqual(proposal.queuer, None)
-        self.assertEqual(proposal.queued_revision_id, None)
-        self.assertEqual(proposal.date_queued, None)
-        self.assertEqual(proposal.queue_position, None)
 
     def test_set_status_wip_to_needs_review(self):
         # setState can change the merge proposal to Needs Review.
@@ -508,18 +435,6 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.CODE_APPROVED)
         self.assertEqual(proposal.reviewed_revision_id, '500')
-
-    def test_set_status_wip_to_queued(self):
-        # setState can change the merge proposal to Queued, which will
-        # also set the queued_revision_id to the specified revision id.
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch,
-            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setStatus(BranchMergeProposalStatus.QUEUED,
-            user=self.target_branch.owner, revision_id='250')
-        self.assertEqual(proposal.queue_status,
-            BranchMergeProposalStatus.QUEUED)
-        self.assertEqual(proposal.queued_revision_id, '250')
 
     def test_set_status_wip_to_rejected(self):
         # setState can change the merge proposal to Rejected, which also
@@ -616,7 +531,7 @@ class TestCreateCommentNotifications(TestCaseWithFactory):
         commenter = self.factory.makePerson()
         login_person(commenter)
         result, events = self.assertNotifies(
-            NewCodeReviewCommentEvent,
+            ObjectCreatedEvent, False,
             merge_proposal.createComment,
             owner=commenter,
             subject='A review.')
@@ -756,14 +671,13 @@ class TestMergeProposalNotification(TestCaseWithFactory):
     def test_notifyOnCreate_needs_review(self):
         # When a merge proposal is created needing review, the
         # BranchMergeProposalNeedsReviewEvent is raised as well as the usual
-        # NewBranchMergeProposalEvent.
+        # ObjectCreatedEvent.
         source_branch = self.factory.makeProductBranch()
         target_branch = self.factory.makeProductBranch(
             product=source_branch.product)
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
-            [NewBranchMergeProposalEvent,
-             BranchMergeProposalNeedsReviewEvent],
+            [ObjectCreatedEvent, BranchMergeProposalNeedsReviewEvent], False,
             source_branch.addLandingTarget, registrant, target_branch,
             needs_review=True)
         self.assertEqual(result, events[0].object)
@@ -776,7 +690,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             product=source_branch.product)
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
-            [NewBranchMergeProposalEvent],
+            [ObjectCreatedEvent], False,
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, events[0].object)
 
@@ -787,7 +701,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         with person_logged_in(bmp.registrant):
             self.assertNotifies(
-                [BranchMergeProposalNeedsReviewEvent],
+                [BranchMergeProposalNeedsReviewEvent], False,
                 bmp.setStatus, BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def test_needs_review_no_op(self):
@@ -1023,6 +937,151 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         self.assertIn(charlie, recipients)
 
 
+class TestMergeProposalWebhooksMixin:
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMergeProposalWebhooksMixin, self).setUp()
+        self.useFixture(FeatureFixture(
+            {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: "on"}))
+
+    @staticmethod
+    def getURL(obj):
+        if obj is not None:
+            return canonical_url(obj, force_local_path=True)
+        else:
+            return None
+
+    @classmethod
+    def getExpectedPayload(cls, proposal):
+        payload = {
+            "registrant": "/~%s" % proposal.registrant.name,
+            "source_branch": cls.getURL(proposal.source_branch),
+            "source_git_repository": cls.getURL(
+                proposal.source_git_repository),
+            "source_git_path": proposal.source_git_path,
+            "target_branch": cls.getURL(proposal.target_branch),
+            "target_git_repository": cls.getURL(
+                proposal.target_git_repository),
+            "target_git_path": proposal.target_git_path,
+            "prerequisite_branch": cls.getURL(proposal.prerequisite_branch),
+            "prerequisite_git_repository": cls.getURL(
+                proposal.prerequisite_git_repository),
+            "prerequisite_git_path": proposal.prerequisite_git_path,
+            "queue_status": proposal.queue_status.title,
+            "commit_message": proposal.commit_message,
+            "whiteboard": proposal.whiteboard,
+            "description": proposal.description,
+            "preview_diff": cls.getURL(proposal.preview_diff),
+            }
+        return {k: Equals(v) for k, v in payload.items()}
+
+    def assertCorrectDelivery(self, expected_payload, hook, delivery):
+        self.assertThat(
+            delivery, MatchesStructure(
+                event_type=Equals("merge-proposal:0.1"),
+                payload=MatchesDict(expected_payload)))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
+
+    def test_create_triggers_webhooks(self):
+        # When a merge proposal is created, any relevant webhooks are
+        # triggered.
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
+        registrant = self.factory.makePerson()
+        hook = self.factory.makeWebhook(
+            target=self.getWebhookTarget(target),
+            event_types=["merge-proposal:0.1"])
+        proposal = source.addLandingTarget(
+            registrant, target, needs_review=True)
+        login_person(target.owner)
+        delivery = hook.deliveries.one()
+        expected_payload = {
+            "merge_proposal": Equals(self.getURL(proposal)),
+            "action": Equals("created"),
+            "new": MatchesDict(self.getExpectedPayload(proposal)),
+            }
+        self.assertCorrectDelivery(expected_payload, hook, delivery)
+
+    def test_modify_triggers_webhooks(self):
+        # When an existing merge proposal is modified, any relevant webhooks
+        # are triggered.
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
+        registrant = self.factory.makePerson()
+        proposal = source.addLandingTarget(
+            registrant, target, needs_review=True)
+        hook = self.factory.makeWebhook(
+            target=self.getWebhookTarget(target),
+            event_types=["merge-proposal:0.1"])
+        login_person(target.owner)
+        expected_payload = {
+            "merge_proposal": Equals(self.getURL(proposal)),
+            "action": Equals("modified"),
+            "old": MatchesDict(self.getExpectedPayload(proposal)),
+            }
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.setStatus(
+                BranchMergeProposalStatus.CODE_APPROVED, user=target.owner)
+            proposal.description = "An excellent proposal."
+        expected_payload["new"] = MatchesDict(
+            self.getExpectedPayload(proposal))
+        delivery = hook.deliveries.one()
+        self.assertCorrectDelivery(expected_payload, hook, delivery)
+
+    def test_delete_triggers_webhooks(self):
+        # When an existing merge proposal is deleted, any relevant webhooks
+        # are triggered.
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
+        registrant = self.factory.makePerson()
+        proposal = source.addLandingTarget(
+            registrant, target, needs_review=True)
+        hook = self.factory.makeWebhook(
+            target=self.getWebhookTarget(target),
+            event_types=["merge-proposal:0.1"])
+        login_person(target.owner)
+        expected_payload = {
+            "merge_proposal": Equals(self.getURL(proposal)),
+            "action": Equals("deleted"),
+            "old": MatchesDict(self.getExpectedPayload(proposal)),
+            }
+        proposal.deleteProposal()
+        delivery = hook.deliveries.one()
+        self.assertCorrectDelivery(expected_payload, hook, delivery)
+
+
+class TestMergeProposalWebhooksBzr(
+    TestMergeProposalWebhooksMixin, TestCaseWithFactory):
+
+    def makeBranch(self, same_target_as=None):
+        kwargs = {}
+        if same_target_as is not None:
+            kwargs["product"] = same_target_as.product
+        return self.factory.makeProductBranch(**kwargs)
+
+    def getWebhookTarget(self, branch):
+        return branch
+
+
+class TestMergeProposalWebhooksGit(
+    TestMergeProposalWebhooksMixin, TestCaseWithFactory):
+
+    def makeBranch(self, same_target_as=None):
+        kwargs = {}
+        if same_target_as is not None:
+            kwargs["target"] = same_target_as.target
+        return self.factory.makeGitRefs(**kwargs)[0]
+
+    def getWebhookTarget(self, branch):
+        return branch.repository
+
+
 class TestGetAddress(TestCaseWithFactory):
     """Test that the address property gives expected results."""
 
@@ -1088,6 +1147,8 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
     def test_activeProposalsForBranches_different_states(self):
         """Only proposals for active states are returned."""
         for state in BranchMergeProposalStatus.items:
+            if state in OBSOLETE_STATES:
+                continue
             mp = self.factory.makeBranchMergeProposal(set_state=state)
             active = BranchMergeProposalGetter.activeProposalsForBranches(
                 mp.source_branch, mp.target_branch)
@@ -1130,8 +1191,8 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             registrant = owner
         bmp = branch.addLandingTarget(
             registrant=registrant,
-            target_branch=self.factory.makeProductBranch(product=product,
-            owner=owner))
+            merge_target=self.factory.makeProductBranch(
+                product=product, owner=owner))
         if needs_review:
             bmp.requestReview()
         return bmp
@@ -1320,49 +1381,48 @@ class TestBranchMergeProposalDeletion(TestCaseWithFactory):
             SQLObjectNotFound, BranchMergeProposalJob.get, job_id)
 
 
-class TestBranchMergeProposalBugs(TestCaseWithFactory):
+class TestBranchMergeProposalBugsMixin:
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchMergeProposalBugsMixin, self).setUp()
         self.user = self.factory.makePerson()
         login_person(self.user)
 
+    def test_bugs(self):
+        # bugs includes all linked bugs.
+        bmp = self._makeBranchMergeProposal()
+        self.assertEqual([], bmp.bugs)
+        bugs = [self.factory.makeBug() for _ in range(2)]
+        bmp.linkBug(bugs[0], bmp.registrant)
+        self.assertEqual([bugs[0]], bmp.bugs)
+        bmp.linkBug(bugs[1], bmp.registrant)
+        self.assertContentEqual(bugs, bmp.bugs)
+        bmp.unlinkBug(bugs[0], bmp.registrant)
+        self.assertEqual([bugs[1]], bmp.bugs)
+        bmp.unlinkBug(bugs[1], bmp.registrant)
+        self.assertEqual([], bmp.bugs)
+
     def test_related_bugtasks_includes_source_bugtasks(self):
-        """related_bugtasks includes bugtasks linked to the source branch."""
-        bmp = self.factory.makeBranchMergeProposal()
-        source_branch = bmp.source_branch
+        # related_bugtasks includes bugtasks linked to the source branch in
+        # the Bazaar case, or directly to the MP in the Git case.
+        bmp = self._makeBranchMergeProposal()
         bug = self.factory.makeBug()
-        source_branch.linkBug(bug, bmp.registrant)
+        bmp.linkBug(bug, bmp.registrant)
         self.assertEqual(
             bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
 
-    def test_related_bugtasks_excludes_target_bugs(self):
-        """related_bugtasks ignores bugs linked to the source branch."""
-        bmp = self.factory.makeBranchMergeProposal()
-        bug = self.factory.makeBug()
-        bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
-
-    def test_related_bugtasks_excludes_mutual_bugs(self):
-        """related_bugtasks ignores bugs linked to both branches."""
-        bmp = self.factory.makeBranchMergeProposal()
-        bug = self.factory.makeBug()
-        bmp.source_branch.linkBug(bug, bmp.registrant)
-        bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
-
     def test_related_bugtasks_excludes_private_bugs(self):
-        """related_bugtasks ignores private bugs for non-authorised users."""
-        bmp = self.factory.makeBranchMergeProposal()
+        # related_bugtasks ignores private bugs for non-authorised users.
+        bmp = self._makeBranchMergeProposal()
         bug = self.factory.makeBug()
-        bmp.source_branch.linkBug(bug, bmp.registrant)
+        bmp.linkBug(bug, bmp.registrant)
         person = self.factory.makePerson()
         with person_logged_in(person):
             private_bug = self.factory.makeBug(
                 owner=person, information_type=InformationType.USERDATA)
-            bmp.source_branch.linkBug(private_bug, person)
+            bmp.linkBug(private_bug, person)
             private_tasks = private_bug.bugtasks
         self.assertEqual(
             bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
@@ -1370,6 +1430,171 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         all_bugtasks.extend(private_tasks)
         self.assertEqual(
             all_bugtasks, list(bmp.getRelatedBugTasks(person)))
+
+
+class TestBranchMergeProposalBugsBzr(
+    TestBranchMergeProposalBugsMixin, TestCaseWithFactory):
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposal()
+
+    def test_related_bugtasks_excludes_target_bugs(self):
+        # related_bugtasks ignores bugs linked to the target branch.
+        bmp = self._makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+    def test_related_bugtasks_excludes_mutual_bugs(self):
+        # related_bugtasks ignores bugs linked to both branches.
+        bmp = self._makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+
+class TestBranchMergeProposalBugsGit(
+    TestBranchMergeProposalBugsMixin, TestCaseWithFactory):
+
+    def setUp(self):
+        super(TestBranchMergeProposalBugsGit, self).setUp()
+        self.hosting_fixture = self.useFixture(GitHostingFixture(
+            disable_memcache=False))
+        self.memcache_fixture = self.useFixture(MemcacheFixture())
+
+    def _makeBranchMergeProposal(self):
+        return self.factory.makeBranchMergeProposalForGit()
+
+    def test__fetchRelatedBugIDsFromSource(self):
+        # _fetchRelatedBugIDsFromSource makes a reasonable backend call and
+        # parses commit messages.
+        bugs = [self.factory.makeBug() for _ in range(3)]
+        bmp = self._makeBranchMergeProposal()
+        self.hosting_fixture.getLog.result = [
+            {
+                u"sha1": bmp.source_git_commit_sha1,
+                u"message": u"Commit 1\n\nLP: #%d" % bugs[0].id,
+                },
+            {
+                u"sha1": unicode(hashlib.sha1("1").hexdigest()),
+                # Will not be matched.
+                u"message": u"Commit 2; see LP #%d" % bugs[1].id,
+                },
+            {
+                u"sha1": unicode(hashlib.sha1("2").hexdigest()),
+                u"message": u"Commit 3; LP: #%d" % bugs[2].id,
+                },
+            {
+                u"sha1": unicode(hashlib.sha1("3").hexdigest()),
+                # Non-existent bug ID will not be returned.
+                u"message": u"Non-existent bug; LP: #%d" % (bugs[2].id + 100),
+                },
+            ]
+        related_bugs = bmp._fetchRelatedBugIDsFromSource()
+        path = "%s:%s" % (
+            bmp.target_git_repository.getInternalPath(),
+            bmp.source_git_repository.getInternalPath())
+        self.assertEqual(
+            [((path, bmp.source_git_commit_sha1),
+              {"limit": 10, "stop": bmp.target_git_commit_sha1,
+               "logger": None})],
+            self.hosting_fixture.getLog.calls)
+        self.assertContentEqual([bugs[0].id, bugs[2].id], related_bugs)
+
+    def _setUpLog(self, bugs):
+        """Set up a fake log response referring to the given bugs."""
+        self.hosting_fixture.getLog.result = [
+            {
+                u"sha1": unicode(hashlib.sha1(str(i)).hexdigest()),
+                u"message": u"LP: #%d" % bug.id,
+                }
+            for i, bug in enumerate(bugs)]
+        self.memcache_fixture.clear()
+
+    def test_updateRelatedBugsFromSource_no_links(self):
+        # updateRelatedBugsFromSource does nothing if there are no related
+        # bugs in either the database or the source branch.
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([], bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_new_links(self):
+        # If the source branch has related bugs not yet reflected in the
+        # database, updateRelatedBugsFromSource creates the links.
+        bugs = [self.factory.makeBug() for _ in range(3)]
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bugs[0]])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bugs[0]], bmp.bugs)
+        self._setUpLog(bugs)
+        bmp.updateRelatedBugsFromSource()
+        self.assertContentEqual(bugs, bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_same_links(self):
+        # If the database and the source branch list the same related bugs,
+        # updateRelatedBugsFromSource does nothing.
+        bug = self.factory.makeBug()
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bug])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+        # The second run is a no-op.
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_removes_old_links(self):
+        # If the database records a source-branch-originating related bug
+        # that is no longer listed by the source branch,
+        # updateRelatedBugsFromSource removes the link.
+        bug = self.factory.makeBug()
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bug])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+        self._setUpLog([])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([], bmp.bugs)
+
+    def test_updateRelatedBugsFromSource_leaves_manual_links(self):
+        # If a bug was linked to the merge proposal manually,
+        # updateRelatedBugsFromSource leaves the link alone regardless of
+        # whether it is listed by the source branch.
+        bug = self.factory.makeBug()
+        bmp = self._makeBranchMergeProposal()
+        bmp.linkBug(bug)
+        self._setUpLog([])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bug], bmp.bugs)
+        matches_expected_xref = MatchesDict(
+            {(u"bug", unicode(bug.id)): ContainsDict({"metadata": Is(None)})})
+        self.assertThat(
+            getUtility(IXRefSet).findFrom(
+                (u"merge_proposal", unicode(bmp.id)), types=[u"bug"]),
+            matches_expected_xref)
+        self._setUpLog([bug])
+        self.assertThat(
+            getUtility(IXRefSet).findFrom(
+                (u"merge_proposal", unicode(bmp.id)), types=[u"bug"]),
+            matches_expected_xref)
+
+    def test_updateRelatedBugsFromSource_honours_limit(self):
+        # If the number of bugs to be linked exceeds the configured limit,
+        # updateRelatedBugsFromSource only links that many bugs and logs an
+        # OOPS.
+        self.pushConfig("codehosting", related_bugs_from_source_limit=3)
+        bugs = [self.factory.makeBug() for _ in range(5)]
+        bmp = self._makeBranchMergeProposal()
+        self._setUpLog([bugs[0]])
+        bmp.updateRelatedBugsFromSource()
+        self.assertEqual([bugs[0]], bmp.bugs)
+        self.assertEqual([], self.oopses)
+        self._setUpLog(bugs)
+        bmp.updateRelatedBugsFromSource()
+        self.assertContentEqual(bugs[:3], bmp.bugs)
+        self.assertEqual(1, len(self.oopses))
+        self.assertEqual("TooManyRelatedBugs", self.oopses[0]["type"])
 
 
 class TestNotifyModified(TestCaseWithFactory):
@@ -1384,14 +1609,11 @@ class TestNotifyModified(TestCaseWithFactory):
         """
         bmp = self.factory.makeBranchMergeProposal()
         login_person(bmp.target_branch.owner)
-        # Approve branch to prevent enqueue from approving it, which would
-        # generate an undesired event.
-        bmp.approveBranch(bmp.target_branch.owner, revision_id='abc')
         self.assertNotifies(
-            ObjectModifiedEvent, notify_modified, bmp, bmp.enqueue,
-            bmp.target_branch.owner, revision_id='abc')
-        self.assertEqual(BranchMergeProposalStatus.QUEUED, bmp.queue_status)
-        self.assertEqual('abc', bmp.queued_revision_id)
+            ObjectModifiedEvent, False, notify_modified, bmp, bmp.markAsMerged,
+            merge_reporter=bmp.target_branch.owner)
+        self.assertEqual(BranchMergeProposalStatus.MERGED, bmp.queue_status)
+        self.assertEqual(bmp.target_branch.owner, bmp.merge_reporter)
 
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
@@ -1408,7 +1630,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         result, events = self.assertNotifies(
-            ReviewerNominatedEvent,
+            ReviewerNominatedEvent, False,
             merge_proposal.nominateReviewer,
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner)
@@ -1782,6 +2004,13 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         revised = original.resubmit(original.registrant, description='foo')
         self.assertEqual('foo', revised.description)
 
+    def test_resubmit_preserves_commit(self):
+        """Resubmit preserves commit message."""
+        original = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(original.registrant))
+        revised = original.resubmit(original.registrant)
+        self.assertEqual(original.commit_message, revised.commit_message)
+
     def test_resubmit_breaks_link(self):
         """Resubmit breaks link, if specified."""
         original = self.factory.makeBranchMergeProposal()
@@ -1835,7 +2064,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             "--- sample\t2009-01-15 23:44:22 +0000\n"
             "+++ sample\t2009-01-29 04:10:57 +0000\n"
             "@@ -19,7 +19,7 @@\n"
-            " from zope.interface import implements\n"
+            " from zope.interface import implementer\n"
             "\n"
             " from storm.expr import Desc, Join, LeftJoin\n"
             "-from storm.references import Reference\n"
@@ -2072,12 +2301,12 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
-class TestBranchMergeProposalInlineCommentsBase(TestCaseWithFactory):
+class TestBranchMergeProposalInlineComments(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestBranchMergeProposalInlineCommentsBase, self).setUp()
+        super(TestBranchMergeProposalInlineComments, self).setUp()
         # Create a testing IPerson, IPreviewDiff and IBranchMergeProposal
         # for tests. Log in as the testing IPerson.
         self.person = self.factory.makePerson()
@@ -2104,46 +2333,6 @@ class TestBranchMergeProposalInlineCommentsBase(TestCaseWithFactory):
         return self.bmp.getDraftInlineComments(
             previewdiff_id, person)
 
-
-class TestBranchMergeProposalInlineCommentsDisabled(
-        TestBranchMergeProposalInlineCommentsBase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_save_drafts(self):
-        # 'saveDraftInlineComment' does not record draft inline comments
-        # if the corresponding feature-flag is not set.
-        self.bmp.saveDraftInlineComment(
-            previewdiff_id=self.previewdiff.id,
-            person=self.person,
-            comments={'10': 'No game'})
-        self.assertIsNone(self.getDraft())
-
-    def test_publish(self):
-        # `createComment` does not publish given inline comments
-        # if the corresponding feature-flag is not set. The MP comment
-        # is created. The MP comment itself is recorded.
-        self.bmp.createComment(
-            owner=self.bmp.registrant,
-            subject='Testing!',
-            previewdiff_id=self.previewdiff.id,
-            inline_comments={'11': 'foo'},
-        )
-        self.assertEqual(0, len(self.getInlineComments()))
-        self.assertEqual(1, self.bmp.all_comments.count())
-
-
-class TestBranchMergeProposalInlineCommentsEnabled(
-        TestBranchMergeProposalInlineCommentsBase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestBranchMergeProposalInlineCommentsEnabled, self).setUp()
-        # Enabled corresponding feature flag.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
     def test_save_drafts(self):
         # Draft inline comments, passed as a dictionary keyed by diff line
         # number, can be stored for the current user using
@@ -2167,9 +2356,8 @@ class TestBranchMergeProposalInlineCommentsEnabled(
             DiffNotFound, self.bmp.saveDraftInlineComment, **kwargs)
 
     def test_publish(self):
-        # Existing (draft) inline comments can only be published associated
-        # with an `ICodeReviewComment` if the feature flag
-        # 'code.inline_diff_comments.enabled' is set.
+        # Existing (draft) inline comments can be published associated
+        # with an `ICodeReviewComment`.
         self.bmp.createComment(
             owner=self.bmp.registrant,
             subject='Testing!',
@@ -2314,11 +2502,21 @@ class TestWebservice(WebServiceTestCase):
             [mp], list(target.getMergeProposals(
                 status=['Merged'], merged_revnos=[123])))
 
-    def test_getRelatedBugTasks(self):
-        """Test the getRelatedBugTasks API."""
+    def test_getRelatedBugTasks_bzr(self):
+        """Test the getRelatedBugTasks API for Bazaar."""
         db_bmp = self.factory.makeBranchMergeProposal()
         db_bug = self.factory.makeBug()
         db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+        transaction.commit()
+        bmp = self.wsObject(db_bmp)
+        bugtask = self.wsObject(db_bug.default_bugtask)
+        self.assertEqual([bugtask], list(bmp.getRelatedBugTasks()))
+
+    def test_getRelatedBugTasks_git(self):
+        """Test the getRelatedBugTasks API for Git."""
+        db_bmp = self.factory.makeBranchMergeProposalForGit()
+        db_bug = self.factory.makeBug()
+        db_bmp.linkBug(db_bug, db_bmp.registrant)
         transaction.commit()
         bmp = self.wsObject(db_bmp)
         bugtask = self.wsObject(db_bug.default_bugtask)
@@ -2346,11 +2544,6 @@ class TestWebservice(WebServiceTestCase):
 
     def test_saveDraftInlineComment_with_no_previewdiff(self):
         # Failure on context diff mismatch.
-
-        # Enabled inline_diff feature.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         bmp = self.factory.makeBranchMergeProposal()
         ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
 
@@ -2362,11 +2555,6 @@ class TestWebservice(WebServiceTestCase):
         # Creating and retrieving draft inline comments.
         # These operations require an logged in user with permission
         # to view the BMP.
-
-        # Enabled inline_diff feature.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         previewdiff = self.factory.makePreviewDiff()
         proposal = previewdiff.branch_merge_proposal
 
@@ -2382,11 +2570,6 @@ class TestWebservice(WebServiceTestCase):
 
     def test_getInlineComment(self):
         # Publishing and retrieving inline comments.
-
-        # Enabled inline_diff feature.
-        self.useContext(feature_flags())
-        set_feature_flag(u'code.inline_diff_comments.enabled', u'enabled')
-
         previewdiff = self.factory.makePreviewDiff()
         proposal = previewdiff.branch_merge_proposal
         user = proposal.target_branch.owner

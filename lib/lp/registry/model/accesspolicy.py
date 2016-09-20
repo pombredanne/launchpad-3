@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model classes for pillar and artifact access policies."""
@@ -32,7 +32,7 @@ from storm.properties import (
 from storm.references import Reference
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import (
     InformationType,
@@ -88,8 +88,8 @@ def reconcile_access_for_artifact(artifact, information_type, pillars,
     apasource.delete(existing_links - wanted_links)
 
 
+@implementer(IAccessArtifact)
 class AccessArtifact(StormBase):
-    implements(IAccessArtifact)
 
     __storm_table__ = 'AccessArtifact'
 
@@ -98,12 +98,16 @@ class AccessArtifact(StormBase):
     bug = Reference(bug_id, 'Bug.id')
     branch_id = Int(name='branch')
     branch = Reference(branch_id, 'Branch.id')
+    gitrepository_id = Int(name='gitrepository')
+    gitrepository = Reference(gitrepository_id, 'GitRepository.id')
     specification_id = Int(name='specification')
     specification = Reference(specification_id, 'Specification.id')
 
     @property
     def concrete_artifact(self):
-        artifact = self.bug or self.branch or self.specification
+        artifact = (
+            self.bug or self.branch or self.gitrepository or
+            self.specification)
         return artifact
 
     @classmethod
@@ -111,10 +115,13 @@ class AccessArtifact(StormBase):
         from lp.blueprints.interfaces.specification import ISpecification
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
+        from lp.code.interfaces.gitrepository import IGitRepository
         if IBug.providedBy(concrete_artifact):
             col = cls.bug
         elif IBranch.providedBy(concrete_artifact):
             col = cls.branch
+        elif IGitRepository.providedBy(concrete_artifact):
+            col = cls.gitrepository
         elif ISpecification.providedBy(concrete_artifact):
             col = cls.specification
         else:
@@ -137,6 +144,7 @@ class AccessArtifact(StormBase):
         from lp.blueprints.interfaces.specification import ISpecification
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
+        from lp.code.interfaces.gitrepository import IGitRepository
 
         existing = list(cls.find(concrete_artifacts))
         if len(existing) == len(concrete_artifacts):
@@ -150,15 +158,17 @@ class AccessArtifact(StormBase):
         insert_values = []
         for concrete in needed:
             if IBug.providedBy(concrete):
-                insert_values.append((concrete, None, None))
+                insert_values.append((concrete, None, None, None))
             elif IBranch.providedBy(concrete):
-                insert_values.append((None, concrete, None))
+                insert_values.append((None, concrete, None, None))
+            elif IGitRepository.providedBy(concrete):
+                insert_values.append((None, None, concrete, None))
             elif ISpecification.providedBy(concrete):
-                insert_values.append((None, None, concrete))
+                insert_values.append((None, None, None, concrete))
             else:
                 raise ValueError("%r is not a supported artifact" % concrete)
         new = create(
-            (cls.bug, cls.branch, cls.specification),
+            (cls.bug, cls.branch, cls.gitrepository, cls.specification),
             insert_values, get_objects=True)
         return list(existing) + new
 
@@ -174,8 +184,8 @@ class AccessArtifact(StormBase):
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
+@implementer(IAccessPolicy)
 class AccessPolicy(StormBase):
-    implements(IAccessPolicy)
 
     __storm_table__ = 'AccessPolicy'
 
@@ -269,8 +279,8 @@ class AccessPolicy(StormBase):
         cls.find(pillars_and_types).remove()
 
 
+@implementer(IAccessPolicyArtifact)
 class AccessPolicyArtifact(StormBase):
-    implements(IAccessPolicyArtifact)
 
     __storm_table__ = 'AccessPolicyArtifact'
     __storm_primary__ = 'abstract_artifact_id', 'policy_id'
@@ -322,8 +332,8 @@ class AccessPolicyArtifact(StormBase):
         cls.findByArtifact(artifacts).remove()
 
 
+@implementer(IAccessArtifactGrant)
 class AccessArtifactGrant(StormBase):
-    implements(IAccessArtifactGrant)
 
     __storm_table__ = 'AccessArtifactGrant'
     __storm_primary__ = 'abstract_artifact_id', 'grantee_id'
@@ -374,8 +384,8 @@ class AccessArtifactGrant(StormBase):
         cls.findByArtifact(artifacts, grantees).remove()
 
 
+@implementer(IAccessPolicyGrant)
 class AccessPolicyGrant(StormBase):
-    implements(IAccessPolicyGrant)
 
     __storm_table__ = 'AccessPolicyGrant'
     __storm_primary__ = 'policy_id', 'grantee_id'

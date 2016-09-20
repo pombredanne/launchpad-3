@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test harness for running the new-login.txt tests."""
 
@@ -33,7 +33,12 @@ from openid.extensions import (
     sreg,
     )
 from openid.yadis.discover import DiscoveryFailure
-from testtools.matchers import Contains
+from testtools.matchers import (
+    Contains,
+    ContainsDict,
+    Equals,
+    MatchesListwise,
+    )
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -51,6 +56,10 @@ from lp.services.identity.interfaces.account import (
     IAccountSet,
     )
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.openid.extensions.macaroon import (
+    MacaroonRequest,
+    MacaroonResponse,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.interfaces import ILaunchpadApplication
@@ -88,12 +97,13 @@ from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 class FakeOpenIDResponse:
 
     def __init__(self, identity_url, status=SUCCESS, message='', email=None,
-                 full_name=None):
+                 full_name=None, discharge_macaroon_raw=None):
         self.message = message
         self.status = status
         self.identity_url = identity_url
         self.sreg_email = email
         self.sreg_fullname = full_name
+        self.discharge_macaroon_raw = discharge_macaroon_raw
 
 
 class StubbedOpenIDCallbackView(OpenIDCallbackView):
@@ -136,10 +146,29 @@ def SRegResponse_fromSuccessResponse_stubbed():
     # FakeOpenIDResponses instead of real ones.
     sreg.SRegResponse.fromSuccessResponse = classmethod(
         sregFromFakeSuccessResponse)
+    try:
+        yield
+    finally:
+        sreg.SRegResponse.fromSuccessResponse = orig_method
 
-    yield
 
-    sreg.SRegResponse.fromSuccessResponse = orig_method
+@contextmanager
+def MacaroonResponse_fromSuccessResponse_stubbed():
+
+    def macaroonFromFakeSuccessResponse(cls, success_response,
+                                        signed_only=True):
+        return MacaroonResponse(
+            discharge_macaroon_raw=success_response.discharge_macaroon_raw)
+
+    orig_method = MacaroonResponse.fromSuccessResponse
+    # Use a stub MacaroonResponse.fromSuccessResponse that works with
+    # FakeOpenIDResponses instead of real ones.
+    MacaroonResponse.fromSuccessResponse = classmethod(
+        macaroonFromFakeSuccessResponse)
+    try:
+        yield
+    finally:
+        MacaroonResponse.fromSuccessResponse = orig_method
 
 
 @contextmanager
@@ -183,10 +212,10 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             openid_response, view_class=view_class)
 
     def _createAndRenderView(self, response,
-                             view_class=StubbedOpenIDCallbackView):
-        request = LaunchpadTestRequest(
-            form={'starting_url': 'http://launchpad.dev/after-login'},
-            environ={'PATH_INFO': '/'})
+                             view_class=StubbedOpenIDCallbackView, form=None):
+        if form is None:
+            form = {'starting_url': 'http://launchpad.dev/after-login'}
+        request = LaunchpadTestRequest(form=form, environ={'PATH_INFO': '/'})
         # The layer we use sets up an interaction (by calling login()), but we
         # want to use our own request in the interaction, so we logout() and
         # setup a newInteraction() using our request.
@@ -456,6 +485,73 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             'No email address or full name found in sreg response',
             main_content)
 
+    def test_discharge_macaroon(self):
+        # If a discharge macaroon was requested and received, the view
+        # returns a form that submits it to the starting URL.
+        test_email = 'test-example@example.com'
+        person = self.factory.makePerson(email=test_email)
+        identifier = ITestOpenIDPersistentIdentity(
+            person.account).openid_identity_url
+        openid_response = FakeOpenIDResponse(
+            identifier, status=SUCCESS, message='', email=test_email,
+            full_name='Foo User', discharge_macaroon_raw='dummy discharge')
+        form = {
+            'starting_url': 'http://launchpad.dev/after-login',
+            'discharge_macaroon_action': 'field.actions.complete',
+            'discharge_macaroon_field': 'field.discharge_macaroon',
+            }
+        with SRegResponse_fromSuccessResponse_stubbed():
+            with MacaroonResponse_fromSuccessResponse_stubbed():
+                view, html = self._createAndRenderView(
+                    openid_response, form=form)
+        self.assertTrue(view.login_called)
+        self.assertEqual('dummy discharge', view.discharge_macaroon_raw)
+        discharge_form = find_tag_by_id(html, 'discharge-form')
+        self.assertEqual(form['starting_url'], discharge_form['action'])
+        self.assertThat(
+            [dict(tag.attrs) for tag in discharge_form.findAll('input')],
+            MatchesListwise([
+                ContainsDict({
+                    'type': Equals('hidden'),
+                    'name': Equals('field.actions.complete'),
+                    'value': Equals('1'),
+                    }),
+                ContainsDict({
+                    'type': Equals('hidden'),
+                    'name': Equals('field.discharge_macaroon'),
+                    'value': Equals('dummy discharge'),
+                    }),
+                ContainsDict({
+                    'type': Equals('submit'),
+                    'value': Equals('Continue'),
+                    }),
+                ]))
+
+    def test_discharge_macaroon_missing(self):
+        # If a discharge macaroon was requested but not received, the login
+        # error page is shown.
+        test_email = 'test-example@example.com'
+        person = self.factory.makePerson(email=test_email)
+        identifier = ITestOpenIDPersistentIdentity(
+            person.account).openid_identity_url
+        openid_response = FakeOpenIDResponse(
+            identifier, status=SUCCESS, message='', email=test_email,
+            full_name='Foo User')
+        form = {
+            'starting_url': 'http://launchpad.dev/after-login',
+            'discharge_macaroon_action': 'field.actions.complete',
+            'discharge_macaroon_field': 'field.discharge_macaroon',
+            }
+        with SRegResponse_fromSuccessResponse_stubbed():
+            with MacaroonResponse_fromSuccessResponse_stubbed():
+                view, html = self._createAndRenderView(
+                    openid_response, form=form)
+        self.assertFalse(view.login_called)
+        main_content = extract_text(find_main_content(html))
+        self.assertIn(
+            "OP didn't include a macaroon extension in the response.",
+            main_content)
+
     def test_negative_openid_assertion(self):
         # The OpenID provider responded with a negative assertion, so the
         # login error page is shown.
@@ -528,6 +624,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL,
             form={'starting_url': self.STARTING_URL})
+        view.initialize()
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -541,6 +638,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
             QUERY_STRING='starting_url=' + self.STARTING_URL)
+        view.initialize()
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -552,6 +650,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         # string values at all, then the application URL is used.
         view = OpenIDCallbackView(context=None, request=None)
         view.request = LaunchpadTestRequest(SERVER_URL=self.APPLICATION_URL)
+        view.initialize()
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -690,6 +789,7 @@ class ForwardsCorrectly:
     def match(self, query_string):
         args = dict(urlparse.parse_qsl(query_string))
         request = LaunchpadTestRequest(form=args)
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
@@ -735,6 +835,7 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # extension) to the OpenID provider so that we can automatically
         # register unseen OpenID identities.
         request = LaunchpadTestRequest()
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
@@ -754,6 +855,7 @@ class TestOpenIDLogin(TestCaseWithFactory):
         # a reauth URL parameter, which should add PAPE extension's
         # max_auth_age paramter.
         request = LaunchpadTestRequest(QUERY_STRING='reauth=1')
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
@@ -765,11 +867,43 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertIsInstance(pape_extension, pape.Request)
         self.assertEqual(0, pape_extension.max_auth_age)
 
+    def test_macaroon_extension_added_with_macaroon_query(self):
+        # We can signal that we need to acquire a discharge macaroon via a
+        # macaroon_caveat_id form parameter, which should add the macaroon
+        # extension.
+        caveat_id = 'ask SSO'
+        form = {
+            'macaroon_caveat_id': caveat_id,
+            'discharge_macaroon_action': 'field.actions.complete',
+            'discharge_macaroon_field': 'field.discharge_macaroon',
+            }
+        request = LaunchpadTestRequest(form=form, method='POST')
+        request.processInputs()
+        # This is a hack to make the request.getURL(1) call issued by the view
+        # not raise an IndexError.
+        request._app_names = ['foo']
+        view = StubbedOpenIDLogin(object(), request)
+        view()
+        extensions = view.openid_request.extensions
+        self.assertIsNot(None, extensions)
+        macaroon_extension = extensions[1]
+        self.assertIsInstance(macaroon_extension, MacaroonRequest)
+        self.assertEqual(caveat_id, macaroon_extension.caveat_id)
+        return_to_args = dict(urlparse.parse_qsl(
+            urlparse.urlsplit(view.openid_request.return_to).query))
+        self.assertEqual(
+            'field.actions.complete',
+            return_to_args['discharge_macaroon_action'])
+        self.assertEqual(
+            'field.discharge_macaroon',
+            return_to_args['discharge_macaroon_field'])
+
     def test_logs_to_timeline(self):
         # Beginning an OpenID association makes an HTTP request to the
         # OP, so it's a potentially long action. It is logged to the
         # request timeline.
         request = LaunchpadTestRequest()
+        request.processInputs()
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']

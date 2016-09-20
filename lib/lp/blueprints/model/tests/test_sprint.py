@@ -45,9 +45,12 @@ class TestSpecifications(TestCaseWithFactory):
         if sprint is None:
             sprint = self.factory.makeSprint()
         blueprint = self.factory.makeSpecification(
-            title=title, status=status, name=name, priority=priority,
+            title=title, status=status, name=name,
             information_type=information_type)
-        link = blueprint.linkSprint(sprint, blueprint.owner)
+        owner = removeSecurityProxy(blueprint).owner
+        if priority is not None:
+            removeSecurityProxy(blueprint).priority = priority
+        link = removeSecurityProxy(blueprint).linkSprint(sprint, owner)
         naked_link = removeSecurityProxy(link)
         if declined:
             link.declineBy(sprint.owner)
@@ -191,29 +194,29 @@ class TestSpecifications(TestCaseWithFactory):
         # Proprietary blueprints are not listed for random users
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
-        self.assertEqual([], list_result(blueprint1.sprints[0]))
+        sprint = removeSecurityProxy(blueprint1).sprints[0]
+        self.assertEqual([], list_result(sprint))
 
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
+        sprint = removeSecurityProxy(blueprint1).sprints[0]
         grant = self.factory.makeAccessArtifactGrant(
             concrete_artifact=blueprint1)
-        self.assertEqual(
-            [blueprint1],
-            list_result(blueprint1.sprints[0], user=grant.grantee))
+        self.assertEqual([blueprint1], list_result(sprint, user=grant.grantee))
 
     def test_proprietary_listed_for_policy_grant(self):
         # Proprietary blueprints are listed for users with a policy grant.
         blueprint1 = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
+        sprint = removeSecurityProxy(blueprint1).sprints[0]
         policy_source = getUtility(IAccessPolicySource)
         (policy,) = policy_source.find(
-            [(blueprint1.product, InformationType.PROPRIETARY)])
+            [(removeSecurityProxy(blueprint1).product,
+              InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
-        self.assertEqual(
-            [blueprint1],
-            list_result(blueprint1.sprints[0], user=grant.grantee))
+        self.assertEqual([blueprint1], list_result(sprint, user=grant.grantee))
 
 
 class TestSprintAttendancesSort(TestCaseWithFactory):

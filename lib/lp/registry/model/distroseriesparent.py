@@ -17,7 +17,7 @@ from storm.locals import (
     SQL,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
@@ -31,9 +31,9 @@ from lp.services.database.interfaces import (
     )
 
 
+@implementer(IDistroSeriesParent)
 class DistroSeriesParent(Storm):
     """See `IDistroSeriesParent`."""
-    implements(IDistroSeriesParent)
     __storm_table__ = 'DistroSeriesParent'
 
     id = Int(primary=True)
@@ -47,6 +47,7 @@ class DistroSeriesParent(Storm):
     initialized = Bool(allow_none=False)
 
     is_overlay = Bool(allow_none=False, default=False)
+    inherit_overrides = Bool(allow_none=False, default=False)
 
     pocket = EnumCol(
         dbName='pocket', notNull=False,
@@ -58,13 +59,14 @@ class DistroSeriesParent(Storm):
     ordering = Int(allow_none=False, default=1)
 
 
+@implementer(IDistroSeriesParentSet)
 class DistroSeriesParentSet:
     """See `IDistroSeriesParentSet`."""
-    implements(IDistroSeriesParentSet)
     title = "Cross reference of parent and derived distroseries."
 
     def new(self, derived_series, parent_series, initialized,
-            is_overlay=False, pocket=None, component=None, ordering=1):
+            is_overlay=False, inherit_overrides=False, pocket=None,
+            component=None, ordering=1):
         """Make and return a new `DistroSeriesParent`."""
         store = IMasterStore(DistroSeriesParent)
         dsp = DistroSeriesParent()
@@ -72,6 +74,7 @@ class DistroSeriesParentSet:
         dsp.parent_series = parent_series
         dsp.initialized = initialized
         dsp.is_overlay = is_overlay
+        dsp.inherit_overrides = inherit_overrides
         dsp.pocket = pocket
         dsp.component = component
         dsp.ordering = ordering

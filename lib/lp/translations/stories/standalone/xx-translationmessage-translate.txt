@@ -161,14 +161,14 @@ Let's test the ones at the end of the form.
     >>> print browser.getLink('Last').url
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
-As a translation admin you will have access to the download, upload and
-details pages for the pofile this message belongs to. In the same time
-you have access to the link for switching between translator and
-reviewer working mode
+As a translation admin you will have access to the download and details
+pages for the pofile this message belongs to. In the same time you have
+access to the link for switching between translator and reviewer working
+mode
 
     >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
     >>> print extract_text(nav)
-    Download translation Upload translation Translation details
+    Download translation Translation details
     Reviewer mode (What's this?)
 
 All those links should linked the proper pages
@@ -455,10 +455,16 @@ Also, we should still have previous translation:
 
 But also, the new one should appear in the form.
 
-    >>> find_tag_by_id(
-    ...     slow_submission.contents,
-    ...     'msgset_143_es_suggestion_703_0').renderContents()
-    'foo!!'
+    >>> import re
+    >>> elements = find_main_content(slow_submission.contents).findAll(
+    ...     True, {'id': re.compile(r'^msgset_143_es_suggestion_\d+_0$')})
+    >>> for element in elements:
+    ...     print element.renderContents()
+    La ubicación ...
+    Tenga paciencia ...
+    foo!!
+    This is a suggestion ...
+    It should work! :-P
 
 
 Unreviewed translations

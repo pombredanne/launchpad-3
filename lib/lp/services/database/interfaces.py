@@ -30,8 +30,9 @@ class IRequestExpired(IRuntimeError):
     timed out.
     """
 
+
 # XXX 2007-02-09 jamesh:
-# This derrived from sqlos.interfaces.ISQLObject before hand.  I don't
+# This derived from sqlos.interfaces.ISQLObject before hand.  I don't
 # think it is ever used though ...
 class ISQLBase(Interface):
     """An extension of ISQLObject that provides an ID."""

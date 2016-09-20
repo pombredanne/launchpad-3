@@ -1,0 +1,192 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+<div
+  metal:define-macro="management"
+  tal:define="context_menu view/context/menu:context">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      kind - the kind of object being described (branch or repository)
+      repository - the underlying Git repository
+    This variable may optionally be set:
+      branch_name - the branch name
+  </tal:comment>
+
+  <dl id="clone-url">
+    <dt>Get this <tal:kind replace="kind" />:</dt>
+    <dd>
+      <tal:anonymous condition="repository/git_https_url">
+        <tt class="command">
+          git clone
+          <tal:branch condition="branch_name|nothing" replace="string:-b ${branch_name}" />
+          <span class="https-url" tal:content="repository/git_https_url" />
+        </tt>
+        <br />
+      </tal:anonymous>
+      <tal:ssh condition="view/user">
+        <tt class="command">
+          git clone
+          <tal:branch condition="branch_name|nothing" replace="string:-b ${branch_name}" />
+          <span class="ssh-url" tal:content="repository/git_ssh_url" />
+        </tt>
+      </tal:ssh>
+    </dd>
+  </dl>
+
+  <div id="upload-directions">
+    <tal:not-logged-in condition="not:view/user">
+      <tal:individual condition="not:context/owner/is_team">
+          Only
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Person</a>
+          can upload to this <tal:kind replace="kind" />. If you are
+          <tal:branch-owner replace="context/owner/displayname"/>
+          please <a href="+login">log in</a> for upload directions.
+      </tal:individual>
+      <tal:team tal:condition="context/owner/is_team">
+          Members of
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Team</a>
+          can upload to this <tal:kind replace="kind" />.
+          <a href="+login">Log in</a> for directions.
+      </tal:team>
+    </tal:not-logged-in>
+
+    <tal:logged-in condition="view/user">
+      <tal:can-push tal:condition="view/user_can_push">
+        <dl id="push-url">
+          <dt>Update this repository:</dt>
+          <dd>
+            <tt class="command">
+            git push
+            <span class="ssh-url" tal:content="repository/git_ssh_url" />
+            <tal:branch condition="branch_name|nothing" replace="branch_name" />
+            </tt>
+          </dd>
+        </dl>
+        <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
+          To authenticate with the Launchpad Git hosting service, you need to
+          <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+            register a SSH key</a>.
+        </p>
+      </tal:can-push>
+
+      <tal:cannot-push condition="not:view/user_can_push">
+        <div id="push-directions" tal:condition="not:context/owner/is_team">
+          You cannot push to this <tal:kind replace="kind" />. Only
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Person</a>
+          can push to this <tal:kind replace="kind" />.
+        </div>
+        <div id="push-directions" tal:condition="context/owner/is_team">
+          You cannot push to this <tal:kind replace="kind" />. Members of
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/displayname">Team</a>
+          can push to this <tal:kind replace="kind" />.
+        </div>
+      </tal:cannot-push>
+    </tal:logged-in>
+
+  </div>
+
+  <div style="margin-top: 1.5em" tal:define="link context_menu/source">
+    <a tal:replace="structure link/fmt:link" />
+  </div>
+
+</div>
+
+<metal:ref-commits define-macro="ref-commits">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      ref - the ref that has the commits
+      commit_infos - a list of dicts of commit information (sha1, author,
+                     author_date, commit_message, merge_proposal)
+  </tal:comment>
+  <style type="text/css">
+    .subordinate {
+      margin-left: 1em;
+    }
+  </style>
+  <dl class="commit">
+    <tal:commit repeat="commit_info commit_infos">
+      <metal:commit-text use-macro="ref/@@+macros/commit-text"/>
+    </tal:commit>
+    <tal:ajax-revision-diffs
+        condition="request/features/code.ajax_revision_diffs.enabled">
+      <tal:diff-expander condition="show_diff_expander | nothing">
+        <div class="revision-group-diff">
+          <a href="#" class="hidden expander-icon js-action"
+              tal:define="start_revision python:commit_infos[0]['sha1'];
+                          prev_revision python:commit_infos[0]['sha1'] + '^';
+                          last_revision python:commit_infos[-1]['sha1']"
+              tal:attributes="id string:expandable-${prev_revision}-${last_revision}"
+          >Changes added by commit
+          <tal:sha1 replace="start_revision/fmt:shorten/10"/>
+          <tal:plural condition="python: start_revision!=last_revision">
+            to commit <tal:sha1 replace="last_revision/fmt:shorten/10"/>
+          </tal:plural></a>
+          <div class="hidden expander-content">Loading diff <img src="/@@/spinner"/></div>
+        </div>
+      </tal:diff-expander>
+    </tal:ajax-revision-diffs>
+  </dl>
+
+</metal:ref-commits>
+
+<metal:commit-text define-macro="commit-text">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variable:
+      commit_info - a dict of the commit information (sha1, author,
+                    author_date, commit_message, merge_proposal) to be
+                    displayed
+
+    It is expected that this macro is called from within a definition list
+    (<dl></dl>).
+  </tal:comment>
+  <dt class="commit-details"
+      tal:define="
+        sha1 python:commit_info['sha1'];
+        author python:commit_info['author'];
+        author_date python:commit_info['author_date']">
+    <a tal:attributes="href python: ref.getCodebrowseUrlForRevision(sha1)"
+       tal:content="sha1/fmt:shorten/10" />
+    by
+    <tal:known-person condition="author/person">
+      <tal:person-link replace="structure author/person/fmt:link" />
+    </tal:known-person>
+    <tal:unknown-person condition="not: author/person">
+      <strong tal:content="author/name/fmt:obfuscate-email" />
+    </tal:unknown-person>
+    <span tal:attributes="title author_date/fmt:datetime"
+          tal:content="author_date/fmt:displaydate" />
+  </dt>
+  <dd class="subordinate commit-message"
+      tal:define="commit_message python:commit_info['commit_message']">
+    <tal:commit-message
+      replace="structure commit_message/fmt:obfuscate-email/fmt:text-to-html" />
+  </dd>
+
+  <div tal:define="merge_proposal python:commit_info.get('merge_proposal')"
+       tal:condition="merge_proposal">
+    <dd class="subordinate commit-comment"
+        tal:define="committer_date merge_proposal/merge_source/committer_date|nothing">
+      <a tal:attributes="href merge_proposal/fmt:url">Merged</a> branch
+      <a tal:condition="committer_date"
+         tal:replace="structure merge_proposal/merge_source/fmt:link">source branch</a>
+      <span tal:condition="not: committer_date"
+            tal:content="merge_proposal/merge_source/display_name" />
+    </dd>
+  </div>
+
+</metal:commit-text>
+
+<metal:no-commit-message define-macro="no-commit-message">
+  This branch has not been scanned yet.
+</metal:no-commit-message>
+
+</tal:root>

@@ -168,6 +168,8 @@
                     <xsl:when test="
                         @id = 'bug_link_target'
                         or @id = 'bug_target'
+                        or @id = 'faq_target'
+                        or @id = 'git_target'
                         or @id = 'has_bugs'
                         or @id = 'has_milestones'
                         or @id = 'object_with_translation_imports'
@@ -308,6 +310,62 @@
                 <var>&lt;person.name&gt;</var>
                 <xsl:text>/+email/</xsl:text>
                 <var>&lt;email&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'faq'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+faq/</xsl:text>
+                <var >&lt;faq.id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'git_ref'">
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;project.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                <xsl:text>/+ref/</xsl:text>
+                <var>&lt;path&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;distribution.name&gt;</var>
+                <xsl:text>/+source/</xsl:text>
+                <var>&lt;source_package.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                <xsl:text>/+ref/</xsl:text>
+                <var>&lt;path&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                <xsl:text>/+ref/</xsl:text>
+                <var>&lt;path&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'git_repository'">
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;project.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;distribution.name&gt;</var>
+                <xsl:text>/+source/</xsl:text>
+                <var>&lt;source_package.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
+                or
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+git/</xsl:text>
+                <var>&lt;repository.name&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'gpg_key'">
                 <xsl:text>/</xsl:text>
@@ -740,6 +798,12 @@
         </dd>
     </xsl:template>
 
+    <!-- Documentation for the standard DELETE on an entry -->
+    <xsl:template match="wadl:method[@name='DELETE']" mode="standard-method">
+        <dt><xsl:value-of select="@name" /></dt>
+        <dd>Deletes the entry.</dd>
+    </xsl:template>
+
     <!-- Documentation for the custom GET operations of the resource type -->
     <xsl:template name="custom-GETs">
         <xsl:variable name="operations" select="wadl:method[
@@ -981,7 +1045,7 @@
     </xsl:template>
 
     <!-- Documentation for the response of custom methods returning
-        and entry or a collection.
+        an entry or a collection.
     -->
     <xsl:template match="wadl:response/wadl:representation[@href]">
         <xsl:variable name="id" select="substring-after(@href, '#')" />
@@ -994,9 +1058,7 @@
             representation of a
             <a href="#{$resource_type}"><xsl:value-of
                 select="$resource_type"
-            /></a><xsl:if test="contains($id, '-page')">
-                    collection
-                </xsl:if>.
+            /></a><xsl:if test="contains($id, '-page')"> collection</xsl:if>.
         </p>
     </xsl:template>
 

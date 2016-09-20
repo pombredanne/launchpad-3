@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -33,7 +33,10 @@ from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
-from lp.archivepublisher.uefi import UefiUpload
+from lp.archivepublisher.signing import (
+    SigningUpload,
+    UefiUpload,
+    )
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     prefix_multi_line_string,
@@ -56,6 +59,7 @@ from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadCustomFormat,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
@@ -258,6 +262,7 @@ class CustomUploadFile(NascentUploadFile):
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
         'raw-uefi': PackageUploadCustomFormat.UEFI,
+        'raw-signing': PackageUploadCustomFormat.SIGNING,
         }
 
     custom_handlers = {
@@ -267,6 +272,7 @@ class CustomUploadFile(NascentUploadFile):
         PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
             RosettaTranslationsUpload,
         PackageUploadCustomFormat.UEFI: UefiUpload,
+        PackageUploadCustomFormat.SIGNING: SigningUpload,
         }
 
     @property
@@ -305,8 +311,10 @@ class CustomUploadFile(NascentUploadFile):
 
     def autoApprove(self):
         """Return whether this custom upload can be automatically approved."""
-        # UEFI uploads are signed, and must therefore be approved by a human.
-        if self.custom_type == PackageUploadCustomFormat.UEFI:
+        # Signing uploads will be signed, and must therefore be approved
+        # by a human.
+        if self.custom_type in (PackageUploadCustomFormat.UEFI,
+                                PackageUploadCustomFormat.SIGNING):
             return False
         return True
 
@@ -741,7 +749,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # We get an error from the constructor if the .deb does not
             # contain all the expected top-level members (debian-binary,
             # control.tar.gz, and data.tar.*).
-            yield UploadError(error)
+            yield UploadError(str(error))
+            return
         try:
             deb_file.control.go(tar_checker.callback)
             deb_file.data.go(tar_checker.callback)
@@ -846,8 +855,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         dar = self.policy.distroseries[self.archtag]
 
         # Check if there's a suitable existing build.
-        build = sourcepackagerelease.getBuildByArch(
-            dar, self.policy.archive)
+        build = getUtility(IBinaryPackageBuildSet).getBySourceAndLocation(
+            sourcepackagerelease, self.policy.archive, dar)
         if build is not None:
             build.updateStatus(BuildStatus.FULLYBUILT)
             self.logger.debug("Updating build for %s: %s" % (
@@ -855,9 +864,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
         else:
             # No luck. Make one.
             # Usually happen for security binary uploads.
-            build = sourcepackagerelease.createBuild(
-                dar, self.policy.pocket, self.policy.archive,
-                status=BuildStatus.FULLYBUILT)
+            build = getUtility(IBinaryPackageBuildSet).new(
+                sourcepackagerelease, self.policy.archive, dar,
+                self.policy.pocket, status=BuildStatus.FULLYBUILT)
             self.logger.debug("Build %s created" % build.id)
         return build
 

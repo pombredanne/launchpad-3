@@ -146,4 +146,3 @@ class IVPOExport(Interface):
         title=u"Translation in plural form 5",
         description=u"As in ITranslationMessage.",
         readonly=True, required=False)
-

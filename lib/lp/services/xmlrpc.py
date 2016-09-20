@@ -56,9 +56,5 @@ class Transport(xmlrpclib.Transport):
 
     def make_connection(self, host):
         conn = xmlrpclib.Transport.make_connection(self, host)
-        # In Python 2.6 make_connection returns a legacy HTTP wrapper object
-        # around the HTTPConnection, 2.7 returns the HTTPConnection directly.
-        # No connection is yet opened so it's okay to set timeout after init.
-        real_conn = getattr(conn, "_conn", conn)
-        real_conn.timeout = self.timeout
+        conn.timeout = self.timeout
         return conn

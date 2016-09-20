@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the peoplemerge browser module."""
 
@@ -62,7 +62,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
     def _assert_perform_merge_request(self):
         # Perform a merge request, asserting expected bahviour along the way.
         # We are redirected to a page displaying the email addresses owned by
-        # the dupe account. The user chooses which one he wants to claim.
+        # the dupe account. The user chooses which one they want to claim.
         target = self.factory.makePerson()
         login_person(target)
         browser = self.getUserBrowser(
@@ -74,7 +74,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
         self.assertThat(
             extract_text(explanation), DocTestMatches(
                 "The account..."
-                "has more than one registered e-mail address..."))
+                "has more than one registered email address..."))
         email_select_control = browser.getControl(name='selected')
         for ctrl in email_select_control.controls:
             ctrl.selected = True
@@ -124,7 +124,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
         # wasn't finished because the duplicate account still have a registered
         # email addresses.
         self.assertIn(
-            'has other registered e-mail addresses too', browser.contents)
+            'has other registered email addresses too', browser.contents)
         return browser, emails
 
     def test_validation_email_confirm(self):
@@ -133,7 +133,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
 
     def test_validation_email_complete(self):
         # Test that the merge completes successfully when the user proves that
-        # he's the owner of the second email address of the dupe account.
+        # they're the owner of the second email address of the dupe account.
         browser, emails = self._assert_validation_email_confirm()
         ignore, ignore2, raw_msg2 = emails.pop()
         token_url = get_token_url_from_email(raw_msg2)
@@ -231,7 +231,7 @@ class TestRequestPeopleMergeHiddenEmailAddresses(RequestPeopleMergeMixin):
         explanation = find_tag_by_id(browser.contents, 'explanation')
         self.assertThat(
             extract_text(explanation), DocTestMatches(
-                "The account...has 2 registered e-mail addresses..."))
+                "The account...has 2 registered email addresses..."))
         self.assertRaises(LookupError, browser.getControl, 'selected')
         self.assertNotIn('foo@baz.com', browser.contents)
         self.assertNotIn('bar.foo@canonical.com', browser.contents)
@@ -246,7 +246,7 @@ class TestRequestPeopleMergeHiddenEmailAddresses(RequestPeopleMergeMixin):
         self.assertThat(
             extract_text(confirmation), DocTestMatches(
                 "Confirmation email messages were sent to the 2 registered "
-                "e-mail addresses..."))
+                "email addresses..."))
         self.assertNotIn('foo@baz.com', browser.contents)
         self.assertNotIn('bar.foo@canonical.com', browser.contents)
 
@@ -286,7 +286,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
             view.errors)
 
     def test_cannot_merge_person_with_private_branches(self):
-        # A team or user with a private branches cannot be merged.
+        # A team or user with a private branch cannot be merged.
         self.factory.makeBranch(
             owner=self.dupe, information_type=InformationType.USERDATA)
         login_celebrity('registry_experts')
@@ -294,6 +294,18 @@ class TestValidatingMergeView(TestCaseWithFactory):
             self.person_set, '+requestmerge', form=self.getForm())
         self.assertEqual(
             [u"dupe owns private branches that must be deleted or "
+              "transferred to another owner first."],
+            view.errors)
+
+    def test_cannot_merge_person_with_private_git_repositories(self):
+        # A team or user with a private Git repository cannot be merged.
+        self.factory.makeGitRepository(
+            owner=self.dupe, information_type=InformationType.USERDATA)
+        login_celebrity('registry_experts')
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=self.getForm())
+        self.assertEqual(
+            [u"dupe owns private Git repositories that must be deleted or "
               "transferred to another owner first."],
             view.errors)
 
@@ -445,7 +457,7 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
                 'field.dupe_person': self.dupe_person.name,
                 'field.target_person': self.target_person.name,
                 'field.actions.reassign_emails_and_merge':
-                    'Reassign E-mails and Merge',
+                    'Reassign Emails and Merge',
                 }
         return create_initialized_view(
             self.person_set, '+adminpeoplemerge', form=form)

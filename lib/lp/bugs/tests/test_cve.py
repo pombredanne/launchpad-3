@@ -8,6 +8,7 @@ from zope.component import getUtility
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.cve import ICveSet
 from lp.testing import (
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     verifyObject,
@@ -75,3 +76,60 @@ class TestCveSet(TestCaseWithFactory):
             u'CVE-2000-0001', u'CVE-2000-0002', u'CVE-2000-0003',
             u'CVE-2000-0004']
         self.assertEqual(expected, cve_data)
+
+    def test_getBugCveCount(self):
+        login_person(self.factory.makePerson())
+
+        base = getUtility(ICveSet).getBugCveCount()
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        cve1 = self.factory.makeCVE(sequence='2099-1234')
+        cve2 = self.factory.makeCVE(sequence='2099-2468')
+        self.assertEqual(base, getUtility(ICveSet).getBugCveCount())
+        cve1.linkBug(bug1)
+        self.assertEqual(base + 1, getUtility(ICveSet).getBugCveCount())
+        cve1.linkBug(bug2)
+        self.assertEqual(base + 2, getUtility(ICveSet).getBugCveCount())
+        cve2.linkBug(bug1)
+        self.assertEqual(base + 3, getUtility(ICveSet).getBugCveCount())
+        cve1.unlinkBug(bug1)
+        cve1.unlinkBug(bug2)
+        cve2.unlinkBug(bug1)
+        self.assertEqual(base, getUtility(ICveSet).getBugCveCount())
+
+
+class TestBugLinks(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_link_and_unlink(self):
+        login_person(self.factory.makePerson())
+
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        cve1 = self.factory.makeCVE(sequence='2099-1234')
+        cve2 = self.factory.makeCVE(sequence='2099-2468')
+        self.assertContentEqual([], bug1.cves)
+        self.assertContentEqual([], bug2.cves)
+        self.assertContentEqual([], cve1.bugs)
+        self.assertContentEqual([], cve2.bugs)
+
+        cve1.linkBug(bug1)
+        cve2.linkBug(bug1)
+        cve1.linkBug(bug2)
+        self.assertContentEqual([bug1, bug2], cve1.bugs)
+        self.assertContentEqual([bug1], cve2.bugs)
+        self.assertContentEqual([cve1, cve2], bug1.cves)
+        self.assertContentEqual([cve1], bug2.cves)
+
+        cve1.unlinkBug(bug1)
+        self.assertContentEqual([bug2], cve1.bugs)
+        self.assertContentEqual([bug1], cve2.bugs)
+        self.assertContentEqual([cve2], bug1.cves)
+        self.assertContentEqual([cve1], bug2.cves)
+
+        cve1.unlinkBug(bug2)
+        self.assertContentEqual([], cve1.bugs)
+        self.assertContentEqual([bug1], cve2.bugs)
+        self.assertContentEqual([cve2], bug1.cves)
+        self.assertContentEqual([], bug2.cves)

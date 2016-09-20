@@ -12,7 +12,6 @@ __all__ = [
     'ISourcePackageFactory',
     'SourcePackageFileType',
     'SourcePackageType',
-    'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
 
@@ -80,10 +79,13 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
             title=_("Name"), required=True, readonly=True,
             description=_("The text name of this source package.")))
 
-    displayname = exported(
+    display_name = exported(
         TextLine(
             title=_("Display name"), required=True, readonly=True,
-            description=_("A displayname, constructed, for this package")))
+            description=_("A displayname, constructed, for this package")),
+        exported_as="displayname")
+
+    displayname = Attribute("Display name (deprecated)")
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
 
@@ -152,7 +154,8 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
     published_by_pocket = Attribute("The set of source package releases "
         "currently published in this distro series, organised by "
         "pocket. The result is a dictionary, with the pocket dbschema "
-        "as a key, and a list of source package releases as the value.")
+        "as a key, and a list of {'spr': source package release, "
+        "'component_name': component name} as the value.")
 
     linked_branches = Attribute(
         "A mapping of pockets to officially linked branches, ordered by "
@@ -169,10 +172,6 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
 
     owner = Attribute(
         "The owner of the distroseries for this source package.")
-
-    def __getitem__(version):
-        """Return the source package release with the given version in this
-        distro series, or None."""
 
     def __hash__():
         """Sourcepackage hash method.
@@ -412,6 +411,17 @@ class SourcePackageFileType(DBEnumeratedType):
 
         This is only part of the 3.0 (quilt) source package format.""")
 
+    ORIG_TARBALL_SIGNATURE = DBItem(9, """
+        Orig Tarball Signature
+
+        This file is a detached signature for an Ubuntu "orig" file.""")
+
+    COMPONENT_ORIG_TARBALL_SIGNATURE = DBItem(10, """
+        Component Orig Tarball Signature
+
+        This file is a detached signature for an Ubuntu component "orig"
+        file.""")
+
 
 class SourcePackageType(DBEnumeratedType):
     """Source Package Format
@@ -440,51 +450,6 @@ class SourcePackageType(DBEnumeratedType):
 
         This is the source package format used by Gentoo.
         """)
-
-
-class SourcePackageRelationships(DBEnumeratedType):
-    """Source Package Relationships
-
-    Launchpad tracks many source packages. Some of these are related to one
-    another. For example, a source package in Ubuntu called "apache2" might
-    be related to a source package in Mandrake called "httpd". This schema
-    defines the relationships that Launchpad understands.
-    """
-
-    REPLACES = DBItem(1, """
-        Replaces
-
-        The subject source package was designed to replace the object source
-        package.  """)
-
-    REIMPLEMENTS = DBItem(2, """
-        Reimplements
-
-        The subject source package is a completely new packaging of the same
-        underlying products as the object package.  """)
-
-    SIMILARTO = DBItem(3, """
-        Similar To
-
-        The subject source package is similar, in that it packages software
-        that has similar functionality to the object package.  For example,
-        postfix and exim4 would be "similarto" one another.  """)
-
-    DERIVESFROM = DBItem(4, """
-        Derives From
-
-        The subject source package derives from and tracks the object source
-        package. This means that new uploads of the object package should
-        trigger a notification to the maintainer of the subject source
-        package.  """)
-
-    CORRESPONDSTO = DBItem(5, """
-        Corresponds To
-
-        The subject source package includes the same products as the object
-        source package, but for a different distribution. For example, the
-        "apache2" Ubuntu package "correspondsto" the "httpd2" package in Red
-        Hat.  """)
 
 
 class SourcePackageUrgency(DBEnumeratedType):

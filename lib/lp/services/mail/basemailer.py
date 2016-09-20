@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class for sending out emails."""
@@ -7,10 +7,17 @@ __metaclass__ = type
 
 __all__ = ['BaseMailer', 'RecipientReason']
 
+from collections import OrderedDict
 import logging
 from smtplib import SMTPException
+import sys
+
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
+from zope.security.management import getSecurityPolicy
 
 from lp.services.mail.helpers import get_email_template
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
     append_footer,
@@ -18,6 +25,7 @@ from lp.services.mail.sendmail import (
     MailController,
     )
 from lp.services.utils import text_delta
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 
 
 class BaseMailer:
@@ -34,7 +42,8 @@ class BaseMailer:
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, message_id=None, notification_type=None,
-                 mail_controller_class=None):
+                 mail_controller_class=None, request=None, wrap=False,
+                 force_wrap=False):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -48,7 +57,25 @@ class BaseMailer:
             not supplied, random message-ids will be used.
         :param mail_controller_class: The class of the mail controller to
             use to send the mails.  Defaults to `MailController`.
+        :param request: An optional `IErrorReportRequest` to use when
+            logging OOPSes.
+        :param wrap: Wrap body text using `MailWrapper`.
+        :param force_wrap: See `MailWrapper.format`.
         """
+        # Running mail notifications with web security is too fragile: it's
+        # easy to end up with subtle bugs due to such things as
+        # subscriptions from private teams that are inaccessible to the user
+        # with the current interaction.  BaseMailer always sends one mail
+        # per recipient and thus never leaks information to other users, so
+        # it's safer to require a permissive security policy.
+        #
+        # When converting other notification code to BaseMailer, it may be
+        # necessary to move notifications into jobs, to move unit tests to a
+        # Zopeless-based layer, or to use the permissive_security_policy
+        # context manager.
+        assert getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy, (
+            "BaseMailer may only be used with a permissive security policy.")
+
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()
@@ -62,8 +89,14 @@ class BaseMailer:
         if mail_controller_class is None:
             mail_controller_class = MailController
         self._mail_controller_class = mail_controller_class
+        self.request = request
+        self._wrap = wrap
+        self._force_wrap = force_wrap
 
-    def _getToAddresses(self, recipient, email):
+    def _getFromAddress(self, email, recipient):
+        return self.from_address
+
+    def _getToAddresses(self, email, recipient):
         return [format_address(recipient.displayname, email)]
 
     def generateEmail(self, email, recipient, force_no_attachments=False):
@@ -73,12 +106,16 @@ class BaseMailer:
         :param recipient: The Person to send to.
         :return: (headers, subject, body) of the email.
         """
-        to_addresses = self._getToAddresses(recipient, email)
-        headers = self._getHeaders(email)
+        from_address = self._getFromAddress(email, recipient)
+        to_addresses = self._getToAddresses(email, recipient)
+        headers = self._getHeaders(email, recipient)
         subject = self._getSubject(email, recipient)
         body = self._getBody(email, recipient)
+        expanded_footer = self._getExpandedFooter(headers, recipient)
+        if expanded_footer:
+            body = append_footer(body, expanded_footer)
         ctrl = self._mail_controller_class(
-            self.from_address, to_addresses, subject, body, headers,
+            from_address, to_addresses, subject, body, headers,
             envelope_to=[email])
         if force_no_attachments:
             ctrl.addAttachment(
@@ -93,17 +130,20 @@ class BaseMailer:
         return (self._subject_template %
                     self._getTemplateParams(email, recipient))
 
-    def _getReplyToAddress(self):
+    def _getReplyToAddress(self, email, recipient):
         """Return the address to use for the reply-to header."""
         return None
 
-    def _getHeaders(self, email):
+    def _getHeaders(self, email, recipient):
         """Return the mail headers to use."""
         reason, rationale = self._recipients.getReason(email)
-        headers = {'X-Launchpad-Message-Rationale': reason.mail_header}
+        headers = OrderedDict()
+        headers['X-Launchpad-Message-Rationale'] = reason.mail_header
+        if reason.subscriber.name is not None:
+            headers['X-Launchpad-Message-For'] = reason.subscriber.name
         if self.notification_type is not None:
             headers['X-Launchpad-Notification-Type'] = self.notification_type
-        reply_to = self._getReplyToAddress()
+        reply_to = self._getReplyToAddress(email, recipient)
         if reply_to is not None:
             headers['Reply-To'] = reply_to
         if self.message_id is not None:
@@ -118,6 +158,10 @@ class BaseMailer:
         :param email: The email address of the recipient.
         """
         pass
+
+    def _getTemplateName(self, email, recipient):
+        """Return the name of the template to use for this email body."""
+        return self._template_name
 
     def _getTemplateParams(self, email, recipient):
         """Return a dict of values to use in the body and subject."""
@@ -134,36 +178,61 @@ class BaseMailer:
 
     def _getBody(self, email, recipient):
         """Return the complete body to use for this email."""
-        template = get_email_template(self._template_name, app=self.app)
+        template = get_email_template(
+            self._getTemplateName(email, recipient), app=self.app)
         params = self._getTemplateParams(email, recipient)
         body = template % params
-        footer = self._getFooter(params)
+        if self._wrap:
+            body = MailWrapper().format(
+                body, force_wrap=self._force_wrap) + "\n"
+        footer = self._getFooter(email, recipient, params)
         if footer is not None:
             body = append_footer(body, footer)
         return body
 
-    def _getFooter(self, params):
+    def _getFooter(self, email, recipient, params):
         """Provide a footer to attach to the body, or None."""
         return None
 
+    def _getExpandedFooter(self, headers, recipient):
+        """Provide an expanded footer for recipients who have requested it."""
+        if not recipient.expanded_notification_footers:
+            return None
+        lines = []
+        for key, value in headers.items():
+            if key.startswith('X-Launchpad-'):
+                lines.append('%s: %s\n' % (key[2:], value))
+        return ''.join(lines)
+
+    def sendOne(self, email, recipient):
+        """Send notification to one recipient."""
+        # We never want SMTP errors to propagate from this function.
+        ctrl = self.generateEmail(email, recipient)
+        try:
+            ctrl.send()
+        except SMTPException:
+            # If the initial sending failed, try again without
+            # attachments.
+            ctrl = self.generateEmail(
+                email, recipient, force_no_attachments=True)
+            try:
+                ctrl.send()
+            except SMTPException:
+                error_utility = getUtility(IErrorReportingUtility)
+                oops_vars = {
+                    "message_id": ctrl.headers.get("Message-Id"),
+                    "notification_type": self.notification_type,
+                    "recipient": ", ".join(ctrl.to_addrs),
+                    "subject": ctrl.subject,
+                    }
+                with error_utility.oopsMessage(oops_vars):
+                    oops = error_utility.raising(sys.exc_info(), self.request)
+                self.logger.info("Mail resulted in OOPS: %s" % oops.get("id"))
+
     def sendAll(self):
         """Send notifications to all recipients."""
-        # We never want SMTP errors to propagate from this function.
-        for email, recipient in self._recipients.getRecipientPersons():
-            try:
-                ctrl = self.generateEmail(email, recipient)
-                ctrl.send()
-            except SMTPException as e:
-                # If the initial sending failed, try again without
-                # attachments.
-                try:
-                    ctrl = self.generateEmail(
-                        email, recipient, force_no_attachments=True)
-                    ctrl.send()
-                except SMTPException as e:
-                    # Don't want an entire stack trace, just some details.
-                    self.logger.warning(
-                        'send failed for %s, %s' % (email, e))
+        for email, recipient in sorted(self._recipients.getRecipientPersons()):
+            self.sendOne(email, recipient)
 
 
 class RecipientReason:

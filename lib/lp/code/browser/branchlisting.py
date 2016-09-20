@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -12,17 +12,13 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
-    'CodeFacetBreadcrumb',
     'PersonBranchesMenu',
+    'PersonBranchesView',
     'PersonCodeSummaryView',
-    'PersonOwnedBranchesView',
-    'PersonRegisteredBranchesView',
-    'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'ProductBranchListingView',
     'ProductBranchesMenu',
     'ProductBranchesView',
-    'ProductCodeIndexView',
     'ProjectBranchesView',
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
@@ -33,7 +29,7 @@ __all__ = [
 from operator import attrgetter
 import urlparse
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     EnumeratedType,
     Item,
@@ -46,7 +42,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema import Choice
@@ -60,7 +56,6 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
-from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     ServiceUsage,
@@ -72,7 +67,6 @@ from lp.blueprints.interfaces.specificationbranch import (
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import ActiveReviewsView
-from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -89,6 +83,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -132,13 +127,7 @@ from lp.services.webapp.authorization import (
     precache_permission_for_objects,
     )
 from lp.services.webapp.batching import TableBatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.publisher import LaunchpadView
-
-
-class CodeFacetBreadcrumb(Breadcrumb):
-    rootsite = 'code'
-    text = 'Code'
 
 
 class BranchBadges(HasBadgeBase):
@@ -157,6 +146,7 @@ class BranchBadges(HasBadgeBase):
             return super(BranchBadges, self).getBadge(badge_name)
 
 
+@delegate_to(IBranch, context='context')
 class BranchListingItem(BzrIdentityMixin, BranchBadges):
     """A decorated branch.
 
@@ -164,7 +154,6 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
     to get on the fly for each branch in the listing.  These items are
     prefetched by the view and decorate the branch.
     """
-    delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, show_bug_badge,
                  show_blueprint_badge, show_mp_badge,
@@ -218,7 +207,7 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
 
     @property
     def revision_codebrowse_link(self):
-        return self.context.codebrowse_url(
+        return self.context.getCodebrowseUrl(
             'revision', str(self.context.revision_count))
 
     def __repr__(self):
@@ -289,6 +278,28 @@ class BranchListingSort(EnumeratedType):
         """)
 
 
+class PersonBranchCategory(EnumeratedType):
+    """Choices for filtering lists of branches related to people."""
+
+    OWNED = Item("""
+        Owned
+
+        Show branches owned by the person or team.
+        """)
+
+    SUBSCRIBED = Item("""
+        Subscribed
+
+        Show branches subscribed to by the person or team.
+        """)
+
+    REGISTERED = Item("""
+        Registered
+
+        Show branches registered by the person or team.
+        """)
+
+
 class IBranchListingFilter(Interface):
     """The schema for the branch listing filtering/ordering form."""
 
@@ -308,6 +319,14 @@ class IBranchListingFilter(Interface):
     sort_by = Choice(
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
+
+
+class IPersonBranchListingFilter(IBranchListingFilter):
+    """The schema for the branch listing filtering/ordering form for people."""
+
+    category = Choice(
+        title=_('Category'), vocabulary=PersonBranchCategory,
+        default=PersonBranchCategory.OWNED)
 
 
 class BranchListingItemsMixin:
@@ -458,10 +477,10 @@ class BranchListingItemsMixin:
         return [self._createItem(branch) for branch in branches]
 
 
+@implementer(IBranchBatchNavigator)
 class BranchListingBatchNavigator(TableBatchNavigator,
                                   BranchListingItemsMixin):
     """Batch up the branch listings."""
-    implements(IBranchBatchNavigator)
 
     def __init__(self, view):
         TableBatchNavigator.__init__(
@@ -512,10 +531,20 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # shown in the branch listings.
     show_series_links = False
     extra_columns = []
-    label_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
+
+    # Many Bazaar branch listings have a closely related Git listing
+    # that they should link to.
+    can_have_git_link = False
+
+    @property
+    def show_git_link(self):
+        if not self.can_have_git_link:
+            return False
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
 
     # Set the feed types to be only the various branches feed links.  The
     # `feed_links` property will screen this list and produce only the feeds
@@ -528,18 +557,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         PersonBranchesFeedLink,
         PersonRevisionsFeedLink,
         )
-
-    @property
-    def label(self):
-        return self.label_template % {
-            'displayname': self.context.displayname,
-            'title': getattr(self.context, 'title', 'no-title')}
-
-    @property
-    def page_title(self):
-        """Provide a default for distros and other things without breadcrumbs.
-        """
-        return self.label
 
     table_only_template = ViewPageTemplateFile(
         '../templates/branches-table-include.pt')
@@ -845,13 +862,11 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
                 .scanned())
 
 
-class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
+class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['registered', 'owned', 'subscribed',
-             'active_reviews', 'mergequeues', 'source_package_recipes']
-    extra_attributes = ['mergequeue_count']
+    links = ['branches', 'active_reviews', 'source_package_recipes', 'snaps']
 
     @property
     def person(self):
@@ -862,17 +877,9 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         """
         return self.context
 
-    def owned(self):
+    def branches(self):
         return Link(
-            canonical_url(self.context, rootsite='code'), 'Owned branches')
-
-    def registered(self):
-        enabled = not self.person.is_team
-        return Link(
-            '+registeredbranches', 'Registered branches', enabled=enabled)
-
-    def subscribed(self):
-        return Link('+subscribedbranches', 'Subscribed branches')
+            canonical_url(self.context, rootsite='code'), 'Branches')
 
     def active_reviews(self):
         return Link('+activereviews', 'Active reviews')
@@ -882,12 +889,15 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             '+recipes', 'Source package recipes',
             enabled=IPerson.providedBy(self.context))
 
+    def snaps(self):
+        enabled = IPerson.providedBy(self.context)
+        return Link('+snaps', 'Snap packages', enabled=enabled)
+
 
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
-    links = ['registered', 'owned', 'subscribed', 'active_reviews',
-             'source_package_recipes']
+    links = ['branches', 'active_reviews', 'source_package_recipes', 'snaps']
 
     @property
     def person(self):
@@ -899,10 +909,8 @@ class PersonBaseBranchListingView(BranchListingView):
     """Base class used for different person listing views."""
 
     @property
-    def show_action_menu(self):
-        if self.user is not None:
-            return self.user.inTeam(self.context)
-        return False
+    def person(self):
+        return self.context
 
     @property
     def show_junk_directions(self):
@@ -913,6 +921,28 @@ class PersonBaseBranchListingView(BranchListingView):
         values = super(PersonBaseBranchListingView, self).initial_values
         values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
         return values
+
+    def _getCollection(self):
+        category = PersonBranchCategory.OWNED
+        if self.widgets['category'].hasValidInput():
+            category = self.widgets['category'].getInputValue()
+        if category == PersonBranchCategory.OWNED:
+            return getUtility(IAllBranches).ownedBy(self.person)
+        elif category == PersonBranchCategory.SUBSCRIBED:
+            return getUtility(IAllBranches).subscribedBy(self.person)
+        elif category == PersonBranchCategory.REGISTERED:
+            return getUtility(IAllBranches).registeredBy(self.person)
+
+
+class PersonBranchesView(PersonBaseBranchListingView):
+    """View for branch listing for a person's branches."""
+
+    schema = IPersonBranchListingFilter
+    field_names = ['category', 'lifecycle', 'sort_by']
+    custom_widget('category', LaunchpadDropdownWidget)
+
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
+    can_have_git_link = True
 
     @property
     def no_branch_message(self):
@@ -929,37 +959,40 @@ class PersonBaseBranchListingView(BranchListingView):
         return message % self.context.displayname
 
 
-class PersonRegisteredBranchesView(PersonBaseBranchListingView):
-    """View for branch listing for a person's registered branches."""
+class PersonProductBranchesView(PersonBranchesView):
+    """Branch listing for a person's branches of a product."""
 
-    page_title = _('Registered')
-    label_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
+    no_sort_by = (
+        BranchListingSort.DEFAULT, BranchListingSort.OWNER,
+        BranchListingSort.PRODUCT)
+
+    @property
+    def person(self):
+        """Return the person from the PersonProduct context."""
+        return self.context.person
+
+    @property
+    def label(self):
+        return 'Branches of %s' % self.context.product.displayname
+
+    @property
+    def no_branch_message(self):
+        """Provide a more appropriate message for no branches."""
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches of %s for %s but none of them '
+                'match the current filter criteria for this page. '
+                'Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches of %s for %s in Launchpad today.')
+        return message % (
+            self.context.product.displayname, self.context.person.displayname)
 
     def _getCollection(self):
-        return getUtility(IAllBranches).registeredBy(self.context)
-
-
-class PersonOwnedBranchesView(PersonBaseBranchListingView):
-    """View for branch listing for a person's owned branches."""
-
-    page_title = _('Owned')
-    label_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).ownedBy(self.context)
-
-
-class PersonSubscribedBranchesView(PersonBaseBranchListingView):
-    """View for branch listing for a person's subscribed branches."""
-
-    page_title = _('Subscribed')
-    label_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, )
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).subscribedBy(self.context)
+        coll = super(PersonProductBranchesView, self)._getCollection()
+        return coll.inProduct(self.context.product)
 
 
 class PersonTeamBranchesView(LaunchpadView):
@@ -1057,7 +1090,6 @@ class ProductBranchListingView(BranchListingView):
 
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT, )
-    label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
@@ -1110,11 +1142,8 @@ class ProductBranchStatisticsView(BranchCountSummaryView,
         return text.capitalize()
 
 
-class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin, BranchMirrorMixin):
-    """Initial view for products on the code virtual host."""
-
-    show_set_development_focus = True
+class ProductBranchSummaryView(ProductBranchListingView, SortSeriesMixin,
+                               ProductDownloadFileMixin, BranchMirrorMixin):
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
@@ -1124,17 +1153,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def branch(self):
         return self.development_focus_branch
-
-    @property
-    def form_action(self):
-        return "+all-branches"
-
-    @property
-    def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.DEFAULT,
-            }
 
     @cachedproperty
     def commit_count(self):
@@ -1165,6 +1183,53 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
                     if person.is_team])
+
+    @property
+    def has_development_focus_branch(self):
+        """Is there a branch assigned as development focus?"""
+        return self.development_focus_branch is not None
+
+    @property
+    def branch_text(self):
+        return get_plural_text(self.branch_count, _('branch'), _('branches'))
+
+    @property
+    def person_text(self):
+        return get_plural_text(
+            self.person_owner_count, _('person'), _('people'))
+
+    @property
+    def team_text(self):
+        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
+
+    @property
+    def commit_text(self):
+        return get_plural_text(self.commit_count, _('commit'), _('commits'))
+
+    @property
+    def committer_text(self):
+        return get_plural_text(self.committer_count, _('person'), _('people'))
+
+    @property
+    def external_visible(self):
+        return (
+            self.context.codehosting_usage == ServiceUsage.EXTERNAL
+            and self.branch)
+
+
+class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
+                          ProductDownloadFileMixin, BranchMirrorMixin):
+    """Initial view for products on the code virtual host."""
+
+    show_set_development_focus = True
+    can_have_git_link = True
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.DEFAULT,
+            }
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
@@ -1201,7 +1266,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = super(ProductCodeIndexView, self)._branches(
+        branch_query = super(ProductBranchesView, self)._branches(
             self.selected_lifecycle_status)
         branch_query.order_by(self._listingSortToOrderBy(
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST))
@@ -1220,85 +1285,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def _branches(self, lifecycle_status):
         """Return the series branches, followed by most recently changed."""
         # The params are ignored, and only used by the listing view.
-        return self.initial_branches
-
-    @property
-    def unseen_branch_count(self):
-        """How many branches are not shown."""
-        return self.branch_count - len(self.initial_branches)
-
-    def hasAnyBranchesVisibleByUser(self):
-        """See `BranchListingView`."""
-        return self.branch_count > 0
+        if self.sort_by == BranchListingSort.DEFAULT:
+            return self.initial_branches
+        return super(ProductBranchesView, self)._branches(lifecycle_status)
 
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
-
-    @property
-    def branch_text(self):
-        return get_plural_text(self.branch_count, _('branch'), _('branches'))
-
-    @property
-    def person_text(self):
-        return get_plural_text(
-            self.person_owner_count, _('person'), _('people'))
-
-    @property
-    def team_text(self):
-        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
-
-    @property
-    def commit_text(self):
-        return get_plural_text(self.commit_count, _('commit'), _('commits'))
-
-    @property
-    def committer_text(self):
-        return get_plural_text(self.committer_count, _('person'), _('people'))
-
-    @property
-    def configure_codehosting(self):
-        """Get the menu link for configuring code hosting."""
-        if not check_permission(
-            'launchpad.Edit', self.context.development_focus):
-            return None
-        series_menu = MenuAPI(self.context.development_focus).overview
-        set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure code hosting'
-        return set_branch
-
-    @property
-    def external_visible(self):
-        return (
-            self.context.codehosting_usage == ServiceUsage.EXTERNAL
-            and self.branch)
-
-
-class ProductBranchesView(ProductBranchListingView):
-    """View for branch listing for a product."""
-
-    def initialize(self):
-        """Conditionally redirect to the default view.
-
-        If the branch listing requests the default listing, redirect to the
-        default view for the product.
-        """
-        ProductBranchListingView.initialize(self)
-        if self.sort_by == BranchListingSort.DEFAULT:
-            redirect_url = canonical_url(self.context)
-            widget = self.widgets['lifecycle']
-            if widget.hasValidInput():
-                redirect_url += (
-                    '?field.lifecycle=' + widget.getInputValue().name)
-            self.request.response.redirect(redirect_url)
-
-    @property
-    def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.LIFECYCLE,
-            }
 
 
 class ProjectBranchesView(BranchListingView):
@@ -1306,11 +1300,10 @@ class ProjectBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT, )
     extra_columns = ('author', 'product')
-    label_template = 'Bazaar branches of %(displayname)s'
     show_series_links = True
 
     def _getCollection(self):
-        return getUtility(IAllBranches).inProject(self.context)
+        return getUtility(IAllBranches).inProjectGroup(self.context)
 
     @property
     def no_branch_message(self):
@@ -1346,7 +1339,7 @@ class BaseSourcePackageBranchesView(BranchListingView):
 class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
-    label_template = 'Bazaar branches for %(title)s'
+    can_have_git_link = True
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
@@ -1356,12 +1349,18 @@ class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
 class DistributionBranchListingView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distribution."""
 
+    can_have_git_link = True
+
     def _getCollection(self):
         return getUtility(IAllBranches).inDistribution(self.context)
 
 
 class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
+
+    @property
+    def label(self):
+        return 'Branches for %s' % self.context.displayname
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistroSeries(self.context)
@@ -1370,12 +1369,6 @@ class DistroSeriesBranchListingView(BaseSourcePackageBranchesView):
 class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
                                                    BranchListingItemsMixin):
     """A view that groups branches into distro series."""
-
-    @property
-    def label(self):
-        return 'Bazaar branches for %s' % self.context.title
-
-    page_title = label
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -1527,10 +1520,17 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
                      })
         return result
 
+    @property
+    def show_git_link(self):
+        c = IGitCollection(self.context)
+        return not c.visibleByUser(self.user).is_empty()
+
 
 class SourcePackageBranchesView(BranchListingView):
 
-    label_template = 'Bazaar branches of %(displayname)s'
+    @property
+    def label(self):
+        return 'Branches for %s' % self.context.distroseries.displayname
 
     # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
     # menu yet -- do we need one?
@@ -1582,72 +1582,3 @@ class SourcePackageBranchesView(BranchListingView):
                 num_branches='%s %s' % (num_branches, num_branches_text),
                 dev_focus_css=dev_focus_css,
                 linked=(series != our_series))
-
-
-class PersonProductBaseBranchesView(PersonBaseBranchListingView):
-    """A base view used for other person-product branch listings."""
-
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
-    show_action_menu = False
-
-    @property
-    def person(self):
-        """Return the person from the PersonProduct context."""
-        return self.context.person
-
-    @property
-    def label(self):
-        return self.label_template % {
-            'person': self.context.person.displayname,
-            'product': self.context.product.displayname}
-
-    @property
-    def no_branch_message(self):
-        """Provide a more appropriate message for no branches."""
-        if (self.selected_lifecycle_status is not None
-            and self.hasAnyBranchesVisibleByUser()):
-            message = (
-                'There are branches of %s owned by %s but none of them '
-                'match the current filter criteria for this page. '
-                'Try filtering on "Any Status".')
-        else:
-            message = (
-                'There are no branches of %s owned by %s in Launchpad today.')
-        return message % (
-            self.context.product.displayname, self.context.person.displayname)
-
-
-class PersonProductOwnedBranchesView(PersonProductBaseBranchesView):
-    """Branch listing for a person's owned branches of a product."""
-
-    no_sort_by = (BranchListingSort.DEFAULT,
-                  BranchListingSort.OWNER,
-                  BranchListingSort.PRODUCT)
-
-    label_template = 'Bazaar Branches of %(product)s owned by %(person)s'
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).ownedBy(
-            self.context.person).inProduct(self.context.product)
-
-
-class PersonProductRegisteredBranchesView(PersonProductBaseBranchesView):
-    """Branch listing for a person's registered branches of a product."""
-
-    label_template = (
-        'Bazaar Branches of %(product)s registered by %(person)s')
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).registeredBy(
-            self.context.person).inProduct(self.context.product)
-
-
-class PersonProductSubscribedBranchesView(PersonProductBaseBranchesView):
-    """Branch listing for a person's subscribed branches of a product."""
-
-    label_template = (
-        'Bazaar Branches of %(product)s subscribed to by %(person)s')
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).subscribedBy(
-            self.context.person).inProduct(self.context.product)

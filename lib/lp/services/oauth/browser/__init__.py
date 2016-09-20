@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -46,7 +46,7 @@ from lp.services.webapp.interfaces import OAuthPermission
 class JSONTokenMixin:
 
     def getJSONRepresentation(self, permissions, token=None,
-                              include_secret=False):
+                              secret=None):
         """Return a JSON representation of the authorization policy.
 
         This includes a description of some subset of OAuthPermission,
@@ -56,8 +56,8 @@ class JSONTokenMixin:
         if token is not None:
             structure['oauth_token'] = token.key
             structure['oauth_token_consumer'] = token.consumer.key
-            if include_secret:
-                structure['oauth_token_secret'] = token.secret
+            if secret is not None:
+                structure['oauth_token_secret'] = secret
         access_levels = [{
                 'value': permission.name,
                 'title': permission.title,
@@ -79,7 +79,10 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
         with a 401 status.  If the key is not empty but there's no consumer
         with it, we register a new consumer.
         """
-        form = get_oauth_authorization(self.request)
+        try:
+            form = get_oauth_authorization(self.request)
+        except UnicodeDecodeError:
+            raise UnexpectedFormData("Invalid UTF-8.")
         consumer_key = form.get('oauth_consumer_key')
         if not consumer_key:
             self.request.unauthorized(OAUTH_CHALLENGE)
@@ -93,7 +96,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
         if not check_oauth_signature(self.request, consumer, None):
             return u''
 
-        token = consumer.newRequestToken()
+        token, secret = consumer.newRequestToken()
         if self.request.headers.get('Accept') == HTTPResource.JSON_TYPE:
             # Don't show the client the DESKTOP_INTEGRATION access
             # level. If they have a legitimate need to use it, they'll
@@ -103,9 +106,8 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
                 if (permission != OAuthPermission.DESKTOP_INTEGRATION)
                 ]
             return self.getJSONRepresentation(
-                permissions, token, include_secret=True)
-        return u'oauth_token=%s&oauth_token_secret=%s' % (
-            token.key, token.secret)
+                permissions, token, secret=secret)
+        return u'oauth_token=%s&oauth_token_secret=%s' % (token.key, secret)
 
 
 def token_exists_and_is_not_reviewed(form, action):
@@ -307,7 +309,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
     def initialize(self):
         self.storeTokenContext()
-        form = get_oauth_authorization(self.request)
+        try:
+            form = get_oauth_authorization(self.request)
+        except UnicodeDecodeError:
+            raise UnexpectedFormData("Invalid UTF-8.")
         key = form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
@@ -350,7 +355,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         # We have no guarantees that lp.context will be together with the
         # OAuth parameters, so we need to check in the Authorization header
         # and on the request's form if it's not in the former.
-        oauth_data = get_oauth_authorization(self.request)
+        try:
+            oauth_data = get_oauth_authorization(self.request)
+        except UnicodeDecodeError:
+            raise UnexpectedFormData("Invalid UTF-8.")
         context = oauth_data.get('lp.context')
         if not context:
             context = self.request.form.get('lp.context')
@@ -442,7 +450,7 @@ class OAuthAccessTokenView(LaunchpadView):
                 'End-user refused to authorize request token.')
 
         try:
-            access_token = token.createAccessToken()
+            access_token, access_secret = token.createAccessToken()
         except OAuthValidationError as e:
             return self._set_status_and_error(e)
 
@@ -450,5 +458,5 @@ class OAuthAccessTokenView(LaunchpadView):
         if access_token.context is not None:
             context_name = access_token.context.name
         body = u'oauth_token=%s&oauth_token_secret=%s&lp.context=%s' % (
-            access_token.key, access_token.secret, context_name)
+            access_token.key, access_secret, context_name)
         return body

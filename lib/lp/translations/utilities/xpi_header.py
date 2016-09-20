@@ -11,10 +11,10 @@ try:
     import xml.etree.cElementTree as cElementTree
 except ImportError:
     import cElementTree
-from email.Utils import parseaddr
+from email.utils import parseaddr
 from StringIO import StringIO
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationHeaderData,
@@ -25,8 +25,8 @@ from lp.translations.interfaces.translationimporter import (
     )
 
 
+@implementer(ITranslationHeaderData)
 class XpiHeader:
-    implements(ITranslationHeaderData)
 
     def __init__(self, header_content):
         self._raw_content = header_content
@@ -45,7 +45,7 @@ class XpiHeader:
             try:
                 self._text = header_content.decode(self.charset)
             except UnicodeDecodeError:
-                raise TranslationFormatInvalidInputError, (
+                raise TranslationFormatInvalidInputError(
                     "XPI header is not encoded in %s." % self.charset)
         else:
             assert isinstance(header_content, unicode), (
@@ -92,4 +92,3 @@ class XpiHeader:
         """
         # Nothing to do for this format.
         return
-

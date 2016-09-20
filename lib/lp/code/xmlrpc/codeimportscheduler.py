@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import CodeImportResultStatus
@@ -28,10 +28,9 @@ from lp.xmlrpc.faults import NoSuchCodeImportJob
 from lp.xmlrpc.helpers import return_fault
 
 
+@implementer(ICodeImportScheduler)
 class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
     """See `ICodeImportScheduler`."""
-
-    implements(ICodeImportScheduler)
 
     def getJobForMachine(self, hostname, worker_limit):
         """See `ICodeImportScheduler`."""

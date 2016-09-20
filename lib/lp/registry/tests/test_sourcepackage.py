@@ -342,7 +342,7 @@ class TestSourcePackage(TestCaseWithFactory):
                 sp.setPackaging(series, owner)
 
     def test_setPackagingReturnSharingDetailPermissions__ordinary_user(self):
-        """An ordinary user can create a packaging link but he cannot
+        """An ordinary user can create a packaging link but they cannot
         set the series' branch or translation syncronisation settings,
         or the translation usage settings of the product.
         """
@@ -404,7 +404,7 @@ class TestSourcePackage(TestCaseWithFactory):
             owner=self.factory.makePerson())
 
     def test_getSharingDetailPermissions__product_owner(self):
-        """A product owner can create a packaging link, and he can set the
+        """A product owner can create a packaging link, and they can set the
         series' branch and the translation syncronisation settings, and the
         translation usage settings of the product.
         """

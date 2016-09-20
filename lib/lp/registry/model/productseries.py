@@ -13,7 +13,7 @@ __all__ = [
 
 import datetime
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -30,7 +30,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
@@ -110,16 +110,14 @@ def landmark_key(landmark):
     return date + landmark['name']
 
 
+@implementer(
+    IBugSummaryDimension, IProductSeries, IServiceUsage, ISeriesBugTarget)
+@delegate_to(ISpecificationTarget, context='product')
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
                     HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(
-        IBugSummaryDimension, IProductSeries, IServiceUsage,
-        ISeriesBugTarget)
-
-    delegates(ISpecificationTarget, 'product')
 
     _table = 'ProductSeries'
 
@@ -395,7 +393,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
-        if distroseries.distribution.full_functionality:
+        if distroseries.distribution.official_packages:
             source_package = distroseries.getSourcePackage(sourcepackagename)
             if source_package.currentrelease is None:
                 raise AssertionError(
@@ -591,9 +589,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return self.product.userCanView(user)
 
 
+@implementer(ITimelineProductSeries)
 class TimelineProductSeries:
     """See `ITimelineProductSeries`."""
-    implements(ITimelineProductSeries)
 
     def __init__(self, name, status, is_development_focus, uri, landmarks,
                  product):
@@ -605,10 +603,9 @@ class TimelineProductSeries:
         self.product = product
 
 
+@implementer(IProductSeriesSet)
 class ProductSeriesSet:
     """See IProductSeriesSet."""
-
-    implements(IProductSeriesSet)
 
     def __getitem__(self, series_id):
         """See IProductSeriesSet."""

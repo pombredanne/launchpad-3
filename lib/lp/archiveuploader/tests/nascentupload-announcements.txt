@@ -28,8 +28,9 @@ contains the special header 'X-Katie', its presence is checked by
 third part application and also in our changeslist (gutsy-changes@).
 See further information in bug #121752.
 
-PPA upload notifications also include a 'X-Launchpad-PPA' email header
-containing the target PPA owner name, see bug #172377.
+Notifications also include an 'X-Launchpad-Archive' header containing
+the target archive reference, and Ubuntu PPA notifications have an
+'X-Launchpad-PPA' email header containing the old-style PPA reference.
 
 We need to be logged into the security model in order to get any further
 
@@ -100,9 +101,8 @@ unsigned changes):
     DEBUG above if files already exist in other distroseries.
     ...
     DEBUG --
-    DEBUG You are receiving this email because you are the uploader,
-    maintainer or
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
 
 There is only one email generated:
 
@@ -142,7 +142,7 @@ Uploading the same package again will result in a rejection email:
     DEBUG bar diff from 1.0-1 to 1.0-1 requested
     DEBUG Setting it to ACCEPTED
     ...
-    DEBUG Sending rejection email.
+    DEBUG Sent a mail:
     ...
     DEBUG Rejected:
     DEBUG The source bar - 1.0-1 is already accepted in ubuntu/hoary
@@ -162,6 +162,8 @@ Uploading the same package again will result in a rejection email:
 Upload notifications from primary archive do not contain the
 'X-Launchpad-PPA' header, since it doesn't apply to this context.
 
+    >>> notification['X-Launchpad-Archive']
+    'ubuntu'
     >>> 'X-Launchpad-PPA' in notification.keys()
     False
 
@@ -203,8 +205,8 @@ This is the body of the rejection email.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you are the most recent person
+    listed in this package's changelog.
     <BLANKLINE>
 
 In order to facilitate automated processing of announcement emails, the
@@ -212,10 +214,10 @@ changes file is enclosed as an attachment.
 
     >>> attachment = notification.get_payload()[1]
     >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
-    Content-Type: text/plain; charset="utf-8"
-    MIME-Version: 1.0
-    Content-Transfer-Encoding: quoted-printable
     Content-Disposition: attachment; filename="changesfile"
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset="utf-8"
+    Content-Transfer-Encoding: quoted-printable
     <BLANKLINE>
     -----BEGIN PGP SIGNED MESSAGE-----
     Hash: SHA1
@@ -285,16 +287,16 @@ A PPA upload will contain the X-Launchpad-PPA header.
 On PPA upload notifications the 'X-Launchpad-PPA' is present and
 contains the target PPA owner account name.
 
+    >>> notification['X-Launchpad-Archive']
+    '~name16/ubuntu/ppa'
     >>> notification['X-Launchpad-PPA']
     'name16'
 
 However, PPA upload notifications do not contain an attachment with the
 original changesfile.
 
-    >>> attachment = notification.get_payload()[1]
-    Traceback (most recent call last):
-    ...
-    IndexError: list index out of range
+    >>> notification.is_multipart()
+    False
 
 See further tests upon PPA upload notifications on
 archiveuploader/tests/test_ppauploadprocessor.
@@ -343,8 +345,7 @@ NEW source uploads for 'translations' section via sync policy:
     >>> lang_pack.logger = FakeLogger()
     >>> result = lang_pack.do_accept()
     DEBUG Creating queue entry
-    DEBUG Skipping acceptance and announcement, it is a language-package
-    upload.
+    DEBUG Skipping acceptance and announcement for language packs.
 
     >>> lang_pack.queue_root.status.name
     'NEW'
@@ -376,8 +377,7 @@ AUTO_APPROVED source uploads for 'translations' section:
     >>> result = lang_pack.do_accept()
     DEBUG Creating queue entry
     ...
-    DEBUG Skipping acceptance and announcement, it is a language-package
-    upload.
+    DEBUG Skipping acceptance and announcement for language packs.
 
     >>> lang_pack.queue_root.status.name
     'DONE'
@@ -407,22 +407,21 @@ UNAPPROVED source uploads for 'translations' section via insecure:
     DEBUG Creating queue entry
     DEBUG language-pack-pt diff from 1.0-2 to 1.0-3 requested
     DEBUG Setting it to UNAPPROVED
-    DEBUG Skipping acceptance and announcement, it is a language-package
-    upload.
+    DEBUG Skipping acceptance and announcement for language packs.
 
     >>> lang_pack.queue_root.status.name
     'UNAPPROVED'
 
 UNAPPROVED message was also skipped for an upload targeted to
-'translation' section:
-
+'translation' section: 
     >>> transaction.commit()
     >>> len(stub.test_emails)
     0
 
 
-An UNAPPROVED binary upload via insecure will send one email saying that
-the upload is waiting for approval:
+An UNAPPROVED binary upload via insecure will send emails (in this case, one
+to the signer and one to the changer) saying that the upload is waiting for
+approval:
 
     >>> bar_src = NascentUpload.from_changesfile_path(
     ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
@@ -434,16 +433,21 @@ the upload is waiting for approval:
     DEBUG Creating queue entry
     ...
 
-    >>> [notification] = pop_notifications()
+    >>> changer_notification, signer_notification = pop_notifications()
 
-    >>> notification['X-Katie']
+    >>> changer_notification['X-Katie']
+    'Launchpad actually'
+    >>> signer_notification['X-Katie']
     'Launchpad actually'
 
-    >>> print_addrlist(notification['To'])
+    >>> print_addrlist(changer_notification['To'])
     Daniel Silverstone <daniel.silverstone@canonical.com>
+    >>> print_addrlist(signer_notification['To'])
     Foo Bar <foo.bar@canonical.com>
 
-    >>> notification['Subject']
+    >>> changer_notification['Subject']
+    '[ubuntu/hoary-updates] bar 1.0-2 (Waiting for approval)'
+    >>> signer_notification['Subject']
     '[ubuntu/hoary-updates] bar 1.0-2 (Waiting for approval)'
 
 And clean up.
@@ -452,7 +456,7 @@ And clean up.
     >>> upload_data = datadir('suite/bar_1.0-2')
     >>> os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))
 
-UNAPPROVED upload to BACKPORTS via insecure policy will send a notification
+UNAPPROVED upload to BACKPORTS via insecure policy will send notifications
 saying they are waiting for approval:
 
     >>> unapproved_backports_policy = getPolicy(
@@ -470,16 +474,21 @@ saying they are waiting for approval:
     DEBUG Setting it to UNAPPROVED
     ...
 
-    >>> [notification] = pop_notifications()
+    >>> changer_notification, signer_notification = pop_notifications()
 
-    >>> notification['X-Katie']
+    >>> changer_notification['X-Katie']
+    'Launchpad actually'
+    >>> signer_notification['X-Katie']
     'Launchpad actually'
 
-    >>> print_addrlist(notification['To'])
+    >>> print_addrlist(changer_notification['To'])
     Daniel Silverstone <daniel.silverstone@canonical.com>
+    >>> print_addrlist(signer_notification['To'])
     Foo Bar <foo.bar@canonical.com>
 
-    >>> notification['Subject']
+    >>> changer_notification['Subject']
+    '[ubuntu/hoary-backports] bar 1.0-3 (Waiting for approval)'
+    >>> signer_notification['Subject']
     '[ubuntu/hoary-backports] bar 1.0-3 (Waiting for approval)'
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
@@ -507,9 +516,9 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     DEBUG   * Changer using non-preferred email
     DEBUG
     DEBUG Date: Tue, 25 Apr 2006 10:36:14 -0300
-    DEBUG Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+    DEBUG Changed-By: cprov@ubuntu.com (Celso R. Providelo)
     DEBUG Maintainer: Launchpad team <launchpad@lists.canonical.com>
-    DEBUG http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
+    DEBUG http://launchpad.dev/ubuntu/+source/bar/1.0-4
     DEBUG
     DEBUG ==
     DEBUG
@@ -520,12 +529,11 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     DEBUG
     DEBUG Announcing to hoary-announce@lists.ubuntu.com
     DEBUG
-    DEBUG Thank you for your contribution to Ubuntu Linux.
+    DEBUG Thank you for your contribution to Ubuntu.
     DEBUG
     DEBUG --
-    DEBUG You are receiving this email because you are the uploader,
-    maintainer or
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
 
 There is one email generated:
 
@@ -636,46 +644,8 @@ Rejections with notify=False will also not generate any emails.
     >>> len(msgs)
     0
 
-The PackageUpload record created by NascentUpload will be in the NEW
-state if the package was not previously uploaded.  When accepted by an
-archive admin using the queue tool, the queue tool will call
-PackageUpload.notify() directly.  One of the arguments it can specify is
-dry_run, which when True will not send any emails.  It will also log at
-the INFO level what it /would/ have sent.
-
-    >>> random_package_upload = hoary.getPackageUploads()[0]
-    >>> random_package_upload.notify(dry_run=True, logger=FakeLogger())
-    DEBUG Building recipients list.
-    ...
-    DEBUG Would have sent a mail:
-    DEBUG   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
-    DEBUG   Sender: Root <root@localhost>
-    DEBUG   Recipients: Celso Providelo <celso.providelo@canonical.com>
-    DEBUG   Bcc: Root <root@localhost>
-    DEBUG   Body:
-    DEBUG bar (1.0-6) breezy; urgency=low
-    ...
-    DEBUG Announcing to hoary-announce@lists.ubuntu.com
-    ...
-    DEBUG You are receiving this email because you are the uploader, maintainer
-    or
-    DEBUG signer of the above package.
-    DEBUG Would have sent a mail:
-    DEBUG   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
-    DEBUG   Sender: Celso Providelo <cprov@ubuntu.com>
-    DEBUG   Recipients: hoary-announce@lists.ubuntu.com
-    DEBUG   Bcc: Root <root@localhost>, bar_derivatives@packages.qa.debian.org
-    ...
-
-No emails generated:
-
-    >>> msgs = pop_notifications()
-    >>> len(msgs)
-    0
-
 Uploads with UTF-8 characters in email addresses in the changes file are
-permitted, but converted to ASCII, which is a limitation of the mailer.
-However, UTF-8 in the mail content is preserved.
+permitted, but RFC2047-encoded.  UTF-8 in the mail content is preserved.
 
     >>> hoary.status = SeriesStatus.DEVELOPMENT
     >>> anything_policy = getPolicy(
@@ -694,12 +664,11 @@ However, UTF-8 in the mail content is preserved.
 
     >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
     >>> len(msgs)
-    2
+    3
 
-"Cihar" should actually be "Čihař" but the mailer will convert to ASCII.
-
-    >>> [message['From'] for message in msgs]
-    ['Root <root@localhost>', 'Non-ascii changed-by Cihar
+    >>> [message['From'].replace('\n ', ' ') for message in msgs]
+    ['Root <root@localhost>', 'Root <root@localhost>',
+    '=?utf-8?q?Non-ascii_changed-by_=C4=8Ciha=C5=99?=
     <daniel.silverstone@canonical.com>']
 
 UTF-8 text in the changes file that is sent on the email is preserved
@@ -729,7 +698,7 @@ changes file is mentioned toward the end of the email.
     Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
     .com>
     Signed-By: Foo Bar <foo.bar@canonical.com>
-    http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-10
+    http://launchpad.dev/ubuntu/+source/bar/1.0-10
     <BLANKLINE>
     =3D=3D
     <BLANKLINE>
@@ -740,12 +709,12 @@ changes file is mentioned toward the end of the email.
     <BLANKLINE>
     Announcing to hoary-announce@lists.ubuntu.com
     <BLANKLINE>
-    Thank you for your contribution to Ubuntu Linux.
+    Thank you for your contribution to Ubuntu.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you are the most recent person
+    listed in this package's changelog.
     <BLANKLINE>
 
 In order to facilitate scripts that parse announcement emails, the changes
@@ -761,10 +730,10 @@ Here's the attachment metadata.
 And what follows is the content of the attachment.
 
     >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
-    Content-Type: text/plain; charset="utf-8"
-    MIME-Version: 1.0
-    Content-Transfer-Encoding: quoted-printable
     Content-Disposition: attachment; filename="changesfile"
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset="utf-8"
+    Content-Transfer-Encoding: quoted-printable
     <BLANKLINE>
     -----BEGIN PGP SIGNED MESSAGE-----
     Hash: SHA1
@@ -830,7 +799,6 @@ And then try to upload using the changes file with the malformed name.
     >>> result = bar_src.do_accept()
     DEBUG Building recipients list.
     ...
-    DEBUG Sending rejection email.
     DEBUG Sent a mail:
     ...
     DEBUG Rejected:
@@ -842,9 +810,8 @@ And then try to upload using the changes file with the malformed name.
     DEBUG http://answers.launchpad.net/soyuz
     DEBUG
     DEBUG --
-    DEBUG You are receiving this email because you are the uploader,
-    maintainer or
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
 
     >>> [notification] = pop_notifications()
 

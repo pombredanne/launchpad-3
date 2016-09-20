@@ -39,7 +39,7 @@ class TestNicknameGeneration(TestCaseWithFactory):
         self.assertEqual(['bar', 'foo-bar', 'foo-bar', 'foo+bar'], nicks)
 
     def test_enforces_minimum_length(self):
-        # Nicks must be a minimum length. generate_nick enforces this by 
+        # Nicks must be a minimum length. generate_nick enforces this by
         # adding random suffixes to the required length.
         self.assertIs(None, getUtility(IPersonSet).getByName('i'))
         nick = generate_nick('i@example.com')

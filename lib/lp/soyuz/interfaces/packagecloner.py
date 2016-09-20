@@ -16,8 +16,7 @@ class IPackageCloner(Interface):
     """Copies publishing history data across archives."""
 
     def clonePackages(origin, destination, distroarchseries_list=None,
-                    processors=None, sourcepackagenames=None,
-                    always_create=False):
+                    processors=None, sourcepackagenames=None):
         """Copy packages from origin to destination.
 
         Copies the source packages, as well as the binary packages for the
@@ -30,7 +29,6 @@ class IPackageCloner(Interface):
         :param processors: the processors that builds will be created for.
         :param sourcepackagenames: the source packages which are to be
             copied.
-        :param always_create: if builds should always be created.
         """
 
     def mergeCopy(origin, destination):

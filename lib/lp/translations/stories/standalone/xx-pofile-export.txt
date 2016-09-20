@@ -19,13 +19,13 @@ Logged in as a regular user, the +export page is accessible.
     >>> user_browser.getLink('Download').click()
 
     >>> print user_browser.title
-    Download translation : Spanish (es)...
-    ...evolution... package : Translations : Hoary (5.04) : Ubuntu
+    Download translation : Spanish (es)... : Hoary (5.04) :
+    Translations : evolution package : Ubuntu
 
     >>> print find_main_content(user_browser.contents)
     <...
     ...Download Spanish translation...
-    Once the file is ready for download, Launchpad will e-mail
+    Once the file is ready for download, Launchpad will email
     <code>no-priv@canonical.com</code>
     with a link to the file...
 

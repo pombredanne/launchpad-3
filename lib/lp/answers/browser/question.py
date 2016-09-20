@@ -44,7 +44,7 @@ from zope.formlib.widgets import (
     )
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     providedBy,
     )
 from zope.schema import Choice
@@ -75,10 +75,7 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
-from lp.answers.vocabulary import (
-    UsesAnswersDistributionVocabulary,
-    UsesAnswersProductVocabulary,
-    )
+from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -405,6 +402,7 @@ class QuestionSubscriptionView(LaunchpadView):
         return self.context.isSubscribed(self.user)
 
 
+@implementer(IContextSourceBinder)
 class QuestionLanguageVocabularyFactory:
     """Factory for a vocabulary containing a subset of the possible languages.
 
@@ -415,8 +413,6 @@ class QuestionLanguageVocabularyFactory:
     It also always include the question's current language and excludes all
     English variants.
     """
-
-    implements(IContextSourceBinder)
 
     def __init__(self, view):
         """Create a QuestionLanguageVocabularyFactory.
@@ -552,8 +548,8 @@ class QuestionHistoryView(LaunchpadView):
 class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     """Multi-page add view.
 
-    The user enters first his question summary and then he is shown a list
-    of similar results before adding the question.
+    The user enters first their question summary and then they are shown a
+    list of similar results before adding the question.
     """
     label = _('Ask a question')
 
@@ -651,7 +647,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     def context_uses_answers(self):
         """Return True if the context uses launchpad as an answer forum."""
         usage = IServiceUsage(self.context)
-        if usage is not None:             
+        if usage is not None:
             return usage.answers_usage == ServiceUsage.LAUNCHPAD
         else:
             return False
@@ -992,7 +988,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         self.context.giveAnswer(self.user, data['message'])
         # Owners frequently solve their questions, but their messages imply
         # that another user provided an answer. When a question has answers
-        # that can be confirmed, suggest to the owner that he use the
+        # that can be confirmed, suggest to the owner that they use the
         # confirmation button.
         if self.context.can_confirm_answer:
             msgid = _("Your question is solved. If a particular message "
@@ -1079,8 +1075,8 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     def _addNotificationAndHandlePossibleSubscription(self, message, data):
         """Post-processing work common to all workflow actions.
 
-        Adds a notification, subscribe the user if he checked the
-        'E-mail me...' option and redirect to the question page.
+        Adds a notification, subscribe the user if they checked the
+        'Email me...' option and redirect to the question page.
         """
         self.request.response.addNotification(message)
 
@@ -1100,11 +1096,11 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     @property
     def original_bug(self):
         """Return the bug that the question was created from or None."""
-        for buglink in self.context.bug_links:
-            if (check_permission('launchpad.View', buglink.bug)
-                and buglink.bug.owner == self.context.owner
-                and buglink.bug.datecreated == self.context.datecreated):
-                return buglink.bug
+        for bug in self.context.bugs:
+            if (check_permission('launchpad.View', bug)
+                and bug.owner == self.context.owner
+                and bug.datecreated == self.context.datecreated):
+                return bug
 
         return None
 

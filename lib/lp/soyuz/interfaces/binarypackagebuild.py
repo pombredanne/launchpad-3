@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BinaryPackageBuild interfaces."""
@@ -23,10 +23,12 @@ from lazr.enum import (
 from lazr.restful.declarations import (
     error_status,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
+    operation_returns_entry,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -44,7 +46,7 @@ from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.soyuz.interfaces.processor import IProcessor
+from lp.buildmaster.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
@@ -85,6 +87,10 @@ class IBinaryPackageBuildView(IPackageBuild):
 
     distro_arch_series_id = Int()
 
+    arch_indep = Bool(
+        title=_("Build architecture independent packages"),
+        required=False, readonly=True)
+
     # Properties
     current_source_publication = exported(
         Reference(
@@ -92,6 +98,10 @@ class IBinaryPackageBuildView(IPackageBuild):
             schema=ISourcePackagePublishingHistory,
             required=False, readonly=True,
             description=_("The current source publication for this build.")))
+    api_source_package_name = exported(
+        TextLine(
+            title=_("Source package name"), required=False, readonly=True),
+        exported_as="source_package_name")
 
     distro_series = Attribute("Direct parent needed by CanonicalURL")
     arch_tag = exported(
@@ -123,9 +133,6 @@ class IBinaryPackageBuildView(IPackageBuild):
             title=_("Can Be Cancelled"), required=False, readonly=True,
             description=_(
                 "Whether or not this build record can be cancelled.")))
-
-    is_virtualized = Attribute(
-        "Whether or not this build requires a virtual build host or not.")
 
     upload_changesfile = Attribute(
         "The `LibraryFileAlias` object containing the changes file which "
@@ -216,6 +223,20 @@ class IBinaryPackageBuildView(IPackageBuild):
             `IBinaryPackageFile`, `ILibraryFileAlias`, `ILibraryFileContent`).
         """
 
+    @operation_returns_entry(ISourcePackagePublishingHistory)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getLatestSourcePublication():
+        """The latest source publication corresponding to this build.
+
+        Unlike current_source_publication, this returns publications even if
+        they are no longer active.
+
+        :return: An `ISourcePackagePublishingHistory`, or None if no
+            corresponding source publication can be located (which is a bug,
+            but is true for some old production builds).
+        """
+
 
 class IBinaryPackageBuildEdit(Interface):
     """A Build interface for items requiring launchpad.Edit."""
@@ -233,8 +254,8 @@ class IBinaryPackageBuildEdit(Interface):
     def cancel():
         """Cancel the build if it is either pending or in progress.
 
-        Call the can_be_cancelled() method prior to this one to find out if
-        cancelling the build is possible.
+        Check the can_be_cancelled property prior to calling this method to
+        find out if cancelling the build is possible.
 
         If the build is in progress, it is marked as CANCELLING until the
         buildd manager terminates the build and marks it CANCELLED. If the
@@ -243,6 +264,26 @@ class IBinaryPackageBuildEdit(Interface):
 
         If the build is not in a cancellable state, this method is a no-op.
         """
+
+
+class IBinaryPackageBuildRestricted(Interface):
+    """Restricted `IBinaryPackageBuild` attributes.
+
+    These attributes need launchpad.View to see, and launchpad.Moderate to
+    change.
+    """
+    api_external_dependencies = exported(
+        Text(
+            title=_("External dependencies"), required=False, readonly=False,
+            description=_(
+                "Newline-separated list of repositories to be used to "
+                "retrieve any external build-dependencies when performing "
+                "this build, in the format:\n"
+                "deb http[s]://[user:pass@]<host>[/path] series[-pocket] "
+                "[components]\n"
+                "This is intended for bootstrapping build-dependency loops.")),
+        as_of="devel",
+        exported_as="external_dependencies")
 
 
 class IBinaryPackageBuildAdmin(Interface):
@@ -256,7 +297,7 @@ class IBinaryPackageBuildAdmin(Interface):
 
 class IBinaryPackageBuild(
     IBinaryPackageBuildView, IBinaryPackageBuildEdit,
-    IBinaryPackageBuildAdmin):
+    IBinaryPackageBuildRestricted, IBinaryPackageBuildAdmin):
     """A Build interface"""
     export_as_webservice_entry(singular_name='build', plural_name='builds')
 
@@ -295,20 +336,32 @@ class BuildSetStatus(EnumeratedType):
 class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
-    def new(distro_arch_series, source_package_release, processor,
-            archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None, builder=None):
+    def new(source_package_release, archive, distro_arch_series, pocket,
+            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
-        :param distro_arch_series: An `IDistroArchSeries`.
         :param source_package_release: An `ISourcePackageRelease`.
-        :param processor: An `IProcessor`.
         :param archive: An `IArchive` in which context the build is built.
+        :param distro_arch_series: An `IDistroArchSeries`.
         :param pocket: An item of `PackagePublishingPocket`.
+        :param arch_indep: Build architecture independent packages in
+            addition to architecture specific ones.
         :param status: A `BuildStatus` item indicating the builds status.
-        :param date_created: An optional datetime to ensure multiple builds
-            in the same transaction don't all get the same UTC_NOW.
         :param builder: An optional `IBuilder`.
+        """
+
+    def getBySourceAndLocation(source_package_release, archive,
+                               distro_arch_series):
+        """Return a build by its source, archive and architecture.
+
+        This is the natural key, and lookups don't consider copies
+        between archives, just the archive in which the build originally
+        occurred.
+
+        :param source_package_release: The `ISourcePackageRelease` that is
+            built.
+        :param archive: The `IArchive` containing the build.
+        :param distro_arch_series: The `IDistroArchSeries` built against.
         """
 
     def getBuildsForBuilder(builder_id, status=None, name=None, pocket=None,
@@ -364,6 +417,17 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a list of `IBuild` records not target to PPA archives.
         """
 
+    def findBuiltOrPublishedBySourceAndArchive(sourcepackagerelease, archive):
+        """Find all successful builds for source relevant to an Archive.
+
+        This includes all successful builds for the source directly in
+        this archive, and any that had their binaries copied into this
+        archive.
+
+        :return: A dict mapping architecture tags (in string form,
+            e.g. 'i386') to `BinaryPackageBuild`s for that build.
+        """
+
     def getStatusSummaryForBuilds(builds):
         """Return a summary of the build status for the given builds.
 
@@ -396,6 +460,19 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     def preloadBuildsData(builds):
         """Prefetch the data related to the builds.
 
+        """
+
+    def createForSource(sourcepackagerelease, archive, distroseries, pocket,
+                        architectures_available=None, logger=None):
+        """Create missing build records for a source.
+
+        :param architectures_available: options list of `DistroArchSeries`
+            that should be considered for build creation; if not given
+            it will be calculated in place, all architectures for the
+            context distroseries with available chroot.
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        :return: a list of `Builds` created for this source publication.
         """
 
 

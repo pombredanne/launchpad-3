@@ -95,11 +95,18 @@
     <tal:no_job condition="not: job">
       <tal:builderok condition="builder/builderok">
         <tal:idle condition="not: builder/manual">
+          <tal:cleaning condition="not: builder/clean_status/enumvalue:CLEAN">
           <span class="sortkey" tal:content="string:0" />
-          <span class="sprite yes green">Idle</span>
+          <img width="14" height="14" src="/@@/processing" alt="[cleaning]" />
+          Cleaning
+          </tal:cleaning>
+          <tal:clean condition="builder/clean_status/enumvalue:CLEAN">
+          <span class="sortkey" tal:content="string:1" />
+          <span class="sprite yes">Idle</span>
+          </tal:clean>
         </tal:idle>
         <tal:manual tal:condition="builder/manual">
-          <span class="sortkey" tal:content="string:1" />
+          <span class="sortkey" tal:content="string:2" />
           <span class="sprite info">Manual</span>
         </tal:manual>
       </tal:builderok>
@@ -111,7 +118,7 @@
 
     <tal:job-header condition="job">
       <span class="sortkey" tal:content="job/id" />
-      <img src="/@@/processing" alt="[building]" />
+      <img width="14" height="14" src="/@@/processing" alt="[building]" />
       <tal:specific-build replace="structure job/specific_build/@@+current" />
     </tal:job-header>
 

@@ -20,10 +20,10 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -54,11 +54,10 @@ from lp.translations.model.translationrelicensingagreement import (
 from lp.translations.model.translator import Translator
 
 
+@implementer(ITranslationsPerson)
+@adapter(IPerson)
 class TranslationsPerson:
     """See `ITranslationsPerson`."""
-    implements(ITranslationsPerson)
-    adapts(IPerson)
-
     def __init__(self, person):
         self.person = person
 
@@ -107,7 +106,7 @@ class TranslationsPerson:
     def _translations_relicensing_agreement(self):
         """Return whether translator agrees to relicense their translations.
 
-        If she has made no explicit decision yet, return None.
+        If they have made no explicit decision yet, return None.
         """
         relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
             person=self.person)
@@ -122,7 +121,7 @@ class TranslationsPerson:
     def set_translations_relicensing_agreement(self, value):
         """Set a translations relicensing decision by translator.
 
-        If she has already made a decision, overrides it with the new one.
+        If they have already made a decision, overrides it with the new one.
         """
         relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
             person=self.person)
@@ -271,7 +270,7 @@ class TranslationsPerson:
                 tables=[
                     DistroSeries,
                     Join(
-                        Distribution, 
+                        Distribution,
                         And(
                             Distribution.id == DistroSeries.distributionID,
                             Distribution.translations_usage ==
@@ -294,7 +293,8 @@ class TranslationsPerson:
                                 ServiceUsage.LAUNCHPAD,
                             Product.active == True)),
                     LeftJoin(
-                        ProjectGroup, ProjectGroup.id == Product.projectID),
+                        ProjectGroup,
+                        ProjectGroup.id == Product.projectgroupID),
                     Join(
                         SQL('reviewable_groups'),
                         SQL('reviewable_groups.id') ==
@@ -348,7 +348,7 @@ class TranslationsPerson:
             Product.active == True))
 
         ProjectJoin = LeftJoin(
-            ProjectGroup, ProjectGroup.id == Product.projectID)
+            ProjectGroup, ProjectGroup.id == Product.projectgroupID)
 
         # Look up translation group.
         groupjoin_conditions = Or(

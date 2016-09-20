@@ -1,14 +1,14 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the SignedMessage class."""
 
 __metaclass__ = type
 
-from email.Message import Message
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
-from email.Utils import (
+from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import (
     formatdate,
     make_msgid,
     )
@@ -62,7 +62,7 @@ class TestSignedMessage(TestCaseWithFactory):
         # Create a signed message for the sender specified with the test
         # secret key.
         key = import_secret_test_key()
-        signing_context = GPGSigningContext(key.fingerprint, password='test')
+        signing_context = GPGSigningContext(key, password='test')
         if body is None:
             body = dedent("""\
                 This is a multi-line body.
@@ -136,7 +136,7 @@ class TestSignedMessage(TestCaseWithFactory):
         gpghandler = getUtility(IGPGHandler)
         signature = gpghandler.signContent(
             canonicalise_line_endings(body_text.as_string()),
-            key.fingerprint, 'test', gpgme.SIG_MODE_DETACH)
+            key, 'test', gpgme.SIG_MODE_DETACH)
 
         attachment = Message()
         attachment.set_payload(signature)

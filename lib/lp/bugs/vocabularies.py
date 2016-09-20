@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug domain vocabularies"""
@@ -19,8 +19,6 @@ __all__ = [
     'WebBugTrackerVocabulary',
     ]
 
-from operator import attrgetter
-
 from sqlobject import (
     CONTAINSSTRING,
     OR,
@@ -30,7 +28,7 @@ from storm.expr import (
     Or,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.interfaces import (
     IVocabulary,
     IVocabularyTokenized,
@@ -63,6 +61,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.milestone import milestone_sort_key
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.vocabularies import DistributionVocabulary
 from lp.services.database.interfaces import IStore
@@ -113,11 +112,11 @@ class BugVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'id'
 
 
+@implementer(IHugeVocabulary)
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
     """All web and email based external bug trackers."""
     displayname = 'Select a bug tracker'
     step_title = 'Search'
-    implements(IHugeVocabulary)
     _table = BugTracker
     _filter = True
     _orderBy = 'title'
@@ -210,12 +209,11 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(watch, watch.id, title)
 
 
+@implementer(IVocabulary, IVocabularyTokenized)
 class DistributionUsingMaloneVocabulary:
     """All the distributions that uses Malone officially."""
 
-    implements(IVocabulary, IVocabularyTokenized)
-
-    _orderBy = 'displayname'
+    _orderBy = 'display_name'
 
     def __init__(self, context=None):
         self.context = context
@@ -264,9 +262,7 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
     def __iter__(self):
         bug = self.context.bug
 
-        all_series = self._getNominatableObjects()
-
-        for series in sorted(all_series, key=attrgetter("displayname")):
+        for series in self._getNominatableObjects():
             if bug.canBeNominatedFor(series):
                 yield self.toTerm(series)
 
@@ -347,14 +343,13 @@ def milestone_matches_bugtask(milestone, bugtask):
     return False
 
 
+@implementer(IVocabulary, IVocabularyTokenized)
 class BugTaskMilestoneVocabulary:
     """Milestones for a set of bugtasks.
 
     This vocabulary supports the optional preloading and caching of milestones
     in order to avoid repeated database queries.
     """
-
-    implements(IVocabulary, IVocabularyTokenized)
 
     def __init__(self, default_bugtask=None, milestones=None):
         assert default_bugtask is None or IBugTask.providedBy(default_bugtask)
@@ -399,7 +394,11 @@ class BugTaskMilestoneVocabulary:
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             milestones.append(bugtask.milestone)
-        return milestones
+
+        def naked_milestone_sort_key(milestone):
+            return milestone_sort_key(removeSecurityProxy(milestone))
+
+        return sorted(milestones, key=naked_milestone_sort_key, reverse=True)
 
     def getTerm(self, value):
         """See `IVocabulary`."""

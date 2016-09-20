@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the product view classes and templates."""
@@ -60,7 +60,7 @@ class ProductTestBase(TestCaseWithFactory):
         return product, branch
 
 
-class TestProductCodeIndexView(ProductTestBase):
+class TestProductBranchesView(ProductTestBase):
     """Tests for the product code home page."""
 
     def getBranchSummaryBrowseLinkForProduct(self, product):
@@ -124,68 +124,6 @@ class TestProductCodeIndexView(ProductTestBase):
             product, '+branches', rootsite='code')
         self.assertNotIn(branch, view.initial_branches)
 
-    def test_committer_count_with_revision_authors(self):
-        # Test that the code pathing for calling committer_count with
-        # valid revision authors is truly tested.
-        self.factory.makePerson(email='cthulu@example.com')
-        product, branch = self.makeProductAndDevelopmentFocusBranch()
-        date_generator = time_counter(
-            datetime.now(pytz.UTC) - timedelta(days=30),
-            timedelta(days=1))
-        self.factory.makeRevisionsForBranch(
-            branch, author='cthulu@example.com',
-            date_generator=date_generator)
-        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
-
-        view = create_initialized_view(product, '+branches', rootsite='code')
-        self.assertEqual(view.committer_count, 1)
-
-    def test_committers_count_private_branch(self):
-        # Test that calling committer_count will return the proper value
-        # for a private branch.
-        fsm = self.factory.makePerson(email='flyingpasta@example.com')
-        product, branch = self.makeProductAndDevelopmentFocusBranch(
-            owner=fsm, information_type=InformationType.USERDATA)
-        date_generator = time_counter(
-            datetime.now(pytz.UTC) - timedelta(days=30),
-            timedelta(days=1))
-        login_person(fsm)
-        self.factory.makeRevisionsForBranch(
-            branch, author='flyingpasta@example.com',
-            date_generator=date_generator)
-        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
-
-        view = create_initialized_view(product, '+branches',
-                                       rootsite='code', principal=fsm)
-        self.assertEqual(view.committer_count, 1)
-
-        commit_section = find_tag_by_id(view.render(), 'commits')
-        self.assertIsNot(None, commit_section)
-
-    def test_committers_count_private_branch_non_subscriber(self):
-        # Test that calling committer_count will return the proper value
-        # for a private branch.
-        fsm = self.factory.makePerson(email='flyingpasta@example.com')
-        product, branch = self.makeProductAndDevelopmentFocusBranch(
-            owner=fsm, information_type=InformationType.USERDATA)
-        date_generator = time_counter(
-            datetime.now(pytz.UTC) - timedelta(days=30),
-            timedelta(days=1))
-        login_person(fsm)
-        self.factory.makeRevisionsForBranch(
-            branch, author='flyingpasta@example.com',
-            date_generator=date_generator)
-        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
-
-        observer = self.factory.makePerson()
-        login_person(observer)
-        view = create_initialized_view(product, '+branches',
-                                       rootsite='code', principal=observer)
-        self.assertEqual(view.branch_count, 0)
-        self.assertEqual(view.committer_count, 1)
-        commit_section = find_tag_by_id(view.render(), 'commits')
-        self.assertIs(None, commit_section)
-
     def test_initial_branches_contains_push_instructions(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
         view = create_initialized_view(
@@ -207,8 +145,17 @@ class TestProductCodeIndexView(ProductTestBase):
         expected = 'There are no branches for %s' % product.displayname
         self.assertIn(expected, html)
 
+    def test_git_link(self):
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, '+branches')
+        self.assertNotIn('View Git repositories', view())
 
-class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
+        self.factory.makeGitRepository(target=product)
+        view = create_initialized_view(product, '+branches')
+        self.assertIn('View Git repositories', view())
+
+
+class TestProductBranchesServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
 
     def test_external_imported(self):
@@ -316,8 +263,82 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         url = "http://example.com/mybranch"
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.MIRRORED, url=url)
-        view = create_initialized_view(product, '+branches', rootsite='code')
+        view = create_initialized_view(
+            product, '+branch-summary', rootsite='code')
         self.assertEqual(url, view.mirror_location)
+
+
+class TestProductBranchSummaryView(ProductTestBase):
+
+    def test_committer_count_with_revision_authors(self):
+        # Test that the code pathing for calling committer_count with
+        # valid revision authors is truly tested.
+        self.factory.makePerson(email='cthulu@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch()
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        self.factory.makeRevisionsForBranch(
+            branch, author='cthulu@example.com',
+            date_generator=date_generator)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
+
+        view = create_initialized_view(
+            product, '+branch-summary', rootsite='code')
+        self.assertEqual(view.committer_count, 1)
+
+    def test_committers_count_private_branch(self):
+        # Test that calling committer_count will return the proper value
+        # for a private branch.
+        fsm = self.factory.makePerson(email='flyingpasta@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            owner=fsm, information_type=InformationType.USERDATA)
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        login_person(fsm)
+        self.factory.makeRevisionsForBranch(
+            branch, author='flyingpasta@example.com',
+            date_generator=date_generator)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
+
+        view = create_initialized_view(product, '+branch-summary',
+                                       rootsite='code', principal=fsm)
+        self.assertEqual(view.committer_count, 1)
+
+        view = create_initialized_view(
+            product, '+portlet-product-branchstatistics', rootsite='code',
+            principal=fsm)
+        commit_section = find_tag_by_id(view.render(), 'commits')
+        self.assertIsNot(None, commit_section)
+
+    def test_committers_count_private_branch_non_subscriber(self):
+        # Test that calling committer_count will return the proper value
+        # for a private branch.
+        fsm = self.factory.makePerson(email='flyingpasta@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            owner=fsm, information_type=InformationType.USERDATA)
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        login_person(fsm)
+        self.factory.makeRevisionsForBranch(
+            branch, author='flyingpasta@example.com',
+            date_generator=date_generator)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
+
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_initialized_view(product, '+branch-summary',
+                                       rootsite='code', principal=observer)
+        self.assertEqual(view.branch_count, 0)
+        self.assertEqual(view.committer_count, 1)
+
+        view = create_initialized_view(
+            product, '+portlet-product-branchstatistics', rootsite='code',
+            principal=observer)
+        commit_section = find_tag_by_id(view.render(), 'commits')
+        self.assertIs(None, commit_section)
 
 
 class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
@@ -333,7 +354,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertIs(None, find_tag_by_id(contents, 'privacy'))
         self.assertIs(None, find_tag_by_id(contents, 'involvement'))
         self.assertIs(None, find_tag_by_id(
-            contents, 'portlet-product-codestatistics'))
+            contents, 'portlet-product-branchstatistics'))
 
     def test_portlets_shown_for_HOSTED(self):
         # If the BranchUsage is HOSTED then the portlets are shown.
@@ -345,7 +366,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertIsNot(None, find_tag_by_id(contents, 'privacy'))
         self.assertIsNot(None, find_tag_by_id(contents, 'involvement'))
         self.assertIsNot(None, find_tag_by_id(
-            contents, 'portlet-product-codestatistics'))
+            contents, 'portlet-product-branchstatistics'))
 
     def test_portlets_shown_for_EXTERNAL(self):
         # If the BranchUsage is EXTERNAL then the portlets are shown.
@@ -358,7 +379,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         self.assertIsNot(None, find_tag_by_id(contents, 'privacy'))
         self.assertIsNot(None, find_tag_by_id(contents, 'involvement'))
         self.assertIsNot(None, find_tag_by_id(
-            contents, 'portlet-product-codestatistics'))
+            contents, 'portlet-product-branchstatistics'))
 
     def test_is_private(self):
         product = self.factory.makeProduct(
@@ -395,11 +416,11 @@ class TestCanConfigureBranches(TestCaseWithFactory):
 
     def test_cannot_configure_branches_product_no_edit_permission(self):
         product = self.factory.makeProduct()
-        view = create_view(product, '+all-branches')
+        view = create_view(product, '+branches')
         self.assertEqual(False, view.can_configure_branches())
 
     def test_can_configure_branches_product_with_edit_permission(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = create_view(product, '+all-branches')
+        view = create_view(product, '+branches')
         self.assertTrue(view.can_configure_branches())

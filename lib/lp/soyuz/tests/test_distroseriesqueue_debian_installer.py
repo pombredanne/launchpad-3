@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test upload and queue manipulation of debian-installer custom uploads.
@@ -7,6 +7,7 @@ See also lp.archivepublisher.tests.test_debian_installer for detailed tests
 of debian-installer custom upload extraction.
 """
 
+from itertools import chain
 import os
 
 import transaction
@@ -28,8 +29,8 @@ class TestDistroSeriesQueueDebianInstaller(TestNativePublishingBase):
     def setUp(self):
         super(TestDistroSeriesQueueDebianInstaller, self).setUp()
         import_public_test_keys()
-        # CustomUpload.installFiles requires a umask of 022.
-        old_umask = os.umask(022)
+        # CustomUpload.installFiles requires a umask of 0o022.
+        old_umask = os.umask(0o022)
         self.addCleanup(os.umask, old_umask)
         self.anything_policy = getPolicy(
             name="anything", distro="ubuntutest", distroseries=None)
@@ -52,11 +53,16 @@ class TestDistroSeriesQueueDebianInstaller(TestNativePublishingBase):
         self.assertEqual(1, len(upload.queue_root.customfiles))
 
     def test_generates_mail(self):
-        # Two e-mail messages were generated (acceptance and announcement).
+        # Three email messages were generated (acceptance to signer,
+        # acceptance to changer, and announcement).
         self.anything_policy.setDistroSeriesAndPocket("hoary-test")
         self.anything_policy.distroseries.changeslist = "announce@example.com"
         self.uploadTestData()
-        self.assertEqual(2, len(stub.test_emails))
+        self.assertContentEqual(
+            ["announce@example.com", "celso.providelo@canonical.com",
+             "foo.bar@canonical.com"],
+            list(chain.from_iterable(
+                [to_addrs for _, to_addrs, _ in stub.test_emails])))
 
     def test_bad_upload_remains_in_accepted(self):
         # Bad debian-installer uploads remain in accepted.  Simulate an

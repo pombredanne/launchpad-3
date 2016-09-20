@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for implementing distribution items."""
@@ -9,6 +9,7 @@ __all__ = [
     'DistributionSet',
     ]
 
+from collections import defaultdict
 import itertools
 from operator import itemgetter
 
@@ -33,13 +34,9 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import (
-    alsoProvides,
-    implements,
-    )
+from zope.interface import implementer
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -90,12 +87,11 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
+    VCSType,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
-    IBaseDistribution,
-    IDerivativeDistribution,
     IDistribution,
     IDistributionSet,
     )
@@ -118,6 +114,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.distributionmirror import (
     DistributionMirror,
+    MirrorCDImageDistroSeries,
     MirrorDistroArchSeries,
     MirrorDistroSeriesSource,
     )
@@ -135,6 +132,7 @@ from lp.registry.model.milestone import (
 from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -187,6 +185,10 @@ from lp.translations.model.hastranslationimports import (
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+@implementer(
+    IBugSummaryDimension, IDistribution, IHasBugSupervisor,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
@@ -194,17 +196,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    StructuralSubscriptionTargetMixin, HasMilestonesMixin,
                    HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(
-        IBugSummaryDimension, IDistribution, IFAQTarget,
-        IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo,
-        IHasMugshot, IHasOOPSReferences, ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
-    displayname = StringCol(notNull=True)
-    title = StringCol(notNull=True)
+    display_name = StringCol(dbName='displayname', notNull=True)
+    _title = StringCol(dbName='title', notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
@@ -244,24 +242,26 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     active = True
+    official_packages = BoolCol(notNull=True, default=False)
+    supports_ppas = BoolCol(notNull=True, default=False)
+    supports_mirrors = BoolCol(notNull=True, default=False)
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
     development_series_alias = StringCol(notNull=False, default=None)
+    vcs = EnumCol(enum=VCSType, notNull=False)
 
     def __repr__(self):
-        displayname = self.displayname.encode('ASCII', 'backslashreplace')
+        display_name = self.display_name.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
-            self.__class__.__name__, displayname, self.name)
+            self.__class__.__name__, display_name, self.name)
 
-    def _init(self, *args, **kw):
-        """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
-        SQLBase._init(self, *args, **kw)
-        # Add a marker interface to set permissions for this kind
-        # of distribution.
-        if self.name == 'ubuntu':
-            alsoProvides(self, IBaseDistribution)
-        else:
-            alsoProvides(self, IDerivativeDistribution)
+    @property
+    def displayname(self):
+        return self.display_name
+
+    @property
+    def title(self):
+        return self.display_name
 
     @property
     def pillar(self):
@@ -434,17 +434,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return [archive.id]
 
-    def _getActiveMirrors(self, mirror_content_type,
-            by_country=False, needs_fresh=False):
+    def _getMirrors(self, content=None, enabled=True,
+                    status=MirrorStatus.OFFICIAL, by_country=False,
+                    needs_fresh=False, needs_cdimage_series=False):
         """Builds the query to get the mirror data for various purposes."""
-        mirrors = list(Store.of(self).find(
-            DistributionMirror,
-            And(
-                DistributionMirror.distribution == self.id,
-                DistributionMirror.content == mirror_content_type,
-                DistributionMirror.enabled == True,
-                DistributionMirror.status == MirrorStatus.OFFICIAL,
-                DistributionMirror.official_candidate == True)))
+        clauses = [
+            DistributionMirror.distribution == self.id,
+            DistributionMirror.status == status,
+            ]
+        if content is not None:
+            clauses.append(DistributionMirror.content == content)
+        if enabled is not None:
+            clauses.append(DistributionMirror.enabled == enabled)
+        if status != MirrorStatus.UNOFFICIAL:
+            clauses.append(DistributionMirror.official_candidate == True)
+        mirrors = list(Store.of(self).find(DistributionMirror, And(*clauses)))
 
         if by_country and mirrors:
             # Since country data is needed, fetch countries into the cache.
@@ -484,66 +488,71 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     mirror.id, None)
                 cache.source_mirror_freshness = source_mirror_freshness.get(
                     mirror.id, None)
+
+        if needs_cdimage_series and mirrors:
+            all_cdimage_series = load_referencing(
+                MirrorCDImageDistroSeries, mirrors, ["distribution_mirrorID"])
+            cdimage_series = defaultdict(list)
+            for series in all_cdimage_series:
+                cdimage_series[series.distribution_mirrorID].append(series)
+            for mirror in mirrors:
+                cache = get_property_cache(mirror)
+                cache.cdimage_series = cdimage_series.get(mirror.id, [])
+
         return mirrors
 
     @property
     def archive_mirrors(self):
         """See `IDistribution`."""
-        return self._getActiveMirrors(MirrorContent.ARCHIVE)
+        return self._getMirrors(content=MirrorContent.ARCHIVE)
 
     @property
     def archive_mirrors_by_country(self):
         """See `IDistribution`."""
-        return self._getActiveMirrors(
-            MirrorContent.ARCHIVE,
+        return self._getMirrors(
+            content=MirrorContent.ARCHIVE,
             by_country=True,
             needs_fresh=True)
 
     @property
     def cdimage_mirrors(self, by_country=False):
         """See `IDistribution`."""
-        return self._getActiveMirrors(MirrorContent.RELEASE)
+        return self._getMirrors(
+            content=MirrorContent.RELEASE,
+            needs_cdimage_series=True)
 
     @property
     def cdimage_mirrors_by_country(self):
         """See `IDistribution`."""
-        return self._getActiveMirrors(
-            MirrorContent.RELEASE,
-            by_country=True)
+        return self._getMirrors(
+            content=MirrorContent.RELEASE,
+            by_country=True,
+            needs_cdimage_series=True)
 
     @property
     def disabled_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
+        return self._getMirrors(
             enabled=False,
-            status=MirrorStatus.OFFICIAL,
-            official_candidate=True)
+            by_country=True,
+            needs_fresh=True)
 
     @property
     def unofficial_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            status=MirrorStatus.UNOFFICIAL)
+        return self._getMirrors(
+            enabled=None,
+            status=MirrorStatus.UNOFFICIAL,
+            by_country=True,
+            needs_fresh=True)
 
     @property
     def pending_review_mirrors(self):
         """See `IDistribution`."""
-        return Store.of(self).find(
-            DistributionMirror,
-            distribution=self,
-            status=MirrorStatus.PENDING_REVIEW,
-            official_candidate=True)
-
-    @property
-    def full_functionality(self):
-        """See `IDistribution`."""
-        if IBaseDistribution.providedBy(self):
-            return True
-        return False
+        return self._getMirrors(
+            enabled=None,
+            by_country=True,
+            status=MirrorStatus.PENDING_REVIEW)
 
     @property
     def drivers(self):
@@ -609,7 +618,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def bugtargetdisplayname(self):
         """See IBugTarget."""
-        return self.displayname
+        return self.display_name
 
     @property
     def bugtargetname(self):
@@ -635,8 +644,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         from lp.code.model.seriessourcepackagebranch import (
             SeriesSourcePackageBranch)
 
+        # This method returns thousands of branch unique names in a
+        # single call, so the query is perilous and awkwardly tuned to
+        # get a good plan with the normal dataset (the charms distro).
+        OfficialSeries = ClassAlias(DistroSeries)
+
+        ds_ids = Select(
+            DistroSeries.id, tables=[DistroSeries],
+            where=DistroSeries.distributionID == self.id)
         clauses = [
-            DistroSeries.distribution == self.id,
+            DistroSeries.id.is_in(ds_ids),
             get_branch_privacy_filter(user),
         ]
 
@@ -644,17 +661,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # If "since" was provided, take into account.
             clauses.append(Branch.last_scanned > since)
 
-        OfficialSeries = ClassAlias(DistroSeries)
         branches = IStore(self).using(
             Branch,
             Join(DistroSeries,
                  DistroSeries.id == Branch.distroseriesID),
             LeftJoin(
-                SeriesSourcePackageBranch,
-                SeriesSourcePackageBranch.branchID == Branch.id),
-            LeftJoin(
-                OfficialSeries,
-                OfficialSeries.id == SeriesSourcePackageBranch.distroseriesID),
+                Join(
+                    SeriesSourcePackageBranch,
+                    OfficialSeries,
+                    OfficialSeries.id ==
+                        SeriesSourcePackageBranch.distroseriesID),
+                And(SeriesSourcePackageBranch.branchID == Branch.id,
+                    SeriesSourcePackageBranch.distroseriesID.is_in(ds_ids))),
         ).find(
             (Branch.unique_name, Branch.last_scanned_id, OfficialSeries.name),
             And(*clauses)
@@ -689,7 +707,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             content=mirror_type,
             country_dns_mirror=True).one()
 
-    def newMirror(self, owner, speed, country, content, displayname=None,
+    def newMirror(self, owner, speed, country, content, display_name=None,
                   description=None, http_base_url=None,
                   ftp_base_url=None, rsync_base_url=None,
                   official_candidate=False, enabled=False,
@@ -699,7 +717,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
-        if not self.full_functionality:
+        if not self.supports_mirrors:
             return None
 
         urls = {'http_base_url': http_base_url,
@@ -723,7 +741,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
-            country=country, content=content, displayname=displayname,
+            country=country, content=content, display_name=display_name,
             description=description, http_base_url=urls['http_base_url'],
             ftp_base_url=urls['ftp_base_url'],
             rsync_base_url=urls['rsync_base_url'],
@@ -794,6 +812,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries,
             distribution=self,
             status=SeriesStatus.DEVELOPMENT)
+
+    def getNonObsoleteSeries(self):
+        """See `IDistribution`."""
+        for series in self.series:
+            if series.status != SeriesStatus.OBSOLETE:
+                yield series
 
     def getMilestone(self, name):
         """See `IDistribution`."""
@@ -981,8 +1005,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         conditions = [
             DistributionSourcePackageCache.distribution == self,
-            DistributionSourcePackageCache.archiveID.is_in(
-                self.all_distro_archive_ids),
+            Or(
+                DistributionSourcePackageCache.archiveID.is_in(
+                    self.all_distro_archive_ids),
+                DistributionSourcePackageCache.archive == None),
             Or(
                 fti_search(DistributionSourcePackageCache, text),
                 DistributionSourcePackageCache.name.contains_string(
@@ -1259,10 +1285,22 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],
             orderBy=['archive.id'], distinct=True)
 
+        reapable_af_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        ArchiveFile.archive = archive.id AND
+        ArchiveFile.scheduled_deletion_date < %s
+        """ % sqlvalues(ArchivePurpose.PPA, self, UTC_NOW)
+
+        reapable_af_archives = Archive.select(
+            reapable_af_query, clauseTables=['ArchiveFile'],
+            orderBy=['archive.id'], distinct=True)
+
         deleting_archives = Archive.selectBy(
             status=ArchiveStatus.DELETING).orderBy(['archive.id'])
 
-        return src_archives.union(bin_archives).union(deleting_archives)
+        return src_archives.union(bin_archives).union(
+            reapable_af_archives).union(deleting_archives)
 
     def getArchiveByComponent(self, component_name):
         """See `IDistribution`."""
@@ -1301,13 +1339,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.owner) or user.inTeam(admins)
 
-    def newSeries(self, name, displayname, title, summary,
+    def newSeries(self, name, display_name, title, summary,
                   description, version, previous_series, registrant):
         """See `IDistribution`."""
         series = DistroSeries(
             distribution=self,
             name=name,
-            displayname=displayname,
+            display_name=display_name,
             title=title,
             summary=summary,
             description=description,
@@ -1392,10 +1430,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return False
 
 
+@implementer(IDistributionSet)
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
-
-    implements(IDistributionSet)
     title = "Registered Distributions"
 
     def __iter__(self):
@@ -1430,13 +1467,14 @@ class DistributionSet:
             return None
         return pillar
 
-    def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, registrant, mugshot=None, logo=None, icon=None):
+    def new(self, name, display_name, title, description, summary, domainname,
+            members, owner, registrant, mugshot=None, logo=None, icon=None,
+            vcs=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
-            displayname=displayname,
-            title=title,
+            display_name=display_name,
+            _title=title,
             description=description,
             summary=summary,
             domainname=domainname,
@@ -1446,7 +1484,8 @@ class DistributionSet:
             registrant=registrant,
             mugshot=mugshot,
             logo=logo,
-            icon=icon)
+            icon=icon,
+            vcs=vcs)
         getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         policies = itertools.product(

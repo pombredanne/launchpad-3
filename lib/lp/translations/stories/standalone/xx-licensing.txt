@@ -85,14 +85,14 @@ Karl can now browse to a +translate page without being forwarded.
     >>> browser.url
     'http://.../alsa-utils/trunk/+pots/alsa-utils/es/+translate'
     >>> print browser.title
-    Spanish (es) : Template ...alsa-utils... : Translations :
-    Series trunk : alsa-utils
+    Spanish (es) : Template ...alsa-utils... : Series trunk :
+    Translations : alsa-utils
 
 
 Permissions
 -----------
 
-If another logged-in user comes across Karl's translations page, he sees
+If another logged-in user comes across Karl's translations page, they see
 no link to change Karl's licensing choice.
 
     >>> user_browser.open('http://translations.launchpad.dev/~karl/')

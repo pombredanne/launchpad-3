@@ -22,7 +22,7 @@
         <tal:can-subscribe-to-list
             condition="view/user_can_subscribe_to_list">
           <a id="link-list-subscribe" class="sprite add"
-              href="/people/+me/+editemails">Subscribe to mailing list</a>
+              href="/people/+me/+editmailinglists">Subscribe to mailing list</a>
           <br />
         </tal:can-subscribe-to-list>
         <tal:subscribed-to-list

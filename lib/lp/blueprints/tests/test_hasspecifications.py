@@ -107,9 +107,9 @@ class HasSpecificationsTests(TestCaseWithFactory):
     def test_projectgroup_all_specifications(self):
         projectgroup = self.factory.makeProject()
         other_projectgroup = self.factory.makeProject()
-        product1 = self.factory.makeProduct(project=projectgroup)
-        product2 = self.factory.makeProduct(project=projectgroup)
-        product3 = self.factory.makeProduct(project=other_projectgroup)
+        product1 = self.factory.makeProduct(projectgroup=projectgroup)
+        product2 = self.factory.makeProduct(projectgroup=projectgroup)
+        product3 = self.factory.makeProduct(projectgroup=other_projectgroup)
         self.factory.makeSpecification(product=product1, name="spec1")
         self.factory.makeSpecification(
             product=product2, name="spec2",
@@ -121,9 +121,9 @@ class HasSpecificationsTests(TestCaseWithFactory):
     def test_projectgroup_valid_specifications(self):
         projectgroup = self.factory.makeProject()
         other_projectgroup = self.factory.makeProject()
-        product1 = self.factory.makeProduct(project=projectgroup)
-        product2 = self.factory.makeProduct(project=projectgroup)
-        product3 = self.factory.makeProduct(project=other_projectgroup)
+        product1 = self.factory.makeProduct(projectgroup=projectgroup)
+        product2 = self.factory.makeProduct(projectgroup=projectgroup)
+        product3 = self.factory.makeProduct(projectgroup=other_projectgroup)
         self.factory.makeSpecification(product=product1, name="spec1")
         self.factory.makeSpecification(
             product=product2, name="spec2",

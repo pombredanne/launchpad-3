@@ -35,8 +35,8 @@
 
 <metal:load-javascript define-macro="load-javascript"
   tal:define="
-      revno modules/lp.app.versioninfo/revno | string:unknown;
-      icingroot string:/+icing/rev${revno};
+      revision modules/lp.app.versioninfo/revision | string:unknown;
+      icingroot string:/+icing/rev${revision};
       combo_url view/combo_url;
       devmode modules/lp.services.config/config/devmode;
       yui_version view/yui_version;
@@ -109,7 +109,6 @@
 
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
-      revno modules/lp.app.versioninfo/revno | string:unknown;
       devmode modules/lp.services.config/config/devmode;">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
@@ -194,8 +193,8 @@
 
 <metal:launchpad-stylesheet-3-0 define-macro="launchpad-stylesheet-3-0"
   tal:define="
-    revno modules/lp.app.versioninfo/revno | string:unknown;
-    icingroot string:/+icing/rev${revno}">
+    revision modules/lp.app.versioninfo/revision | string:unknown;
+    icingroot string:/+icing/rev${revision}">
   <tal:comment replace="nothing">
     This macro loads a single css file containing all our stylesheets.
     If you need to include a new css file here, add it to
@@ -294,7 +293,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2014
+      &copy; 2004-2016
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
@@ -312,11 +311,11 @@
 		>Careers</a>
       </tal:careers_link>
       &nbsp;&bull;&nbsp;
-      <a href="http://identi.ca/launchpadstatus"
+      <a href="https://twitter.com/launchpadstatus"
         >System status</a>
       <span id="lp-version">
       &nbsp;&bull;&nbsp;
-        r<tal:revno replace="revno" />
+        r<tal:display_revision replace="display_revision" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
         (<a href="https://dev.launchpad.net/"

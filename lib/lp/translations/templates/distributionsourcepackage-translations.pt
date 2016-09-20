@@ -1,0 +1,51 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only">
+  <body>
+  <div metal:fill-slot="main">
+    <div class="translation-help-links">
+      <a href="https://help.launchpad.net/Translations"
+         id="link-to-translations-help"
+         >Help for translations
+      </a>
+      <div></div><!-- to clear-up all floats -->
+    </div>
+
+    <tal:translation_focus condition="view/translation_focus"
+                           define="target view/translation_focus">
+
+      <div class="top-portlet">
+          Launchpad currently recommends translating
+          <tal:target replace="structure target/fmt:link/+translations"
+                      >trunk</tal:target>.
+      </div>
+      <div tal:replace="structure view/translation_focus/@@+potlist" />
+    </tal:translation_focus>
+
+    <tal:secondary condition="view/secondary_translatable_series">
+      <h2 tal:condition="view/translation_focus">
+        Other versions of <span tal:replace="context/displayname">Ubuntu</span>
+      </h2>
+
+      <ul id="distroseries-list">
+        <li tal:repeat="sourcepackage view/secondary_translatable_series">
+          <a tal:attributes="href sourcepackage/fmt:url:translations"
+             tal:content="sourcepackage/distroseries/named_version">Hoary (5.04)</a>
+        </li>
+      </ul>
+    </tal:secondary>
+
+    <tal:untranslatable condition="not: view/translation_focus">
+      <p>
+        This package does not have any series to be translated. Once
+        <span tal:replace="context/displayname">Ubuntu</span> has
+        created a distroseries, you will be able to find or create
+        translations for its packages here.
+      </p>
+    </tal:untranslatable>
+</div>
+</body>
+</html>

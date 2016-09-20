@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'branch_to_target',
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
@@ -14,7 +13,7 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.code.errors import NoLinkedBranch
@@ -30,11 +29,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.webapp.sorting import sorted_version_numbers
-
-
-def branch_to_target(branch):
-    """Adapt an IBranch to an IBranchTarget."""
-    return branch.target
 
 
 class _BaseBranchTarget:
@@ -61,8 +55,8 @@ class _BaseBranchTarget:
         return []
 
 
+@implementer(IBranchTarget)
 class PackageBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     def __init__(self, sourcepackage):
         self.sourcepackage = sourcepackage
@@ -88,9 +82,8 @@ class PackageBranchTarget(_BaseBranchTarget):
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
-        from lp.code.model.branchnamespace import (
-            PackageNamespace)
-        return PackageNamespace(owner, self.sourcepackage)
+        from lp.code.model.branchnamespace import PackageBranchNamespace
+        return PackageBranchNamespace(owner, self.sourcepackage)
 
     @property
     def collection(self):
@@ -120,12 +113,17 @@ class PackageBranchTarget(_BaseBranchTarget):
         return True
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return True
 
     @property
     def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def allow_recipe_name_from_target(self):
         """See `IBranchTarget`."""
         return True
 
@@ -195,8 +193,8 @@ class PackageBranchTarget(_BaseBranchTarget):
         return result
 
 
+@implementer(IBranchTarget)
 class PersonBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     name = u'+junk'
     default_stacked_on_branch = None
@@ -222,9 +220,8 @@ class PersonBranchTarget(_BaseBranchTarget):
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
-        from lp.code.model.branchnamespace import (
-            PersonalNamespace)
-        return PersonalNamespace(owner)
+        from lp.code.model.branchnamespace import PersonalBranchNamespace
+        return PersonalBranchNamespace(owner)
 
     @property
     def collection(self):
@@ -237,12 +234,17 @@ class PersonBranchTarget(_BaseBranchTarget):
         return False
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return False
 
     @property
     def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
+    def allow_recipe_name_from_target(self):
         """See `IBranchTarget`."""
         return False
 
@@ -270,8 +272,8 @@ class PersonBranchTarget(_BaseBranchTarget):
         branch.sourcepackagename = None
 
 
+@implementer(IBranchTarget)
 class ProductBranchTarget(_BaseBranchTarget):
-    implements(IBranchTarget)
 
     def __init__(self, product):
         self.product = product
@@ -308,9 +310,8 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
-        from lp.code.model.branchnamespace import (
-            ProductNamespace)
-        return ProductNamespace(owner, self.product)
+        from lp.code.model.branchnamespace import ProjectBranchNamespace
+        return ProjectBranchNamespace(owner, self.product)
 
     @property
     def collection(self):
@@ -323,12 +324,17 @@ class ProductBranchTarget(_BaseBranchTarget):
         return True
 
     @property
-    def supports_short_identites(self):
+    def supports_short_identities(self):
         """See `IBranchTarget`."""
         return True
 
     @property
     def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def allow_recipe_name_from_target(self):
         """See `IBranchTarget`."""
         return True
 

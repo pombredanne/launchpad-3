@@ -30,7 +30,7 @@ from storm.store import (
     Store,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -126,8 +126,8 @@ def dictify_translations(translations):
         if translation is not None)
 
 
+@implementer(IPOTMsgSet)
 class POTMsgSet(SQLBase):
-    implements(IPOTMsgSet)
 
     _table = 'POTMsgSet'
 
@@ -414,7 +414,7 @@ class POTMsgSet(SQLBase):
                 JOIN SuggestivePOTemplate ON
                     TranslationTemplateItem.potemplate =
                         SuggestivePOTemplate.potemplate
-                WHERE msgid_singular = %s and potmsgset.id <> %s
+                WHERE POTMsgSet.msgid_singular = %s and POTMsgSet.id <> %s
             )''' % sqlvalues(self.msgid_singular, self))
 
         # Subquery to find the ids of TranslationMessages that are

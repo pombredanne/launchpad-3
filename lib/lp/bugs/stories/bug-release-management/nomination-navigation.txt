@@ -11,12 +11,12 @@ same navigation as the bug page itself.
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1'
     ... '/nominations/2/+editstatus')
     >>> print_location(admin_browser.contents)
-    Hierarchy: Ubuntu > ?mozilla-firefox? package > Bugs > Bug #1...
+    Hierarchy: Ubuntu > mozilla-firefox package > Bug #1...
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Bugs (selected) - http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Blueprints - not linked
-    * Translations - not linked
+    * Translations - http://translations.launchpad.dev/ubuntu/+source/mozilla-firefox
     * Answers - http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox
     Main heading: Approve or decline nomination for bug #1 in Ubuntu Hoary

@@ -9,10 +9,11 @@ from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.archive import Archive
 
-# PPA owners that we never want to expire.
+# PPA owners or particular PPAs that we never want to expire.
 BLACKLISTED_PPAS = """
 adobe-isv
 chelsea-team
+ci-train-ppa-service/stable-phone-overlay
 dennis-team
 elvis-team
 fluendo-isv
@@ -79,9 +80,10 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND spr.id = sprf.sourcepackagerelease
                 AND spph.sourcepackagerelease = spr.id
                 AND spph.dateremoved < (
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
+                    interval %(stay_of_execution)s)
                 AND spph.archive = archive.id
-                AND archive.purpose IN %s
+                AND archive.purpose IN %(archive_types)s
                 AND lfa.expires IS NULL
             EXCEPT
             SELECT sprf.libraryfile
@@ -97,17 +99,22 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND spph.archive = a.id
                 AND p.id = a.owner
                 AND (
-                    (p.name IN %s AND a.purpose = %s)
+                    ((p.name IN %(blacklist)s
+                      OR (p.name || '/' || a.name) IN %(blacklist)s)
+                     AND a.purpose = %(ppa)s)
                     OR (a.private IS TRUE
-                        AND (p.name || '/' || a.name) NOT IN %s)
-                    OR a.purpose NOT IN %s
+                        AND (p.name || '/' || a.name) NOT IN %(whitelist)s)
+                    OR a.purpose NOT IN %(archive_types)s
                     OR dateremoved >
-                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
+                        interval %(stay_of_execution)s
                     OR dateremoved IS NULL);
             """ % sqlvalues(
-                stay_of_execution, archive_types, self.blacklist,
-                ArchivePurpose.PPA, self.whitelist, archive_types,
-                stay_of_execution))
+                stay_of_execution=stay_of_execution,
+                archive_types=archive_types,
+                blacklist=self.blacklist,
+                whitelist=self.whitelist,
+                ppa=ArchivePurpose.PPA))
 
         lfa_ids = results.get_all()
         return lfa_ids
@@ -152,7 +159,9 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND bpph.archive = a.id
                 AND p.id = a.owner
                 AND (
-                    (p.name IN %(blacklist)s AND a.purpose = %(ppa)s)
+                    ((p.name IN %(blacklist)s
+                      OR (p.name || '/' || a.name) IN %(blacklist)s)
+                     AND a.purpose = %(ppa)s)
                     OR (a.private IS TRUE
                         AND (p.name || '/' || a.name) NOT IN %(whitelist)s)
                     OR a.purpose NOT IN %(archive_types)s

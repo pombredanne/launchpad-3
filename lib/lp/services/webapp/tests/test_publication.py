@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests publication.py"""
@@ -8,8 +8,10 @@ __metaclass__ = type
 import sys
 
 from contrib.oauth import (
+    OAuthConsumer,
     OAuthRequest,
     OAuthSignatureMethod_PLAINTEXT,
+    OAuthToken,
     )
 from storm.database import (
     STATE_DISCONNECTED,
@@ -99,19 +101,21 @@ class TestWebServicePublication(TestCaseWithFactory):
         self.failIfEqual(person.id, person.account.id)
 
         # Create an access token for our new person.
-        consumer = getUtility(IOAuthConsumerSet).new('test-consumer')
-        request_token = consumer.newRequestToken()
+        consumer = getUtility(IOAuthConsumerSet).new(u'test-consumer')
+        request_token, _ = consumer.newRequestToken()
         request_token.review(
             person, permission=OAuthPermission.READ_PUBLIC, context=None)
-        access_token = request_token.createAccessToken()
+        access_token, access_secret = request_token.createAccessToken()
 
         # Use oauth.OAuthRequest just to generate a dictionary containing all
         # the parameters we need to use in a valid OAuth request, using the
         # access token we just created for our new person.
+        oauth_consumer = OAuthConsumer(consumer.key, u'')
+        oauth_token = OAuthToken(access_token.key, access_secret)
         oauth_request = OAuthRequest.from_consumer_and_token(
-            consumer, access_token)
+            oauth_consumer, oauth_token)
         oauth_request.sign_request(
-            OAuthSignatureMethod_PLAINTEXT(), consumer, access_token)
+            OAuthSignatureMethod_PLAINTEXT(), oauth_consumer, oauth_token)
         return LaunchpadTestRequest(form=oauth_request.parameters)
 
     def test_getPrincipal_for_person_and_account_with_different_ids(self):

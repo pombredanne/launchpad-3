@@ -12,21 +12,24 @@ __all__ = [
 
 
 from zope.component import queryAdapter
+from zope.interface import implementer
 from zope.traversing.interfaces import IPathAdapter
 
 from lp.app.errors import NotFoundError
+from lp.code.browser.vcslisting import PersonTargetDefaultVCSNavigationMixin
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.registry.interfaces.personproduct import IPersonProduct
 from lp.services.webapp import (
     canonical_url,
-    Link,
     Navigation,
     StandardLaunchpadFacets,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IMultiFacetedBreadcrumb
 
 
-class PersonProductNavigation(Navigation):
+class PersonProductNavigation(PersonTargetDefaultVCSNavigationMixin,
+                              Navigation):
     """Navigation to branches for this person/product."""
     usedfor = IPersonProduct
 
@@ -41,6 +44,7 @@ class PersonProductNavigation(Navigation):
             return branch
 
 
+@implementer(IMultiFacetedBreadcrumb)
 class PersonProductBreadcrumb(Breadcrumb):
     """Breadcrumb for an `IPersonProduct`."""
 

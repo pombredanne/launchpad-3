@@ -16,11 +16,11 @@ from zope.interface import (
     )
 
 from lp import _
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
     IDistroArchSeriesBinaryPackageRelease,
-    )
-from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease,
     )
 
 
@@ -53,8 +53,7 @@ class IDistroSeriesBinaryPackage(Interface):
                 "binary package in this distroseries."))
 
     last_sourcepackagerelease = Reference(
-        IDistroSeriesSourcePackageRelease,
-        title=_("The DistroSeriesSourcePackageRelease that was used to "
+        IDistributionSourcePackageRelease,
+        title=_("The DistributionSourcePackageRelease that was used to "
                 "generate the most recently published binary package "
                 "release"))
-

@@ -16,7 +16,7 @@ from lazr.lifecycle.interfaces import IObjectCreatedEvent
 import transaction
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -173,13 +173,13 @@ class BugCommandGroups(BugCommandGroup):
                 self._groups.append(command_or_group)
 
 
+@implementer(IMailHandler)
 class MaloneHandler:
     """Handles emails sent to Malone.
 
     It only handles mail sent to new@... and $bugid@..., where $bugid is a
     positive integer.
     """
-    implements(IMailHandler)
 
     allow_unknown_users = False
 

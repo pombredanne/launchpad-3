@@ -1,11 +1,11 @@
 = Ubuntu PPAs =
 
-The Ubuntu Linux page contains a link to get to the Personal Package Archives.
+The Ubuntu page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > Personal Package Archives
+    Hierarchy: Ubuntu
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu
     * Code - http://code.launchpad.dev/ubuntu
@@ -13,7 +13,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     * Blueprints - http://blueprints.launchpad.dev/ubuntu
     * Translations - http://translations.launchpad.dev/ubuntu
     * Answers - http://answers.launchpad.dev/ubuntu
-    Main heading: Personal Package Archives for Ubuntu Linux
+    Main heading: Personal Package Archives for Ubuntu
 
 
 == Distribution PPA main page ==
@@ -55,15 +55,31 @@ further tests.
 
 == Other distributions PPAs ==
 
-Currently we only support PPAs for ubuntu, although the '+ppas' page
-is presented for other distribution.
+Currently we only support PPAs for a limited number of distros. The
+'+ppas' page isn't linked for other distribution.
+
+    >>> anon_browser.open("http://launchpad.dev/debian")
+    >>> anon_browser.getLink("Personal Package Archives")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+If we enable Debian PPA support, the links appear and the pages present
+coherent data for a distribution with no PPAs.
+
+    >>> from zope.component import getUtility
+    >>> import transaction
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.supports_ppas = True
+    >>> logout()
+    >>> transaction.commit()
 
     >>> anon_browser.open("http://launchpad.dev/debian")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
     Personal Package Archives : Debian
-
-Those pages present coherent data for a distribution with no PPAs.
 
 PPA supported architectures reflects what we have in sampledata.
 
@@ -186,11 +202,6 @@ No data matches the non-existent search string "bustmybuffers".
 We have to update the archive caches, in order to be able to search
 them properly, see doc/package-archive.txt.
 
-    >>> from zope.component import getUtility
-
-    >>> import transaction
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> for archive in ubuntu.getAllPPAs():
@@ -229,7 +240,7 @@ Let's start by adding an extra package to Celso's archive:
     >>> def publishToPPA(person_name, distroseries_name, name, version):
     ...     person = getUtility(IPersonSet).getByName(person_name)
     ...     distroseries = person.archive.distribution[distroseries_name]
-    ...     ign = factory.makeSourcePackagePublishingHistory(
+    ...     factory.makeSourcePackagePublishingHistory(
     ...         distroseries=distroseries, archive=person.archive,
     ...         sourcepackagename=name, version=version)
 
@@ -256,6 +267,8 @@ context PPA in their systems.
     You can update your system with unsupported packages from this
     untrusted PPA by adding ppa:cprov/ppa to your system's Software Sources.
     (Read about installing)
+    sudo add-apt-repository ppa:cprov/ppa
+    sudo apt-get update
     Technical details about this PPA
     ...
     For questions and bugs with software in this PPA please contact
@@ -352,10 +365,10 @@ to the newer version.
                                         no signer (2007-07-09)
     pmount              0.1-1           no signer (2007-07-09)
 
-The link itself will point to the newer version in the distro series.
+The link itself will point to the newer version in the distribution.
 
     >>> print anon_browser.getLink('Newer version').url
-    http://launchpad.dev/ubuntu/warty/+source/iceweasel/1.1
+    http://launchpad.dev/ubuntu/+source/iceweasel/1.1
 
 A Latest updates portlet is included on the index page indicating the
 latest published sources with their states.
@@ -384,14 +397,14 @@ If the ppa has some current activity (building or waiting builds) then this
 is also included in the statistics portlet.
 
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> login('foo.bar@canonical.com')
     >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
     >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
     ...     cprov_ppa)
-    >>> builds[0].updateStatus(BuildStatus.BUILDING)
+    >>> builds[0].updateStatus(
+    ...     BuildStatus.BUILDING, force_invalid_transition=True)
     >>> logout()
 
     >>> anon_browser.reload()
@@ -407,7 +420,7 @@ Current build activity is linked to the builds page with the relevant
 filter.
 
     >>> print anon_browser.getLink('1 package building').url
-    http://launchpad.dev/~cprov/+archive/ppa/+builds?build_state=building
+    http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds?build_state=building
 
 
 == Filtering an archive ==
@@ -444,10 +457,9 @@ An empty PPA doesn't list any packages and it also doesn't present the
 'apt sources lines ' widget and the repository 'URL' since they would
 link to a repository that doesn't exist yet.
 
-    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
     >>> print extract_text(find_main_content(anon_browser.contents))
     PPA for No Privileges Person
-    ...
     PPA description
     I am not allowed to say, I have no privs.
     Adding this PPA to your system
@@ -498,7 +510,8 @@ section in the PPA details table.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
 
     >>> print_tag_with_id(no_priv_browser.contents, 'upload-hint')
     Uploading packages to this PPA
@@ -514,12 +527,12 @@ It also has a link pointing to its corresponding help page.
 Anonymous access or users with no upload permission cannot see the
 upload hint section.
 
-    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
     >>> print find_tag_by_id(
     ...     anon_browser.contents, 'upload-hint')
     None
 
-    >>> admin_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> admin_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
     >>> print find_tag_by_id(
     ...     anon_browser.contents, 'upload-hint')
     None
@@ -544,8 +557,10 @@ for more information).
 
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> a_key = getUtility(IGPGKeySet).get(1)
-    >>> removeSecurityProxy(no_priv.archive).signing_key = a_key
+    >>> a_key = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
+    >>> removeSecurityProxy(no_priv.archive).signing_key_fingerprint = (
+    ...     a_key.fingerprint)
+    >>> removeSecurityProxy(no_priv.archive).signing_key_owner = a_key.owner
     >>> logout()
 
 Now that 'No privileges' PPA has a signing key, a text with the key
@@ -566,7 +581,7 @@ keyserver.
 
     >>> print anon_browser.getLink(
     ...     '1024D/12345678').url
-    http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&op=index
+    http://keyserver.ubuntu.com:11371/pks/lookup?fingerprint=on&op=index&search=0xABCDEF0123456789ABCDDCBA0000111112345678
 
 Using software from a PPA can be hard for novices. We offer two
 links to the same help pop-up that describes how to add a PPA and
@@ -586,7 +601,7 @@ And further down, next to the key id, we link to that same pop-up help:
 Just quickly check if the singular form of this section is handled
 properly.
 
-    >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ppa")
+    >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ubuntu/ppa")
     >>> print anon_browser.title
     PPA for Mark Shuttleworth : Mark Shuttleworth
 
@@ -604,20 +619,6 @@ And the sources.list entries point to the right distribution release:
     >>> print text
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
     deb-src http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
-
-
-== Other Distribution PPAs ==
-
-PPAs are targeted to a specific distribution and currently we only
-allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
-
-    >>> anon_browser.open("http://launchpad.dev/ubuntutest")
-    >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> print anon_browser.title
-    Personal Package Archives : ubuntutest
-
-    >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
-    0
 
 
 == Populating 'Most Active' section ==
@@ -639,7 +640,7 @@ can check how it looks.
     >>> transaction.commit()
 
 Publications created, now when any user access the 'Ubuntu PPAs' page,
-he will be able to see 4 PPAs where we've added publications listed in
+they will be able to see 4 PPAs where we've added publications listed in
 the 'Most active' section.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
@@ -667,7 +668,7 @@ will redirect to the correct URL with the default PPA name, "ppa".
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> admin_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    'http://launchpad.dev/~cprov/+archive/ubuntu/ppa'
 
 If the user in question doesn't have a PPA, any attempt to access it,
 either via the new-style URL or the compatibility redirection, will

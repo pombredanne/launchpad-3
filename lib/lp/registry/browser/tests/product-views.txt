@@ -119,7 +119,7 @@ Reviewing a project's licensing
 Launchpad admins and members of the registry experts team can review a
 project's licences.
 
-The Commercial Admin user is not in the registry admins team so he
+The Commercial Admin user is not in the registry admins team so they
 cannot access the page.
 
     >>> login('commercial-member@canonical.com')
@@ -138,12 +138,13 @@ Mark is in the registry admins team and is allowed to access the page.
     Review project
 
 Adding the Commercial Admin to the registry experts team will give
-him access.
+them access.
 
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
     >>> registry_experts = getUtility(IPersonSet).getByName('registry')
     >>> ignored = registry_experts.addMember(commercial_member, reviewer=mark)
+    >>> transaction.commit()
     >>> login('commercial-member@canonical.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label
@@ -172,7 +173,7 @@ to a source package.
     [...This project cannot be deactivated since it is linked to
     ...source packages</a>.']
 
-The reviewer can deactivate a project if he concludes it is bogus.
+The reviewer can deactivate a project if they conclude it is bogus.
 
     >>> product = factory.makeProduct(name='tomato', title='Tomato')
     >>> product.active

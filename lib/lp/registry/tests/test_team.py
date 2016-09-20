@@ -1,9 +1,15 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
 
 __metaclass__ = type
+
+from email.mime.text import MIMEText
+from email.utils import (
+    formatdate,
+    make_msgid,
+    )
 
 import transaction
 from zope.component import getUtility
@@ -33,6 +39,8 @@ from lp.registry.model.persontransferjob import PersonTransferJob
 from lp.services.database.interfaces import IMasterStore
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.mail.sendmail import format_address_for_person
+from lp.services.messages.interfaces.message import IDirectEmailAuthorization
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_celebrity,
@@ -341,8 +349,8 @@ class TestTeamMembershipPolicyChoiceModerated(TeamMembershipPolicyBase):
 
     def test_closed_team_with_closed_super_team_cannot_become_open(self):
         # The team cannot compromise the membership of the super team
-        # by becoming open. The user must remove his team from the super team
-        # first.
+        # by becoming open. The user must remove their team from the super
+        # team first.
         self.setUpTeams()
         self.other_team.addMember(self.team, self.team.teamowner)
         self.assertFalse(
@@ -553,6 +561,27 @@ class TestVisibilityConsistencyWarning(TestCaseWithFactory):
         PersonTransferJob(
             member, self.team,
             PersonTransferJobType.MEMBERSHIP_NOTIFICATION, metadata)
+        self.assertEqual(
+            None,
+            self.team.visibilityConsistencyWarning(PersonVisibility.PRIVATE))
+
+    def test_no_warning_for_UserToUserEmail_recipient(self):
+        # A UserToUserEmail.recipient reference does not cause a warning.
+        # Since the fix for https://bugs.launchpad.net/launchpad/+bug/246022
+        # it's no longer possible to create these without also having a
+        # TeamMembership.person reference (which separately inhibits
+        # visibility changes), but there are still examples on production.
+        sender = self.factory.makePerson()
+        self.team.setContactAddress(
+            getUtility(IEmailAddressSet).new("team@example.org", self.team))
+        message = MIMEText("")
+        message["From"] = format_address_for_person(sender)
+        message["To"] = format_address_for_person(self.team)
+        message["Subject"] = ""
+        message["Message-ID"] = make_msgid("launchpad")
+        message["Date"] = formatdate()
+        IDirectEmailAuthorization(sender).record(message)
+        transaction.commit()
         self.assertEqual(
             None,
             self.team.visibilityConsistencyWarning(PersonVisibility.PRIVATE))

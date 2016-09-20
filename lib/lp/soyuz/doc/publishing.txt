@@ -23,15 +23,15 @@ to make sure verifyObject will work.
     >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
-    >>> spph.sourcepackagerelease.dscsigningkey = fake_signer
+    >>> spph.sourcepackagerelease.signing_key_owner = fake_signer.owner
+    >>> spph.sourcepackagerelease.signing_key_fingerprint = (
+    ...     fake_signer.fingerprint)
 
 Verify if the object follows its interface contracts:
 
     >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
-    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    ...     IDistributionSourcePackageRelease)
     >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackagePublishingHistory,
@@ -88,7 +88,9 @@ Other properties are shortcuts to the source package's properties:
 
 The signer can also be None for packages that were synced (e.g. from Debian):
 
-    >>> spph.sourcepackagerelease.dscsigningkey = None
+    >>> from lp.services.propertycache import get_property_cache
+    >>> spph.sourcepackagerelease.signing_key_owner = None
+    >>> spph.sourcepackagerelease.signing_key_fingerprint = None
     >>> print spph.package_signer
     None
 
@@ -133,14 +135,14 @@ source package release will be returned.
     >>> from lp.services.propertycache import get_property_cache
     >>> del get_property_cache(pub).newer_distroseries_version
     >>> print pub.newer_distroseries_version.title
-    "iceweasel" 1.1 source package in The Warty Warthog Release
+    iceweasel 1.1 source package in Ubuntu
 
 We can calculate the newer_distroseries_version for many spph objects at once.
 
     >>> del get_property_cache(pub).newer_distroseries_version
     >>> pub.distroseries.setNewerDistroSeriesVersions([pub])
     >>> print get_property_cache(pub).newer_distroseries_version.title
-    "iceweasel" 1.1 source package in The Warty Warthog Release
+    iceweasel 1.1 source package in Ubuntu
 
 A helper is also included to create a summary of the build statuses for
 the spph's related builds, getStatusSummaryForBuilds(), which just
@@ -214,7 +216,8 @@ Nor will it be included in the unpublished builds:
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
-    >>> builds[1].updateStatus(BuildStatus.SUPERSEDED)
+    >>> builds[1].updateStatus(
+    ...     BuildStatus.SUPERSEDED, force_invalid_transition=True)
     >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
     ...     print build.title
 
@@ -228,7 +231,8 @@ But the returned build-states can be set explicitly:
 
 Just switch it back to FULLYBUILT before continuing:
 
-    >>> builds[1].updateStatus(BuildStatus.FULLYBUILT)
+    >>> builds[1].updateStatus(
+    ...     BuildStatus.FULLYBUILT, force_invalid_transition=True)
 
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
@@ -303,57 +307,17 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
     base
 
 
-Stanza generation
-=================
+Retrieve any SourcePackagePublishingHistory entry.
 
     >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackageFilePublishing,
     ...     )
-
-Retrieve any SourcePackagePublishingHistory entry.
-
     >>> spph = SourcePackagePublishingHistory.get(10)
 
     >>> print spph.displayname
     alsa-utils 1.0.8-1ubuntu1 in warty
 
-A 'stanza' is the name given to a group of attributes related to one
-source or binary package in the archive index file, it provides
-information to APT, things like, package name, pool path, DSC format,
-files checksum, etc.
-
-The archive index should contain one entry for each source or binary
-currently published in the archive, it is usually partionated by
-component:
-
-<mirror_url_base>/ubuntu/edgy/main/binary-i386/Packages
-<mirror_url_base>/ubuntu/edgy/main/source/Sources
-
-The archive index is also available in in compressed formats.
-
-    >>> print spph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
-    Package: alsa-utils
-    Binary: alsa-mixer
-    Version: 1.0.8-1ubuntu1
-    Section: base
-    Maintainer: Mark Shuttleworth <mark@example.com>
-    Architecture: all
-    Standards-Version: 3.6.2
-    Format: 1.0
-    Directory: pool/main/a/alsa-utils
-    Files:
-     01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
-    Checksums-Sha1:
-     a10856bfea3f0bdb09550dd41f3c5bc275da8a33 3 alsa-utils_1.0.8-1ubuntu1.dsc
-    Checksums-Sha256:
-     0123456789012345678901234567890123456789012345678901234567890123 3 alsa-utils_1.0.8-1ubuntu1.dsc
-
-
-Empty fields like are suppressed, like 'Build-Depends' or
-'Build-Depends-Indep' to avoid extra charge on download.
-See sourcepackagerelease.txt for further information about the fields
-in question.
 
 Files published are accessible via the files property:
 
@@ -361,9 +325,9 @@ Files published are accessible via the files property:
     >>> ISourcePackageFilePublishing.providedBy(any_pub_file)
     True
 
-    >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name,
-    ...   pub_file.archive_url) for pub_file in spph.files]
-    [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
+    >>> [(pub_file.libraryfilealias.filename, pub_file.archive_url)
+    ...  for pub_file in spph.files]
+    [(u'alsa-utils_1.0.8-1ubuntu1.dsc',
       u'http://archive.launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 
@@ -760,7 +724,13 @@ suite. To simulate this we will create a publication in Celso's PPA.
 Now we will copy only the source from Celso's PPA breezy-autotest to
 hoary-test.
 
+We hack cprov's PPA to be for ubuntutest instead of ubuntu, as we use
+ubuntutest series in this test.
+
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> breezy_autotest = ppa_source.distroseries
+    >>> removeSecurityProxy(cprov.archive).distribution = (
+    ...     breezy_autotest.distribution)
     >>> hoary_test = breezy_autotest.distribution.getSeries(
     ...     'hoary-test')
     >>> hoary_test.nominatedarchindep = hoary_test["i386"]
@@ -918,32 +888,6 @@ BinaryPackageFile and IBinaryPackagePublishingHistory
     >>> IBinaryPackagePublishingHistory.providedBy(bpph)
     True
 
-Generating respective "Packages" stanzas:
-
-    >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
-    Package: mozilla-firefox
-    Priority: important
-    Section: editors
-    Maintainer: Mark Shuttleworth <mark@canonical.com>
-    Architecture: i386
-    Version: 0.9
-    Recommends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
-    Replaces: gnome-mozilla-browser
-    Suggests: firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint
-    Provides: mozilla-firefox
-    Depends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
-    Conflicts: firefox, mozilla-web-browser
-    Pre-Depends: pmount, foo
-    Enhances: pmount, bar
-    Breaks: pmount, baz
-    Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
-    Size: 3
-    MD5sum: 01234567890123456789012345678926
-    SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
-    SHA256: 0123456789012345678901234567890123456789012345678901234567890123
-    Description: Mozilla Firefox Web Browser
-     Mozilla Firefox Web Browser is .....
-
     >>> any_file = bpph.files[-1]
     >>> IBinaryPackageFilePublishing.providedBy(any_file)
     True
@@ -1019,7 +963,6 @@ which create new publishing records, and:
  * getUnpublishedBuildsForSources();
  * getFilesForSources();
  * getBinaryPublicationsForSources();
- * getPackageDiffsForSources();
 
 which receive a list of `SourcePackagePublishingHistory` objects and
 fetch the corresponding information for all of them.
@@ -1066,7 +1009,7 @@ the PPA publication will always be main:
     >>> ppa_pub = publishing_set.newSourcePublication(
     ...     archive=mark.archive,
     ...     sourcepackagerelease=test_source_pub.sourcepackagerelease,
-    ...     distroseries=test_source_pub.distroseries,
+    ...     distroseries=mark.archive.distribution.currentseries,
     ...     component=test_source_pub.component,
     ...     section=test_source_pub.section,
     ...     pocket=test_source_pub.pocket)
@@ -1273,105 +1216,6 @@ Please note how the result set is ordered by the id of `LibraryFileAlias`
     mno-bin_999_all.deb
     mno-bin_999_all.deb
     pqr-bin_666_all.deb
-
-getPackageDiffsForSources() is also provided by `IPublishingSet`, it
-allows callsites to retrieve all related `PackageDiff` records based
-on a collection of source publications.
-
-The sampledata does not contain any `PackageDiff`s, thus nothing is
-returned for the Celso's sources.
-
-    >>> cprov_diffs = publishing_set.getPackageDiffsForSources(
-    ...     cprov_sources)
-
-    >>> cprov_diffs.count()
-    0
-
-For testing purposes we will create a `PackageDiff` for Celso's
-'pmount' and another for Celso's 'iceweasel' sources.
-
-    >>> a_source = cprov_sources[1]
-    >>> print a_source.displayname
-    iceweasel 1.0 in warty
-
-    >>> to_source = cprov_sources[-2]
-    >>> print to_source.displayname
-    pmount 0.1-1 in warty
-
-    >>> pmount_diff = a_source.sourcepackagerelease.requestDiffTo(
-    ...     cprov, to_source.sourcepackagerelease)
-    >>> print pmount_diff.title
-    diff from 1.0 (in Ubuntu) to 0.1-1
-
-    >>> iceweasel_diff = to_source.sourcepackagerelease.requestDiffTo(
-    ...     cprov, a_source.sourcepackagerelease)
-    >>> print iceweasel_diff.title
-    diff from 0.1-1 (in Ubuntu) to 1.0
-
-    >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-
-The `PackageDiff` are availble via getPackageDiffsForSources() even if
-they are not completed yet.
-
-    >>> cprov_diffs.count()
-    2
-
-Let's fulfill the file related with the 'pmount' diff.
-
-    >>> from lp.services.librarian.interfaces import (
-    ...     ILibraryFileAliasSet)
-
-    >>> diff_file = getUtility(ILibraryFileAliasSet)[1]
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_diff = removeSecurityProxy(pmount_diff)
-    >>> naked_diff.diff_content = diff_file
-    >>> flush_database_updates()
-
-getPackageDiffsForSources() returns a list of 4-element tuple, ordered
-by ascending publishing id and descending `PackageDiff` creation date,
-containing:
-
- * `SourcePackagePublishingHistory`;
- * `PackageDiff`;
- * `LibraryFileAlias`;
- * `LibraryFileContent`.
-
-    >>> [iceweasel_diff, pmount_diff] = cprov_diffs
-
-    >>> source_pub, diff, file, content = pmount_diff
-
-    >>> print source_pub.displayname
-    pmount 0.1-1 in warty
-
-    >>> print diff.title
-    diff from 1.0 (in Ubuntu) to 0.1-1
-
-    >>> print file.filename
-    netapplet-1.0.0.tar.gz
-
-    >>> print content.md5
-    01234567890123456789012345678900
-
-All elements of the result are present, even if they do not correspond
-to actual objects in the database, which is the case of pending diff
-requests. On pending diffs, `LibraryFileAlias` and
-`LibraryFileContent` elements are None.
-
-    >>> source_pub, diff, file, content = iceweasel_diff
-
-    >>> print source_pub.displayname
-    iceweasel 1.0 in warty
-
-    >>> print diff.title
-    diff from 0.1-1 (in Ubuntu) to 1.0
-
-    >>> print file
-    None
-
-    >>> print content
-    None
 
 getChangesFilesForSources(), provided by IPublishingSet, allows
 call sites to retrieve all .changes files related to a set of source

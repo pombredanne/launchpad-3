@@ -3,7 +3,7 @@ specifically Hoary.
 
     >>> browser.open('http://localhost/ubuntu/hoary/+bugs')
     >>> print browser.title
-    Bugs : Hoary (5.04) : Ubuntu 
+    Hoary (5.04) : Bugs : Ubuntu 
 
 This page checks that we can see a list of bugs on the distributions, in
 this case Ubuntu.

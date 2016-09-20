@@ -17,7 +17,7 @@ __all__ = [
     'KdePOExporter',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationexporter import (
     ITranslationFormatExporter,
@@ -28,9 +28,9 @@ from lp.translations.interfaces.translationfileformat import (
 from lp.translations.utilities.gettext_po_exporter import GettextPOExporter
 
 
+@implementer(ITranslationFormatExporter)
 class KdePOExporter(GettextPOExporter):
     """Support class for exporting legacy KDE .po files."""
-    implements(ITranslationFormatExporter)
 
     msgid_plural_distinguishes_messages = True
 

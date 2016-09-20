@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz buildd slave manager logic."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BuilddManager',
     'BUILDD_MANAGER_LOG_NAME',
+    'SlaveScanner',
     ]
 
 import datetime
@@ -26,6 +27,7 @@ from twisted.python import log
 from zope.component import getUtility
 
 from lp.buildmaster.enums import (
+    BuilderCleanStatus,
     BuildQueueStatus,
     BuildStatus,
     )
@@ -35,6 +37,7 @@ from lp.buildmaster.interactor import (
     )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
+    BuildDaemonIsolationError,
     BuildSlaveFailure,
     CannotBuild,
     CannotFetchFile,
@@ -48,6 +51,15 @@ from lp.services.propertycache import get_property_cache
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
+
+
+# The number of times a builder can consecutively fail before we
+# reset its current job.
+JOB_RESET_THRESHOLD = 3
+
+# The number of times a builder can consecutively fail before we
+# mark it builderok=False.
+BUILDER_FAILURE_THRESHOLD = 5
 
 
 class BuilderFactory:
@@ -130,74 +142,120 @@ class PrefetchedBuilderFactory:
         return (b for n, b in sorted(self.vitals_map.iteritems()))
 
 
-@defer.inlineCallbacks
-def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
-                        exception):
-    """View builder/job failure_count and work out which needs to die.
+def judge_failure(builder_count, job_count, exc, retry=True):
+    """Judge how to recover from a scan failure.
 
-    :return: A Deferred that fires either immediately or after a virtual
-        slave has been reset.
+    Assesses the failure counts of a builder and its current job, and
+    determines the best course of action for recovery.
+
+    :param: builder_count: Count of consecutive failures of the builder.
+    :param: job_count: Count of consecutive failures of the job.
+    :param: exc: Exception that caused the failure, if any.
+    :param: retry: Whether to retry a few times without taking action.
+    :return: A tuple of (builder action, job action). True means reset,
+        False means fail, None means take no action.
     """
-    # builder.currentjob hides a complicated query, don't run it twice.
-    # See bug 623281 (Note that currentjob is a cachedproperty).
+    if isinstance(exc, BuildDaemonIsolationError):
+        # We have a potential security issue. Insta-kill both regardless
+        # of any failure counts.
+        return (False, False)
 
-    del get_property_cache(builder).currentjob
-    current_job = builder.currentjob
-    if current_job is None:
-        job_failure_count = 0
+    if builder_count == job_count:
+        # We can't tell which is to blame. Retry a few times, and then
+        # reset the job so it can be retried elsewhere. If the job is at
+        # fault, it'll error on the next builder and fail out. If the
+        # builder is at fault, the job will work fine next time, and the
+        # builder will error on the next job and fail out.
+        if not retry or builder_count >= JOB_RESET_THRESHOLD:
+            return (None, True)
+    elif builder_count > job_count:
+        # The builder has failed more than the job, so the builder is at
+        # fault. We reset the job and attempt to recover the builder.
+        if builder_count < BUILDER_FAILURE_THRESHOLD:
+            # Let's dirty the builder and give it a few cycles to
+            # recover. Since it's dirty and idle, this will
+            # automatically attempt a reset if virtual.
+            return (True, True)
+        else:
+            # We've retried too many times, so fail the builder.
+            return (False, True)
     else:
-        job_failure_count = current_job.specific_build.failure_count
+        # The job has failed more than the builder. Fail it.
+        return (None, False)
 
-    if builder.failure_count == job_failure_count and current_job is not None:
-        # If the failure count for the builder is the same as the
-        # failure count for the job being built, then we cannot
-        # tell whether the job or the builder is at fault. We retry the
-        # scan a few times, but once we give up the best we can do is
-        # reset the job and hope it runs against a different builder,
-        # giving us a judgement on which is at fault.
-        if not retry or builder.failure_count >= Builder.JOB_RESET_THRESHOLD:
-            current_job.reset()
-            del get_property_cache(builder).currentjob
-        return
+    # Just retry.
+    return (None, None)
 
-    if builder.failure_count > job_failure_count:
-        # The builder has failed more than the jobs it's been
-        # running.
 
-        # Re-schedule the build if there is one.
-        if current_job is not None:
-            current_job.reset()
-
-        # We are a little more tolerant with failing builders than
-        # failing jobs because sometimes they get unresponsive due to
-        # human error, flaky networks etc.  We expect the builder to get
-        # better, whereas jobs are very unlikely to get better.
-        if builder.failure_count >= (
-                Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
-            # We've already tried resetting it enough times, so we have
-            # little choice but to give up.
-            builder.failBuilder(str(exception))
-        elif builder.failure_count % Builder.RESET_THRESHOLD == 0:
-            # The builder is dead, but in the virtual case it might be worth
-            # resetting it.
-            yield interactor.resetOrFail(
-                vitals, slave, builder, logger, exception)
-    else:
-        # The job is the culprit!  Override its status to 'failed'
-        # to make sure it won't get automatically dispatched again,
-        # and remove the buildqueue request.  The failure should
-        # have already caused any relevant slave data to be stored
-        # on the build record so don't worry about that here.
-        builder.resetFailureCount()
-        build_job = current_job.specific_build
-        build_job.updateStatus(BuildStatus.FAILEDTOBUILD)
-        builder.currentjob.destroySelf()
-
-        # N.B. We could try and call _handleStatus_PACKAGEFAIL here
-        # but that would cause us to query the slave for its status
-        # again, and if the slave is non-responsive it holds up the
-        # next buildd scan.
+def recover_failure(logger, vitals, builder, retry, exception):
+    """Recover from a scan failure by slapping the builder or job."""
     del get_property_cache(builder).currentjob
+    job = builder.currentjob
+
+    # If a job is being cancelled we won't bother retrying a failure.
+    # Just mark it as cancelled and clear the builder for normal cleanup.
+    cancelling = job is not None and job.status == BuildQueueStatus.CANCELLING
+
+    # judge_failure decides who is guilty and their sentences. We're
+    # just the executioner.
+    builder_action, job_action = judge_failure(
+        builder.failure_count, job.specific_build.failure_count if job else 0,
+        exception, retry=retry and not cancelling)
+    if job is not None:
+        logger.info(
+            "Judged builder %s (%d failures) with job %s (%d failures): "
+            "%r, %r", builder.name, builder.failure_count, job.build_cookie,
+            job.specific_build.failure_count, builder_action, job_action)
+    else:
+        logger.info(
+            "Judged builder %s (%d failures) with no job: %r, %r",
+            builder.name, builder.failure_count, builder_action, job_action)
+
+    if job is not None and job_action is not None:
+        if cancelling:
+            # We've previously been asked to cancel the job, so just set
+            # it to cancelled rather than retrying or failing.
+            logger.info("Cancelling job %s.", job.build_cookie)
+            job.markAsCancelled()
+        elif job_action == False:
+            # Fail and dequeue the job.
+            logger.info("Failing job %s.", job.build_cookie)
+            if job.specific_build.status == BuildStatus.FULLYBUILT:
+                # A FULLYBUILT build should be out of our hands, and
+                # probably has artifacts like binaries attached. It's
+                # impossible to enter the state twice, so don't revert
+                # the status. Something's wrong, so log an OOPS and get
+                # it out of the queue to avoid further corruption.
+                logger.warning(
+                    "Build is already successful! Dequeuing but leaving build "
+                    "status alone. Something is very wrong.")
+            else:
+                # Whatever it was before, we want it failed. We're an
+                # error handler, so let's not risk more errors.
+                job.specific_build.updateStatus(
+                    BuildStatus.FAILEDTOBUILD, force_invalid_transition=True)
+            job.destroySelf()
+        elif job_action == True:
+            # Reset the job so it will be retried elsewhere.
+            logger.info("Requeueing job %s.", job.build_cookie)
+            job.reset()
+
+        if job_action == False:
+            # We've decided the job is bad, so unblame the builder.
+            logger.info("Resetting failure count of builder %s.", builder.name)
+            builder.resetFailureCount()
+
+    if builder_action == False:
+        # We've already tried resetting it enough times, so we have
+        # little choice but to give up.
+        logger.info("Failing builder %s.", builder.name)
+        builder.failBuilder(str(exception))
+    elif builder_action == True:
+        # Dirty the builder to attempt recovery. In the virtual case,
+        # the dirty idleness will cause a reset, giving us a good chance
+        # of recovery.
+        logger.info("Dirtying builder %s to attempt recovery.", builder.name)
+        builder.setCleanStatus(BuilderCleanStatus.DIRTY)
 
 
 class SlaveScanner:
@@ -275,18 +333,15 @@ class SlaveScanner:
         return d
 
     def _updateDateScanned(self, ignored):
+        self.logger.debug("Scan finished for builder %s" % self.builder_name)
         self.date_scanned = datetime.datetime.utcnow()
 
-    @defer.inlineCallbacks
     def _scanFailed(self, retry, failure):
         """Deal with failures encountered during the scan cycle.
 
         1. Print the error in the log
         2. Increment and assess failure counts on the builder and job.
            If asked to retry, a single failure may not be considered fatal.
-
-        :return: A Deferred that fires either immediately or after a virtual
-            slave has been reset.
         """
         # Make sure that pending database updates are removed as it
         # could leave the database in an inconsistent state (e.g. The
@@ -310,10 +365,10 @@ class SlaveScanner:
         vitals = self.builder_factory.getVitals(self.builder_name)
         builder = self.builder_factory[self.builder_name]
         try:
-            builder.handleFailure(self.logger)
-            yield assessFailureCounts(
-                self.logger, vitals, builder, self.slave_factory(vitals),
-                self.interactor_factory(), retry, failure.value)
+            builder.gotFailure()
+            if builder.current_build is not None:
+                builder.current_build.gotFailure()
+            recover_failure(self.logger, vitals, builder, retry, failure.value)
             transaction.commit()
         except Exception:
             # Catastrophic code failure! Not much we can do.
@@ -323,61 +378,38 @@ class SlaveScanner:
             transaction.abort()
 
     @defer.inlineCallbacks
-    def checkCancellation(self, vitals, slave, interactor):
+    def checkCancellation(self, vitals, slave):
         """See if there is a pending cancellation request.
 
         If the current build is in status CANCELLING then terminate it
         immediately.
 
-        :return: A deferred whose value is True if we recovered the builder
-            by resuming a slave host, so that there is no need to update its
-            status.
+        :return: A deferred which fires when this cancellation cycle is done.
         """
-        if vitals.build_queue is None:
-            self.date_cancel = None
-            defer.returnValue(False)
         if vitals.build_queue.status != BuildQueueStatus.CANCELLING:
             self.date_cancel = None
-            defer.returnValue(False)
-
-        try:
-            if self.date_cancel is None:
-                self.logger.info(
-                    "Cancelling BuildQueue %d (%s) on %s",
-                    vitals.build_queue.id, self.getExpectedCookie(vitals),
-                    vitals.name)
-                yield slave.abort()
-                self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
-                defer.returnValue(False)
-            else:
-                # The BuildFarmJob will normally set the build's status to
-                # something other than CANCELLING once the builder responds to
-                # the cancel request.  This timeout is in case it doesn't.
-                if self._clock.seconds() < self.date_cancel:
-                    self.logger.info(
-                        "Waiting for BuildQueue %d (%s) on %s to cancel",
-                        vitals.build_queue.id, self.getExpectedCookie(vitals),
-                        vitals.name)
-                    defer.returnValue(False)
-                else:
-                    raise BuildSlaveFailure(
-                        "Timeout waiting for BuildQueue %d (%s) on %s to "
-                        "cancel" % (
-                        vitals.build_queue.id, self.getExpectedCookie(vitals),
-                        vitals.name))
-        except Exception as e:
+        elif self.date_cancel is None:
             self.logger.info(
-                "Failure while cancelling BuildQueue %d (%s) on %s",
+                "Cancelling BuildQueue %d (%s) on %s",
                 vitals.build_queue.id, self.getExpectedCookie(vitals),
                 vitals.name)
-            self.date_cancel = None
-            vitals.build_queue.markAsCancelled()
-            transaction.commit()
-            value = yield interactor.resetOrFail(
-                vitals, slave, self.builder_factory[vitals.name], self.logger,
-                e)
-            # value is not None if we resumed a slave host.
-            defer.returnValue(value is not None)
+            yield slave.abort()
+            self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
+        else:
+            # The BuildFarmJob will normally set the build's status to
+            # something other than CANCELLING once the builder responds to
+            # the cancel request.  This timeout is in case it doesn't.
+            if self._clock.seconds() < self.date_cancel:
+                self.logger.info(
+                    "Waiting for BuildQueue %d (%s) on %s to cancel",
+                    vitals.build_queue.id, self.getExpectedCookie(vitals),
+                    vitals.name)
+            else:
+                raise BuildSlaveFailure(
+                    "Timeout waiting for BuildQueue %d (%s) on %s to "
+                    "cancel" % (
+                    vitals.build_queue.id, self.getExpectedCookie(vitals),
+                    vitals.name))
 
     def getExpectedCookie(self, vitals):
         """Return the build cookie expected to be held by the slave.
@@ -387,10 +419,7 @@ class SlaveScanner:
         """
         if vitals.build_queue != self._cached_build_queue:
             if vitals.build_queue is not None:
-                behaviour = self.behaviour_factory(
-                    vitals.build_queue, self.builder_factory[vitals.name],
-                    None)
-                self._cached_build_cookie = behaviour.getBuildCookie()
+                self._cached_build_cookie = vitals.build_queue.build_cookie
             else:
                 self._cached_build_cookie = None
             self._cached_build_queue = vitals.build_queue
@@ -413,70 +442,90 @@ class SlaveScanner:
         vitals = self.builder_factory.getVitals(self.builder_name)
         interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
-        if vitals.builderok:
-            self.logger.debug("Scanning %s." % self.builder_name)
-            slave_status = yield slave.status()
-        else:
-            slave_status = None
 
-        # Confirm that the DB and slave sides are in a valid, mutually
-        # agreeable state.
-        lost_reason = None
-        if not vitals.builderok:
-            lost_reason = '%s is disabled' % vitals.name
-        else:
-            self.updateVersion(vitals, slave_status)
-            cancelled = yield self.checkCancellation(vitals, slave, interactor)
-            if cancelled:
-                return
-            assert slave_status is not None
-            lost = yield interactor.rescueIfLost(
-                vitals, slave, slave_status, self.getExpectedCookie(vitals),
-                self.logger)
-            if lost:
-                lost_reason = '%s is lost' % vitals.name
+        if vitals.build_queue is not None:
+            if vitals.clean_status != BuilderCleanStatus.DIRTY:
+                # This is probably a grave bug with security implications,
+                # as a slave that has a job must be cleaned afterwards.
+                raise BuildDaemonIsolationError(
+                    "Non-dirty builder allegedly building.")
 
-        # The slave is lost or the builder is disabled. We can't
-        # continue to update the job status or dispatch a new job, so
-        # just rescue the assigned job, if any, so it can be dispatched
-        # to another slave.
-        if lost_reason is not None:
-            if vitals.build_queue is not None:
+            lost_reason = None
+            if not vitals.builderok:
+                lost_reason = '%s is disabled' % vitals.name
+            else:
+                slave_status = yield slave.status()
+                # Ensure that the slave has the job that we think it
+                # should.
+                slave_cookie = slave_status.get('build_id')
+                expected_cookie = self.getExpectedCookie(vitals)
+                if slave_cookie != expected_cookie:
+                    lost_reason = (
+                        '%s is lost (expected %r, got %r)' % (
+                            vitals.name, expected_cookie, slave_cookie))
+
+            if lost_reason is not None:
+                # The slave is either confused or disabled, so reset and
+                # requeue the job. The next scan cycle will clean up the
+                # slave if appropriate.
                 self.logger.warn(
-                    "%s. Resetting BuildQueue %d.", lost_reason,
-                    vitals.build_queue.id)
+                    "%s. Resetting job %s.", lost_reason,
+                    vitals.build_queue.build_cookie)
                 vitals.build_queue.reset()
                 transaction.commit()
-            return
+                return
 
-        # We've confirmed that the slave state matches the DB. Continue
-        # with updating the job status, or dispatching a new job if the
-        # builder is idle.
-        if vitals.build_queue is not None:
-            # Scan the slave and get the logtail, or collect the build
-            # if it's ready.  Yes, "updateBuild" is a bad name.
+            yield self.checkCancellation(vitals, slave)
+
+            # The slave and DB agree on the builder's state.  Scan the
+            # slave and get the logtail, or collect the build if it's
+            # ready.  Yes, "updateBuild" is a bad name.
             assert slave_status is not None
             yield interactor.updateBuild(
                 vitals, slave, slave_status, self.builder_factory,
                 self.behaviour_factory)
-        elif vitals.manual:
-            # If the builder is in manual mode, don't dispatch anything.
-            self.logger.debug(
-                '%s is in manual mode, not dispatching.' % vitals.name)
         else:
-            # See if there is a job we can dispatch to the builder slave.
-            builder = self.builder_factory[self.builder_name]
-            # Try to dispatch the job. If it fails, don't attempt to
-            # just retry the scan; we need to reset the job so the
-            # dispatch will be reattempted.
-            d = interactor.findAndStartJob(vitals, builder, slave)
-            d.addErrback(functools.partial(self._scanFailed, False))
-            yield d
-            if builder.currentjob is not None:
-                # After a successful dispatch we can reset the
-                # failure_count.
-                builder.resetFailureCount()
-                transaction.commit()
+            if not vitals.builderok:
+                return
+            # We think the builder is idle. If it's clean, dispatch. If
+            # it's dirty, clean.
+            if vitals.clean_status == BuilderCleanStatus.CLEAN:
+                slave_status = yield slave.status()
+                if slave_status.get('builder_status') != 'BuilderStatus.IDLE':
+                    raise BuildDaemonIsolationError(
+                        'Allegedly clean slave not idle (%r instead)'
+                        % slave_status.get('builder_status'))
+                self.updateVersion(vitals, slave_status)
+                if vitals.manual:
+                    # If the builder is in manual mode, don't dispatch
+                    # anything.
+                    self.logger.debug(
+                        '%s is in manual mode, not dispatching.', vitals.name)
+                    return
+                # Try to find and dispatch a job. If it fails, don't
+                # attempt to just retry the scan; we need to reset
+                # the job so the dispatch will be reattempted.
+                builder = self.builder_factory[self.builder_name]
+                d = interactor.findAndStartJob(vitals, builder, slave)
+                d.addErrback(functools.partial(self._scanFailed, False))
+                yield d
+                if builder.currentjob is not None:
+                    # After a successful dispatch we can reset the
+                    # failure_count.
+                    builder.resetFailureCount()
+                    transaction.commit()
+            else:
+                # Ask the BuilderInteractor to clean the slave. It might
+                # be immediately cleaned on return, in which case we go
+                # straight back to CLEAN, or we might have to spin
+                # through another few cycles.
+                done = yield interactor.cleanSlave(
+                    vitals, slave, self.builder_factory)
+                if done:
+                    builder = self.builder_factory[self.builder_name]
+                    builder.setCleanStatus(BuilderCleanStatus.CLEAN)
+                    self.logger.debug('%s has been cleaned.', vitals.name)
+                    transaction.commit()
 
 
 class NewBuildersScanner:
@@ -507,6 +556,7 @@ class NewBuildersScanner:
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
+        self.manager.logger.debug("Refreshing builders from the database.")
         try:
             self.manager.builder_factory.update()
             new_builders = self.checkForNewBuilders()
@@ -516,6 +566,7 @@ class NewBuildersScanner:
                 "Failure while updating builders:\n",
                 exc_info=True)
             transaction.abort()
+        self.manager.logger.debug("Builder refresh complete.")
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""

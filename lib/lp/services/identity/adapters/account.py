@@ -23,4 +23,3 @@ def accountFromPrincipal(principal):
         # we can return None here.
         ##return None
         raise ComponentLookupError
-

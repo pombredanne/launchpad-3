@@ -16,7 +16,7 @@ each.
     >>> anon_browser.getLink(url='/ubuntu/warty/+source/evolution').click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'maincontent').h1)
-    “evolution” source package in Warty
+    evolution source package in Warty
 
 It can also show the packages by product series. And if you have permission
 (for example, you're the owner of the product), Launchpad lets you register

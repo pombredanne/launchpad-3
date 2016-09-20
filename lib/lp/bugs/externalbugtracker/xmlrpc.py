@@ -108,6 +108,10 @@ class UrlLib2Transport(Transport):
         Uses the configured proxy server to make the connection.
         """
         url = urlunparse((self.scheme, host, handler, '', '', ''))
+        # httplib can raise a UnicodeDecodeError when using a Unicode
+        # URL, a non-ASCII body and a proxy. http://bugs.python.org/issue12398
+        if isinstance(url, unicode):
+            url = url.encode('utf-8')
         headers = {'Content-type': 'text/xml'}
         request = Request(url, request_body, headers)
         try:
@@ -117,10 +121,4 @@ class UrlLib2Transport(Transport):
                 request.get_full_url(), he.code, he.msg, he.hdrs)
         else:
             traceback_info(response)
-            # In Python2.6 the api is self._parse_response, in 2.7 it is
-            # self.parse_response and no longer takes the 'sock' argument
-            parse = getattr(self, '_parse_response', None)
-            if parse is not None:
-                # Compatibility with python 2.6
-                return parse(StringIO(response), None)
             return self.parse_response(StringIO(response))

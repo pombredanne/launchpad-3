@@ -28,7 +28,7 @@ from lp import _
 from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.soyuz.interfaces.processor import IProcessor
+from lp.buildmaster.interfaces.processor import IProcessor
 
 
 class IBuildQueue(Interface):
@@ -109,6 +109,9 @@ class IBuildQueue(Interface):
         IBuildFarmJob, title=_("Build farm job"),
         description=_("Concrete build farm job object."))
 
+    build_cookie = Attribute(
+        "A string which uniquely identifies the job in the build farm.")
+
     date_started = Datetime(
         title=_('Start time'),
         description=_('Time when the job started.'))
@@ -135,6 +138,9 @@ class IBuildQueueSet(Interface):
         Retrieve the only one possible entry being processed for a given
         builder. If not found, return None.
         """
+
+    def preloadForBuilders(builders):
+        """Preload currentjob for the given IBuilders."""
 
     def preloadForBuildFarmJobs(builds):
         """Preload buildqueue_record for the given IBuildFarmJobs."""

@@ -54,7 +54,7 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         self.package_build.updateStatus(
             BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
         self.assertEqual(u'deps', self.package_build.dependencies)
-        self.package_build.updateStatus(BuildStatus.FULLYBUILT)
+        self.package_build.updateStatus(BuildStatus.NEEDSBUILD)
         self.assertEqual(None, self.package_build.dependencies)
 
     def test_log_url(self):
@@ -63,8 +63,8 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         self.package_build.setLog(lfa)
         log_url = self.package_build.log_url
         self.failUnlessEqual(
-            'http://launchpad.dev/~joe/'
-            '+archive/ppa/+recipebuild/%d/+files/mybuildlog.txt' % (
+            'http://launchpad.dev/~joe/+archive/ubuntu/ppa/'
+            '+recipebuild/%d/+files/mybuildlog.txt' % (
                 self.package_build.id),
             log_url)
 
@@ -102,8 +102,8 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         self.package_build.storeUploadLog("Some content")
         log_url = self.package_build.upload_log_url
         self.failUnlessEqual(
-            'http://launchpad.dev/~joe/'
-            '+archive/ppa/+recipebuild/%d/+files/upload_%d_log.txt' % (
+            'http://launchpad.dev/~joe/+archive/ubuntu/ppa/'
+            '+recipebuild/%d/+files/upload_%d_log.txt' % (
                 self.package_build.id, self.package_build.id),
             log_url)
 

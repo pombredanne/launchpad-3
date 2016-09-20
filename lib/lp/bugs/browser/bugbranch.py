@@ -8,18 +8,16 @@ __all__ = [
     'BranchLinkToBugView',
     'BugBranchAddView',
     'BugBranchDeleteView',
-    'BugBranchPrimaryContext',
     'BugBranchView',
     ]
 
 from lazr.restful.interfaces import IWebServiceClientRequest
-from lazr.restful.utils import smartquote
 from zope.component import (
-    adapts,
+    adapter,
     getMultiAdapter,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -39,16 +37,6 @@ from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from lp.services.webapp.interfaces import IPrimaryContext
-
-
-class BugBranchPrimaryContext:
-    """The primary context is the bug branch link is that of the branch."""
-
-    implements(IPrimaryContext)
-
-    def __init__(self, bug_branch):
-        self.context = IPrimaryContext(bug_branch.branch).context
 
 
 class BugBranchAddView(LaunchpadFormView):
@@ -136,8 +124,7 @@ class BranchLinkToBugView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return smartquote(
-            'Link branch "%s" to a bug report' % self.context.displayname)
+        return 'Link branch %s to a bug report' % self.context.displayname
 
     @property
     def next_url(self):
@@ -151,10 +138,9 @@ class BranchLinkToBugView(LaunchpadFormView):
         bug.linkBranch(branch=self.context, registrant=self.user)
 
 
+@adapter(IBugBranch, IWebServiceClientRequest)
+@implementer(Interface)
 class BugBranchXHTMLRepresentation:
-    adapts(IBugBranch, IWebServiceClientRequest)
-    implements(Interface)
-
     def __init__(self, branch, request):
         self.branch = branch
         self.request = request

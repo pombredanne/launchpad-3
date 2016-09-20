@@ -191,6 +191,8 @@ of the email with the bug title and URL.
 
     >>> msg['X-Launchpad-Message-Rationale']
     'Subscriber (pmount in Ubuntu)'
+    >>> msg['X-Launchpad-Message-For']
+    'daf'
 
     >>> msg['Subject']
     '[Bug 1] [NEW] Firefox does not support SVG'

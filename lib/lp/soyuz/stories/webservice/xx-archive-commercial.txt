@@ -17,7 +17,7 @@ Create the P3A where software_center_agent is an owner.
     >>> ppa_owner = factory.makeTeam(members=[celebrity, owner])
     >>> archive = factory.makeArchive(name='commercial', private=True,
     ...     owner=ppa_owner, suppress_subscription_notifications=True)
-    >>> url = "/~%s/+archive/commercial" % archive.owner.name
+    >>> url = "/~%s/+archive/ubuntu/commercial" % archive.owner.name
     >>> person = factory.makePerson(name='joe')
     >>> logout()
 
@@ -51,7 +51,7 @@ valid subscription for it.
     This person does not have a valid subscription for the target archive
 
 In order to allow access for the test user, the agent has to subscribe
-him first.
+them first.
 
     >>> response = agent_webservice.named_post(cp3a['self_link'],
     ...   'newSubscription', subscriber=joe['self_link'])
@@ -136,16 +136,16 @@ It returns a collection of `ArchiveSubscriber` objects:
     start: 0
     total_size: 1
     ---
-    archive_link: u'http://.../+archive/commercial'
+    archive_link: u'http://.../+archive/ubuntu/commercial'
     date_created: ...
     date_expires: None
     description: None
     registrant_link: u'http://.../~software-center-agent'
     resource_type_link: u'http://.../#archive_subscriber'
-    self_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    self_link: u'http://.../+archive/ubuntu/commercial/+subscriptions/joe'
     status: u'Active'
     subscriber_link: u'http://.../~joe'
-    web_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    web_link: u'http://.../+archive/ubuntu/commercial/+subscriptions/joe'
     ---
 
 Additionally to the person itself, the subscriptions can be inspected
@@ -168,16 +168,16 @@ and it includes 'commercial-admins' users:
     start: 0
     total_size: 1
     ---
-    archive_link: u'http://.../+archive/commercial'
+    archive_link: u'http://.../+archive/ubuntu/commercial'
     date_created: ...
     date_expires: None
     description: None
     registrant_link: u'http://.../~software-center-agent'
     resource_type_link: u'http://.../#archive_subscriber'
-    self_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    self_link: u'http://.../+archive/ubuntu/commercial/+subscriptions/joe'
     status: u'Active'
     subscriber_link: u'http://.../~joe'
-    web_link: u'http://.../+archive/commercial/+subscriptions/joe'
+    web_link: u'http://.../+archive/ubuntu/commercial/+subscriptions/joe'
     ---
 
 Subscription cancellation can be performed by invoking 'cancel' operation

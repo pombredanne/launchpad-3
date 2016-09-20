@@ -1,12 +1,14 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from datetime import datetime
 import doctest
+from itertools import chain
 import os
 import pdb
 import pprint
@@ -38,6 +40,7 @@ from zope.app.testing.functional import (
     SimpleCookie,
     )
 from zope.component import getUtility
+from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser
@@ -51,6 +54,7 @@ from lp.services.oauth.interfaces import (
     OAUTH_REALM,
     )
 from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlsplit
@@ -60,13 +64,21 @@ from lp.testing import (
     login,
     login_person,
     logout,
+    person_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import PageTestLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     stop,
     )
+
+SAMPLEDATA_ACCESS_SECRETS = {
+    u'salgado-read-nonprivate': u'secret',
+    u'salgado-change-anything': u'test',
+    u'nopriv-read-nonprivate': u'mystery',
+    }
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -113,8 +125,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
     """A class for making calls to Launchpad web services."""
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
-                 handle_errors=True, domain='api.launchpad.dev',
-                 protocol='http'):
+                 oauth_access_secret=None, handle_errors=True,
+                 domain='api.launchpad.dev', protocol='http'):
         """Create a LaunchpadWebServiceCaller.
         :param oauth_consumer_key: The OAuth consumer key to use.
         :param oauth_access_key: The OAuth access key to use for the request.
@@ -124,39 +136,21 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         Other parameters are passed to the HTTPCaller used to make the calls.
         """
         if oauth_consumer_key is not None and oauth_access_key is not None:
-            login(ANONYMOUS)
-            consumers = getUtility(IOAuthConsumerSet)
-            self.consumer = consumers.getByKey(oauth_consumer_key)
-            if oauth_access_key == '':
-                # The client wants to make an anonymous request.
-                self.access_token = OAuthToken(oauth_access_key, '')
-                if self.consumer is None:
-                    # The client is trying to make an anonymous
-                    # request with a previously unknown consumer. This
-                    # is fine: we manually create a "fake"
-                    # OAuthConsumer (it's "fake" because it's not
-                    # really an IOAuthConsumer as returned by
-                    # IOAuthConsumerSet.getByKey) to be used in the
-                    # requests we make.
-                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
-            else:
-                if self.consumer is None:
-                    # Requests using this caller will be rejected by
-                    # the server, but we have a test that verifies
-                    # such requests _are_ rejected, so we'll create a
-                    # fake OAuthConsumer object.
-                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
-                    self.access_token = OAuthToken(oauth_access_key, '')
-                else:
-                    # The client wants to make an authorized request
-                    # using a recognized consumer key.
-                    self.access_token = self.consumer.getAccessToken(
-                        oauth_access_key)
+            # XXX cjwatson 2016-01-25: Callers should be updated to pass
+            # Unicode directly, but that's a big change.
+            if isinstance(oauth_consumer_key, bytes):
+                oauth_consumer_key = unicode(oauth_consumer_key)
+            self.consumer = OAuthConsumer(oauth_consumer_key, u'')
+            if oauth_access_secret is None:
+                oauth_access_secret = SAMPLEDATA_ACCESS_SECRETS.get(
+                    oauth_access_key, u'')
+            self.access_token = OAuthToken(
+                oauth_access_key, oauth_access_secret)
+            # This shouldn't be here, but many old tests expect it.
             logout()
         else:
             self.consumer = None
             self.access_token = None
-
         self.handle_errors = handle_errors
         WebServiceCaller.__init__(self, handle_errors, domain, protocol)
 
@@ -589,10 +583,11 @@ def print_location(contents):
     The main heading is the first <h1> element in the page.
     """
     doc = find_tag_by_id(contents, 'document')
-    hierarchy = doc.find(attrs={'class': 'breadcrumbs'}).findAll(
-        recursive=False)
+    heading = doc.find(attrs={'id': 'watermark-heading'}).findAll('a')
+    container = doc.find(attrs={'class': 'breadcrumbs'})
+    hierarchy = container.findAll(recursive=False) if container else []
     segments = [extract_text(step).encode('us-ascii', 'replace')
-                for step in hierarchy]
+                for step in chain(heading, hierarchy)]
 
     if len(segments) == 0:
         breadcrumbs = 'None displayed'
@@ -700,7 +695,7 @@ def safe_canonical_url(*args, **kwargs):
     return str(canonical_url(*args, **kwargs))
 
 
-def webservice_for_person(person, consumer_key='launchpad-library',
+def webservice_for_person(person, consumer_key=u'launchpad-library',
                           permission=OAuthPermission.READ_PUBLIC,
                           context=None):
     """Return a valid LaunchpadWebServiceCaller for the person.
@@ -715,11 +710,12 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     consumer = oacs.getByKey(consumer_key)
     if consumer is None:
         consumer = oacs.new(consumer_key)
-    request_token = consumer.newRequestToken()
+    request_token, _ = consumer.newRequestToken()
     request_token.review(person, permission, context)
-    access_token = request_token.createAccessToken()
+    access_token, access_secret = request_token.createAccessToken()
     logout()
-    service = LaunchpadWebServiceCaller(consumer_key, access_token.key)
+    service = LaunchpadWebServiceCaller(
+        consumer_key, access_token.key, access_secret)
     service.user = person
     return service
 
@@ -767,6 +763,26 @@ def setupRosettaExpertBrowser():
     return setupBrowser(auth='Basic re@ex.com:test')
 
 
+@contextmanager
+def permissive_security_policy(dbuser_name=None):
+    """Context manager to run code with a permissive security policy.
+
+    This is just enough to run code such as `BaseMailer` that normally
+    expects to be called only from environments that use a permissive
+    security policy, such as jobs or scripts.
+    """
+    try:
+        old_policy = setSecurityPolicy(LaunchpadPermissiveSecurityPolicy)
+        if dbuser_name is not None:
+            dbuser_context = dbuser(dbuser_name)
+        else:
+            dbuser_context = contextmanager([None].__iter__)
+        with person_logged_in(ANONYMOUS), dbuser_context:
+            yield
+    finally:
+        setSecurityPolicy(old_policy)
+
+
 def setUpGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller()
@@ -807,6 +823,7 @@ def setUpGlobs(test):
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['permissive_security_policy'] = permissive_security_policy
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['print_action_links'] = print_action_links
     test.globs['print_errors'] = print_errors
@@ -853,8 +870,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # Add tests to the suite individually.
     if filenames:
         checker = doctest.OutputChecker()
-        paths=[os.path.join(storydir, filename)
-               for filename in filenames]
+        paths = [os.path.join(storydir, filename) for filename in filenames]
         suite.addTest(LayeredDocFileSuite(
             paths=paths,
             package=package, checker=checker, stdout_logging=False,

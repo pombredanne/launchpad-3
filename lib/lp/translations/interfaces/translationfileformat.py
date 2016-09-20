@@ -59,4 +59,3 @@ class TranslationFileFormat(DBEnumeratedType):
         Gettext's standard text file format but contains only those msgids
         that were changed compared to the imported version.
         """)
-

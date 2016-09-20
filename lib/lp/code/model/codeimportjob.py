@@ -19,7 +19,7 @@ from sqlobject import (
     StringCol,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
@@ -50,10 +50,9 @@ from lp.services.database.sqlbase import (
     )
 
 
+@implementer(ICodeImportJob)
 class CodeImportJob(SQLBase):
     """See `ICodeImportJob`."""
-
-    implements(ICodeImportJob)
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -101,10 +100,9 @@ class CodeImportJob(SQLBase):
         return import_job is not None
 
 
+@implementer(ICodeImportJobSet, ICodeImportJobSetPublic)
 class CodeImportJobSet(object):
     """See `ICodeImportJobSet`."""
-
-    implements(ICodeImportJobSet, ICodeImportJobSetPublic)
 
     # CodeImportJob database objects are created using
     # CodeImportJobWorkflow.newJob.
@@ -148,10 +146,9 @@ class CodeImportJobSet(object):
                         config.codeimportworker.maximum_heartbeat_interval))
 
 
+@implementer(ICodeImportJobWorkflow)
 class CodeImportJobWorkflow:
     """See `ICodeImportJobWorkflow`."""
-
-    implements(ICodeImportJobWorkflow)
 
     def newJob(self, code_import, interval=None):
         """See `ICodeImportJobWorkflow`."""

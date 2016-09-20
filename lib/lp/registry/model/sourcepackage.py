@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes that implement SourcePackage items."""
@@ -12,7 +12,6 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
@@ -21,8 +20,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -78,9 +77,6 @@ from lp.soyuz.model.binarypackagebuild import (
     )
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
-    )
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -188,6 +184,9 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return self.distribution.owner
 
 
+@implementer(
+    IBugSummaryDimension, ISourcePackage, IHasBuildRecords, ISeriesBugTarget)
+@provider(ISourcePackageFactory)
 class SourcePackage(BugTargetBase, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     HasBranchesMixin, HasMergeProposalsMixin,
@@ -198,12 +197,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
     represent the concept of a source package in a distro series, with links
     to the relevant database objects.
     """
-
-    implements(
-        IBugSummaryDimension, ISourcePackage, IHasBuildRecords,
-        ISeriesBugTarget)
-
-    classProvides(ISourcePackageFactory)
 
     def __init__(self, sourcepackagename, distroseries):
         # We store the ID of the sourcepackagename and distroseries
@@ -284,15 +277,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             [self.sourcepackagename])
         return releases.get(self)
 
-    def __getitem__(self, version):
-        """See `ISourcePackage`."""
-        latest_package = self._getFirstPublishingHistory(version=version)
-        if latest_package:
-            return DistroSeriesSourcePackageRelease(
-                    self.distroseries, latest_package.sourcepackagerelease)
-        else:
-            return None
-
     @property
     def path(self):
         """See `ISourcePackage`."""
@@ -302,10 +286,12 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             self.sourcepackagename.name])
 
     @property
-    def displayname(self):
+    def display_name(self):
         return "%s in %s %s" % (
             self.sourcepackagename.name, self.distribution.displayname,
             self.distroseries.displayname)
+
+    displayname = display_name
 
     @property
     def bugtargetdisplayname(self):
@@ -325,7 +311,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
     @property
     def title(self):
         """See `ISourcePackage`."""
-        return smartquote('"%s" source package in %s') % (
+        return '%s source package in %s' % (
             self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
@@ -435,9 +421,12 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         for pocket in PackagePublishingPocket.items:
             thedict[pocket] = []
         # add all the sourcepackagereleases in the right place
-        for spr in result:
-            thedict[spr.pocket].append(DistroSeriesSourcePackageRelease(
-                spr.distroseries, spr.sourcepackagerelease))
+        for spph in result:
+            thedict[spph.pocket].append({
+                'spr': spph.distroseries.distribution.getSourcePackageRelease(
+                    spph.sourcepackagerelease),
+                'component_name': spph.component_name,
+                })
         return thedict
 
     @property

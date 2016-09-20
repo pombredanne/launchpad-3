@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -10,7 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from email.Utils import formatdate
+from email.utils import formatdate
 import math
 import os.path
 import rfc822
@@ -24,7 +24,7 @@ from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
-    adapts,
+    adapter,
     getMultiAdapter,
     getUtility,
     queryAdapter,
@@ -32,7 +32,7 @@ from zope.component import (
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.browser import BrowserView
@@ -69,7 +69,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.utils import total_seconds
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.error import SystemErrorView
@@ -83,7 +82,6 @@ from lp.services.webapp.interfaces import (
     IFacetMenu,
     ILaunchBag,
     INavigationMenu,
-    IPrimaryContext,
     NoCanonicalUrl,
     )
 from lp.services.webapp.menu import (
@@ -112,8 +110,8 @@ def format_link(obj, view_name=None, empty_value='None'):
     """Return the equivalent of obj/fmt:link as a string."""
     if obj is None:
         return empty_value
-    adapter = queryAdapter(obj, IPathAdapter, 'fmt')
-    link = getattr(adapter, 'link', None)
+    fmt_adapter = queryAdapter(obj, IPathAdapter, 'fmt')
+    link = getattr(fmt_adapter, 'link', None)
     if link is None:
         raise NotImplementedError("Missing link function on adapter.")
     return link(view_name)
@@ -277,13 +275,16 @@ class MenuAPI:
 
     def _facet_menu(self):
         """Return the IFacetMenu related to the context."""
+        # XXX wgrant 2014-11-26: Manually instantiate a Hierarchy view
+        # to find the lowest IHeadingBreadcrumb that's in the title,
+        # ensuring that the facet tabs match what's above them. This
+        # whole class needs refactoring once the UI is stable.
+        from lp.app.browser.launchpad import Hierarchy
         try:
-            try:
-                context = IPrimaryContext(self._context).context
-            except TypeError:
-                # Could not adapt raises a type error.  If there was no
-                # way to adapt, then just use self._context.
-                context = self._context
+            context = self._context
+            crumbs = Hierarchy(context, self._request).heading_breadcrumbs
+            if crumbs:
+                context = crumbs[-1].context
             menu = nearest_adapter(context, IFacetMenu)
         except NoCanonicalUrl:
             menu = None
@@ -350,6 +351,7 @@ class CountAPI:
         return len(self._context)
 
 
+@implementer(ITraversable)
 class EnumValueAPI:
     """Namespace to test the value of an EnumeratedType Item.
 
@@ -359,7 +361,6 @@ class EnumValueAPI:
 
     Registered for canonical.lazr.enum.Item.
     """
-    implements(ITraversable)
 
     def __init__(self, item):
         self.item = item
@@ -380,6 +381,7 @@ class EnumValueAPI:
             return False
 
 
+@implementer(ITraversable)
 class HTMLFormAPI:
     """HTML form helper API, available as request/htmlform:.
 
@@ -393,7 +395,6 @@ class HTMLFormAPI:
             return None
 
     """
-    implements(ITraversable)
 
     def __init__(self, request):
         self.form = request.form
@@ -419,9 +420,8 @@ def htmlmatch(formvalue, value):
         return formvalue == value
 
 
+@implementer(ITraversable)
 class HTMLFormOperation:
-
-    implements(ITraversable)
 
     def __init__(self, formvalue, operation):
         self.formvalue = formvalue
@@ -441,9 +441,9 @@ class IRequestAPI(Interface):
     cookie_scope = Attribute("The scope parameters for cookies.")
 
 
+@implementer(IRequestAPI)
 class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
-    implements(IRequestAPI)
 
     def __init__(self, request):
         self.request = request
@@ -464,11 +464,11 @@ class RequestAPI:
         return params
 
 
+@implementer(ITraversable)
 class DBSchemaAPI:
     """Adapter from integers to things that can extract information from
     DBSchemas.
     """
-    implements(ITraversable)
 
     def __init__(self, number):
         self._number = number
@@ -481,6 +481,7 @@ class DBSchemaAPI:
             raise TraversalError(name)
 
 
+@implementer(ITraversable)
 class NoneFormatter:
     """Adapter from None to various string formats.
 
@@ -488,7 +489,6 @@ class NoneFormatter:
     of handling NULL values from the database, which become None values for
     attributes in content classes.
     """
-    implements(ITraversable)
 
     allowed_names = set([
         'approximatedate',
@@ -542,10 +542,9 @@ class NoneFormatter:
             raise TraversalError(name)
 
 
+@implementer(ITraversable)
 class ObjectFormatterAPI:
     """Adapter for any object to a formatted string."""
-
-    implements(ITraversable)
 
     # Although we avoid mutables as class attributes, the two ones below are
     # constants, so it's not a problem. We might want to use something like
@@ -688,16 +687,15 @@ class ObjectFormatterAPI:
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
-        If not available, then the view's .page_title attribut is used.
+        If not available, then the view's .page_title attribute is used.
         """
         ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
-        hierarchy_view = getMultiAdapter(
-            (view.context, request), name='+hierarchy')
+        hierarchy_view = getMultiAdapter((view, request), name='+hierarchy')
         if (isinstance(view, SystemErrorView) or
             hierarchy_view is None or
-            not hierarchy_view.display_breadcrumbs):
+            len(hierarchy_view.items) < 2):
             # The breadcrumbs are either not available or are overridden.  If
             # the view has a .page_title attribute use that.
             page_title = getattr(view, 'page_title', None)
@@ -897,6 +895,7 @@ class ObjectImageDisplayAPI:
         return markup % dict(icon=icon)
 
 
+@implementer(ITraversable)
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
     from the generic ObjectImageDisplayAPI and overrides the icon
@@ -904,7 +903,6 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
-    implements(ITraversable)
 
     allowed_names = set([
         'icon',
@@ -955,11 +953,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
-        return not self._context.bug.linked_branches.is_empty()
+        return not self._context.bug.linked_bugbranches.is_empty()
 
     def _hasSpecification(self):
         """Return whether the bug is linked to a specification."""
-        return not self._context.bug.specifications.is_empty()
+        return len(self._context.bug.specifications) != 0
 
     def _hasPatch(self):
         """Return whether the bug has a patch."""
@@ -1048,6 +1046,9 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             sprite_str = sprite_str + ' private'
 
         return sprite_str
+
+    def icon(self):
+        return '<span class="%s"></span>' % self.sprite_css()
 
     def badges(self):
 
@@ -1198,9 +1199,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def local_time(self):
         """Return the local time for this person."""
-        time_zone = 'UTC'
-        if self._context.time_zone is not None:
-            time_zone = self._context.time_zone
+        time_zone = self._context.time_zone
         return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
     def url(self, view_name=None, rootsite='mainsite'):
@@ -1674,6 +1673,24 @@ class BranchMergeProposalFormatterAPI(CustomizableFormatter):
             }
 
 
+class GitRepositoryFormatterAPI(CustomizableFormatter):
+    """Adapter for IGitRepository objects to a formatted string."""
+
+    _link_summary_template = '%(display_name)s'
+
+    def _link_summary_values(self):
+        return {'display_name': self._context.display_name}
+
+
+class GitRefFormatterAPI(CustomizableFormatter):
+    """Adapter for IGitRef objects to a formatted string."""
+
+    _link_summary_template = '%(display_name)s'
+
+    def _link_summary_values(self):
+        return {'display_name': self._context.display_name}
+
+
 class BugBranchFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for BugBranch objects"""
 
@@ -1742,8 +1759,8 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
     """Adapter providing fmt support for `IPackageBuild` objects."""
 
     def _composeArchiveReference(self, archive):
-        if archive.is_ppa:
-            return " [%s/%s]" % (archive.owner.name, archive.name)
+        if archive.reference != archive.distribution.name:
+            return " [%s]" % archive.reference
         else:
             return ""
 
@@ -1828,6 +1845,38 @@ class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         return {'name': self._context.name,
                 'owner': self._context.owner.displayname}
+
+
+class LiveFSFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ILiveFS objects."""
+
+    _link_summary_template = _(
+        'Live filesystem %(distroseries)s %(name)s for %(owner)s')
+
+    def _link_summary_values(self):
+        return {'distroseries': self._context.distro_series.name,
+                'name': self._context.name,
+                'owner': self._context.owner.displayname}
+
+
+class SnapFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISnap objects."""
+
+    _link_summary_template = _(
+        'Snap %(name)s for %(owner)s')
+
+    def _link_summary_values(self):
+        return {'name': self._context.name,
+                'owner': self._context.owner.displayname}
+
+
+class SnappySeriesFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISnappySeries objects."""
+
+    _link_summary_template = _('%(title)s')
+
+    def _link_summary_values(self):
+        return {'title': self._context.title}
 
 
 class SpecificationFormatterAPI(CustomizableFormatter):
@@ -2042,10 +2091,9 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
         return self._make_external_link(self._context.remotebug)
 
 
+@implementer(ITraversable)
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
-
-    implements(ITraversable)
 
     def __init__(self, number):
         self._number = number
@@ -2250,10 +2298,9 @@ class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):
             self._context.sourcepackage, IPathAdapter, 'fmt').link(view_name)
 
 
+@implementer(ITraversable)
 class DurationFormatterAPI:
     """Adapter from timedelta objects to a formatted string."""
-
-    implements(ITraversable)
 
     def __init__(self, duration):
         self._duration = duration
@@ -2308,7 +2355,7 @@ class DurationFormatterAPI:
         # a useful name. It's also unlikely that these numbers will be
         # changed.
 
-        seconds = total_seconds(self._duration)
+        seconds = self._duration.total_seconds()
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
@@ -2407,7 +2454,7 @@ class DurationFormatterAPI:
         return "%d weeks" % weeks
 
     def millisecondduration(self):
-        return '%sms' % (total_seconds(self._duration) * 1000,)
+        return '%sms' % (self._duration.total_seconds() * 1000,)
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):
@@ -2468,14 +2515,13 @@ def clean_path_segments(request):
     return clean_path_split
 
 
+@implementer(ITraversable)
 class PermissionRequiredQuery:
     """Check if the logged in user has a given permission on a given object.
 
     Example usage::
         tal:condition="person/required:launchpad.Edit"
     """
-
-    implements(ITraversable)
 
     def __init__(self, context):
         self.context = context
@@ -2492,15 +2538,15 @@ class IMainTemplateFile(Interface):
     path = TextLine(title=u'The absolute path to this main template.')
 
 
+@adapter(LaunchpadLayer)
+@implementer(IMainTemplateFile)
 class LaunchpadLayerToMainTemplateAdapter:
-    adapts(LaunchpadLayer)
-    implements(IMainTemplateFile)
-
     def __init__(self, context):
         here = os.path.dirname(os.path.realpath(__file__))
         self.path = os.path.join(here, '../templates/base-layout.pt')
 
 
+@implementer(ITraversable)
 class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
@@ -2519,8 +2565,6 @@ class PageMacroDispatcher:
         view/macro:is-page-contentless
         view/macro:has-watermark
     """
-
-    implements(ITraversable)
 
     def __init__(self, context):
         # The context of this object is a view object.
@@ -2720,6 +2764,7 @@ class PackageDiffFormatterAPI(ObjectFormatterAPI):
                 diff.diff_content.content.filesize)
 
 
+@implementer(ITraversable)
 class CSSFormatter:
     """A tales path adapter used for CSS rules.
 
@@ -2728,8 +2773,6 @@ class CSSFormatter:
     You will get "visible" if value evaluates to true, and "hidden" if the
     value evaluates to false.
     """
-
-    implements(ITraversable)
 
     def __init__(self, context):
         self.context = context
@@ -2751,10 +2794,9 @@ class CSSFormatter:
             raise TraversalError(name)
 
 
+@implementer(ITraversable)
 class IRCNicknameFormatterAPI(ObjectFormatterAPI):
     """Adapter from IrcID objects to a formatted string."""
-
-    implements(ITraversable)
 
     traversable_names = {
         'displayname': 'displayname',

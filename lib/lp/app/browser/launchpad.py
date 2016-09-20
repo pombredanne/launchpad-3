@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -35,6 +35,7 @@ from zope.component import (
     getGlobalSiteManager,
     getUtility,
     queryAdapter,
+    queryUtility,
     )
 from zope.datetime import (
     DateTimeError,
@@ -42,7 +43,8 @@ from zope.datetime import (
     )
 from zope.i18nmessageid import Message
 from zope.interface import (
-    implements,
+    alsoProvides,
+    implementer,
     Interface,
     )
 from zope.publisher.defaultview import getDefaultViewName
@@ -54,7 +56,11 @@ from zope.schema import (
     TextLine,
     )
 from zope.security.interfaces import Unauthorized
-from zope.traversing.interfaces import ITraversable
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    ITraversable,
+    )
 
 from lp import _
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -72,10 +78,14 @@ from lp.app.browser.tales import (
     )
 from lp.app.errors import (
     GoneError,
+    NameLookupFailed,
     NotFoundError,
     POSTToNonCanonicalURL,
     )
-from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.interfaces.headings import (
+    IHeadingBreadcrumb,
+    IMajorHeadingView,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IServiceFactory
 from lp.app.widgets.project import ProjectScopeWidget
@@ -84,6 +94,7 @@ from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -93,8 +104,11 @@ from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.gitlookup import IGitLookup
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.layers import WebServiceLayer
+from lp.registry.enums import VCSType
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -111,7 +125,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import intOrZero
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.propertycache import cachedproperty
@@ -132,10 +145,14 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IBreadcrumb,
+    ICanonicalUrlData,
+    IFacet,
     ILaunchBag,
     ILaunchpadRoot,
+    IMultiFacetedBreadcrumb,
     INavigationMenu,
     )
 from lp.services.webapp.menu import get_facet
@@ -143,15 +160,22 @@ from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.interfaces.translations import IRosettaApplication
+
+
+class IFacetBreadcrumb(Interface):
+    pass
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -240,14 +264,34 @@ class LinkView(LaunchpadView):
 
 
 class Hierarchy(LaunchpadView):
-    """The hierarchy part of the location bar on each page."""
-
-    vhost_breadcrumb = True
+    """The heading, title, facet links and breadcrumbs parts of each page."""
 
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
-        return self.request.traversed_objects
+        # Start the chain with the deepest object that has a breadcrumb.
+        try:
+            objects = [(
+                obj for obj in reversed(self.request.traversed_objects)
+                if IBreadcrumb(obj, None)).next()]
+        except StopIteration:
+            return []
+        # Now iterate. If an object has a breadcrumb, it can override
+        # its parent. Otherwise we just follow the normal URL hierarchy
+        # until we reach the end.
+        while True:
+            next_obj = None
+            breadcrumb = IBreadcrumb(objects[0], None)
+            if breadcrumb is not None:
+                next_obj = breadcrumb.inside
+            if next_obj is None:
+                urldata = ICanonicalUrlData(objects[0], None)
+                if urldata is not None:
+                    next_obj = urldata.inside
+            if next_obj is None:
+                break
+            objects.insert(0, next_obj)
+        return objects
 
     @cachedproperty
     def items(self):
@@ -261,74 +305,93 @@ class Hierarchy(LaunchpadView):
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
-        facet = get_facet(self._naked_context_view)
-        if (len(breadcrumbs) != 0 and facet is not None and
-            self.vhost_breadcrumb):
+        facet = queryUtility(IFacet, name=get_facet(self._naked_context_view))
+        if breadcrumbs and facet is not None:
             # We have breadcrumbs and we're on a custom facet, so we'll
             # sneak an extra breadcrumb for the facet we're on.
-
             # Iterate over the context of our breadcrumbs in reverse order and
-            # for the first one we find an adapter named after the facet we're
-            # on, generate an extra breadcrumb and insert it in our list.
+            # find the first one that implements IMultiFactedBreadcrumb.
+            # It'll be facet-agnostic, so insert a facet-specific one
+            # after it.
             for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
-                extra_breadcrumb = queryAdapter(
-                    breadcrumb.context, IBreadcrumb, name=facet)
-                if extra_breadcrumb is not None:
-                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                if IMultiFacetedBreadcrumb.providedBy(breadcrumb):
+                    facet_crumb = Breadcrumb(
+                        breadcrumb.context, rootsite=facet.rootsite,
+                        text=facet.text)
+                    alsoProvides(facet_crumb, IFacetBreadcrumb)
+                    breadcrumbs.insert(idx + 1, facet_crumb)
+                    # Ensure that all remaining breadcrumbs are
+                    # themselves faceted.
+                    for remaining_crumb in breadcrumbs[idx + 1:]:
+                        remaining_crumb.rootsite_override = facet.rootsite
                     break
         if len(breadcrumbs) > 0:
-            page_crumb = self.makeBreadcrumbForRequestedPage()
-            if page_crumb:
-                breadcrumbs.append(page_crumb)
+            breadcrumbs.extend(self.makeBreadcrumbsForRequestedPage())
         return breadcrumbs
+
+    @property
+    def items_for_body(self):
+        """Return breadcrumbs to display in the page body's hierarchy section.
+
+        While the entire sequence of breadcrumbs must be included in the
+        document title, the first 0-3 are represented specially in the header
+        (headings and facet links), so we don't want to duplicate them in the
+        main content.
+        """
+        crumbs = []
+        for crumb in self.items:
+            if (IHeadingBreadcrumb.providedBy(crumb)
+                    or IFacetBreadcrumb.providedBy(crumb)):
+                crumbs = []
+                continue
+            crumbs.append(crumb)
+        return crumbs
 
     @property
     def _naked_context_view(self):
         """Return the unproxied view for the context of the hierarchy."""
-        from zope.security.proxy import removeSecurityProxy
+        # XXX wgrant 2014-11-16: Should just be able to use self.context
+        # here, but some views end up delegating to things that don't
+        # have __name__ or __launchpad_facetname__.
         if len(self.request.traversed_objects) > 0:
             return removeSecurityProxy(self.request.traversed_objects[-1])
         else:
             return None
 
-    def makeBreadcrumbForRequestedPage(self):
-        """Return an `IBreadcrumb` for the requested page.
+    def makeBreadcrumbsForRequestedPage(self):
+        """Return a sequence of `IBreadcrumb`s for the requested page.
 
         The `IBreadcrumb` for the requested page is created using the current
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the view is the default one for the object or the current
-        facet, return None -- we'll have injected a *FacetBreadcrumb
-        earlier in the hierarchy which links here.
+        facet, no breadcrumbs are returned -- we'll have injected a
+        facet Breadcrumb earlier in the hierarchy which links here.
         """
-        # XXX wgrant 2014-02-25: We should eventually define the
-        # facet-level defaults in app-level ZCML rather than hardcoding
-        # them centrally.
-        facet_defaults = {
-            'answers': '+questions',
-            'branches': '+branches',
-            'bugs': '+bugs',
-            'specifications': '+specs',
-            'translations': '+translations',
-            }
-
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
         default_view_name = getDefaultViewName(obj, self.request)
         view = self._naked_context_view
-        facet = get_facet(view)
-        if view.__name__ not in (default_view_name, facet_defaults.get(facet)):
+        default_views = [default_view_name]
+        facet = queryUtility(IFacet, name=get_facet(view))
+        if facet is not None:
+            default_views.append(facet.default_view)
+        crumbs = []
+
+        # Views may provide an additional breadcrumb to precede them.
+        # This is useful to have an add view link back to its
+        # collection despite its parent being the context of the collection.
+        if hasattr(view, 'inside_breadcrumb'):
+            crumbs.append(view.inside_breadcrumb)
+
+        if hasattr(view, '__name__') and view.__name__ not in default_views:
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
-            breadcrumb = Breadcrumb(None)
-            breadcrumb._url = url
-            breadcrumb.text = title
-            return breadcrumb
-        else:
-            return None
+            crumbs.append(Breadcrumb(None, url=url, text=title))
+        return crumbs
 
     @property
     def display_breadcrumbs(self):
@@ -339,7 +402,51 @@ class Hierarchy(LaunchpadView):
         # to display breadcrumbs either.
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
-        return len(self.items) > 1 and not has_major_heading
+        return len(self.items_for_body) > 1 and not has_major_heading
+
+    @property
+    def heading_breadcrumbs(self):
+        crumbs = [
+            crumb for crumb in self.items
+            if IHeadingBreadcrumb.providedBy(crumb)]
+        assert len(crumbs) <= 2
+        return crumbs
+
+    def heading(self):
+        """Return the heading markup for the page.
+
+        If the context provides `IMajorHeadingView` then we return an
+        H1, else an H2.
+        """
+        # The title is static, but only the index view gets an H1.
+        tag = 'h1' if IMajorHeadingView.providedBy(self.context) else 'h2'
+        # If there is actually no root context, then it's a top-level
+        # context-less page so Launchpad.net is shown as the branding.
+        crumb_markups = []
+        for crumb in self.heading_breadcrumbs:
+            crumb_markups.append(
+                structured('<a href="%s">%s</a>', crumb.url, crumb.detail))
+        if not crumb_markups:
+            crumb_markups.append(structured('<span>Launchpad.net</span>'))
+        content = structured(
+            '<br />'.join(['%s'] * len(crumb_markups)), *crumb_markups)
+        return structured(
+            '<%s id="watermark-heading">%s</%s>',
+            tag, content, tag).escapedtext
+
+    def logo(self):
+        """Return the logo image for the top header breadcrumb's context."""
+        logo_context = (
+            self.heading_breadcrumbs[0].context if self.heading_breadcrumbs
+            else None)
+        adapter = queryAdapter(logo_context, IPathAdapter, 'image')
+        if logo_context is not None:
+            return structured(
+                '<a href="%s">%s</a>',
+                canonical_url(logo_context, rootsite='mainsite'),
+                structured(adapter.logo())).escapedtext
+        else:
+            return adapter.logo()
 
 
 class ExceptionHierarchy(Hierarchy):
@@ -350,6 +457,7 @@ class ExceptionHierarchy(Hierarchy):
         return []
 
 
+@implementer(IBrowserPublisher, ITraversable)
 class Macro:
     """Keeps templates that are registered as pages from being URL accessable.
 
@@ -391,7 +499,6 @@ class Macro:
         permission="zope.Public"
         />
     """
-    implements(IBrowserPublisher, ITraversable)
 
     def __init__(self, context, request):
         self.context = context
@@ -663,6 +770,68 @@ class LaunchpadRootNavigation(Navigation):
 
         return self.redirectSubTree(target_url)
 
+    @stepto('+code')
+    def redirect_branch_or_repo(self):
+        """Redirect /+code/<foo> to the branch or repository named 'foo'.
+
+        'foo' can be the unique name of the branch/repo, or any of the aliases
+        for the branch/repo.
+
+        If 'foo' is invalid, or exists but the user does not have permission to
+        view 'foo', a NotFoundError is raised, resulting in a 404 error.
+
+        Unlike +branch, this works for both git and bzr repositories/branches.
+        """
+        target_url = None
+        path = '/'.join(self.request.stepstogo)
+
+        # Try a Git repository lookup first, since the schema is simpler and
+        # so it's quicker.
+        try:
+            repository, trailing = getUtility(IGitLookup).getByPath(path)
+            if repository is not None:
+                target_url = canonical_url(repository)
+                if trailing:
+                    target_url = urlappend(target_url, trailing)
+        except (InvalidNamespace, InvalidProductName, NameLookupFailed,
+                Unauthorized):
+            # Either the git repository wasn't found, or it was found but we
+            # lack authority to access it. In either case, attempt a bzr lookup
+            # so don't set target_url
+            pass
+
+        # Attempt a bzr lookup as well:
+        try:
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
+            bzr_url = canonical_url(branch)
+            if trailing != '':
+                bzr_url = urlappend(bzr_url, trailing)
+
+            if target_url and branch.product is not None:
+                # Project has both a bzr branch and a git repo. There's no
+                # right thing we can do here, so pretend we didn't see
+                # anything at all.
+                if branch.product.vcs is None:
+                    target_url = None
+                # if it's set to BZR, then set this branch as the target
+                if branch.product.vcs == VCSType.BZR:
+                    target_url = bzr_url
+            else:
+                target_url = bzr_url
+        except (NoLinkedBranch, CannotHaveLinkedBranch, InvalidNamespace,
+                InvalidProductName, NotFoundError):
+            # No bzr branch found either.
+            pass
+
+        # Either neither bzr nor git returned matches, or they did but we're
+        # not authorised to view them, or they both did and the project has not
+        # set its 'vcs' property to indicate which one to prefer. In all cases
+        # raise a 404:
+        if not target_url:
+            raise NotFoundError
+
+        return self.redirectSubTree(target_url)
+
     @stepto('+builds')
     def redirect_buildfarm(self):
         """Redirect old /+builds requests to new URL, /builders."""
@@ -675,20 +844,23 @@ class LaunchpadRootNavigation(Navigation):
     # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
+        'archives': IArchiveSet,
         '+services': IServiceFactory,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
-        '+code': IBazaarApplication,
+        '+code-index': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         '+countries': ICountrySet,
         'distros': IDistributionSet,
+        '+git': IGitRepositorySet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        'livefses': ILiveFSSet,
         '+nameblacklist': INameBlacklistSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
@@ -696,6 +868,8 @@ class LaunchpadRootNavigation(Navigation):
         '+processors': IProcessorSet,
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,
+        '+snaps': ISnapSet,
+        '+snappy-series': ISnappySeriesSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -750,12 +924,15 @@ class LaunchpadRootNavigation(Navigation):
                 # team membership or Launchpad administration.
                 if (person.is_team and
                     not check_permission('launchpad.LimitedView', person)):
-                    raise NotFound(self.context, name)
+                    return None
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
                     if not check_permission('launchpad.Moderate', person):
                         raise GoneError(
                             'User is suspended: %s' % name)
+                if person.account_status == AccountStatus.PLACEHOLDER:
+                    if not check_permission('launchpad.Moderate', person):
+                        return None
                 return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded

@@ -100,7 +100,6 @@ to see there.
     >>> main = find_main_content(owner_browser.contents)
     >>> print extract_text(main.renderContents())
     Custom language code  ...no... for Foo
-    Foo Translations Custom language code ...no...
     For Foo, uploads with the language code
     &ldquo;no&rdquo;
     are associated with the language

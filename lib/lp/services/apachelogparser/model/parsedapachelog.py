@@ -9,7 +9,7 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.apachelogparser.interfaces.parsedapachelog import (
     IParsedApacheLog,
@@ -19,10 +19,9 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.interfaces import IStore
 
 
+@implementer(IParsedApacheLog)
 class ParsedApacheLog(Storm):
     """See `IParsedApacheLog`"""
-
-    implements(IParsedApacheLog)
     __storm_table__ = 'ParsedApacheLog'
 
     id = Int(primary=True)

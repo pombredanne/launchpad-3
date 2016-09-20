@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -10,20 +10,26 @@ __all__ = [
     ]
 
 from functools import partial
-from logging import getLogger
+import json
 
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.indices import (
+    build_binary_stanza_fields,
+    build_source_stanza_fields,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.interfaces import IStore
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -31,13 +37,15 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     )
-from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease,
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
+    api_url,
     login,
     person_logged_in,
     record_two_runs,
@@ -50,6 +58,7 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import webservice_for_person
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -96,7 +105,7 @@ class CurrentSourceReleasesMixin:
     def test_return_value(self):
         # getCurrentSourceReleases() returns a dict. The corresponding
         # source package is used as the key, with
-        # a DistroSeriesSourcePackageRelease as the values.
+        # a DistributionSourcePackageRelease as the values.
         self.publisher.getPubSource(version='0.9')
         releases = self.target.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])
@@ -178,7 +187,7 @@ class TestDistroSeriesCurrentSourceReleases(
     """Test for DistroSeries.getCurrentSourceReleases()."""
 
     layer = LaunchpadFunctionalLayer
-    release_interface = IDistroSeriesSourcePackageRelease
+    release_interface = IDistributionSourcePackageRelease
 
     @property
     def target(self):
@@ -247,6 +256,27 @@ class TestDistroSeries(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(derived_series=distroseries)
         self.assertTrue(distroseries.isDerivedSeries())
 
+    def test_inherit_overrides_from_parents(self):
+        # inherit_overrides_from_parents is an accessor which maps to
+        # all of the series' DistroSeriesParent.inherit_overrides, for
+        # UI simplicity for now.
+        distroseries = self.factory.makeDistroSeries()
+        dsp1 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=True)
+        dsp2 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, inherit_overrides=False)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = False
+        self.assertEqual(False, dsp1.inherit_overrides)
+        self.assertEqual(False, dsp2.inherit_overrides)
+        self.assertEqual(False, distroseries.inherit_overrides_from_parents)
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.inherit_overrides_from_parents = True
+        self.assertEqual(True, dsp1.inherit_overrides)
+        self.assertEqual(True, dsp2.inherit_overrides)
+        self.assertEqual(True, distroseries.inherit_overrides_from_parents)
+
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
         # initialization job with a pending status attached to this series.
@@ -291,43 +321,6 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             [comment], distroseries.getDifferenceComments())
 
-    def checkLegalPocket(self, status, pocket):
-        distroseries = self.factory.makeDistroSeries(status=status)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, pocket=pocket)
-        return removeSecurityProxy(distroseries).checkLegalPocket(
-            spph, False, getLogger())
-
-    def test_checkLegalPocket_allows_unstable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_unstable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_forbids_unstable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
-
-    def test_checkLegalPocket_forbids_stable_release(self):
-        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
-        self.assertFalse(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
-
-    def test_checkLegalPocket_allows_stable_proposed(self):
-        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
-
-    def test_checkLegalPocket_allows_stable_updates(self):
-        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
-        self.assertTrue(self.checkLegalPocket(
-            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
-
     def test_valid_specifications_query_count(self):
         distroseries = self.factory.makeDistroSeries()
         distribution = distroseries.distribution
@@ -343,7 +336,7 @@ class TestDistroSeries(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             for spec in distroseries.api_valid_specifications:
                 spec.workitems_text
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
 
     def test_valid_specifications_preloading_excludes_deleted_workitems(self):
         distroseries = self.factory.makeDistroSeries()
@@ -356,6 +349,70 @@ class TestDistroSeries(TestCaseWithFactory):
             s.workitems_text
             for s in distroseries.api_valid_specifications]
         self.assertContentEqual([spec.workitems_text], workitems)
+
+    def test_backports_not_automatic(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.backports_not_automatic)
+        with admin_logged_in():
+            distroseries.backports_not_automatic = True
+        self.assertTrue(distroseries.backports_not_automatic)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["backports_not_automatic"])
+
+    def test_include_long_descriptions(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(distroseries.include_long_descriptions)
+        with admin_logged_in():
+            distroseries.include_long_descriptions = False
+        self.assertFalse(distroseries.include_long_descriptions)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertFalse(
+            naked_distroseries.publishing_options["include_long_descriptions"])
+
+    def test_index_compressors(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertEqual(
+            [IndexCompressionType.GZIP, IndexCompressionType.BZIP2],
+            distroseries.index_compressors)
+        with admin_logged_in():
+            distroseries.index_compressors = [IndexCompressionType.XZ]
+        self.assertEqual(
+            [IndexCompressionType.XZ], distroseries.index_compressors)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertEqual(
+            ["xz"], naked_distroseries.publishing_options["index_compressors"])
+
+    def test_publish_by_hash(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.publish_by_hash)
+        with admin_logged_in():
+            distroseries.publish_by_hash = True
+        self.assertTrue(distroseries.publish_by_hash)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["publish_by_hash"])
+
+    def test_advertise_by_hash(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.advertise_by_hash)
+        with admin_logged_in():
+            distroseries.advertise_by_hash = True
+        self.assertTrue(distroseries.advertise_by_hash)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["advertise_by_hash"])
+
+    def test_strict_supported_component_dependencies(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(distroseries.strict_supported_component_dependencies)
+        with admin_logged_in():
+            distroseries.strict_supported_component_dependencies = False
+        self.assertFalse(distroseries.strict_supported_component_dependencies)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertFalse(
+            naked_distroseries.publishing_options[
+                "strict_supported_component_dependencies"])
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
@@ -526,7 +583,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             for spp in self.series.getSourcePackagePublishing(
                     PackagePublishingPocket.RELEASE, self.universe_component,
                     self.series.main_archive):
-                spp.getIndexStanza()
+                build_source_stanza_fields(
+                    spp.sourcepackagerelease, spp.component, spp.section)
 
         recorder1, recorder2 = record_two_runs(
             get_index_stanzas,
@@ -535,7 +593,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
         self.assertThat(recorder1, HasQueryCount(Equals(11)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getBinaryPackagePublishing_query_count(self):
         # Check that the number of queries required to publish binary
@@ -544,7 +602,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             for bpp in self.series.getBinaryPackagePublishing(
                     das.architecturetag, PackagePublishingPocket.RELEASE,
                     self.universe_component, self.series.main_archive):
-                bpp.getIndexStanza()
+                build_binary_stanza_fields(
+                    bpp.binarypackagerelease, bpp.component, bpp.section,
+                    bpp.priority, bpp.phased_update_percentage, False)
 
         das = self.factory.makeDistroArchSeries(distroseries=self.series)
         recorder1, recorder2 = record_two_runs(
@@ -555,7 +615,43 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
         self.assertThat(recorder1, HasQueryCount(Equals(15)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+
+class TestDistroSeriesWebservice(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_language_pack_full_export_requested_not_translations_admin(self):
+        # Somebody with only launchpad.TranslationsAdmin cannot request full
+        # language pack exports.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+        group = self.factory.makeTranslationGroup()
+        with admin_logged_in():
+            distroseries.distribution.translationgroup = group
+        webservice = webservice_for_person(
+            group.owner, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            api_url(distroseries), "application/json",
+            json.dumps({"language_pack_full_export_requested": True}))
+        self.assertEqual(401, response.status)
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+
+    def test_language_pack_full_export_requested_langpacks_admin(self):
+        # Somebody with launchpad.LanguagePacksAdmin can request full
+        # language pack exports.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+        person = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).rosetta_experts])
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            api_url(distroseries), "application/json",
+            json.dumps({"language_pack_full_export_requested": True}))
+        self.assertEqual(209, response.status)
+        self.assertTrue(distroseries.language_pack_full_export_requested)
 
 
 class TestDistroSeriesSet(TestCaseWithFactory):

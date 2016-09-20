@@ -16,7 +16,7 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <p metal:fill-slot="extra_top">
-      E-mail notifications for this team should go to:
+      Email notifications for this team should go to:
     </p>
     <metal:widgets fill-slot="widgets">
       <style>
@@ -49,7 +49,7 @@
     </p>
 
     <p id="email-warning" class="block-sprite large-warning">
-        E-mail sent to a mailing list or external contact address may
+        Email sent to a mailing list or external contact address may
         be publicly accessible.<br/>If this team is subscribed to private
         bug or branches, private information may be disclosed.<br/>
         The safest option to avoid leaking private information is to

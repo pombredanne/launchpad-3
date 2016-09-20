@@ -8,6 +8,9 @@ __all__ = [
     'Library',
     ]
 
+import hashlib
+import urllib
+
 from storm.expr import (
     And,
     SQL,
@@ -54,13 +57,23 @@ class Library:
         """
         restricted = self.restricted
         if token and path:
-            # with a token and a path we may be able to serve restricted files
+            # With a token and a path we may be able to serve restricted files
             # on the public port.
+            #
+            # The URL-encoding of the path may have changed somewhere
+            # along the line, so reencode it canonically. LFA.filename
+            # can't contain slashes, so they're safe to leave unencoded.
+            # And urllib.quote erroneously excludes ~ from its safe set,
+            # while RFC 3986 says it should be unescaped and Chromium
+            # forcibly decodes it in any URL that it sees.
+            #
+            # This needs to match url_path_quote.
+            normalised_path = urllib.quote(urllib.unquote(path), safe='/~+')
             store = session_store()
             token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
-                TimeLimitedToken.token == token,
-                TimeLimitedToken.path==path).is_empty()
+                TimeLimitedToken.token == hashlib.sha256(token).hexdigest(),
+                TimeLimitedToken.path == normalised_path).is_empty()
             store.reset()
             if token_found:
                 raise LookupError("Token stale/pruned/path mismatch")

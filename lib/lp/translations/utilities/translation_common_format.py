@@ -10,7 +10,7 @@ __all__ = [
     'TranslationMessageData',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
@@ -21,9 +21,9 @@ from lp.translations.interfaces.translationimporter import (
     )
 
 
+@implementer(ITranslationFileData)
 class TranslationFileData:
     """See `ITranslationFileData`."""
-    implements(ITranslationFileData)
 
     def __init__(self):
         self.header = None
@@ -35,9 +35,9 @@ class TranslationFileData:
         self.syntax_warnings = []
 
 
+@implementer(ITranslationMessageData)
 class TranslationMessageData:
     """See `ITranslationMessageData`."""
-    implements(ITranslationMessageData)
 
     def __init__(self):
         self.msgid_singular = None
@@ -89,4 +89,3 @@ class TranslationMessageData:
     def resetAllTranslations(self):
         """See `ITranslationMessageData`."""
         self._translations = []
-

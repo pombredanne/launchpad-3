@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import worker. This imports code from foreign repositories."""
@@ -87,11 +87,14 @@ class CodeImportBranchOpenPolicy(BranchOpenPolicy):
 
     In summary:
      - follow references,
-     - only open non-Launchpad URLs
+     - only open non-Launchpad URLs for imports from Bazaar
      - only open the allowed schemes
     """
 
     allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp', 'bzr']
+
+    def __init__(self, rcstype):
+        self.rcstype = rcstype
 
     def shouldFollowReferences(self):
         """See `BranchOpenPolicy.shouldFollowReferences`.
@@ -113,15 +116,19 @@ class CodeImportBranchOpenPolicy(BranchOpenPolicy):
     def checkOneURL(self, url):
         """See `BranchOpenPolicy.checkOneURL`.
 
-        We refuse to mirror from Launchpad or a ssh-like or file URL.
+        We refuse to mirror Bazaar branches from Launchpad, or any branches
+        from a ssh-like or file URL.
         """
         try:
             uri = URI(url)
         except InvalidURIError:
             raise BadUrl(url)
-        launchpad_domain = config.vhost.mainsite.hostname
-        if uri.underDomain(launchpad_domain):
-            raise BadUrl(url)
+        # XXX cjwatson 2015-06-12: Once we have imports into Git, this
+        # should be extended to prevent Git-to-Git self-imports as well.
+        if self.rcstype == "bzr":
+            launchpad_domain = config.vhost.mainsite.hostname
+            if uri.underDomain(launchpad_domain):
+                raise BadUrl(url)
         for hostname in get_blacklisted_hostnames():
             if uri.underDomain(hostname):
                 raise BadUrl(url)

@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'AnswersFacetBreadcrumb',
     'AskAQuestionButtonPortlet',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -85,7 +84,6 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
-from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import (
@@ -767,10 +765,10 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         """Check or update the Person's preferred languages as needed.
 
         Answer contacts must tell Launchpad in which languages they provide
-        help. If the Person has not already set his preferred languages, they
-        are set to his browser languages. In the case of a team without
-        languages, only English is added to the preferred languages. When
-        languages are added, a notification is added to the response.
+        help. If the Person has not already set their preferred languages,
+        they are set to their browser languages. In the case of a team
+        without languages, only English is added to the preferred languages.
+        When languages are added, a notification is added to the response.
         """
         if len(person_or_team.languages) > 0:
             return
@@ -960,8 +958,3 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         """Return a link to the manage answer contact view."""
         text = 'Set answer contact'
         return Link('+answer-contact', text, icon='edit')
-
-
-class AnswersFacetBreadcrumb(Breadcrumb):
-    rootsite = 'answers'
-    text = 'Questions'

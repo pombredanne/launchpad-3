@@ -1,13 +1,18 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test source package diffs."""
 
+from __future__ import print_function
+
 __metaclass__ = type
 
 from datetime import datetime
+import errno
 import os.path
+from textwrap import dedent
 
+from fixtures import EnvironmentVariableFixture
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -23,10 +28,12 @@ from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-def create_proper_job(factory):
+def create_proper_job(factory, sourcepackagename=None):
     archive = factory.makeArchive()
-    foo_dash1 = factory.makeSourcePackageRelease(archive=archive)
-    foo_dash15 = factory.makeSourcePackageRelease(archive=archive)
+    foo_dash1 = factory.makeSourcePackageRelease(
+        archive=archive, sourcepackagename=sourcepackagename)
+    foo_dash15 = factory.makeSourcePackageRelease(
+        archive=archive, sourcepackagename=sourcepackagename)
     suite_dir = 'lib/lp/archiveuploader/tests/data/suite'
     files = {
         '%s/foo_1.0-1/foo_1.0-1.diff.gz' % suite_dir: None,
@@ -156,3 +163,61 @@ class TestPackageDiffs(TestCaseWithFactory):
         [job] = IStore(Job).find(
             Job, Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF)
         self.assertIsNot(None, job)
+
+    def test_packagediff_timeout(self):
+        # debdiff is killed after the time limit expires.
+        self.pushConfig("packagediff", debdiff_timeout=1)
+        temp_dir = self.makeTemporaryDirectory()
+        mock_debdiff_path = os.path.join(temp_dir, "debdiff")
+        marker_path = os.path.join(temp_dir, "marker")
+        with open(mock_debdiff_path, "w") as mock_debdiff:
+            print(dedent("""\
+                #! /bin/sh
+                (echo "$$"; echo "$TMPDIR") >%s
+                sleep 5
+                """ % marker_path), end="", file=mock_debdiff)
+        os.chmod(mock_debdiff_path, 0o755)
+        mock_path = "%s:%s" % (temp_dir, os.environ["PATH"])
+        diff = create_proper_job(self.factory)
+        with EnvironmentVariableFixture("PATH", mock_path):
+            diff.performDiff()
+        self.assertEqual(PackageDiffStatus.FAILED, diff.status)
+        with open(marker_path) as marker:
+            debdiff_pid = int(marker.readline())
+            debdiff_tmpdir = marker.readline().rstrip("\n")
+            err = self.assertRaises(OSError, os.kill, debdiff_pid, 0)
+            self.assertEqual(errno.ESRCH, err.errno)
+            self.assertFalse(os.path.exists(debdiff_tmpdir))
+
+    def test_packagediff_max_size(self):
+        # debdiff is killed if it generates more than the size limit.
+        self.pushConfig("packagediff", debdiff_max_size=1024)
+        temp_dir = self.makeTemporaryDirectory()
+        mock_debdiff_path = os.path.join(temp_dir, "debdiff")
+        marker_path = os.path.join(temp_dir, "marker")
+        with open(mock_debdiff_path, "w") as mock_debdiff:
+            print(dedent("""\
+                #! /bin/sh
+                (echo "$$"; echo "$TMPDIR") >%s
+                yes | head -n2048 || exit 2
+                sleep 5
+                """ % marker_path), end="", file=mock_debdiff)
+        os.chmod(mock_debdiff_path, 0o755)
+        mock_path = "%s:%s" % (temp_dir, os.environ["PATH"])
+        diff = create_proper_job(self.factory)
+        with EnvironmentVariableFixture("PATH", mock_path):
+            diff.performDiff()
+        self.assertEqual(PackageDiffStatus.FAILED, diff.status)
+        with open(marker_path) as marker:
+            debdiff_pid = int(marker.readline())
+            debdiff_tmpdir = marker.readline().rstrip("\n")
+            err = self.assertRaises(OSError, os.kill, debdiff_pid, 0)
+            self.assertEqual(errno.ESRCH, err.errno)
+            self.assertFalse(os.path.exists(debdiff_tmpdir))
+
+    def test_packagediff_blacklist(self):
+        # Package diff jobs for blacklisted package names do nothing.
+        self.pushConfig("packagediff", blacklist="udev cordova-cli")
+        diff = create_proper_job(self.factory, sourcepackagename="cordova-cli")
+        diff.performDiff()
+        self.assertEqual(PackageDiffStatus.FAILED, diff.status)

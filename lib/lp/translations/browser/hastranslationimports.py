@@ -17,7 +17,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.formlib.widgets import DropdownWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
@@ -362,10 +362,9 @@ class HasTranslationImportsView(LaunchpadFormView):
             'items': items}
 
 
+@implementer(IContextSourceBinder)
 class EntryImportStatusVocabularyFactory:
     """Factory for a vocabulary containing a list of statuses for import."""
-
-    implements(IContextSourceBinder)
 
     def __init__(self, entry, user):
         """Create a EntryImportStatusVocabularyFactory.
@@ -386,10 +385,9 @@ class EntryImportStatusVocabularyFactory:
         return SimpleVocabulary(terms)
 
 
+@implementer(IContextSourceBinder)
 class TranslationImportStatusVocabularyFactory:
     """Factory for a vocabulary containing a list of import statuses."""
-
-    implements(IContextSourceBinder)
 
     def __call__(self, context):
         terms = [SimpleTerm('all', 'all', 'All statuses')]
@@ -398,10 +396,9 @@ class TranslationImportStatusVocabularyFactory:
         return SimpleVocabulary(terms)
 
 
+@implementer(IContextSourceBinder)
 class TranslationImportFileExtensionVocabularyFactory:
     """Factory for a vocabulary containing a list of available extensions."""
-
-    implements(IContextSourceBinder)
 
     def __call__(self, context):
         file_extensions = ('po', 'pot')

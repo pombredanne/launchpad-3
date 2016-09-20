@@ -13,16 +13,15 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp import canonical_url
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
     BrowserTestCase,
     login,
     logout,
-    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -30,8 +29,6 @@ from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
-    setupBrowser,
-    setupBrowserForUser,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -47,7 +44,8 @@ class TestCanonicalUrlForRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             canonical_url(build),
             StartsWith(
-                'http://launchpad.dev/~ppa-owner/+archive/ppa/+recipebuild/'))
+                'http://launchpad.dev/~ppa-owner/+archive/ubuntu/ppa/'
+                '+recipebuild/'))
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
@@ -70,7 +68,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', getUtility(IProcessorSet).getByName('386'), False,
-            self.chef, supports_virtualized=True)
+            self.chef)
 
     def makeRecipeBuild(self):
         """Create and return a specific recipe."""
@@ -84,17 +82,19 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             daily_build_archive=self.ppa)
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
+        build.queueBuild()
         return build
 
     def test_cancel_build(self):
-        """An admin can cancel a build."""
+        """The archive owner can cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
+        owner = build.archive.owner
         logout()
 
-        browser = self.getUserBrowser(build_url, user=self.admin)
+        browser = self.getUserBrowser(build_url, user=owner)
         browser.getLink('Cancel build').click()
 
         self.assertEqual(
@@ -108,12 +108,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             build_url)
 
         login(ANONYMOUS)
-        self.assertEqual(
-            BuildStatus.SUPERSEDED,
-            build.status)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
 
-    def test_cancel_build_not_admin(self):
-        """No one but an admin can cancel a build."""
+    def test_cancel_build_not_owner(self):
+        """A normal user can't cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()
@@ -132,12 +130,14 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
         build = self.makeRecipeBuild()
-        build.cancelBuild()
+        with admin_logged_in():
+            build.cancel()
         transaction.commit()
         build_url = canonical_url(build)
+        owner = build.archive.owner
         logout()
 
-        browser = self.getUserBrowser(build_url, user=self.admin)
+        browser = self.getUserBrowser(build_url, user=owner)
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
@@ -213,7 +213,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""
         build = self.makeRecipeBuild()
-        build.cancelBuild()
+        with admin_logged_in():
+            build.cancel()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -229,25 +230,11 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         This is the case where the user has a stale link that they click on.
         """
         build = self.factory.makeSourcePackageRecipeBuild()
-        build.cancelBuild()
+        build.queueBuild()
+        with admin_logged_in():
+            build.cancel()
         index_url = canonical_url(build)
         browser = self.getViewBrowser(build, '+rescore', user=self.admin)
-        self.assertEqual(index_url, browser.url)
-        self.assertIn(
-            'Cannot rescore this build because it is not queued.',
-            browser.contents)
-
-    def test_rescore_build_wrong_state_stale_page(self):
-        """Show sane error if you attempt to rescore a non-queued build.
-
-        This is the case where the user is on the rescore page and submits.
-        """
-        build = self.factory.makeSourcePackageRecipeBuild()
-        index_url = canonical_url(build)
-        browser = self.getViewBrowser(build, '+rescore', user=self.admin)
-        with person_logged_in(self.admin):
-            build.cancelBuild()
-        browser.getLink('Rescore build').click()
         self.assertEqual(index_url, browser.url)
         self.assertIn(
             'Cannot rescore this build because it is not queued.',
@@ -275,17 +262,11 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         build.buildqueue_record.logtail = 'i am failing'
         return build
 
-    def makeNonRedirectingBrowser(self, url, user=None):
-        browser = setupBrowserForUser(user) if user else setupBrowser()
-        browser.mech_browser.set_handle_equiv(False)
-        browser.open(url)
-        return browser
-
     def test_builder_index_public(self):
         build = self.makeBuildingRecipe()
         url = canonical_url(build.builder)
         logout()
-        browser = self.makeNonRedirectingBrowser(url)
+        browser = self.getNonRedirectingBrowser(url=url, user=ANONYMOUS)
         self.assertIn('i am failing', browser.contents)
 
     def test_builder_index_private(self):
@@ -293,13 +274,12 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         with admin_logged_in():
             build = self.makeBuildingRecipe(archive=archive)
         url = canonical_url(removeSecurityProxy(build).builder)
-        random_person = self.factory.makePerson()
         logout()
 
         # An unrelated user can't see the logtail of a private build.
-        browser = self.makeNonRedirectingBrowser(url, random_person)
+        browser = self.getNonRedirectingBrowser(url=url)
         self.assertNotIn('i am failing', browser.contents)
 
         # But someone who can see the archive can.
-        browser = self.makeNonRedirectingBrowser(url, archive.owner)
+        browser = self.getNonRedirectingBrowser(url=url, user=archive.owner)
         self.assertIn('i am failing', browser.contents)

@@ -25,8 +25,8 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.buildmaster.enums import (
@@ -35,6 +35,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
+    IBuildFarmJobDB,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     )
@@ -50,12 +51,28 @@ from lp.services.propertycache import (
     )
 
 
+VALID_STATUS_TRANSITIONS = {
+    BuildStatus.NEEDSBUILD: tuple(BuildStatus.items),
+    BuildStatus.FULLYBUILT: (),
+    BuildStatus.FAILEDTOBUILD: (BuildStatus.NEEDSBUILD,),
+    BuildStatus.MANUALDEPWAIT: (BuildStatus.NEEDSBUILD,),
+    BuildStatus.CHROOTWAIT: (BuildStatus.NEEDSBUILD,),
+    BuildStatus.SUPERSEDED: (),
+    BuildStatus.BUILDING: tuple(BuildStatus.items),
+    BuildStatus.FAILEDTOUPLOAD: (BuildStatus.NEEDSBUILD,),
+    BuildStatus.UPLOADING: (
+        BuildStatus.FULLYBUILT, BuildStatus.FAILEDTOUPLOAD,
+        BuildStatus.SUPERSEDED),
+    BuildStatus.CANCELLING: (BuildStatus.CANCELLED,),
+    BuildStatus.CANCELLED: (BuildStatus.NEEDSBUILD,),
+    }
+
+
+@implementer(IBuildFarmJob, IBuildFarmJobDB)
+@provider(IBuildFarmJobSource)
 class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
     __storm_table__ = 'BuildFarmJob'
-
-    implements(IBuildFarmJob)
-    classProvides(IBuildFarmJobSource)
 
     id = Int(primary=True)
 
@@ -99,6 +116,10 @@ class BuildFarmJobMixin:
 
     @property
     def dependencies(self):
+        return None
+
+    @property
+    def external_dependencies(self):
         return None
 
     @property
@@ -147,13 +168,27 @@ class BuildFarmJobMixin:
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
+    @property
+    def build_cookie(self):
+        """See `IBuildFarmJob`."""
+        return '%s-%s' % (self.job_type.name, self.id)
+
     def setLog(self, log):
         """See `IBuildFarmJob`."""
         self.log = log
 
     def updateStatus(self, status, builder=None, slave_status=None,
-                     date_started=None, date_finished=None):
+                     date_started=None, date_finished=None,
+                     force_invalid_transition=False):
         """See `IBuildFarmJob`."""
+        if (not force_invalid_transition
+                and status != self.build_farm_job.status
+                and status not in VALID_STATUS_TRANSITIONS[
+                    self.build_farm_job.status]):
+            raise AssertionError(
+                "Can't change build status from %s to %s."
+                % (self.build_farm_job.status.name, status.name))
+
         self.build_farm_job.status = self.status = status
 
         # If there's a builder provided, set it if we don't already have
@@ -226,8 +261,8 @@ class SpecificBuildFarmJobSourceMixin:
         return True
 
 
+@implementer(IBuildFarmJobSet)
 class BuildFarmJobSet:
-    implements(IBuildFarmJobSet)
 
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""

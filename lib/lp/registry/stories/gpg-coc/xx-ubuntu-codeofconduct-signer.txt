@@ -28,8 +28,8 @@ A regular user can't see the link to Foo Bar's signed codes of conduct.
     ...
     LinkNotFoundError
 
-No-priv hasn't signed the Ubuntu Code of Conduct yet.  His homepage has a link
-to the Ubuntu Code of Conduct forms.
+No-priv hasn't signed the Ubuntu Code of Conduct yet.  Their homepage has a
+link to the Ubuntu Code of Conduct forms.
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~no-priv')

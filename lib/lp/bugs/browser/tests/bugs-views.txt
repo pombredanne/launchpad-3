@@ -74,7 +74,7 @@ simply appear on the top of the list.
 
 Only the bugs that the user has permission to view are shown in the
 list, so if we mark bug #4 as private, No Privileges won't see it, since
-he's not subscribed to it.
+they're not subscribed to it.
 
     >>> bug_4 = getUtility(IBugSet).get(4)
     >>> bug_4.setPrivate(True, getUtility(ILaunchBag).user)

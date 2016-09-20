@@ -214,8 +214,8 @@ class ProcessMonitorProtocolWithTimeout(ProcessMonitorProtocol, TimeoutMixin):
         """Construct an instance of the protocol, for listening to a worker.
 
         :param deferred: Passed to `ProcessMonitorProtocol.__init__`.
-        :param timeout: The subprocess will be killed after this many seconds of
-            inactivity.
+        :param timeout: The subprocess will be killed after this many
+            seconds of inactivity.
         :param clock: Passed to `ProcessMonitorProtocol.__init__`.
         """
         ProcessMonitorProtocol.__init__(self, deferred, clock)
@@ -333,4 +333,3 @@ class ProcessWithTimeout(ProcessProtocol, TimeoutMixin):
             self._deferred.errback((out, err, code))
         else:
             self._deferred.callback((out, err, code))
-

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publishing interfaces."""
@@ -12,7 +12,6 @@ __all__ = [
     'IBinaryPackagePublishingHistory',
     'IBinaryPackagePublishingHistoryEdit',
     'IBinaryPackagePublishingHistoryPublic',
-    'ICanPublishPackages',
     'IFilePublishing',
     'IPublishingEdit',
     'IPublishingSet',
@@ -127,36 +126,6 @@ name_priority_map = {
 #
 
 
-class ICanPublishPackages(Interface):
-    """Denotes the ability to publish associated publishing records."""
-
-    def getPendingPublications(archive, pocket, is_careful):
-        """Return the specific group of records to be published.
-
-        IDistroSeries -> ISourcePackagePublishing
-        IDistroArchSeries -> IBinaryPackagePublishing
-
-        'pocket' & 'archive' are mandatory arguments, they  restrict the
-        results to the given value.
-
-        If the distroseries is already released, it automatically refuses
-        to publish records to RELEASE pocket.
-        """
-
-    def publish(diskpool, log, archive, pocket, careful=False):
-        """Publish associated publishing records targeted for a given pocket.
-
-        Require an initialized diskpool instance and a logger instance.
-        Require an 'archive' which will restrict the publications.
-        'careful' argument would cause the 'republication' of all published
-        records if True (system will DTRT checking hash of all
-        published files.)
-
-        Consider records returned by the local implementation of
-        getPendingPublications.
-        """
-
-
 class IArchiveSafePublisher(Interface):
     """Safe Publication methods"""
 
@@ -197,20 +166,6 @@ class IPublishingView(Interface):
         with different content) and do not update the database.
 
         If all the files get published correctly update its status properly.
-        """
-
-    def getIndexStanza():
-        """Return archive index stanza contents
-
-        It's based on the locally provided buildIndexStanzaTemplate method,
-        which differs for binary and source instances.
-        """
-
-    def buildIndexStanzaFields():
-        """Build a map of fields and values to be in the Index file.
-
-        The fields and values ae mapped into a dictionary, where the key is
-        the field name and value is the value string.
         """
 
     def requestObsolescence():
@@ -297,8 +252,6 @@ class IFilePublishing(Interface):
 
 class ISourcePackageFilePublishing(IFilePublishing):
     """Source package release files and their publishing status"""
-    file_type_name = Attribute(
-        "The uploaded file's type; one of 'orig', 'dsc', 'diff' or 'other'")
     sourcepackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
             )
@@ -418,10 +371,10 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
-    meta_distroseriessourcepackagerelease = Attribute(
-        "Return an IDistroSeriesSourcePackageRelease meta object "
+    meta_distributionsourcepackagerelease = Attribute(
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "
-        "a specific distroseries")
+        "this distribution")
 
     source_package_name = exported(
         TextLine(
@@ -625,9 +578,13 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """
 
     @export_read_operation()
-    def sourceFileUrls():
+    @operation_parameters(
+        include_meta=Bool(title=_("Include Metadata"), required=False))
+    def sourceFileUrls(include_meta=False):
         """URLs for this source publication's uploaded source files.
 
+        :param include_meta: Return a list of dicts with keys url, size, and
+            sha256 for each URL instead of a simple list.
         :return: A collection of URLs for this source.
         """
 
@@ -839,6 +796,13 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Binary Package Version"),
             required=False, readonly=True))
+    build = exported(
+        Reference(
+            # Really IBinaryPackageBuild, fixed in _schema_circular_imports.
+            Interface,
+            title=_("Build"),
+            description=_("The build that produced this binary package."),
+            required=True, readonly=True))
     architecture_specific = exported(
         Bool(
             title=_("Architecture Specific"),
@@ -909,8 +873,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     def binaryFileUrls(include_meta=False):
         """URLs for this binary publication's binary files.
 
-        :param include_meta: Return a list of dicts with keys url, size
-            and sha1 for each url instead of a simple list.
+        :param include_meta: Return a list of dicts with keys url, size,
+            sha1, and sha256 for each URL instead of a simple list.
         :return: A collection of URLs for this binary.
         """
 
@@ -1143,29 +1107,29 @@ class IPublishingSet(Interface):
              `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
         """
 
-    def getPackageDiffsForSources(one_or_more_source_publications):
-        """Return all `PackageDiff`s for each given source publication.
+    def getActiveArchSpecificPublications(sourcepackagerelease, archive,
+                                          distroseries, pocket):
+        """Find architecture-specific binary publications for a source.
 
-        The returned ResultSet contains entries with the wanted `PackageDiff`s
-        associated with the corresponding source publication and its resulting
-        `LibraryFileAlias` and `LibraryFileContent` in a 4-element tuple. This
-        way the extra information will be cached and the callsites can group
-        package-diffs in any convenient form.
+        For example, say source package release contains binary packages of:
+         * "foo" for i386 (pending in i386)
+         * "foo" for amd64 (published in amd64)
+         * "foo-common" for the "all" architecture (pending or published in
+           various real processor architectures)
 
-        `LibraryFileAlias` and `LibraryFileContent` elements might be None in
-        case the `PackageDiff` is not completed yet.
+        In that case, this search will return foo(i386) and foo(amd64).  The
+        dominator uses this when figuring out whether foo-common can be
+        superseded: we don't track dependency graphs, but we know that the
+        architecture-specific "foo" releases are likely to depend on the
+        architecture-independent foo-common release.
 
-        The result is ordered by:
-
-         1. Ascending `SourcePackagePublishingHistory.id`,
-         2. Descending `PackageDiff.date_requested`.
-
-        :param one_or_more_source_publication: list of or a single
-            `SourcePackagePublishingHistory` object.
-
-        :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `PackageDiff`,
-             `LibraryFileAlias`, `LibraryFileContent`)
+        :param sourcepackagerelease: The `SourcePackageRelease`.
+        :param archive: The `Archive` to search.
+        :param distroseries: The `DistroSeries` to search.
+        :param pocket: The `PackagePublishingPocket` to search.
+        :return: A Storm result set of active, architecture-specific
+            `BinaryPackagePublishingHistory` objects for the source package
+            release in the given `archive`, `distroseries`, and `pocket`.
         """
 
     def getChangesFilesForSources(one_or_more_source_publications):

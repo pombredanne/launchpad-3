@@ -12,13 +12,16 @@
   </tal:for-merging>
   into
   <tal:source-branch
-      tal:define="branch context/target_branch">
+      tal:define="branch context/merge_target">
     <a tal:attributes="href branch/fmt:url"
-       tal:content="branch/bzr_identity">lp:product/branch-name</a>
+       tal:content="branch/identity">lp:product/branch-name</a>
   </tal:source-branch>
   <tal:for-merging condition="context/queue_status/enumvalue:MERGED">
-    <tal:have-revno condition="context/merged_revno">
-      at revision <tal:revno replace="context/merged_revno"/>
-    </tal:have-revno>
+    <tal:have-revision condition="context/merged_revision">
+      at
+      <a tal:attributes="href view/link_to_branch_target_commit">
+        revision <tal:revision replace="context/merged_revision"/>
+      </a>
+    </tal:have-revision>
   </tal:for-merging>
 </tal:root>

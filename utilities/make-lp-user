@@ -153,7 +153,7 @@ def run_native_gpg(arguments):
 def add_gpg_key(person, fingerprint):
     """Add the GPG key with the given fingerprint to `person`."""
     run_native_gpg([
-        '--keyserver', 'keyserver.launchpad.dev',
+        '--keyserver', 'hkp://keyserver.launchpad.dev:11371',
         '--send-key', fingerprint
         ])
 

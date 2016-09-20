@@ -10,7 +10,7 @@ from operator import attrgetter
 
 from storm.expr import Desc
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.propertycache import (
     cachedproperty,
@@ -20,12 +20,10 @@ from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
-    )
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
+@implementer(IDistroSeriesBinaryPackage)
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".
 
@@ -34,8 +32,6 @@ class DistroSeriesBinaryPackage:
     described is the "name", and from there we can jump to specific versions
     in specific DistroArchSeriess.
     """
-
-    implements(IDistroSeriesBinaryPackage)
 
     default = object()
 
@@ -137,11 +133,14 @@ class DistroSeriesBinaryPackage:
     @property
     def last_sourcepackagerelease(self):
         """See `IDistroSeriesBinaryPackage`."""
+        from lp.soyuz.model.distributionsourcepackagerelease import (
+            DistributionSourcePackageRelease,
+            )
         last_published = self.last_published
         if last_published is None:
             return None
 
         src_pkg_release = last_published.build.source_package_release
 
-        return DistroSeriesSourcePackageRelease(
-            self.distroseries, src_pkg_release)
+        return DistributionSourcePackageRelease(
+            self.distribution, src_pkg_release)

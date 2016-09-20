@@ -43,11 +43,11 @@ And here are simple content objects that implement the two interfaces.
 They are derived from a base class that provides the required behaviours
 for traversable objects.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.webapp.interfaces import ICanonicalUrlData
 
-    >>> class BaseContent:
-    ...     implements(ICanonicalUrlData)
+    >>> @implementer(ICanonicalUrlData)
+    ... class BaseContent:
     ...
     ...     def __init__(self, name, parent):
     ...         self.name = name
@@ -58,11 +58,13 @@ for traversable objects.
     >>> class Root(BaseContent):
     ...     """The root of 'cookery', a vhost and facet."""
 
-    >>> class Cookbook(BaseContent):
-    ...     implements(ICookbook)
+    >>> @implementer(ICookbook)
+    ... class Cookbook(BaseContent):
+    ...     pass
 
-    >>> class Recipe(BaseContent):
-    ...     implements(IRecipe)
+    >>> @implementer(IRecipe)
+    ... class Recipe(BaseContent):
+    ...     pass
 
 
 Content views associates with menus
@@ -113,17 +115,17 @@ content object's menu.
     >>> class RecipeIndexView(LaunchpadView):
     ...     """View for summary of a recipe on the cookery facet."""
 
-    >>> class RecipeEditInstructionsView(LaunchpadView):
+    >>> @implementer(IRecipeEditMenuMarker)
+    ... class RecipeEditInstructionsView(LaunchpadView):
     ...     """View for editing recipe instructions on the cookery facet."""
-    ...     implements(IRecipeEditMenuMarker)
 
-    >>> class RecipeEditIngredientsView(LaunchpadView):
+    >>> @implementer(IRecipeEditMenuMarker)
+    ... class RecipeEditIngredientsView(LaunchpadView):
     ...     """View for editing recipe ingedients on the cookery facet."""
-    ...     implements(IRecipeEditMenuMarker)
 
-    >>> class RecipeReadJournalView(LaunchpadView):
+    >>> @implementer(IRecipeJournalMenuMarker)
+    ... class RecipeReadJournalView(LaunchpadView):
     ...     """View for reading a recipe's journal on the cookery facet."""
-    ...     implements(IRecipeJournalMenuMarker)
 
     >>> class RecipeQuestionsAllView(LaunchpadView):
     ...     """View for all questions of a recipe on the questions facet."""
@@ -629,7 +631,7 @@ Menu linked links
 -----------------
 
 A link is not linked (the anchor is not rendered) when its URL matches
-the request URI; the user should not navigate to a page he is already
+the request URI; the user should not navigate to a page they are already
 seeing. The matched URI comes from the view's request...
 
     >>> recipe_navigationmenu = queryAdapter(
@@ -1017,8 +1019,9 @@ that the comment refers to.
     >>> class IComment(Interface):
     ...     """A comment on a recipe."""
 
-    >>> class Comment(BaseContent):
-    ...     implements(IComment)
+    >>> @implementer(IComment)
+    ... class Comment(BaseContent):
+    ...     pass
 
     # This is usually done in ZCML by browser:defaultView.
 
@@ -1061,9 +1064,9 @@ If we try a navigation menu lookup on an object without a canonical url
 or a navigation menu adapter, then no menu will be returned, and no
 error will be raised by the template.
 
-    >>> class MenulessView(LaunchpadView):
-    ...     # Needed so the IPathAdapter can be applied to this view.
-    ...     implements(Interface)
+    >>> # Needed so the IPathAdapter can be applied to this view.
+    >>> @implementer(Interface)
+    ... class MenulessView(LaunchpadView):
     ...     __launchpad_facetname__ = 'cookery'
 
     >>> menuless_view = MenulessView(comment, request)

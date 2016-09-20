@@ -38,10 +38,10 @@ from storm.store import (
     Store,
     )
 from zope.component import (
-    adapts,
+    adapter,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import ProxyFactory
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -90,10 +90,9 @@ from lp.services.database.stormexpr import (
 from lp.services.propertycache import cachedproperty
 
 
+@implementer(IStructuralSubscription)
 class StructuralSubscription(Storm):
     """A subscription to a Launchpad structure."""
-
-    implements(IStructuralSubscription)
 
     __storm_table__ = 'StructuralSubscription'
 
@@ -105,8 +104,8 @@ class StructuralSubscription(Storm):
     productseriesID = Int("productseries", default=None)
     productseries = Reference(productseriesID, "ProductSeries.id")
 
-    projectID = Int("project", default=None)
-    project = Reference(projectID, "ProjectGroup.id")
+    projectgroupID = Int("project", default=None)
+    projectgroup = Reference(projectgroupID, "ProjectGroup.id")
 
     milestoneID = Int("milestone", default=None)
     milestone = Reference(milestoneID, "Milestone.id")
@@ -148,8 +147,8 @@ class StructuralSubscription(Storm):
             return self.product
         elif self.productseries is not None:
             return self.productseries
-        elif self.project is not None:
-            return self.project
+        elif self.projectgroup is not None:
+            return self.projectgroup
         elif self.milestone is not None:
             return self.milestone
         elif self.distribution is not None:
@@ -187,12 +186,10 @@ class StructuralSubscription(Storm):
         Store.of(self).remove(self)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IDistroSeries)
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
-    adapts(IDistroSeries)
-
     target_type_display = 'distribution series'
 
     def __init__(self, target):
@@ -203,28 +200,24 @@ class DistroSeriesTargetHelper:
         self.join = (StructuralSubscription.distroseries == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IProjectGroup)
 class ProjectGroupTargetHelper:
     """A helper for `IProjectGroup`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
-    adapts(IProjectGroup)
-
     target_type_display = 'project group'
 
     def __init__(self, target):
         self.target = target
         self.target_parent = None
-        self.target_arguments = {"project": target}
+        self.target_arguments = {"projectgroup": target}
         self.pillar = target
-        self.join = (StructuralSubscription.project == target)
+        self.join = (StructuralSubscription.projectgroup == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IDistributionSourcePackage)
 class DistributionSourcePackageTargetHelper:
     """A helper for `IDistributionSourcePackage`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
-    adapts(IDistributionSourcePackage)
-
     target_type_display = 'package'
 
     def __init__(self, target):
@@ -242,12 +235,10 @@ class DistributionSourcePackageTargetHelper:
                 target.sourcepackagename.id))
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IMilestone)
 class MilestoneTargetHelper:
     """A helper for `IMilestone`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
-    adapts(IMilestone)
-
     target_type_display = 'milestone'
 
     def __init__(self, target):
@@ -258,34 +249,30 @@ class MilestoneTargetHelper:
         self.join = (StructuralSubscription.milestone == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IProduct)
 class ProductTargetHelper:
     """A helper for `IProduct`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
-    adapts(IProduct)
-
     target_type_display = 'project'
 
     def __init__(self, target):
         self.target = target
-        self.target_parent = target.project
+        self.target_parent = target.projectgroup
         self.target_arguments = {"product": target}
         self.pillar = target
-        if target.project is not None:
+        if target.projectgroup is not None:
             self.join = Or(
                 StructuralSubscription.product == target,
-                StructuralSubscription.project == target.project)
+                StructuralSubscription.projectgroup == target.projectgroup)
         else:
             self.join = (
                 StructuralSubscription.product == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IProductSeries)
 class ProductSeriesTargetHelper:
     """A helper for `IProductSeries`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
-    adapts(IProductSeries)
-
     target_type_display = 'project series'
 
     def __init__(self, target):
@@ -296,12 +283,10 @@ class ProductSeriesTargetHelper:
         self.join = (StructuralSubscription.productseries == target)
 
 
+@implementer(IStructuralSubscriptionTargetHelper)
+@adapter(IDistribution)
 class DistributionTargetHelper:
     """A helper for `IDistribution`s."""
-
-    implements(IStructuralSubscriptionTargetHelper)
-    adapts(IDistribution)
-
     target_type_display = 'distribution'
 
     def __init__(self, target):

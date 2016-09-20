@@ -16,7 +16,6 @@ import datetime
 import pytz
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.publisher.interfaces import implements
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -36,19 +35,7 @@ from lp.services.webapp import (
     LaunchpadView,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import (
-    ILaunchBag,
-    IPrimaryContext,
-    )
-
-
-class BugNominationPrimaryContext:
-    """The primary context is the nearest `IBugTarget`."""
-    implements(IPrimaryContext)
-
-    def __init__(self, nomination):
-        launchbag = getUtility(ILaunchBag)
-        self.context = launchbag.bugtask.target
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class BugNominationView(LaunchpadFormView):

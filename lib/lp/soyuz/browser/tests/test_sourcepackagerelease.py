@@ -5,58 +5,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'TestSourcePackageReleaseFiles',
     'TestSourcePackageReleaseView',
     ]
 
-from zope.security.proxy import removeSecurityProxy
-
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
-
-
-class TestSourcePackageReleaseFiles(TestCaseWithFactory):
-    """Source package release files are rendered correctly."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestSourcePackageReleaseFiles, self).setUp()
-        # SourcePackageRelease itself is contextless, so wrap it in DSPR
-        # to give it a URL.
-        self.source_package_release = (
-            self.factory.makeDistroSeries().getSourcePackageRelease(
-                self.factory.makeSourcePackageRelease()))
-
-    def test_spr_files_none(self):
-        # The snippet renders appropriately when there are no files.
-        view = create_initialized_view(self.source_package_release, "+files")
-        html = view.__call__()
-        self.failUnless('No files available for download.' in html)
-
-    def test_spr_files_one(self):
-        # The snippet links to the file when present.
-        library_file = self.factory.makeLibraryFileAlias(
-            filename='test_file.dsc', content='0123456789')
-        self.source_package_release.addFile(library_file)
-        view = create_initialized_view(self.source_package_release, "+files")
-        html = view.__call__()
-        self.failUnless('test_file.dsc' in html)
-
-    def test_spr_files_deleted(self):
-        # The snippet handles deleted files too.
-        library_file = self.factory.makeLibraryFileAlias(
-            filename='test_file.dsc', content='0123456789')
-        self.source_package_release.addFile(library_file)
-        removeSecurityProxy(library_file).content = None
-        view = create_initialized_view(self.source_package_release, "+files")
-        html = view.__call__()
-        self.failUnless('test_file.dsc (deleted)' in html)
 
 
 class TestSourcePackageReleaseView(TestCaseWithFactory):

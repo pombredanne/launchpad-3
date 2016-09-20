@@ -10,6 +10,7 @@ from datetime import (
     timedelta,
     )
 import errno
+import hashlib
 import os
 import re
 import sys
@@ -17,7 +18,7 @@ from time import time
 
 import iso8601
 from swiftclient import client as swiftclient
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.database.postgresql import (
@@ -91,17 +92,15 @@ def open_stream(content_id):
     return None  # File not found.
 
 
-def same_file(content_id_1, content_id_2):
-    file1 = open_stream(content_id_1)
-    file2 = open_stream(content_id_2)
-
-    chunks_iter = iter(
-        lambda: (file1.read(STREAM_CHUNK_SIZE), file2.read(STREAM_CHUNK_SIZE)),
-        ('', ''))
-    for chunk1, chunk2 in chunks_iter:
-        if chunk1 != chunk2:
-            return False
-    return True
+def sha1_file(content_id):
+    file = open_stream(content_id)
+    chunks_iter = iter(lambda: file.read(STREAM_CHUNK_SIZE), '')
+    length = 0
+    hasher = hashlib.sha1()
+    for chunk in chunks_iter:
+        hasher.update(chunk)
+        length += len(chunk)
+    return hasher.hexdigest(), length
 
 
 def confirm_no_clock_skew(con):
@@ -222,18 +221,18 @@ def merge_duplicates(con):
         # most likely to exist on the staging server (it should be
         # irrelevant on production).
         cur.execute("""
-            SELECT id
+            SELECT id, sha1, filesize
             FROM LibraryFileContent
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
             ORDER BY datecreated DESC
             """, vars())
-        dupes = [row[0] for row in cur.fetchall()]
+        dupes = cur.fetchall()
 
         if debug:
             log.debug("Found duplicate LibraryFileContents")
             # Spit out more info in case it helps work out where
             # dupes are coming from.
-            for dupe_id in dupes:
+            for dupe_id, _, _ in dupes:
                 cur.execute("""
                     SELECT id, filename, mimetype FROM LibraryFileAlias
                     WHERE content = %(dupe_id)s
@@ -246,7 +245,7 @@ def merge_duplicates(con):
         # and cope - just report and skip. However, on staging this will
         # be more common because database records has been synced from
         # production but the actual librarian contents has not.
-        dupe1_id = dupes[0]
+        dupe1_id = dupes[0][0]
         if not file_exists(dupe1_id):
             if config.instance_name == 'staging':
                 log.debug(
@@ -256,31 +255,25 @@ def merge_duplicates(con):
                         "LibraryFileContent %d data is missing", dupe1_id)
             continue
 
-        # Do a manual check that they really are identical, because we
-        # employ paranoids. And we might as well cope with someone breaking
-        # SHA1 enough that it becomes possible to create a SHA1 collision
-        # with an identical filesize to an existing file. Which is pretty
-        # unlikely. Where did I leave my tin foil hat?
-        for dupe2_id in (dupe for dupe in dupes[1:]):
-            # Check paths exist, because on staging they may not!
-            if (file_exists(dupe2_id) and not same_file(dupe1_id, dupe2_id)):
-                log.error(
-                        "SHA-1 collision found. LibraryFileContent %d and "
-                        "%d have the same SHA1 and filesize, but are not "
-                        "byte-for-byte identical.",
-                        dupe1_id, dupe2_id
-                        )
-                sys.exit(1)
+        # Check that the first file is intact. Don't want to delete
+        # dupes if we might need them to recover the original.
+        actual_sha1, actual_size = sha1_file(dupe1_id)
+        if actual_sha1 != dupes[0][1] or actual_size != dupes[0][2]:
+            log.error(
+                "Corruption found. LibraryFileContent %d has SHA-1 %s and "
+                "size %d, expected %s and %d.", dupes[0][0],
+                actual_sha1, actual_size, dupes[0][1], dupes[0][2])
+            sys.exit(1)
 
         # Update all the LibraryFileAlias entries to point to a single
         # LibraryFileContent
-        prime_id = dupes[0]
-        other_ids = ', '.join(str(dupe) for dupe in dupes[1:])
+        prime_id = dupes[0][0]
+        other_ids = ', '.join(str(dupe) for dupe, _, _ in dupes[1:])
         log.debug(
             "Making LibraryFileAliases referencing %s reference %s instead",
             other_ids, prime_id
             )
-        for other_id in dupes[1:]:
+        for other_id, _, _ in dupes[1:]:
             cur.execute("""
                 UPDATE LibraryFileAlias SET content=%(prime_id)s
                 WHERE content = %(other_id)s
@@ -290,13 +283,13 @@ def merge_duplicates(con):
         con.commit()
 
 
+@implementer(ITunableLoop)
 class ExpireAliases:
     """Expire expired LibraryFileAlias records.
 
     This simply involves setting the LibraryFileAlias.content to NULL.
     Unreferenced LibraryFileContent records are cleaned up elsewhere.
     """
-    implements(ITunableLoop)
 
     def __init__(self, con):
         self.con = con
@@ -323,6 +316,7 @@ class ExpireAliases:
                     content IS NOT NULL
                     AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                         - interval '1 week'
+                ORDER BY expires
                 LIMIT %d)
             """ % chunksize)
         self.total_expired += cur.rowcount
@@ -339,6 +333,7 @@ def expire_aliases(con):
     loop_tuner.run()
 
 
+@implementer(ITunableLoop)
 class UnreferencedLibraryFileAliasPruner:
     """Delete unreferenced LibraryFileAliases.
 
@@ -350,7 +345,6 @@ class UnreferencedLibraryFileAliasPruner:
     in the database and delete them, if they are expired (expiry in the past
     or NULL).
     """
-    implements(ITunableLoop)
 
     def __init__(self, con):
         self.con = con  # Database connection to use
@@ -433,7 +427,7 @@ class UnreferencedLibraryFileAliasPruner:
             "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileAlias")
         self.max_id = cur.fetchone()[0]
         log.debug(
-            "%d unreferenced LibraryFileContent to remove." % self.max_id)
+            "%d unreferenced LibraryFileAlias to remove." % self.max_id)
         con.commit()
 
     def isDone(self):
@@ -467,6 +461,7 @@ def delete_unreferenced_aliases(con):
     loop_tuner.run()
 
 
+@implementer(ITunableLoop)
 class UnreferencedContentPruner:
     """Delete LibraryFileContent entries and their disk files that are
     not referenced by any LibraryFileAlias entries.
@@ -474,7 +469,6 @@ class UnreferencedContentPruner:
     Note that a LibraryFileContent can only be accessed through a
     LibraryFileAlias, so all entries in this state are garbage.
     """
-    implements(ITunableLoop)
 
     def __init__(self, con):
         self.swift_enabled = getFeatureFlag(
@@ -486,8 +480,8 @@ class UnreferencedContentPruner:
         drop_tables(cur, "UnreferencedLibraryFileContent")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
-                id serial PRIMARY KEY,
-                content integer UNIQUE)
+                id bigserial PRIMARY KEY,
+                content bigint UNIQUE)
             """)
         cur.execute("""
             INSERT INTO UnreferencedLibraryFileContent (content)
@@ -616,7 +610,7 @@ def delete_unwanted_disk_files(con):
     removed_count = 0
     content_id = next_wanted_content_id = -1
 
-    hex_content_id_re = re.compile('^[0-9a-f]{8}$')
+    hex_content_id_re = re.compile('^([0-9a-f]{8})(\.migrated)?$')
     ONE_DAY = 24 * 60 * 60
 
     for dirpath, dirnames, filenames in os.walk(
@@ -659,12 +653,13 @@ def delete_unwanted_disk_files(con):
         for filename in filenames:
             path = os.path.join(dirpath, filename)
             hex_content_id = ''.join(path.split(os.sep)[-4:])
-            if hex_content_id_re.search(hex_content_id) is None:
+            match = hex_content_id_re.search(hex_content_id)
+            if match is None:
                 log.warning(
                     "Ignoring invalid path %s" % path)
                 continue
 
-            content_id = int(hex_content_id, 16)
+            content_id = int(match.groups()[0], 16)
 
             while (next_wanted_content_id is not None
                     and content_id > next_wanted_content_id):
@@ -706,9 +701,8 @@ def delete_unwanted_disk_files(con):
             next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
-            "Deleted %d files from disk that where no longer referenced "
-            "in the db" % removed_count
-            )
+        "Deleted %d files from disk that were no longer referenced "
+        "in the db." % removed_count)
 
 
 def swift_files(max_lfc_id):
@@ -811,14 +805,24 @@ def delete_unwanted_swift_files(con):
     if next_wanted_content_id == content_id:
         next_wanted_content_id = get_next_wanted_content_id()
     while next_wanted_content_id is not None:
-        log.error(
-            "LibraryFileContent {0} exists in the database but was not "
-            "found in Swift.".format(next_wanted_content_id))
+        # The entry exists in the database but not in Swift. This is
+        # normal, as there is lag between uploading files to disk and
+        # migrating them into Swift. The important case, where files
+        # are missing and exist neither on disk nor in Swift, is reported
+        # earlier. Still, we should catch if the librarian-feed-swift
+        # has not run recently. Report an error if the file is older
+        # than one week and doesn't exist in Swift.
+        path = get_file_path(next_wanted_content_id)
+        if os.path.exists(path) and (os.stat(path).st_ctime
+                                     < time() - (7 * 24 * 60 * 60)):
+            log.error(
+                "LibraryFileContent {0} exists in the database and disk "
+                "but was not found in Swift.".format(next_wanted_content_id))
         next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
-        "Deleted {0} files from Swift that where no longer referenced"
-        "in the db".format(removed_count))
+        "Deleted {0} files from Swift that were no longer referenced "
+        "in the db.".format(removed_count))
 
 
 def get_file_path(content_id):

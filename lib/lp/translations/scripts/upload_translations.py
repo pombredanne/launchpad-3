@@ -58,8 +58,8 @@ class UploadPackageTranslations(LaunchpadScript):
             content = open(filename).read()
             queue.addOrUpdateEntry(
                 filename, content, True, rosetta_team,
-                sourcepackagename = self.sourcepackagename,
-                distroseries = self.distroseries)
+                sourcepackagename=self.sourcepackagename,
+                distroseries=self.distroseries)
             self._commit()
 
         self.logger.info("Done.")

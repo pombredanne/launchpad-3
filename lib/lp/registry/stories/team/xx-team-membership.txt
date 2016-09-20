@@ -140,7 +140,7 @@ the administrator control on the membership page.
     'Approved'
     >>> logout()
 
-Sample person had his membership declined to the guadamen group. Test
+Sample person had their membership declined to the guadamen group. Test
 that the page works and that foo.bar@canonical can access it.
 
     >>> browser.open('http://launchpad.dev/~guadamen/+member/name12/')
@@ -247,7 +247,7 @@ subscriptions on their own participation page.
     >>> user_browser.getLink('Register a team')
     <Link ... url='http://.../people/+newteam'>
     >>> user_browser.getLink('Change mailing list subscriptions')
-    <Link ... url='http://.../~no-priv/+editemails'>
+    <Link ... url='http://.../~no-priv/+editmailinglists'>
 
 Teams also have a participation page, but it does not include a mailing
 list column.

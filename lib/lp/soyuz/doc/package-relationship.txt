@@ -1,12 +1,16 @@
 = Package Relationship Model =
 
 We call "package relationship" the DSC field which describes relation
-between the package in question and others availble:
+between the package in question and others available:
 
 For sources DSC provides:
 
  * builddepends
  * builddependsindep
+ * builddependsarch
+ * build_conflicts
+ * build_conflicts_indep
+ * build_conflicts_arch
 
 For binaries we have:
 
@@ -29,25 +33,27 @@ For example:
   ...    'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 ( = 3.4.1-4sarge1)')
 
 Launchpad models package relationship elements via the
-IPackageRelationShip instance. We use APT to parse the relationship
+IPackageRelationship instance. We use deb822 to parse the relationship
 lines:
 
-  >>> from apt_pkg import parse_depends
+  >>> from debian.deb822 import PkgRelation
 
-parse_depends returns a 'list of lists of tuples' as:
+PkgRelation.parse_relations returns a 'list of lists of dicts' as:
 
-  [ [('$NAME', '$VERSION', '$OPERATOR')],
-    [('$NAME', '$VERSION', '$OPERATOR')],
+  [ [{'name': '$NAME', 'version': ('$OPERATOR', '$VERSION')}],
+    [{'name': '$NAME', 'version': ('$OPERATOR', '$VERSION')}],
     ... ]
 
-So we need perform a small treatment on its result in order to have
-*sane* data:
+So we need to massage its result into the form we prefer:
 
-  >>> parsed_relationships = [relationship for (relationship,) in
-  ...                         parse_depends(relationship_line)]
-
-Let's see what we call 'sane':
-
+  >>> def parse_relations(line):
+  ...     for (rel,) in PkgRelation.parse_relations(relationship_line):
+  ...         if rel['version'] is None:
+  ...             operator, version = '', ''
+  ...         else:
+  ...             operator, version = rel['version']
+  ...         yield rel['name'], version, operator
+  >>> parsed_relationships = list(parse_relations(relationship_line))
   >>> parsed_relationships
   [('gcc-3.4-base', '', ''), ('libc6', '2.3.2.ds1-4', '>='), ('gcc-3.4', '3.4.1-4sarge1', '=')]
 
@@ -74,8 +80,3 @@ Now for each parsed element we can build an IPackageRelationship:
   '2.3.2.ds1-4'
   >>> pkg_relationship.url == fake_url
   True
-
-
-
-
-

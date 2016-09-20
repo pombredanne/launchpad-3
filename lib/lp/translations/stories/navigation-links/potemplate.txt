@@ -9,15 +9,15 @@ Taking an IPOTemplate for IProductSeries context:
   >>> print admin_browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
 
-The Application tabs should point to IProductSeries URLs.
+The Application tabs should point to IProduct URLs.
 
     >>> print_location_apps(admin_browser.contents)
-    * Overview - http://launchpad.dev/evolution/trunk
+    * Overview - http://launchpad.dev/evolution
     * Code - http://code.launchpad.dev/evolution
-    * Bugs - http://bugs.launchpad.dev/evolution/trunk
-    * Blueprints - http://blueprints.launchpad.dev/evolution/trunk
-    * Translations (selected) - http://translations.launchpad.dev/evolution/trunk
-    * Answers - not linked
+    * Bugs - http://bugs.launchpad.dev/evolution
+    * Blueprints - http://blueprints.launchpad.dev/evolution
+    * Translations (selected) - http://translations.launchpad.dev/evolution
+    * Answers - http://answers.launchpad.dev/evolution
 
 Taking an IPOTemplate for ISourcePackage context:
 
@@ -27,12 +27,12 @@ Taking an IPOTemplate for ISourcePackage context:
   >>> print admin_browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2
 
-The Application tabs should point to ISourcePackage URLs.
+The Application tabs should point to IDistributionSourcePackage URLs.
 
     >>> print_location_apps(admin_browser.contents)
-    * Overview - http://launchpad.dev/ubuntu/hoary/+source/evolution
-    * Code - http://code.launchpad.dev/ubuntu/hoary/+source/evolution
-    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution
+    * Overview - http://launchpad.dev/ubuntu/+source/evolution
+    * Code - http://code.launchpad.dev/ubuntu/+source/evolution
+    * Bugs - http://bugs.launchpad.dev/ubuntu/+source/evolution
     * Blueprints - not linked
-    * Translations (selected) - http://translations.launchpad.dev/ubuntu/hoary/+source/evolution
-    * Answers - not linked
+    * Translations (selected) - http://translations.launchpad.dev/ubuntu/+source/evolution
+    * Answers - http://answers.launchpad.dev/ubuntu/+source/evolution
