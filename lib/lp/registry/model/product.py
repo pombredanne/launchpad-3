@@ -1994,31 +1994,23 @@ class ProductSet:
                 CommercialSubscription.date_last_modified <=
                     subscription_modified_before)
 
-        if subscription_conditions or has_subscription:
-            conditions.append(
-                Exists(Select(
-                    1, tables=[CommercialSubscription],
-                    where=And(*
-                        [CommercialSubscription.productID == Product.id]
-                        + subscription_conditions))))
-        elif has_subscription is False:
-            conditions.append(SQL('''
-                NOT EXISTS (
-                    SELECT 1
-                    FROM CommercialSubscription
-                    WHERE CommercialSubscription.product = Product.id
-                    LIMIT 1)
-                '''))
+        assert not subscription_conditions or has_subscription is not False
+        if subscription_conditions or has_subscription is not None:
+            subscription_expr = Exists(Select(
+                1, tables=[CommercialSubscription],
+                where=And(*
+                    [CommercialSubscription.productID == Product.id]
+                    + subscription_conditions)))
+            if has_subscription is False:
+                subscription_expr = Not(subscription_expr)
+            conditions.append(subscription_expr)
 
-        if licenses is not None and len(licenses) > 0:
-            conditions.append(SQL('''EXISTS (
-                SELECT 1
-                FROM ProductLicense
-                WHERE ProductLicense.product = Product.id
-                    AND license IN %s
-                LIMIT 1
-                )
-                ''' % sqlvalues(tuple(licenses))))
+        if licenses:
+            conditions.append(Exists(Select(
+                1, tables=[ProductLicense],
+                where=And(
+                    ProductLicense.productID == Product.id,
+                    ProductLicense.license.is_in(licenses)))))
 
         result = IStore(Product).find(Product, *conditions).order_by(
             Product.datecreated, Desc(Product.id))
