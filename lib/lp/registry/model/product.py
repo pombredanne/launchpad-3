@@ -381,7 +381,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         return None
 
-    @property
+    @cachedproperty
     def inferred_vcs(self):
         """Use vcs, otherwise infer from existence of git or bzr branches.
 
