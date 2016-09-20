@@ -8,7 +8,10 @@ from zope.security.proxy import removeSecurityProxy
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import get_feedback_messages
 
@@ -33,8 +36,11 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         bug = self.factory.makeBug()
         distroseries = self.factory.makeDistroSeries(
             distribution=self.distribution)
-        dsp = self.factory.makeDSPCache(distroseries=distroseries)
-        spn = dsp.sourcepackagename
+        dsp1 = self.factory.makeDSPCache(distroseries=distroseries)
+        with person_logged_in(bug.owner):
+            bug.addTask(bug.owner, dsp1)
+        dsp2 = self.factory.makeDSPCache(distroseries=distroseries)
+        spn = dsp2.sourcepackagename
         browser = self.openBugPage(bug)
         browser.getLink(url='+distrotask').click()
         browser.getControl('Distribution').value = [self.distribution.name]
@@ -48,13 +54,16 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         bug = self.factory.makeBug()
         distroseries = self.factory.makeDistroSeries(
             distribution=self.distribution)
-        dsp = self.factory.makeDSPCache(
+        dsp1 = self.factory.makeDSPCache(distroseries=distroseries)
+        with person_logged_in(bug.owner):
+            bug.addTask(bug.owner, dsp1)
+        dsp2 = self.factory.makeDSPCache(
             distroseries=distroseries, sourcepackagename='snarf')
         with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
             browser = self.openBugPage(bug)
             browser.getLink(url='+distrotask').click()
             browser.getControl('Distribution').value = [self.distribution.name]
-            browser.getControl('Source Package Name').value = dsp.name
+            browser.getControl('Source Package Name').value = dsp2.name
             browser.getControl('Continue').click()
         self.assertEqual([], get_feedback_messages(browser.contents))
 
