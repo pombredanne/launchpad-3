@@ -34,6 +34,7 @@ from storm.expr import (
     And,
     Coalesce,
     Desc,
+    Exists,
     Join,
     LeftJoin,
     Not,
@@ -1960,49 +1961,47 @@ class ProductSet:
                 created_before = dateToDatetime(created_before)
             conditions.append(Product.datecreated <= created_before)
 
-        needs_join = False
-
+        subscription_conditions = []
         if subscription_expires_after is not None:
             if not isinstance(subscription_expires_after, datetime.datetime):
                 subscription_expires_after = (
                     dateToDatetime(subscription_expires_after))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_expires >=
                     subscription_expires_after)
-            needs_join = True
 
         if subscription_expires_before is not None:
             if not isinstance(subscription_expires_before, datetime.datetime):
                 subscription_expires_before = (
                     dateToDatetime(subscription_expires_before))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_expires <=
                     subscription_expires_before)
-            needs_join = True
 
         if subscription_modified_after is not None:
             if not isinstance(subscription_modified_after, datetime.datetime):
                 subscription_modified_after = (
                     dateToDatetime(subscription_modified_after))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_last_modified >=
                     subscription_modified_after)
-            needs_join = True
         if subscription_modified_before is not None:
             if not isinstance(subscription_modified_before,
                               datetime.datetime):
                 subscription_modified_before = (
                     dateToDatetime(subscription_modified_before))
-            conditions.append(
+            subscription_conditions.append(
                 CommercialSubscription.date_last_modified <=
                     subscription_modified_before)
-            needs_join = True
 
-        if needs_join or has_subscription:
+        if subscription_conditions or has_subscription:
             conditions.append(
-                CommercialSubscription.productID == Product.id)
-
-        if has_subscription is False:
+                Exists(Select(
+                    1, tables=[CommercialSubscription],
+                    where=And(*
+                        [CommercialSubscription.productID == Product.id]
+                        + subscription_conditions))))
+        elif has_subscription is False:
             conditions.append(SQL('''
                 NOT EXISTS (
                     SELECT 1
