@@ -17,6 +17,7 @@ from soupmatchers import (
     )
 from testtools.matchers import (
     LessThan,
+    MatchesAll,
     Not,
     )
 import transaction
@@ -296,6 +297,45 @@ class TestProductView(BrowserTestCase):
     def setUp(self):
         super(TestProductView, self).setUp()
         self.product = self.factory.makeProduct(name='fnord')
+
+    def test_code_link_bzr(self):
+        branch = self.factory.makeBranch(target=self.product)
+        # No browse link unless there are revisions.
+        self.factory.makeRevisionsForBranch(branch)
+        with person_logged_in(self.product.owner):
+            self.product.development_focus.branch = branch
+            self.product.vcs = VCSType.BZR
+        view = create_initialized_view(self.product, "+index")
+        html = view()
+        self.assertThat(
+            html,
+            MatchesAll(
+                HTMLContains(
+                    Tag("branch link", "a",
+                        text="lp://dev/%s" % self.product.name,
+                        attrs={"href": canonical_url(branch)})),
+                HTMLContains(
+                    Tag("code browser link", "a", text="Browse the code",
+                        attrs={"href": branch.getCodebrowseUrl('files')}))))
+
+    def test_code_link_git(self):
+        repo = self.factory.makeGitRepository(target=self.product)
+        with person_logged_in(repo.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                target=self.product, repository=repo)
+            self.product.vcs = VCSType.GIT
+        view = create_initialized_view(self.product, "+index")
+        html = view()
+        self.assertThat(
+            html,
+            MatchesAll(
+                HTMLContains(
+                    Tag("repo link", "a",
+                        text="lp:%s" % self.product.name,
+                        attrs={"href": canonical_url(repo)})),
+                HTMLContains(
+                    Tag("code browser link", "a", text="Browse the code",
+                        attrs={"href": repo.getCodebrowseUrl()}))))
 
     def test_golang_meta_renders_git(self):
         # ensure golang meta import path is rendered if project has

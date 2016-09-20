@@ -195,7 +195,7 @@
             section.
           </tal:comment>
           <div id="code-info" class="portlet"
-               tal:define="trunk context/development_focus/branch;
+               tal:define="trunk view/code_trunk;
                            trunk_visible trunk/required:launchpad.View|nothing"
                tal:condition="python: trunk_visible or context.inferred_vcs">
             <h2>
@@ -205,17 +205,15 @@
               Code
             </h2>
 
-            <dl id="dev-focus" tal:condition="trunk_visible">
-              <dt>Development focus:</dt>
-              <dd>
-                <p>
-                  <a tal:replace="structure trunk/fmt:link" />&nbsp;
-                  <a tal:replace="structure context/menu:overview/configure_code/fmt:icon" />
-                  <br/>
-                  <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
-                </p>
-              </dd>
-            </dl>
+            <div id="code-trunk"
+                tal:condition="trunk_visible">
+              <p tal:condition="trunk_visible">
+                <a tal:replace="structure trunk/fmt:link" />&nbsp;
+                <a tal:replace="structure context/menu:overview/configure_code/fmt:icon" />
+                <br/>
+                <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
+              </p>
+            </div>
 
             <div class="two-column-list">
               <dl id="product-vcs" tal:condition="context/inferred_vcs">
