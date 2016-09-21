@@ -52,8 +52,8 @@ The authorisation cookie will be stored in the auth_cookie property of
 the XML-RPC transport.
 
     >>> test_transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[Cookie(version=0, name='Bugzilla_login'...),
-                         Cookie(version=0, name='Bugzilla_logincookie'...)]>
+    <...CookieJar[Cookie(version=0, name='Bugzilla_login'...),
+                  Cookie(version=0, name='Bugzilla_logincookie'...)]>
 
 Trying to log in to a Bugzilla instance for which we have no credentials
 will raise an error:

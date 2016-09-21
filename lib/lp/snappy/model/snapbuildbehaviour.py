@@ -126,7 +126,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             build_id=self.build.build_cookie,
             timestamp=timestamp)
         auth_string = '{}:{}'.format(admin_username, secret).strip()
-        auth_header = 'Basic ' + base64.encodestring(auth_string)
+        auth_header = 'Basic ' + base64.b64encode(auth_string)
         data = json.dumps({'username': proxy_username})
 
         result = yield getPage(

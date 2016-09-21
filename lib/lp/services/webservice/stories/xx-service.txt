@@ -186,11 +186,12 @@ to a different host.
 Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
 
+    >>> import base64
     >>> from lp.testing.pages import (
     ...     LaunchpadWebServiceCaller)
     >>> noauth_webservice = LaunchpadWebServiceCaller(
     ...     domain='bugs.launchpad.dev')
-    >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
+    >>> sample_auth = 'Basic %s' % base64.b64encode('test@canonical.com:test')
     >>> print noauth_webservice.get(
     ...     'http://bugs.launchpad.dev/api/devel/people/+me',
     ...     headers={'Authorization': sample_auth})
