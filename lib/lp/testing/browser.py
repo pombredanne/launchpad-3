@@ -79,7 +79,7 @@ class Browser(_Browser):
         if auth:
             # Unlike the higher level Zope test browser, we actually have to
             # encode the basic auth information.
-            userpass = base64.encodestring(auth)
+            userpass = base64.b64encode(auth)
             self.addHeader('Authorization', 'Basic ' + userpass)
         _live_browser_set.add(weakref.ref(self, self._refclose))
 

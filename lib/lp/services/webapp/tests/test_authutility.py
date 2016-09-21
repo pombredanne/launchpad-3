@@ -77,7 +77,7 @@ class TestPlacelessAuth(PlacelessSetup, testtools.TestCase):
     def _make(self, login, pwd):
         dict = {
             'HTTP_AUTHORIZATION':
-            'Basic %s' % base64.encodestring('%s:%s' % (login, pwd))}
+            'Basic %s' % base64.b64encode('%s:%s' % (login, pwd))}
         request = TestRequest(**dict)
         return getUtility(IPlacelessAuthUtility), request
 
