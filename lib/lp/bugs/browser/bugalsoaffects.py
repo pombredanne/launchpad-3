@@ -469,8 +469,12 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
         for bugtask in IBug(self.context).bugtasks:
             if (IDistributionSourcePackage.providedBy(bugtask.target) and
                 (not self.widgets['sourcepackagename'].hasInput())):
+                # Set the rendered value to the raw name string rather than
+                # the SPN object.  The widget won't have its distribution
+                # set up in order to be able to look up the SPN, and even if
+                # it did it might not correspond to a valid DSP.
                 self.widgets['sourcepackagename'].setRenderedValue(
-                    bugtask.sourcepackagename)
+                    bugtask.sourcepackagename.name)
                 break
         return super(DistroBugTaskCreationStep, self).render()
 
