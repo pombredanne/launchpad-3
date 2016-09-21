@@ -194,7 +194,7 @@ non-ASCII str object is passed, it will throw a UnicodeDecodeError.
     ...     to_addrs='test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content')
-    '20...launchpad@...'
+    '...launchpad@...'
 
     >>> simple_sendmail(
     ...     from_addr='F\xf4\xf4 Bar <foo.bar@canonical.com>',
@@ -211,7 +211,7 @@ non-ASCII str object is passed, it will throw a UnicodeDecodeError.
     ...     to_addrs=u'test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content')
-    '20...launchpad@...'
+    '...launchpad@...'
 
     >>> simple_sendmail(
     ...     from_addr='Foo Bar <foo.bar@canonical.com>',
