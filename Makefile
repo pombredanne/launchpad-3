@@ -1,8 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON:=$(shell sed -e \
-    '/RELEASE/!d; s/.*=1[234].*/python2.7/; s/.*=.*/python2.6/' /etc/lsb-release)
+PYTHON:=python2.7
 
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
