@@ -30,7 +30,7 @@ sets a cookie from the server, 'foo=bar'.
 Before sending the request, the transport's cookie jar is empty.
 
     >>> transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[]>
+    <...CookieJar[]>
 
     >>> request_body = """<?xml version="1.0"?>
     ... <methodCall>
@@ -51,13 +51,13 @@ We received the url as the single XMLRPC result, and the cookie jar now
 contains the 'foo=bar' cookie sent by the server.
 
     >>> transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[Cookie(version=0, name='foo', value='bar'...)]>
+    <...CookieJar[Cookie(version=0, name='foo', value='bar'...)]>
 
 In addition to cookies sent by the server, we can set cookies locally.
 
     >>> transport.setCookie('ding=dong')
     >>> transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[Cookie(version=0, name='ding', value='dong'...),
+    <...CookieJar[Cookie(version=0, name='ding', value='dong'...),
                          Cookie(version=0, name='foo', value='bar'...)]>
 
 If an error occurs trying to make the request, an

@@ -1034,9 +1034,10 @@ will get associated with the request after the beforeTraversal() hook.
 The default implementation will use the IPlacelessAuthentication
 utility to setup the request.
 
+    >>> import base64
     >>> login(ANONYMOUS) # Get rid of the marker object in the interaction.
     >>> foo_bar_auth = 'Basic %s' % (
-    ...     'foo.bar@canonical.com:test'.encode('base64'))
+    ...     base64.b64encode('foo.bar@canonical.com:test'))
     >>> request, publication = get_request_and_publication(
     ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
