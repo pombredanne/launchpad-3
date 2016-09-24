@@ -613,16 +613,13 @@ class FTPArchiveHandler:
             BinaryPackageFile.binarypackagereleaseID ==
                 BinaryPackagePublishingHistory.binarypackagereleaseID,
             BinaryPackageBuild.id == BinaryPackageRelease.buildID,
-            SourcePackageRelease.id ==
-                BinaryPackageBuild.source_package_release_id,
-            SourcePackageName.id == SourcePackageRelease.sourcepackagenameID,
+            SourcePackageName.id == BinaryPackageBuild.source_package_name_id,
             LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
             DistroArchSeries.id ==
                 BinaryPackagePublishingHistory.distroarchseriesID,
             Component.id == BinaryPackagePublishingHistory.componentID,
             ]
         select_conditions = [
-            BinaryPackagePublishingHistory.dateremoved == None,
             DistroArchSeries.distroseriesID == distroseries.id,
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
             BinaryPackagePublishingHistory.pocket == pocket,
@@ -635,10 +632,10 @@ class FTPArchiveHandler:
                 BinaryPackageRelease.binpackageformat
                     != BinaryPackageFormat.DDEB)
 
-        result_set = IStore(SourcePackageRelease).find(
+        result_set = IStore(BinaryPackageRelease).find(
             columns, *(join_conditions + select_conditions))
         return result_set.order_by(
-            BinaryPackagePublishingHistory.id, BinaryPackageFile.id)
+            LibraryFileAlias.filename, BinaryPackageFile.id)
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""

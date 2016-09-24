@@ -373,8 +373,8 @@ class TestFTPArchive(TestCaseWithFactory):
         binary_files = fa.getBinaryFiles(
             hoary, PackagePublishingPocket.RELEASE)
         expected_files = [
-            ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
             ('foo', 'foo_666_hppa.deb', 'main', 'binary-hppa'),
+            ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
             ]
         self.assertEqual(expected_files, list(binary_files))
 
@@ -387,9 +387,9 @@ class TestFTPArchive(TestCaseWithFactory):
         binary_files = fa.getBinaryFiles(
             hoary, PackagePublishingPocket.RELEASE)
         expected_files = [
-            ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
-            ('foo', 'foo_666_hppa.deb', 'main', 'binary-hppa'),
             ('foo', 'foo-dbgsym_666_hppa.ddeb', 'main', 'binary-hppa'),
+            ('foo', 'foo_666_hppa.deb', 'main', 'binary-hppa'),
+            ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
             ]
         self.assertEqual(expected_files, list(binary_files))
 
