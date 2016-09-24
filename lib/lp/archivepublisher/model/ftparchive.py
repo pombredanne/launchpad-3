@@ -36,10 +36,12 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
-    SourcePackageFilePublishing,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.section import Section
@@ -562,19 +564,31 @@ class FTPArchiveHandler:
 
         :return: a `ResultSet` with the source files information tuples.
         """
-        store = IStore(SourcePackagePublishingHistory)
-        result_set = store.using(SourcePackageFilePublishing).find(
-            (SourcePackageFilePublishing.sourcepackagename,
-             SourcePackageFilePublishing.libraryfilealiasfilename,
-             SourcePackageFilePublishing.componentname),
-            SourcePackageFilePublishing.distribution == self.distro,
-            SourcePackageFilePublishing.archive == self.publisher.archive,
-            SourcePackageFilePublishing.distroseriesname == distroseries.name,
-            SourcePackageFilePublishing.pocket == pocket,
-            SourcePackageFilePublishing.publishingstatus ==
-                PackagePublishingStatus.PUBLISHED)
+        columns = (
+            SourcePackageName.name,
+            LibraryFileAlias.filename,
+            Component.name,
+            )
+        join_conditions = [
+            SourcePackageReleaseFile.sourcepackagereleaseID ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageName.id ==
+                SourcePackagePublishingHistory.sourcepackagenameID,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            Component.id == SourcePackagePublishingHistory.componentID,
+            ]
+        select_conditions = [
+            SourcePackagePublishingHistory.archive == self.publisher.archive,
+            SourcePackagePublishingHistory.distroseriesID == distroseries.id,
+            SourcePackagePublishingHistory.pocket == pocket,
+            SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED,
+            ]
 
-        return result_set.order_by(Desc(SourcePackageFilePublishing.id))
+        result_set = IStore(SourcePackageRelease).find(
+            columns, *(join_conditions + select_conditions))
+        return result_set.order_by(
+            LibraryFileAlias.filename, SourcePackageReleaseFile.id)
 
     def getBinaryFiles(self, distroseries, pocket):
         """Fetch publishing information about all published binary files.
