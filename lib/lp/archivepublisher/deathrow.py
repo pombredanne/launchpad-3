@@ -223,14 +223,14 @@ class DeathRow:
             See `canRemove` for more information.
             """
             for pub_file in pub_record.files:
-                filename = pub_file.libraryfilealias.filename
-                file_md5 = pub_file.libraryfilealias.content.md5
+                filename = pub_file.libraryfile.filename
+                file_md5 = pub_file.libraryfile.content.md5
 
                 self.logger.debug("Checking %s (%s)" % (filename, file_md5))
 
                 # Calculating the file path in pool.
                 pub_file_details = (
-                    pub_file.libraryfilealias.filename,
+                    pub_file.libraryfile.filename,
                     pub_record.source_package_name,
                     pub_record.component_name,
                     )

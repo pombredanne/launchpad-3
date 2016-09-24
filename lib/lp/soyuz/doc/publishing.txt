@@ -309,10 +309,10 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
 
 Retrieve any SourcePackagePublishingHistory entry.
 
+    >>> from lp.soyuz.interfaces.files import (
+    ...     ISourcePackageReleaseFile)
     >>> from lp.soyuz.interfaces.publishing import (
-    ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackageFilePublishing,
-    ...     )
+    ...     IBinaryPackagePublishingHistory)
     >>> spph = SourcePackagePublishingHistory.get(10)
 
     >>> print spph.displayname
@@ -322,10 +322,10 @@ Retrieve any SourcePackagePublishingHistory entry.
 Files published are accessible via the files property:
 
     >>> any_pub_file = spph.files[0]
-    >>> ISourcePackageFilePublishing.providedBy(any_pub_file)
+    >>> ISourcePackageReleaseFile.providedBy(any_pub_file)
     True
 
-    >>> spph.files[0].libraryfilealias.filename
+    >>> spph.files[0].libraryfile.filename
     u'alsa-utils_1.0.8-1ubuntu1.dsc'
 
 
@@ -876,8 +876,8 @@ Binary and Binary File Publishing
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and IBinaryPackagePublishingHistory
 
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     IBinaryPackageFilePublishing)
+    >>> from lp.soyuz.interfaces.files import (
+    ...     IBinaryPackageFile)
 
     >>> bpph = BinaryPackagePublishingHistory.get(15)
     >>> print bpph.displayname
@@ -887,10 +887,10 @@ BinaryPackageFile and IBinaryPackagePublishingHistory
     True
 
     >>> any_file = bpph.files[-1]
-    >>> IBinaryPackageFilePublishing.providedBy(any_file)
+    >>> IBinaryPackageFile.providedBy(any_file)
     True
 
-    >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
+    >>> [pub_file.libraryfile.filename for pub_file in bpph.files]
     [u'mozilla-firefox_0.9_i386.deb']
 
 Binary publishing records also have a download count, which contains

@@ -222,8 +222,8 @@ class ArchivePublisherBase:
                 # when retrieving data from DB.
                 source = self.source_package_name.encode('utf-8')
                 component = self.component.name.encode('utf-8')
-                filename = pub_file.libraryfilealias.filename.encode('utf-8')
-                filealias = pub_file.libraryfilealias
+                filename = pub_file.libraryfile.filename.encode('utf-8')
+                filealias = pub_file.libraryfile
                 sha1 = filealias.content.sha1
                 path = diskpool.pathFor(component, source, filename)
 
@@ -456,10 +456,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
-        preJoins = ['libraryfilealias', 'libraryfilealias.content']
-
-        return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishing=self).prejoin(preJoins)
+        files = self.sourcepackagerelease.files
+        lfas = bulk.load_related(LibraryFileAlias, files, ['libraryfileID'])
+        bulk.load_related(LibraryFileContent, lfas, ['contentID'])
+        return files
 
     def getSourceAndBinaryLibraryFiles(self):
         """See `IPublishing`."""
@@ -707,10 +707,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
-        preJoins = ['libraryfilealias', 'libraryfilealias.content']
-
-        return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishing=self).prejoin(preJoins)
+        files = self.binarypackagerelease.files
+        lfas = bulk.load_related(LibraryFileAlias, files, ['libraryfileID'])
+        bulk.load_related(LibraryFileContent, lfas, ['contentID'])
+        return files
 
     @property
     def distroseries(self):

@@ -638,6 +638,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         required=False, readonly=False)
     binarypackagerelease = Attribute(
         "The binary package release being published")
+    source_package_name = Attribute(
+        'The source package name that built this binary.')
     distroarchseriesID = Int(
         title=_("The DB id for the distroarchseries."),
         required=False, readonly=False)

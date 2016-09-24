@@ -202,9 +202,9 @@ Publish files on disk and build a list of all created file paths
     ...     for pub_file in pub.files:
     ...         for pub_file in pub.files:
     ...             file_path = quiet_disk_pool.pathFor(
-    ...                 pub_file.componentname.encode('utf-8'),
-    ...                 pub_file.sourcepackagename.encode('utf8'),
-    ...                 pub_file.libraryfilealiasfilename.encode('utf-8')
+    ...                 pub.component.name.encode('utf-8'),
+    ...                 pub.source_package_name.encode('utf8'),
+    ...                 pub_file.libraryfile.filename.encode('utf-8')
     ...              )
     ...             unique_file_paths.add(file_path)
     ...         pub.publish(quiet_disk_pool, BufferLogger())
